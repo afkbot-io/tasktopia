@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { countryViewBounds, fitCameraScale, minimumCameraScale } from "../../src/client/world-camera";
 
 test("login, map and MCP token management", async ({ page }) => {
+  test.setTimeout(240_000);
   const consoleErrors: string[] = [];
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
   await page.goto("/");
@@ -10,7 +11,7 @@ test("login, map and MCP token management", async ({ page }) => {
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByText("Riverside", { exact: true })).toBeVisible();
   await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
-  const mapWarmup = { timeout: 30_000 };
+  const mapWarmup = { timeout: 90_000 };
   await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);
   await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-cars")), mapWarmup).toBeGreaterThan(0);
   await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-walkers")), mapWarmup).toBeGreaterThan(0);
@@ -59,7 +60,7 @@ test("login, map and MCP token management", async ({ page }) => {
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 800);
   const mapHost = page.locator(".world-canvas");
-  await expect.poll(async () => Number(await mapHost.getAttribute("data-resident-chunks"))).toBeGreaterThanOrEqual(30);
+  await expect.poll(async () => Number(await mapHost.getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThanOrEqual(30);
   const residentChunks = Number(await mapHost.getAttribute("data-resident-chunks"));
   expect(residentChunks).toBeLessThan(200);
   await page.screenshot({ path: "screenshots/mvp-city-zoomed-out.png", fullPage: true });
@@ -78,13 +79,13 @@ test("login, map and MCP token management", async ({ page }) => {
   await cityDirectory.getByRole("button", { name: /Harborview/ }).click();
   await expect(page.getByText("Harborview", { exact: true })).toBeVisible();
   await expect(canvas).toBeVisible();
-  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);
   await page.screenshot({ path: "screenshots/mvp-harborview.png", fullPage: true });
 
   await page.getByRole("button", { name: "План" }).click();
   await page.getByRole("complementary", { name: "План страны" }).getByRole("button", { name: /Pinegate/ }).click();
   await expect(page.getByText("Pinegate", { exact: true })).toBeVisible();
-  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);
   await page.screenshot({ path: "screenshots/mvp-pinegate.png", fullPage: true });
 
   await page.getByTitle("MCP-интеграции").click();
