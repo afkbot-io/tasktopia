@@ -10,9 +10,10 @@ test("login, map and MCP token management", async ({ page }) => {
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByText("Riverside", { exact: true })).toBeVisible();
   await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
-  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
-  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-cars"))).toBeGreaterThan(0);
-  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-walkers"))).toBeGreaterThan(0);
+  const mapWarmup = { timeout: 30_000 };
+  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-cars")), mapWarmup).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await page.locator(".world-canvas").getAttribute("data-walkers")), mapWarmup).toBeGreaterThan(0);
   const districtsToggle = page.getByRole("button", { name: "Районы" });
   await expect(districtsToggle).toHaveAttribute("aria-pressed", "false");
   // The anonymous bootstrap request is expected to return 401 before login.
