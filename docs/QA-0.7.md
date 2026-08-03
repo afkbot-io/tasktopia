@@ -4,6 +4,11 @@
 
 ```bash
 npm run assets:build
+npm run assets:verify
+npm run test:review-worldgen
+npm run test:review-worldgen:soak
+npm run test:growth-lifecycle
+npm run test:scale
 npm run typecheck
 npm run lint
 npm test
@@ -25,5 +30,6 @@ SMOKE_BASE_URL=http://127.0.0.1:3101 npm run smoke:mcp
 9. Ввести неверный пароль и проверить понятное сообщение «Неверный email или пароль» без технического `Bad Request`.
 10. Попытаться зарегистрировать уже существующий email: форма должна показать конфликт и остаться доступной для исправления.
 11. Имитировать временный сбой `/api/bootstrap` после входа: ошибка должна остаться на экране авторизации, а «Повторить загрузку» — открыть страну без повторного ввода пароля.
+12. В городе на 100 задач проверить отсутствие пропавших спрайтов и недоступных входов; в `NEW_BUILD` должно оставаться не менее 70% крупных корпусов, в `PRIVATE` — не менее 60% частных домов.
 
 Контрольные снимки находятся в `screenshots/mvp-city-desktop.png`, `screenshots/mvp-living-streets-closeup.png`, `screenshots/mvp-plan-tasks.png`, `screenshots/mvp-countries-chamber.png` и `screenshots/mvp-task-modal.png`.

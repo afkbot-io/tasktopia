@@ -1,0 +1,58 @@
+{
+  "date": "2026-08-03",
+  "assets": {
+    "buildings": 46,
+    "stages": 230,
+    "terrainFamilies": 12,
+    "props": 45,
+    "vehicleColors": 4,
+    "referencedPngs": 343,
+    "runtimePngs": 343,
+    "maximumPalette": 25,
+    "paletteBudget": 32,
+    "violations": 0
+  },
+  "soak": {
+    "seeds": 10,
+    "passed": 10,
+    "maximumGenerationMs": 2904,
+    "violations": 0
+  },
+  "growth": {
+    "checkpoints": [20, 60, 100],
+    "changedTasks": 0,
+    "changedDistrictGeometry": 0,
+    "roadsInsidePreviousDistricts": 0,
+    "violations": 0
+  },
+  "scale": {
+    "cities": 10,
+    "districts": 80,
+    "tasks": 250,
+    "roads": 41849,
+    "generationMs": 42815,
+    "generationBudgetMs": 60000,
+    "chunkMs": 1195,
+    "chunkBudgetMs": 5000,
+    "rssMb": 470,
+    "rssBudgetMb": 768
+  },
+  "browser": {
+    "growthWorldTasks": 100,
+    "growthBuildingTypes": 39,
+    "growthRoads": 4249,
+    "growthBridges": 36,
+    "unreachableEntrances": 0,
+    "growthE2ePassed": 1,
+    "fullE2ePassed": 4,
+    "fullE2eSkipped": 1
+  },
+  "quality": {
+    "testFilesPassed": 15,
+    "testsPassed": 54,
+    "typecheck": "pass",
+    "lint": "pass",
+    "build": "pass",
+    "diffCheck": "pass"
+  }
+}

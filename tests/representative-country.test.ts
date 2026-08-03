@@ -53,6 +53,23 @@ describe("representative country fixture", () => {
         const districtTasks = tasks.filter((task) => task.districtId === district.id);
         if (district.status === "PLANNED") expect(districtTasks.every((task) => task.status === "PLANNING")).toBe(true);
         if (district.status === "COMPLETED") expect(districtTasks.every((task) => task.status === "COMPLETED")).toBe(true);
+        if (district.status === "ACTIVE") {
+          expect(new Set(districtTasks.map((task) => task.status))).toEqual(new Set(["PLANNING", "STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"]));
+        }
+      }
+    }
+  });
+
+  it("keeps residential district identities visually dominant", () => {
+    const districts = service.listDistricts(countryId);
+    expect(audit.metrics.districtArchetypes.NEW_BUILD).toBeGreaterThan(0);
+    expect(audit.metrics.districtArchetypes.PRIVATE).toBeGreaterThan(0);
+    for (const district of districts) {
+      if (district.archetype === "NEW_BUILD") {
+        expect(audit.metrics.zoningPrimarySharePerDistrict[district.name], district.name).toBeGreaterThanOrEqual(0.7);
+      }
+      if (district.archetype === "PRIVATE") {
+        expect(audit.metrics.zoningPrimarySharePerDistrict[district.name], district.name).toBeGreaterThanOrEqual(0.6);
       }
     }
   });

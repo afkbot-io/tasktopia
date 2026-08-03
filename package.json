@@ -24,7 +24,8 @@
     "test:growth-lifecycle": "tsx scripts/worldgen-growth-lifecycle.ts",
     "study:worldgen": "tsx scripts/worldgen-algorithm-study.ts",
     "assets:setup": "python3 -m venv .venv-assets && .venv-assets/bin/python -m pip install -r requirements-assets.txt",
-    "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack-v4.py"
+    "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack-v4.py",
+    "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack-v4.py"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

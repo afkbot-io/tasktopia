@@ -8,6 +8,9 @@ import { cellKey, connected, intersects } from "../src/server/world/grid";
 const cityCount = Number(process.env.SCALE_CITIES ?? 10);
 const districtsPerCity = Number(process.env.SCALE_DISTRICTS ?? 8);
 const tasksPerCity = Number(process.env.SCALE_TASKS ?? 25);
+const generationBudgetMs = Number(process.env.SCALE_GENERATION_BUDGET_MS ?? 60_000);
+const chunkBudgetMs = Number(process.env.SCALE_CHUNK_BUDGET_MS ?? 5_000);
+const rssBudgetMb = Number(process.env.SCALE_RSS_BUDGET_MB ?? 768);
 const db = createDb(":memory:");
 const registered = await registerUser(db, { email: "scale@tasktopia.local", name: "Scale Mayor", password: "scale-password-123" });
 db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, registered.user.countryId);
@@ -88,6 +91,10 @@ for (const city of cities) {
 }
 const chunkMs = performance.now() - chunksStartedAt;
 const memory = process.memoryUsage();
+const rssMb = Math.round(memory.rss / 1024 / 1024);
+assert.ok(generationMs <= generationBudgetMs, `generation ${Math.round(generationMs)}ms exceeded ${generationBudgetMs}ms budget`);
+assert.ok(chunkMs <= chunkBudgetMs, `chunk materialization ${Math.round(chunkMs)}ms exceeded ${chunkBudgetMs}ms budget`);
+assert.ok(rssMb <= rssBudgetMb, `resident memory ${rssMb}MB exceeded ${rssBudgetMb}MB budget`);
 
 console.log(JSON.stringify({
   seed: 424_242,
@@ -98,8 +105,11 @@ console.log(JSON.stringify({
   chunks: cities.length * 9,
   terrainCells,
   generationMs: Math.round(generationMs),
+  generationBudgetMs,
   chunkMs: Math.round(chunkMs),
-  rssMb: Math.round(memory.rss / 1024 / 1024),
+  chunkBudgetMs,
+  rssMb,
+  rssBudgetMb,
   heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
 }, null, 2));
 db.close();

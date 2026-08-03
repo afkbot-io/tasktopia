@@ -43,13 +43,15 @@ Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`. `src/shar
 }
 ```
 
-Затем выполните `npm run assets:build`. Builder создаст пять стадий, обновит manifest/public pack, проверит размеры и alpha и перерисует contact sheet.
+Затем выполните `npm run assets:build && npm run assets:verify`. Builder создаст пять стадий, обновит manifest/public pack и перерисует contact sheet. Read-only audit отдельно проверит все runtime PNG: пять уникальных непустых стадий, сетку и footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, одинаковую геометрию цветовых машин, отсутствие механического поворота ракурса, потерянных ссылок и лишних файлов.
 
 ## Подключить нарисованные вручную спрайты
 
 1. Положите пять PNG в `assets/pixel-city-pack-v4/sources/<key>/`.
 2. Добавьте запись в `catalog/imported-buildings.json` с `key`, metadata и массивом `stages` относительно каталога `sources`.
 3. Запустите builder и тесты.
+
+`assets:verify` ничего не перегенерирует, поэтому его следует запускать и после ручной правки PNG. Сейчас он покрывает 46 зданий / 230 стадий, 12 terrain families, 45 props и 4 цветовых семейства машин.
 
 Imported entry может явно переопределить `platform`, `estimates`, `tags`, `ruleIds`, `entrances`, quotas и `serviceRole`. Новый обычный вариант не требует изменений TypeScript, базы или MCP.
 

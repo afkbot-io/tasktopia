@@ -1246,7 +1246,13 @@ export class AppService {
       const entry = BUILDING_CATALOG.find((item) => item.key === String(row.building_type));
       return entry ? !primaryZoningRole(archetype, buildingZoningRole(entry)) : false;
     }).length;
-    const supportLimit = archetype === "MIXED_URBAN" ? Number.POSITIVE_INFINITY : archetype === "CIVIC" ? 2 : 3;
+    // New-build districts must read as one coherent residential complex even
+    // after the automatic city-service schedule adds a clinic/fire/police task.
+    // Two optional support plots + one required service keeps at least seven
+    // of every ten tasks in the dense-residential family.
+    const supportLimit = archetype === "MIXED_URBAN"
+      ? Number.POSITIVE_INFINITY
+      : archetype === "CIVIC" || archetype === "NEW_BUILD" ? 2 : 3;
     const wantsSupport = tags.has("commercial") || tags.has("civic") || Boolean(requiredService);
     const primaryCandidates = compatible.filter((entry) => primaryZoningRole(archetype, buildingZoningRole(entry)));
     const supportCandidates = compatible.filter((entry) => !primaryZoningRole(archetype, buildingZoningRole(entry)));

@@ -307,14 +307,39 @@ export function auditWorld(db: Db, service: AppService, countryId: string): Worl
     return [city.name, [...roles].sort()];
   }));
   const districtArchetypes = Object.fromEntries(["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"].map((archetype) => [archetype, districts.filter((district) => district.archetype === archetype).length]));
-  const zoningPrimarySharePerDistrict = Object.fromEntries(districts.map((district) => {
+  const zoningPrimaryShareByDistrictId = new Map(districts.map((district) => {
     const districtTasks = tasks.filter((task) => task.districtId === district.id);
     const primary = districtTasks.filter((task) => {
       const entry = BUILDING_CATALOG.find((building) => building.key === task.buildingType);
       return entry ? primaryZoningRole(district.archetype, buildingZoningRole(entry)) : false;
     }).length;
-    return [district.name, districtTasks.length === 0 ? 1 : primary / districtTasks.length];
+    return [district.id, districtTasks.length === 0 ? 1 : primary / districtTasks.length] as const;
   }));
+  const zoningPrimarySharePerDistrict = Object.fromEntries(districts.map((district) => [
+    district.name,
+    zoningPrimaryShareByDistrictId.get(district.id)!,
+  ]));
+  const minimumPrimaryShare: Partial<Record<(typeof districts)[number]["archetype"], number>> = {
+    NEW_BUILD: 0.7,
+    PRIVATE: 0.6,
+  };
+  for (const district of districts) {
+    const minimumShare = minimumPrimaryShare[district.archetype];
+    if (minimumShare === undefined) continue;
+    const taskCount = tasks.filter((task) => task.districtId === district.id).length;
+    const primaryShare = zoningPrimaryShareByDistrictId.get(district.id) ?? 0;
+    // A first shop or clinic is a legitimate seed for an otherwise empty
+    // district. Percentage zoning becomes meaningful once one full planning
+    // batch (ten tasks) exists; hard family incompatibility is checked from the
+    // very first task above.
+    if (taskCount >= 10 && primaryShare + Number.EPSILON < minimumShare) {
+      addViolation(
+        violations,
+        "ZONING_PRIMARY_SHARE_LOW",
+        `${district.name}: профильная застройка занимает только ${Math.round(primaryShare * 100)}% района ${district.archetype}, требуется ${Math.round(minimumShare * 100)}%`,
+      );
+    }
+  }
   const compatibleTasks = tasks.filter((task) => {
     const district = districtById.get(task.districtId);
     const building = BUILDING_CATALOG.find((entry) => entry.key === task.buildingType);

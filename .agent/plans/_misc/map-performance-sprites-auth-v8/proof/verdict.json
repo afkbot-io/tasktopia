@@ -1,0 +1,13 @@
+{
+  "status": "pass_with_accepted_risk",
+  "acceptance": {
+    "world": "pass",
+    "sprites": "pass",
+    "browser": "pass"
+  },
+  "blockingProblems": [],
+  "acceptedRisks": [
+    "The 10-city batch generator takes 42.815 seconds on the audit machine; it is inside the new 60-second regression budget but remains unsuitable for a synchronous request path.",
+    "The production client bundle emits an existing 531 kB chunk-size warning; runtime chunk residency and browser flows pass, but code splitting remains a later optimization lane."
+  ]
+}
