@@ -24,6 +24,14 @@ services:
       start_period: 10s
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 volumes:
   tasktopia_data:

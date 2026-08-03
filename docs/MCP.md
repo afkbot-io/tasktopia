@@ -6,7 +6,7 @@ Endpoint: `POST /mcp`, транспорт Streamable HTTP.
 {
   "mcpServers": {
     "tasktopia": {
-      "url": "https://tasktopia.example.com/mcp",
+      "url": "https://tasktopia.online/mcp",
       "headers": { "Authorization": "Bearer ttp_mcp_..." }
     }
   }
