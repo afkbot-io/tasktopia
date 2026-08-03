@@ -1,0 +1,18 @@
+{
+  "route": "http://127.0.0.1:5273/",
+  "viewport": { "width": 1440, "height": 900 },
+  "scenario": "demo login, warm detail sample, eight zoom-out wheel inputs, bounded 30-step drag, warm overview sample",
+  "detail": { "framesPerSecondApprox": 19.7, "averageFrameMs": 50.86, "p95FrameMs": 91.7, "maxFrameMs": 91.9 },
+  "overview": { "framesPerSecondApprox": 21.0, "averageFrameMs": 47.71, "p95FrameMs": 91.7, "maxFrameMs": 100.0 },
+  "residentChunks": 60,
+  "uniqueChunkRequests": 60,
+  "cars": 28,
+  "walkers": 96,
+  "reportedHeapMb": 1745,
+  "largestObservedLongTaskMs": 643,
+  "notes": [
+    "The current 60-chunk terrain layer alone can represent 245760 individual tile sprites.",
+    "Long tasks repeatedly appeared around 500-600 ms during viewport reconciliation.",
+    "Browser heap exposure is diagnostic and must be compared with the same harness after implementation."
+  ]
+}

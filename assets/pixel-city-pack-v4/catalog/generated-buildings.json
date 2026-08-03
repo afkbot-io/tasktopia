@@ -1,0 +1,16 @@
+[
+  {"key":"house-rowhomes","label":"Рядные дома","spriteSize":[32,32],"footprintCells":[4,3],"wall":"#c99b79ff","dark":"#8c5b4fff","roof":"#3f5268ff","accent":"#e4c07aff","style":"row"},
+  {"key":"house-brick-duplex","label":"Кирпичный дуплекс","spriteSize":[24,32],"footprintCells":[3,3],"wall":"#b8735fff","dark":"#79493fff","roof":"#344b61ff","accent":"#d8c49cff","style":"duplex"},
+  {"key":"house-courtyard-apartments","label":"Дом с внутренним двором","spriteSize":[48,40],"footprintCells":[6,4],"wall":"#d4b37fff","dark":"#8c6b4fff","roof":"#46576aff","accent":"#5f9c75ff","style":"courtyard","rarity":"UNCOMMON"},
+  {"key":"house-modern-lowrise","label":"Современный малоэтажный дом","spriteSize":[32,32],"footprintCells":[4,3],"wall":"#d5d4caff","dark":"#777f83ff","roof":"#414c55ff","accent":"#3f9aa5ff","style":"modern"},
+  {"key":"house-woodland-home","label":"Деревянный пригородный дом","spriteSize":[32,32],"footprintCells":[4,3],"wall":"#c08a55ff","dark":"#744f38ff","roof":"#35465aff","accent":"#799653ff","style":"gabled"},
+  {"key":"house-corner-apartments","label":"Угловой жилой дом","spriteSize":[40,40],"footprintCells":[5,4],"wall":"#bd795eff","dark":"#78483fff","roof":"#46505cff","accent":"#55a6aeff","style":"corner","rarity":"UNCOMMON"},
+  {"key":"civic-theatre","label":"Городской театр","spriteSize":[48,40],"footprintCells":[6,5],"wall":"#d2b789ff","dark":"#80624fff","roof":"#584b67ff","accent":"#d2ad58ff","style":"courtyard","rarity":"UNIQUE","category":"CIVIC"},
+  {"key":"civic-library","label":"Районная библиотека","spriteSize":[40,32],"footprintCells":[5,4],"wall":"#c9c5b2ff","dark":"#6d756fff","roof":"#395a6bff","accent":"#65a0a1ff","style":"modern","rarity":"UNCOMMON","category":"CIVIC"},
+  {"key":"civic-fire-station-compact","label":"Малая пожарная часть","spriteSize":[40,32],"footprintCells":[5,4],"wall":"#d5b58aff","dark":"#8a5548ff","roof":"#a34338ff","accent":"#e2b951ff","style":"modern","rarity":"UNCOMMON","category":"CIVIC"},
+  {"key":"civic-police-neighborhood","label":"Районный пункт полиции","spriteSize":[32,24],"footprintCells":[4,3],"wall":"#cbd3d4ff","dark":"#66747aff","roof":"#345a76ff","accent":"#55a7d5ff","style":"modern","rarity":"UNCOMMON","category":"CIVIC"},
+  {"key":"civic-clinic-neighborhood","label":"Районная амбулатория","spriteSize":[32,24],"footprintCells":[4,3],"wall":"#d7d7caff","dark":"#6d7774ff","roof":"#408177ff","accent":"#d85c55ff","style":"modern","rarity":"UNCOMMON","category":"CIVIC"},
+  {"key":"commercial-gas-station-compact","label":"Компактная заправка","spriteSize":[40,24],"footprintCells":[5,3],"wall":"#d9d2bdff","dark":"#737b78ff","roof":"#b94f42ff","accent":"#e2be4fff","style":"modern","rarity":"UNCOMMON","category":"COMMERCIAL"},
+  {"key":"highrise-mixed-use-market","label":"Новостройка с магазинами","spriteSize":[40,56],"footprintCells":[5,5],"wall":"#c9c7b8ff","dark":"#59666bff","roof":"#3f5967ff","accent":"#d69b4cff","style":"mixed-use","rarity":"UNCOMMON","category":"HIGHRISE"},
+  {"key":"commercial-highway-service-plaza","label":"Большая придорожная заправка","spriteSize":[64,40],"footprintCells":[8,5],"wall":"#d8d2bdff","dark":"#657277ff","roof":"#b94f42ff","accent":"#e6bd4dff","style":"gas-plaza","rarity":"RARE","category":"COMMERCIAL"}
+]

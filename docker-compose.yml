@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_PATH: /app/data/tasktopia.db
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      TRUST_PROXY: "true"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - tasktopia_data:/app/data
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  tasktopia_data:

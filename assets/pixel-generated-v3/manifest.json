@@ -1,0 +1,206 @@
+{
+  "version": 3,
+  "style": "premium low-resolution city-builder pixel art",
+  "orientation": "POINTY_TOP",
+  "terrain": {
+    "spriteSize": [
+      167,
+      193
+    ],
+    "vertices": [
+      [
+        83,
+        0
+      ],
+      [
+        166,
+        48
+      ],
+      [
+        166,
+        144
+      ],
+      [
+        83,
+        192
+      ],
+      [
+        0,
+        144
+      ],
+      [
+        0,
+        48
+      ]
+    ],
+    "center": [
+      83,
+      96
+    ],
+    "neighbourOffsets": {
+      "NE": [
+        83,
+        -144
+      ],
+      "E": [
+        166,
+        0
+      ],
+      "SE": [
+        83,
+        144
+      ],
+      "SW": [
+        -83,
+        144
+      ],
+      "W": [
+        -166,
+        0
+      ],
+      "NW": [
+        -83,
+        -144
+      ]
+    },
+    "files": [
+      "tiles/environment/grass.png",
+      "tiles/environment/meadow.png",
+      "tiles/environment/forest.png",
+      "tiles/environment/rocks.png",
+      "tiles/environment/water.png",
+      "tiles/environment/river-straight.png",
+      "tiles/environment/river-curve.png",
+      "tiles/environment/river-fork.png",
+      "tiles/environment/road-straight.png",
+      "tiles/environment/road-curve.png",
+      "tiles/environment/road-t.png",
+      "tiles/environment/bridge.png"
+    ]
+  },
+  "building": {
+    "key": "townhouse",
+    "spriteSize": [
+      192,
+      256
+    ],
+    "anchor": [
+      96,
+      218
+    ],
+    "footprint": [
+      [
+        0,
+        0
+      ]
+    ],
+    "files": [
+      "tiles/building/townhouse-stage-1.png",
+      "tiles/building/townhouse-stage-2.png",
+      "tiles/building/townhouse-stage-3.png",
+      "tiles/building/townhouse-stage-4.png",
+      "tiles/building/townhouse-stage-5.png"
+    ],
+    "containsTerrain": false
+  },
+  "validation": {
+    "terrainCount": 12,
+    "buildingStageCount": 5,
+    "identicalTerrainAlphaGeometry": true,
+    "allSixNeighbourEdgesMeetExactly": true,
+    "sideLengthsPx": [
+      95.88,
+      96.0,
+      95.88,
+      95.88,
+      96.0,
+      95.88
+    ],
+    "sideLengthSpreadPx": 0.12,
+    "portContractsPass": true,
+    "portSignals": {
+      "river-straight": {
+        "water": {
+          "NE": 0.0,
+          "E": 0.0,
+          "SE": 0.96,
+          "SW": 0.0,
+          "W": 0.0,
+          "NW": 0.65
+        }
+      },
+      "river-curve": {
+        "water": {
+          "NE": 0.96,
+          "E": 0.0,
+          "SE": 0.0,
+          "SW": 0.0,
+          "W": 0.9,
+          "NW": 0.0
+        }
+      },
+      "river-fork": {
+        "water": {
+          "NE": 0.96,
+          "E": 0.0,
+          "SE": 0.96,
+          "SW": 0.0,
+          "W": 0.0,
+          "NW": 0.89
+        }
+      },
+      "road-straight": {
+        "road": {
+          "NE": 0.04,
+          "E": 0.87,
+          "SE": 0.04,
+          "SW": 0.04,
+          "W": 0.87,
+          "NW": 0.04
+        }
+      },
+      "road-curve": {
+        "road": {
+          "NE": 1.0,
+          "E": 0.1,
+          "SE": 0.04,
+          "SW": 0.04,
+          "W": 0.53,
+          "NW": 0.04
+        }
+      },
+      "road-t": {
+        "road": {
+          "NE": 1.0,
+          "E": 0.93,
+          "SE": 0.04,
+          "SW": 0.04,
+          "W": 0.93,
+          "NW": 0.04
+        }
+      },
+      "bridge": {
+        "road": {
+          "NE": 0.04,
+          "E": 0.85,
+          "SE": 0.04,
+          "SW": 0.04,
+          "W": 0.86,
+          "NW": 0.04
+        },
+        "water": {
+          "NE": 0.0,
+          "E": 0.0,
+          "SE": 0.96,
+          "SW": 0.0,
+          "W": 0.0,
+          "NW": 0.96
+        }
+      }
+    }
+  },
+  "provenance": {
+    "art": "built-in image generation, one source per terrain concept and one five-stage strip",
+    "runtimeGeometry": "deterministic normalization by scripts/process-pixel-generated-v3.py"
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+.venv-assets/
+__pycache__/
+*.py[cod]
+dist/
+data/
+.env
+playwright-report/
+test-results/
+coverage/
+.playwright-cli/
+output/
+.DS_Store

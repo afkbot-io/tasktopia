@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "projection": "strict vertical orthographic",
+  "grid": "SQUARE_4_NEIGHBOUR",
+  "tileSize": [
+    192,
+    192
+  ],
+  "portCoordinatePx": 96,
+  "files": [
+    "tiles/grass.png",
+    "tiles/forest.png",
+    "tiles/rocks.png",
+    "tiles/water.png",
+    "tiles/building.png",
+    "tiles/road-ew.png",
+    "tiles/road-ns.png",
+    "tiles/road-nw.png",
+    "tiles/road-ne.png",
+    "tiles/road-es.png",
+    "tiles/road-sw.png",
+    "tiles/river-ns.png",
+    "tiles/river-ew.png",
+    "tiles/river-ne.png",
+    "tiles/river-es.png",
+    "tiles/river-sw.png",
+    "tiles/river-nw.png",
+    "tiles/bridge-ew-ns.png"
+  ],
+  "contracts": {
+    "road-ew": {
+      "road": [
+        "E",
+        "W"
+      ]
+    },
+    "road-ns": {
+      "road": [
+        "N",
+        "S"
+      ]
+    },
+    "road-nw": {
+      "road": [
+        "N",
+        "W"
+      ]
+    },
+    "road-ne": {
+      "road": [
+        "E",
+        "N"
+      ]
+    },
+    "road-es": {
+      "road": [
+        "E",
+        "S"
+      ]
+    },
+    "road-sw": {
+      "road": [
+        "S",
+        "W"
+      ]
+    },
+    "river-ns": {
+      "water": [
+        "N",
+        "S"
+      ]
+    },
+    "river-ew": {
+      "water": [
+        "E",
+        "W"
+      ]
+    },
+    "river-ne": {
+      "water": [
+        "E",
+        "N"
+      ]
+    },
+    "river-es": {
+      "water": [
+        "E",
+        "S"
+      ]
+    },
+    "river-sw": {
+      "water": [
+        "S",
+        "W"
+      ]
+    },
+    "river-nw": {
+      "water": [
+        "N",
+        "W"
+      ]
+    },
+    "bridge-ew-ns": {
+      "road": [
+        "E",
+        "W"
+      ],
+      "water": [
+        "N",
+        "S"
+      ]
+    }
+  },
+  "validation": {
+    "camera": "ORTHOGRAPHIC_TOP_DOWN_90_DEGREES",
+    "tileSize": [
+      192,
+      192
+    ],
+    "tileCount": 18,
+    "grid": "SQUARE_4_NEIGHBOUR",
+    "portCoordinatePx": 96,
+    "portContractsPass": true,
+    "portSignals": {
+      "road-ew": {
+        "road": {
+          "N": 0.0,
+          "E": 0.96,
+          "S": 0.0,
+          "W": 0.9
+        }
+      },
+      "road-ns": {
+        "road": {
+          "N": 0.96,
+          "E": 0.0,
+          "S": 0.9,
+          "W": 0.0
+        }
+      },
+      "road-nw": {
+        "road": {
+          "N": 0.91,
+          "E": 0.0,
+          "S": 0.0,
+          "W": 1.0
+        }
+      },
+      "road-ne": {
+        "road": {
+          "N": 0.98,
+          "E": 0.91,
+          "S": 0.0,
+          "W": 0.0
+        }
+      },
+      "road-es": {
+        "road": {
+          "N": 0.0,
+          "E": 0.98,
+          "S": 0.85,
+          "W": 0.0
+        }
+      },
+      "road-sw": {
+        "road": {
+          "N": 0.0,
+          "E": 0.0,
+          "S": 1.0,
+          "W": 0.85
+        }
+      },
+      "river-ns": {
+        "water": {
+          "N": 0.92,
+          "E": 0.0,
+          "S": 0.94,
+          "W": 0.0
+        }
+      },
+      "river-ew": {
+        "water": {
+          "N": 0.0,
+          "E": 1.0,
+          "S": 0.0,
+          "W": 0.99
+        }
+      },
+      "river-ne": {
+        "water": {
+          "N": 0.77,
+          "E": 0.76,
+          "S": 0.0,
+          "W": 0.0
+        }
+      },
+      "river-es": {
+        "water": {
+          "N": 0.0,
+          "E": 0.77,
+          "S": 0.7,
+          "W": 0.0
+        }
+      },
+      "river-sw": {
+        "water": {
+          "N": 0.0,
+          "E": 0.0,
+          "S": 0.77,
+          "W": 0.7
+        }
+      },
+      "river-nw": {
+        "water": {
+          "N": 0.76,
+          "E": 0.0,
+          "S": 0.0,
+          "W": 0.77
+        }
+      },
+      "bridge-ew-ns": {
+        "road": {
+          "N": 0.0,
+          "E": 0.9,
+          "S": 0.0,
+          "W": 0.91
+        },
+        "water": {
+          "N": 1.0,
+          "E": 0.0,
+          "S": 1.0,
+          "W": 0.0
+        }
+      }
+    }
+  },
+  "provenance": {
+    "art": "built-in image generation; one call per base concept; grass used as style anchor",
+    "runtime": "deterministic resize, edge-port normalization and rotations by scripts/process-pixel-square-v1.py"
+  }
+}

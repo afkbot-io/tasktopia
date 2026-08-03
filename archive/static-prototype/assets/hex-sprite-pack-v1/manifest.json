@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "name": "Tasktopia Hex Sprite Pack V1",
+  "orientation": "flat-top",
+  "camera": "terrain-top-down-90-building-soft-three-quarter",
+  "terrainFrame": {
+    "width": 256,
+    "height": 222,
+    "anchor": [128, 111]
+  },
+  "objectFrame": {
+    "width": 320,
+    "height": 384,
+    "anchor": [160, 376],
+    "hexOrigin": [32, 154],
+    "footprint": "one-hex"
+  },
+  "terrain": [
+    "terrain/grass-plain.png",
+    "terrain/grass-tufts.png",
+    "terrain/grass-meadow.png",
+    "terrain/water-calm.png",
+    "terrain/water-ripples.png",
+    "terrain/water-waves.png"
+  ],
+  "roads": [
+    { "file": "roads/road-end-e.png", "connections": ["E"] },
+    { "file": "roads/road-straight-ew.png", "connections": ["E", "W"] },
+    { "file": "roads/road-straight-nw-se.png", "connections": ["NW", "SE"] },
+    { "file": "roads/road-turn-w-ne.png", "connections": ["W", "NE"] },
+    { "file": "roads/road-t-w-e-sw.png", "connections": ["W", "E", "SW"] },
+    { "file": "roads/road-intersection-6.png", "connections": ["NE", "E", "SE", "SW", "W", "NW"] }
+  ],
+  "buildings": {
+    "residential": [
+      "buildings/residential/stage-01-planning.png",
+      "buildings/residential/stage-02-foundation.png",
+      "buildings/residential/stage-03-construction.png",
+      "buildings/residential/stage-04-finishing.png",
+      "buildings/residential/stage-05-complete.png"
+    ],
+    "shop": [
+      "buildings/shop/stage-01-planning.png",
+      "buildings/shop/stage-02-foundation.png",
+      "buildings/shop/stage-03-construction.png",
+      "buildings/shop/stage-04-finishing.png",
+      "buildings/shop/stage-05-complete.png"
+    ]
+  }
+}

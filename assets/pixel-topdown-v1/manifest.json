@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "projection": "strict vertical orthographic",
+  "orientation": "POINTY_TOP",
+  "spriteSize": [
+    167,
+    193
+  ],
+  "vertices": [
+    [
+      83,
+      0
+    ],
+    [
+      166,
+      48
+    ],
+    [
+      166,
+      144
+    ],
+    [
+      83,
+      192
+    ],
+    [
+      0,
+      144
+    ],
+    [
+      0,
+      48
+    ]
+  ],
+  "center": [
+    83,
+    96
+  ],
+  "files": [
+    "tiles/grass.png",
+    "tiles/forest.png",
+    "tiles/rocks.png",
+    "tiles/water.png",
+    "tiles/road-straight.png",
+    "tiles/river-straight.png",
+    "tiles/building.png"
+  ],
+  "validation": {
+    "camera": "ORTHOGRAPHIC_TOP_DOWN_90_DEGREES",
+    "tileCount": 7,
+    "identicalAlphaMasks": true,
+    "sideLengthsPx": [
+      95.88,
+      96.0,
+      95.88,
+      95.88,
+      96.0,
+      95.88
+    ],
+    "sideLengthSpreadPx": 0.12,
+    "neighbourOffsets": {
+      "NE": [
+        83,
+        -144
+      ],
+      "E": [
+        166,
+        0
+      ],
+      "SE": [
+        83,
+        144
+      ],
+      "SW": [
+        -83,
+        144
+      ],
+      "W": [
+        -166,
+        0
+      ],
+      "NW": [
+        -83,
+        -144
+      ]
+    }
+  },
+  "provenance": {
+    "art": "built-in image generation; one call per concept; grass anchor used as style reference",
+    "geometry": "deterministic mask and neighbor layout from scripts/process-pixel-topdown-v1.py"
+  }
+}

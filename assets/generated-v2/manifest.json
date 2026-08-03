@@ -1,0 +1,795 @@
+{
+  "version": 2,
+  "orientation": "POINTY_TOP",
+  "cellSize": 320,
+  "camera": "terrain top-down; buildings restrained pseudo-isometric",
+  "lightDirection": "upper-left",
+  "atlases": {
+    "environment": [
+      {
+        "key": "grass",
+        "path": "assets/generated-v2/tiles/environment/grass.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          22,
+          284,
+          301
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "meadow",
+        "path": "assets/generated-v2/tiles/environment/meadow.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          35,
+          22,
+          284,
+          301
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "forest",
+        "path": "assets/generated-v2/tiles/environment/forest.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          35,
+          22,
+          285,
+          301
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "rocks",
+        "path": "assets/generated-v2/tiles/environment/rocks.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          22,
+          284,
+          301
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "water",
+        "path": "assets/generated-v2/tiles/environment/water.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          22,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "river-nw-se",
+        "path": "assets/generated-v2/tiles/environment/river-nw-se.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          35,
+          22,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "river-w-e",
+        "path": "assets/generated-v2/tiles/environment/river-w-e.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          35,
+          22,
+          285,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "river-confluence",
+        "path": "assets/generated-v2/tiles/environment/river-confluence.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          22,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "road-w-e",
+        "path": "assets/generated-v2/tiles/environment/road-w-e.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          22,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "road-nw-se",
+        "path": "assets/generated-v2/tiles/environment/road-nw-se.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          35,
+          22,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "road-curve",
+        "path": "assets/generated-v2/tiles/environment/road-curve.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          22,
+          285,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "road-t",
+        "path": "assets/generated-v2/tiles/environment/road-t.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          22,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "road-cross",
+        "path": "assets/generated-v2/tiles/environment/road-cross.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          23,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "bridge",
+        "path": "assets/generated-v2/tiles/environment/bridge.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          35,
+          23,
+          284,
+          302
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "civic-plaza",
+        "path": "assets/generated-v2/tiles/environment/civic-plaza.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          23,
+          285,
+          301
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "park",
+        "path": "assets/generated-v2/tiles/environment/park.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          23,
+          284,
+          301
+        ],
+        "source": "generated-2d"
+      }
+    ],
+    "buildings": [
+      {
+        "key": "cottage",
+        "path": "assets/generated-v2/tiles/buildings/cottage.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          48,
+          43,
+          295,
+          320
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "townhouse",
+        "path": "assets/generated-v2/tiles/buildings/townhouse.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          38,
+          44,
+          284,
+          320
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "apartments",
+        "path": "assets/generated-v2/tiles/buildings/apartments.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          26,
+          44,
+          270,
+          320
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "apartment-tower",
+        "path": "assets/generated-v2/tiles/buildings/apartment-tower.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          11,
+          36,
+          255,
+          320
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "corner-shop",
+        "path": "assets/generated-v2/tiles/buildings/corner-shop.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          50,
+          33,
+          296,
+          310
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "supermarket",
+        "path": "assets/generated-v2/tiles/buildings/supermarket.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          37,
+          35,
+          284,
+          312
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "office",
+        "path": "assets/generated-v2/tiles/buildings/office.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          24,
+          24,
+          269,
+          311
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "hotel",
+        "path": "assets/generated-v2/tiles/buildings/hotel.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          9,
+          34,
+          253,
+          312
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "police",
+        "path": "assets/generated-v2/tiles/buildings/police.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          51,
+          27,
+          295,
+          303
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "fire-station",
+        "path": "assets/generated-v2/tiles/buildings/fire-station.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          36,
+          13,
+          282,
+          304
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "clinic",
+        "path": "assets/generated-v2/tiles/buildings/clinic.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          24,
+          29,
+          267,
+          304
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "school",
+        "path": "assets/generated-v2/tiles/buildings/school.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          8,
+          29,
+          253,
+          305
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "theatre",
+        "path": "assets/generated-v2/tiles/buildings/theatre.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          50,
+          18,
+          296,
+          294
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "library",
+        "path": "assets/generated-v2/tiles/buildings/library.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          37,
+          18,
+          282,
+          294
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "gas-station",
+        "path": "assets/generated-v2/tiles/buildings/gas-station.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          24,
+          19,
+          267,
+          294
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "workshop",
+        "path": "assets/generated-v2/tiles/buildings/workshop.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          8,
+          19,
+          253,
+          295
+        ],
+        "source": "generated-2d"
+      }
+    ],
+    "stages": [
+      {
+        "key": "cottage-stage-1",
+        "path": "assets/generated-v2/tiles/stages/cottage-stage-1.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          46,
+          98,
+          295,
+          239
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "cottage-stage-2",
+        "path": "assets/generated-v2/tiles/stages/cottage-stage-2.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          43,
+          98,
+          291,
+          239
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "cottage-stage-3",
+        "path": "assets/generated-v2/tiles/stages/cottage-stage-3.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          38,
+          99,
+          287,
+          240
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "cottage-stage-4",
+        "path": "assets/generated-v2/tiles/stages/cottage-stage-4.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          33,
+          99,
+          281,
+          240
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "cottage-stage-5",
+        "path": "assets/generated-v2/tiles/stages/cottage-stage-5.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          19,
+          99,
+          267,
+          240
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "apartments-stage-1",
+        "path": "assets/generated-v2/tiles/stages/apartments-stage-1.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          62,
+          90,
+          308,
+          241
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "apartments-stage-2",
+        "path": "assets/generated-v2/tiles/stages/apartments-stage-2.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          54,
+          90,
+          299,
+          241
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "apartments-stage-3",
+        "path": "assets/generated-v2/tiles/stages/apartments-stage-3.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          40,
+          84,
+          285,
+          241
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "apartments-stage-4",
+        "path": "assets/generated-v2/tiles/stages/apartments-stage-4.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          27,
+          73,
+          272,
+          241
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "apartments-stage-5",
+        "path": "assets/generated-v2/tiles/stages/apartments-stage-5.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          11,
+          80,
+          257,
+          241
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "fire-station-stage-1",
+        "path": "assets/generated-v2/tiles/stages/fire-station-stage-1.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          41,
+          91,
+          307,
+          273
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "fire-station-stage-2",
+        "path": "assets/generated-v2/tiles/stages/fire-station-stage-2.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          28,
+          91,
+          296,
+          273
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "fire-station-stage-3",
+        "path": "assets/generated-v2/tiles/stages/fire-station-stage-3.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          19,
+          78,
+          290,
+          273
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "fire-station-stage-4",
+        "path": "assets/generated-v2/tiles/stages/fire-station-stage-4.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          14,
+          77,
+          281,
+          273
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "fire-station-stage-5",
+        "path": "assets/generated-v2/tiles/stages/fire-station-stage-5.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          4,
+          80,
+          271,
+          273
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "supermarket-stage-1",
+        "path": "assets/generated-v2/tiles/stages/supermarket-stage-1.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          43,
+          78,
+          310,
+          257
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "supermarket-stage-2",
+        "path": "assets/generated-v2/tiles/stages/supermarket-stage-2.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          37,
+          78,
+          303,
+          257
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "supermarket-stage-3",
+        "path": "assets/generated-v2/tiles/stages/supermarket-stage-3.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          29,
+          78,
+          295,
+          257
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "supermarket-stage-4",
+        "path": "assets/generated-v2/tiles/stages/supermarket-stage-4.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          14,
+          78,
+          282,
+          258
+        ],
+        "source": "generated-2d"
+      },
+      {
+        "key": "supermarket-stage-5",
+        "path": "assets/generated-v2/tiles/stages/supermarket-stage-5.png",
+        "size": [
+          320,
+          320
+        ],
+        "contentBounds": [
+          0,
+          78,
+          268,
+          258
+        ],
+        "source": "generated-2d"
+      }
+    ]
+  }
+}
