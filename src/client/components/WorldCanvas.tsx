@@ -1,18 +1,34 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Application, Assets, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
-import { BUILDING_CATALOG, PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, getBuilding } from "../../shared/catalog";
-import type { BootstrapDto, Cell, ChunkDto, DistrictDto, PlatformKind, RoadCellDto, SurfaceCellDto, TaskDto, WorldFeatureDto } from "../../shared/contracts";
+import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, getBuilding } from "../../shared/catalog";
+import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto } from "../../shared/contracts";
 import { api } from "../api";
 import { connectShortWalkGaps, mustYieldAtCrosswalk } from "../agent-routing";
+import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
 import {
   chunkRangeForViewport,
   clampCameraPosition,
-  countryViewBounds,
   fitCameraScale,
   minimumCameraScale,
 } from "../world-camera";
 
 const CELL_SIZE = 8;
+const DETAIL_LOD_SCALE = 1.12;
+const CHUNK_FETCH_CONCURRENCY = 6;
+type MapLod = "DETAIL" | "OVERVIEW";
+type MapInvalidation = { id: number; type: string; affectedBounds?: Rect };
+type FocusArea = { point: Cell; bounds: Rect };
+type WorldRuntime = {
+  focus(area: FocusArea): void;
+  invalidate(event: MapInvalidation): void;
+  setViewBounds(bounds: Rect): void;
+};
+
+const TERRAIN_COLORS: Record<string, number> = {
+  GRASS: 0x668548, MEADOW: 0x789451, FOREST: 0x315f3d,
+  DIRT: 0x8d6549, SAND: 0xc5aa73, CLAY: 0x9b5d47, STONE: 0x7d8581,
+  HILL: 0x64754b, MOUNTAIN: 0x717875, SHALLOW_WATER: 0x287da0, DEEP_WATER: 0x1f648c,
+};
 const GRID_DIRECTIONS = [
   { x: 0, y: -1, bit: 1 }, { x: 1, y: 0, bit: 2 }, { x: 0, y: 1, bit: 4 }, { x: -1, y: 0, bit: 8 },
 ] as const;
@@ -33,6 +49,22 @@ function key(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
 function clear(container: Container): void {
   for (const child of container.removeChildren()) child.destroy({ children: true });
+}
+
+function chunkKey(chunkX: number, chunkY: number): string { return `${chunkX},${chunkY}`; }
+
+function intersectsRect(left: Rect, right: Rect): boolean {
+  return left.minX <= right.maxX && left.maxX >= right.minX && left.minY <= right.maxY && left.maxY >= right.minY;
+}
+
+async function inParallel<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
+  let cursor = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const item = items[cursor++];
+      if (item !== undefined) await worker(item);
+    }
+  }));
 }
 
 function sprite(url: string, x: number, y: number): Sprite {
@@ -87,7 +119,7 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>): Con
   return group;
 }
 
-function drawDistrictBoundary(district: DistrictDto): Graphics {
+function drawDistrictBoundary(district: ChunkDistrictDto): Graphics {
   const graphics = new Graphics();
   const cells = new Set(district.cells.map(key));
   const color = Number.parseInt(district.color.slice(1), 16);
@@ -106,7 +138,7 @@ function drawDistrictBoundary(district: DistrictDto): Graphics {
   return graphics;
 }
 
-function drawPlatform(task: TaskDto): Container {
+function drawPlatform(task: ChunkTaskDto): Container {
   const group = new Container();
   const tile = PLATFORM_TILE[task.platformType];
   for (const cell of task.footprint) {
@@ -116,7 +148,7 @@ function drawPlatform(task: TaskDto): Container {
   return group;
 }
 
-function drawBuilding(task: TaskDto, onSelect: (taskId: string) => void): Container {
+function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): Container {
   const entry = getBuilding(task.buildingType);
   const group = new Container();
   group.eventMode = "static";
@@ -186,49 +218,96 @@ function drawWorldFeature(feature: WorldFeatureDto): { platform?: Container; vis
   return { platform, visual };
 }
 
-const ASSET_URLS = [
-  ...Object.values(TERRAIN_SPRITES).flat().map((value) => `/game-assets/v4/${value}`),
-  ...Object.values(PROP_SPRITES),
-  ...Object.values(TILE_SPRITES),
-  ...Object.values(VEHICLE_SPRITES).flatMap((axes) => [axes.horizontal, axes.vertical]),
-  ...BUILDING_CATALOG.flatMap((entry) => entry.stages),
-];
+function assetUrl(path: string): string {
+  return path.startsWith("/") ? path : `/game-assets/v4/${path}`;
+}
 
-export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, onTaskSelect }: {
-  bootstrap: BootstrapDto;
-  revision: number;
-  focusCityId?: string;
+function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
+  const urls = new Set<string>();
+  for (const chunk of chunks) {
+    for (const task of chunk.tasks) {
+      const entry = getBuilding(task.buildingType);
+      urls.add(entry.stages[task.stage - 1]!);
+      if (lod === "DETAIL") urls.add(assetUrl(PLATFORM_TILE[task.platformType]));
+    }
+    for (const feature of chunk.worldFeatures) {
+      if (feature.assetKind === "PROP") {
+        const metadata = PROP_CATALOG[feature.assetKey];
+        if (metadata) urls.add(metadata.path);
+      } else if (feature.assetKind === "BUILDING") {
+        urls.add(getBuilding(feature.assetKey).stages[4]!);
+        if (lod === "DETAIL") urls.add(TILE_SPRITES.road!);
+      } else if (lod === "DETAIL") {
+        urls.add(TILE_SPRITES["path-brown"]!);
+        urls.add(assetUrl(TERRAIN_SPRITES.MEADOW![1]!));
+      }
+    }
+    if (lod !== "DETAIL") continue;
+    for (const cell of chunk.terrain) {
+      const variants = TERRAIN_SPRITES[cell.terrain] ?? TERRAIN_SPRITES.GRASS!;
+      urls.add(assetUrl(variants[cell.variant % variants.length]!));
+    }
+    for (const decoration of chunk.decorations) {
+      const metadata = PROP_CATALOG[decoration.kind];
+      if (metadata) urls.add(metadata.path);
+    }
+  }
+  if (lod === "DETAIL") {
+    for (const path of Object.values(TILE_SPRITES)) urls.add(path);
+    for (const path of Object.values(VEHICLE_SPRITES).flatMap((axes) => [axes.horizontal, axes.vertical])) urls.add(path);
+    for (const key of ["walker-east", "walker-west", "walker-south", "walker-north"] as const) urls.add(PROP_SPRITES[key]!);
+  }
+  return [...urls];
+}
+
+export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, invalidation, showDistricts, onTaskSelect }: {
+  countryId: string;
+  chunkSize: number;
+  viewBounds: Rect;
+  focusCity?: BootstrapDto["initialCity"];
+  invalidation?: MapInvalidation;
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const districtLayerRef = useRef<Container | null>(null);
+  const runtimeRef = useRef<WorldRuntime | null>(null);
   const showDistrictsRef = useRef(showDistricts);
-  const focusCity = bootstrap.cities.find((city) => city.id === focusCityId) ?? bootstrap.cities[0];
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
-    const cells = bootstrap.districts.filter((district) => district.cityId === focusCity.id).flatMap((district) => district.cells);
-    if (cells.length === 0) return { point: focusCity.center, bounds: focusCity.bounds };
-    const bounds = {
-      minX: Math.min(...cells.map((cell) => cell.x)) - 4,
-      minY: Math.min(...cells.map((cell) => cell.y)) - 12,
-      maxX: Math.max(...cells.map((cell) => cell.x)) + 4,
-      maxY: Math.max(...cells.map((cell) => cell.y)) + 4,
-    };
-    return {
-      point: { x: (bounds.minX + bounds.maxX + 1) / 2, y: (bounds.minY + bounds.maxY + 1) / 2 },
-      bounds,
-    };
-  }, [bootstrap.districts, focusCity]);
+    return { point: focusCity.center, bounds: focusCity.bounds };
+  }, [focusCity]);
   const focusX = focusArea?.point.x;
   const focusY = focusArea?.point.y;
-  const viewBounds = useMemo(() => countryViewBounds(bootstrap.cities), [bootstrap.cities]);
-  const accessibleTasks = useMemo(() => bootstrap.tasks.slice(0, 50), [bootstrap.tasks]);
+  const focusMinX = focusArea?.bounds.minX;
+  const focusMinY = focusArea?.bounds.minY;
+  const focusMaxX = focusArea?.bounds.maxX;
+  const focusMaxY = focusArea?.bounds.maxY;
+  const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
+  const initialFocusRef = useRef(focusArea);
+  const initialViewBoundsRef = useRef(viewBounds);
 
   useEffect(() => {
     showDistrictsRef.current = showDistricts;
     if (districtLayerRef.current) districtLayerRef.current.visible = showDistricts;
   }, [showDistricts]);
+
+  useEffect(() => {
+    if (focusX == null || focusY == null || focusMinX == null || focusMinY == null || focusMaxX == null || focusMaxY == null) return;
+    runtimeRef.current?.focus({
+      point: { x: focusX, y: focusY },
+      bounds: { minX: focusMinX, minY: focusMinY, maxX: focusMaxX, maxY: focusMaxY },
+    });
+  }, [focusMaxX, focusMaxY, focusMinX, focusMinY, focusX, focusY]);
+
+  useEffect(() => {
+    if (invalidation) runtimeRef.current?.invalidate(invalidation);
+  }, [invalidation]);
+
+  useEffect(() => {
+    const [minX, minY, maxX, maxY] = viewBoundsKey.split(",").map(Number);
+    runtimeRef.current?.setViewBounds({ minX: minX!, minY: minY!, maxX: maxX!, maxY: maxY! });
+  }, [viewBoundsKey]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -238,10 +317,11 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
     let disposed = false;
     const app = new Application();
     const chunks = new Map<string, ChunkDto>();
-    const pendingChunks = new Map<string, Promise<ChunkDto>>();
+    const groundContainers = new Map<string, { terrain: Container; surfaces: Container; roads: Container }>();
+    const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
+    const initialFocus = initialFocusRef.current;
 
     void (async () => {
-      await Assets.load(ASSET_URLS);
       await app.init({ resizeTo: host, backgroundColor: 0x101d20, antialias: false, autoDensity: true, resolution: Math.min(devicePixelRatio, 2), preference: "webgl" });
       if (disposed) { app.destroy({ removeView: true }, { children: true }); return; }
       const canvas = app.canvas;
@@ -264,6 +344,15 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
       districtLayer.visible = showDistrictsRef.current;
       world.addChild(terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, agentLayer, buildingLayer, featureLayer);
       app.stage.addChild(world);
+      type RenderNode = Container | Graphics | Sprite;
+      const districtViews = new Map<string, EntityViewRecord<Graphics>>();
+      const taskPlatformViews = new Map<string, EntityViewRecord<Container>>();
+      const taskBuildingViews = new Map<string, EntityViewRecord<Container>>();
+      const decorationViews = new Map<string, EntityViewRecord<Sprite>>();
+      const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Sprite }>();
+      let entityReplacementCount = 0;
+      let currentViewBounds = initialViewBoundsRef.current;
+      let currentLod: MapLod = world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
       type MovingAgent = {
         view: Sprite;
         graph: Map<string, Cell>;
@@ -279,6 +368,7 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
         steps: number;
       };
       let movingAgents: MovingAgent[] = [];
+      let movingWalkers: MovingAgent[] = [];
       let activeCrosswalks = new Set<string>();
       let activityCells = new Set<string>();
       const straightRun = (graph: Map<string, Cell>, origin: Cell, direction: Cell, limit = 7): number => {
@@ -325,7 +415,6 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
       app.ticker.add(() => {
         if (reducedMotion) return;
         const elapsed = Math.min(50, app.ticker.deltaMS);
-        const walkers = movingAgents.filter((agent) => agent.kind === "WALKER");
         for (const agent of movingAgents) {
           if (agent.pauseMs > 0) {
             agent.pauseMs = Math.max(0, agent.pauseMs - elapsed);
@@ -334,7 +423,7 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
           if (agent.kind === "CAR" && mustYieldAtCrosswalk(
             agent.next,
             activeCrosswalks,
-            walkers,
+            movingWalkers,
           )) continue;
           agent.progress += elapsed * agent.speed;
           while (agent.progress >= 1) {
@@ -375,24 +464,26 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
           agent.view.rotation = agent.kind === "WALKER" ? cycle * 0.055 : cycle * 0.008;
         }
       });
-      const initialScale = focusX == null || focusY == null || !focusArea
+      const initialScale = !initialFocus
         ? 1.25
-        : fitCameraScale(app.screen, focusArea.bounds, CELL_SIZE);
-      const focus = focusX == null || focusY == null ? { x: 0, y: 0 } : position({ x: focusX, y: focusY });
-      const appliedInitialScale = Math.max(initialScale, minimumCameraScale(app.screen, viewBounds, CELL_SIZE));
+        : fitCameraScale(app.screen, initialFocus.bounds, CELL_SIZE);
+      const focus = initialFocus ? position(initialFocus.point) : { x: 0, y: 0 };
+      const appliedInitialScale = Math.max(initialScale, minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE));
       world.scale.set(appliedInitialScale);
+      currentLod = appliedInitialScale < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
       world.position.set(app.screen.width / 2 - focus.x * appliedInitialScale, app.screen.height / 2 - focus.y * appliedInitialScale);
 
       let screenSize = { width: app.screen.width, height: app.screen.height };
       let resizeFrame = 0;
       let panFrame = 0;
       let loadRevision = 0;
+      let renderedRange = "";
       let dragging = false;
       let previous = { x: 0, y: 0 };
       const clampCamera = () => {
-        const minimumScale = minimumCameraScale(app.screen, viewBounds, CELL_SIZE);
+        const minimumScale = minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
         if (world.scale.x < minimumScale) world.scale.set(minimumScale);
-        const clamped = clampCameraPosition(world.position, world.scale.x, app.screen, viewBounds, CELL_SIZE);
+        const clamped = clampCameraPosition(world.position, world.scale.x, app.screen, currentViewBounds, CELL_SIZE);
         world.position.set(clamped.x, clamped.y);
       };
       const scheduleVisibleLoad = () => {
@@ -424,75 +515,136 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
         scheduleVisibleLoad();
       });
 
-      async function loadVisible(): Promise<void> {
-        const currentLoad = ++loadRevision;
-        const range = chunkRangeForViewport(
-          world.position, world.scale.x, app.screen, viewBounds, CELL_SIZE, bootstrap.chunkSize,
-        );
-        const wanted: Array<[number, number]> = [];
-        for (let chunkX = range.minChunkX; chunkX <= range.maxChunkX; chunkX += 1) {
-          for (let chunkY = range.minChunkY; chunkY <= range.maxChunkY; chunkY += 1) wanted.push([chunkX, chunkY]);
-        }
-        try {
-          await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
-            const cacheKey = `${chunkX},${chunkY}`;
-            if (chunks.has(cacheKey)) return;
-            let pending = pendingChunks.get(cacheKey);
-            if (!pending) {
-              pending = api<ChunkDto>(`/api/chunks/${chunkX}/${chunkY}`);
-              pendingChunks.set(cacheKey, pending);
-            }
-            try { chunks.set(cacheKey, await pending); }
-            finally { pendingChunks.delete(cacheKey); }
-          }));
-        } catch {
-          if (!disposed && currentLoad === loadRevision) host!.dataset.loadError = "true";
-          return;
-        }
-        if (disposed || currentLoad !== loadRevision) return;
-        const active = new Set(wanted.map(([chunkX, chunkY]) => `${chunkX},${chunkY}`));
-        for (const cacheKey of chunks.keys()) if (!active.has(cacheKey)) chunks.delete(cacheKey);
-        host!.dataset.residentChunks = String(chunks.size);
-        host!.dataset.chunkRange = `${range.minChunkX},${range.minChunkY}:${range.maxChunkX},${range.maxChunkY}`;
-        delete host!.dataset.loadError;
-        render();
+      function removeGround(cacheKey: string): void {
+        const record = groundContainers.get(cacheKey);
+        if (!record) return;
+        record.terrain.removeFromParent(); record.terrain.destroy({ children: true });
+        record.surfaces.removeFromParent(); record.surfaces.destroy({ children: true });
+        record.roads.removeFromParent(); record.roads.destroy({ children: true });
+        groundContainers.delete(cacheKey);
       }
 
-      function render(): void {
-        [terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, buildingLayer, featureLayer, agentLayer].forEach(clear);
-        movingAgents = [];
-        const districts = new Map<string, DistrictDto>();
-        const tasks = new Map<string, TaskDto>();
+      function buildGround(cacheKey: string, chunk: ChunkDto): void {
+        removeGround(cacheKey);
+        const terrain = new Container();
+        const surfaces = new Container();
+        const roads = new Container();
+        terrain.eventMode = "none"; surfaces.eventMode = "none"; roads.eventMode = "none";
+        if (currentLod === "DETAIL") {
+          for (const cell of chunk.terrain) terrain.addChild(terrainSprite(cell));
+          const surfaceMap = new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
+          for (const surface of chunk.surfaces) surfaces.addChild(drawSurface(surface));
+          for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap));
+        } else {
+          const terrainGraphics = new Graphics();
+          for (const cell of chunk.terrain) {
+            const localX = cell.x - chunk.chunkX * chunk.size;
+            const localY = cell.y - chunk.chunkY * chunk.size;
+            if (localX % 4 !== 0 || localY % 4 !== 0) continue;
+            terrainGraphics.rect(cell.x * CELL_SIZE, cell.y * CELL_SIZE, CELL_SIZE * 4, CELL_SIZE * 4)
+              .fill(TERRAIN_COLORS[cell.terrain] ?? TERRAIN_COLORS.GRASS);
+          }
+          terrain.addChild(terrainGraphics);
+          const roadGraphics = new Graphics();
+          for (const road of chunk.roads) roadGraphics.rect(road.x * CELL_SIZE, road.y * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(0x35414f);
+          roads.addChild(roadGraphics);
+        }
+        terrainLayer.addChild(terrain); surfaceLayer.addChild(surfaces); roadLayer.addChild(roads);
+        groundContainers.set(cacheKey, { terrain, surfaces, roads });
+      }
+
+      function renderEntities(rebuildMovement: boolean): void {
+        if (rebuildMovement) {
+          clear(agentLayer);
+          movingAgents = [];
+          movingWalkers = [];
+        }
+        const districts = new Map<string, ChunkDistrictDto>();
+        const tasks = new Map<string, ChunkTaskDto>();
         const roads = new Map<string, RoadCellDto>();
         const surfaces = new Map<string, SurfaceCellDto>();
         const terrain = new Map<string, ChunkDto["terrain"][number]>();
         const decorations = new Map<string, ChunkDto["decorations"][number]>();
         const features = new Map<string, WorldFeatureDto>();
         for (const chunk of chunks.values()) {
-          for (const cell of chunk.terrain) { terrain.set(key(cell), cell); terrainLayer.addChild(terrainSprite(cell)); }
+          for (const cell of chunk.terrain) terrain.set(key(cell), cell);
           for (const road of chunk.roads) roads.set(key(road), road);
           for (const surface of chunk.surfaces) surfaces.set(key(surface), surface);
-          for (const district of chunk.districts) districts.set(district.id, district);
+          for (const district of chunk.districts) {
+            const existing = districts.get(district.id);
+            if (!existing) districts.set(district.id, district);
+            else {
+              const cells = new Map([...existing.cells, ...district.cells].map((cell) => [key(cell), cell]));
+              districts.set(district.id, { ...district, cells: [...cells.values()] });
+            }
+          }
           for (const task of chunk.tasks) tasks.set(task.id, task);
           for (const decoration of chunk.decorations) decorations.set(decoration.id, decoration);
           for (const feature of chunk.worldFeatures) features.set(feature.id, feature);
         }
-        for (const surface of surfaces.values()) surfaceLayer.addChild(drawSurface(surface));
-        for (const road of roads.values()) roadLayer.addChild(drawRoad(road, surfaces));
-        for (const district of districts.values()) districtLayer.addChild(drawDistrictBoundary(district));
-        for (const task of tasks.values()) platformLayer.addChild(drawPlatform(task));
-        for (const decoration of decorations.values()) {
-          const item = drawDecoration(decoration);
-          if (item) decorationLayer.addChild(item);
+
+        const reconcile = <T extends RenderNode, D>(
+          source: Map<string, D>,
+          records: Map<string, EntityViewRecord<T>>,
+          layer: Container,
+          factory: (item: D) => T | null,
+          signatureOf: (item: D) => string = JSON.stringify,
+        ) => {
+          entityReplacementCount += reconcileEntityViews({
+            source, records, signatureOf, create: factory,
+            attach: (view) => { layer.addChild(view); },
+            dispose: (view) => { view.removeFromParent(); view.destroy({ children: true }); },
+          });
+        };
+
+        reconcile(districts, districtViews, districtLayer, drawDistrictBoundary);
+        reconcile(
+          currentLod === "DETAIL" ? tasks : new Map<string, ChunkTaskDto>(),
+          taskPlatformViews,
+          platformLayer,
+          drawPlatform,
+          (task) => JSON.stringify([task.platformType, task.footprint]),
+        );
+        reconcile(tasks, taskBuildingViews, buildingLayer, (task) => drawBuilding(task, onTaskSelect));
+        reconcile(currentLod === "DETAIL" ? decorations : new Map<string, ChunkDto["decorations"][number]>(), decorationViews, decorationLayer, drawDecoration);
+
+        for (const [id, record] of featureViews) {
+          if (features.has(id)) continue;
+          record.platform?.removeFromParent(); record.platform?.destroy({ children: true });
+          record.visual?.removeFromParent(); record.visual?.destroy({ children: true });
+          featureViews.delete(id);
+        }
+        for (const [id, feature] of features) {
+          const signature = `${currentLod}:${JSON.stringify(feature)}`;
+          const current = featureViews.get(id);
+          if (current?.signature === signature) continue;
+          if (current) {
+            current.platform?.removeFromParent(); current.platform?.destroy({ children: true });
+            current.visual?.removeFromParent(); current.visual?.destroy({ children: true });
+          }
+          const drawn = drawWorldFeature(feature);
+          if (!drawn) { featureViews.delete(id); continue; }
+          if (drawn.platform && currentLod === "DETAIL") featurePlatformLayer.addChild(drawn.platform);
+          else if (drawn.platform) drawn.platform.destroy({ children: true });
+          if (drawn.visual) featureLayer.addChild(drawn.visual);
+          featureViews.set(id, {
+            signature,
+            platform: currentLod === "DETAIL" ? drawn.platform : undefined,
+            visual: drawn.visual,
+          });
+          entityReplacementCount += 1;
         }
         decorationLayer.children.sort((a, b) => a.y - b.y);
-        [...tasks.values()].sort((a, b) => a.origin.y - b.origin.y || a.origin.x - b.origin.x)
-          .forEach((task) => buildingLayer.addChild(drawBuilding(task, onTaskSelect)));
-        for (const feature of [...features.values()].sort((a, b) => a.origin.y - b.origin.y || a.origin.x - b.origin.x)) {
-          const drawn = drawWorldFeature(feature);
-          if (!drawn) continue;
-          if (drawn.platform) featurePlatformLayer.addChild(drawn.platform);
-          if (drawn.visual) featureLayer.addChild(drawn.visual);
+        buildingLayer.children.sort((a, b) => a.y - b.y || a.x - b.x);
+        featureLayer.children.sort((a, b) => a.y - b.y || a.x - b.x);
+        host!.dataset.entityViews = String(
+          districtViews.size + taskPlatformViews.size + taskBuildingViews.size + decorationViews.size + featureViews.size,
+        );
+        host!.dataset.entityReplacements = String(entityReplacementCount);
+
+        if (!rebuildMovement) {
+          host!.dataset.entityRebuilds = String(Number(host!.dataset.entityRebuilds ?? 0) + 1);
+          return;
         }
 
         const addAgents = (graph: Map<string, Cell>, count: number, kind: MovingAgent["kind"]): void => {
@@ -500,7 +652,8 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
           if (candidates.length === 0) return;
           const colors = Object.keys(VEHICLE_SPRITES);
           const stride = Math.max(1, Math.floor(candidates.length / Math.max(1, count)));
-          for (let index = 0; index < candidates.length && movingAgents.filter((agent) => agent.kind === kind).length < count; index += stride) {
+          let created = 0;
+          for (let index = 0; index < candidates.length && created < count; index += stride) {
             const current = candidates[index]!;
             const next = kind === "CAR"
               ? laneNeighbors(graph, current)[0] ?? bestLongitudinalNeighbor(graph, current)
@@ -521,6 +674,8 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
             };
             orientVehicle(agent);
             movingAgents.push(agent);
+            if (kind === "WALKER") movingWalkers.push(agent);
+            created += 1;
           }
         };
         const roadGraph = new Map([...roads].map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y }]));
@@ -545,11 +700,125 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
         for (const feature of features.values()) if (feature.kind === "BUS_STOP" || feature.kind === "PARK") {
           for (const cell of [...feature.footprint, ...feature.accessPath]) activityCells.add(key(cell));
         }
-        addAgents(roadGraph, Math.min(28, Math.max(3, Math.floor(roads.size / 90))), "CAR");
-        addAgents(walkGraph, Math.min(96, Math.max(8, Math.floor(walkGraph.size / 38))), "WALKER");
+        if (currentLod === "DETAIL") {
+          addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR");
+          addAgents(walkGraph, Math.min(64, Math.max(8, Math.floor(walkGraph.size / 54))), "WALKER");
+        }
         host!.dataset.cars = String(movingAgents.filter((agent) => agent.kind === "CAR").length);
-        host!.dataset.walkers = String(movingAgents.filter((agent) => agent.kind === "WALKER").length);
+        host!.dataset.walkers = String(movingWalkers.length);
+        host!.dataset.entityRebuilds = String(Number(host!.dataset.entityRebuilds ?? 0) + 1);
       }
+
+      async function loadVisible(options: { forceKeys?: Set<string>; rebuildMovement?: boolean } = {}): Promise<void> {
+        const currentLoad = ++loadRevision;
+        const nextLod: MapLod = world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
+        const lodChanged = nextLod !== currentLod;
+        currentLod = nextLod;
+        const range = chunkRangeForViewport(
+          world.position, world.scale.x, app.screen, currentViewBounds, CELL_SIZE, chunkSize,
+        );
+        const rangeLabel = `${range.minChunkX},${range.minChunkY}:${range.maxChunkX},${range.maxChunkY}`;
+        if (!options.forceKeys?.size && !lodChanged && rangeLabel === renderedRange) {
+          host!.dataset.skippedReconciles = String(Number(host!.dataset.skippedReconciles ?? 0) + 1);
+          return;
+        }
+        const wanted: Array<[number, number]> = [];
+        for (let chunkX = range.minChunkX; chunkX <= range.maxChunkX; chunkX += 1) {
+          for (let chunkY = range.minChunkY; chunkY <= range.maxChunkY; chunkY += 1) wanted.push([chunkX, chunkY]);
+        }
+        const active = new Set(wanted.map(([chunkX, chunkY]) => chunkKey(chunkX, chunkY)));
+        for (const [cacheKey, pending] of pendingChunks) {
+          if (lodChanged || !active.has(cacheKey) || options.forceKeys?.has(cacheKey)) {
+            pending.controller.abort();
+            pendingChunks.delete(cacheKey);
+          }
+        }
+        const changed = new Set<string>();
+        try {
+          await inParallel(wanted, CHUNK_FETCH_CONCURRENCY, async ([chunkX, chunkY]) => {
+            const cacheKey = chunkKey(chunkX, chunkY);
+            const forced = lodChanged || (options.forceKeys?.has(cacheKey) ?? false);
+            if (chunks.has(cacheKey) && !forced) return;
+            let pending = pendingChunks.get(cacheKey);
+            if (!pending) {
+              const controller = new AbortController();
+              pending = { controller, promise: api<ChunkDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${currentLod.toLowerCase()}`, { signal: controller.signal }) };
+              pendingChunks.set(cacheKey, pending);
+            }
+            try {
+              const chunk = await pending.promise;
+              if (!disposed && currentLoad === loadRevision) {
+                chunks.set(cacheKey, chunk);
+                changed.add(cacheKey);
+              }
+            } finally {
+              if (pendingChunks.get(cacheKey) === pending) pendingChunks.delete(cacheKey);
+            }
+          });
+        } catch (error) {
+          if (!disposed && currentLoad === loadRevision && !(error instanceof DOMException && error.name === "AbortError")) host!.dataset.loadError = "true";
+          return;
+        }
+        if (disposed || currentLoad !== loadRevision) return;
+        for (const cacheKey of [...chunks.keys()]) {
+          if (active.has(cacheKey)) continue;
+          chunks.delete(cacheKey);
+          removeGround(cacheKey);
+          changed.add(cacheKey);
+        }
+        if (lodChanged) {
+          for (const cacheKey of chunks.keys()) changed.add(cacheKey);
+        }
+        try {
+          await Assets.load(requiredAssets(chunks.values(), currentLod));
+        } catch {
+          if (!disposed && currentLoad === loadRevision) host!.dataset.loadError = "true";
+          return;
+        }
+        if (disposed || currentLoad !== loadRevision) return;
+        for (const cacheKey of changed) {
+          const chunk = chunks.get(cacheKey);
+          if (chunk) buildGround(cacheKey, chunk);
+        }
+        renderEntities(options.rebuildMovement ?? true);
+        renderedRange = rangeLabel;
+        host!.dataset.residentChunks = String(chunks.size);
+        host!.dataset.chunkRange = rangeLabel;
+        host!.dataset.mapLod = currentLod.toLowerCase();
+        host!.dataset.groundRebuilds = String(Number(host!.dataset.groundRebuilds ?? 0) + changed.size);
+        delete host!.dataset.loadError;
+      }
+
+      runtimeRef.current = {
+        setViewBounds(bounds) {
+          currentViewBounds = bounds;
+          clampCamera();
+          void loadVisible();
+        },
+        focus(area) {
+          const scale = Math.max(fitCameraScale(app.screen, area.bounds, CELL_SIZE), minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE));
+          const point = position(area.point);
+          world.scale.set(scale);
+          world.position.set(app.screen.width / 2 - point.x * scale, app.screen.height / 2 - point.y * scale);
+          clampCamera();
+          renderedRange = "";
+          void loadVisible();
+        },
+        invalidate(event) {
+          const forceKeys = new Set<string>();
+          for (const [cacheKey, chunk] of chunks) {
+            const bounds = {
+              minX: chunk.chunkX * chunk.size,
+              minY: chunk.chunkY * chunk.size,
+              maxX: (chunk.chunkX + 1) * chunk.size - 1,
+              maxY: (chunk.chunkY + 1) * chunk.size - 1,
+            };
+            if (!event.affectedBounds || intersectsRect(bounds, event.affectedBounds)) forceKeys.add(cacheKey);
+          }
+          const rebuildMovement = event.type === "city.created" || event.type === "district.created" || event.type === "task.created";
+          void loadVisible({ forceKeys, rebuildMovement });
+        },
+      };
 
       const finishDrag = () => { dragging = false; void loadVisible(); };
       app.stage.on("pointerup", finishDrag);
@@ -561,19 +830,35 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };
-        const appliedScale = Math.max(newScale, minimumCameraScale(app.screen, viewBounds, CELL_SIZE));
+        const appliedScale = Math.max(newScale, minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE));
         world.scale.set(appliedScale);
         world.position.set(mouse.x - local.x * appliedScale, mouse.y - local.y * appliedScale);
         clampCamera();
         void loadVisible();
       };
       canvas.addEventListener("wheel", wheel, { passive: false });
-      const visibility = () => document.hidden ? app.stop() : app.start();
+      let intersectsViewport = true;
+      const updateAnimation = () => {
+        const active = !reducedMotion && !document.hidden && intersectsViewport;
+        host.dataset.animationActive = String(active);
+        if (active) app.start(); else app.stop();
+      };
+      const visibility = () => updateAnimation();
+      const intersectionObserver = new IntersectionObserver(([entry]) => {
+        intersectsViewport = Boolean(entry?.isIntersecting);
+        updateAnimation();
+      }, { threshold: 0.01 });
+      intersectionObserver.observe(host);
       document.addEventListener("visibilitychange", visibility);
       await loadVisible();
+      updateAnimation();
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap = () => {
         if (districtLayerRef.current === districtLayer) districtLayerRef.current = null;
+        if (runtimeRef.current) runtimeRef.current = null;
         resizeObserver.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame);
+        intersectionObserver.disconnect();
+        for (const pending of pendingChunks.values()) pending.controller.abort();
+        pendingChunks.clear();
         canvas.removeEventListener("wheel", wheel); document.removeEventListener("visibilitychange", visibility);
       };
     })();
@@ -583,12 +868,9 @@ export function WorldCanvas({ bootstrap, revision, focusCityId, showDistricts, o
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap?.();
       if (app.renderer) app.destroy({ removeView: true }, { children: true });
     };
-  }, [bootstrap.chunkSize, focusArea, focusX, focusY, onTaskSelect, revision, viewBounds]);
+  }, [chunkSize, countryId, onTaskSelect]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />
-    <div className="sr-only" aria-label="Задачи на карте">
-      {accessibleTasks.map((task) => <button key={task.id} onClick={() => onTaskSelect(task.id)}>Открыть задачу {task.title}</button>)}
-    </div>
   </div>;
 }

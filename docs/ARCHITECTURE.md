@@ -1,0 +1,44 @@
+# Архитектура и сущности
+
+Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `AppService` → асинхронный пул PostgreSQL 16. Геометрия мира хранится отдельно от read model чанков; terrain и часть поверхностей вычисляются детерминированно по seed.
+
+## Карта сущностей
+
+| Семейство | Сущности | Владелец и граница | Жизненный цикл |
+| --- | --- | --- | --- |
+| Identity | `users`, `sessions` | пользователь; session хранится только как SHA-256 hash | register/login → restore → expire/logout/delete |
+| Access | `countries`, `country_members` | `OWNER`, редактор `MEMBER`, read-only `VIEWER`; все чтения мира ограничены выбранной страной | create → invite/select → revoke member → delete country |
+| MCP | `mcp_tokens` | персональный token; права = текущая роль ∩ scopes, новые expiry 30/90/365 дней | issue → use/last-used → reissue/revoke/expire |
+| City | `cities_v3` | `country_id` | create active → расширение bounds районами; archive зарезервирован контрактом |
+| District | `districts_v3` | город выбранной страны | planned → active → completed; один active на город |
+| Task | `tasks_v3` | район и город одной страны | planning → started → in-progress → testing → completed |
+| History | `task_comments_v3`, `task_events_v7` | задача; actor может ссылаться на пользователя | append-only; удаляется каскадом только вместе с задачей |
+| World | `roads_v3`, `world_features_v6` | страна; feature может принадлежать городу | создаются/расширяются генератором; удаляются каскадом |
+| Spatial read model | `world_chunk_entities_v11` | страна + chunk + entity kind/id | trigger insert/update/delete и одноразовый backfill |
+| Integration log | `idempotency`, `events` | страна | mutation+event+response фиксируются одной транзакцией |
+| Legacy | `projects`, `sprints`, `tasks`, `task_comments`, `roads` | старая hex-модель | runtime не читает; таблицы сохранены для недеструктивной совместимости/экспорта |
+
+## Инварианты
+
+- Transport не принимает `countryId` как доверенную границу мира: HTTP использует session active country, MCP — заново аутентифицированный персональный token.
+- Чужие city/district/task id возвращают `404`/`403` без геометрии или данных другой страны.
+- Изменяющие MCP-команды требуют `idempotencyKey`; запись домена, `worldVersion`, event и сохранённый ответ коммитятся атомарно.
+- Районы четырёхсвязны, не пересекаются и находятся внутри актуальных city bounds. Footprint задач не пересекаются с дорогой, водой и друг другом; вход имеет короткий путь к пешеходной сети.
+- `NEW_BUILD` и `PRIVATE` используют квартальные шаблоны; полный видимый asphalt (дороги, asphalt platforms и driveways) не превышает 20% района.
+- `world_chunk_entities_v11` использует математический floor и корректно индексирует отрицательные координаты. Geometry UPDATE и DELETE удаляют старое membership.
+
+## Чтение и производительность карты
+
+`/api/bootstrap` отдаёт только identity, выбранную страну, первый город, общие bounds, counters, chunk size и asset version. План загружает города стабильными cursor-страницами `/api/plan/cities-page` по `(created_at, id)`, затем районы выбранного города, затем задачи выбранного района. Старый массив `/api/plan/cities` сохранён для совместимости. Геометрия приходит только из `/api/chunks/:x/:y?lod=overview|detail`.
+
+Overview содержит 256 terrain samples и не содержит surfaces/decorations; detail содержит 4096 клеток и полный слой. JSON-ответы от 1 KiB сжимаются Brotli/gzip. Клиент держит только viewport + 0,25 viewport prefetch, загружает до шести чанков одновременно и отменяет устаревшие запросы. Сервер держит LRU до 64 готовых чанков; структурные события очищают cache страны, а status event — только пересекающиеся ключи.
+
+Pixi canvas живёт весь срок выбранной страны. Ground хранится по чанкам. Общий `entity-reconciler` обновляет entity-слои по id/signature: неизменённые здания, районы, декор и world features не уничтожаются при панорамировании или единичном status event. Движущиеся агенты выключаются в overview, скрытой вкладке и вне viewport.
+
+## Realtime и отзыв доступа
+
+Socket.IO проверяет HttpOnly session на handshake и помещает соединение только в комнату выбранной страны. Каждую минуту long-lived соединение повторно проверяет session и active country. Событие несёт `affectedBounds`; клиент перечитывает только пересекающиеся resident chunks и игнорирует событие другой страны. Удаление участника из палаты отключает его соединения этой страны, logout отключает все сокеты session user.
+
+## Миграции и эксплуатационные границы
+
+Версионные SQL-миграции применяются до старта HTTP под PostgreSQL advisory lock; имя и SHA-256 фиксируются в `schema_migrations`, изменение уже применённого файла останавливает запуск. JSON-геометрия хранится в `jsonb`, а chunk membership поддерживается триггерами insert/update/delete. Одноразовый CLI читает legacy SQLite только в read-only режиме, импортирует dependency-ordered batches в пустую PostgreSQL-схему и сверяет counts/constraints; исходный файл не удаляется. PostgreSQL допускает несколько процессов приложения, но для распределённого realtime всё ещё нужны общий Socket.IO broker и межпроцессная invalidation.

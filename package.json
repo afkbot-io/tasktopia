@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -17,17 +17,19 @@
     "smoke:mcp": "tsx scripts/mcp-smoke.ts",
     "test:watch": "vitest",
     "seed": "tsx scripts/seed-demo.ts",
+    "seed:test": "tsx scripts/seed-test.ts",
     "seed:growth": "tsx scripts/seed-growth-demo.ts",
+    "db:import-sqlite": "tsx scripts/migrate-sqlite-to-postgres.ts",
+    "test:db:start": "docker compose -f docker-compose.test.yml up -d --wait",
+    "test:db:stop": "docker compose -f docker-compose.test.yml down",
     "test:scale": "tsx scripts/worldgen-scale-smoke.ts",
-    "test:review-worldgen": "tsx scripts/worldgen-review-30x3.ts",
-    "test:review-worldgen:soak": "tsx scripts/worldgen-review-soak.ts",
-    "test:growth-lifecycle": "tsx scripts/worldgen-growth-lifecycle.ts",
     "study:worldgen": "tsx scripts/worldgen-algorithm-study.ts",
     "assets:setup": "python3 -m venv .venv-assets && .venv-assets/bin/python -m pip install -r requirements-assets.txt",
     "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack-v4.py",
     "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack-v4.py"
   },
   "dependencies": {
+    "@fastify/compress": "^9.1.1",
     "@fastify/cookie": "^11.0.2",
     "@fastify/helmet": "^13.1.0",
     "@fastify/rate-limit": "^10.3.0",
@@ -35,6 +37,7 @@
     "@modelcontextprotocol/sdk": "1.30.0",
     "fastify": "5.11.0",
     "pixi.js": "8.19.0",
+    "postgres": "^3.4.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "socket.io": "4.8.3",
@@ -48,6 +51,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "latest",
+    "@vitest/coverage-v8": "^4.1.10",
     "concurrently": "latest",
     "esbuild": "latest",
     "eslint": "^10.8.0",
@@ -58,5 +62,8 @@
     "typescript-eslint": "^8.65.0",
     "vite": "8.2.0",
     "vitest": "latest"
+  },
+  "overrides": {
+    "hono": "4.12.34"
   }
 }

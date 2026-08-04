@@ -6,22 +6,22 @@ import { GROWTH_DEMO_SEED, seedGrowthDemo } from "../src/server/fixtures/growth-
 import { auditWorld } from "../src/server/world/world-audit";
 import { cellKey, contains } from "../src/server/world/grid";
 
-const databasePath = process.env.DATABASE_PATH ?? "./data/tasktopia-growth.db";
+const databasePath = process.env.DATABASE_URL ?? "postgres://tasktopia:tasktopia@127.0.0.1:5432/tasktopia";
 const districtLimit = Number(process.env.GROWTH_DISTRICTS ?? 10);
-const db = createDb(databasePath);
-const existing = db.prepare("SELECT u.id, c.id AS country_id FROM users u JOIN countries c ON c.user_id = u.id WHERE u.email = ?")
+const db = await createDb(databasePath);
+const existing = await db.prepare("SELECT u.id, c.id AS country_id FROM users u JOIN countries c ON c.user_id = u.id WHERE u.email = ?")
   .get("growth@tasktopia.local") as { id: string; country_id: string } | undefined;
 const registered = existing
   ? { user: { id: existing.id, email: "growth@tasktopia.local", name: "Growth Mayor", countryId: existing.country_id } }
   : await registerUser(db, { email: "growth@tasktopia.local", name: "Growth Mayor", password: "growth-demo-100" });
-db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(GROWTH_DEMO_SEED, registered.user.countryId);
+await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(GROWTH_DEMO_SEED, registered.user.countryId);
 const service = new AppService(db);
 
 const startedAt = performance.now();
-const fixture = seedGrowthDemo(service, registered.user.countryId, districtLimit);
+const fixture = await seedGrowthDemo(service, registered.user.countryId, districtLimit);
 const generationMs = performance.now() - startedAt;
-const audit = auditWorld(db, service, registered.user.countryId);
-const roads = db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(registered.user.countryId) as Array<{ x: number; y: number }>;
+const audit = await auditWorld(db, service, registered.user.countryId);
+const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(registered.user.countryId) as Array<{ x: number; y: number }>;
 const roadKeys = new Set(roads.map(cellKey));
 
 function footprintRoadDistance(task: (typeof fixture.tasks)[number], limit = 8): number {
@@ -77,5 +77,5 @@ const result = {
 };
 
 console.log(JSON.stringify(result, null, 2));
-db.close();
+await db.close();
 if (audit.violations.length > 0 || fixture.tasks.length !== fixture.districts.length * 10 || !tasksInsideCity) process.exitCode = 1;

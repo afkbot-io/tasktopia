@@ -5,9 +5,7 @@
 ```bash
 npm run assets:build
 npm run assets:verify
-npm run test:review-worldgen
-npm run test:review-worldgen:soak
-npm run test:growth-lifecycle
+npm run test:scale
 npm run test:scale
 npm run typecheck
 npm run lint

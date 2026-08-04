@@ -1,6 +1,6 @@
 # Production deployment: nginx + Docker
 
-Production-схема: системный nginx принимает `80/443`, приложение работает непривилегированным пользователем внутри Docker и доступно только на `127.0.0.1:3000`. SQLite хранится в named volume `tasktopia_data`.
+Production-схема: системный nginx принимает `80/443`, приложение работает непривилегированным пользователем внутри Docker и доступно только на `127.0.0.1:3000`. PostgreSQL 16 хранит данные в named volume `tasktopia_postgres` и должен пройти healthcheck до запуска приложения.
 
 ## Первый запуск на Ubuntu/Debian
 
@@ -34,6 +34,7 @@ Certbot добавляет HTTPS-блок и системный timer продл
 
 ```dotenv
 APP_ORIGIN=https://tasktopia.online
+POSTGRES_PASSWORD=<длинный-случайный-пароль>
 SESSION_COOKIE_SECURE=true
 LOG_LEVEL=info
 ```
@@ -54,14 +55,12 @@ LOG_LEVEL=info
 
 ```bash
 cd /opt/tasktopia
-docker compose stop app
 install -d -m 0700 backups
-docker run --rm -v tasktopia_tasktopia_data:/data -v "$PWD/backups:/backup" alpine \
-  cp /data/tasktopia.db "/backup/tasktopia-$(date +%F-%H%M).db"
-docker compose start app
+docker compose exec -T postgres pg_dump -U tasktopia -d tasktopia -Fc \
+  > "backups/tasktopia-$(date +%F-%H%M).dump"
 ```
 
-Имя volume зависит от Compose project name; его нужно проверить через `docker volume ls`.
+Проверяйте восстановление дампа в отдельной базе через `pg_restore` до обновления production.
 
 ## Проверка
 
@@ -75,4 +74,4 @@ certbot renew --dry-run
 ss -lntp
 ```
 
-Ожидаемые публичные порты: только `22`, `80`, `443`. Порт `3000` должен слушать исключительно `127.0.0.1`. SQLite предполагает один экземпляр приложения; для горизонтального масштабирования потребуется PostgreSQL и общий event broker.
+Ожидаемые публичные порты: только `22`, `80`, `443`. Порт приложения `3000` должен слушать исключительно `127.0.0.1`, а PostgreSQL не публикуется наружу. Для нескольких app replicas требуется общий Socket.IO broker.

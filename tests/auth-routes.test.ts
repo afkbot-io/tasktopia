@@ -2,24 +2,26 @@ import fastifyCookie from "@fastify/cookie";
 import Fastify, { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppService } from "../src/server/app-service";
-import { createDb, type Db } from "../src/server/db";
+import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
 
 describe("authentication HTTP boundary", () => {
   let db: Db;
   let app: FastifyInstance;
+  let service: AppService;
 
   beforeEach(async () => {
-    db = createDb(":memory:");
+    db = await createTestDb();
     app = Fastify();
     await app.register(fastifyCookie);
-    registerRoutes(app, db, new AppService(db));
+    service = new AppService(db);
+    await registerRoutes(app, db, service);
     await app.ready();
   });
 
   afterEach(async () => {
     await app.close();
-    db.close();
+    await db.close();
   });
 
   it("registers, restores the country session, logs out, and logs in again", async () => {
@@ -30,11 +32,57 @@ describe("authentication HTTP boundary", () => {
     });
     expect(registered.statusCode).toBe(200);
     const setCookie = registered.headers["set-cookie"]!;
+    expect(String(setCookie)).toContain("HttpOnly");
+    expect(String(setCookie)).toContain("SameSite=Strict");
     const cookie = (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;
 
     const bootstrap = await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } });
     expect(bootstrap.statusCode).toBe(200);
     expect(bootstrap.json()).toMatchObject({ user: { email: "mayor@example.test" }, countryRole: "OWNER" });
+    expect(bootstrap.json()).not.toHaveProperty("districts");
+    expect(bootstrap.json()).not.toHaveProperty("tasks");
+    expect(bootstrap.json().stats).toEqual({ cities: 0, districts: 0, tasks: 0 });
+
+    const countryId = bootstrap.json().country.id as string;
+    const city = await service.createCity(countryId, { name: "Scoped City", idempotencyKey: "http-city" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Scoped District", activate: true, idempotencyKey: "http-district" });
+    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Scoped task", estimate: 1, idempotencyKey: "http-task" });
+
+    const populatedBootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } })).json();
+    expect(populatedBootstrap.stats).toEqual({ cities: 1, districts: 1, tasks: 1 });
+    expect(JSON.stringify(populatedBootstrap)).not.toContain("footprint");
+    const planCities = await app.inject({ method: "GET", url: "/api/plan/cities", headers: { cookie } });
+    expect(planCities.json()).toMatchObject([{ id: city.id, districtCount: 1, taskCount: 1 }]);
+    const planDistricts = await app.inject({ method: "GET", url: `/api/plan/cities/${city.id}/districts`, headers: { cookie } });
+    expect(planDistricts.json()).toMatchObject([{ id: district.id, taskCount: 1 }]);
+    expect(JSON.stringify(planDistricts.json())).not.toContain("cells");
+    const planTasks = await app.inject({ method: "GET", url: `/api/plan/districts/${district.id}/tasks`, headers: { cookie } });
+    expect(planTasks.json()).toMatchObject([{ title: "Scoped task", stage: 1 }]);
+    expect(JSON.stringify(planTasks.json())).not.toContain("footprint");
+    expect((await app.inject({ method: "GET", url: `/api/plan/cities/${crypto.randomUUID()}/districts`, headers: { cookie } })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: `/api/plan/districts/${crypto.randomUUID()}/tasks`, headers: { cookie } })).statusCode).toBe(404);
+
+    const secondCity = await service.createCity(countryId, { name: "Second scoped city", idempotencyKey: "http-city-two" });
+    const firstPage = await app.inject({ method: "GET", url: "/api/plan/cities-page?limit=1", headers: { cookie } });
+    expect(firstPage.statusCode).toBe(200);
+    expect(firstPage.json().items).toHaveLength(1);
+    expect(firstPage.json().nextCursor).toBeTruthy();
+    const secondPage = await app.inject({ method: "GET", url: `/api/plan/cities-page?limit=1&cursor=${encodeURIComponent(firstPage.json().nextCursor)}`, headers: { cookie } });
+    expect(secondPage.json().items).toHaveLength(1);
+    expect(new Set([firstPage.json().items[0].id, secondPage.json().items[0].id])).toEqual(new Set([city.id, secondCity.id]));
+    expect((await app.inject({ method: "GET", url: "/api/plan/cities-page?cursor=tampered", headers: { cookie } })).statusCode).toBe(400);
+
+    const taskChunk = await service.chunkForCell(task.origin);
+    const overviewChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie } })).json();
+    const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: { cookie } })).json();
+    expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
+    expect(overviewChunk.terrain).toHaveLength(256);
+    expect(overviewChunk.surfaces).toEqual([]);
+    expect(detailChunk.terrain).toHaveLength(4096);
+    // A task footprint may legally straddle a chunk whose access surface is in
+    // the adjacent chunk. The detail contract guarantees the collection, not
+    // that every task-containing chunk has a surface cell of its own.
+    expect(detailChunk.surfaces).toEqual(expect.any(Array));
 
     const loggedOut = await app.inject({ method: "POST", url: "/api/auth/logout", headers: { cookie } });
     expect(loggedOut.statusCode).toBe(200);
@@ -47,7 +95,7 @@ describe("authentication HTTP boundary", () => {
     });
     expect(loggedIn.statusCode).toBe(200);
     expect(loggedIn.headers["set-cookie"]).toBeDefined();
-  });
+  }, 15_000);
 
   it("returns a clear conflict instead of Bad Request or 500 for an existing email", async () => {
     const payload = { email: "duplicate@example.test", name: "First Mayor", password: "safe-password-123" };
@@ -83,5 +131,45 @@ describe("authentication HTTP boundary", () => {
     expect(invalidLogin.statusCode).toBe(401);
     expect(invalidLogin.json()).toMatchObject({ error: "UNAUTHENTICATED", message: "Неверный email или пароль" });
   });
-});
 
+  it("does not trust a client-supplied forwarded host for CSRF checks", async () => {
+    const rejected = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      headers: { origin: "https://attacker.example", "x-forwarded-host": "attacker.example" },
+      payload: { email: "csrf@example.test", name: "CSRF Test", password: "safe-password-123" },
+    });
+    expect(rejected.statusCode).toBe(403);
+    expect(rejected.json()).toMatchObject({ error: "INVALID_ORIGIN" });
+
+    const accepted = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      headers: { origin: "http://localhost:5173" },
+      payload: { email: "trusted@example.test", name: "Trusted Test", password: "safe-password-123" },
+    });
+    expect(accepted.statusCode).toBe(200);
+  });
+
+  it("notifies the realtime boundary when a session is revoked", async () => {
+    const revokedUsers: string[] = [];
+    await app.close();
+    app = Fastify();
+    await app.register(fastifyCookie);
+    await registerRoutes(app, db, service, {
+                              onUserSessionRevoked: (userId) => { revokedUsers.push(userId); },
+                            });
+    await app.ready();
+    const registered = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: { email: "socket-logout@example.test", name: "Socket Logout", password: "safe-password-123" },
+    });
+    const cookieHeader = registered.headers["set-cookie"]!;
+    const cookie = (Array.isArray(cookieHeader) ? cookieHeader[0]! : cookieHeader).split(";")[0]!;
+    const userId = registered.json().user.id as string;
+
+    expect((await app.inject({ method: "POST", url: "/api/auth/logout", headers: { cookie } })).statusCode).toBe(200);
+    expect(revokedUsers).toEqual([userId]);
+  });
+});

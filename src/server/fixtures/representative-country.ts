@@ -94,10 +94,10 @@ function districtSeries(prefix: string, archetypes: DistrictArchetype[]): Distri
 }
 
 const METROPOLIS_ARCHETYPES: DistrictArchetype[] = [
-  "NEW_BUILD", "NEW_BUILD", "MIXED_URBAN", "CIVIC", "COMMERCIAL",
-  "NEW_BUILD", "MIXED_URBAN", "PRIVATE", "NEW_BUILD", "COMMERCIAL",
-  "NEW_BUILD", "CIVIC", "MIXED_URBAN", "NEW_BUILD", "COMMERCIAL",
-  "PRIVATE", "NEW_BUILD", "MIXED_URBAN", "NEW_BUILD", "COMMERCIAL",
+  "NEW_BUILD", "NEW_BUILD", "NEW_BUILD", "NEW_BUILD", "NEW_BUILD",
+  "NEW_BUILD", "CIVIC", "COMMERCIAL", "NEW_BUILD", "NEW_BUILD",
+  "NEW_BUILD", "NEW_BUILD", "NEW_BUILD", "NEW_BUILD", "MIXED_URBAN",
+  "COMMERCIAL", "NEW_BUILD", "NEW_BUILD", "NEW_BUILD", "NEW_BUILD",
 ];
 
 export const REPRESENTATIVE_CITIES: CityTemplate[] = [
@@ -134,59 +134,59 @@ function targetStatus(role: "COMPLETED" | "ACTIVE" | "PLANNED", taskIndex: numbe
 
 export type RepresentativeCountryResult = { cities: CityDto[]; districts: DistrictDto[]; tasks: TaskDto[] };
 
-export function seedRepresentativeCountry(service: AppService, countryId: string): RepresentativeCountryResult {
+export async function seedRepresentativeCountry(service: AppService, countryId: string): Promise<RepresentativeCountryResult> {
   for (let cityIndex = 0; cityIndex < REPRESENTATIVE_CITIES.length; cityIndex += 1) {
     const citySpec = REPRESENTATIVE_CITIES[cityIndex]!;
-    const city = service.listCities(countryId).find((candidate) => candidate.name === citySpec.name) ?? service.createCity(countryId, {
-      name: citySpec.name,
-      description: citySpec.description,
-      morphology: citySpec.morphology,
-      idempotencyKey: `representative-city-${citySpec.key}`,
-    });
+    const city = (await service.listCities(countryId)).find((candidate) => candidate.name === citySpec.name) ?? await service.createCity(countryId, {
+                      name: citySpec.name,
+                      description: citySpec.description,
+                      morphology: citySpec.morphology,
+                      idempotencyKey: `representative-city-${citySpec.key}`,
+                    });
     const activeIndex = citySpec.districts.length - 2;
 
     for (let districtIndex = 0; districtIndex < citySpec.districts.length; districtIndex += 1) {
       const districtSpec = citySpec.districts[districtIndex]!;
       const lifecycle = districtIndex < activeIndex ? "COMPLETED" : districtIndex === activeIndex ? "ACTIVE" : "PLANNED";
-      const district = service.listDistricts(countryId, city.id).find((candidate) => candidate.name === districtSpec.name) ?? service.createDistrict(countryId, {
-        cityId: city.id,
-        name: districtSpec.name,
-        goal: `Сформировать самостоятельный район типа ${districtSpec.archetype}.`,
-        capacitySp: 26,
-        activate: lifecycle !== "PLANNED",
-        archetype: districtSpec.archetype,
-        idempotencyKey: `representative-district-${citySpec.key}-${districtIndex}`,
-      });
+      const district = (await service.listDistricts(countryId, city.id)).find((candidate) => candidate.name === districtSpec.name) ?? await service.createDistrict(countryId, {
+                                cityId: city.id,
+                                name: districtSpec.name,
+                                goal: `Сформировать самостоятельный район типа ${districtSpec.archetype}.`,
+                                capacitySp: 26,
+                                activate: lifecycle !== "PLANNED",
+                                archetype: districtSpec.archetype,
+                                idempotencyKey: `representative-district-${citySpec.key}-${districtIndex}`,
+                              });
       const templates = TASKS_BY_ARCHETYPE[districtSpec.archetype];
       for (let taskIndex = 0; taskIndex < TASKS_PER_DISTRICT; taskIndex += 1) {
         const template = templates[taskIndex]!;
         const title = `${template.title} — ${district.name}`;
-        let task = service.listTasks(countryId, district.id).find((candidate) => candidate.title === title) ?? service.createTask(countryId, {
-          cityId: city.id,
-          districtId: district.id,
-          title,
-          description: `${template.description} Город ${city.name}.`,
-          estimate: ESTIMATES[taskIndex]!,
-          priority: PRIORITIES[(cityIndex + districtIndex + taskIndex) % PRIORITIES.length],
-          idempotencyKey: `representative-task-${citySpec.key}-${districtIndex}-${taskIndex}`,
-        });
+        let task = (await service.listTasks(countryId, district.id)).find((candidate) => candidate.title === title) ?? await service.createTask(countryId, {
+                                          cityId: city.id,
+                                          districtId: district.id,
+                                          title,
+                                          description: `${template.description} Город ${city.name}.`,
+                                          estimate: ESTIMATES[taskIndex]!,
+                                          priority: PRIORITIES[(cityIndex + districtIndex + taskIndex) % PRIORITIES.length],
+                                          idempotencyKey: `representative-task-${citySpec.key}-${districtIndex}-${taskIndex}`,
+                                        });
         const target = targetStatus(lifecycle, taskIndex);
         for (let stageIndex = STATUS_ORDER.indexOf(task.status) + 1; stageIndex <= STATUS_ORDER.indexOf(target); stageIndex += 1) {
-          task = service.updateTaskStatus(countryId, {
-            taskId: task.id,
-            status: STATUS_ORDER[stageIndex]!,
-            progress: [0, 12, 52, 88, 100][stageIndex],
-            comment: lifecycle === "COMPLETED" ? "Район завершён по демо-плану." : "Активная реализация района.",
-            actor: "Representative country fixture",
-            idempotencyKey: `representative-task-${citySpec.key}-${districtIndex}-${taskIndex}-stage-${stageIndex}`,
-          });
+          task = await service.updateTaskStatus(countryId, {
+                                                    taskId: task.id,
+                                                    status: STATUS_ORDER[stageIndex]!,
+                                                    progress: [0, 12, 52, 88, 100][stageIndex],
+                                                    comment: lifecycle === "COMPLETED" ? "Район завершён по демо-плану." : "Активная реализация района.",
+                                                    actor: "Representative country fixture",
+                                                    idempotencyKey: `representative-task-${citySpec.key}-${districtIndex}-${taskIndex}-stage-${stageIndex}`,
+                                                  });
         }
       }
       if (lifecycle === "COMPLETED" && district.status !== "COMPLETED") {
-        service.completeDistrict(countryId, district.id, `representative-district-${citySpec.key}-${districtIndex}-complete`);
+        await service.completeDistrict(countryId, district.id, `representative-district-${citySpec.key}-${districtIndex}-complete`);
       }
     }
   }
 
-  return { cities: service.listCities(countryId), districts: service.listDistricts(countryId), tasks: service.listTasks(countryId) };
+  return { cities: await service.listCities(countryId), districts: await service.listDistricts(countryId), tasks: await service.listTasks(countryId) };
 }

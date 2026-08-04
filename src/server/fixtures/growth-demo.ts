@@ -46,47 +46,47 @@ const PRIORITIES: TaskPriority[] = ["LOW", "NORMAL", "HIGH", "CRITICAL"];
 
 export type GrowthDemoResult = { city: CityDto; districts: DistrictDto[]; tasks: TaskDto[] };
 
-export function seedGrowthDemo(service: AppService, countryId: string, districtLimit = GROWTH_DISTRICT_COUNT): GrowthDemoResult {
+export async function seedGrowthDemo(service: AppService, countryId: string, districtLimit = GROWTH_DISTRICT_COUNT): Promise<GrowthDemoResult> {
   const limit = Math.max(1, Math.min(GROWTH_DISTRICT_COUNT, Math.trunc(districtLimit)));
-  const city = service.listCities(countryId).find((candidate) => candidate.name === "Centuria") ?? service.createCity(countryId, {
-    name: "Centuria",
-    description: "Live-test города, который последовательно растёт до ста задач.",
-    idempotencyKey: "growth-city-centuria",
-  });
+  const city = (await service.listCities(countryId)).find((candidate) => candidate.name === "Centuria") ?? await service.createCity(countryId, {
+            name: "Centuria",
+            description: "Live-test города, который последовательно растёт до ста задач.",
+            idempotencyKey: "growth-city-centuria",
+          });
 
   for (let districtIndex = 0; districtIndex < limit; districtIndex += 1) {
     if (districtIndex > 0) {
       const previousName = DISTRICT_NAMES[districtIndex - 1]!;
-      const previous = service.listDistricts(countryId, city.id).find((candidate) => candidate.name === previousName);
-      if (previous && previous.status !== "COMPLETED" && service.listTasks(countryId, previous.id).length === GROWTH_TASKS_PER_DISTRICT) {
-        const previousTasks = service.listTasks(countryId, previous.id);
+      const previous = (await service.listDistricts(countryId, city.id)).find((candidate) => candidate.name === previousName);
+      if (previous && previous.status !== "COMPLETED" && (await service.listTasks(countryId, previous.id)).length === GROWTH_TASKS_PER_DISTRICT) {
+        const previousTasks = await service.listTasks(countryId, previous.id);
         for (let taskIndex = 0; taskIndex < previousTasks.length; taskIndex += 1) {
           let task = previousTasks[taskIndex]!;
           for (let stageIndex = STATUS_ORDER.indexOf(task.status) + 1; stageIndex < STATUS_ORDER.length; stageIndex += 1) {
-            task = service.updateTaskStatus(countryId, {
-              taskId: task.id,
-              status: STATUS_ORDER[stageIndex]!,
-              progress: [0, 12, 52, 88, 100][stageIndex],
-              comment: "Live-test: задача завершена перед закрытием района.",
-              actor: "Growth live-test",
-              idempotencyKey: `growth-district-${districtIndex - 1}-close-task-${taskIndex}-stage-${stageIndex}`,
-            });
+            task = await service.updateTaskStatus(countryId, {
+                                                              taskId: task.id,
+                                                              status: STATUS_ORDER[stageIndex]!,
+                                                              progress: [0, 12, 52, 88, 100][stageIndex],
+                                                              comment: "Live-test: задача завершена перед закрытием района.",
+                                                              actor: "Growth live-test",
+                                                              idempotencyKey: `growth-district-${districtIndex - 1}-close-task-${taskIndex}-stage-${stageIndex}`,
+                                                            });
           }
         }
-        service.completeDistrict(countryId, previous.id, `growth-district-${districtIndex - 1}-complete`);
+        await service.completeDistrict(countryId, previous.id, `growth-district-${districtIndex - 1}-complete`);
       }
     }
     const districtName = DISTRICT_NAMES[districtIndex]!;
-    let district = service.listDistricts(countryId, city.id).find((candidate) => candidate.name === districtName) ?? service.createDistrict(countryId, {
-      cityId: city.id,
-      name: districtName,
-      goal: `Создать самостоятельный смешанный район №${districtIndex + 1}.`,
-      capacitySp: 26,
-      activate: true,
-      idempotencyKey: `growth-district-${districtIndex}`,
-    });
+    let district = (await service.listDistricts(countryId, city.id)).find((candidate) => candidate.name === districtName) ?? await service.createDistrict(countryId, {
+                      cityId: city.id,
+                      name: districtName,
+                      goal: `Создать самостоятельный смешанный район №${districtIndex + 1}.`,
+                      capacitySp: 26,
+                      activate: true,
+                      idempotencyKey: `growth-district-${districtIndex}`,
+                    });
     if (district.status === "PLANNED") {
-      district = service.activateDistrict(countryId, district.id, `growth-district-${districtIndex}-activate`);
+      district = await service.activateDistrict(countryId, district.id, `growth-district-${districtIndex}-activate`);
     }
 
     for (let taskIndex = 0; taskIndex < BASE_TASKS.length; taskIndex += 1) {
@@ -95,33 +95,33 @@ export function seedGrowthDemo(service: AppService, countryId: string, districtL
         ? LARGE_TITLES[districtIndex % LARGE_TITLES.length]!
         : template.title;
       const title = `${titleBase} — ${districtName}`;
-      let task = service.listTasks(countryId, district.id).find((candidate) => candidate.title === title) ?? service.createTask(countryId, {
-        cityId: city.id,
-        districtId: district.id,
-        title,
-        description: `${template.description} Город Centuria, район «${districtName}».`,
-        estimate: template.estimate,
-        priority: PRIORITIES[(districtIndex + taskIndex) % PRIORITIES.length],
-        idempotencyKey: `growth-task-${districtIndex}-${taskIndex}`,
-      });
+      let task = (await service.listTasks(countryId, district.id)).find((candidate) => candidate.title === title) ?? await service.createTask(countryId, {
+                                cityId: city.id,
+                                districtId: district.id,
+                                title,
+                                description: `${template.description} Город Centuria, район «${districtName}».`,
+                                estimate: template.estimate,
+                                priority: PRIORITIES[(districtIndex + taskIndex) % PRIORITIES.length],
+                                idempotencyKey: `growth-task-${districtIndex}-${taskIndex}`,
+                              });
 
       const targetStage = (districtIndex * GROWTH_TASKS_PER_DISTRICT + taskIndex) % STATUS_ORDER.length;
       for (let stageIndex = STATUS_ORDER.indexOf(task.status) + 1; stageIndex <= targetStage; stageIndex += 1) {
-        task = service.updateTaskStatus(countryId, {
-          taskId: task.id,
-          status: STATUS_ORDER[stageIndex]!,
-          progress: [0, 12, 52, 88, 100][stageIndex],
-          comment: `Live-test: подтверждена стадия ${stageIndex + 1} из 5.`,
-          actor: "Growth live-test",
-          idempotencyKey: `growth-task-${districtIndex}-${taskIndex}-stage-${stageIndex}`,
-        });
+        task = await service.updateTaskStatus(countryId, {
+                                          taskId: task.id,
+                                          status: STATUS_ORDER[stageIndex]!,
+                                          progress: [0, 12, 52, 88, 100][stageIndex],
+                                          comment: `Live-test: подтверждена стадия ${stageIndex + 1} из 5.`,
+                                          actor: "Growth live-test",
+                                          idempotencyKey: `growth-task-${districtIndex}-${taskIndex}-stage-${stageIndex}`,
+                                        });
       }
     }
   }
 
   return {
-    city: service.listCities(countryId).find((candidate) => candidate.id === city.id)!,
-    districts: service.listDistricts(countryId, city.id),
-    tasks: service.listTasks(countryId).filter((task) => task.cityId === city.id),
+    city: (await service.listCities(countryId)).find((candidate) => candidate.id === city.id)!,
+    districts: await service.listDistricts(countryId, city.id),
+    tasks: (await service.listTasks(countryId)).filter((task) => task.cityId === city.id),
   };
 }

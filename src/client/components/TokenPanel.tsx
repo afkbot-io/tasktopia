@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { BootstrapDto } from "../../shared/contracts";
+import { MCP_READ_SCOPES, MCP_SCOPES, type BootstrapDto, type McpScope, type McpTokenDto } from "../../shared/contracts";
 import { api, ApiError } from "../api";
 
-type TokenMeta = { id: string; name: string; prefix: string; createdAt: string; revokedAt: string | null; lastUsedAt: string | null };
+const scopeLabels: Record<McpScope, string> = {
+  "country:read": "Чтение страны", "cities:write": "Создание городов", "districts:write": "Управление районами",
+  "tasks:read": "Чтение задач", "tasks:write": "Изменение задач", "comments:write": "Комментарии",
+};
 
 export function TokenPanel({ bootstrap, onClose, onAccountChanged, onLogout }: {
   bootstrap: BootstrapDto;
@@ -10,13 +13,16 @@ export function TokenPanel({ bootstrap, onClose, onAccountChanged, onLogout }: {
   onAccountChanged: () => Promise<void>;
   onLogout: () => Promise<void>;
 }) {
-  const [tokens, setTokens] = useState<TokenMeta[]>([]);
+  const [tokens, setTokens] = useState<McpTokenDto[]>([]);
   const [secret, setSecret] = useState<string | null>(null);
   const [tokenName, setTokenName] = useState("Персональный MCP");
+  const allowedScopes = bootstrap.countryRole === "VIEWER" ? MCP_READ_SCOPES : MCP_SCOPES;
+  const [scopes, setScopes] = useState<McpScope[]>([...allowedScopes]);
+  const [expiresInDays, setExpiresInDays] = useState<30 | 90 | 365>(90);
   const [accountName, setAccountName] = useState(bootstrap.user.name);
   const [error, setError] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
-  const load = () => api<TokenMeta[]>("/api/tokens").then(setTokens);
+  const load = () => api<McpTokenDto[]>("/api/tokens").then(setTokens);
   useEffect(() => {
     void load();
     closeRef.current?.focus();
@@ -28,7 +34,9 @@ export function TokenPanel({ bootstrap, onClose, onAccountChanged, onLogout }: {
   async function create() {
     setError("");
     try {
-      const token = await api<{ token: string }>("/api/tokens", { method: "POST", body: JSON.stringify({ name: tokenName }) });
+      const token = await api<{ token: string }>("/api/tokens", {
+        method: "POST", body: JSON.stringify({ name: tokenName, scopes, expiresInDays }),
+      });
       setSecret(token.token);
       await load();
     } catch (reason) { setError(reason instanceof ApiError ? reason.message : "Не удалось перевыпустить ссылку"); }
@@ -57,10 +65,14 @@ export function TokenPanel({ bootstrap, onClose, onAccountChanged, onLogout }: {
       </section>
       <section className="settings-section"><h3>Персональная MCP-ссылка</h3>
         <p className="muted">Endpoint: <code>{location.origin}/mcp</code>. Ключ принадлежит вашему аккаунту и работает с выбранной страной.</p>
-        <div className="token-create"><input value={tokenName} onChange={(event) => setTokenName(event.target.value)} maxLength={80} /><button className="primary-button" onClick={() => void create()}>Перевыпустить</button></div>
+        <div className="token-create"><input value={tokenName} onChange={(event) => setTokenName(event.target.value)} maxLength={80} /><button className="primary-button" disabled={scopes.length === 0} onClick={() => void create()}>Перевыпустить</button></div>
+        <div className="token-options">
+          <label>Срок действия <select value={expiresInDays} onChange={(event) => setExpiresInDays(Number(event.target.value) as 30 | 90 | 365)}><option value={30}>30 дней</option><option value={90}>90 дней</option><option value={365}>365 дней</option></select></label>
+          <fieldset><legend>Разрешения</legend>{allowedScopes.map((scope) => <label key={scope}><input type="checkbox" checked={scopes.includes(scope)} onChange={(event) => setScopes((current) => event.target.checked ? [...current, scope] : current.filter((item) => item !== scope))} />{scopeLabels[scope]}</label>)}</fieldset>
+        </div>
         <p className="token-warning">Новый ключ автоматически отключит предыдущий персональный ключ.</p>
         {secret && <div className="token-secret"><strong>Скопируйте сейчас — повторно секрет не показывается.</strong><code>{secret}</code><button onClick={() => void navigator.clipboard.writeText(secret)}>Копировать</button></div>}
-        <div className="token-list">{tokens.map((token) => <article key={token.id} className={token.revokedAt ? "revoked" : ""}><div><strong>{token.name}</strong><code>{token.prefix}…</code></div><span>{token.revokedAt ? "Отозван" : token.lastUsedAt ? "Использовался" : "Новый"}</span>{!token.revokedAt && <button onClick={() => void revoke(token.id)}>Отозвать</button>}</article>)}</div>
+        <div className="token-list">{tokens.map((token) => <article key={token.id} className={token.revokedAt ? "revoked" : ""}><div><strong>{token.name}</strong><code>{token.prefix}…</code><small>{token.scopes.map((scope) => scopeLabels[scope]).join(" · ")}<br />{token.expiresAt ? `до ${new Date(token.expiresAt).toLocaleDateString("ru-RU")}` : "без срока"}</small></div><span>{token.revokedAt ? "Отозван" : token.lastUsedAt ? "Использовался" : "Новый"}</span>{!token.revokedAt && <button onClick={() => void revoke(token.id)}>Отозвать</button>}</article>)}</div>
       </section>
       <button className="logout-button" onClick={() => void onLogout()}>Выйти из аккаунта</button>
     </section>

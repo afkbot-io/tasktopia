@@ -10,7 +10,14 @@ export type DistrictArchetype = "NEW_BUILD" | "PRIVATE" | "MIXED_URBAN" | "COMME
 export type SurfaceKind = "SIDEWALK" | "PATH" | "DRIVEWAY" | "SHOULDER" | "CROSSWALK";
 export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "PARK_DECOR";
 export type CardinalOrientation = "N" | "E" | "S" | "W";
-export type CountryRole = "OWNER" | "MEMBER";
+export type CountryRole = "OWNER" | "MEMBER" | "VIEWER";
+export type McpScope = "country:read" | "cities:write" | "districts:write" | "tasks:read" | "tasks:write" | "comments:write";
+export const MCP_SCOPES: readonly McpScope[] = [
+  "country:read", "cities:write", "districts:write", "tasks:read", "tasks:write", "comments:write",
+];
+export const MCP_READ_SCOPES: readonly McpScope[] = ["country:read", "tasks:read"];
+export type BlockPattern = "DENSE_SUPERBLOCK_3X3" | "DENSE_ROW" | "PRIVATE_STREET_ROW" | "PRIVATE_TWO_SIDED" | "PRIVATE_MEWS" | "COMMERCIAL_STRIP" | "CIVIC_CLUSTER";
+export type PlannedLotRole = "PRIMARY" | "SUPPORT";
 
 export type Cell = { x: number; y: number };
 export type Rect = { minX: number; minY: number; maxX: number; maxY: number };
@@ -56,6 +63,19 @@ export type PlannedLotDto = {
   width: number;
   height: number;
   taskId: string | null;
+  /** Optional V9 metadata. Old square-v7 districts remain valid without it. */
+  layoutVersion?: "block-v2";
+  groupId?: string;
+  pattern?: BlockPattern;
+  slotIndex?: number;
+  slotCount?: number;
+  rowIndex?: number;
+  role?: PlannedLotRole;
+  frontageSide?: CardinalOrientation;
+  facadeFamily?: string;
+  alignmentX?: "START" | "CENTER" | "END";
+  alignmentY?: "START" | "CENTER" | "END";
+  sharedAccess?: Cell[];
 };
 
 export type DistrictDto = {
@@ -152,6 +172,14 @@ export type DecorationDto = {
   origin: Cell;
 };
 
+export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "status" | "color" | "archetype"> & {
+  cells: Cell[];
+};
+
+export type ChunkTaskDto = Pick<TaskDto,
+  "id" | "cityId" | "districtId" | "title" | "status" | "stage" | "buildingType" | "platformType" | "origin" | "footprint"
+>;
+
 export type ChunkDto = {
   chunkX: number;
   chunkY: number;
@@ -159,9 +187,8 @@ export type ChunkDto = {
   terrain: TerrainCellDto[];
   roads: RoadCellDto[];
   surfaces: SurfaceCellDto[];
-  cities: CityDto[];
-  districts: DistrictDto[];
-  tasks: TaskDto[];
+  districts: ChunkDistrictDto[];
+  tasks: ChunkTaskDto[];
   decorations: DecorationDto[];
   worldFeatures: WorldFeatureDto[];
   worldVersion: number;
@@ -172,12 +199,43 @@ export type BootstrapDto = {
   country: CountryDto;
   countries: CountryAccessDto[];
   countryRole: CountryRole;
-  cities: CityDto[];
-  districts: DistrictDto[];
-  tasks: TaskDto[];
+  initialCity: CityDto | null;
+  viewBounds: Rect;
+  stats: { cities: number; districts: number; tasks: number };
   chunkSize: number;
   assetVersion: 4;
 };
+
+export type PlanCityDto = CityDto & {
+  districtCount: number;
+  taskCount: number;
+};
+
+export type PlanCityPageDto = {
+  items: PlanCityDto[];
+  nextCursor: string | null;
+};
+
+export type McpTokenDto = {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: McpScope[];
+  expiresAt: string | null;
+  createdAt: string;
+  revokedAt: string | null;
+  lastUsedAt: string | null;
+};
+
+export type PlanDistrictDto = Pick<DistrictDto,
+  "id" | "cityId" | "name" | "goal" | "status" | "capacitySp" | "archetype" | "color" | "createdAt"
+> & {
+  taskCount: number;
+};
+
+export type PlanTaskDto = Pick<TaskDto,
+  "id" | "cityId" | "districtId" | "title" | "estimate" | "priority" | "status" | "progress" | "dueAt" | "stage" | "updatedAt"
+>;
 
 export type RealtimeEvent = {
   id: number;

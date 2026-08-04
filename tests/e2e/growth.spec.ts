@@ -21,9 +21,12 @@ test("captures a deterministic city growth checkpoint", async ({ page }) => {
   consoleErrors.length = 0;
 
   const bootstrap = await page.evaluate(async () => (await fetch("/api/bootstrap")).json());
-  expect(bootstrap.cities).toHaveLength(1);
-  expect(bootstrap.tasks).toHaveLength(expectedTasks);
-  expect(bootstrap.districts).toHaveLength(expectedTasks / 10);
+  expect(bootstrap.initialCity).toMatchObject({ name: "Centuria" });
+  expect(bootstrap.stats.cities).toBe(1);
+  expect(bootstrap).not.toHaveProperty("tasks");
+  expect(bootstrap).not.toHaveProperty("districts");
+  expect(bootstrap.stats.tasks).toBe(expectedTasks);
+  expect(bootstrap.stats.districts).toBe(expectedTasks / 10);
   expect(Number(await map.getAttribute("data-resident-chunks"))).toBeLessThan(200);
   await page.screenshot({ path: screenshotPath!, fullPage: true });
   expect(consoleErrors).toEqual([]);

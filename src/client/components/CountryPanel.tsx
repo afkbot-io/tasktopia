@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BootstrapDto, CountryMemberDto } from "../../shared/contracts";
+import type { BootstrapDto, CountryMemberDto, CountryRole } from "../../shared/contracts";
 import { api, ApiError } from "../api";
 
 export function CountryPanel({ bootstrap, onClose, onBootstrap }: {
@@ -10,6 +10,7 @@ export function CountryPanel({ bootstrap, onClose, onBootstrap }: {
   const [members, setMembers] = useState<CountryMemberDto[]>([]);
   const [countryName, setCountryName] = useState("");
   const [email, setEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<Extract<CountryRole, "MEMBER" | "VIEWER">>("MEMBER");
   const [error, setError] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
   const loadMembers = useCallback(() => api<CountryMemberDto[]>(`/api/countries/${bootstrap.country.id}/members`).then(setMembers), [bootstrap.country.id]);
@@ -39,7 +40,7 @@ export function CountryPanel({ bootstrap, onClose, onBootstrap }: {
   });
 
   const invite = () => safely(async () => {
-    await api(`/api/countries/${bootstrap.country.id}/members`, { method: "POST", body: JSON.stringify({ email }) });
+    await api(`/api/countries/${bootstrap.country.id}/members`, { method: "POST", body: JSON.stringify({ email, role: inviteRole }) });
     setEmail("");
     await loadMembers();
   });
@@ -63,15 +64,16 @@ export function CountryPanel({ bootstrap, onClose, onBootstrap }: {
       <div className="country-layout">
         <section className="country-list"><h3>Ваши страны</h3>
           {bootstrap.countries.map((country) => <article className={country.id === bootstrap.country.id ? "selected" : ""} key={country.id}>
-            <button className="country-select" onClick={() => void selectCountry(country.id)}><strong>{country.name}</strong><span>{country.role === "OWNER" ? "Основатель" : "Член палаты"} · {country.memberCount} чел.</span></button>
+            <button className="country-select" onClick={() => void selectCountry(country.id)}><strong>{country.name}</strong><span>{country.role === "OWNER" ? "Основатель" : country.role === "VIEWER" ? "Наблюдатель" : "Редактор"} · {country.memberCount} чел.</span></button>
             {country.role === "OWNER" && country.id === bootstrap.country.id && bootstrap.countries.length > 1 && <button className="danger-icon" onClick={() => void deleteCountry(country.id, country.name)} title="Удалить страну">×</button>}
           </article>)}
           <div className="inline-create"><input value={countryName} onChange={(event) => setCountryName(event.target.value)} placeholder="Название новой страны" maxLength={100} /><button onClick={() => void create()} disabled={countryName.trim().length < 2}>Создать</button></div>
         </section>
         <section className="chamber-list"><h3>Палата страны <span>{members.length}</span></h3>
-          {bootstrap.countryRole === "OWNER" && <div className="inline-create"><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email зарегистрированного человека" /><button onClick={() => void invite()} disabled={!email.includes("@")}>Добавить</button></div>}
-          {members.map((member) => <article key={member.userId}><span className="member-avatar">{member.name.slice(0, 1).toUpperCase()}</span><div><strong>{member.name}</strong><small>{member.email} · {member.role === "OWNER" ? "Основатель" : "Член палаты"}</small></div>{bootstrap.countryRole === "OWNER" && member.role === "MEMBER" && <button onClick={() => void removeMember(member.userId)}>Исключить</button>}</article>)}
+          {bootstrap.countryRole === "OWNER" && <div className="inline-create"><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email зарегистрированного человека" /><select aria-label="Роль приглашения" value={inviteRole} onChange={(event) => setInviteRole(event.target.value as typeof inviteRole)}><option value="MEMBER">Редактор</option><option value="VIEWER">Наблюдатель</option></select><button onClick={() => void invite()} disabled={!email.includes("@")}>Добавить</button></div>}
+          {members.map((member) => <article key={member.userId}><span className="member-avatar">{member.name.slice(0, 1).toUpperCase()}</span><div><strong>{member.name}</strong><small>{member.email} · {member.role === "OWNER" ? "Основатель" : member.role === "VIEWER" ? "Наблюдатель" : "Редактор"}</small></div>{bootstrap.countryRole === "OWNER" && member.role !== "OWNER" && <button onClick={() => void removeMember(member.userId)}>Исключить</button>}</article>)}
           {bootstrap.countryRole === "MEMBER" && <p className="muted chamber-note">Вы можете развивать города и задачи. Составом палаты управляет основатель страны.</p>}
+          {bootstrap.countryRole === "VIEWER" && <p className="muted chamber-note">У вас доступ только для чтения карты, плана и задач.</p>}
         </section>
       </div>
     </section>

@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tasktopia
+      POSTGRES_USER: tasktopia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - tasktopia_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasktopia -d tasktopia"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+
   app:
     build:
       context: .
@@ -7,13 +24,14 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
-      DATABASE_PATH: /app/data/tasktopia.db
+      DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       TRUST_PROXY: "true"
       LOG_LEVEL: ${LOG_LEVEL:-info}
-    volumes:
-      - tasktopia_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:
@@ -34,4 +52,4 @@ services:
         max-file: "5"
 
 volumes:
-  tasktopia_data:
+  tasktopia_postgres:

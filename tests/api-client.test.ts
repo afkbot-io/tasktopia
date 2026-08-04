@@ -5,7 +5,7 @@ describe("client API errors", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("keeps a structured server message", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(
+    vi.stubGlobal("fetch", vi.fn(() => new Response(
       JSON.stringify({ message: "Неверный email или пароль" }),
       { status: 401, headers: { "content-type": "application/json" } },
     )));
@@ -16,7 +16,7 @@ describe("client API errors", () => {
   });
 
   it("turns a plain Bad Request response into an understandable message", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("Bad Request", {
+    vi.stubGlobal("fetch", vi.fn(() => new Response("Bad Request", {
       status: 400,
       headers: { "content-type": "text/plain" },
     })));

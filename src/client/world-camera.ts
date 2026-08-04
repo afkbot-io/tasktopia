@@ -1,27 +1,10 @@
-import type { CityDto, Rect } from "../shared/contracts";
+import type { Rect } from "../shared/contracts";
 
 export type ScreenSize = { width: number; height: number };
 export type CameraPosition = { x: number; y: number };
 export type ChunkRange = { minChunkX: number; minChunkY: number; maxChunkX: number; maxChunkY: number };
 
-export const COUNTRY_VIEW_MARGIN_CELLS = 192;
-export const PREFETCH_VIEWPORT_RATIO = 0.75;
-
-export function countryViewBounds(cities: CityDto[], margin = COUNTRY_VIEW_MARGIN_CELLS): Rect {
-  if (cities.length === 0) return { minX: -margin, minY: -margin, maxX: margin - 1, maxY: margin - 1 };
-  const bounds = cities.reduce<Rect>((result, city) => ({
-    minX: Math.min(result.minX, city.bounds.minX),
-    minY: Math.min(result.minY, city.bounds.minY),
-    maxX: Math.max(result.maxX, city.bounds.maxX),
-    maxY: Math.max(result.maxY, city.bounds.maxY),
-  }), { ...cities[0]!.bounds });
-  return {
-    minX: bounds.minX - margin,
-    minY: bounds.minY - margin,
-    maxX: bounds.maxX + margin,
-    maxY: bounds.maxY + margin,
-  };
-}
+export const PREFETCH_VIEWPORT_RATIO = 0.25;
 
 export function minimumCameraScale(screen: ScreenSize, bounds: Rect, cellSize: number, configuredMinimum = 0.8): number {
   const width = (bounds.maxX - bounds.minX + 1) * cellSize;

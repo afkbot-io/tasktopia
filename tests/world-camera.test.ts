@@ -1,35 +1,19 @@
 import { describe, expect, it } from "vitest";
-import type { CityDto } from "../src/shared/contracts";
 import {
   chunkRangeForViewport,
   clampCameraPosition,
-  countryViewBounds,
   fitCameraScale,
   minimumCameraScale,
 } from "../src/client/world-camera";
 
-function city(bounds: CityDto["bounds"]): CityDto {
-  return {
-    id: crypto.randomUUID(), name: "Test", description: "", status: "ACTIVE",
-    center: { x: 0, y: 0 }, bounds, styleId: "test", morphology: "BALANCED", createdAt: "2026-01-01T00:00:00.000Z",
-  };
-}
-
 describe("world camera geometry", () => {
-  it("adds a generous natural frame around all published cities", () => {
-    expect(countryViewBounds([
-      city({ minX: -50, minY: -40, maxX: 49, maxY: 59 }),
-      city({ minX: 250, minY: 120, maxX: 349, maxY: 219 }),
-    ], 100)).toEqual({ minX: -150, minY: -140, maxX: 449, maxY: 319 });
-  });
-
-  it("loads the viewport plus three quarters of a viewport on every side", () => {
+  it("loads a bounded quarter-viewport prefetch ring", () => {
     const range = chunkRangeForViewport(
       { x: 720, y: 450 }, 0.8, { width: 1440, height: 900 },
       { minX: -500, minY: -500, maxX: 499, maxY: 499 }, 8, 64,
     );
-    expect(range.maxChunkX - range.minChunkX + 1).toBeGreaterThanOrEqual(8);
-    expect(range.maxChunkY - range.minChunkY + 1).toBeGreaterThanOrEqual(5);
+    expect(range.maxChunkX - range.minChunkX + 1).toBeLessThanOrEqual(6);
+    expect(range.maxChunkY - range.minChunkY + 1).toBeLessThanOrEqual(4);
   });
 
   it("clamps pan and raises the minimum zoom when the country is smaller than the screen", () => {

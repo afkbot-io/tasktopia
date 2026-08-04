@@ -13,8 +13,10 @@ import type {
 import { cellKey, contains, neighbors4 } from "./grid";
 
 export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
-  LOCAL: 3,
-  COLLECTOR: 4,
+  // One 8 px cell is one traffic lane. Local and district collector streets
+  // therefore use an even two-cell profile: one lane per direction.
+  LOCAL: 2,
+  COLLECTOR: 2,
   ARTERIAL: 4,
   HIGHWAY: 4,
 };
@@ -129,6 +131,10 @@ export function buildSurfaceMap(input: {
   for (const district of input.districts.filter((item) => item.status === "COMPLETED")) {
     for (const cell of district.cells) completedOwners.set(cellKey(cell), district.id);
   }
+  const persistedAccess = new Set([
+    ...input.tasks.flatMap((task) => [task.entrance, ...task.accessPath]),
+    ...input.features.flatMap((feature) => feature.accessPath),
+  ].map(cellKey));
 
   for (const road of input.roads.values()) {
     const roadOwner = completedOwners.get(cellKey(road));
@@ -138,7 +144,10 @@ export function buildSurfaceMap(input: {
       const targetOwner = completedOwners.get(key);
       // New external roads must never synthesize fresh sidewalk inside a
       // completed district. Only its already published internal streets own it.
-      if (targetOwner && targetOwner !== roadOwner) continue;
+      // Do not synthesize arbitrary new sidewalk across a sealed boundary, but
+      // preserve an access anchor that was explicitly committed while the
+      // district was active (park entrance or building approach).
+      if (targetOwner && targetOwner !== roadOwner && !persistedAccess.has(key)) continue;
       const insideCity = input.cities.some((city) => contains(city.bounds, cell));
       const kind: SurfaceCellDto["kind"] = road.roadClass === "HIGHWAY" && !insideCity ? "SHOULDER" : "SIDEWALK";
       const existing = surfaces.get(key);
@@ -147,6 +156,20 @@ export function buildSurfaceMap(input: {
   }
 
   publishCrosswalks(input.roads, surfaces);
+
+  // V9 block plans publish their shared pedestrian skeleton before tasks are
+  // assigned. Rear residential rows can therefore reuse one stable courtyard
+  // path instead of asking the road generator for another street.
+  for (const district of input.districts) {
+    for (const lot of district.lots) {
+      for (const cell of lot.sharedAccess ?? []) {
+        const key = cellKey(cell);
+        if (!input.roads.has(key) && !blocked.has(key) && input.isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
+          surfaces.set(key, { ...cell, kind: "PATH" });
+        }
+      }
+    }
+  }
 
   for (const task of input.tasks) {
     for (const cell of task.accessPath) {
@@ -241,12 +264,16 @@ export function findAccessPlan(input: {
   maxLength?: number;
 }): AccessPlan | null {
   const maxLength = input.maxLength ?? 6;
+  const isPublicPedestrianSurface = (cell: Cell): boolean => {
+    const kind = input.surfaces.get(cellKey(cell))?.kind;
+    return kind === "SIDEWALK" || kind === "PATH";
+  };
   let best: AccessPlan | null = null;
   for (const configured of input.entry.entrances) {
     const start = entranceOutside(input.origin, input.entry, configured.side, configured.offset);
     const startKey = cellKey(start);
     if (input.roads.has(startKey) || input.buildingFootprint.has(startKey) || input.occupied.has(startKey) || !input.isWalkableTerrain(start)) continue;
-    if (input.surfaces.get(startKey)?.kind === "SIDEWALK") {
+    if (isPublicPedestrianSurface(start)) {
       const direct = { entrance: start, path: [], distance: 0 };
       if (!best || direct.distance < best.distance) best = direct;
       continue;
@@ -263,7 +290,7 @@ export function findAccessPlan(input: {
       for (let direction = 0; direction < 4; direction += 1) {
         const next = neighbors4(state.cell)[direction]!;
         const nextKey = cellKey(next);
-        if (input.surfaces.get(nextKey)?.kind === "SIDEWALK") {
+        if (isPublicPedestrianSurface(next)) {
           const candidate = { entrance: start, path: state.path, distance: state.path.length };
           if (!best || candidate.distance < best.distance) best = candidate;
           queue.length = 0;

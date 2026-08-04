@@ -179,11 +179,17 @@ export function aStarPath(
   const startKey = cellKey(start);
   const cameFrom = new Map<string, string>();
   const cost = new Map<string, number>([[startKey, 0]]);
-  open.push({ cell: start, priority: manhattan(start, end) });
+  const closed = new Set<string>();
+  // Every edge is clamped to at least 0.05 below. Scaling the heuristic by
+  // that same lower bound keeps it admissible even when existing roads are
+  // intentionally much cheaper than terrain.
+  open.push({ cell: start, priority: manhattan(start, end) * 0.05 });
   let visited = 0;
-  while (open.size > 0 && visited < 250_000) {
+  while (open.size > 0 && visited < 750_000) {
     const current = open.pop()!.cell;
     const currentKey = cellKey(current);
+    if (closed.has(currentKey)) continue;
+    closed.add(currentKey);
     visited += 1;
     if (current.x === end.x && current.y === end.y) {
       const path: Cell[] = [end];
@@ -209,7 +215,7 @@ export function aStarPath(
       if (nextCost >= (cost.get(nextKey) ?? Number.POSITIVE_INFINITY)) continue;
       cost.set(nextKey, nextCost);
       cameFrom.set(nextKey, currentKey);
-      open.push({ cell: next, priority: nextCost + manhattan(next, end) });
+      open.push({ cell: next, priority: nextCost + manhattan(next, end) * 0.05 });
     }
   }
   return fallbackToOrthogonal ? orthogonalPath(start, end, Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)) : [];

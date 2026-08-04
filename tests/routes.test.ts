@@ -10,7 +10,7 @@ describe("request error status mapping", () => {
 
   it("maps domain and database errors without exposing unknown failures", () => {
     expect(requestErrorStatus(new DomainError("UNAUTHENTICATED", "Login required"))).toBe(401);
-    expect(requestErrorStatus({ code: "SQLITE_CONSTRAINT_UNIQUE" })).toBe(409);
+    expect(requestErrorStatus({ code: "23505" })).toBe(409);
     expect(requestErrorStatus(new Error("Unexpected"))).toBe(500);
   });
 });

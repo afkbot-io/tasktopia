@@ -38,6 +38,8 @@ export type WorldAuditMetrics = {
   districtArchetypes: Record<string, number>;
   zoningCompliance: number;
   zoningPrimarySharePerDistrict: Record<string, number>;
+  asphaltSharePerDistrict: Record<string, number>;
+  maximumResidentialAsphaltShare: number;
   crosswalkCells: number;
   roadJunctionsPerCity: Record<string, number>;
 };
@@ -99,27 +101,30 @@ function countRoadJunctions(city: CityDto, roadMap: Map<string, RoadRow>): numbe
   return components;
 }
 
-export function auditWorld(db: Db, service: AppService, countryId: string): WorldAuditResult {
+export async function auditWorld(db: Db, service: AppService, countryId: string): Promise<WorldAuditResult> {
   const violations: WorldAuditViolation[] = [];
-  const cities = service.listCities(countryId);
-  const districts = service.listDistricts(countryId);
-  const tasks = service.listTasks(countryId);
-  const seed = Number((db.prepare("SELECT seed FROM countries WHERE id = ?").get(countryId) as { seed: number }).seed);
-  const roads = db.prepare("SELECT x, y, mask, structure, road_class AS roadClass FROM roads_v3 WHERE country_id = ?")
-    .all(countryId) as RoadRow[];
+  const cities = await service.listCities(countryId);
+  const districts = await service.listDistricts(countryId);
+  const tasks = await service.listTasks(countryId);
+  const seed = Number((await db.prepare("SELECT seed FROM countries WHERE id = ?").get<{ seed: number }>(countryId))?.seed);
+  const roadRows = await db.prepare("SELECT x, y, mask, structure, road_class FROM roads_v3 WHERE country_id = ?").all(countryId);
+  const roads: RoadRow[] = roadRows.map((row) => ({
+    x: Number(row.x), y: Number(row.y), mask: Number(row.mask),
+    structure: String(row.structure) as RoadRow["structure"], roadClass: String(row.road_class) as RoadRow["roadClass"],
+  }));
   const roadMap = new Map(roads.map((road) => [cellKey(road), road]));
   const roadKeys = new Set(roadMap.keys());
   const cityById = new Map(cities.map((city) => [city.id, city]));
   const districtById = new Map(districts.map((district) => [district.id, district]));
   const districtCells = new Map(districts.map((district) => [district.id, new Set(district.cells.map(cellKey))]));
-  const worldFeatures = service.listWorldFeatures(countryId);
+  const worldFeatures = await service.listWorldFeatures(countryId);
   const relevantChunks = new Set<string>();
   for (const task of tasks) for (const cell of [task.entrance, ...task.accessPath]) relevantChunks.add(`${floorDiv(cell.x, CHUNK_SIZE)},${floorDiv(cell.y, CHUNK_SIZE)}`);
   for (const feature of worldFeatures) for (const cell of [...feature.footprint, ...feature.accessPath]) relevantChunks.add(`${floorDiv(cell.x, CHUNK_SIZE)},${floorDiv(cell.y, CHUNK_SIZE)}`);
   const surfaceMap = new Map<string, SurfaceCellDto>();
   for (const chunk of relevantChunks) {
     const [chunkX, chunkY] = chunk.split(",").map(Number);
-    for (const surface of service.getChunk(countryId, chunkX!, chunkY!).surfaces) surfaceMap.set(cellKey(surface), surface);
+    for (const surface of (await service.getChunk(countryId, chunkX!, chunkY!)).surfaces) surfaceMap.set(cellKey(surface), surface);
   }
   const surfaceKeys = new Set(surfaceMap.keys());
 
@@ -244,7 +249,28 @@ export function auditWorld(db: Db, service: AppService, countryId: string): Worl
       if (isWater(terrainAt(seed, cell.x, cell.y).terrain)) addViolation(violations, "GREEN_AREA_ACCESS_CROSSES_WATER", `${area.assetKey}: подход проходит по воде`);
     }
     const sidewalkTouchPoints = accessCells.length > 0 ? [accessCells.at(-1)!] : area.footprint;
-    const reachesSidewalk = sidewalkTouchPoints.some((cell) => neighbors4(cell).some((neighbor) => surfaceMap.get(cellKey(neighbor))?.kind === "SIDEWALK"));
+    const pedestrianQueue = [...sidewalkTouchPoints];
+    const pedestrianVisited = new Set<string>();
+    let reachesSidewalk = false;
+    while (pedestrianQueue.length > 0 && pedestrianVisited.size < 256) {
+      const current = pedestrianQueue.shift()!;
+      const currentKey = cellKey(current);
+      if (pedestrianVisited.has(currentKey)) continue;
+      pedestrianVisited.add(currentKey);
+      if (surfaceMap.get(currentKey)?.kind === "SIDEWALK") {
+        reachesSidewalk = true;
+        break;
+      }
+      for (const neighbor of neighbors4(current)) {
+        const kind = surfaceMap.get(cellKey(neighbor))?.kind;
+        if (kind === "SIDEWALK") {
+          reachesSidewalk = true;
+          pedestrianQueue.length = 0;
+          break;
+        }
+        if ((kind === "PATH" || kind === "DRIVEWAY") && !pedestrianVisited.has(cellKey(neighbor))) pedestrianQueue.push(neighbor);
+      }
+    }
     if (!reachesSidewalk) addViolation(violations, "GREEN_AREA_UNREACHABLE", `${area.assetKey}: нет выхода к тротуару`);
   }
 
@@ -319,6 +345,36 @@ export function auditWorld(db: Db, service: AppService, countryId: string): Worl
     district.name,
     zoningPrimaryShareByDistrictId.get(district.id)!,
   ]));
+  // Measure the visible impervious/asphalt surface, not only road rows. Parking
+  // platforms, service-building pads and driveways used to be omitted, which
+  // could make a district pass while still looking paved over in the renderer.
+  const asphaltKeys = new Set(roadKeys);
+  for (const task of tasks) {
+    if (task.platformType === "ASPHALT") for (const cell of task.footprint) asphaltKeys.add(cellKey(cell));
+    if (task.accessKind === "DRIVEWAY") for (const cell of task.accessPath) asphaltKeys.add(cellKey(cell));
+  }
+  for (const feature of worldFeatures) {
+    if (feature.assetKind === "BUILDING") for (const cell of feature.footprint) asphaltKeys.add(cellKey(cell));
+  }
+  for (const surface of surfaceMap.values()) if (surface.kind === "DRIVEWAY") asphaltKeys.add(cellKey(surface));
+  const asphaltShareByDistrictId = new Map(districts.map((district) => {
+    const asphalt = district.cells.filter((cell) => asphaltKeys.has(cellKey(cell))).length;
+    return [district.id, district.cells.length === 0 ? 0 : asphalt / district.cells.length] as const;
+  }));
+  const asphaltSharePerDistrict = Object.fromEntries(districts.map((district) => [
+    district.name,
+    asphaltShareByDistrictId.get(district.id) ?? 0,
+  ]));
+  const residentialBlockDistricts = districts.filter((district) =>
+    (district.archetype === "NEW_BUILD" || district.archetype === "PRIVATE")
+    && district.lots.some((lot) => lot.layoutVersion === "block-v2"),
+  );
+  for (const district of residentialBlockDistricts) {
+    const share = asphaltShareByDistrictId.get(district.id) ?? 0;
+    if (share > 0.2 + Number.EPSILON) {
+      addViolation(violations, "DISTRICT_ASPHALT_DENSITY_HIGH", `${district.name}: асфальт занимает ${Math.round(share * 100)}% района, предел 20%`);
+    }
+  }
   const minimumPrimaryShare: Partial<Record<(typeof districts)[number]["archetype"], number>> = {
     NEW_BUILD: 0.7,
     PRIVATE: 0.6,
@@ -377,6 +433,10 @@ export function auditWorld(db: Db, service: AppService, countryId: string): Worl
       districtArchetypes,
       zoningCompliance: tasks.length === 0 ? 1 : compatibleTasks / tasks.length,
       zoningPrimarySharePerDistrict,
+      asphaltSharePerDistrict,
+      maximumResidentialAsphaltShare: residentialBlockDistricts.length === 0
+        ? 0
+        : Math.max(...residentialBlockDistricts.map((district) => asphaltShareByDistrictId.get(district.id) ?? 0)),
       crosswalkCells: [...surfaceMap.values()].filter((surface) => surface.kind === "CROSSWALK").length,
       roadJunctionsPerCity: Object.fromEntries(cities.map((city) => [city.name, countRoadJunctions(city, roadMap)])),
     },
