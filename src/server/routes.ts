@@ -23,6 +23,7 @@ import {
 import { BUILDING_CATALOG } from "../shared/catalog";
 import { MCP_SCOPES, type McpScope } from "../shared/contracts";
 import { config } from "./config";
+import { APP_VERSION } from "./version";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -95,7 +96,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
 
   app.get("/health", async () => {
             await db.prepare("SELECT 1").get();
-            return { status: "ok", version: "1.0.0", uptime: Math.round(process.uptime()) };
+            return { status: "ok", version: APP_VERSION, uptime: Math.round(process.uptime()) };
           });
 
   app.post("/api/auth/register", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request, reply) => {

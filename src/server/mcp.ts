@@ -8,6 +8,7 @@ import { DomainError } from "./app-service";
 import type { Db } from "./db";
 import { authenticateMcpToken, listAccessibleCountries, setActiveCountry } from "./auth";
 import type { CountryRole, McpScope } from "../shared/contracts";
+import { APP_VERSION } from "./version";
 
 type McpIdentity = { userId: string; countryId: string; countryRole: CountryRole; tokenId: string; scopes: McpScope[] };
 
@@ -30,7 +31,7 @@ export async function getMcpIdentity(db: Db, headers: IncomingHttpHeaders): Prom
 }
 
 export async function createMcpServer(db: Db, service: AppService, identity: McpIdentity): Promise<McpServer> {
-  const server = new McpServer({ name: "tasktopia", version: "1.0.0" });
+  const server = new McpServer({ name: "tasktopia", version: APP_VERSION });
   const actor = await db.prepare("SELECT name FROM users WHERE id = ?").get<{ name: string }>(identity.userId);
   const actorName = actor?.name ?? "Участник палаты";
   const resolveMember = async (email: string | undefined): Promise<string | undefined> => {

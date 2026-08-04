@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
+import { APP_VERSION } from "../src/server/version";
 
 describe("authentication HTTP boundary", () => {
   let db: Db;
@@ -22,6 +23,12 @@ describe("authentication HTTP boundary", () => {
   afterEach(async () => {
     await app.close();
     await db.close();
+  });
+
+  it("reports the package version from the health endpoint", async () => {
+    const response = await app.inject({ method: "GET", url: "/health" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ status: "ok", version: APP_VERSION });
   });
 
   it("registers, restores the country session, logs out, and logs in again", async () => {
