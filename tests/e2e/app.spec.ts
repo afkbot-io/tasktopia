@@ -5,8 +5,9 @@ async function capture(page: Page, path: string): Promise<void> {
   if (captureReleaseScreenshots) await page.screenshot({ path, fullPage: true });
 }
 
-test("login, map and MCP token management", async ({ page }) => {
+test("login, map and MCP token management", async ({ page, context }) => {
   test.setTimeout(240_000);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const consoleErrors: string[] = [];
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
   await page.goto("/");
@@ -69,9 +70,25 @@ test("login, map and MCP token management", async ({ page }) => {
   await cityDirectory.getByRole("button", { name: "Закрыть план" }).click();
 
   await page.getByTitle("MCP-интеграции").click();
-  await expect(page.getByRole("heading", { name: "Аккаунт и MCP" })).toBeVisible();
-  await page.getByRole("button", { name: "Перевыпустить" }).click();
-  await expect(page.getByText("Скопируйте сейчас")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Аккаунт и интеграции" })).toBeVisible();
+  const endpoint = `${new URL(page.url()).origin}/mcp`;
+  await expect(page.getByText(endpoint, { exact: true })).toBeVisible();
+  await expect(page.getByText("Streamable HTTP", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Копировать URL" }).click();
+  await expect(page.getByRole("button", { name: "Скопировано" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(endpoint);
+  await capture(page, "screenshots/release-mcp-settings.png");
+  await page.getByRole("button", { name: /Создать ключ|Заменить ключ/ }).click();
+  await expect(page.getByText("Ключ готов")).toBeVisible();
+  await page.getByRole("button", { name: "Скопировать ключ" }).click();
+  await expect(page.getByRole("button", { name: "Ключ скопирован" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^ttp_mcp_/);
+  const settingsHeader = await page.locator(".settings-header").boundingBox();
+  expect(settingsHeader?.y).toBeGreaterThanOrEqual(0);
+  await page.getByRole("button", { name: "Профиль" }).click();
+  await expect(page.getByLabel("Имя и фамилия")).toBeVisible();
+  await page.getByRole("button", { name: "MCP-интеграция" }).click();
+  await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
   await page.getByRole("button", { name: "Закрыть" }).click();
   await page.locator(".country-title-button").click();
   await expect(page.getByRole("heading", { name: "Страны и палата" })).toBeVisible();
@@ -80,7 +97,14 @@ test("login, map and MCP token management", async ({ page }) => {
   await page.getByRole("button", { name: "Закрыть" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toBeVisible();
+  await expect(page.getByRole("button", { name: "План" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Районы" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await capture(page, "screenshots/release-city-mobile.png");
+  await page.getByRole("button", { name: "MCP-интеграции" }).click();
+  await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
+  await capture(page, "screenshots/release-mcp-mobile.png");
+  await page.getByRole("button", { name: "Закрыть" }).click();
   expect(consoleErrors).toEqual([]);
 });
 
@@ -93,7 +117,20 @@ test("registration automatically creates an empty country", async ({ page }) => 
   await page.getByLabel("Пароль").fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
   await expect(page.getByRole("heading", { name: "Создайте первый город через MCP" })).toBeVisible();
-  await page.getByTitle("Настройки аккаунта").click();
+  const emptyDescription = page.getByText("Подключите Tasktopia к MCP-клиенту");
+  const connectButton = page.getByRole("button", { name: "Подключить MCP" });
+  await expect(emptyDescription).toBeVisible();
+  await expect(connectButton).toBeVisible();
+  const descriptionBox = await emptyDescription.boundingBox();
+  const buttonBox = await connectButton.boundingBox();
+  expect(buttonBox!.y).toBeGreaterThan(descriptionBox!.y + descriptionBox!.height);
+  await capture(page, "screenshots/release-empty-country.png");
+  await connectButton.click();
+  await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
+  await expect(page.getByText(`${new URL(page.url()).origin}/mcp`, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Профиль" }).click();
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
+  await page.getByRole("button", { name: "Закрыть" }).click();
+  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Создайте первый город через MCP" })).toBeVisible();
 });

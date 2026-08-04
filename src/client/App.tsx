@@ -28,6 +28,7 @@ export function App() {
   const [authError, setAuthError] = useState("");
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
   const [tokensOpen, setTokensOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<"mcp" | "account">("mcp");
   const [planOpen, setPlanOpen] = useState(false);
   const [countriesOpen, setCountriesOpen] = useState(false);
   const [showDistricts, setShowDistricts] = useState(false);
@@ -37,6 +38,11 @@ export function App() {
   const [online, setOnline] = useState(true);
   const countryId = bootstrap?.country.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
+  const closeSettings = useCallback(() => setTokensOpen(false), []);
+  const openSettings = useCallback((section: "mcp" | "account") => {
+    setSettingsSection(section);
+    setTokensOpen(true);
+  }, []);
 
   const logout = useCallback(async () => {
     await api("/api/auth/logout", { method: "POST" });
@@ -115,21 +121,22 @@ export function App() {
       </div>
       <button className={`topbar-button ${planOpen ? "active" : ""}`} onClick={() => setPlanOpen((value) => !value)}>План</button>
       <button className={`topbar-button ${showDistricts ? "active" : ""}`} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Районы</button>
-      <button className="icon-button" onClick={() => setTokensOpen(true)} title="MCP-интеграции">⌁</button>
-      <button className="icon-button account-button" onClick={() => setTokensOpen(true)} title="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</button>
+      <button className="icon-button" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</button>
+      <button className="icon-button account-button" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</button>
     </header>
 
     <section className="map-region">
-      <Suspense fallback={<div className="app-loading" role="status"><div className="loader-square" /><span>Загружаем карту…</span></div>}>
-        <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} />
-      </Suspense>
-      <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
+      {bootstrap.stats.cities > 0 ? <>
+        <Suspense fallback={<div className="app-loading" role="status"><div className="loader-square" /><span>Загружаем карту…</span></div>}>
+          <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} />
+        </Suspense>
+        <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
+      </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
       {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} />}
-      {bootstrap.stats.cities === 0 && <div className="world-empty"><div className="empty-square">＋</div><h2>Создайте первый город через MCP</h2><p>Новый город получит территорию, внутренние улицы и дорогу от границы страны.</p><button className="primary-button" onClick={() => setTokensOpen(true)}>Настроить MCP</button></div>}
     </section>
 
     {selectedTask && <TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} />}
     {countriesOpen && <CountryPanel bootstrap={bootstrap} onClose={() => setCountriesOpen(false)} onBootstrap={applyBootstrap} />}
-    {tokensOpen && <TokenPanel bootstrap={bootstrap} onClose={() => setTokensOpen(false)} onAccountChanged={load} onLogout={logout} />}
+    {tokensOpen && <TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} />}
   </main>;
 }
