@@ -40,9 +40,27 @@ describe("client API errors", () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await api("/api/countries", { method: "POST", body: JSON.stringify({ name: "Project" }) });
+    await api("/api/countries", { method: "POST", json: { name: "Project" } });
 
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
     expect(new Headers(request.headers).get("content-type")).toBe("application/json");
+    expect(request.body).toBe(JSON.stringify({ name: "Project" }));
+  });
+
+  it("preserves explicit text and FormData request semantics", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api("/api/text", { method: "POST", body: "plain", headers: { "content-type": "text/plain" } });
+    const form = new FormData();
+    form.set("name", "Project");
+    await api("/api/form", { method: "POST", body: form });
+
+    const textRequest = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const formRequest = fetchMock.mock.calls[1]?.[1] as RequestInit;
+    expect(new Headers(textRequest.headers).get("content-type")).toBe("text/plain");
+    expect(textRequest.body).toBe("plain");
+    expect(new Headers(formRequest.headers).has("content-type")).toBe(false);
+    expect(formRequest.body).toBe(form);
   });
 });

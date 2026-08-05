@@ -30,7 +30,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
             countryName: data.get("countryName"), cityName: data.get("cityName"),
           }
         : { email: data.get("email"), password: data.get("password") };
-      await api(`/api/auth/${mode}`, { method: "POST", body: JSON.stringify(body) });
+      await api(`/api/auth/${mode}`, { method: "POST", json: body });
       try {
         await onAuthenticated();
       } catch (cause) {

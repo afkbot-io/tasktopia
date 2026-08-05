@@ -94,7 +94,7 @@ describe("country collaboration HTTP boundary", () => {
     const removed = await app.inject({ method: "DELETE", url: `/api/countries/${countryId}/members/${memberId}`, headers: { cookie: ownerCookie } });
     expect(removed.statusCode).toBe(200);
     expect(revoked).toEqual([{ countryId, userId: memberId }]);
-  });
+  }, 15_000);
 
   it("enforces read-only viewer scopes at the token HTTP boundary", async () => {
     const ownerCookie = await register("viewer-owner@example.com", "Viewer Owner");

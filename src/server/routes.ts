@@ -22,6 +22,7 @@ import {
 } from "./auth";
 import { BUILDING_CATALOG } from "../shared/catalog";
 import { MCP_SCOPES, type McpScope } from "../shared/contracts";
+import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
 import { config } from "./config";
 import { APP_VERSION } from "./version";
 import { z } from "zod";
@@ -45,13 +46,6 @@ const tokenSchema = z.object({
 const countrySchema = z.object({ name: z.string().trim().min(2).max(100) }).strict();
 const accountSchema = z.object({ name: z.string().trim().min(2).max(60) }).strict();
 const invitationSchema = z.object({ email: z.string().trim().email().max(254), role: z.enum(["MEMBER", "VIEWER"]).default("MEMBER") }).strict();
-const safeRequestMessage: Partial<Record<number, string>> = {
-  400: "Некорректный запрос. Проверьте введённые данные",
-  401: "Требуется авторизация",
-  403: "Доступ запрещён",
-  404: "Запрашиваемые данные не найдены",
-  429: "Слишком много запросов. Попробуйте немного позже",
-};
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -99,7 +93,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const message = error instanceof DomainError ? error.message
       : status === 500 ? "Внутренняя ошибка сервера"
         : uniqueConflict ? "Такая запись уже существует"
-          : safeRequestMessage[status] ?? "Ошибка запроса";
+          : SAFE_HTTP_ERROR_MESSAGES[status] ?? "Ошибка запроса";
     if (status === 500) request.log.error({ err: error }, "Unhandled request error");
     reply.code(status).send({ error: error instanceof DomainError ? error.code : "REQUEST_FAILED", message });
   });

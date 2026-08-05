@@ -1,35 +1,35 @@
+import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
+
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
   }
 }
 
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  if (typeof init?.body === "string" && init.body.length > 0 && !headers.has("content-type")) {
+type ApiInit = Omit<RequestInit, "body"> & (
+  | { json: unknown; body?: never }
+  | { body?: BodyInit | null; json?: never }
+);
+
+export async function api<T>(path: string, init?: ApiInit): Promise<T> {
+  const { json, ...requestInit } = init ?? {};
+  const hasJson = init !== undefined && "json" in init;
+  const body = hasJson ? JSON.stringify(json) : requestInit.body;
+  const headers = new Headers(requestInit.headers);
+  if (hasJson && body !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
   const response = await fetch(path, {
     credentials: "include",
-    ...init,
+    ...requestInit,
+    body,
     headers,
   });
   const raw = await response.text();
   let payload: { message?: string } = {};
   try { payload = raw ? JSON.parse(raw) as { message?: string } : {}; } catch { /* Plain-text proxy/server response. */ }
   if (!response.ok) {
-    const fallback: Record<number, string> = {
-      400: "Некорректный запрос. Проверьте введённые данные",
-      401: "Требуется авторизация",
-      403: "Доступ запрещён",
-      404: "Запрашиваемые данные не найдены",
-      409: "Данные конфликтуют с уже существующей записью",
-      429: "Слишком много запросов. Попробуйте немного позже",
-      500: "Сервер временно недоступен. Попробуйте ещё раз",
-      502: "Сервер временно недоступен. Попробуйте ещё раз",
-      503: "Сервер временно недоступен. Попробуйте ещё раз",
-    };
-    throw new ApiError(response.status, payload.message ?? fallback[response.status] ?? `Ошибка HTTP ${response.status}`);
+    throw new ApiError(response.status, payload.message ?? SAFE_HTTP_ERROR_MESSAGES[response.status] ?? `Ошибка HTTP ${response.status}`);
   }
   return payload as T;
 }

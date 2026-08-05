@@ -52,16 +52,16 @@ export function CountryPanel({ bootstrap, onClose, onBootstrap }: {
     onBootstrap(await api<BootstrapDto>(`/api/countries/${countryId}/select`, { method: "POST" }));
   });
   const create = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    const country = await api<{ id: string }>("/api/countries", { method: "POST", body: JSON.stringify({ name: countryName }) });
+    const country = await api<{ id: string }>("/api/countries", { method: "POST", json: { name: countryName } });
     setCountryName("");
     onBootstrap(await api<BootstrapDto>(`/api/countries/${country.id}/select`, { method: "POST" }));
   }); };
   const rename = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    await api(`/api/countries/${bootstrap.country.id}`, { method: "PATCH", body: JSON.stringify({ name: renameValue }) });
+    await api(`/api/countries/${bootstrap.country.id}`, { method: "PATCH", json: { name: renameValue } });
     await reloadBootstrap();
   }); };
   const invite = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    await api(`/api/countries/${bootstrap.country.id}/members`, { method: "POST", body: JSON.stringify({ email, role: inviteRole }) });
+    await api(`/api/countries/${bootstrap.country.id}/members`, { method: "POST", json: { email, role: inviteRole } });
     setEmail(""); await loadMembers();
   }); };
   const removeMember = (userId: string) => void safely(async () => {

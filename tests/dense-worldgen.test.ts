@@ -40,7 +40,9 @@ describe("one-city world generation gate", () => {
       }
     }
     audit = await auditWorld(db, service, registered.user.countryId);
-  }, 15_000);
+  // Coverage instrumentation and parallel database suites can roughly double
+  // the bounded 1-city/10-district fixture time on CI runners.
+  }, 30_000);
 
   afterAll(async () => await db.close());
 

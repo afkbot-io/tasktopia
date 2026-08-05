@@ -80,7 +80,7 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
     setError("");
     try {
       const token = await api<{ token: string }>("/api/tokens", {
-        method: "POST", body: JSON.stringify({ name: tokenName.trim(), scopes, expiresInDays }),
+        method: "POST", json: { name: tokenName.trim(), scopes, expiresInDays },
       });
       setSecret(token.token);
       setCopyTarget(null);
@@ -110,7 +110,7 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
     setPending(true);
     setError("");
     try {
-      await api("/api/account", { method: "PATCH", body: JSON.stringify({ name: accountName.trim() }) });
+      await api("/api/account", { method: "PATCH", json: { name: accountName.trim() } });
       await onAccountChanged();
     } catch (reason) {
       setError(reason instanceof ApiError ? reason.message : "Не удалось сохранить имя");
