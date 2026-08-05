@@ -59,4 +59,23 @@ describe("procedural decoration footprints", () => {
     expect(residents.length).toBeLessThanOrEqual(5);
     expect(boats.length + fishers.length + residents.length).toBeLessThanOrEqual(12);
   });
+
+  it("never places fishers next to a road even when the road follows the shore", () => {
+    const terrain: TerrainCellDto[] = [];
+    for (let y = 0; y < 64; y += 1) for (let x = 0; x < 256; x += 1) {
+      terrain.push({ x, y, terrain: y < 28 ? "DEEP_WATER" : y < 32 ? "SAND" : "GRASS", variant: 0 });
+    }
+    const road = Array.from({ length: 256 }, (_, x) => ({ x, y: 31 }));
+    const blocked = new Set(road.map(cellKey));
+    const city: CityDto = {
+      id: "city", name: "Shore road", description: "", status: "ACTIVE", center: { x: 128, y: 38 },
+      bounds: { minX: 0, minY: 24, maxX: 255, maxY: 63 }, styleId: "pixel-v4", morphology: "BALANCED", createdAt: "2026-01-01T00:00:00.000Z",
+    };
+    const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;
+    const fishers = Array.from({ length: 24 }, (_, seed) => generate(seed + 1, terrain, blocked, [], [], [city]))
+      .flat()
+      .filter((item) => item.kind.startsWith("fisher-"));
+    expect(fishers.length).toBeGreaterThan(0);
+    expect(fishers.every((fisher) => Math.abs(fisher.origin.y - 31) > 1)).toBe(true);
+  });
 });

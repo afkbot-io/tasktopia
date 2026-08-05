@@ -14,8 +14,8 @@ Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`. `src/shar
 ## Слои рендера
 
 1. Base terrain `8×8`.
-2. Surface: тротуар, коричневая дорожка, driveway или shoulder.
-3. Дорога/мост и приглушённый curb только на границе с surface.
+2. Surface: тротуар, грунтовая дорожка, мелкая плитка, тихий асфальт, driveway или shoulder.
+3. Дорога/мост без отдельного бордюрного overlay; мостовые ограждения остаются только по внешней стороне пролёта.
 4. Опциональная цветная граница района.
 5. Платформа участка: `YARD | STONE | ASPHALT | SERVICE | PARK`.
 6. Props, здание нужной стадии и локальные машины/пешеходы.
@@ -51,7 +51,7 @@ Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`. `src/shar
 2. Добавьте запись в `catalog/imported-buildings.json` с `key`, metadata и массивом `stages` относительно каталога `sources`.
 3. Запустите builder и тесты.
 
-`assets:verify` ничего не перегенерирует, поэтому его следует запускать и после ручной правки PNG. Сейчас он покрывает 46 зданий / 230 стадий, 12 terrain families, 62 props и 4 цветовых семейства машин. Рыбацкие лодки, береговые рыбаки, разные действия жителей, ограждения, активный флаг и water-варианты с рыбами сначала сформированы AI-reference листами, а runtime-версии перерисованы детерминированным pixel builder; provenance хранится в manifest.
+`assets:verify` ничего не перегенерирует, поэтому его следует запускать и после ручной правки PNG. Сейчас он покрывает 46 зданий / 230 стадий, 12 terrain families, 70 props и 4 цветовых семейства машин. Рыбацкие лодки, береговые рыбаки, разные действия жителей, редкие лисы/олени, ограждения, активный флаг и water-варианты с рыбами сначала сформированы AI-reference листами, а runtime-версии перерисованы детерминированным pixel builder; provenance хранится в manifest.
 
 Imported entry может явно переопределить `platform`, `estimates`, `tags`, `ruleIds`, `entrances`, quotas и `serviceRole`. Новый обычный вариант не требует изменений TypeScript, базы или MCP.
 

@@ -29,10 +29,11 @@ await transaction(db, async () => {
 const city = await service.createCity(user.countryId, { name: "Riverside", idempotencyKey: "test-city" });
 const archetypes: DistrictArchetype[] = ["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"];
 for (let index = 0; index < 10; index += 1) {
+  const archetype = archetypes[index % archetypes.length]!;
   const district = await service.createDistrict(user.countryId, {
             cityId: city.id,
             name: `Тестовый район ${index + 1}`,
-            archetype: archetypes[index % archetypes.length],
+            archetype,
             capacitySp: 40,
             activate: index === 0,
             idempotencyKey: `test-district-${index}`,
@@ -42,7 +43,7 @@ for (let index = 0; index < 10; index += 1) {
                               cityId: city.id,
                               districtId: district.id,
                               title: `Задача района ${index + 1}.${taskIndex + 1}`,
-                              estimate: 1,
+                              estimate: archetype === "PRIVATE" ? 1 : 2,
                               idempotencyKey: `test-task-${index}-${taskIndex}`,
                             });
   }

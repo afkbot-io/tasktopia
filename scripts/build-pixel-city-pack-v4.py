@@ -122,6 +122,21 @@ def transparent_tile() -> Image.Image:
     return Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
 
 
+def path_tile(kind: str) -> Image.Image:
+    base = "#7e8681ff" if kind == "pavers" else "#596166ff"
+    image = Image.new("RGBA", (CELL, CELL), rgba(base))
+    draw = ImageDraw.Draw(image)
+    if kind == "pavers":
+        for y in range(0, CELL, 3):
+            draw.line((0, y, CELL - 1, y), fill=rgba("#a6ada7ff"))
+            offset = 2 if (y // 3) % 2 else 0
+            for x in range(offset, CELL, 4): draw.point((x, min(CELL - 1, y + 1)), fill=rgba("#59625fff"))
+    else:
+        draw.line((0, 1, CELL - 1, 1), fill=rgba("#70787aff"))
+        draw.point((2, 5), fill=rgba("#454d51ff")); draw.point((6, 3), fill=rgba("#454d51ff"))
+    return image
+
+
 def topdown_vertical_car(palette: tuple[str, str, str, str]) -> Image.Image:
     image = Image.new("RGBA", (8, 16), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
@@ -263,6 +278,28 @@ def prop_walker(direction: str, color: str) -> Image.Image:
     return image
 
 
+def prop_animal(species: str, direction: str) -> Image.Image:
+    image = transparent_tile()
+    draw = ImageDraw.Draw(image)
+    body = "#b7653fff" if species == "fox" else "#9b774fff"
+    light = "#dfb071ff" if species == "fox" else "#c6a879ff"
+    if direction in "EW":
+        draw.rectangle((2, 3, 6, 5), fill=rgba(body), outline=rgba(OUTLINE))
+        head_x = 6 if direction == "E" else 1
+        draw.rectangle((head_x, 2, head_x + 1, 4), fill=rgba(body))
+        tail_x = 0 if direction == "E" else 7
+        draw.line((tail_x, 3, 2 if direction == "E" else 6, 4), fill=rgba(light))
+        draw.point((3, 6), fill=rgba(OUTLINE)); draw.point((6, 6), fill=rgba(OUTLINE))
+    else:
+        draw.rectangle((2, 2, 5, 6), fill=rgba(body), outline=rgba(OUTLINE))
+        head_y = 1 if direction == "N" else 6
+        draw.rectangle((3, head_y, 4, min(7, head_y + 1)), fill=rgba(light))
+        draw.point((2, 7 if direction == "S" else 1), fill=rgba(OUTLINE)); draw.point((5, 7 if direction == "S" else 1), fill=rgba(OUTLINE))
+    if species == "deer":
+        draw.point((2, 1), fill=rgba("#5a4435ff")); draw.point((5, 1), fill=rgba("#5a4435ff"))
+    return image
+
+
 def prop_boat(horizontal: bool, variant: int) -> Image.Image:
     # Three cells give the hull a readable slender proportion at gameplay
     # zoom. The seated passenger reuses the walker's exact 2 px head / 4 px
@@ -391,14 +428,14 @@ def draw_finished_house(image: Image.Image, spec: HouseSpec, scaffold: bool) -> 
     if spec.style == "gas-plaza":
         # A service plaza is deliberately wider and visually sits on the
         # asphalt platform supplied by the runtime footprint layer.
-        draw.rectangle((width - 24, 14, width - 3, bottom), fill=rgba(spec.wall), outline=rgba(OUTLINE))
-        draw.rectangle((width - 25, 11, width - 2, 15), fill=rgba(spec.roof), outline=rgba(OUTLINE))
-        draw.rectangle((3, 8, width - 24, 13), fill=rgba(spec.roof), outline=rgba(OUTLINE))
-        for x in (8, 22, 36):
+        draw.rectangle((width - 24, 14, width - 5, bottom), fill=rgba(spec.wall), outline=rgba(OUTLINE))
+        draw.polygon([(width - 25, 11), (width - 4, 11), (width - 1, 14), (width - 22, 14)], fill=rgba(spec.roof), outline=rgba(OUTLINE))
+        draw.polygon([(2, 8), (width - 24, 8), (width - 20, 11), (6, 11)], fill=rgba(spec.roof), outline=rgba(OUTLINE))
+        for x in (8, 20, 32):
             if x < width - 24:
-                draw.line((x, 13, x, bottom), fill=rgba("#a8b3afff"))
+                draw.line((x, 11, x, bottom), fill=rgba("#a8b3afff"))
                 draw.rectangle((x - 2, bottom - 8, x + 2, bottom - 2), fill=rgba(spec.accent), outline=rgba(OUTLINE))
-        draw.rectangle((width - 20, 18, width - 7, 24), fill=rgba(GLASS), outline=rgba(spec.dark))
+        draw.rectangle((width - 20, 17, width - 8, min(bottom - 2, 22)), fill=rgba(GLASS), outline=rgba(spec.dark))
         draw.rectangle((width - 15, bottom - 7, width - 10, bottom), fill=rgba(spec.accent), outline=rgba(OUTLINE))
         draw.rectangle((2, 17, 5, bottom), fill=rgba("#d7d1b8ff"), outline=rgba(OUTLINE))
         if scaffold:
@@ -458,6 +495,14 @@ def copy_v3_runtime() -> None:
         shutil.copytree(V3 / directory, RUNTIME / directory, dirs_exist_ok=True)
     for color, palette in CAR_PALETTES.items():
         topdown_vertical_car(palette).save(RUNTIME / "vehicles" / f"car-{color}-vertical.png", optimize=True)
+    (RUNTIME / "tiles" / "curb.png").unlink(missing_ok=True)
+    classic_station = HouseSpec(
+        key="commercial-gas-station", label="Заправка", size=(48, 24), footprint=(6, 3),
+        wall="#d9d2bdff", dark="#657277ff", roof="#3f7f72ff", accent="#e2be4fff",
+        style="gas-plaza", rarity="UNCOMMON", category="COMMERCIAL",
+    )
+    destination = RUNTIME / "buildings" / "commercial" / classic_station.key
+    for stage in range(1, 6): building_stage(classic_station, stage).save(destination / f"stage-{stage}.png", optimize=True)
 
 
 def building_metadata(key: str, raw: dict) -> dict:
@@ -480,8 +525,12 @@ def building_metadata(key: str, raw: dict) -> dict:
         tags += ["commercial"]
     elif category == "CIVIC":
         platform = "SERVICE"; tags += ["service", "civic"]; rule_ids = ["UNIQUE_SERVICE"]; max_per_district = 1
-    if any(token in key for token in ("gas-station", "parking", "auto-repair", "warehouse")):
+    if any(token in key for token in ("gas-station", "service-plaza", "parking", "auto-repair", "warehouse")):
         platform = "ASPHALT"; rule_ids.append("REQUIRES_COLLECTOR")
+    if "parking" in key:
+        max_per_city = 1; max_per_district = 1; service_role = "parking-service"; rule_ids.append("UNIQUE_SERVICE")
+    if "gas-station" in key or "service-plaza" in key:
+        max_per_city = 1; max_per_district = 1; service_role = "fuel-service"; rule_ids.append("UNIQUE_SERVICE")
     if any(token in key for token in ("fire", "police", "clinic", "school", "city-hall")):
         max_per_city = 1
     if key in {"highrise-landmark", "civic-bank", "civic-post-office"}: max_per_city = 1
@@ -608,6 +657,9 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "fence-horizontal": prop_fence(False), "fence-vertical": prop_fence(True),
         "active-district-flag": prop_active_marker(),
     }
+    for species in ("fox", "deer"):
+        for direction in ("north", "east", "south", "west"):
+            generated_props[f"animal-{species}-{direction}"] = prop_animal(species, direction[0].upper())
     prop_dir = RUNTIME / "props"
     prop_manifest = dict(source_manifest["props"])
     for key, image in generated_props.items():
@@ -625,6 +677,12 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "size": list(image.size), "footprintCells": footprint, "anchorPx": [image.width // 2, image.height],
         }
 
+    tile_manifest = {key: value for key, value in source_manifest["tiles"].items() if key != "curb"}
+    tile_dir = RUNTIME / "tiles"
+    for key, kind in (("path-pavers", "pavers"), ("path-asphalt", "asphalt")):
+        target = tile_dir / f"{key}.png"
+        path_tile(kind).save(target, optimize=True)
+        tile_manifest[key] = {"path": str(target.relative_to(RUNTIME)), "size": [CELL, CELL], "overlay": False}
     return {
         "version": 4,
         "gridPx": CELL,
@@ -632,7 +690,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "runtimeAI": False,
         "terrain": terrain,
         "transitions": transitions,
-        "tiles": source_manifest["tiles"],
+        "tiles": tile_manifest,
         "buildings": buildings,
         "vehicles": source_manifest["vehicles"],
         "props": prop_manifest,
@@ -725,6 +783,7 @@ def contact_sheet(manifest: dict, specs: list[HouseSpec]) -> None:
 
 
 def main() -> None:
+    if RUNTIME.exists(): shutil.rmtree(RUNTIME)
     RUNTIME.mkdir(parents=True, exist_ok=True)
     copy_v3_runtime()
     specs = load_generated_specs()

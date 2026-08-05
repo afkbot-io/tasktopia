@@ -65,7 +65,7 @@ import {
 export const CHUNK_SIZE = 64;
 const CITY_SIZE = 100;
 const CITY_SPACING = 320;
-const COUNTRY_VIEW_MARGIN = 192;
+const COUNTRY_VIEW_MARGIN = 54;
 const SPRINT_COLORS = ["#52a8d8", "#dfa94b", "#9877c7", "#69ad67", "#c86f67", "#4fb49f", "#d585b4"];
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
 
@@ -1159,7 +1159,10 @@ export class AppService {
                       const nearest = cities.length > 0
                         ? cities.reduce((best, city) => manhattan(city.center, center) < manhattan(best.center, center) ? city : best, cities[0]!)
                         : undefined;
-                      const approach = nearest?.center ?? { x: bounds.minX - 54, y: center.y + 9 };
+                      // The first national approach begins at the published
+                      // country viewport edge, so a new world never appears
+                      // to have a highway materialising in the middle of it.
+                      const approach = nearest?.center ?? { x: bounds.minX - COUNTRY_VIEW_MARGIN, y: center.y + 9 };
                       const gateway = this.cityGateway(bounds, center, approach);
                       const portal = this.cityPortal(bounds, gateway.cell, gateway.horizontalApproach);
                       const source = nearest ? await this.highwayAnchor(countryId, portal, cities) ?? nearest.center : approach;
@@ -2309,6 +2312,12 @@ export class AppService {
     const cityRanges = new Map([24, 72, 96].map((margin) => [margin, cities.map((city) => expandRect(city.bounds, margin))]));
     const closeToCity = (cell: Cell, margin = 72) => (cityRanges.get(margin) ?? []).some((bounds) => contains(bounds, cell));
     const adjacentToSurface = (cell: Cell) => neighbors4(cell).some((neighbor) => surfaceKeys.has(cellKey(neighbor)));
+    const closeToBlocked = (cell: Cell, distance: number) => {
+      for (let dy = -distance; dy <= distance; dy += 1) for (let dx = -distance; dx <= distance; dx += 1) {
+        if (Math.abs(dx) + Math.abs(dy) <= distance && blocked.has(cellKey({ x: cell.x + dx, y: cell.y + dy }))) return true;
+      }
+      return false;
+    };
     const waterDirection = (cell: Cell): "north" | "east" | "south" | "west" | undefined => {
       const names = ["north", "east", "south", "west"] as const;
       for (let distance = 1; distance <= 4; distance += 1) {
@@ -2330,7 +2339,7 @@ export class AppService {
       if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && chance < 0.0009) {
         const horizontal = hashCoordinate(seed, cell.x, cell.y, 719) < 0.5;
         kind = `boat-${horizontal ? "horizontal" : "vertical"}-${hashCoordinate(seed, cell.x, cell.y, 727) < 0.5 ? "a" : "b"}`;
-      } else if (shoreDirection && chance < 0.005) {
+      } else if (shoreDirection && !closeToBlocked(cell, 1) && chance < 0.005) {
         kind = `fisher-${shoreDirection}`;
       } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && chance < 0.018) {
         const residents = ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"];

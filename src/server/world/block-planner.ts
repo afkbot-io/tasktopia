@@ -156,11 +156,36 @@ export function planBlockDistrict(input: PlanInput): BlockDistrictPlan {
       : input.archetype === "CIVIC"
         ? "CIVIC_CLUSTER"
         : "COMMERCIAL_STRIP";
-  const template = input.archetype === "NEW_BUILD"
+  const baseTemplate = input.archetype === "NEW_BUILD"
     ? denseSlots(input.origin, input.width, sidewalkY)
     : input.archetype === "PRIVATE"
       ? privateSlots(input.origin, input.width, sidewalkY)
       : stripSlots(input.origin, input.width, sidewalkY, input.archetype);
+  // Ten authored compositions vary row rhythm and depth while keeping every
+  // path deterministic and connected to the same frontage. The first remains
+  // the compact legacy composition for spatial compatibility.
+  const composition = [
+    [[0, 0], [0, 0], [0, 0]],
+    [[0, -1], [1, 0], [0, 1]],
+    [[1, 0], [0, -1], [1, 1]],
+    [[0, 1], [1, -1], [0, 0]],
+    [[1, -1], [1, 1], [0, 0]],
+    [[0, 0], [1, 1], [1, -1]],
+    [[1, 1], [0, 0], [1, -1]],
+    [[0, -1], [0, 1], [1, 0]],
+    [[1, 0], [1, -1], [0, 1]],
+    [[0, 1], [1, 0], [1, -1]],
+  ][groupIndex % 10]!;
+  const slots = baseTemplate.slots.map((slot) => {
+    const [dx, dy] = composition[slot.rowIndex % 3]!;
+    return { ...slot, x: slot.x + (slot.role === "PRIMARY" ? dx : 0), baseline: slot.baseline + dy };
+  });
+  const spineX = Math.min(...slots.map((slot) => slot.x)) - 1;
+  const access = new Map(slots.map((slot, index) => [index, uniqueCells([
+    ...horizontalLine(spineX, slot.x + slot.width - 1, slot.baseline),
+    ...verticalLine(spineX, Math.min(slot.baseline, sidewalkY), Math.max(slot.baseline, sidewalkY)),
+  ])]));
+  const template = { slots, access };
   const groupId = `${input.districtId}:block:${String(groupIndex).padStart(3, "0")}`;
   const facadeFamily = input.archetype === "NEW_BUILD"
     ? `dense-${groupIndex % 4}`

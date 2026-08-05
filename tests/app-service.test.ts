@@ -30,6 +30,8 @@ describe("Tasktopia square-world application service", () => {
     const spanX = Math.max(...cityRoads.map((road) => road.x)) - Math.min(...cityRoads.map((road) => road.x)) + 1;
     const spanY = Math.max(...cityRoads.map((road) => road.y)) - Math.min(...cityRoads.map((road) => road.y)) + 1;
     expect(Math.max(spanX, spanY)).toBeLessThan(70);
+    const worldRoadExtent = await db.prepare("SELECT MIN(x) AS min_x FROM roads_v3 WHERE country_id = ?").get(countryId) as { min_x: number };
+    expect(Number(worldRoadExtent.min_x)).toBeLessThanOrEqual(first.bounds.minX - 54);
     const roadMap = new Map((await service.getChunk(countryId, 0, 0)).roads.map((road) => [cellKey(road), road]));
     for (const road of roadMap.values()) {
       for (const direction of GRID_DIRECTIONS) {
@@ -250,11 +252,11 @@ describe("Tasktopia square-world application service", () => {
   it("keeps committed tasks fixed when spatial growth is needed", async () => {
     await db.prepare("UPDATE countries SET seed = 424242 WHERE id = ?").run(countryId);
     const city = await service.createCity(countryId, { name: "Growth City", idempotencyKey: "growth-city" });
-    await service.createDistrict(countryId, { cityId: city.id, name: "Growth", capacitySp: 26, activate: true, idempotencyKey: "growth-district" });
-    const first = await service.createTask(countryId, { cityId: city.id, title: "First parking", estimate: 1, buildingHint: "commercial-parking-lot", idempotencyKey: "growth-task-0" });
+    await service.createDistrict(countryId, { cityId: city.id, name: "Growth", archetype: "PRIVATE", capacitySp: 26, activate: true, idempotencyKey: "growth-district" });
+    const first = await service.createTask(countryId, { cityId: city.id, title: "First home", estimate: 1, buildingHint: "house-cottage", idempotencyKey: "growth-task-0" });
     const committed = JSON.stringify(first.footprint);
     for (let index = 1; index < 25; index += 1) {
-      await service.createTask(countryId, { cityId: city.id, title: `Parking ${index}`, estimate: 1, buildingHint: "commercial-parking-lot", idempotencyKey: `growth-task-${index}` });
+      await service.createTask(countryId, { cityId: city.id, title: `Home ${index}`, estimate: 1, idempotencyKey: `growth-task-${index}` });
     }
     const district = (await service.listDistricts(countryId, city.id))[0]!;
     expect(district.cells.length).toBeGreaterThan(300);

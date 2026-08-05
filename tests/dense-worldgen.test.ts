@@ -21,10 +21,11 @@ describe("one-city world generation gate", () => {
     const city = await service.createCity(registered.user.countryId, { name: "Riverside", idempotencyKey: "city" });
     const archetypes: DistrictArchetype[] = ["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"];
     for (let districtIndex = 0; districtIndex < 10; districtIndex += 1) {
+      const archetype = archetypes[districtIndex % archetypes.length]!;
       const district = await service.createDistrict(registered.user.countryId, {
                                 cityId: city.id,
                                 name: `Район ${districtIndex + 1}`,
-                                archetype: archetypes[districtIndex % archetypes.length],
+                                archetype,
                                 capacitySp: 26,
                                 activate: districtIndex === 0,
                                 idempotencyKey: `district-${districtIndex}`,
@@ -34,7 +35,7 @@ describe("one-city world generation gate", () => {
                                                   cityId: city.id,
                                                   districtId: district.id,
                                                   title: `Задача ${districtIndex + 1}.${taskIndex + 1}`,
-                                                  estimate: 1,
+                                                  estimate: archetype === "PRIVATE" ? 1 : 2,
                                                   idempotencyKey: `task-${districtIndex}-${taskIndex}`,
                                                 });
       }

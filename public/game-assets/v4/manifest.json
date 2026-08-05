@@ -106,14 +106,6 @@
       ],
       "overlay": false
     },
-    "curb": {
-      "path": "tiles/curb.png",
-      "size": [
-        8,
-        8
-      ],
-      "overlay": true
-    },
     "pavement": {
       "path": "tiles/pavement.png",
       "size": [
@@ -185,6 +177,22 @@
         8
       ],
       "overlay": true
+    },
+    "path-pavers": {
+      "path": "tiles/path-pavers.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": false
+    },
+    "path-asphalt": {
+      "path": "tiles/path-asphalt.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": false
     }
   },
   "buildings": {
@@ -1132,7 +1140,8 @@
       ],
       "ruleIds": [
         "STANDARD",
-        "REQUIRES_COLLECTOR"
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
       ],
       "entrances": [
         {
@@ -1140,9 +1149,9 @@
           "offset": 3
         }
       ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service"
     },
     "commercial-parking-lot": {
       "label": "Городская парковка",
@@ -1178,7 +1187,8 @@
       ],
       "ruleIds": [
         "STANDARD",
-        "REQUIRES_COLLECTOR"
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
       ],
       "entrances": [
         {
@@ -1186,9 +1196,9 @@
           "offset": 3
         }
       ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "parking-service"
     },
     "commercial-shopping-plaza": {
       "label": "Торговая галерея",
@@ -2171,7 +2181,8 @@
       ],
       "ruleIds": [
         "STANDARD",
-        "REQUIRES_COLLECTOR"
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
       ],
       "entrances": [
         {
@@ -2179,9 +2190,9 @@
           "offset": 2
         }
       ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service"
     },
     "highrise-mixed-use-market": {
       "label": "Новостройка с магазинами",
@@ -2254,7 +2265,7 @@
         "buildings/house/commercial-highway-service-plaza/stage-4.png",
         "buildings/house/commercial-highway-service-plaza/stage-5.png"
       ],
-      "platform": "STONE",
+      "platform": "ASPHALT",
       "estimates": [
         6
       ],
@@ -2262,7 +2273,9 @@
         "commercial"
       ],
       "ruleIds": [
-        "STANDARD"
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
       ],
       "entrances": [
         {
@@ -2270,9 +2283,9 @@
           "offset": 4
         }
       ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service"
     }
   },
   "vehicles": {
@@ -3364,6 +3377,134 @@
       "anchorPx": [
         4,
         16
+      ]
+    },
+    "animal-fox-north": {
+      "label": "Animal Fox North",
+      "path": "props/animal-fox-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-fox-east": {
+      "label": "Animal Fox East",
+      "path": "props/animal-fox-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-fox-south": {
+      "label": "Animal Fox South",
+      "path": "props/animal-fox-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-fox-west": {
+      "label": "Animal Fox West",
+      "path": "props/animal-fox-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-deer-north": {
+      "label": "Animal Deer North",
+      "path": "props/animal-deer-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-deer-east": {
+      "label": "Animal Deer East",
+      "path": "props/animal-deer-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-deer-south": {
+      "label": "Animal Deer South",
+      "path": "props/animal-deer-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-deer-west": {
+      "label": "Animal Deer West",
+      "path": "props/animal-deer-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
       ]
     }
   },

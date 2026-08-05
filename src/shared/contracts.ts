@@ -152,6 +152,7 @@ export type TerrainCellDto = Cell & {
 export type SurfaceCellDto = Cell & {
   kind: SurfaceKind;
   orientation?: "H" | "V";
+  finish?: "EARTH" | "PAVERS" | "ASPHALT";
 };
 
 export type WorldFeatureDto = {

@@ -98,14 +98,14 @@ function edgeSprite(url: string, cell: Cell, direction: number): Sprite {
 function drawSurface(cell: SurfaceCellDto): Sprite {
   const p = position(cell);
   const url = cell.kind === "SIDEWALK" ? TILE_SPRITES.pavement!
-    : cell.kind === "PATH" ? TILE_SPRITES["path-brown"]!
+    : cell.kind === "PATH" ? TILE_SPRITES[cell.finish === "PAVERS" ? "path-pavers" : cell.finish === "ASPHALT" ? "path-asphalt" : "path-brown"]!
       : cell.kind === "DRIVEWAY" ? TILE_SPRITES.road!
         : cell.kind === "CROSSWALK" ? TILE_SPRITES[cell.orientation === "V" ? "crosswalk-vertical" : "crosswalk-horizontal"]!
           : `/game-assets/v4/${TERRAIN_SPRITES.DIRT![1]!}`;
   return sprite(url, p.x, p.y);
 }
 
-function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>): Container {
+function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, roads: Map<string, RoadCellDto>): Container {
   const group = new Container();
   const p = position(cell);
   group.addChild(sprite(TILE_SPRITES.road!, p.x, p.y));
@@ -115,17 +115,20 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>): Con
   }
   for (let direction = 0; direction < GRID_DIRECTIONS.length; direction += 1) {
     const config = GRID_DIRECTIONS[direction]!;
+    const neighborRoad = roads.get(key({ x: cell.x + config.x, y: cell.y + config.y }));
+    if (cell.structure === "ROAD" && neighborRoad?.structure === "BRIDGE") {
+      const portal = new Graphics();
+      if (direction === 0 || direction === 2) portal.rect(p.x + 1, p.y + (direction === 0 ? 0 : 6), 6, 2);
+      else portal.rect(p.x + (direction === 1 ? 6 : 0), p.y + 1, 2, 6);
+      portal.fill(0xb7c4c2);
+      group.addChild(portal);
+    }
     if (cell.mask & config.bit) continue;
     if (cell.structure === "BRIDGE") {
       const edgeUrl = (cell.mask & (2 | 8)) ? TILE_SPRITES["bridge-side-horizontal"]! : TILE_SPRITES["bridge-side-vertical"]!;
       group.addChild(edgeSprite(edgeUrl, cell, direction));
       continue;
     }
-    const neighbor = surfaces.get(key({ x: cell.x + config.x, y: cell.y + config.y }));
-    if (neighbor?.kind !== "SIDEWALK" && neighbor?.kind !== "SHOULDER") continue;
-    const crossingOpen = crossing?.kind === "CROSSWALK"
-      && (crossing.orientation === "H" ? direction === 1 || direction === 3 : direction === 0 || direction === 2);
-    if (!crossingOpen) group.addChild(edgeSprite(TILE_SPRITES.curb!, cell, direction));
   }
   return group;
 }
@@ -181,10 +184,10 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): C
   group.addChild(building);
   {
     const badgeColor = [0x9b72d2, 0xd6a13d, 0xf2c84b, 0x4fa5d7, 0x69ad67][task.stage - 1]!;
-    const badgeX = entry.spriteSize.width / 2 - 2;
-    const badgeY = -4;
-    group.addChild(new Graphics().circle(badgeX, badgeY, 4).fill(0x122126).stroke({ color: badgeColor, width: 1 }));
-    const label = new Text({ text: String(task.stage), style: new TextStyle({ fontFamily: "monospace", fontSize: 5, fontWeight: "700", fill: 0xffffff }) });
+    const badgeX = entry.spriteSize.width / 2 - 5;
+    const badgeY = -5;
+    group.addChild(new Graphics().rect(badgeX - 5, badgeY - 5, 10, 10).fill(0x0b171a).stroke({ color: badgeColor, width: 2 }));
+    const label = new Text({ text: String(task.stage), resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 7, fontWeight: "900", fill: 0xffffff }) });
     label.anchor.set(0.5); label.position.set(badgeX, badgeY); group.addChild(label);
   }
   let tooltip: Container | undefined;
@@ -195,7 +198,8 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): C
       tooltip.eventMode = "none";
       const tooltipText = new Text({
         text: `${task.title}\n${TASK_STATUS_LABEL[task.status]} · ${task.progress}%${details ? `\n${details.slice(0, 96)}${details.length > 96 ? "…" : ""}` : ""}`,
-        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 7, lineHeight: 9, fill: 0xeaf2ee, wordWrap: true, wordWrapWidth: 128 }),
+        resolution: 4,
+        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "600", lineHeight: 11, fill: 0xeaf2ee, wordWrap: true, wordWrapWidth: 144 }),
       });
       const padding = 5;
       const panel = new Graphics().roundRect(-padding, -padding, tooltipText.width + padding * 2, tooltipText.height + padding * 2, 3)
@@ -207,6 +211,23 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): C
     tooltip.visible = true;
   });
   group.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
+  group.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onSelect(task.id); });
+  return group;
+}
+
+function drawOverviewBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): Container {
+  const entry = getBuilding(task.buildingType);
+  const group = new Container();
+  group.eventMode = "static";
+  group.cursor = "pointer";
+  const colors = { HOUSE: 0xd0b27a, HIGHRISE: 0x6aa5b6, COMMERCIAL: 0xb9825e, CIVIC: 0xd2c8a8 } as const;
+  const width = Math.max(CELL_SIZE, entry.footprint.width * CELL_SIZE - 2);
+  const height = Math.max(CELL_SIZE, entry.footprint.height * CELL_SIZE - 2);
+  group.position.set(task.origin.x * CELL_SIZE + 1, task.origin.y * CELL_SIZE + 1);
+  group.hitArea = new Rectangle(0, 0, width, height);
+  group.addChild(new Graphics().rect(0, 0, width, height).fill(colors[entry.category]).stroke({ color: 0x263945, width: 2 }));
+  const progressWidth = Math.max(2, Math.floor((width - 2) * task.progress / 100));
+  group.addChild(new Graphics().rect(1, height - 3, progressWidth, 2).fill(task.status === "COMPLETED" ? 0x69ad67 : 0xf2c84b));
   group.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onSelect(task.id); });
   return group;
 }
@@ -270,8 +291,10 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   for (const chunk of chunks) {
     for (const task of chunk.tasks) {
       const entry = getBuilding(task.buildingType);
-      urls.add(entry.stages[task.stage - 1]!);
-      if (lod === "DETAIL") urls.add(assetUrl(PLATFORM_TILE[task.platformType]));
+      if (lod === "DETAIL") {
+        urls.add(entry.stages[task.stage - 1]!);
+        urls.add(assetUrl(PLATFORM_TILE[task.platformType]));
+      }
     }
     for (const feature of chunk.worldFeatures) {
       if (feature.assetKind === "PROP") {
@@ -300,6 +323,9 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
     for (const path of Object.values(TILE_SPRITES)) urls.add(path);
     for (const path of Object.values(VEHICLE_SPRITES).flatMap((axes) => [axes.horizontal, axes.vertical])) urls.add(path);
     for (const key of ["walker-east", "walker-west", "walker-south", "walker-north"] as const) urls.add(PROP_SPRITES[key]!);
+    for (const species of ["fox", "deer"] as const) for (const direction of ["north", "east", "south", "west"] as const) {
+      urls.add(PROP_SPRITES[`animal-${species}-${direction}`]!);
+    }
   }
   return [...urls];
 }
@@ -422,7 +448,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         previous?: Cell;
         progress: number;
         speed: number;
-        kind: "CAR" | "WALKER";
+        kind: "CAR" | "WALKER" | "ANIMAL";
         variant: string;
         phase: number;
         pauseMs: number;
@@ -467,9 +493,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       };
       const orientVehicle = (agent: MovingAgent): void => {
         if (agent.kind !== "CAR") return;
-        agent.view.scale.set(1);
-        if (agent.next.x < agent.current.x) agent.view.scale.x = -1;
-        if (agent.next.y < agent.current.y) agent.view.scale.y = -1;
+        agent.view.scale.set(1.08);
+        if (agent.next.x < agent.current.x) agent.view.scale.x = -1.08;
+        if (agent.next.y < agent.current.y) agent.view.scale.y = -1.08;
       };
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
@@ -507,9 +533,11 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
               ?? candidates.find((cell) => !agent.previous || key(cell) !== key(agent.previous))
               ?? agent.previous ?? agent.current;
             const horizontal = agent.next.x !== agent.current.x;
+            const direction = horizontal ? agent.next.x > agent.current.x ? "east" : "west" : agent.next.y > agent.current.y ? "south" : "north";
             const url = agent.kind === "CAR"
               ? VEHICLE_SPRITES[agent.variant]![horizontal ? "horizontal" : "vertical"]
-              : PROP_SPRITES[horizontal ? agent.next.x > agent.current.x ? "walker-east" : "walker-west" : agent.next.y > agent.current.y ? "walker-south" : "walker-north"];
+              : agent.kind === "ANIMAL" ? PROP_SPRITES[`animal-${agent.variant}-${direction}`]
+                : PROP_SPRITES[`walker-${direction}`];
             const texture = url ? Assets.get<Texture>(url) : undefined;
             if (texture) agent.view.texture = texture;
             orientVehicle(agent);
@@ -520,9 +548,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           const x = agent.current.x + (agent.next.x - agent.current.x) * agent.progress;
           const y = agent.current.y + (agent.next.y - agent.current.y) * agent.progress;
           const cycle = Math.sin((agent.progress + agent.phase) * Math.PI * 4);
-          const step = agent.kind === "WALKER" ? Math.abs(cycle) * 0.7 : Math.abs(cycle) * 0.14;
+          const step = agent.kind === "WALKER" ? Math.abs(cycle) * 0.7 : agent.kind === "ANIMAL" ? Math.abs(cycle) * 0.35 : Math.abs(cycle) * 0.14;
           agent.view.position.set(x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2 - step);
-          agent.view.rotation = agent.kind === "WALKER" ? cycle * 0.055 : cycle * 0.008;
+          agent.view.rotation = agent.kind === "WALKER" ? cycle * 0.055 : agent.kind === "ANIMAL" ? cycle * 0.025 : cycle * 0.008;
         }
       });
       const initialScale = !initialFocus
@@ -605,7 +633,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           for (const cell of chunk.terrain) terrain.addChild(terrainSprite(cell));
           const surfaceMap = new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
           for (const surface of chunk.surfaces) surfaces.addChild(drawSurface(surface));
-          for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap));
+          const roadMap = new Map(chunk.roads.map((road) => [key(road), road]));
+          for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap, roadMap));
         } else {
           const terrainGraphics = new Graphics();
           for (const cell of chunk.terrain) {
@@ -676,7 +705,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           drawPlatform,
           (task) => JSON.stringify([task.platformType, task.footprint]),
         );
-        reconcile(tasks, taskBuildingViews, buildingLayer, (task) => drawBuilding(task, onTaskSelect));
+        reconcile(tasks, taskBuildingViews, buildingLayer, (task) => currentLod === "DETAIL" ? drawBuilding(task, onTaskSelect) : drawOverviewBuilding(task, onTaskSelect), (task) => `${currentLod}:${JSON.stringify(task)}`);
         reconcile(currentLod === "DETAIL" ? decorations : new Map<string, ChunkDto["decorations"][number]>(), decorationViews, decorationLayer, drawDecoration);
 
         for (const [id, record] of featureViews) {
@@ -731,16 +760,18 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
               : GRID_DIRECTIONS.map((direction) => graph.get(key({ x: current.x + direction.x, y: current.y + direction.y }))).find((cell): cell is Cell => Boolean(cell));
             if (!next) continue;
             const horizontal = next.x !== current.x;
-            const variant = colors[(index / stride) % colors.length | 0] ?? "blue";
+            const variant = kind === "ANIMAL" ? (created % 2 === 0 ? "fox" : "deer") : colors[(index / stride) % colors.length | 0] ?? "blue";
+            const direction = horizontal ? next.x > current.x ? "east" : "west" : next.y > current.y ? "south" : "north";
             const url = kind === "CAR"
               ? VEHICLE_SPRITES[variant]![horizontal ? "horizontal" : "vertical"]
-              : PROP_SPRITES[horizontal ? next.x > current.x ? "walker-east" : "walker-west" : next.y > current.y ? "walker-south" : "walker-north"]!;
+              : kind === "ANIMAL" ? PROP_SPRITES[`animal-${variant}-${direction}`]!
+                : PROP_SPRITES[`walker-${direction}`]!;
             const view = sprite(url, current.x * CELL_SIZE + CELL_SIZE / 2, current.y * CELL_SIZE + CELL_SIZE / 2);
             view.anchor.set(0.5);
             agentLayer.addChild(view);
             const agent: MovingAgent = {
               view, graph, current, next, progress: (index % 7) / 7,
-              speed: kind === "CAR" ? 0.0022 + (index % 3) * 0.00016 : 0.00115 + (index % 5) * 0.00013,
+              speed: kind === "CAR" ? 0.0022 + (index % 3) * 0.00016 : kind === "ANIMAL" ? 0.00065 + (index % 3) * 0.00008 : 0.00115 + (index % 5) * 0.00013,
               kind, variant, phase: (index % 11) / 11, pauseMs: 0, steps: index % 17,
             };
             orientVehicle(agent);
@@ -769,6 +800,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           .filter(([cellKey, cell]) => !blockedWalkCells.has(cellKey) && !roads.has(cellKey) && ["GRASS", "MEADOW", "DIRT"].includes(cell.terrain))
           .map(([cellKey, cell]) => [cellKey, { x: cell.x, y: cell.y }]));
         const walkGraph = connectShortWalkGaps(baseWalkGraph, safeGround, 2);
+        const animalGraph = new Map([...terrain]
+          .filter(([cellKey, cell]) => !blockedWalkCells.has(cellKey) && !roads.has(cellKey) && !surfaces.has(cellKey) && ["MEADOW", "FOREST"].includes(cell.terrain))
+          .map(([cellKey, cell]) => [cellKey, { x: cell.x, y: cell.y }]));
         activeCrosswalks = new Set([...surfaces].filter(([, surface]) => surface.kind === "CROSSWALK").map(([cellKey]) => cellKey));
         activityCells = new Set<string>();
         for (const decoration of decorations.values()) {
@@ -781,9 +815,11 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         if (currentLod === "DETAIL") {
           addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR");
           addAgents(walkGraph, Math.min(24, Math.max(4, Math.floor(walkGraph.size / 120))), "WALKER");
+          addAgents(animalGraph, Math.min(4, Math.floor(animalGraph.size / 1800)), "ANIMAL");
         }
         host!.dataset.cars = String(movingAgents.filter((agent) => agent.kind === "CAR").length);
         host!.dataset.walkers = String(movingWalkers.length);
+        host!.dataset.animals = String(movingAgents.filter((agent) => agent.kind === "ANIMAL").length);
         host!.dataset.movementRebuilds = String(Number(host!.dataset.movementRebuilds ?? 0) + 1);
         host!.dataset.entityRebuilds = String(Number(host!.dataset.entityRebuilds ?? 0) + 1);
         if (reducedMotion) {

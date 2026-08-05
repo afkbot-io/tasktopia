@@ -28,11 +28,9 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
     await service.createDistrict(registered.user.countryId, {
                               cityId: city.id,
                               name: `District ${districtIndex + 1}`,
-                              // The workload below intentionally places parking facilities. Keep the
-                              // active district commercial so the scale test measures generator and
-                              // chunk performance instead of forcing support lots into a residential
-                              // zoning template that is designed to cap them.
-                              archetype: districtIndex === 0 ? "COMMERCIAL" : undefined,
+                              // The opt-in scale workload uses ordinary homes so catalog uniqueness
+                              // limits do not become an accidental performance-test dependency.
+                              archetype: districtIndex === 0 ? "PRIVATE" : undefined,
                               capacitySp: 26,
                               activate: districtIndex === 0,
                               idempotencyKey: `scale-district-${cityIndex}-${districtIndex}`,
@@ -41,9 +39,8 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
   for (let taskIndex = 0; taskIndex < tasksPerCity; taskIndex += 1) {
     await service.createTask(registered.user.countryId, {
                               cityId: city.id,
-                              title: `Parking task ${taskIndex + 1}`,
+                              title: `Home task ${taskIndex + 1}`,
                               estimate: 1,
-                              buildingHint: "commercial-parking-lot",
                               idempotencyKey: `scale-task-${cityIndex}-${taskIndex}`,
                             });
   }

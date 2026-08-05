@@ -114,6 +114,12 @@ export function entranceOutside(origin: Cell, entry: BuildingCatalogEntry, side:
   return { x: origin.x + entry.footprint.width, y: origin.y + offset };
 }
 
+function pathFinish(id: string): NonNullable<SurfaceCellDto["finish"]> {
+  let hash = 0;
+  for (const character of id) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return (["EARTH", "PAVERS", "ASPHALT"] as const)[hash % 3]!;
+}
+
 export function buildSurfaceMap(input: {
   roads: Map<string, RoadCellDto>;
   cities: CityDto[];
@@ -161,35 +167,39 @@ export function buildSurfaceMap(input: {
   // assigned. Rear residential rows can therefore reuse one stable courtyard
   // path instead of asking the road generator for another street.
   for (const district of input.districts) {
+    const finish = pathFinish(district.id);
     for (const lot of district.lots) {
       for (const cell of lot.sharedAccess ?? []) {
         const key = cellKey(cell);
         if (!input.roads.has(key) && !blocked.has(key) && input.isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
-          surfaces.set(key, { ...cell, kind: "PATH" });
+          surfaces.set(key, { ...cell, kind: "PATH", finish });
         }
       }
     }
   }
 
   for (const task of input.tasks) {
+    const finish = pathFinish(task.districtId);
     for (const cell of task.accessPath) {
       const key = cellKey(cell);
       if (!input.roads.has(key) && !blocked.has(key) && surfaces.get(key)?.kind !== "SIDEWALK") {
-        surfaces.set(key, { ...cell, kind: task.accessKind });
+        surfaces.set(key, { ...cell, kind: task.accessKind, finish: task.accessKind === "PATH" ? finish : undefined });
       }
     }
   }
   for (const feature of input.features) {
+    const finish = pathFinish(feature.districtId ?? feature.cityId ?? feature.id);
     if (feature.assetKind === "AREA") {
       for (const cell of feature.footprint) {
         const key = cellKey(cell);
-        if (!input.roads.has(key)) surfaces.set(key, { ...cell, kind: "PATH" });
+        if (!input.roads.has(key)) surfaces.set(key, { ...cell, kind: "PATH", finish });
       }
     }
     for (const cell of feature.accessPath) {
       const key = cellKey(cell);
       if (!input.roads.has(key) && !blocked.has(key) && surfaces.get(key)?.kind !== "SIDEWALK") {
-        surfaces.set(key, { ...cell, kind: feature.kind === "PARK" || feature.kind === "GROVE" ? "PATH" : "DRIVEWAY" });
+        const kind = feature.kind === "PARK" || feature.kind === "GROVE" ? "PATH" : "DRIVEWAY";
+        surfaces.set(key, { ...cell, kind, finish: kind === "PATH" ? finish : undefined });
       }
     }
   }

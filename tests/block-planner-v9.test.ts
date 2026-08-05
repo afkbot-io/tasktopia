@@ -117,10 +117,11 @@ describe("V9 block city generation", () => {
                       cityId: city.id, name: "Общественный центр", archetype: "CIVIC", capacitySp: 10, activate: true, idempotencyKey: "district",
                     });
     const beforeBounds = boundsOf(district.cells);
-    for (let index = 0; index < 5; index += 1) {
+    const hints = ["shop-supermarket", "shop-bakery-long", "commercial-parking-lot", "commercial-corner-cafe", "commercial-pharmacy"];
+    for (let index = 0; index < hints.length; index += 1) {
       await service.createTask(registered.user.countryId, {
-                                        cityId: city.id, districtId: district.id, title: `Общественная парковка ${index + 1}`,
-                                        estimate: 1, buildingHint: "commercial-parking-lot", idempotencyKey: `task-${index}`,
+                                        cityId: city.id, districtId: district.id, title: `Общественный объект ${index + 1}`,
+                                        estimate: 2, buildingHint: hints[index], idempotencyKey: `task-${index}`,
                                       });
     }
     const updated = (await service.listDistricts(registered.user.countryId, city.id))[0]!;
