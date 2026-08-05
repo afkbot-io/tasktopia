@@ -5,10 +5,14 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (typeof init?.body === "string" && init.body.length > 0 && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
   const response = await fetch(path, {
     credentials: "include",
     ...init,
-    headers: { "content-type": "application/json", ...init?.headers },
+    headers,
   });
   const raw = await response.text();
   let payload: { message?: string } = {};

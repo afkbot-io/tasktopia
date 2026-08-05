@@ -99,6 +99,9 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("button", { name: "Скопировать ключ" }).click();
   await expect(page.getByRole("button", { name: "Ключ скопирован" })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^ttp_mcp_/);
+  await page.getByRole("button", { name: "Отозвать", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Отозвать", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Отозван", { exact: true }).last()).toBeVisible();
   const settingsHeader = await page.locator(".settings-header").boundingBox();
   expect(settingsHeader?.y).toBeGreaterThanOrEqual(0);
   await page.getByRole("button", { name: "Профиль" }).click();
@@ -123,7 +126,9 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("button", { name: "MCP-интеграции" }).click();
   await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
   await capture(page, "screenshots/release-mcp-mobile.png");
-  await page.getByRole("button", { name: "Закрыть" }).click();
+  await page.getByRole("button", { name: "Профиль" }).click();
+  await page.getByRole("button", { name: "Выйти из аккаунта" }).click();
+  await expect(page.getByRole("button", { name: "Открыть страну" })).toBeVisible();
   expect(consoleErrors).toEqual([]);
 });
 

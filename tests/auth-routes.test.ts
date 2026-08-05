@@ -31,6 +31,21 @@ describe("authentication HTTP boundary", () => {
     expect(response.json()).toMatchObject({ status: "ok", version: APP_VERSION });
   });
 
+  it("does not expose framework parser errors for an empty JSON request", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/auth/logout",
+      headers: { "content-type": "application/json" },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      error: "REQUEST_FAILED",
+      message: "Некорректный запрос. Проверьте введённые данные",
+    });
+    expect(response.body).not.toContain("Body cannot be empty");
+  });
+
   it("registers, restores the country session, logs out, and logs in again", async () => {
     const registered = await app.inject({
       method: "POST",

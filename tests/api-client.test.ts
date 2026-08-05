@@ -25,4 +25,24 @@ describe("client API errors", () => {
       new ApiError(400, "Некорректный запрос. Проверьте введённые данные"),
     );
   });
+
+  it("does not declare an empty DELETE request as JSON", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api("/api/countries/country-1/members/user-1", { method: "DELETE" });
+
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(new Headers(request.headers).has("content-type")).toBe(false);
+  });
+
+  it("declares a serialized JSON string body as JSON", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api("/api/countries", { method: "POST", body: JSON.stringify({ name: "Project" }) });
+
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(new Headers(request.headers).get("content-type")).toBe("application/json");
+  });
 });
