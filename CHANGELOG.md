@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+### Fixed
+
+- Production update script теперь повторяет health-запрос при `connection refused/reset` во время атомарной замены контейнера и не сообщает ложный провал успешного релиза.
+
 ## 1.1.1
 
 ### Performance
