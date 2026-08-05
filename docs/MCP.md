@@ -4,6 +4,8 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 Самодостаточная публичная инструкция, которую можно передать ИИ без доступа к репозиторию: [https://tasktopia.online/ai.md](https://tasktopia.online/ai.md).
 
+Готовый Codex skill для выбора проектного контекста, постановки задач и ведения прогресса: [https://tasktopia.online/skills/tasktopia-progress/SKILL.md](https://tasktopia.online/skills/tasktopia-progress/SKILL.md). Установка и правила вызова приведены в публичной AI-инструкции.
+
 ## Быстрое подключение
 
 1. В Tasktopia откройте кнопку «MCP-интеграции» или «Подключить MCP».

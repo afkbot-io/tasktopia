@@ -8,7 +8,7 @@ const scopeLabels: Record<McpScope, string> = {
 };
 
 type SettingsSection = "mcp" | "account";
-type CopyTarget = "endpoint" | "guide" | "secret" | "example";
+type CopyTarget = "endpoint" | "guide" | "skill" | "secret" | "example";
 
 export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChanged, onLogout }: {
   bootstrap: BootstrapDto;
@@ -34,6 +34,7 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
 
   const endpoint = `${location.origin}/mcp`;
   const aiGuide = `${location.origin}/ai.md`;
+  const progressSkill = `${location.origin}/skills/tasktopia-progress/SKILL.md`;
   const connectionExample = `URL: ${endpoint}\nAuthorization: Bearer ВАШ_КЛЮЧ\nTransport: Streamable HTTP`;
   const load = useCallback(() => api<McpTokenDto[]>("/api/tokens").then(setTokens), []);
 
@@ -143,10 +144,12 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
               <button type="button" onClick={() => void copy(endpoint, "endpoint")}>{copyTarget === "endpoint" ? "Скопировано" : "Копировать URL"}</button>
             </div>
             <div className="mcp-guide-card">
-              <div><strong>Документация для ИИ</strong><span>Готовая настройка, инструменты, права и безопасный сценарий работы.</span><code>{aiGuide}</code></div>
+              <div><strong>Документация и skill для ИИ</strong><span>Подключение, модель проекта и готовый процесс ведения прогресса.</span><code>{aiGuide}</code><code>{progressSkill}</code></div>
               <div className="mcp-guide-actions">
                 <a href={aiGuide} target="_blank" rel="noreferrer">Открыть ai.md</a>
                 <button type="button" onClick={() => void copy(aiGuide, "guide")}>{copyTarget === "guide" ? "Ссылка скопирована" : "Копировать ссылку"}</button>
+                <a href={progressSkill} target="_blank" rel="noreferrer">Открыть skill</a>
+                <button type="button" onClick={() => void copy(progressSkill, "skill")}>{copyTarget === "skill" ? "Skill скопирован" : "Копировать skill"}</button>
               </div>
             </div>
             <ol className="mcp-steps">

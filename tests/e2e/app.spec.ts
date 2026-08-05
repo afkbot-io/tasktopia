@@ -14,6 +14,10 @@ test("public AI integration guide is directly accessible", async ({ request }) =
   expect(guide).toContain('"Authorization": "Bearer <PERSONAL_MCP_KEY>"');
   expect(guide).toContain("`country.get_current`");
   expect(guide).toContain("`task.report_progress`");
+  const skill = await request.get("/skills/tasktopia-progress/SKILL.md");
+  expect(skill.ok()).toBe(true);
+  expect(skill.headers()["content-type"]).toContain("text/markdown");
+  expect(await skill.text()).toContain("name: tasktopia-progress");
   const favicon = await request.get("/favicon.svg");
   expect(favicon.ok()).toBe(true);
   expect(favicon.headers()["content-type"]).toContain("image/svg+xml");
@@ -101,11 +105,16 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page.getByRole("heading", { name: "Аккаунт и интеграции" })).toBeVisible();
   const endpoint = `${new URL(page.url()).origin}/mcp`;
   const aiGuide = `${new URL(page.url()).origin}/ai.md`;
+  const progressSkill = `${new URL(page.url()).origin}/skills/tasktopia-progress/SKILL.md`;
   await expect(page.getByText(endpoint, { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Открыть ai.md" })).toHaveAttribute("href", aiGuide);
+  await expect(page.getByRole("link", { name: "Открыть skill" })).toHaveAttribute("href", progressSkill);
   await page.getByRole("button", { name: "Копировать ссылку" }).click();
   await expect(page.getByRole("button", { name: "Ссылка скопирована" })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(aiGuide);
+  await page.getByRole("button", { name: "Копировать skill" }).click();
+  await expect(page.getByRole("button", { name: "Skill скопирован" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(progressSkill);
   await expect(page.getByText("Streamable HTTP", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Копировать URL" }).click();
   await expect(page.getByRole("button", { name: "Скопировано" })).toBeVisible();

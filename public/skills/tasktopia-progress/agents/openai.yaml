@@ -1,0 +1,12 @@
+interface:
+  display_name: "Tasktopia: прогресс задач"
+  short_description: "Ведение задач и прогресса через Tasktopia MCP"
+  default_prompt: "Используй $tasktopia-progress, чтобы уточнить контекст и организовать работу с задачами и прогрессом в Tasktopia."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "tasktopia"
+      description: "Tasktopia MCP для структуры проекта, задач и прогресса"
+      transport: "streamable_http"
+      url: "https://tasktopia.online/mcp"

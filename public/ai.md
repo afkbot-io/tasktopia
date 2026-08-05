@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.3.2
+Version: 1.3.3
 Last updated: 2026-08-05  
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -10,6 +10,55 @@ contain districts, and every task is represented by a building.
 
 This document is intended for AI agents and developers integrating through the
 Model Context Protocol (MCP).
+
+## Work model: what every entity means
+
+Tasktopia is not only a visualization. Its hierarchy is the working context an
+AI must preserve:
+
+| Entity | Project-management meaning | Use it for |
+| --- | --- | --- |
+| Country | An independent project, product, or workspace | The top-level goal, access boundary, and portfolio context |
+| City | A long-lived project association, product direction, epic, or subproject | Grouping work that shares one stable domain and outcome |
+| District | A sprint, iteration, milestone, phase, or bounded work package | A goal and capacity for the current delivery cycle |
+| Task/building | One concrete, verifiable unit of work | An outcome with acceptance criteria, estimate, owner, and progress |
+
+Do not create a city for one task, use a district as a label, or move work into
+an arbitrary entity because its ID is convenient. When the country, city, or
+district is ambiguous, read the available hierarchy and ask the user before a
+write. A city is the association between a task stream and its project
+direction; it is normally longer-lived than a sprint.
+
+## Install the progress-management skill
+
+A production-ready Codex skill is published at:
+
+`https://tasktopia.online/skills/tasktopia-progress/SKILL.md`
+
+It adds context resolution, mandatory clarification rules, task-writing
+templates, evidence-based progress reporting, blocking workflow, safe status
+transitions, and completion gates. Install it globally for the current user:
+
+```bash
+mkdir -p ~/.codex/skills/tasktopia-progress/agents
+curl -fsS https://tasktopia.online/skills/tasktopia-progress/SKILL.md \
+  -o ~/.codex/skills/tasktopia-progress/SKILL.md
+curl -fsS https://tasktopia.online/skills/tasktopia-progress/agents/openai.yaml \
+  -o ~/.codex/skills/tasktopia-progress/agents/openai.yaml
+```
+
+Start a new Codex task after installation so the skill catalog is refreshed.
+Invoke it explicitly when needed:
+
+```text
+Используй $tasktopia-progress. Проверь текущий проект, найди нужное направление
+и итерацию, затем поставь задачу и веди её прогресс по фактическим результатам.
+```
+
+The skill does not contain a personal key. Configure the MCP endpoint and
+Bearer key separately as described below. Other agents can use the same
+`SKILL.md` as a system/workflow instruction even if they do not support the
+Codex skill directory convention.
 
 ## Quick start
 
@@ -61,8 +110,8 @@ A key can contain any combination of these scopes:
 | Scope | Allows |
 | --- | --- |
 | `country:read` | Read the selected country and list available countries |
-| `cities:write` | Create cities |
-| `districts:write` | Create, activate, and complete districts |
+| `cities:write` | Create and rename cities |
+| `districts:write` | Create, rename, activate, and complete districts |
 | `tasks:read` | Read tasks and task details |
 | `tasks:write` | Create, update, report progress, and assign tasks |
 | `comments:write` | Add task comments |
@@ -82,6 +131,26 @@ Follow this sequence unless the user explicitly asks for something else:
 5. Call `task.list` and `task.get` before updating an existing task.
 6. Make the smallest requested change.
 7. Re-read the changed entity and report the result to the user.
+
+Before creating work, ask only for information that remains genuinely
+ambiguous. A compact confirmation should cover: country/project,
+city/direction, district/iteration, expected task outcome, acceptance evidence,
+estimate, and assignee when assignment matters. If exactly one matching context
+exists, the agent may use it after stating the assumption.
+
+For progress-centric operation:
+
+1. Read `task.get` before every update.
+2. Use `task.report_progress` after a measurable checkpoint, not on a timer.
+3. Base the percentage on completed acceptance criteria or verified artifacts,
+   never on effort spent.
+4. Record blockers with `task.add_comment` without inflating progress.
+5. Enter `TESTING` only after implementation is complete and a verification
+   method exists.
+6. Enter `COMPLETED` at 100% only after every acceptance criterion is verified.
+
+Exact progress ranges are `PLANNING = 0`, `STARTED = 0`, `IN_PROGRESS = 1–79`,
+`TESTING = 80–99`, and `COMPLETED = 100`.
 
 For every retried mutation, reuse the same `idempotencyKey`. Generate a new
 idempotency key for a new user intent. Never place the personal MCP key in task
@@ -407,4 +476,5 @@ still necessary, reuse the original `idempotencyKey`.
 
 - Application: https://tasktopia.online
 - MCP guide: https://tasktopia.online/ai.md
+- Progress skill: https://tasktopia.online/skills/tasktopia-progress/SKILL.md
 - MCP endpoint: https://tasktopia.online/mcp

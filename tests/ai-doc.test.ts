@@ -39,4 +39,21 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("`tasktopia://catalog/buildings`");
     for (const tool of documentedTools) expect(guide).toContain(`\`${tool}\``);
   });
+
+  it("publishes an installable progress skill with hierarchy and completion safeguards", async () => {
+    const guide = await readFile(new URL("../public/ai.md", import.meta.url), "utf8");
+    const skill = await readFile(new URL("../public/skills/tasktopia-progress/SKILL.md", import.meta.url), "utf8");
+
+    expect(guide).toContain("https://tasktopia.online/skills/tasktopia-progress/SKILL.md");
+    expect(guide).toContain("$tasktopia-progress");
+    expect(skill).toContain("name: tasktopia-progress");
+    expect(skill).toContain("Страна | Отдельный проект");
+    expect(skill).toContain("Город | Долгоживущее направление");
+    expect(skill).toContain("Район | Спринт");
+    expect(skill).toContain("`task.report_progress`");
+    expect(skill).toContain("`TESTING → IN_PROGRESS`");
+    expect(skill).toContain("Готово: <конкретный результат");
+    expect(skill).not.toContain("TODO");
+    for (const tool of documentedTools) expect(skill).toContain(`\`${tool}\``);
+  });
 });
