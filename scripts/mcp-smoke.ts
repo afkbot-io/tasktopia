@@ -1,10 +1,12 @@
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 
 const baseUrl = process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3000";
+const smokeEmail = process.env.SMOKE_EMAIL ?? "demo@tasktopia.local";
+const smokePassword = process.env.SMOKE_PASSWORD ?? "tasktopia-demo";
 const login = await fetch(`${baseUrl}/api/auth/login`, {
   method: "POST",
   headers: { "content-type": "application/json" },
-  body: JSON.stringify({ email: "demo@tasktopia.local", password: "tasktopia-demo" }),
+  body: JSON.stringify({ email: smokeEmail, password: smokePassword }),
 });
 if (!login.ok) throw new Error(`Login failed: ${login.status} ${await login.text()}`);
 const cookie = login.headers.get("set-cookie")?.split(";")[0];

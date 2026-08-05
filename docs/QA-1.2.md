@@ -54,7 +54,9 @@ unit/E2E.
 ```bash
 curl -fsS https://tasktopia.online/health
 curl -fsS https://tasktopia.online/ai.md | head
-npm run smoke:mcp
+SMOKE_BASE_URL=https://tasktopia.online \
+SMOKE_EMAIL='<выделенный-smoke-account>' \
+SMOKE_PASSWORD='<пароль>' npm run smoke:mcp
 ```
 
 После обновления дополнительно проверить `docker compose logs --tail=100 app`,
