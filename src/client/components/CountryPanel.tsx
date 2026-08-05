@@ -18,6 +18,7 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
   const [inviteRole, setInviteRole] = useState<Extract<CountryRole, "MEMBER" | "VIEWER">>("MEMBER");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [regenerationNotice, setRegenerationNotice] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const loadMembers = useCallback(() => api<CountryMemberDto[]>(`/api/countries/${bootstrap.country.id}/members`).then(setMembers), [bootstrap.country.id]);
@@ -70,6 +71,16 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
     onBootstrap(await api<BootstrapDto>(`/api/countries/${result.activeCountryId}/select`, { method: "POST" }));
     onClose();
   });
+  const regenerateCountry = () => void safely(async () => {
+    const confirmation = window.prompt(`Страна будет полностью перестроена, но города, районы, задачи, статусы и история сохранятся. Введите точное название:\n${bootstrap.country.name}`);
+    if (confirmation == null) return;
+    setRegenerationNotice("");
+    const result = await api<{ cities: number; districts: number; tasks: number }>(`/api/countries/${bootstrap.country.id}/regenerate`, {
+      method: "POST", json: { confirmName: confirmation, idempotencyKey: crypto.randomUUID() },
+    });
+    await reloadBootstrap();
+    setRegenerationNotice(`Мир пересобран: ${result.cities} городов, ${result.districts} районов, ${result.tasks} зданий.`);
+  });
 
   return <div className="fixed inset-0 z-50 grid place-items-center bg-[#020607]/85 p-0 backdrop-blur-md sm:p-4" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
     <section ref={panelRef} className="country-government-dialog" role="dialog" aria-modal="true" aria-labelledby="country-dialog-title">
@@ -95,6 +106,12 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
             <section className="country-government-card country-facts">
               <h3>Сведения</h3><dl><div><dt>Ваша роль</dt><dd>{roleLabel[bootstrap.countryRole]}</dd></div><div><dt>Участников правительства</dt><dd>{members.length}</dd></div><div><dt>Городов</dt><dd>{bootstrap.stats.cities}</dd></div></dl>
             </section>
+            {bootstrap.countryRole === "OWNER" && <section className="country-government-card country-regeneration-card">
+              <h3>Перегенерация мира</h3>
+              <p>Создаёт новый рельеф, дороги, районы, здания и окружение. Названия, ID, статусы, ответственные, комментарии и хроника задач сохраняются.</p>
+              <Button variant="secondary" className="mt-4" onClick={regenerateCountry} disabled={pending}>{pending ? "Перестраиваем мир…" : "Перегенерировать мир"}</Button>
+              {regenerationNotice && <p className="country-regeneration-success" role="status">{regenerationNotice}</p>}
+            </section>}
             {bootstrap.countryRole === "OWNER" && bootstrap.countries.length > 1 && <Button variant="danger" onClick={deleteCountry} disabled={pending}>Удалить страну</Button>}
           </div>
           <section className="country-government-card overflow-hidden p-0">

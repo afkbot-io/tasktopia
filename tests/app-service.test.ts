@@ -61,6 +61,33 @@ describe("Tasktopia square-world application service", () => {
     expect(await service.renameTask(countryId, { taskId: task.id, title: "New Task", actor: "Tester", idempotencyKey: "rename-task" })).toEqual(renamedTask);
   });
 
+  it("atomically regenerates spatial data while preserving task identity and history", async () => {
+    const city = await service.createCity(countryId, { name: "Renewable City", idempotencyKey: "regen-city" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Renewable District", archetype: "PRIVATE", activate: true, idempotencyKey: "regen-district" });
+    const greenFeatures = await service.listWorldFeatures(countryId);
+    expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
+    expect(greenFeatures.some((feature) => ["bench-horizontal", "picnic-table", "playground-small", "trash-bin", "streetlamp"].includes(feature.assetKey))).toBe(true);
+    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Preserved work", description: "Keep this", estimate: 1, buildingHint: "house-cottage", idempotencyKey: "regen-task" });
+    await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", comment: "History survives", actor: "Tester", idempotencyKey: "regen-start" });
+    const seedBefore = Number((await db.prepare("SELECT seed FROM countries WHERE id = ?").get(countryId) as { seed: number }).seed);
+    const geometryBefore = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
+
+    const result = await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world" });
+    expect(await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world" })).toEqual(result);
+    expect(result).toMatchObject({ regenerated: true, countryId, cities: 1, districts: 1, tasks: 1 });
+    expect(result.seed).not.toBe(seedBefore);
+    expect((await service.listCities(countryId))[0]?.id).toBe(city.id);
+    expect((await service.listDistricts(countryId))[0]?.id).toBe(district.id);
+    const preserved = await service.getTask(countryId, task.id);
+    expect(preserved).toMatchObject({ id: task.id, title: "Preserved work", description: "Keep this", status: "STARTED" });
+    expect(preserved.comments?.map((comment) => comment.body)).toContain("History survives");
+    expect(preserved.events?.some((event) => event.type === "STATUS_CHANGED")).toBe(true);
+    const geometryAfter = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
+    expect(geometryAfter).not.toBe(geometryBefore);
+    expect(await db.prepare("SELECT 1 FROM countries WHERE name LIKE 'regeneration-%'").get()).toBeUndefined();
+    expect((await service.listEvents(countryId)).filter((event) => event.type === "country.regenerated")).toHaveLength(1);
+  }, 30_000);
+
   it("creates a planned district and advances a sprite building through five stages", async () => {
     const city = await service.createCity(countryId, { name: "Southport", idempotencyKey: "c1" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Core", archetype: "MIXED_URBAN", activate: true, idempotencyKey: "d1" });
@@ -229,7 +256,7 @@ describe("Tasktopia square-world application service", () => {
       expect(events).toEqual([]);
     });
     expect(events).toEqual(["city.created"]);
-  });
+  }, 15_000);
 
   it("connects a second city to the existing national road component", async () => {
     const cities = await Promise.all(Array.from({ length: 2 }, (_, index) => service.createCity(countryId, { name: `City ${index}`, idempotencyKey: `city-${index}` })));

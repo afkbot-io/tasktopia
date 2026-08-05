@@ -54,10 +54,10 @@ describe("procedural decoration footprints", () => {
     const boats = decorations.filter((item) => item.kind.startsWith("boat-"));
     const fishers = decorations.filter((item) => item.kind.startsWith("fisher-"));
     const residents = decorations.filter((item) => item.kind.startsWith("resident-"));
-    expect(boats.length).toBeLessThanOrEqual(8);
-    expect(fishers.length).toBeLessThanOrEqual(5);
-    expect(residents.length).toBeLessThanOrEqual(5);
-    expect(boats.length + fishers.length + residents.length).toBeLessThanOrEqual(12);
+    expect(boats.length).toBeLessThanOrEqual(3);
+    expect(fishers.length).toBeLessThanOrEqual(2);
+    expect(residents.length).toBeLessThanOrEqual(4);
+    expect(boats.length + fishers.length + residents.length).toBeLessThanOrEqual(9);
   });
 
   it("never places fishers next to a road even when the road follows the shore", () => {

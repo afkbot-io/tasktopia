@@ -361,6 +361,130 @@ export class AppService {
     return { id: String(row.id), name: String(row.name), worldVersion: Number(row.world_version), generatorVersion: "square-v7", createdAt: String(row.created_at) };
   }
 
+  /**
+   * Rebuild all spatial data in an isolated temporary country, then copy the
+   * finished geometry over in one transaction. Product identities and work
+   * history never leave their original rows; a failed generation rolls back
+   * without exposing a half-built world.
+   */
+  async regenerateCountry(countryId: string, input: { confirmName: string; idempotencyKey: string }): Promise<{
+    regenerated: true; countryId: string; seed: number; cities: number; districts: number; tasks: number;
+  }> {
+    return await this.mutate(countryId, "country.regenerate.v1", input.idempotencyKey, input, async () => {
+      const country = await this.countryRow(countryId);
+      if (input.confirmName.trim() !== String(country.name)) {
+        throw new DomainError("CONFIRMATION_MISMATCH", "Для перегенерации укажите точное текущее название страны");
+      }
+      const cities = await this.listCities(countryId);
+      const districts = await this.listDistricts(countryId);
+      const tasks = await this.listTasks(countryId);
+      const oldBounds = cities.length > 0 ? cities.map((city) => city.bounds).reduce(unionRect) : undefined;
+      const seedBytes = createHash("sha256").update(`${countryId}:${input.idempotencyKey}:${now()}`).digest();
+      let seed = seedBytes.readUInt32LE(0) & 0x7fff_ffff;
+      if (seed === Number(country.seed)) seed = (seed + 1) & 0x7fff_ffff;
+      const temporaryCountryId = randomUUID();
+      await this.db.prepare(`INSERT INTO countries (id, user_id, name, seed, world_version, created_at)
+        VALUES (?, ?, ?, ?, 1, ?)`).run(temporaryCountryId, country.user_id, `regeneration-${temporaryCountryId}`, seed, now());
+
+      // Suppress realtime publication for the disposable build. All nested
+      // operations still use the production generator and its invariants.
+      const generator = new AppService(this.db);
+      const cityMap = new Map<string, string>();
+      const districtMap = new Map<string, string>();
+      const taskMap = new Map<string, string>();
+      const districtsByCity = new Map<string, DistrictDto[]>();
+      const tasksByDistrict = new Map<string, TaskDto[]>();
+      for (const district of districts) districtsByCity.set(district.cityId, [...districtsByCity.get(district.cityId) ?? [], district]);
+      for (const task of tasks) tasksByDistrict.set(task.districtId, [...tasksByDistrict.get(task.districtId) ?? [], task]);
+      for (const city of cities) {
+        const generated = await generator.createCity(temporaryCountryId, {
+          name: city.name, description: city.description, morphology: city.morphology,
+          idempotencyKey: `regenerate-city:${city.id}`,
+        });
+        cityMap.set(city.id, generated.id);
+        for (const district of districtsByCity.get(city.id) ?? []) {
+          const generatedDistrict = await generator.createDistrict(temporaryCountryId, {
+            cityId: generated.id, name: district.name, goal: district.goal, capacitySp: district.capacitySp,
+            activate: district.status === "ACTIVE", archetype: district.archetype,
+            idempotencyKey: `regenerate-district:${district.id}`,
+          });
+          districtMap.set(district.id, generatedDistrict.id);
+          for (const task of tasksByDistrict.get(district.id) ?? []) {
+            const generatedTask = await generator.createTask(temporaryCountryId, {
+              cityId: generated.id, districtId: generatedDistrict.id, title: task.title,
+              description: task.description, estimate: task.estimate, priority: task.priority,
+              dueAt: task.dueAt ?? undefined, buildingHint: task.buildingType,
+              idempotencyKey: `regenerate-task:${task.id}`,
+            });
+            taskMap.set(task.id, generatedTask.id);
+          }
+        }
+      }
+
+      const generatedCities = new Map((await generator.listCities(temporaryCountryId)).map((city) => [city.id, city]));
+      const generatedDistricts = new Map((await generator.listDistricts(temporaryCountryId)).map((district) => [district.id, district]));
+      const generatedTasks = new Map((await generator.listTasks(temporaryCountryId)).map((task) => [task.id, task]));
+      const reverseTaskMap = new Map([...taskMap].map(([original, generated]) => [generated, original]));
+      const originalCityByGenerated = new Map([...cityMap].map(([original, generated]) => [generated, original]));
+      const originalDistrictByGenerated = new Map([...districtMap].map(([original, generated]) => [generated, original]));
+      for (const city of cities) {
+        const generated = generatedCities.get(cityMap.get(city.id)!);
+        if (!generated) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию города");
+        await this.db.prepare(`UPDATE cities_v3 SET center_x = ?, center_y = ?, bounds_json = ?, style_id = ? WHERE id = ?`)
+          .run(generated.center.x, generated.center.y, JSON.stringify(generated.bounds), generated.styleId, city.id);
+      }
+      for (const district of districts) {
+        const generated = generatedDistricts.get(districtMap.get(district.id)!);
+        if (!generated) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию района");
+        const lots = generated.lots.map((lot) => ({ ...lot, taskId: lot.taskId ? reverseTaskMap.get(lot.taskId) ?? null : null }));
+        await this.db.prepare(`UPDATE districts_v3 SET cells_json = ?, lots_json = ?, growth_direction = ?, color = ? WHERE id = ?`)
+          .run(JSON.stringify(generated.cells), JSON.stringify(lots), generated.growthDirection, generated.color, district.id);
+      }
+      for (const task of tasks) {
+        const generated = generatedTasks.get(taskMap.get(task.id)!);
+        if (!generated) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию задачи");
+        await this.db.prepare(`UPDATE tasks_v3 SET platform_type = ?, origin_x = ?, origin_y = ?, footprint_json = ?,
+          entrance_x = ?, entrance_y = ?, access_json = ?, access_kind = ? WHERE id = ?`).run(
+          generated.platformType, generated.origin.x, generated.origin.y, JSON.stringify(generated.footprint),
+          generated.entrance.x, generated.entrance.y, JSON.stringify(generated.accessPath), generated.accessKind, task.id,
+        );
+      }
+
+      await this.db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(countryId);
+      await this.db.prepare(`INSERT INTO roads_v3 (country_id, x, y, mask, structure, road_class)
+        SELECT ?, x, y, mask, structure, road_class FROM roads_v3 WHERE country_id = ?`).run(countryId, temporaryCountryId);
+      await this.db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(countryId);
+      const generatedFeatures = await generator.listWorldFeatures(temporaryCountryId);
+      const featureMap = new Map<string, string>();
+      let pending = [...generatedFeatures];
+      while (pending.length > 0) {
+        const ready = pending.filter((feature) => !feature.parentFeatureId || featureMap.has(feature.parentFeatureId));
+        if (ready.length === 0) throw new DomainError("REGENERATION_FAILED", "Нарушена иерархия объектов окружения");
+        for (const feature of ready) {
+          const copied = await this.insertWorldFeature(countryId, {
+            cityId: feature.cityId ? originalCityByGenerated.get(feature.cityId) ?? null : null,
+            districtId: feature.districtId ? originalDistrictByGenerated.get(feature.districtId) ?? null : null,
+            parentFeatureId: feature.parentFeatureId ? featureMap.get(feature.parentFeatureId) ?? null : null,
+            kind: feature.kind, assetKind: feature.assetKind, assetKey: feature.assetKey,
+            origin: feature.origin, footprint: feature.footprint, orientation: feature.orientation, accessPath: feature.accessPath,
+          });
+          featureMap.set(feature.id, copied.id);
+        }
+        const copiedIds = new Set(ready.map((feature) => feature.id));
+        pending = pending.filter((feature) => !copiedIds.has(feature.id));
+      }
+      await this.db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(seed, countryId);
+      await this.db.prepare("DELETE FROM countries WHERE id = ?").run(temporaryCountryId);
+      this.roadCache.delete(countryId);
+      this.surfaceCache.delete(countryId);
+      const rebuiltCities = await this.listCities(countryId);
+      const newBounds = rebuiltCities.length > 0 ? rebuiltCities.map((city) => city.bounds).reduce(unionRect) : undefined;
+      const affectedBounds = oldBounds && newBounds ? unionRect(oldBounds, newBounds) : oldBounds ?? newBounds;
+      const data = { regenerated: true as const, countryId, seed, cities: cities.length, districts: districts.length, tasks: tasks.length };
+      return { data, eventType: "country.regenerated", eventPayload: { ...data, ...(affectedBounds ? { affectedBounds } : {}) } };
+    });
+  }
+
   async listCities(countryId: string): Promise<CityDto[]> {
     return (await this.db.prepare("SELECT * FROM cities_v3 WHERE country_id = ? ORDER BY created_at").all(countryId) as Row[]).map(cityDto);
   }
@@ -2304,6 +2428,7 @@ export class AppService {
     cities: CityDto[],
   ): DecorationDto[] {
     const result: DecorationDto[] = [];
+    const ambientCounts = { boats: 0, fishers: 0, residents: 0 };
     const occupied = new Set(blocked);
     const terrainByCell = new Map(terrain.map((cell) => [cellKey(cell), cell]));
     const surfaceKeys = new Set(surfaces.map(cellKey));
@@ -2336,12 +2461,12 @@ export class AppService {
       let clearance = 0;
       const district = districtByCell.get(cellKey(cell));
       const shoreDirection = (cell.terrain === "SAND" || cell.terrain === "WET_SAND") && closeToCity(cell) ? waterDirection(cell) : undefined;
-      if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && chance < 0.0009) {
+      if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && ambientCounts.boats < 3 && chance < 0.0005) {
         const horizontal = hashCoordinate(seed, cell.x, cell.y, 719) < 0.5;
         kind = `boat-${horizontal ? "horizontal" : "vertical"}-${hashCoordinate(seed, cell.x, cell.y, 727) < 0.5 ? "a" : "b"}`;
-      } else if (shoreDirection && !closeToBlocked(cell, 1) && chance < 0.005) {
+      } else if (shoreDirection && !closeToBlocked(cell, 1) && ambientCounts.fishers < 2 && chance < 0.0028) {
         kind = `fisher-${shoreDirection}`;
-      } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && chance < 0.018) {
+      } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && ambientCounts.residents < 4 && chance < 0.014) {
         const residents = ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"];
         kind = chance < 0.01 ? "streetlamp" : residents[Math.floor(hashCoordinate(seed, cell.x, cell.y, 733) * residents.length)];
       } else if (district && district.status !== "ACTIVE" && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.006) {
@@ -2390,6 +2515,9 @@ export class AppService {
         }
         if (!available) continue;
         result.push({ id: `${kind}:${cell.x}:${cell.y}`, kind, origin: { x: cell.x, y: cell.y } });
+        if (kind.startsWith("boat-")) ambientCounts.boats += 1;
+        else if (kind.startsWith("fisher-")) ambientCounts.fishers += 1;
+        else if (kind.startsWith("resident-")) ambientCounts.residents += 1;
         for (const part of footprint) {
           for (let dy = -clearance; dy <= clearance; dy += 1) {
             for (let dx = -clearance; dx <= clearance; dx += 1) occupied.add(cellKey({ x: part.x + dx, y: part.y + dy }));

@@ -83,6 +83,9 @@ export function App() {
       throw error;
     }
   }, []);
+  const refreshWorld = useCallback(async () => {
+    applyBootstrap(await api<BootstrapDto>("/api/bootstrap"));
+  }, [applyBootstrap]);
 
   useEffect(() => { void load().catch(() => undefined); }, [load]);
   useEffect(() => {
@@ -159,10 +162,10 @@ export function App() {
         </Suspense>
         <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
-      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} />}
+      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onMutation={refreshWorld} />}
     </section>
 
-    {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} /></Suspense>}
+    {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} canEdit={bootstrap.countryRole !== "VIEWER"} onClose={closeTask} onDeleted={refreshWorld} /></Suspense>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
   </main>;

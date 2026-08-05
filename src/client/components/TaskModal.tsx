@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getBuilding } from "../../shared/catalog";
 import type { TaskDto } from "../../shared/contracts";
 import { api } from "../api";
+import { Button } from "./ui";
 
 const statusLabel: Record<TaskDto["status"], string> = {
   PLANNING: "Планирование", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
@@ -12,8 +13,10 @@ const eventLabel: Record<NonNullable<TaskDto["events"]>[number]["type"], string>
   CREATED: "Задача создана", TITLE_CHANGED: "Задача переименована", STATUS_CHANGED: "Изменён этап строительства", COMMENT_ADDED: "Добавлен комментарий", ASSIGNEE_CHANGED: "Изменён ответственный",
 };
 
-export function TaskModal({ taskId, revision, onClose }: { taskId: string; revision: number; onClose: () => void }) {
+export function TaskModal({ taskId, revision, canEdit, onClose, onDeleted }: { taskId: string; revision: number; canEdit: boolean; onClose: () => void; onDeleted: () => Promise<void> }) {
   const [task, setTask] = useState<TaskDto | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -23,6 +26,19 @@ export function TaskModal({ taskId, revision, onClose }: { taskId: string; revis
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [taskId, revision, onClose]);
+  const removeTask = async () => {
+    if (!task) return;
+    const confirmation = window.prompt(`Удаление задачи нельзя отменить. Введите точное название:\n${task.title}`);
+    if (confirmation == null) return;
+    setDeleteError(""); setDeleting(true);
+    try {
+      await api(`/api/tasks/${task.id}`, { method: "DELETE", json: { confirmTitle: confirmation, idempotencyKey: crypto.randomUUID() } });
+      onClose();
+      await onDeleted();
+    } catch (reason) {
+      setDeleteError(reason instanceof Error ? reason.message : "Не удалось удалить задачу");
+    } finally { setDeleting(false); }
+  };
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
@@ -53,6 +69,11 @@ export function TaskModal({ taskId, revision, onClose }: { taskId: string; revis
           <section className="task-history"><h3>Хроника задачи</h3>
             {task.events?.length ? task.events.map((event) => <article key={event.id}><i /><div><strong>{eventLabel[event.type]}</strong><span>{event.actor} · {new Date(event.createdAt).toLocaleString("ru-RU")}</span></div></article>) : <p className="muted">Хроника начнёт заполняться при следующем изменении.</p>}
           </section>
+          {canEdit && <section className="task-danger-zone">
+            <div><h3>Удаление задачи</h3><p>Здание исчезнет, а участок снова станет доступен для новых задач.</p></div>
+            <Button variant="danger" disabled={deleting} onClick={() => void removeTask()}>{deleting ? "Удаляем…" : "Удалить задачу"}</Button>
+            {deleteError && <p className="task-delete-error" role="alert">{deleteError}</p>}
+          </section>}
         </>}
       </section>
     </div>

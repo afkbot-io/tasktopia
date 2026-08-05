@@ -76,7 +76,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   let cityDirectory = page.getByRole("complementary", { name: "План страны" });
   await expect(cityDirectory.getByText("20 зданий")).toBeVisible();
   await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
-  await cityDirectory.getByRole("button", { name: /Задача района 1\.1/ }).click();
+  await cityDirectory.getByRole("button", { name: /^1 Задача района 1\.1/ }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await capture(page, "screenshots/release-task-modal.png");
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();

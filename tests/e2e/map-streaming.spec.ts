@@ -1,6 +1,45 @@
 import { expect, test } from "@playwright/test";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 
+async function openDemoMap(page: import("@playwright/test").Page) {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("demo@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+  const host = page.locator(".world-canvas");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  await canvas.hover();
+  for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "detail"; step += 1) await page.mouse.wheel(0, -800);
+  await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
+  await expect.poll(async () => Number(await host.getAttribute("data-cars")), { timeout: 90_000 }).toBeGreaterThan(0);
+  return { host, canvas };
+}
+
+test("keeps visible agent state across detail zoom and randomizes a new page session", async ({ page }) => {
+  test.setTimeout(120_000);
+  let { host, canvas } = await openDemoMap(page);
+  const idsBefore = new Set((await host.getAttribute("data-agent-ids"))!.split(",").filter(Boolean));
+  const sessionBefore = await host.getAttribute("data-agent-session");
+  const rebuildsBefore = Number(await host.getAttribute("data-movement-rebuilds") ?? 0);
+  await canvas.hover();
+  await page.mouse.wheel(0, -200);
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  const idsAfter = new Set((await host.getAttribute("data-agent-ids"))!.split(",").filter(Boolean));
+  const retained = [...idsBefore].filter((id) => idsAfter.has(id));
+  expect(retained.length).toBeGreaterThan(0);
+  expect(Number(await host.getAttribute("data-movement-rebuilds") ?? 0)).toBe(rebuildsBefore);
+
+  await page.reload();
+  host = page.locator(".world-canvas");
+  canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  await canvas.hover();
+  for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "detail"; step += 1) await page.mouse.wheel(0, -800);
+  await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
+  expect(await host.getAttribute("data-agent-session")).not.toBe(sessionBefore);
+});
+
 test("streams delayed chunks without duplicate requests or an exposed empty canvas", async ({ page }) => {
   test.setTimeout(120_000);
   const chunkRequests: string[] = [];

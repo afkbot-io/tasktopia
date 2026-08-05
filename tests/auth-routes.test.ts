@@ -146,6 +146,28 @@ describe("authentication HTTP boundary", () => {
     });
   }, 15_000);
 
+  it("exposes exact-confirmed city, district and task deletion to an authenticated editor", async () => {
+    const registered = await app.inject({
+      method: "POST", url: "/api/auth/register",
+      payload: { email: "delete-http@example.test", name: "Delete Mayor", password: "safe-password-123", countryName: "Deletion Land", cityName: "Permanent City" },
+    });
+    const setCookie = registered.headers["set-cookie"]!;
+    const cookie = (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;
+    const bootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } })).json();
+    const countryId = bootstrap.country.id as string;
+    const city = await service.createCity(countryId, { name: "Disposable City", idempotencyKey: "http-delete-city-create" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Disposable District", activate: true, idempotencyKey: "http-delete-district-create" });
+    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Disposable Task", estimate: 1, idempotencyKey: "http-delete-task-create" });
+    const wrong = await app.inject({ method: "DELETE", url: `/api/tasks/${task.id}`, headers: { cookie }, payload: { confirmTitle: "wrong", idempotencyKey: "http-delete-task-wrong" } });
+    expect(wrong.statusCode).toBe(400);
+    expect((await app.inject({ method: "DELETE", url: `/api/tasks/${task.id}`, headers: { cookie }, payload: { confirmTitle: task.title, idempotencyKey: "http-delete-task" } })).statusCode).toBe(200);
+    expect((await app.inject({ method: "DELETE", url: `/api/districts/${district.id}`, headers: { cookie }, payload: { confirmName: district.name, idempotencyKey: "http-delete-district" } })).statusCode).toBe(200);
+    expect((await app.inject({ method: "DELETE", url: `/api/cities/${city.id}`, headers: { cookie }, payload: { confirmName: city.name, idempotencyKey: "http-delete-city" } })).statusCode).toBe(200);
+    const regenerated = await app.inject({ method: "POST", url: `/api/countries/${countryId}/regenerate`, headers: { cookie }, payload: { confirmName: "Deletion Land", idempotencyKey: "http-regenerate-country" } });
+    expect(regenerated.statusCode).toBe(200);
+    expect(regenerated.json()).toMatchObject({ regenerated: true, cities: 1, districts: 0, tasks: 0 });
+  }, 20_000);
+
   it("requires the first country and city at the public registration boundary", async () => {
     const response = await app.inject({
       method: "POST",

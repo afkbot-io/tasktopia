@@ -46,6 +46,10 @@ const tokenSchema = z.object({
 const countrySchema = z.object({ name: z.string().trim().min(2).max(100) }).strict();
 const accountSchema = z.object({ name: z.string().trim().min(2).max(60) }).strict();
 const invitationSchema = z.object({ email: z.string().trim().email().max(254), role: z.enum(["MEMBER", "VIEWER"]).default("MEMBER") }).strict();
+const deleteCitySchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
+const deleteDistrictSchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
+const deleteTaskSchema = z.object({ confirmTitle: z.string().trim().min(1).max(160), idempotencyKey: z.string().min(1).max(160) }).strict();
+const regenerateCountrySchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -220,6 +224,16 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     return await service.getCountry(countryId);
   });
 
+  app.post("/api/countries/:countryId/regenerate", { config: { rateLimit: { max: 2, timeWindow: "1 hour" } } }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
+    if (countryId !== user.countryId || await countryRole(db, user.id, countryId) !== "OWNER") {
+      throw new DomainError("FORBIDDEN", "Перегенерировать мир может только глава выбранной страны");
+    }
+    return await service.regenerateCountry(countryId, parse(regenerateCountrySchema, request.body));
+  });
+
   app.delete("/api/countries/:countryId", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
@@ -297,6 +311,30 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
             return await service.getTask(user.countryId, taskId);
           });
+
+  app.delete("/api/cities/:cityId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может удалять города");
+    const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
+    return await service.deleteCity(user.countryId, { cityId, ...parse(deleteCitySchema, request.body) });
+  });
+
+  app.delete("/api/districts/:districtId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может удалять районы");
+    const districtId = parse(z.string().uuid(), (request.params as { districtId: string }).districtId);
+    return await service.deleteDistrict(user.countryId, { districtId, ...parse(deleteDistrictSchema, request.body) });
+  });
+
+  app.delete("/api/tasks/:taskId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может удалять задачи");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    return await service.deleteTask(user.countryId, { taskId, ...parse(deleteTaskSchema, request.body) });
+  });
 
   app.get("/api/events", async (request, reply) => {
             const user = await requireUser(db, request, reply);
