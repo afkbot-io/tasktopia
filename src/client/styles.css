@@ -125,7 +125,10 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .token-list button, .token-secret button { padding: 7px 10px; border: 1px solid #42606a; border-radius: 7px; background: #1b3137; cursor: pointer; }
 
 .map-region { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
-.world-canvas-wrap { width: 100%; height: 100%; }
+.world-canvas-wrap { position: relative; width: 100%; height: 100%; }
+.world-first-frame-loading { position: absolute; inset: 0; z-index: 4; background: #0d1b1e; }
+.map-retry-button { cursor: pointer; border: 1px solid #3e6973; border-radius: 8px; background: #173039; color: #edf3e7; padding: 8px 14px; font-weight: 700; }
+.map-retry-button:hover { border-color: #66b8cc; background: #1d3c46; }
 .plan-drawer { position: absolute; top: 16px; right: 16px; z-index: 8; width: min(930px, calc(100% - 32px)); max-height: calc(100% - 74px); overflow: hidden; border: 1px solid #355057; border-radius: 14px; background: #101d21f5; box-shadow: 0 24px 72px #000a; backdrop-filter: blur(14px); }
 .plan-head { display: flex; justify-content: space-between; align-items: center; padding: 17px 19px; border-bottom: 1px solid #294047; }
 .plan-head .eyebrow { margin-bottom: 3px; }

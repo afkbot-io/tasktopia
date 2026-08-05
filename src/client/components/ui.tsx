@@ -13,7 +13,7 @@ const buttonVariants = {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: keyof typeof buttonVariants }>(function Button({ variant = "secondary", className, type = "button", ...props }, ref) {
   return <button ref={ref} type={type} className={cx(
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-extrabold transition-colors disabled:pointer-events-none disabled:opacity-45",
+    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 text-sm font-extrabold transition-colors disabled:pointer-events-none disabled:opacity-45",
     buttonVariants[variant], className,
   )} {...props} />;
 });

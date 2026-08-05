@@ -32,7 +32,7 @@ await app.register(fastifyHelmet, {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "ws:", "wss:"],
+      connectSrc: ["'self'", "data:", "ws:", "wss:"],
       imgSrc: ["'self'", "data:", "blob:"],
       workerSrc: ["'self'", "blob:"],
       styleSrc: ["'self'", "'unsafe-inline'"],

@@ -2,12 +2,12 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import type { BootstrapDto, CityDto, RealtimeEvent, Rect } from "../shared/contracts";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
+import { CountryPanel } from "./components/CountryPanel";
 import { CountrySwitcher } from "./components/CountrySwitcher";
+import { PlanDrawer } from "./components/PlanDrawer";
 import { Button, cx } from "./components/ui";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
-const CountryPanel = lazy(() => import("./components/CountryPanel").then((module) => ({ default: module.CountryPanel })));
-const PlanDrawer = lazy(() => import("./components/PlanDrawer").then((module) => ({ default: module.PlanDrawer })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
@@ -145,8 +145,8 @@ export function App() {
       </div>
 
       <nav className="flex items-center justify-end gap-1.5 sm:gap-2" aria-label="Действия карты">
-        <Button data-plan-trigger className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "border-skyline bg-[#1a3942] text-white")} onClick={() => { setCountryMenuOpen(false); setPlanOpen((value) => !value); }}>План</Button>
-        <Button className={cx("min-h-10 px-3 text-xs sm:px-4", showDistricts && "border-skyline bg-[#1a3942] text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Районы</Button>
+        <Button data-plan-trigger className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={planOpen} onClick={() => { setCountryMenuOpen(false); setPlanOpen((value) => !value); }}>План</Button>
+        <Button className={cx("min-h-10 px-3 text-xs sm:px-4", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>
         <Button className="h-10 min-h-10 w-10 px-0 text-lg text-signal" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</Button>
         <Button className="h-10 min-h-10 w-10 rounded-full px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
       </nav>
@@ -159,11 +159,11 @@ export function App() {
         </Suspense>
         <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
-      {planOpen && <Suspense fallback={null}><PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} /></Suspense>}
+      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} />}
     </section>
 
     {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} /></Suspense>}
-    {countryDialog && <Suspense fallback={null}><CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} /></Suspense>}
+    {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
   </main>;
 }

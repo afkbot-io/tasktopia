@@ -15,6 +15,10 @@ services:
       retries: 12
     security_opt:
       - no-new-privileges:true
+    pids_limit: 100
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-768m}
+    cpus: ${POSTGRES_CPU_LIMIT:-0.75}
+    cpu_shares: 512
 
   app:
     build:
@@ -44,6 +48,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    pids_limit: 160
+    mem_limit: ${APP_MEMORY_LIMIT:-1g}
+    cpus: ${APP_CPU_LIMIT:-1.50}
+    cpu_shares: 1024
     init: true
     logging:
       driver: json-file
