@@ -52,12 +52,16 @@
     "SHALLOW_WATER": [
       "terrain/shallow_water-0.png",
       "terrain/shallow_water-1.png",
-      "terrain/shallow_water-2.png"
+      "terrain/shallow_water-2.png",
+      "terrain/shallow_water-3.png",
+      "terrain/shallow_water-4.png"
     ],
     "DEEP_WATER": [
       "terrain/deep_water-0.png",
       "terrain/deep_water-1.png",
-      "terrain/deep_water-2.png"
+      "terrain/deep_water-2.png",
+      "terrain/deep_water-3.png",
+      "terrain/deep_water-4.png"
     ],
     "DIRT": [
       "terrain/dirt-0.png",
@@ -3089,11 +3093,283 @@
         4,
         8
       ]
+    },
+    "boat-horizontal-a": {
+      "label": "Boat Horizontal A",
+      "path": "props/boat-horizontal-a.png",
+      "size": [
+        16,
+        8
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        8
+      ]
+    },
+    "boat-horizontal-b": {
+      "label": "Boat Horizontal B",
+      "path": "props/boat-horizontal-b.png",
+      "size": [
+        16,
+        8
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        8
+      ]
+    },
+    "boat-vertical-a": {
+      "label": "Boat Vertical A",
+      "path": "props/boat-vertical-a.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        2
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "boat-vertical-b": {
+      "label": "Boat Vertical B",
+      "path": "props/boat-vertical-b.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        2
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "fisher-north": {
+      "label": "Fisher North",
+      "path": "props/fisher-north.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "fisher-east": {
+      "label": "Fisher East",
+      "path": "props/fisher-east.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "fisher-south": {
+      "label": "Fisher South",
+      "path": "props/fisher-south.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "fisher-west": {
+      "label": "Fisher West",
+      "path": "props/fisher-west.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "resident-reader": {
+      "label": "Resident Reader",
+      "path": "props/resident-reader.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "resident-box": {
+      "label": "Resident Box",
+      "path": "props/resident-box.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "resident-sweeper": {
+      "label": "Resident Sweeper",
+      "path": "props/resident-sweeper.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "resident-phone": {
+      "label": "Resident Phone",
+      "path": "props/resident-phone.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "resident-worker": {
+      "label": "Resident Worker",
+      "path": "props/resident-worker.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "resident-wave": {
+      "label": "Resident Wave",
+      "path": "props/resident-wave.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "fence-horizontal": {
+      "label": "Fence Horizontal",
+      "path": "props/fence-horizontal.png",
+      "size": [
+        16,
+        8
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        8
+      ]
+    },
+    "fence-vertical": {
+      "label": "Fence Vertical",
+      "path": "props/fence-vertical.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        2
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "active-district-flag": {
+      "label": "Active District Flag",
+      "path": "props/active-district-flag.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
     }
   },
   "provenance": {
     "basePack": "pixel-city-pack-v3",
     "newRuntimeAssets": "deterministic procedural pixel drawing",
-    "referenceOnly": "reference/expanded-city-assets-reference.png generated with OpenAI image model"
+    "referenceOnly": "reference/expanded-city-assets-reference.png, reference/fishing-life-reference.png, reference/resident-actions-reference.png and reference/fish-water-reference.png generated with OpenAI image model"
   }
 }

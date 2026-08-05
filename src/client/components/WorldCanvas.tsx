@@ -46,6 +46,9 @@ const PLATFORM_TILE: Record<PlatformKind, string> = {
   SERVICE: TILE_SPRITES.pavement!,
   PARK: TERRAIN_SPRITES.MEADOW![1]!,
 };
+const TASK_STATUS_LABEL: Record<ChunkTaskDto["status"], string> = {
+  PLANNING: "Планируется", STARTED: "Начата", IN_PROGRESS: "В работе", TESTING: "Проверяется", COMPLETED: "Завершена",
+};
 
 function position(cell: Cell): { x: number; y: number } {
   return { x: cell.x * CELL_SIZE, y: cell.y * CELL_SIZE };
@@ -116,12 +119,19 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>): Con
     if (cell.structure === "BRIDGE") {
       const edgeUrl = (cell.mask & (2 | 8)) ? TILE_SPRITES["bridge-side-horizontal"]! : TILE_SPRITES["bridge-side-vertical"]!;
       group.addChild(edgeSprite(edgeUrl, cell, direction));
+      continue;
     }
+    const neighbor = surfaces.get(key({ x: cell.x + config.x, y: cell.y + config.y }));
+    if (neighbor?.kind !== "SIDEWALK" && neighbor?.kind !== "SHOULDER") continue;
+    const crossingOpen = crossing?.kind === "CROSSWALK"
+      && (crossing.orientation === "H" ? direction === 1 || direction === 3 : direction === 0 || direction === 2);
+    if (!crossingOpen) group.addChild(edgeSprite(TILE_SPRITES.curb!, cell, direction));
   }
   return group;
 }
 
-function drawDistrictBoundary(district: ChunkDistrictDto): Graphics {
+function drawDistrictBoundary(district: ChunkDistrictDto): Container {
+  const group = new Container();
   const graphics = new Graphics();
   const cells = new Set(district.cells.map(key));
   const color = Number.parseInt(district.color.slice(1), 16);
@@ -136,8 +146,15 @@ function drawDistrictBoundary(district: ChunkDistrictDto): Graphics {
       else graphics.moveTo(p.x, p.y).lineTo(p.x, p.y + CELL_SIZE);
     }
   }
-  graphics.stroke({ color, width: 1.4, alpha: district.status === "ACTIVE" ? 0.95 : 0.72, cap: "square" });
-  return graphics;
+  graphics.stroke({ color, width: district.status === "ACTIVE" ? 2.6 : 1.2, alpha: district.status === "ACTIVE" ? 1 : 0.62, cap: "square" });
+  group.addChild(graphics);
+  if (district.status === "ACTIVE" && district.cells.length > 0) {
+    const markerCell = district.cells.reduce((best, cell) => cell.y < best.y || cell.y === best.y && cell.x < best.x ? cell : best, district.cells[0]!);
+    const marker = sprite(PROP_SPRITES["active-district-flag"]!, markerCell.x * CELL_SIZE + CELL_SIZE / 2, markerCell.y * CELL_SIZE + CELL_SIZE);
+    marker.anchor.set(0.5, 1);
+    group.addChild(marker);
+  }
+  return group;
 }
 
 function drawPlatform(task: ChunkTaskDto): Container {
@@ -162,14 +179,34 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): C
   group.position.set(x, y);
   group.hitArea = new Rectangle(-entry.spriteSize.width / 2, -entry.spriteSize.height, entry.spriteSize.width, entry.spriteSize.height);
   group.addChild(building);
-  if (task.stage < 5) {
-    const badgeColor = [0x9b72d2, 0xd6a13d, 0xf2c84b, 0x4fa5d7][task.stage - 1]!;
+  {
+    const badgeColor = [0x9b72d2, 0xd6a13d, 0xf2c84b, 0x4fa5d7, 0x69ad67][task.stage - 1]!;
     const badgeX = entry.spriteSize.width / 2 - 2;
-    const badgeY = -entry.spriteSize.height + 3;
+    const badgeY = -4;
     group.addChild(new Graphics().circle(badgeX, badgeY, 4).fill(0x122126).stroke({ color: badgeColor, width: 1 }));
     const label = new Text({ text: String(task.stage), style: new TextStyle({ fontFamily: "monospace", fontSize: 5, fontWeight: "700", fill: 0xffffff }) });
     label.anchor.set(0.5); label.position.set(badgeX, badgeY); group.addChild(label);
   }
+  let tooltip: Container | undefined;
+  group.on("pointerover", () => {
+    if (!tooltip) {
+      const details = task.descriptionPreview?.trim().replace(/\s+/g, " ") ?? "";
+      tooltip = new Container();
+      tooltip.eventMode = "none";
+      const tooltipText = new Text({
+        text: `${task.title}\n${TASK_STATUS_LABEL[task.status]} · ${task.progress}%${details ? `\n${details.slice(0, 96)}${details.length > 96 ? "…" : ""}` : ""}`,
+        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 7, lineHeight: 9, fill: 0xeaf2ee, wordWrap: true, wordWrapWidth: 128 }),
+      });
+      const padding = 5;
+      const panel = new Graphics().roundRect(-padding, -padding, tooltipText.width + padding * 2, tooltipText.height + padding * 2, 3)
+        .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x4b6870, width: 1 });
+      tooltip.addChild(panel, tooltipText);
+      tooltip.position.set(-tooltipText.width / 2, -entry.spriteSize.height - tooltipText.height - 8);
+      group.addChild(tooltip);
+    }
+    tooltip.visible = true;
+  });
+  group.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
   group.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onSelect(task.id); });
   return group;
 }
@@ -229,6 +266,7 @@ function assetUrl(path: string): string {
 
 function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   const urls = new Set<string>();
+  urls.add(PROP_SPRITES["active-district-flag"]!);
   for (const chunk of chunks) {
     for (const task of chunk.tasks) {
       const entry = getBuilding(task.buildingType);
@@ -359,7 +397,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       world.addChild(backdropLayer, terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, agentLayer, buildingLayer, featureLayer);
       app.stage.addChild(world);
       type RenderNode = Container | Graphics | Sprite;
-      const districtViews = new Map<string, EntityViewRecord<Graphics>>();
+      const districtViews = new Map<string, EntityViewRecord<Container>>();
       const taskPlatformViews = new Map<string, EntityViewRecord<Container>>();
       const taskBuildingViews = new Map<string, EntityViewRecord<Container>>();
       const decorationViews = new Map<string, EntityViewRecord<Sprite>>();
@@ -715,7 +753,14 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         const blockedWalkCells = new Set([
           ...[...tasks.values()].flatMap((task) => task.footprint),
           ...[...features.values()].filter((feature) => feature.assetKind !== "AREA").flatMap((feature) => feature.footprint),
-          ...[...decorations.values()].map((decoration) => decoration.origin),
+          ...[...decorations.values()].flatMap((decoration) => {
+            const prop = PROP_CATALOG[decoration.kind];
+            if (!prop) return [decoration.origin];
+            return Array.from({ length: prop.footprint.width * prop.footprint.height }, (_, index) => ({
+              x: decoration.origin.x + index % prop.footprint.width,
+              y: decoration.origin.y + Math.floor(index / prop.footprint.width),
+            }));
+          }),
         ].map(key));
         const baseWalkGraph = new Map([...surfaces]
           .filter(([cellKey, surface]) => !blockedWalkCells.has(cellKey) && (surface.kind === "SIDEWALK" || surface.kind === "PATH" || surface.kind === "CROSSWALK"))
@@ -1020,7 +1065,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
             }
             if (chunks.has(cacheKey) || desiredKeys.has(cacheKey)) forceKeys.add(cacheKey);
           }
-          const rebuildMovement = event.type === "city.created" || event.type === "district.created" || event.type === "task.created";
+          const rebuildMovement = new Set([
+            "city.created", "city.deleted", "district.created", "district.deleted", "district.activated",
+            "task.created", "task.deleted",
+          ]).has(event.type);
           void loadVisible({ forceKeys, rebuildMovement });
         },
         retry() {

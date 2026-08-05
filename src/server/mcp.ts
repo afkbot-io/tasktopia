@@ -49,6 +49,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "Tasktopia turns work into a living country: countries contain cities, cities contain districts, and tasks become buildings.",
       "Start with country.get_current, then read IDs before calling write tools.",
       "Every write requires a stable idempotencyKey. Reuse it only for an identical retry.",
+      "District capacitySp is an advisory workload target and never blocks task creation.",
+      "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
       "Task stages are PLANNING -> STARTED -> IN_PROGRESS -> TESTING -> COMPLETED; only TESTING -> IN_PROGRESS may move backward and requires a comment.",
     ].join(" "),
     cacheHints: { "tools/list": { ttlMs: 300_000, cacheScope: "private" }, "resources/list": { ttlMs: 300_000, cacheScope: "private" } },
@@ -69,7 +71,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
   const districtCreateSchema = z.object({
     cityId: z.string().uuid(), name: z.string().min(2).max(100), goal: z.string().max(2000).optional(),
-    capacitySp: z.number().int().min(1).max(26).optional(), activate: z.boolean().optional(),
+    capacitySp: z.number().int().positive().optional().describe("Необязательный ориентир нагрузки в SP; не ограничивает число или сумму задач"), activate: z.boolean().optional(),
     archetype: z.enum(["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"]).optional(),
     idempotencyKey: z.string().min(4).max(160),
   });
@@ -113,7 +115,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       requireScope(identity, "tasks:read");
       const city = (await service.listCities(identity.countryId)).find((item) => item.id === cityId);
       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
-      return response({ city, districts: await service.listDistricts(identity.countryId, cityId), tasks: (await service.listTasks(identity.countryId)).filter((task) => task.cityId === cityId) });
+      const districts = await service.listDistricts(identity.countryId, cityId);
+      return response({ city, districts: await Promise.all(districts.map(async (district) => ({ ...district, workload: await service.getDistrictWorkload(identity.countryId, district.id) }))), tasks: (await service.listTasks(identity.countryId)).filter((task) => task.cityId === cityId) });
     } catch (error) { return failure(error); }
   });
 
@@ -127,8 +130,17 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
+  server.registerTool("city.delete", { description: "Безвозвратно удалить город со всеми районами, задачами и городскими объектами. Для защиты передайте точное текущее название.", inputSchema: z.object({ cityId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
+    try { requireScope(identity, "cities:write"); return response(await service.deleteCity(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
   server.registerTool("district.list", { description: "Получить районы, при необходимости только одного города.", inputSchema: z.object({ cityId: z.string().uuid().optional() }), annotations: { readOnlyHint: true } }, async ({ cityId }) => {
-    try { requireScope(identity, "country:read"); return response(await service.listDistricts(identity.countryId, cityId)); }
+    try {
+      requireScope(identity, "country:read");
+      const districts = await service.listDistricts(identity.countryId, cityId);
+      return response(await Promise.all(districts.map(async (district) => ({ ...district, workload: await service.getDistrictWorkload(identity.countryId, district.id) }))));
+    }
     catch (error) { return failure(error); }
   });
 
@@ -139,6 +151,11 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
 
   server.registerTool("district.rename", { description: "Переименовать существующий район.", inputSchema: z.object({ districtId: z.string().uuid(), name: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async (input) => {
     try { requireScope(identity, "districts:write"); return response(await service.renameDistrict(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("district.delete", { description: "Безвозвратно удалить район и все его задачи. Для защиты передайте точное текущее название; если район был активным, сервер активирует следующий плановый.", inputSchema: z.object({ districtId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
+    try { requireScope(identity, "districts:write"); return response(await service.deleteDistrict(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
@@ -176,11 +193,12 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   }, async (input) => {
     try {
       requireScope(identity, "tasks:write");
-      return response(await service.createTask(identity.countryId, {
+      const task = await service.createTask(identity.countryId, {
                                                 cityId: input.cityId, districtId: input.districtId, title: input.title, description: input.description,
                                                 estimate: input.estimate, priority: input.priority, dueAt: input.dueAt, buildingHint: input.buildingHint,
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.assigneeEmail), idempotencyKey: input.idempotencyKey,
-                                              }));
+                                              });
+      return response({ ...task, workload: await service.getDistrictWorkload(identity.countryId, task.districtId) });
     } catch (error) { return failure(error); }
   });
 
@@ -190,6 +208,19 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     annotations: { idempotentHint: true },
   }, async (input) => {
     try { requireScope(identity, "tasks:write"); return response(await service.renameTask(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.delete", {
+    description: "Безвозвратно удалить задачу и освободить её участок под новую задачу. Для защиты передайте точный текущий заголовок.",
+    inputSchema: z.object({ taskId: z.string().uuid(), confirmTitle: z.string().min(2).max(160), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { destructiveHint: true, idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      const deleted = await service.deleteTask(identity.countryId, input);
+      return response({ ...deleted, workload: await service.getDistrictWorkload(identity.countryId, deleted.districtId) });
+    }
     catch (error) { return failure(error); }
   });
 

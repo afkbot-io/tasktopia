@@ -31,10 +31,10 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 При выпуске выбираются срок `30 | 90 | 365` дней и непустое подмножество scopes:
 
 - `country:read` — страны, города, районы и MCP resources; полный `city.get` дополнительно требует `tasks:read` из-за списка задач;
-- `cities:write` — создание и переименование городов;
-- `districts:write` — создание, переименование и смена состояния районов;
+- `cities:write` — создание, переименование и безопасное удаление городов;
+- `districts:write` — создание, переименование, смена состояния и безопасное удаление районов;
 - `tasks:read` — чтение задач;
-- `tasks:write` — создание, переименование, назначение и смена стадии задач;
+- `tasks:write` — создание, переименование, назначение, смена стадии и безопасное удаление задач;
 - `comments:write` — добавление комментариев.
 
 Глава страны и министр могут выбрать любые scopes. Наблюдателю доступны только `country:read` и `tasks:read`. Сервер заново проверяет активную страну и текущую роль на каждом MCP HTTP-запросе, поэтому сохранённые в старом ключе write-scopes не дают наблюдателю право записи. Истёкший, отозванный, повреждённый или пустой по разрешениям ключ отклоняется. Существующие ключи с `expires_at = NULL` продолжают работать до отзыва; все новые имеют явный срок.
@@ -42,9 +42,9 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 ## Основные инструменты
 
 - `country.get_current`, `country.list`, `country.select`
-- `city.list`, `city.get`, `city.create`, `city.rename`
-- `district.list`, `district.create`, `district.rename`, `district.activate`, `district.complete`
-- `task.list`, `task.get`, `task.create`, `task.rename`
+- `city.list`, `city.get`, `city.create`, `city.rename`, `city.delete`
+- `district.list`, `district.create`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
+- `task.list`, `task.get`, `task.create`, `task.rename`, `task.delete`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
 
 ## Минимальный сценарий
@@ -74,6 +74,10 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 ```
 
 `archetype` необязателен: `NEW_BUILD | PRIVATE | MIXED_URBAN | COMMERCIAL | CIVIC`. Без него сервер выводит тип из названия/цели района, morphology города и уже существующей застройки. Архетип влияет на участки и автоматический выбор зданий, но не меняет смысл явно переданного `buildingHint`.
+
+`capacitySp` — только положительный ориентир нагрузки. Сервер не блокирует задачи при его превышении: допустимая загрузка зависит от длительности итерации, размера команды и распределения исполнителей. `district.list`, `city.get`, `task.create` и `task.delete` возвращают `workload`: ориентир `targetSp`, общую оценку `plannedSp`, незавершённую `openSp`, число задач и `overTargetBySp`. MCP-агент показывает эти данные пользователю, но не создаёт новый район без его решения.
+
+Удаление использует отдельные destructive-инструменты и точное подтверждение текущего названия: `task.delete` принимает `confirmTitle`, а `district.delete` и `city.delete` — `confirmName`. Район удаляется вместе с задачами и принадлежащими ему парками/декором; активный район передаёт активность следующему плановому. Город удаляется с районами, задачами, городскими features и локальными улицами; сохраняются только highway и настоящие сквозные компоненты общей дорожной сети.
 
 Добавить задачу в активный район:
 

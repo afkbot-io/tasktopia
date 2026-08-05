@@ -9,15 +9,18 @@ const documentedTools = [
   "city.get",
   "city.create",
   "city.rename",
+  "city.delete",
   "district.list",
   "district.create",
   "district.rename",
   "district.activate",
   "district.complete",
+  "district.delete",
   "task.list",
   "task.get",
   "task.create",
   "task.rename",
+  "task.delete",
   "task.set_status",
   "task.report_progress",
   "task.add_comment",
@@ -31,8 +34,8 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("https://tasktopia.online/ai.md");
     expect(guide).toContain("https://tasktopia.online/mcp");
     expect(guide).toContain("Authorization: Bearer");
-    expect(guide).toContain('"capacitySp": 26');
-    expect(guide).not.toContain('"capacitySp": 30');
+    expect(guide).toContain('"capacitySp": 40');
+    expect(guide).toContain("never blocks task");
     expect(guide).toContain("isError: true");
     expect(guide).toContain("across all cities in the\nselected country");
     expect(guide).toContain("`tasktopia://country/current`");

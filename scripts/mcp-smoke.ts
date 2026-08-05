@@ -31,9 +31,9 @@ try {
   const tools = await client.listTools();
   const expected = [
     "country.get_current", "country.list", "country.select",
-    "city.list", "city.get", "city.create", "city.rename",
-    "district.list", "district.create", "district.rename", "district.activate", "district.complete",
-    "task.list", "task.get", "task.create", "task.rename", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
+    "city.list", "city.get", "city.create", "city.rename", "city.delete",
+    "district.list", "district.create", "district.rename", "district.activate", "district.complete", "district.delete",
+    "task.list", "task.get", "task.create", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
   ];
   if (tools.tools.length !== expected.length) throw new Error(`Expected ${expected.length} MCP tools, got ${tools.tools.length}`);
   for (const name of expected) {
@@ -44,6 +44,9 @@ try {
     ["city.rename", { cityId: missingId, name: "Renamed city", idempotencyKey: "smoke-rename-city" }],
     ["district.rename", { districtId: missingId, name: "Renamed district", idempotencyKey: "smoke-rename-district" }],
     ["task.rename", { taskId: missingId, title: "Renamed task", idempotencyKey: "smoke-rename-task" }],
+    ["city.delete", { cityId: missingId, confirmName: "Missing city", idempotencyKey: "smoke-delete-city" }],
+    ["district.delete", { districtId: missingId, confirmName: "Missing district", idempotencyKey: "smoke-delete-district" }],
+    ["task.delete", { taskId: missingId, confirmTitle: "Missing task", idempotencyKey: "smoke-delete-task" }],
   ] as const) {
     const result = await client.callTool({ name, arguments: arguments_ });
     if (!result.isError || !JSON.stringify(result.content).includes("NOT_FOUND")) throw new Error(`${name} did not reach its protected domain handler`);
@@ -67,7 +70,7 @@ const legacyTransport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mc
 try {
   await legacyClient.connect(legacyTransport);
   if (legacyClient.getProtocolEra() !== "legacy") throw new Error(`Expected legacy MCP era, got ${legacyClient.getProtocolEra()}`);
-  if ((await legacyClient.listTools()).tools.length !== 20) throw new Error("Legacy MCP client did not receive all tools");
+  if ((await legacyClient.listTools()).tools.length !== 23) throw new Error("Legacy MCP client did not receive all tools");
   console.log("Legacy 2025 MCP fallback passed.");
 } finally {
   await legacyClient.close();
@@ -163,6 +166,11 @@ try {
     },
   });
   if (!forbiddenMutation.isError) throw new Error("Read-only MCP token unexpectedly created a city");
+  const forbiddenDelete = await readOnlyClient.callTool({
+    name: "task.delete",
+    arguments: { taskId: "00000000-0000-4000-8000-000000000001", confirmTitle: "Missing task", idempotencyKey: "scope-delete-task" },
+  });
+  if (!forbiddenDelete.isError || !JSON.stringify(forbiddenDelete.content).includes("FORBIDDEN_SCOPE")) throw new Error("Read-only token reached task.delete");
   console.log("Read-only MCP scopes were enforced as expected.");
 } finally {
   await readOnlyClient.close().catch(() => undefined);

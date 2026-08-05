@@ -208,14 +208,22 @@ function publishCrosswalks(roads: Map<string, RoadCellDto>, surfaces: Map<string
   for (const sidewalk of [...surfaces.values()].filter((surface) => surface.kind === "SIDEWALK")) {
     for (const direction of [{ x: 1, y: 0 }, { x: 0, y: 1 }] as const) {
       const first = { x: sidewalk.x + direction.x, y: sidewalk.y + direction.y };
-      if (!roads.has(cellKey(first))) continue;
+      const firstRoad = roads.get(cellKey(first));
+      if (!firstRoad || firstRoad.structure !== "ROAD" || firstRoad.roadClass === "HIGHWAY") continue;
+      const expectedWidth = ROAD_WIDTH[firstRoad.roadClass];
       const cells: Cell[] = [];
       let current = first;
-      while (roads.has(cellKey(current)) && cells.length < 6) {
+      while (roads.has(cellKey(current)) && cells.length <= expectedWidth) {
         cells.push(current);
         current = { x: current.x + direction.x, y: current.y + direction.y };
       }
-      if (surfaces.get(cellKey(current))?.kind !== "SIDEWALK" || cells.length < 2) continue;
+      // Imported/legacy maps may have an odd three-cell local road. Accept one
+      // compatibility cell, but reject wider junction envelopes and turns.
+      if (surfaces.get(cellKey(current))?.kind !== "SIDEWALK" || cells.length < 2 || cells.length > expectedWidth + 1) continue;
+      if (cells.some((cell) => {
+        const road = roads.get(cellKey(cell));
+        return !road || road.structure !== "ROAD" || road.roadClass !== firstRoad.roadClass;
+      })) continue;
       const orientation: "H" | "V" = direction.x !== 0 ? "H" : "V";
       const perpendicularCenter = orientation === "H"
         ? cells.reduce((sum, cell) => sum + cell.x, 0) / cells.length

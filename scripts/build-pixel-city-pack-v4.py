@@ -102,6 +102,15 @@ def terrain_tile(kind: str, variant: int) -> Image.Image:
             draw.line((max(0, x - 1), y, min(CELL - 1, x + 2), y), fill=rgba(color))
         else:
             draw.point((x, y), fill=rgba(color))
+    if "WATER" in kind and variant >= 3:
+        fish = "#174c68ff" if kind == "SHALLOW_WATER" else "#123d5bff"
+        # Tiny fish shadows follow the generated reference without turning a
+        # seamless terrain tile into a busy illustration.
+        positions = ((2, 3),) if variant == 3 else ((1, 2), (5, 5))
+        for x, y in positions:
+            draw.line((x, y, x + 2, y), fill=rgba(fish))
+            draw.point((x - 1, y - 1), fill=rgba(fish))
+            draw.point((x - 1, y + 1), fill=rgba(fish))
     return image
 
 
@@ -248,6 +257,77 @@ def prop_walker(direction: str, color: str) -> Image.Image:
     else:
         draw.point((2, 6), fill=rgba("#263945ff")); draw.point((5, 6), fill=rgba("#263945ff"))
         draw.point((2 if direction == "W" else 5, 2), fill=rgba("#3f342fff"))
+    return image
+
+
+def prop_boat(horizontal: bool, variant: int) -> Image.Image:
+    size = (16, 8) if horizontal else (8, 16)
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    wood = "#9a6d3fff" if variant == 0 else "#7f5938ff"
+    light = "#c49557ff" if variant == 0 else "#ad7b48ff"
+    if horizontal:
+        draw.polygon([(1, 4), (3, 1), (12, 1), (15, 4), (12, 7), (3, 7)], fill=rgba(wood), outline=rgba(OUTLINE))
+        draw.rectangle((4, 2, 11, 6), fill=rgba("#5c432fff"))
+        for x in (5, 10): draw.line((x, 2, x, 6), fill=rgba(light))
+        draw.line((3, 0, 12, 7), fill=rgba("#c4a064ff"))
+    else:
+        draw.polygon([(4, 1), (7, 3), (7, 12), (4, 15), (1, 12), (1, 3)], fill=rgba(wood), outline=rgba(OUTLINE))
+        draw.rectangle((2, 4, 6, 11), fill=rgba("#5c432fff"))
+        for y in (5, 10): draw.line((2, y, 6, y), fill=rgba(light))
+        draw.line((0, 3, 7, 12), fill=rgba("#c4a064ff"))
+    return image
+
+
+def prop_fisher(direction: str, variant: int) -> Image.Image:
+    image = Image.new("RGBA", (8, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    coats = ("#355b73ff", "#6f8748ff", "#a65343ff", "#8a704eff")
+    skin = ("#d2a074ff", "#b77c54ff", "#e0b78cff", "#8f5f43ff")[variant % 4]
+    draw.rectangle((2, 5, 5, 10), fill=rgba(coats[variant % 4]), outline=rgba(OUTLINE))
+    draw.rectangle((3, 2, 4, 4), fill=rgba(skin))
+    draw.line((2, 11, 2, 14), fill=rgba("#263945ff")); draw.line((5, 11, 5, 14), fill=rgba("#263945ff"))
+    if direction in "EW":
+        side = 7 if direction == "E" else 0
+        draw.line((4 if direction == "E" else 3, 7, side, 4), fill=rgba("#b78d55ff"))
+        draw.line((side, 4, side, 13), fill=rgba("#c7d4d1ff"))
+        draw.point((side, 14), fill=rgba("#d8b64fff"))
+    else:
+        rod_x = 6 if direction == "N" else 1
+        draw.line((4, 7, rod_x, 1 if direction == "N" else 13), fill=rgba("#b78d55ff"))
+        draw.point((rod_x, 0 if direction == "N" else 15), fill=rgba("#d8b64fff"))
+    return image
+
+
+def prop_resident(action: str, variant: int) -> Image.Image:
+    image = prop_walker("S", ("#4f8ca5ff", "#c07a55ff", "#6f9a59ff", "#9a6aa5ff")[variant % 4])
+    draw = ImageDraw.Draw(image)
+    if action == "reader": draw.rectangle((1, 3, 6, 5), fill=rgba("#d7c993ff"), outline=rgba(OUTLINE))
+    elif action == "box": draw.rectangle((4, 3, 7, 6), fill=rgba("#a97846ff"), outline=rgba(OUTLINE))
+    elif action == "sweeper": draw.line((5, 3, 7, 7), fill=rgba("#b78d55ff"))
+    elif action == "phone": draw.point((5, 2), fill=rgba("#d9e2ddff"))
+    elif action == "worker": draw.point((1, 0), fill=rgba("#e0b84fff")); draw.point((6, 4), fill=rgba("#aeb9b8ff"))
+    elif action == "wave": draw.line((5, 3, 7, 0), fill=rgba("#d2a074ff"))
+    return image
+
+
+def prop_fence(vertical: bool) -> Image.Image:
+    image = Image.new("RGBA", (8, 16) if vertical else (16, 8), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    if vertical:
+        draw.line((3, 0, 3, 15), fill=rgba("#805e3cff")); draw.line((5, 0, 5, 15), fill=rgba("#a57b4cff"))
+        for y in (2, 8, 14): draw.rectangle((2, y, 6, min(15, y + 1)), fill=rgba("#b08a58ff"), outline=rgba(OUTLINE))
+    else:
+        draw.line((0, 3, 15, 3), fill=rgba("#805e3cff")); draw.line((0, 5, 15, 5), fill=rgba("#a57b4cff"))
+        for x in (2, 8, 14): draw.rectangle((x, 2, min(15, x + 1), 6), fill=rgba("#b08a58ff"), outline=rgba(OUTLINE))
+    return image
+
+
+def prop_active_marker() -> Image.Image:
+    image = Image.new("RGBA", (8, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.line((2, 1, 2, 15), fill=rgba("#d7c7a0ff"))
+    draw.polygon([(3, 2), (7, 4), (3, 7)], fill=rgba("#f2c84bff"), outline=rgba(OUTLINE))
     return image
 
 
@@ -479,7 +559,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     terrain_dir.mkdir(parents=True, exist_ok=True)
     for kind in TERRAIN_PALETTES:
         terrain[kind] = []
-        for variant in range(3):
+        for variant in range(5 if "WATER" in kind else 3):
             target = terrain_dir / f"{kind.lower()}-{variant}.png"
             terrain_tile(kind, variant).save(target, optimize=True)
             terrain[kind].append(str(target.relative_to(RUNTIME)))
@@ -509,6 +589,15 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "playground-small": prop_playground(),
         "walker-north": prop_walker("N", "#4f8ca5ff"), "walker-east": prop_walker("E", "#c07a55ff"),
         "walker-south": prop_walker("S", "#6f9a59ff"), "walker-west": prop_walker("W", "#9a6aa5ff"),
+        "boat-horizontal-a": prop_boat(True, 0), "boat-horizontal-b": prop_boat(True, 1),
+        "boat-vertical-a": prop_boat(False, 0), "boat-vertical-b": prop_boat(False, 1),
+        "fisher-north": prop_fisher("N", 0), "fisher-east": prop_fisher("E", 1),
+        "fisher-south": prop_fisher("S", 2), "fisher-west": prop_fisher("W", 3),
+        "resident-reader": prop_resident("reader", 0), "resident-box": prop_resident("box", 1),
+        "resident-sweeper": prop_resident("sweeper", 2), "resident-phone": prop_resident("phone", 3),
+        "resident-worker": prop_resident("worker", 0), "resident-wave": prop_resident("wave", 1),
+        "fence-horizontal": prop_fence(False), "fence-vertical": prop_fence(True),
+        "active-district-flag": prop_active_marker(),
     }
     prop_dir = RUNTIME / "props"
     prop_manifest = dict(source_manifest["props"])
@@ -516,8 +605,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         target = prop_dir / f"{key}.png"
         image.save(target, optimize=True)
         if key == "playground-small": footprint = [3, 2]
-        elif key == "bus-stop-horizontal" or key == "guardrail-horizontal": footprint = [2, 1]
-        elif key == "bus-stop-vertical" or key == "guardrail-vertical": footprint = [1, 2]
+        elif key in {"bus-stop-horizontal", "guardrail-horizontal", "boat-horizontal-a", "boat-horizontal-b", "fence-horizontal"}: footprint = [2, 1]
+        elif key in {"bus-stop-vertical", "guardrail-vertical", "boat-vertical-a", "boat-vertical-b", "fence-vertical"}: footprint = [1, 2]
         elif key.startswith(("hill-", "mountain-")): footprint = [max(1, image.width // CELL), max(1, image.height // CELL)]
         else: footprint = [1, 1]
         prop_manifest[key] = {
@@ -539,7 +628,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "provenance": {
             "basePack": "pixel-city-pack-v3",
             "newRuntimeAssets": "deterministic procedural pixel drawing",
-            "referenceOnly": "reference/expanded-city-assets-reference.png generated with OpenAI image model",
+            "referenceOnly": "reference/expanded-city-assets-reference.png, reference/fishing-life-reference.png, reference/resident-actions-reference.png and reference/fish-water-reference.png generated with OpenAI image model",
         },
     }
 

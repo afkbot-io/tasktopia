@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.3.3
+Version: 1.4.0
 Last updated: 2026-08-05  
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -20,7 +20,7 @@ AI must preserve:
 | --- | --- | --- |
 | Country | An independent project, product, or workspace | The top-level goal, access boundary, and portfolio context |
 | City | A long-lived project association, product direction, epic, or subproject | Grouping work that shares one stable domain and outcome |
-| District | A sprint, iteration, milestone, phase, or bounded work package | A goal and capacity for the current delivery cycle |
+| District | A sprint, iteration, milestone, phase, or bounded work package | A goal and advisory workload target for the current delivery cycle |
 | Task/building | One concrete, verifiable unit of work | An outcome with acceptance criteria, estimate, owner, and progress |
 
 Do not create a city for one task, use a district as a label, or move work into
@@ -110,10 +110,10 @@ A key can contain any combination of these scopes:
 | Scope | Allows |
 | --- | --- |
 | `country:read` | Read the selected country and list available countries |
-| `cities:write` | Create and rename cities |
-| `districts:write` | Create, rename, activate, and complete districts |
+| `cities:write` | Create, rename, and delete cities |
+| `districts:write` | Create, rename, activate, complete, and delete districts |
 | `tasks:read` | Read tasks and task details |
-| `tasks:write` | Create, update, report progress, and assign tasks |
+| `tasks:write` | Create, update, report progress, assign, and delete tasks |
 | `comments:write` | Add task comments |
 
 Request only the permissions an integration needs. A key is bound to its owner.
@@ -158,7 +158,7 @@ text, comments, logs, or tool arguments.
 
 ## Tools
 
-The server exposes 20 tools.
+The server exposes 23 tools.
 
 ### Countries
 
@@ -233,6 +233,16 @@ Renames an existing city.
 
 Required scope: `cities:write`.
 
+#### `city.delete`
+
+Permanently deletes a city and cascades its districts, tasks, comments, and city features. City-local roads are removed; only genuine highway or through-road components are retained as shared infrastructure. The response includes `roadsDeleted`. Pass the exact current name to prevent accidental deletion.
+
+```json
+{ "cityId": "<city-id>", "confirmName": "Exact city name", "idempotencyKey": "delete-city-v1" }
+```
+
+Required scope: `cities:write`. This operation is destructive; always read the city and ask the user for explicit deletion intent first.
+
 ### Districts
 
 #### `district.list`
@@ -255,7 +265,7 @@ Creates a district.
   "cityId": "<city-id>",
   "name": "Northern district",
   "goal": "Ship billing recovery",
-  "capacitySp": 26,
+  "capacitySp": 40,
   "activate": false,
   "archetype": "COMMERCIAL",
   "idempotencyKey": "create-sprint-12-v1"
@@ -264,8 +274,24 @@ Creates a district.
 
 `cityId`, `name`, and `idempotencyKey` are required. Allowed archetypes are
 `NEW_BUILD`, `PRIVATE`, `MIXED_URBAN`, `COMMERCIAL`, and `CIVIC`.
+`capacitySp` is an optional positive planning target. It never blocks task
+creation: sprint duration, team size, parallel owners, and actual workload are
+for the team to evaluate. `district.list`, `city.get`, `task.create`, and
+`task.delete` expose `workload` with `targetSp`, `plannedSp`, `openSp`,
+`taskCount`, and `overTargetBySp`. Do not create an extra district merely
+because the target is exceeded.
 
 Required scope: `districts:write`.
+
+#### `district.delete`
+
+Permanently deletes a district and all of its tasks. If the deleted district was active, the oldest planned district becomes active automatically.
+
+```json
+{ "districtId": "<district-id>", "confirmName": "Exact district name", "idempotencyKey": "delete-district-v1" }
+```
+
+Required scope: `districts:write`. Read the district and its tasks, state the cascade, and require explicit user intent before calling it.
 
 #### `district.rename`
 
@@ -352,6 +378,16 @@ estimates are `1`, `2`, `3`, or `6`. Allowed priorities are `LOW`, `NORMAL`,
 omit the field when no exact building was requested.
 
 Required scope: `tasks:write`.
+
+#### `task.delete`
+
+Permanently deletes one task/building and releases its planned lot so a later task can reuse it.
+
+```json
+{ "taskId": "<task-id>", "confirmTitle": "Exact task title", "idempotencyKey": "delete-task-v1" }
+```
+
+Required scope: `tasks:write`. Read the task first and require explicit deletion intent.
 
 #### `task.rename`
 

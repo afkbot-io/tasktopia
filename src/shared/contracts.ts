@@ -157,6 +157,8 @@ export type SurfaceCellDto = Cell & {
 export type WorldFeatureDto = {
   id: string;
   cityId: string | null;
+  districtId: string | null;
+  parentFeatureId: string | null;
   kind: WorldFeatureKind;
   assetKind: "PROP" | "BUILDING" | "AREA";
   assetKey: string;
@@ -177,8 +179,8 @@ export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "status" | "c
 };
 
 export type ChunkTaskDto = Pick<TaskDto,
-  "id" | "cityId" | "districtId" | "title" | "status" | "stage" | "buildingType" | "platformType" | "origin" | "footprint"
->;
+  "id" | "cityId" | "districtId" | "title" | "status" | "progress" | "stage" | "buildingType" | "platformType" | "origin" | "footprint"
+> & { descriptionPreview?: string };
 
 export type ChunkDto = {
   chunkX: number;

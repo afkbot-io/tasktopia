@@ -148,8 +148,6 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
     if (!district.cells.some((cell) => distanceToRoad([cell], roadKeys, 2) <= 2)) {
       addViolation(violations, "DISTRICT_WITHOUT_ROAD", `Район ${district.name} не подключён к дороге`);
     }
-    const estimate = tasks.filter((task) => task.districtId === district.id).reduce((sum, task) => sum + task.estimate, 0);
-    if (estimate > district.capacitySp) addViolation(violations, "DISTRICT_CAPACITY_EXCEEDED", `${district.name}: ${estimate}/${district.capacitySp} SP`);
     const districtTasks = tasks.filter((task) => task.districtId === district.id);
     if (district.status === "PLANNED" && districtTasks.some((task) => task.status !== "PLANNING")) {
       addViolation(violations, "PLANNED_DISTRICT_HAS_STARTED_TASKS", `${district.name}: в плановом районе есть начатые задачи`);

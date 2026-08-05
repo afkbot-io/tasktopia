@@ -141,8 +141,14 @@ export function planBlockDistrict(input: PlanInput): BlockDistrictPlan {
   const allowed = new Set(input.cells.map(cellKey));
   const roadY = input.origin.y + input.height - 4;
   const sidewalkY = roadY - 2;
-  const main = horizontalLine(input.origin.x + 2, input.origin.x + input.width - 3, roadY);
   const groupIndex = input.groupOffset ?? 0;
+  const flipVertical = groupIndex % 2 === 1;
+  const flipHorizontal = groupIndex % 4 >= 2;
+  const mirror = (cell: Cell): Cell => ({
+    x: flipHorizontal ? input.origin.x + input.width - 1 - (cell.x - input.origin.x) : cell.x,
+    y: flipVertical ? input.origin.y + input.height - 1 - (cell.y - input.origin.y) : cell.y,
+  });
+  const main = horizontalLine(input.origin.x + 2, input.origin.x + input.width - 3, roadY).map(mirror);
   const pattern: BlockPattern = input.archetype === "NEW_BUILD"
     ? "DENSE_SUPERBLOCK_3X3"
     : input.archetype === "PRIVATE"
@@ -167,9 +173,15 @@ export function planBlockDistrict(input: PlanInput): BlockDistrictPlan {
   const slotCount = validSlots.length;
   const lots = validSlots.map((slot, slotIndex): PlannedLotDto => {
     const originalIndex = template.slots.indexOf(slot);
+    const canonicalOrigin = { x: slot.x, y: slot.baseline - slot.height };
+    const mirroredCorners = [canonicalOrigin, { x: canonicalOrigin.x + slot.width - 1, y: canonicalOrigin.y + slot.height - 1 }].map(mirror);
+    const lotOrigin = {
+      x: Math.min(...mirroredCorners.map((cell) => cell.x)),
+      y: Math.min(...mirroredCorners.map((cell) => cell.y)),
+    };
     return {
       id: `${groupId}:lot:${String(slotIndex).padStart(2, "0")}`,
-      origin: { x: slot.x, y: slot.baseline - slot.height },
+      origin: lotOrigin,
       width: slot.width,
       height: slot.height,
       taskId: null,
@@ -180,11 +192,15 @@ export function planBlockDistrict(input: PlanInput): BlockDistrictPlan {
       slotCount,
       rowIndex: slot.rowIndex,
       role: slot.role,
-      frontageSide: "S",
+      frontageSide: flipVertical ? "N" : "S",
       facadeFamily,
       alignmentX: "START",
       alignmentY: "END",
-      sharedAccess: (template.access.get(originalIndex) ?? []).filter((cell) => allowed.has(cellKey(cell))),
+      // Front-row private homes receive their own short entrance path during
+      // placement instead of extending the same shared trail past every yard.
+      sharedAccess: input.archetype === "PRIVATE" && slot.rowIndex === 2
+        ? []
+        : (template.access.get(originalIndex) ?? []).map(mirror).filter((cell) => allowed.has(cellKey(cell))),
     };
   });
   return { main, branches: [], lots, pattern };

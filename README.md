@@ -141,6 +141,7 @@ docs/                               эксплуатационная докум�
 - [актуальная генерация мира](docs/WORLD-GENERATION.md)
 - [страны, правительство и права доступа](docs/COUNTRIES-AND-ACCESS.md)
 - [QA релиза 1.3](docs/QA-1.3.md)
+- [QA релиза 1.4](docs/QA-1.4.md)
 - [история изменений](CHANGELOG.md)
 - [архитектура дорожной геометрии v7](.agent/plans/_misc/road-zoning-v7/architecture.md)
 

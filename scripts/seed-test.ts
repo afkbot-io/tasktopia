@@ -33,7 +33,7 @@ for (let index = 0; index < 10; index += 1) {
             cityId: city.id,
             name: `Тестовый район ${index + 1}`,
             archetype: archetypes[index % archetypes.length],
-            capacitySp: 26,
+            capacitySp: 40,
             activate: index === 0,
             idempotencyKey: `test-district-${index}`,
           });

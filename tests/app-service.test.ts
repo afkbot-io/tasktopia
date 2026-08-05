@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
 import { AppService, DomainError } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
@@ -68,6 +69,7 @@ describe("Tasktopia square-world application service", () => {
     expect(task.stage).toBe(1);
     const taskChunk = await service.chunkForCell(task.origin);
     expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY)).tasks.find((item) => item.id === task.id)?.stage).toBe(1);
+    expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW")).tasks.find((item) => item.id === task.id)).not.toHaveProperty("descriptionPreview");
     for (const [index, status] of ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"].entries()) {
       task = await service.updateTaskStatus(countryId, { taskId: task.id, status: status as typeof task.status, comment: `stage ${index}`, idempotencyKey: `status-${index}` });
       if (index === 0) {
@@ -111,14 +113,76 @@ describe("Tasktopia square-world application service", () => {
                     })).rejects.toThrowError(/несовместим/);
   });
 
-  it("enforces district SP capacity and status transitions", async () => {
+  it("treats district SP capacity as an advisory target and still enforces status transitions", async () => {
     const city = await service.createCity(countryId, { name: "Capacity City", idempotencyKey: "capacity-city" });
     await service.createDistrict(countryId, { cityId: city.id, name: "Short Sprint", capacitySp: 3, activate: true, idempotencyKey: "capacity-district" });
     const task = await service.createTask(countryId, { cityId: city.id, title: "Three point task", estimate: 3, idempotencyKey: "capacity-task" });
-    await expect(service.createTask(countryId, { cityId: city.id, title: "Overflow task", estimate: 1, idempotencyKey: "capacity-overflow" }))
-      .rejects.toThrowError(/вместимость 3 SP/);
+    const overflow = await service.createTask(countryId, { cityId: city.id, title: "Overflow task", estimate: 1, idempotencyKey: "capacity-overflow" });
+    expect(overflow.districtId).toBe(task.districtId);
+    expect(await service.getDistrictWorkload(countryId, task.districtId)).toMatchObject({
+      targetSp: 3, plannedSp: 4, openSp: 4, taskCount: 2, overTargetBySp: 1,
+    });
     await expect(service.updateTaskStatus(countryId, { taskId: task.id, status: "TESTING", idempotencyKey: "skip-stage" }))
       .rejects.toThrowError(/пропускать стадии/);
+  });
+
+  it("deletes tasks, districts and cities safely while keeping retries idempotent", async () => {
+    const city = await service.createCity(countryId, { name: "Lifecycle City", idempotencyKey: "lifecycle-city" });
+    const active = await service.createDistrict(countryId, { cityId: city.id, name: "Active District", activate: true, idempotencyKey: "lifecycle-active" });
+    const next = await service.createDistrict(countryId, { cityId: city.id, name: "Next District", idempotencyKey: "lifecycle-next" });
+    const task = await service.createTask(countryId, { cityId: city.id, districtId: active.id, title: "Disposable Task", estimate: 1, idempotencyKey: "lifecycle-task" });
+    await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", comment: "Creates dependent history", idempotencyKey: "lifecycle-start" });
+    const areaId = randomUUID();
+    const decorId = randomUUID();
+    const featureCell = active.cells[0]!;
+    await db.prepare(`INSERT INTO world_features_v6
+      (id,country_id,city_id,district_id,parent_feature_id,kind,asset_kind,asset_key,origin_x,origin_y,footprint_json,orientation,access_json,created_at)
+      VALUES (?,?,?,?,?,'PARK','AREA','urban-park',?,?,?::jsonb,'S','[]'::jsonb,?)`)
+      .run(areaId, countryId, city.id, active.id, null, featureCell.x, featureCell.y, JSON.stringify([featureCell]), new Date().toISOString());
+    await db.prepare(`INSERT INTO world_features_v6
+      (id,country_id,city_id,district_id,parent_feature_id,kind,asset_kind,asset_key,origin_x,origin_y,footprint_json,orientation,access_json,created_at)
+      VALUES (?,?,?,?,?,'PARK_DECOR','PROP','bench-horizontal',?,?,?::jsonb,'S','[]'::jsonb,?)`)
+      .run(decorId, countryId, city.id, active.id, areaId, featureCell.x, featureCell.y, JSON.stringify([featureCell]), new Date().toISOString());
+    const ownedFeatures = await db.prepare("SELECT id FROM world_features_v6 WHERE district_id = ?").all(active.id);
+    expect(ownedFeatures.map((row) => row.id)).toEqual(expect.arrayContaining([areaId, decorId]));
+
+    await expect(service.deleteTask(countryId, { taskId: task.id, confirmTitle: "wrong", idempotencyKey: "delete-task-wrong" }))
+      .rejects.toThrowError(/точное текущее название/);
+    const deletedTask = await service.deleteTask(countryId, { taskId: task.id, confirmTitle: task.title, idempotencyKey: "delete-task" });
+    expect(await service.deleteTask(countryId, { taskId: task.id, confirmTitle: task.title, idempotencyKey: "delete-task" })).toEqual(deletedTask);
+    expect((await service.listTasks(countryId)).some((item) => item.id === task.id)).toBe(false);
+    expect(await db.prepare("SELECT 1 FROM task_comments_v3 WHERE task_id = ?").get(task.id)).toBeUndefined();
+    expect(await db.prepare("SELECT 1 FROM task_events_v7 WHERE task_id = ?").get(task.id)).toBeUndefined();
+    const freed = (await service.listDistricts(countryId, city.id)).find((item) => item.id === active.id)!.lots;
+    expect(freed.some((lot) => lot.taskId === task.id)).toBe(false);
+
+    const deletedDistrict = await service.deleteDistrict(countryId, { districtId: active.id, confirmName: active.name, idempotencyKey: "delete-district" });
+    expect(deletedDistrict.activatedDistrictId).toBe(next.id);
+    expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === next.id)?.status).toBe("ACTIVE");
+    expect(await db.prepare("SELECT 1 FROM world_features_v6 WHERE district_id = ?").get(active.id)).toBeUndefined();
+    expect(await db.prepare("SELECT 1 FROM world_chunk_entities_v11 WHERE entity_kind = 'FEATURE' AND entity_id = ANY(?::text[])").get(ownedFeatures.map((row) => String(row.id)))).toBeUndefined();
+    const deletionEvent = (await service.listEvents(countryId)).findLast((event) => event.type === "district.deleted");
+    const affected = deletionEvent?.payload.affectedBounds as { minX: number; minY: number; maxX: number; maxY: number };
+    expect(affected.minX).toBeLessThanOrEqual(boundsOf(next.cells).minX);
+    expect(affected.maxX).toBeGreaterThanOrEqual(boundsOf(next.cells).maxX);
+
+    const roadsBeforeDelete = Number((await db.prepare("SELECT COUNT(*) AS count FROM roads_v3 WHERE country_id = ? AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?").get(countryId, city.bounds.minX, city.bounds.maxX, city.bounds.minY, city.bounds.maxY) as { count: number }).count);
+    const deletedCity = await service.deleteCity(countryId, { cityId: city.id, confirmName: city.name, idempotencyKey: "delete-city" });
+    expect(deletedCity).toMatchObject({ cityId: city.id, districtsDeleted: 1, tasksDeleted: 0 });
+    expect(deletedCity.roadsDeleted).toBeGreaterThan(0);
+    expect(deletedCity.roadsDeleted).toBeLessThanOrEqual(roadsBeforeDelete);
+    expect(await service.listCities(countryId)).toEqual([]);
+  });
+
+  it("keeps destructive operations isolated and exact-confirmed", async () => {
+    const city = await service.createCity(countryId, { name: "Protected City", idempotencyKey: "protected-city" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Protected District", activate: true, idempotencyKey: "protected-district" });
+    const other = await registerUser(db, { email: "delete-other@example.com", name: "Other", password: "password123" });
+    await expect(service.deleteCity(countryId, { cityId: city.id, confirmName: "wrong", idempotencyKey: "wrong-city-confirm" })).rejects.toThrowError(/точное текущее название/);
+    await expect(service.deleteDistrict(countryId, { districtId: district.id, confirmName: "wrong", idempotencyKey: "wrong-district-confirm" })).rejects.toThrowError(/точное текущее название/);
+    await expect(service.deleteCity(other.user.countryId, { cityId: city.id, confirmName: city.name, idempotencyKey: "foreign-city-delete" })).rejects.toThrowError(/не найден/);
+    await expect(service.deleteDistrict(other.user.countryId, { districtId: district.id, confirmName: district.name, idempotencyKey: "foreign-district-delete" })).rejects.toThrowError(/не найден/);
+    expect((await service.listDistricts(countryId, city.id)).some((item) => item.id === district.id)).toBe(true);
   });
 
   it("keeps future-district tasks in planning until the district becomes active", async () => {

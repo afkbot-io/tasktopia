@@ -91,7 +91,12 @@ export function terrainAt(seed: number, x: number, y: number): Omit<TerrainCellD
     else if (moisture > 0.5) terrain = "MEADOW";
     else terrain = "GRASS";
   }
-  return { terrain, variant: Math.floor(hashCoordinate(seed, x, y, 311) * 3) };
+  const baseVariant = Math.floor(hashCoordinate(seed, x, y, 311) * 3);
+  const fishChance = hashCoordinate(seed, x, y, 313);
+  const variant = isWater(terrain) && fishChance < 0.055
+    ? 3 + Math.floor(hashCoordinate(seed, x, y, 317) * 2)
+    : baseVariant;
+  return { terrain, variant };
 }
 
 export function isWater(terrain: TerrainKind): boolean {

@@ -35,6 +35,16 @@ describe("V9 block city generation", () => {
     expect(roadCells.length / cells.length).toBeLessThan(0.2);
   });
 
+  it("varies private frontage and leaves front homes for individual entrance paths", () => {
+    const origin = { x: 20, y: 30 };
+    const cells = rectangleFootprint(origin, 42, 28);
+    const first = planBlockDistrict({ districtId: "private-a", origin, width: 42, height: 28, cells, archetype: "PRIVATE", groupOffset: 0 });
+    const mirrored = planBlockDistrict({ districtId: "private-b", origin, width: 42, height: 28, cells, archetype: "PRIVATE", groupOffset: 1 });
+    expect(first.main[0]!.y).toBeGreaterThan(mirrored.main[0]!.y);
+    expect(first.lots.filter((lot) => lot.rowIndex === 2).every((lot) => lot.sharedAccess?.length === 0)).toBe(true);
+    expect(mirrored.lots.every((lot) => lot.frontageSide === "N")).toBe(true);
+  });
+
   it("fills a 3x3 high-rise group automatically without changing its road network", async () => {
     db = await createTestDb();
     const registered = await registerUser(db, {

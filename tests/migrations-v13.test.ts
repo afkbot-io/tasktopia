@@ -11,7 +11,7 @@ describe("PostgreSQL migrations", () => {
 
   it("records immutable migration checksums", async () => {
     const rows = await db.prepare("SELECT name, checksum FROM schema_migrations ORDER BY name").all<{ name: string; checksum: string }>();
-    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql"]);
+    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql"]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
   });
 
