@@ -7,4 +7,4 @@
 - [x] Enforce infrastructure quotas and improve gas-station variants.
 - [x] Harden bridge portals, starting approach, vehicle routing, and shore placement.
 - [x] Add sparse two-species animated wildlife within the existing chunk/render budget.
-- [ ] Rebuild assets, run unit/integration/e2e/visual QA, review stale code/docs, then deploy.
+- [x] Rebuild assets, run unit/integration/e2e/visual QA, review stale code/docs, then deploy.
