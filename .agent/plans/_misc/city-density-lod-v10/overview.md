@@ -26,7 +26,7 @@ Make district layouts visibly varied and compact, keep minor streets readable in
 
 # Current status
 
-Implementation and verification complete; production deployment pending.
+Complete and verified in production as Tasktopia 1.7.0.
 
 # Risks
 
@@ -41,4 +41,4 @@ Implementation and verification complete; production deployment pending.
 - [x] Browser evidence captured
 - [x] Separate scale test green
 - [x] Documentation and changelog updated
-- [ ] Production health verified
+- [x] Production health verified
