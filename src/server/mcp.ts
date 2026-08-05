@@ -1,6 +1,5 @@
 import type { IncomingHttpHeaders } from "node:http";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { createMcpHandler, McpServer, type AuthInfo, type McpHttpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { BUILDING_CATALOG } from "../shared/catalog";
 import type { AppService } from "./app-service";
@@ -10,7 +9,8 @@ import { authenticateMcpToken, listAccessibleCountries, setActiveCountry } from 
 import type { CountryRole, McpScope } from "../shared/contracts";
 import { APP_VERSION } from "./version";
 
-type McpIdentity = { userId: string; countryId: string; countryRole: CountryRole; tokenId: string; scopes: McpScope[] };
+export type McpIdentity = { userId: string; countryId: string; countryRole: CountryRole; tokenId: string; scopes: McpScope[] };
+export type McpAuthentication = { identity: McpIdentity; authInfo: AuthInfo };
 
 function response(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }], structuredContent: { result: data } };
@@ -26,12 +26,33 @@ function requireScope(identity: McpIdentity, scope: McpScope): void {
   if (!identity.scopes.includes(scope)) throw new DomainError("FORBIDDEN_SCOPE", `Токену не хватает scope ${scope}`);
 }
 
-export async function getMcpIdentity(db: Db, headers: IncomingHttpHeaders): Promise<McpIdentity | null> {
-  return authenticateMcpToken(db, headers.authorization ?? headers["x-api-key"]);
+export async function getMcpAuthentication(db: Db, headers: IncomingHttpHeaders): Promise<McpAuthentication | null> {
+  const identity = await authenticateMcpToken(db, headers.authorization);
+  if (!identity) return null;
+  const authorization = headers.authorization;
+  if (Array.isArray(authorization)) return null;
+  const token = authorization?.replace(/^Bearer /i, "") ?? "";
+  return {
+    identity,
+    authInfo: {
+      token,
+      clientId: `tasktopia-personal-key:${identity.tokenId}`,
+      scopes: identity.scopes,
+      extra: { tasktopiaIdentity: identity },
+    },
+  };
 }
 
 export async function createMcpServer(db: Db, service: AppService, identity: McpIdentity): Promise<McpServer> {
-  const server = new McpServer({ name: "tasktopia", version: APP_VERSION });
+  const server = new McpServer({ name: "tasktopia", version: APP_VERSION }, {
+    instructions: [
+      "Tasktopia turns delivery work into a city: country=project, city=epic, district=sprint, building=task.",
+      "Start with country.get_current, then read IDs before calling write tools.",
+      "Every write requires a stable idempotencyKey. Reuse it only for an identical retry.",
+      "Task stages are PLANNING -> STARTED -> IN_PROGRESS -> TESTING -> COMPLETED; only TESTING -> IN_PROGRESS may move backward and requires a comment.",
+    ].join(" "),
+    cacheHints: { "tools/list": { ttlMs: 300_000, cacheScope: "private" }, "resources/list": { ttlMs: 300_000, cacheScope: "private" } },
+  });
   const actor = await db.prepare("SELECT name FROM users WHERE id = ?").get<{ name: string }>(identity.userId);
   const actorName = actor?.name ?? "Участник палаты";
   const resolveMember = async (email: string | undefined): Promise<string | undefined> => {
@@ -41,26 +62,26 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     if (!row) throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен быть зарегистрирован и состоять в палате страны");
     return row.id;
   };
-  const cityCreateSchema = {
+  const cityCreateSchema = z.object({
     name: z.string().min(2).max(100), description: z.string().max(4000).optional(),
     morphology: z.enum(["BALANCED", "DENSE_CORE", "GARDEN_CITY", "POLYCENTRIC"]).optional(),
     idempotencyKey: z.string().min(4).max(160),
-  };
-  const districtCreateSchema = {
+  });
+  const districtCreateSchema = z.object({
     cityId: z.string().uuid(), name: z.string().min(2).max(100), goal: z.string().max(2000).optional(),
     capacitySp: z.number().int().min(1).max(26).optional(), activate: z.boolean().optional(),
     archetype: z.enum(["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"]).optional(),
     idempotencyKey: z.string().min(4).max(160),
-  };
+  });
 
-  server.registerTool("country.get_current", { description: "Получить текущую страну и состояние квадратного мира.", inputSchema: {} }, async () => {
+  server.registerTool("country.get_current", { title: "Current country", description: "Получить текущую страну и состояние квадратного мира.", inputSchema: z.object({}), annotations: { readOnlyHint: true } }, async () => {
     try {
       requireScope(identity, "country:read");
       return response({ country: await service.getCountry(identity.countryId), cities: await service.listCities(identity.countryId) });
     } catch (error) { return failure(error); }
   });
 
-  server.registerTool("country.list", { description: "Получить все страны, доступные этому аккаунту.", inputSchema: {} }, async () => {
+  server.registerTool("country.list", { title: "List countries", description: "Получить все страны, доступные этому аккаунту.", inputSchema: z.object({}), annotations: { readOnlyHint: true } }, async () => {
     try {
       requireScope(identity, "country:read");
       return response(await Promise.all((await listAccessibleCountries(db, identity.userId)).map(async (access) => ({
@@ -71,7 +92,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
 
   server.registerTool("country.select", {
     description: "Выбрать страну для всех следующих MCP-команд этого аккаунта.",
-    inputSchema: { countryId: z.string().uuid() },
+    inputSchema: z.object({ countryId: z.string().uuid() }),
   }, async ({ countryId }) => {
     try {
       requireScope(identity, "country:read");
@@ -81,65 +102,67 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     } catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.list", { description: "Получить города текущей страны.", inputSchema: {} }, async () => {
+  server.registerTool("city.list", { description: "Получить города текущей страны.", inputSchema: z.object({}), annotations: { readOnlyHint: true } }, async () => {
     try { requireScope(identity, "country:read"); return response(await service.listCities(identity.countryId)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.get", { description: "Получить город, районы и задачи.", inputSchema: { cityId: z.string().uuid() } }, async ({ cityId }) => {
+  server.registerTool("city.get", { description: "Получить город, районы и задачи.", inputSchema: z.object({ cityId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ cityId }) => {
     try {
       requireScope(identity, "country:read");
+      requireScope(identity, "tasks:read");
       const city = (await service.listCities(identity.countryId)).find((item) => item.id === cityId);
       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
       return response({ city, districts: await service.listDistricts(identity.countryId, cityId), tasks: (await service.listTasks(identity.countryId)).filter((task) => task.cityId === cityId) });
     } catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.create", { description: "Создать город, его территорию, улицы и соединение с дорожной сетью страны.", inputSchema: cityCreateSchema }, async (input) => {
+  server.registerTool("city.create", { description: "Создать город, его территорию, улицы и соединение с дорожной сетью страны.", inputSchema: cityCreateSchema, annotations: { idempotentHint: true } }, async (input) => {
     try { requireScope(identity, "cities:write"); return response(await service.createCity(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.list", { description: "Получить районы, при необходимости только одного города.", inputSchema: { cityId: z.string().uuid().optional() } }, async ({ cityId }) => {
+  server.registerTool("district.list", { description: "Получить районы, при необходимости только одного города.", inputSchema: z.object({ cityId: z.string().uuid().optional() }), annotations: { readOnlyHint: true } }, async ({ cityId }) => {
     try { requireScope(identity, "country:read"); return response(await service.listDistricts(identity.countryId, cityId)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.create", { description: "Создать расширяемый район с улицами, тротуарами и архетипом застройки. Если archetype не передан, сервер выберет его по цели района и характеру города.", inputSchema: districtCreateSchema }, async (input) => {
+  server.registerTool("district.create", { description: "Создать расширяемый район с улицами, тротуарами и архетипом застройки. Если archetype не передан, сервер выберет его по цели района и характеру города.", inputSchema: districtCreateSchema, annotations: { idempotentHint: true } }, async (input) => {
     try { requireScope(identity, "districts:write"); return response(await service.createDistrict(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.activate", { description: "Сделать район активным.", inputSchema: { districtId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) } }, async ({ districtId, idempotencyKey }) => {
+  server.registerTool("district.activate", { description: "Сделать район активным.", inputSchema: z.object({ districtId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async ({ districtId, idempotencyKey }) => {
     try { requireScope(identity, "districts:write"); return response(await service.activateDistrict(identity.countryId, districtId, idempotencyKey)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.complete", { description: "Закрыть район, когда все его задачи завершены; после этого район больше не расширяется.", inputSchema: { districtId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) } }, async ({ districtId, idempotencyKey }) => {
+  server.registerTool("district.complete", { description: "Закрыть район, когда все его задачи завершены; после этого район больше не расширяется.", inputSchema: z.object({ districtId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async ({ districtId, idempotencyKey }) => {
     try { requireScope(identity, "districts:write"); return response(await service.completeDistrict(identity.countryId, districtId, idempotencyKey)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("task.list", { description: "Получить задачи, при необходимости только одного района.", inputSchema: { districtId: z.string().uuid().optional() } }, async ({ districtId }) => {
+  server.registerTool("task.list", { description: "Получить задачи, при необходимости только одного района.", inputSchema: z.object({ districtId: z.string().uuid().optional() }), annotations: { readOnlyHint: true } }, async ({ districtId }) => {
     try { requireScope(identity, "tasks:read"); return response(await service.listTasks(identity.countryId, districtId)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("task.get", { description: "Получить задачу, здание и комментарии.", inputSchema: { taskId: z.string().uuid() } }, async ({ taskId }) => {
+  server.registerTool("task.get", { description: "Получить задачу, здание и комментарии.", inputSchema: z.object({ taskId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ taskId }) => {
     try { requireScope(identity, "tasks:read"); return response(await service.getTask(identity.countryId, taskId)); }
     catch (error) { return failure(error); }
   });
 
   server.registerTool("task.create", {
     description: "Создать задачу в районе; сервер детерминированно выберет здание и при необходимости расширит район.",
-    inputSchema: {
+    inputSchema: z.object({
       cityId: z.string().uuid(), districtId: z.string().uuid().optional(),
       title: z.string().min(2).max(160), description: z.string().max(8000).optional(),
       estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]),
       priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().optional(),
       buildingHint: z.string().max(100).optional(), assigneeEmail: z.string().email().optional(),
       idempotencyKey: z.string().min(4).max(160),
-    },
+    }),
+    annotations: { idempotentHint: true },
   }, async (input) => {
     try {
       requireScope(identity, "tasks:write");
@@ -155,14 +178,15 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     taskId: z.string().uuid(), status: z.enum(["PLANNING", "STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"]),
     progress: z.number().int().min(0).max(100).optional(), comment: z.string().max(8000).optional(), idempotencyKey: z.string().min(4).max(160),
   };
-  server.registerTool("task.set_status", { description: "Перевести задачу на следующую строительную стадию.", inputSchema: statusInput }, async (input) => {
+  server.registerTool("task.set_status", { description: "Перевести задачу на следующую строительную стадию.", inputSchema: z.object(statusInput), annotations: { idempotentHint: true } }, async (input) => {
     try { requireScope(identity, "tasks:write"); return response(await service.updateTaskStatus(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
     catch (error) { return failure(error); }
   });
 
   server.registerTool("task.report_progress", {
     description: "Обновить процент и статус задачи с обязательным комментарием.",
-    inputSchema: { ...statusInput, progress: z.number().int().min(0).max(100), comment: z.string().min(1).max(8000) },
+    inputSchema: z.object({ ...statusInput, progress: z.number().int().min(0).max(100), comment: z.string().min(1).max(8000) }),
+    annotations: { idempotentHint: true },
   }, async (input) => {
     try { requireScope(identity, "tasks:write"); return response(await service.updateTaskStatus(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
     catch (error) { return failure(error); }
@@ -170,7 +194,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
 
   server.registerTool("task.add_comment", {
     description: "Добавить комментарий без изменения стадии.",
-    inputSchema: { taskId: z.string().uuid(), body: z.string().min(1).max(8000), idempotencyKey: z.string().min(4).max(160) },
+    inputSchema: z.object({ taskId: z.string().uuid(), body: z.string().min(1).max(8000), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { idempotentHint: true },
   }, async (input) => {
     try { requireScope(identity, "comments:write"); return response(await service.addTaskComment(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
     catch (error) { return failure(error); }
@@ -178,7 +203,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
 
   server.registerTool("task.assign", {
     description: "Назначить ответственного из палаты страны или снять назначение.",
-    inputSchema: { taskId: z.string().uuid(), assigneeEmail: z.string().email().nullable(), idempotencyKey: z.string().min(4).max(160) },
+    inputSchema: z.object({ taskId: z.string().uuid(), assigneeEmail: z.string().email().nullable(), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { idempotentHint: true },
   }, async ({ taskId, assigneeEmail, idempotencyKey }) => {
     try {
       requireScope(identity, "tasks:write");
@@ -205,4 +231,17 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   return server;
 }
 
-export { StreamableHTTPServerTransport };
+function identityFromAuthInfo(authInfo: AuthInfo | undefined): McpIdentity {
+  const identity = authInfo?.extra?.tasktopiaIdentity as McpIdentity | undefined;
+  if (!identity?.userId || !identity.countryId || !identity.tokenId || !Array.isArray(identity.scopes)) {
+    throw new DomainError("UNAUTHENTICATED", "MCP request не содержит проверенную Tasktopia identity");
+  }
+  return identity;
+}
+
+export function createTasktopiaMcpHandler(db: Db, service: AppService, onerror?: (error: Error) => void): McpHttpHandler {
+  return createMcpHandler(
+    ({ authInfo }) => createMcpServer(db, service, identityFromAuthInfo(authInfo)),
+    { legacy: "stateless", responseMode: "auto", onerror },
+  );
+}

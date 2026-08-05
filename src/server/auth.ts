@@ -16,6 +16,7 @@ export class EmailAlreadyRegisteredError extends Error {
 }
 
 export type AuthUser = { id: string; email: string; name: string; countryId: string; countryRole: CountryRole };
+export type RegistrationInput = { email: string; name: string; password: string; countryName?: string; cityName?: string };
 export type CountryAccessRow = {
   id: string;
   name: string;
@@ -146,7 +147,7 @@ export async function updateAccountName(db: Db, userId: string, name: string): P
   await db.prepare("UPDATE users SET name = ? WHERE id = ?").run(name.trim(), userId);
 }
 
-export async function registerUser(db: Db, input: { email: string; name: string; password: string; countryName?: string }): Promise<{ user: AuthUser; session: string }> {
+export async function registerUser(db: Db, input: RegistrationInput): Promise<{ user: AuthUser; session: string }> {
   const email = input.email.trim().toLowerCase();
   const name = input.name.trim();
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Введите корректный email");
@@ -248,9 +249,10 @@ export async function createMcpToken(
 }
 
 export async function authenticateMcpToken(db: Db, header: string | string[] | undefined): Promise<{ userId: string; countryId: string; countryRole: CountryRole; tokenId: string; scopes: McpScope[] } | null> {
-  const value = Array.isArray(header) ? header[0] : header;
-  if (!value) return null;
-  const token = value.startsWith("Bearer ") ? value.slice(7) : value;
+  if (Array.isArray(header) || !header) return null;
+  const match = /^Bearer (ttp_mcp_[A-Za-z0-9_-]+)$/i.exec(header.trim());
+  if (!match) return null;
+  const token = match[1]!;
   const row = await db.prepare(`SELECT id, country_id, user_id, scopes_json FROM mcp_tokens
     WHERE token_hash = ? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)`)
             .get(hashToken(token), now());

@@ -35,6 +35,22 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - name: MCP protocol and authentication smoke
+        run: |
+          npm run seed:test
+          npm start > /tmp/tasktopia-mcp-smoke.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3000/health
+          npm run smoke:mcp
+        env:
+          NODE_ENV: production
+          SESSION_COOKIE_SECURE: "false"
+          APP_ORIGIN: http://127.0.0.1:3000
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
         env:

@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import postgres, { type Sql } from "postgres";
+import postgres, { type Sql, type TransactionSql } from "postgres";
 
 export type Row = Record<string, unknown>;
 export type RunResult = { changes: number; rows: Row[] };
@@ -27,7 +27,19 @@ type DbOptions = {
   onClose?: () => Promise<void>;
 };
 
-const transactionContext = new AsyncLocalStorage<Sql>();
+type QueryExecutor = Sql | TransactionSql;
+type TransactionContext = { executor: QueryExecutor; afterCommit: Array<() => void>; afterRollback: Array<() => void> };
+const transactionContext = new AsyncLocalStorage<TransactionContext>();
+
+export function onTransactionCommit(callback: () => void): void {
+  const context = transactionContext.getStore();
+  if (context) context.afterCommit.push(callback);
+  else callback();
+}
+
+export function onTransactionRollback(callback: () => void): void {
+  transactionContext.getStore()?.afterRollback.push(callback);
+}
 
 function positionalQuery(query: string): string {
   let index = 0;
@@ -46,8 +58,8 @@ function jsonParameter(value: unknown): unknown {
 class PostgresDb implements Db {
   constructor(private readonly pool: Sql, private readonly onClose?: () => Promise<void>) {}
 
-  private executor(): Sql {
-    return transactionContext.getStore() ?? this.pool;
+  private executor(): QueryExecutor {
+    return transactionContext.getStore()?.executor ?? this.pool;
   }
 
   prepare(query: string): Statement {
@@ -74,7 +86,19 @@ class PostgresDb implements Db {
     // country + first city onboarding). Reuse the active connection instead of
     // opening an unrelated nested transaction that could commit partially.
     if (transactionContext.getStore()) return await callback();
-    return await this.pool.begin(async (sql) => transactionContext.run(sql, callback)) as T;
+    const context: TransactionContext = { executor: this.pool, afterCommit: [], afterRollback: [] };
+    let result: T;
+    try {
+      result = await this.pool.begin(async (sql) => {
+        context.executor = sql;
+        return transactionContext.run(context, callback);
+      }) as T;
+    } catch (error) {
+      for (const afterRollback of context.afterRollback) afterRollback();
+      throw error;
+    }
+    for (const afterCommit of context.afterCommit) afterCommit();
+    return result;
   }
 
   async close(): Promise<void> {

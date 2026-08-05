@@ -20,7 +20,9 @@ describe("country collaboration HTTP boundary", () => {
   afterEach(async () => { await app.close(); await db.close(); });
 
   async function register(email: string, name: string): Promise<string> {
-    const response = await app.inject({ method: "POST", url: "/api/auth/register", payload: { email, name, password: "password-123" } });
+    const response = await app.inject({ method: "POST", url: "/api/auth/register", payload: {
+      email, name, password: "password-123", countryName: `${name} project`, cityName: `${name} city`,
+    } });
     expect(response.statusCode).toBe(200);
     const setCookie = response.headers["set-cookie"]!;
     return (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;

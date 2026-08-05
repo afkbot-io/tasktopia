@@ -5,6 +5,17 @@ async function capture(page: Page, path: string): Promise<void> {
   if (captureReleaseScreenshots) await page.screenshot({ path, fullPage: true });
 }
 
+test("public AI integration guide is directly accessible", async ({ request }) => {
+  const response = await request.get("/ai.md");
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("text/markdown");
+  const guide = await response.text();
+  expect(guide).toContain("https://tasktopia.online/mcp");
+  expect(guide).toContain('"Authorization": "Bearer <PERSONAL_MCP_KEY>"');
+  expect(guide).toContain("`country.get_current`");
+  expect(guide).toContain("`task.report_progress`");
+});
+
 test("login, map and MCP token management", async ({ page, context }) => {
   test.setTimeout(240_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -72,7 +83,12 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByTitle("MCP-интеграции").click();
   await expect(page.getByRole("heading", { name: "Аккаунт и интеграции" })).toBeVisible();
   const endpoint = `${new URL(page.url()).origin}/mcp`;
+  const aiGuide = `${new URL(page.url()).origin}/ai.md`;
   await expect(page.getByText(endpoint, { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Открыть ai.md" })).toHaveAttribute("href", aiGuide);
+  await page.getByRole("button", { name: "Копировать ссылку" }).click();
+  await expect(page.getByRole("button", { name: "Ссылка скопирована" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(aiGuide);
   await expect(page.getByText("Streamable HTTP", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Копировать URL" }).click();
   await expect(page.getByRole("button", { name: "Скопировано" })).toBeVisible();

@@ -1,5 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCompress from "@fastify/compress";
 import fastifyHelmet from "@fastify/helmet";
@@ -11,7 +13,7 @@ import { AppService } from "./app-service";
 import { getSessionUser, SESSION_COOKIE } from "./auth";
 import { config } from "./config";
 import { createDb } from "./db";
-import { createMcpServer, getMcpIdentity, StreamableHTTPServerTransport } from "./mcp";
+import { createTasktopiaMcpHandler, getMcpAuthentication } from "./mcp";
 import { registerRoutes } from "./routes";
 
 const app = Fastify({
@@ -83,6 +85,7 @@ io.on("connection", (socket) => {
 const service = new AppService(db, (event) => {
   io.to(`country:${event.countryId}`).emit("world:event", event);
 });
+const mcpHandler = createTasktopiaMcpHandler(db, service, (error) => app.log.error({ err: error }, "MCP handler error"));
 
 await registerRoutes(app, db, service, {
   async onCountryAccessRevoked(countryId, userId) {
@@ -103,23 +106,50 @@ await registerRoutes(app, db, service, {
   },
 });
 
-app.post("/mcp", { config: { rateLimit: { max: 90, timeWindow: "1 minute" } } }, async (request, reply) => {
+app.route({
+  method: ["GET", "POST", "DELETE"],
+  url: "/mcp",
+  config: { rateLimit: { max: 90, timeWindow: "1 minute" } },
+  handler: async (request, reply) => {
   const origin = request.headers.origin;
   if (origin && origin !== config.APP_ORIGIN) return reply.code(403).send({ error: "INVALID_ORIGIN" });
-  const identity = await getMcpIdentity(db, request.headers);
-  if (!identity) return reply.code(401).send({ error: "UNAUTHENTICATED", message: "Передайте MCP token в Authorization: Bearer" });
-  const server = await createMcpServer(db, service, identity);
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-  await server.connect(transport);
-  reply.hijack();
-  await transport.handleRequest(request.raw, reply.raw, request.body);
-  reply.raw.on("close", () => {
-    void transport.close();
-    void server.close();
+  const authentication = await getMcpAuthentication(db, request.headers);
+  if (!authentication) {
+    return reply.header("WWW-Authenticate", 'Bearer realm="tasktopia"').code(401)
+      .send({ error: "UNAUTHENTICATED", message: "Передайте персональный ключ как Authorization: Bearer <token>" });
+  }
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(request.headers)) {
+    if (Array.isArray(value)) for (const item of value) headers.append(name, item);
+    else if (value !== undefined) headers.set(name, String(value));
+  }
+  const abortController = new AbortController();
+  const abort = () => abortController.abort();
+  const abortDisconnectedResponse = () => { if (!reply.raw.writableEnded) abort(); };
+  request.raw.once("aborted", abort);
+  const webRequest = new Request(new URL(request.url, config.APP_ORIGIN), {
+    method: request.method,
+    headers,
+    signal: abortController.signal,
   });
+  try {
+    const response = await mcpHandler.fetch(webRequest, { authInfo: authentication.authInfo, parsedBody: request.body });
+    reply.hijack();
+    reply.raw.statusCode = response.status;
+    response.headers.forEach((value, name) => reply.raw.setHeader(name, value));
+    reply.raw.once("close", abortDisconnectedResponse);
+    if (!response.body) reply.raw.end();
+    else try {
+        await pipeline(Readable.fromWeb(response.body as import("node:stream/web").ReadableStream), reply.raw);
+      } catch (error) {
+        if (!abortController.signal.aborted) throw error;
+      }
+  } finally {
+    request.raw.off("aborted", abort);
+    reply.raw.off("close", abortDisconnectedResponse);
+  }
+  },
 });
-
-app.get("/mcp", (_request, reply) => reply.code(405).send({ error: "METHOD_NOT_ALLOWED", message: "MCP endpoint работает stateless через POST" }));
 
 const publicRoot = join(process.cwd(), "dist/public");
 if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
@@ -132,6 +162,7 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
 
 const close = async () => {
   io.close();
+  await mcpHandler.close();
   await app.close();
   await db.close();
 };

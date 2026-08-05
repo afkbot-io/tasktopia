@@ -2,6 +2,8 @@
 
 Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `AppService` → асинхронный пул PostgreSQL 16. Геометрия мира хранится отдельно от read model чанков; terrain и часть поверхностей вычисляются детерминированно по seed.
 
+Регистрация вызывает единый `AppService.onboardUser`: аккаунт, session, страна и необязательный первый город создаются внутри одной транзакции. HTTP-route только валидирует вход и не собирает доменный workflow самостоятельно. Вложенные мутации откладывают realtime-публикацию и cache invalidation до commit внешней транзакции; rollback очищает изменённые in-memory индексы.
+
 ## Карта сущностей
 
 | Семейство | Сущности | Владелец и граница | Жизненный цикл |
@@ -23,6 +25,7 @@ Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `App
 - Transport не принимает `countryId` как доверенную границу мира: HTTP использует session active country, MCP — заново аутентифицированный персональный token.
 - Чужие city/district/task id возвращают `404`/`403` без геометрии или данных другой страны.
 - Изменяющие MCP-команды требуют `idempotencyKey`; запись домена, `worldVersion`, event и сохранённый ответ коммитятся атомарно.
+- `/mcp` обслуживается официальным web-standard MCP v2 server handler через streaming Fetch→Fastify bridge: основной протокол `2026-07-28`, stateless fallback `2025-11-25`. Аутентификация принимает только персональный `Authorization: Bearer ttp_mcp_...`; Origin проверяется для всех transport methods. Отдельный Hono/Node adapter не используется, поэтому runtime не зависит от несовместимого framework major override.
 - Районы четырёхсвязны, не пересекаются и находятся внутри актуальных city bounds. Footprint задач не пересекаются с дорогой, водой и друг другом; вход имеет короткий путь к пешеходной сети.
 - `NEW_BUILD` и `PRIVATE` используют квартальные шаблоны; полный видимый asphalt (дороги, asphalt platforms и driveways) не превышает 20% района.
 - `world_chunk_entities_v11` использует математический floor и корректно индексирует отрицательные координаты. Geometry UPDATE и DELETE удаляют старое membership.

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppService, DomainError } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
-import { createTestDb, type Db } from "../src/server/db";
+import { createTestDb, transaction, type Db } from "../src/server/db";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
 import { isWater, terrainAt } from "../src/server/world/terrain";
 
@@ -127,6 +127,25 @@ describe("Tasktopia square-world application service", () => {
     expect(row.token_hash).not.toContain(token.token);
   });
 
+  it("publishes realtime events only after the outer transaction commits", async () => {
+    const events: string[] = [];
+    const transactionalService = new AppService(db, (event) => events.push(event.type));
+
+    await expect(transaction(db, async () => {
+      await transactionalService.createCity(countryId, { name: "Rolled back city", idempotencyKey: "rollback-city" });
+      expect(events).toEqual([]);
+      throw new Error("force outer rollback");
+    })).rejects.toThrowError(/force outer rollback/);
+    expect(events).toEqual([]);
+    expect((await transactionalService.listCities(countryId)).some((city) => city.name === "Rolled back city")).toBe(false);
+
+    await transaction(db, async () => {
+      await transactionalService.createCity(countryId, { name: "Committed city", idempotencyKey: "commit-city" });
+      expect(events).toEqual([]);
+    });
+    expect(events).toEqual(["city.created"]);
+  });
+
   it("connects a second city to the existing national road component", async () => {
     const cities = await Promise.all(Array.from({ length: 2 }, (_, index) => service.createCity(countryId, { name: `City ${index}`, idempotencyKey: `city-${index}` })));
     expect(cities).toHaveLength(2);
@@ -143,7 +162,7 @@ describe("Tasktopia square-world application service", () => {
     for (const feature of features) {
       for (const cell of feature.footprint) expect(roads.some((road) => cellKey(road) === cellKey(cell))).toBe(false);
     }
-  });
+  }, 15_000);
 
   it("keeps committed tasks fixed when spatial growth is needed", async () => {
     await db.prepare("UPDATE countries SET seed = 424242 WHERE id = ?").run(countryId);
@@ -162,6 +181,10 @@ describe("Tasktopia square-world application service", () => {
   }, 15_000);
 
   it("expands a city envelope to fit eight non-overlapping districts", async () => {
+    // Regression: the nearest endpoint was enclosed by reservation halos for
+    // this production-valid seed. District creation must try another safe
+    // road/endpoint pair instead of failing the whole city growth operation.
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1901333332, countryId);
     const city = await service.createCity(countryId, { name: "District City", idempotencyKey: "district-city" });
     for (let index = 0; index < 8; index += 1) {
       await service.createDistrict(countryId, { cityId: city.id, name: `District ${index}`, capacitySp: 14, activate: index === 0, idempotencyKey: `district-eight-${index}` });

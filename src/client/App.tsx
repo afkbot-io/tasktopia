@@ -139,7 +139,7 @@ export function App() {
 
       <nav className="flex items-center justify-end gap-1.5 sm:gap-2" aria-label="Действия карты">
         <Button className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "border-skyline bg-[#1a3942] text-white")} onClick={() => setPlanOpen((value) => !value)}>План</Button>
-        <Button className={cx("hidden min-h-10 px-3 text-xs sm:inline-flex sm:px-4", showDistricts && "border-skyline bg-[#1a3942] text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Районы</Button>
+        <Button className={cx("min-h-10 px-3 text-xs sm:px-4", showDistricts && "border-skyline bg-[#1a3942] text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Районы</Button>
         <Button className="h-10 min-h-10 w-10 px-0 text-lg text-signal" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</Button>
         <Button className="h-10 min-h-10 w-10 rounded-full px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
       </nav>

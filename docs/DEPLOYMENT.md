@@ -39,7 +39,7 @@ SESSION_COOKIE_SECURE=true
 LOG_LEVEL=info
 ```
 
-Публичный MCP endpoint: `https://tasktopia.online/mcp`. Он отображается в настройках из `location.origin`, поэтому отдельный клиентский env не требуется.
+Публичный MCP endpoint: `https://tasktopia.online/mcp`. Публичная инструкция для интеграций: `https://tasktopia.online/ai.md`. Обе ссылки отображаются в настройках из `location.origin`, поэтому отдельный клиентский env не требуется.
 
 ## Обновление
 
@@ -69,6 +69,7 @@ docker compose ps
 docker compose logs --tail=100 app
 curl -fsS http://127.0.0.1:3000/health
 curl -fsS https://tasktopia.online/health
+curl -fsS https://tasktopia.online/ai.md | head
 nginx -t
 certbot renew --dry-run
 ss -lntp

@@ -1,6 +1,8 @@
 # MCP и API
 
-Production endpoint: `https://tasktopia.online/mcp`. Метод протокольных запросов — `POST`, транспорт — Streamable HTTP.
+Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Streamable HTTP. Сервер использует актуальный MCP `2026-07-28` и принимает stateless-клиенты `2025-11-25` в режиме совместимости. `POST` передаёт JSON-RPC, а `GET`/`DELETE` обслуживаются транспортным lifecycle.
+
+Самодостаточная публичная инструкция, которую можно передать ИИ без доступа к репозиторию: [https://tasktopia.online/ai.md](https://tasktopia.online/ai.md).
 
 ## Быстрое подключение
 
@@ -9,7 +11,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Метод протокол
 3. Создайте персональный ключ с минимально необходимыми scopes.
 4. В MCP-клиенте выберите Streamable HTTP и передайте `Authorization: Bearer <ключ>`.
 
-Ключ нельзя добавлять в query string или хранить в открытом конфигурационном файле. Используйте secret storage клиента. `GET /mcp` намеренно возвращает `405`, а `POST /mcp` без действующего Bearer-ключа — `401`.
+Ключ нельзя добавлять в query string или хранить в открытом конфигурационном файле. Используйте secret storage клиента. Каждый метод `/mcp` требует действующий Bearer-ключ; запрос без него получает `401` и стандартный `WWW-Authenticate: Bearer` challenge.
 
 ```json
 {
@@ -22,11 +24,11 @@ Production endpoint: `https://tasktopia.online/mcp`. Метод протокол
 }
 ```
 
-Ключ создаётся в разделе MCP и показывается только один раз. В PostgreSQL хранится только SHA-256 hash. Новый персональный ключ отзывает предыдущий активный ключ пользователя, а команды выполняются от его имени в выбранной стране. Клиент передаёт секрет как `Authorization: Bearer <token>`; `X-API-Key` сохранён только для совместимости.
+Ключ создаётся в разделе MCP и показывается только один раз. В PostgreSQL хранится только SHA-256 hash. Новый персональный ключ отзывает предыдущий активный ключ пользователя, а команды выполняются от его имени в выбранной стране. Принимается только точный заголовок `Authorization: Bearer ttp_mcp_...`: `X-API-Key`, bare token, cookie и query-параметры отклоняются. Эти персональные ключи не являются OAuth-токенами, поэтому endpoint не публикует фиктивный OAuth discovery.
 
 При выпуске выбираются срок `30 | 90 | 365` дней и непустое подмножество scopes:
 
-- `country:read` — страны, города, районы и MCP resources;
+- `country:read` — страны, города, районы и MCP resources; полный `city.get` дополнительно требует `tasks:read` из-за списка задач;
 - `cities:write` — создание городов;
 - `districts:write` — создание и смена состояния районов;
 - `tasks:read` — чтение задач;

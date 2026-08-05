@@ -35,7 +35,7 @@ describe("authentication HTTP boundary", () => {
     const registered = await app.inject({
       method: "POST",
       url: "/api/auth/register",
-      payload: { email: "mayor@example.test", name: "Test Mayor", password: "safe-password-123" },
+      payload: { email: "mayor@example.test", name: "Test Mayor", password: "safe-password-123", countryName: "Mayor Project", cityName: "Mayor City" },
     });
     expect(registered.statusCode).toBe(200);
     const setCookie = registered.headers["set-cookie"]!;
@@ -48,7 +48,7 @@ describe("authentication HTTP boundary", () => {
     expect(bootstrap.json()).toMatchObject({ user: { email: "mayor@example.test" }, countryRole: "OWNER" });
     expect(bootstrap.json()).not.toHaveProperty("districts");
     expect(bootstrap.json()).not.toHaveProperty("tasks");
-    expect(bootstrap.json().stats).toEqual({ cities: 0, districts: 0, tasks: 0 });
+    expect(bootstrap.json().stats).toEqual({ cities: 1, districts: 0, tasks: 0 });
 
     const countryId = bootstrap.json().country.id as string;
     const city = await service.createCity(countryId, { name: "Scoped City", idempotencyKey: "http-city" });
@@ -56,10 +56,12 @@ describe("authentication HTTP boundary", () => {
     const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Scoped task", estimate: 1, idempotencyKey: "http-task" });
 
     const populatedBootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } })).json();
-    expect(populatedBootstrap.stats).toEqual({ cities: 1, districts: 1, tasks: 1 });
+    expect(populatedBootstrap.stats).toEqual({ cities: 2, districts: 1, tasks: 1 });
     expect(JSON.stringify(populatedBootstrap)).not.toContain("footprint");
     const planCities = await app.inject({ method: "GET", url: "/api/plan/cities", headers: { cookie } });
-    expect(planCities.json()).toMatchObject([{ id: city.id, districtCount: 1, taskCount: 1 }]);
+    expect(planCities.json()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: city.id, districtCount: 1, taskCount: 1 }),
+    ]));
     const planDistricts = await app.inject({ method: "GET", url: `/api/plan/cities/${city.id}/districts`, headers: { cookie } });
     expect(planDistricts.json()).toMatchObject([{ id: district.id, taskCount: 1 }]);
     expect(JSON.stringify(planDistricts.json())).not.toContain("cells");
@@ -70,13 +72,14 @@ describe("authentication HTTP boundary", () => {
     expect((await app.inject({ method: "GET", url: `/api/plan/districts/${crypto.randomUUID()}/tasks`, headers: { cookie } })).statusCode).toBe(404);
 
     const secondCity = await service.createCity(countryId, { name: "Second scoped city", idempotencyKey: "http-city-two" });
-    const firstPage = await app.inject({ method: "GET", url: "/api/plan/cities-page?limit=1", headers: { cookie } });
+    const firstPage = await app.inject({ method: "GET", url: "/api/plan/cities-page?limit=2", headers: { cookie } });
     expect(firstPage.statusCode).toBe(200);
-    expect(firstPage.json().items).toHaveLength(1);
+    expect(firstPage.json().items).toHaveLength(2);
     expect(firstPage.json().nextCursor).toBeTruthy();
-    const secondPage = await app.inject({ method: "GET", url: `/api/plan/cities-page?limit=1&cursor=${encodeURIComponent(firstPage.json().nextCursor)}`, headers: { cookie } });
+    const secondPage = await app.inject({ method: "GET", url: `/api/plan/cities-page?limit=2&cursor=${encodeURIComponent(firstPage.json().nextCursor)}`, headers: { cookie } });
     expect(secondPage.json().items).toHaveLength(1);
-    expect(new Set([firstPage.json().items[0].id, secondPage.json().items[0].id])).toEqual(new Set([city.id, secondCity.id]));
+    expect(new Set([...firstPage.json().items, ...secondPage.json().items].map((item: { id: string }) => item.id)))
+      .toEqual(new Set([bootstrap.json().initialCity.id, city.id, secondCity.id]));
     expect((await app.inject({ method: "GET", url: "/api/plan/cities-page?cursor=tampered", headers: { cookie } })).statusCode).toBe(400);
 
     const taskChunk = await service.chunkForCell(task.origin);
@@ -128,6 +131,16 @@ describe("authentication HTTP boundary", () => {
     });
   }, 15_000);
 
+  it("requires the first country and city at the public registration boundary", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: { email: "empty-world@example.test", name: "Empty World", password: "safe-password-123" },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: "INVALID_INPUT", message: "Введите название первой страны" });
+  });
+
   it("rolls back the whole onboarding when first-city generation fails", async () => {
     vi.spyOn(service, "createCity").mockRejectedValueOnce(new Error("world generation failed"));
     const response = await app.inject({
@@ -143,7 +156,7 @@ describe("authentication HTTP boundary", () => {
   });
 
   it("returns a clear conflict instead of Bad Request or 500 for an existing email", async () => {
-    const payload = { email: "duplicate@example.test", name: "First Mayor", password: "safe-password-123" };
+    const payload = { email: "duplicate@example.test", name: "First Mayor", password: "safe-password-123", countryName: "Duplicate Project", cityName: "Duplicate City" };
     expect((await app.inject({ method: "POST", url: "/api/auth/register", payload })).statusCode).toBe(200);
 
     const duplicate = await app.inject({
@@ -163,7 +176,7 @@ describe("authentication HTTP boundary", () => {
     const malformed = await app.inject({
       method: "POST",
       url: "/api/auth/register",
-      payload: { email: "not-an-email", name: "X", password: "short" },
+      payload: { email: "not-an-email", name: "X", password: "short", countryName: "Invalid Project", cityName: "Invalid City" },
     });
     expect(malformed.statusCode).toBe(400);
     expect(malformed.json()).toMatchObject({ error: "INVALID_INPUT", message: "Введите корректный email" });
@@ -182,7 +195,7 @@ describe("authentication HTTP boundary", () => {
       method: "POST",
       url: "/api/auth/register",
       headers: { origin: "https://attacker.example", "x-forwarded-host": "attacker.example" },
-      payload: { email: "csrf@example.test", name: "CSRF Test", password: "safe-password-123" },
+      payload: { email: "csrf@example.test", name: "CSRF Test", password: "safe-password-123", countryName: "CSRF Project", cityName: "CSRF City" },
     });
     expect(rejected.statusCode).toBe(403);
     expect(rejected.json()).toMatchObject({ error: "INVALID_ORIGIN" });
@@ -191,7 +204,7 @@ describe("authentication HTTP boundary", () => {
       method: "POST",
       url: "/api/auth/register",
       headers: { origin: "http://localhost:5173" },
-      payload: { email: "trusted@example.test", name: "Trusted Test", password: "safe-password-123" },
+      payload: { email: "trusted@example.test", name: "Trusted Test", password: "safe-password-123", countryName: "Trusted Project", cityName: "Trusted City" },
     });
     expect(accepted.statusCode).toBe(200);
   });
@@ -208,7 +221,7 @@ describe("authentication HTTP boundary", () => {
     const registered = await app.inject({
       method: "POST",
       url: "/api/auth/register",
-      payload: { email: "socket-logout@example.test", name: "Socket Logout", password: "safe-password-123" },
+      payload: { email: "socket-logout@example.test", name: "Socket Logout", password: "safe-password-123", countryName: "Socket Project", cityName: "Socket City" },
     });
     const cookieHeader = registered.headers["set-cookie"]!;
     const cookie = (Array.isArray(cookieHeader) ? cookieHeader[0]! : cookieHeader).split(";")[0]!;

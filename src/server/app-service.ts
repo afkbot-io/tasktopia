@@ -30,8 +30,8 @@ import {
   type WorldFeatureDto,
 } from "../shared/contracts";
 import type { Db } from "./db";
-import { now, transaction } from "./db";
-import { listAccessibleCountries, type AuthUser } from "./auth";
+import { now, onTransactionCommit, onTransactionRollback, transaction } from "./db";
+import { listAccessibleCountries, registerUser, type AuthUser, type RegistrationInput } from "./auth";
 import {
   GRID_DIRECTIONS,
   aStarPath,
@@ -188,6 +188,19 @@ export class AppService {
 
   constructor(private readonly db: Db, private readonly onEvent?: (event: RealtimeEvent) => void) {}
 
+  async onboardUser(input: RegistrationInput): Promise<Awaited<ReturnType<typeof registerUser>>> {
+    return transaction(this.db, async () => {
+      const registered = await registerUser(this.db, input);
+      if (input.cityName) {
+        await this.createCity(registered.user.countryId, {
+          name: input.cityName,
+          idempotencyKey: `onboarding:${registered.user.id}`,
+        });
+      }
+      return registered;
+    });
+  }
+
   private cachedChunk(key: string, worldVersion: number): ChunkDto | undefined {
     const cached = this.chunkCache.get(key);
     if (!cached) return undefined;
@@ -286,9 +299,16 @@ export class AppService {
       this.surfaceCache.delete(countryId);
       throw error;
     }
+    onTransactionRollback(() => {
+      this.roadCache.delete(countryId);
+      this.surfaceCache.delete(countryId);
+    });
     if (emitted) {
-      this.invalidateChunkCache(countryId, emitted);
-      this.onEvent?.(emitted);
+      const committedEvent = emitted;
+      onTransactionCommit(() => {
+        this.invalidateChunkCache(countryId, committedEvent);
+        this.onEvent?.(committedEvent);
+      });
     }
     return data;
   }
@@ -1410,19 +1430,28 @@ export class AppService {
                           { entrance: segment[0]!, segmentIndex },
                           { entrance: segment.at(-1)!, segmentIndex },
                         ]);
-                        const pair = safeAnchors.flatMap((road) => endpoints.map(({ entrance, segmentIndex }) => ({ road, entrance, segmentIndex, distance: manhattan(road, entrance) })))
-                          .sort((left, right) => left.distance - right.distance)[0];
-                        if (pair) {
-                          connectedSegment = pair.segmentIndex;
-                          const reservedBlock = blockPlan.lots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height));
-                          const connector = pair.distance <= 4
-                            ? orthogonalPath(pair.road, pair.entrance, Math.abs(pair.road.x - pair.entrance.x) >= Math.abs(pair.road.y - pair.entrance.y))
-                            : await this.route(countryId, seed, pair.road, pair.entrance, [], reservedBlock, 1, true);
-                          // The connector is semantically a collector for catalog/service
-                          // rules, but V9 gives collector and local streets the same compact
-                          // two-lane physical profile.
-                          await this.addRoadPath(countryId, seed, connector, "COLLECTOR");
+                        const pairs = safeAnchors.flatMap((road) => endpoints.map(({ entrance, segmentIndex }) => ({ road, entrance, segmentIndex, distance: manhattan(road, entrance) })))
+                          .sort((left, right) => left.distance - right.distance)
+                          .slice(0, 96);
+                        const reservedBlock = blockPlan.lots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height));
+                        let connection: { connector: Cell[]; segmentIndex: number } | undefined;
+                        for (const pair of pairs) {
+                          try {
+                            const connector = pair.distance <= 4
+                              ? orthogonalPath(pair.road, pair.entrance, Math.abs(pair.road.x - pair.entrance.x) >= Math.abs(pair.road.y - pair.entrance.y))
+                              : await this.route(countryId, seed, pair.road, pair.entrance, [], reservedBlock, 1, true);
+                            connection = { connector, segmentIndex: pair.segmentIndex };
+                            break;
+                          } catch (error) {
+                            if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+                          }
                         }
+                        if (!connection) throw new DomainError("ROUTE_BLOCKED", "Не удалось безопасно соединить новый район с дорожной сетью");
+                        connectedSegment = connection.segmentIndex;
+                        // The connector is semantically a collector for catalog/service
+                        // rules, but V9 gives collector and local streets the same compact
+                        // two-lane physical profile.
+                        await this.addRoadPath(countryId, seed, connection.connector, "COLLECTOR");
                       }
                       const publicationOrder = [streetSegments[connectedSegment]!, ...streetSegments.filter((_, index) => index !== connectedSegment)];
                       for (const segment of publicationOrder) await this.addRoadPath(countryId, seed, segment, "LOCAL");

@@ -8,7 +8,7 @@ const scopeLabels: Record<McpScope, string> = {
 };
 
 type SettingsSection = "mcp" | "account";
-type CopyTarget = "endpoint" | "secret" | "example";
+type CopyTarget = "endpoint" | "guide" | "secret" | "example";
 
 export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChanged, onLogout }: {
   bootstrap: BootstrapDto;
@@ -33,6 +33,7 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
   const onCloseRef = useRef(onClose);
 
   const endpoint = `${location.origin}/mcp`;
+  const aiGuide = `${location.origin}/ai.md`;
   const connectionExample = `URL: ${endpoint}\nAuthorization: Bearer ВАШ_КЛЮЧ\nTransport: Streamable HTTP`;
   const load = useCallback(() => api<McpTokenDto[]>("/api/tokens").then(setTokens), []);
 
@@ -140,6 +141,13 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
             <div className="endpoint-card">
               <div><span>URL подключения</span><code>{endpoint}</code></div>
               <button type="button" onClick={() => void copy(endpoint, "endpoint")}>{copyTarget === "endpoint" ? "Скопировано" : "Копировать URL"}</button>
+            </div>
+            <div className="mcp-guide-card">
+              <div><strong>Документация для ИИ</strong><span>Готовая настройка, инструменты, права и безопасный сценарий работы.</span><code>{aiGuide}</code></div>
+              <div className="mcp-guide-actions">
+                <a href={aiGuide} target="_blank" rel="noreferrer">Открыть ai.md</a>
+                <button type="button" onClick={() => void copy(aiGuide, "guide")}>{copyTarget === "guide" ? "Ссылка скопирована" : "Копировать ссылку"}</button>
+              </div>
             </div>
             <ol className="mcp-steps">
               <li>Выберите в MCP-клиенте подключение типа <strong>Streamable HTTP</strong>.</li>

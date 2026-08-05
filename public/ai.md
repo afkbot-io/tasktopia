@@ -1,0 +1,383 @@
+# Tasktopia AI integration guide
+
+Version: 1.2  
+Last updated: 2026-08-05  
+Public guide: https://tasktopia.online/ai.md  
+MCP endpoint: https://tasktopia.online/mcp
+
+Tasktopia turns project work into a living city:
+
+- country = project or workspace;
+- city = epic or subproject;
+- district = sprint or delivery phase;
+- building = task.
+
+This document is intended for AI agents and developers integrating through the
+Model Context Protocol (MCP).
+
+## Quick start
+
+1. Sign in at https://tasktopia.online.
+2. Open the account panel and create a personal MCP key.
+3. Copy the key immediately. Its secret is shown only once.
+4. Configure an MCP client with the endpoint and an Authorization header.
+5. Call `country.get_current`, then read the relevant city, district, and task
+   before making changes.
+
+Generic client configuration:
+
+```json
+{
+  "mcpServers": {
+    "tasktopia": {
+      "url": "https://tasktopia.online/mcp",
+      "headers": {
+        "Authorization": "Bearer <PERSONAL_MCP_KEY>"
+      }
+    }
+  }
+}
+```
+
+The key begins with `ttp_mcp_`. Use the exact `Authorization: Bearer ...`
+format. Query-string tokens, cookies, `X-API-Key`, and bare tokens are not
+accepted.
+
+## Transport and protocol
+
+- Transport: MCP Streamable HTTP at `https://tasktopia.online/mcp`.
+- Current protocol: MCP 2026-07-28.
+- Compatibility: stateless MCP 2025-11-25 clients are accepted.
+- HTTP methods: `POST` for JSON-RPC; `GET` and `DELETE` are part of the
+  Streamable HTTP transport lifecycle.
+- Each request must carry the personal Bearer key.
+- Send `Content-Type: application/json` for JSON-RPC requests.
+- Browser clients must originate from `https://tasktopia.online`.
+
+Tasktopia currently uses user-created personal API keys. It does not advertise
+an OAuth authorization-server flow. Do not attempt OAuth discovery for this
+endpoint.
+
+## Permissions
+
+A key can contain any combination of these scopes:
+
+| Scope | Allows |
+| --- | --- |
+| `country:read` | Read the selected country and list available countries |
+| `cities:write` | Create cities |
+| `districts:write` | Create, activate, and complete districts |
+| `tasks:read` | Read tasks and task details |
+| `tasks:write` | Create, update, report progress, and assign tasks |
+| `comments:write` | Add task comments |
+
+Request only the permissions an integration needs. A key is bound to its owner.
+The selected country belongs to the account, not to an individual key, so
+`country.select` affects later MCP requests made by every key of that account.
+
+## Safe agent workflow
+
+Follow this sequence unless the user explicitly asks for something else:
+
+1. Call `country.get_current`.
+2. If needed, call `country.list` and then `country.select`.
+3. Call `city.list`; do not invent city IDs.
+4. Call `district.list` for the relevant city.
+5. Call `task.list` and `task.get` before updating an existing task.
+6. Make the smallest requested change.
+7. Re-read the changed entity and report the result to the user.
+
+For every retried mutation, reuse the same `idempotencyKey`. Generate a new
+idempotency key for a new user intent. Never place the personal MCP key in task
+text, comments, logs, or tool arguments.
+
+## Tools
+
+The server exposes 17 tools.
+
+### Countries
+
+#### `country.get_current`
+
+Returns the country currently selected for this account. No arguments.
+
+Required scope: `country:read`.
+
+#### `country.list`
+
+Lists countries available to the owner. No arguments.
+
+Required scope: `country:read`.
+
+#### `country.select`
+
+Selects the country used by subsequent requests.
+
+Arguments:
+
+```json
+{ "countryId": "<country-id>" }
+```
+
+Required scope: `country:read`.
+
+### Cities
+
+#### `city.list`
+
+Lists cities in the selected country. No arguments.
+
+Required scope: `country:read`.
+
+#### `city.get`
+
+Reads one city.
+
+```json
+{ "cityId": "<city-id>" }
+```
+
+Required scopes: `country:read` and `tasks:read`.
+
+#### `city.create`
+
+Creates a city in the selected country.
+
+```json
+{
+  "name": "Payments platform",
+  "description": "Optional city goal",
+  "morphology": "BALANCED",
+  "idempotencyKey": "create-city-payments-v1"
+}
+```
+
+`description` and `morphology` are optional. `idempotencyKey` is required.
+Allowed morphology values are `BALANCED`, `DENSE_CORE`, `GARDEN_CITY`, and
+`POLYCENTRIC`. Reuse the same idempotency key when retrying this exact creation.
+
+Required scope: `cities:write`.
+
+### Districts
+
+#### `district.list`
+
+Lists districts. Omit `cityId` to list districts across all cities in the
+selected country.
+
+```json
+{ "cityId": "<optional-city-id>" }
+```
+
+Required scope: `country:read`.
+
+#### `district.create`
+
+Creates a sprint-like district.
+
+```json
+{
+  "cityId": "<city-id>",
+  "name": "Sprint 12",
+  "goal": "Ship billing recovery",
+  "capacitySp": 26,
+  "activate": false,
+  "archetype": "COMMERCIAL",
+  "idempotencyKey": "create-sprint-12-v1"
+}
+```
+
+`cityId`, `name`, and `idempotencyKey` are required. Allowed archetypes are
+`NEW_BUILD`, `PRIVATE`, `MIXED_URBAN`, `COMMERCIAL`, and `CIVIC`.
+
+Required scope: `districts:write`.
+
+#### `district.activate`
+
+Marks a district as active.
+
+```json
+{
+  "districtId": "<district-id>",
+  "idempotencyKey": "activate-sprint-12-v1"
+}
+```
+
+Required scope: `districts:write`.
+
+#### `district.complete`
+
+Completes a district.
+
+```json
+{
+  "districtId": "<district-id>",
+  "idempotencyKey": "complete-sprint-12-v1"
+}
+```
+
+Required scope: `districts:write`.
+
+### Tasks and buildings
+
+#### `task.list`
+
+Lists tasks. Omit `districtId` to list across the selected context.
+
+```json
+{ "districtId": "<optional-district-id>" }
+```
+
+Required scope: `tasks:read`.
+
+#### `task.get`
+
+Reads one task with its current state.
+
+```json
+{ "taskId": "<task-id>" }
+```
+
+Required scope: `tasks:read`.
+
+#### `task.create`
+
+Creates a task/building.
+
+```json
+{
+  "cityId": "<city-id>",
+  "districtId": "<optional-district-id>",
+  "title": "Add retry policy",
+  "description": "Optional acceptance context",
+  "estimate": 3,
+  "priority": "HIGH",
+  "dueAt": "2026-08-12T12:00:00.000Z",
+  "assigneeEmail": "person@example.com",
+  "idempotencyKey": "create-task-retry-policy-v1"
+}
+```
+
+Required fields: `cityId`, `title`, `estimate`, and `idempotencyKey`. Allowed
+estimates are `1`, `2`, `3`, or `6`. Allowed priorities are `LOW`, `NORMAL`,
+`HIGH`, and `CRITICAL`.
+
+`buildingHint` is an optional exact building key. Read
+`tasktopia://catalog/buildings` first and use only a compatible catalog key;
+omit the field when no exact building was requested.
+
+Required scope: `tasks:write`.
+
+#### `task.set_status`
+
+Moves a task to a valid workflow state. Optionally records progress and a
+comment in the same operation.
+
+```json
+{
+  "taskId": "<task-id>",
+  "status": "IN_PROGRESS",
+  "progress": 35,
+  "comment": "API contract implemented",
+  "idempotencyKey": "task-status-api-contract-v1"
+}
+```
+
+Required scope: `tasks:write`.
+
+#### `task.report_progress`
+
+Reports status, progress, and a progress comment together.
+
+```json
+{
+  "taskId": "<task-id>",
+  "status": "IN_PROGRESS",
+  "progress": 70,
+  "comment": "Tests pass; browser QA remains",
+  "idempotencyKey": "task-progress-browser-qa-v1"
+}
+```
+
+Required scope: `tasks:write`.
+
+#### `task.add_comment`
+
+Adds a comment without changing task status.
+
+```json
+{
+  "taskId": "<task-id>",
+  "body": "Blocked pending access approval",
+  "idempotencyKey": "comment-access-blocker-v1"
+}
+```
+
+Required scope: `comments:write`.
+
+#### `task.assign`
+
+Assigns a task by account email. Set `assigneeEmail` to `null` to unassign.
+
+```json
+{
+  "taskId": "<task-id>",
+  "assigneeEmail": "person@example.com",
+  "idempotencyKey": "assign-task-person-v1"
+}
+```
+
+Required scope: `tasks:write`.
+
+## Resources
+
+### `tasktopia://country/current`
+
+Returns the current country and its cities. Use it to orient an agent before
+planning work.
+
+Required scope: `country:read`.
+
+### `tasktopia://catalog/buildings`
+
+Returns the supported building catalog used by task visualization.
+
+Required scope: `country:read`.
+
+## Responses and errors
+
+Successful tools return structured MCP content. The primary machine-readable
+payload is under `structuredContent.result`; a JSON text representation is also
+provided for clients that consume text content.
+
+Transport-level failures:
+
+- `401 Unauthorized`: missing, malformed, expired, or revoked Bearer key;
+- `403 Forbidden`: a browser Origin is not allowed;
+- `429 Too Many Requests`: rate limit reached; wait before retrying;
+
+Validated tool calls return protocol-level MCP results. Missing scopes, invalid
+or inaccessible IDs, conflicts, invalid transitions, and domain validation
+failures are returned as MCP tool results with `isError: true`, not as HTTP
+`403`, `404`, or `409`. Inspect the returned error content and never silently
+assume a mutation succeeded.
+
+On ambiguous network failure, read the entity before retrying. If a retry is
+still necessary, reuse the original `idempotencyKey`.
+
+## Agent rules
+
+- Confirm the selected country before writing.
+- Never guess entity IDs or silently create substitute entities.
+- Preserve the user's hierarchy: project → epic → sprint → task.
+- Prefer one small, verifiable mutation at a time.
+- Respect task transition rules reported by the server.
+- Do not mark work complete merely because code was generated.
+- After a mutation, verify the resulting entity and explain what changed.
+- Treat the personal MCP key as a password and never expose it in output.
+
+## Human links
+
+- Application: https://tasktopia.online
+- MCP guide: https://tasktopia.online/ai.md
+- MCP endpoint: https://tasktopia.online/mcp

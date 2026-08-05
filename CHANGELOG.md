@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.0
+
+### Added
+
+- Опубликована самодостаточная инструкция для ИИ по адресу `https://tasktopia.online/ai.md`: готовая конфигурация, модель сущностей, все 17 MCP tools, resources, scopes, ошибки и безопасный workflow.
+- В настройках MCP появились отдельные действия для открытия и копирования публичной инструкции.
+
+### Changed
+
+- MCP переведён на официальные v2 server/client packages: основной протокол `2026-07-28` и stateless fallback для клиентов `2025-11-25` работают на одном Streamable HTTP endpoint. Web-standard Fetch handler подключён к Fastify через небольшой streaming bridge без несовместимых framework-adapter overrides.
+- MCP принимает только `Authorization: Bearer ttp_mcp_...`, проверяет Origin для `GET`/`POST`/`DELETE` и возвращает стандартный Bearer challenge без credentials.
+- Регистрационный workflow перенесён в `AppService.onboardUser`, чтобы создание пользователя, страны, session и первого города имело одну доменную транзакционную границу.
+- Обновлены Fastify, PostgreSQL client, Zod, инструменты сборки и lint; TypeScript закреплён на последней версии, поддерживаемой текущим `typescript-eslint`.
+
+### Fixed
+
+- Удалены неиспользуемые стили прежних экранов авторизации, верхней панели, списка городов и старой панели стран; оставшиеся CSS selectors подтверждены реальными или динамическими компонентами.
+- Мобильная кнопка районов больше не зависит от конфликтующих `hidden` и `inline-flex` utility-классов.
+- Удалена ненужная Hono/Node-adapter цепочка с конфликтующим диапазоном версий; dependency audit проходит без overrides и известных runtime-уязвимостей.
+- Генератор района пробует следующие безопасные road/endpoint пары, если ближайшая пара окружена reservation halo; regression seed `1901333332` закреплён тестом.
+
+### Quality
+
+- MCP smoke закрепляет modern/legacy negotiation, строгий Bearer, Origin, revocation, scopes и protected resources.
+- Unit и Playwright проверяют полноту и публичную доступность `/ai.md`, а release QA вынесен в `docs/QA-1.2.md`.
+
 ## 1.1.2
 
 ### Fixed

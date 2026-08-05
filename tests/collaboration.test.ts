@@ -48,7 +48,8 @@ describe("countries, chamber and personal task history", () => {
       userId: owner.user.id, countryId: secondCountryId, countryRole: "OWNER",
     });
     await setActiveCountry(db, owner.user.id, owner.user.countryId);
-    expect(await authenticateMcpToken(db, second.token)).toMatchObject({ countryId: owner.user.countryId });
+    expect(await authenticateMcpToken(db, second.token)).toBeNull();
+    expect(await authenticateMcpToken(db, `Bearer ${second.token}`)).toMatchObject({ countryId: owner.user.countryId });
   });
 
   it("issues least-privilege expiring tokens and caps a viewer at read scopes", async () => {
@@ -60,7 +61,7 @@ describe("countries, chamber and personal task history", () => {
     const token = await createMcpToken(db, owner.user.countryId, "Read tasks", viewer.user.id, {
                       scopes: ["country:read", "tasks:read"], expiresInDays: 30,
                     });
-    expect(await authenticateMcpToken(db, token.token)).toMatchObject({
+    expect(await authenticateMcpToken(db, `Bearer ${token.token}`)).toMatchObject({
       countryRole: "VIEWER", scopes: ["country:read", "tasks:read"],
     });
     expect(new Date(token.expiresAt).getTime()).toBeGreaterThan(Date.now() + 29 * 24 * 60 * 60 * 1000);
@@ -69,11 +70,11 @@ describe("countries, chamber and personal task history", () => {
                     })).rejects.toThrowError(/scopes/);
 
     await db.prepare("UPDATE mcp_tokens SET expires_at = ? WHERE id = ?").run(new Date(Date.now() - 1_000).toISOString(), token.id);
-    expect(await authenticateMcpToken(db, token.token)).toBeNull();
+    expect(await authenticateMcpToken(db, `Bearer ${token.token}`)).toBeNull();
 
     const malformed = await createMcpToken(db, owner.user.countryId, "Malformed storage", owner.user.id);
     await db.prepare("UPDATE mcp_tokens SET scopes_json = ? WHERE id = ?").run('["country:read","unknown:write"]', malformed.id);
-    expect(await authenticateMcpToken(db, malformed.token)).toBeNull();
+    expect(await authenticateMcpToken(db, `Bearer ${malformed.token}`)).toBeNull();
   });
 
   it("records creator, responsible person and an immutable task chronicle", async () => {
