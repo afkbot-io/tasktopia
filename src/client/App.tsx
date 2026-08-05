@@ -1,15 +1,14 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { io } from "socket.io-client";
 import type { BootstrapDto, CityDto, RealtimeEvent, Rect } from "../shared/contracts";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
-import { CountryPanel } from "./components/CountryPanel";
-import { PlanDrawer } from "./components/PlanDrawer";
-import { TaskModal } from "./components/TaskModal";
-import { TokenPanel } from "./components/TokenPanel";
 import { Button, cx } from "./components/ui";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
+const CountryPanel = lazy(() => import("./components/CountryPanel").then((module) => ({ default: module.CountryPanel })));
+const PlanDrawer = lazy(() => import("./components/PlanDrawer").then((module) => ({ default: module.PlanDrawer })));
+const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
+const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
 type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
 type MapInvalidation = { id: number; type: string; affectedBounds?: Rect };
@@ -86,23 +85,29 @@ export function App() {
   useEffect(() => { void load().catch(() => undefined); }, [load]);
   useEffect(() => {
     if (!countryId) return;
-    const socket = io({ path: "/socket.io", withCredentials: true });
-    socket.on("connect", () => setOnline(true));
-    socket.on("disconnect", () => setOnline(false));
-    socket.on("world:event", (event: RealtimeEvent) => {
-      if (event.countryId !== countryId) return;
-      setMapInvalidation(eventInvalidation(event));
-      if (event.type === "task.comment_added" || event.type === "task.status_changed") {
-        setBootstrap((current) => {
-          if (!current) return current;
-          return { ...current, country: { ...current.country, worldVersion: event.worldVersion } };
-        });
-        setRevision((value) => value + 1);
-        return;
-      }
-      void load().then(() => setRevision((value) => value + 1)).catch(() => setOnline(false));
+    let active = true;
+    let disconnect: (() => void) | undefined;
+    void import("socket.io-client").then(({ io }) => {
+      if (!active) return;
+      const socket = io({ path: "/socket.io", withCredentials: true });
+      disconnect = () => socket.disconnect();
+      socket.on("connect", () => setOnline(true));
+      socket.on("disconnect", () => setOnline(false));
+      socket.on("world:event", (event: RealtimeEvent) => {
+        if (event.countryId !== countryId) return;
+        setMapInvalidation(eventInvalidation(event));
+        if (event.type === "task.comment_added" || event.type === "task.status_changed") {
+          setBootstrap((current) => {
+            if (!current) return current;
+            return { ...current, country: { ...current.country, worldVersion: event.worldVersion } };
+          });
+          setRevision((value) => value + 1);
+          return;
+        }
+        void load().then(() => setRevision((value) => value + 1)).catch(() => setOnline(false));
+      });
     });
-    return () => { socket.disconnect(); };
+    return () => { active = false; disconnect?.(); };
   }, [countryId, load]);
 
   if (sessionState === "INITIALIZING" && !bootstrap) return <div className="app-loading" role="status"><div className="loader-square" /><span>Открываем страну…</span></div>;
@@ -147,11 +152,11 @@ export function App() {
         </Suspense>
         <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
-      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} />}
+      {planOpen && <Suspense fallback={null}><PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} /></Suspense>}
     </section>
 
-    {selectedTask && <TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} />}
-    {countriesOpen && <CountryPanel bootstrap={bootstrap} onClose={() => setCountriesOpen(false)} onBootstrap={applyBootstrap} />}
-    {tokensOpen && <TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} />}
+    {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} /></Suspense>}
+    {countriesOpen && <Suspense fallback={null}><CountryPanel bootstrap={bootstrap} onClose={() => setCountriesOpen(false)} onBootstrap={applyBootstrap} /></Suspense>}
+    {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
   </main>;
 }
