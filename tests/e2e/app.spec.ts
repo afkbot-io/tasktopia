@@ -56,6 +56,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   } else {
     expect(Number(await mapHost.getAttribute("data-cars"))).toBeGreaterThan(0);
     expect(Number(await mapHost.getAttribute("data-walkers"))).toBeGreaterThan(0);
+    expect(Number(await mapHost.getAttribute("data-walkers"))).toBeLessThanOrEqual(24);
   }
   const districtsToggle = page.getByRole("button", { name: "Границы" });
   await expect(districtsToggle).toHaveAttribute("aria-pressed", "false");

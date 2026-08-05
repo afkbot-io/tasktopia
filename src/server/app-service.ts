@@ -2327,14 +2327,14 @@ export class AppService {
       let clearance = 0;
       const district = districtByCell.get(cellKey(cell));
       const shoreDirection = (cell.terrain === "SAND" || cell.terrain === "WET_SAND") && closeToCity(cell) ? waterDirection(cell) : undefined;
-      if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && chance < 0.0028) {
+      if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && chance < 0.0009) {
         const horizontal = hashCoordinate(seed, cell.x, cell.y, 719) < 0.5;
         kind = `boat-${horizontal ? "horizontal" : "vertical"}-${hashCoordinate(seed, cell.x, cell.y, 727) < 0.5 ? "a" : "b"}`;
-      } else if (shoreDirection && chance < 0.012) {
+      } else if (shoreDirection && chance < 0.005) {
         kind = `fisher-${shoreDirection}`;
-      } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && chance < 0.03) {
-        const urban = ["streetlamp", "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"];
-        kind = urban[Math.floor(hashCoordinate(seed, cell.x, cell.y, 733) * urban.length)];
+      } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && chance < 0.018) {
+        const residents = ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"];
+        kind = chance < 0.01 ? "streetlamp" : residents[Math.floor(hashCoordinate(seed, cell.x, cell.y, 733) * residents.length)];
       } else if (district && district.status !== "ACTIVE" && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.006) {
         const own = districtCellKeys.get(district.id)!;
         const edge = GRID_DIRECTIONS.findIndex((direction) => !own.has(cellKey({ x: cell.x + direction.x, y: cell.y + direction.y })));

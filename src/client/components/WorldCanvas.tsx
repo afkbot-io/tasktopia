@@ -780,7 +780,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         }
         if (currentLod === "DETAIL") {
           addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR");
-          addAgents(walkGraph, Math.min(64, Math.max(8, Math.floor(walkGraph.size / 54))), "WALKER");
+          addAgents(walkGraph, Math.min(24, Math.max(4, Math.floor(walkGraph.size / 120))), "WALKER");
         }
         host!.dataset.cars = String(movingAgents.filter((agent) => agent.kind === "CAR").length);
         host!.dataset.walkers = String(movingWalkers.length);

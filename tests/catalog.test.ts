@@ -40,4 +40,15 @@ describe("building catalog V4", () => {
     expect(PROP_CATALOG["playground-small"]?.size).toEqual({ width: 24, height: 16 });
     expect(PROP_CATALOG["playground-small"]?.footprint).toEqual({ width: 3, height: 2 });
   });
+
+  it("keeps every human on the walker scale and gives crewed boats a slender footprint", () => {
+    const walkerSize = PROP_CATALOG["walker-south"]?.size;
+    expect(walkerSize).toEqual({ width: 8, height: 8 });
+    for (const key of ["fisher-north", "fisher-east", "fisher-south", "fisher-west", "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"]) {
+      expect(PROP_CATALOG[key]?.size, key).toEqual(walkerSize);
+      expect(PROP_CATALOG[key]?.footprint, key).toEqual({ width: 1, height: 1 });
+    }
+    expect(PROP_CATALOG["boat-horizontal-a"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
+    expect(PROP_CATALOG["boat-vertical-a"]).toMatchObject({ size: { width: 8, height: 24 }, footprint: { width: 1, height: 3 } });
+  });
 });

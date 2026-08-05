@@ -37,6 +37,10 @@ CAR_PALETTES = {
     "yellow": ("#5f4823ff", "#aa7724ff", "#d9a838ff", "#f1cf5aff"),
     "green": ("#1c4d39ff", "#2f7850ff", "#43a967ff", "#69cf82ff"),
 }
+WALKER_SKIN = "#d2a074ff"
+WALKER_HAIR = "#3f342fff"
+WALKER_LEGS = "#263945ff"
+WALKER_SHIRTS = ("#4f8ca5ff", "#c07a55ff", "#6f9a59ff", "#9a6aa5ff")
 
 
 @dataclass(frozen=True)
@@ -248,66 +252,71 @@ def prop_city_sign(vertical: bool) -> Image.Image:
 def prop_walker(direction: str, color: str) -> Image.Image:
     image = transparent_tile()
     draw = ImageDraw.Draw(image)
-    skin = "#d2a074ff"
-    draw.rectangle((3, 1, 4, 2), fill=rgba(skin))
+    draw.rectangle((3, 1, 4, 2), fill=rgba(WALKER_SKIN))
     draw.rectangle((2, 3, 5, 5), fill=rgba(color), outline=rgba(OUTLINE))
     if direction in "NS":
-        draw.point((2, 6), fill=rgba("#263945ff")); draw.point((5, 6), fill=rgba("#263945ff"))
-        draw.point((3, 0 if direction == "N" else 2), fill=rgba("#3f342fff"))
+        draw.point((2, 6), fill=rgba(WALKER_LEGS)); draw.point((5, 6), fill=rgba(WALKER_LEGS))
+        draw.point((3, 0 if direction == "N" else 2), fill=rgba(WALKER_HAIR))
     else:
-        draw.point((2, 6), fill=rgba("#263945ff")); draw.point((5, 6), fill=rgba("#263945ff"))
-        draw.point((2 if direction == "W" else 5, 2), fill=rgba("#3f342fff"))
+        draw.point((2, 6), fill=rgba(WALKER_LEGS)); draw.point((5, 6), fill=rgba(WALKER_LEGS))
+        draw.point((2 if direction == "W" else 5, 2), fill=rgba(WALKER_HAIR))
     return image
 
 
 def prop_boat(horizontal: bool, variant: int) -> Image.Image:
-    size = (16, 8) if horizontal else (8, 16)
+    # Three cells give the hull a readable slender proportion at gameplay
+    # zoom. The seated passenger reuses the walker's exact 2 px head / 4 px
+    # torso anatomy and palette, so boats do not introduce a second human
+    # visual language.
+    size = (24, 8) if horizontal else (8, 24)
     image = Image.new("RGBA", size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     wood = "#9a6d3fff" if variant == 0 else "#7f5938ff"
     light = "#c49557ff" if variant == 0 else "#ad7b48ff"
+    shirt = WALKER_SHIRTS[variant % 2]
     if horizontal:
-        draw.polygon([(1, 4), (3, 1), (12, 1), (15, 4), (12, 7), (3, 7)], fill=rgba(wood), outline=rgba(OUTLINE))
-        draw.rectangle((4, 2, 11, 6), fill=rgba("#5c432fff"))
-        for x in (5, 10): draw.line((x, 2, x, 6), fill=rgba(light))
-        draw.line((3, 0, 12, 7), fill=rgba("#c4a064ff"))
+        draw.polygon([(1, 5), (4, 2), (19, 2), (22, 5), (19, 7), (4, 7)], fill=rgba(wood), outline=rgba(OUTLINE))
+        draw.rectangle((5, 3, 18, 6), fill=rgba("#5c432fff"))
+        for x in (6, 17): draw.line((x, 3, x, 6), fill=rgba(light))
+        draw.rectangle((11, 0, 12, 1), fill=rgba(WALKER_SKIN))
+        draw.point((11, 1), fill=rgba(WALKER_HAIR))
+        draw.rectangle((10, 2, 13, 4), fill=rgba(shirt), outline=rgba(OUTLINE))
+        draw.line((4, 1, 19, 7), fill=rgba("#c4a064ff"))
     else:
-        draw.polygon([(4, 1), (7, 3), (7, 12), (4, 15), (1, 12), (1, 3)], fill=rgba(wood), outline=rgba(OUTLINE))
-        draw.rectangle((2, 4, 6, 11), fill=rgba("#5c432fff"))
-        for y in (5, 10): draw.line((2, y, 6, y), fill=rgba(light))
-        draw.line((0, 3, 7, 12), fill=rgba("#c4a064ff"))
+        draw.polygon([(4, 1), (7, 4), (7, 19), (4, 22), (1, 19), (1, 4)], fill=rgba(wood), outline=rgba(OUTLINE))
+        draw.rectangle((2, 5, 6, 18), fill=rgba("#5c432fff"))
+        for y in (6, 17): draw.line((2, y, 6, y), fill=rgba(light))
+        draw.rectangle((3, 8, 4, 9), fill=rgba(WALKER_SKIN))
+        draw.point((3, 9), fill=rgba(WALKER_HAIR))
+        draw.rectangle((2, 10, 5, 12), fill=rgba(shirt), outline=rgba(OUTLINE))
+        draw.line((0, 4, 7, 19), fill=rgba("#c4a064ff"))
     return image
 
 
 def prop_fisher(direction: str, variant: int) -> Image.Image:
-    image = Image.new("RGBA", (8, 16), (0, 0, 0, 0))
+    image = prop_walker(direction, WALKER_SHIRTS[variant % len(WALKER_SHIRTS)])
     draw = ImageDraw.Draw(image)
-    coats = ("#355b73ff", "#6f8748ff", "#a65343ff", "#8a704eff")
-    skin = ("#d2a074ff", "#b77c54ff", "#e0b78cff", "#8f5f43ff")[variant % 4]
-    draw.rectangle((2, 5, 5, 10), fill=rgba(coats[variant % 4]), outline=rgba(OUTLINE))
-    draw.rectangle((3, 2, 4, 4), fill=rgba(skin))
-    draw.line((2, 11, 2, 14), fill=rgba("#263945ff")); draw.line((5, 11, 5, 14), fill=rgba("#263945ff"))
     if direction in "EW":
         side = 7 if direction == "E" else 0
-        draw.line((4 if direction == "E" else 3, 7, side, 4), fill=rgba("#b78d55ff"))
-        draw.line((side, 4, side, 13), fill=rgba("#c7d4d1ff"))
-        draw.point((side, 14), fill=rgba("#d8b64fff"))
+        draw.line((4 if direction == "E" else 3, 4, side, 1), fill=rgba("#b78d55ff"))
+        draw.line((side, 1, side, 6), fill=rgba("#c7d4d1ff"))
+        draw.point((side, 7), fill=rgba("#d8b64fff"))
     else:
         rod_x = 6 if direction == "N" else 1
-        draw.line((4, 7, rod_x, 1 if direction == "N" else 13), fill=rgba("#b78d55ff"))
-        draw.point((rod_x, 0 if direction == "N" else 15), fill=rgba("#d8b64fff"))
+        draw.line((4, 4, rod_x, 0 if direction == "N" else 7), fill=rgba("#b78d55ff"))
+        draw.point((rod_x, 0 if direction == "N" else 7), fill=rgba("#d8b64fff"))
     return image
 
 
 def prop_resident(action: str, variant: int) -> Image.Image:
-    image = prop_walker("S", ("#4f8ca5ff", "#c07a55ff", "#6f9a59ff", "#9a6aa5ff")[variant % 4])
+    image = prop_walker("S", WALKER_SHIRTS[variant % len(WALKER_SHIRTS)])
     draw = ImageDraw.Draw(image)
     if action == "reader": draw.rectangle((1, 3, 6, 5), fill=rgba("#d7c993ff"), outline=rgba(OUTLINE))
     elif action == "box": draw.rectangle((4, 3, 7, 6), fill=rgba("#a97846ff"), outline=rgba(OUTLINE))
     elif action == "sweeper": draw.line((5, 3, 7, 7), fill=rgba("#b78d55ff"))
     elif action == "phone": draw.point((5, 2), fill=rgba("#d9e2ddff"))
     elif action == "worker": draw.point((1, 0), fill=rgba("#e0b84fff")); draw.point((6, 4), fill=rgba("#aeb9b8ff"))
-    elif action == "wave": draw.line((5, 3, 7, 0), fill=rgba("#d2a074ff"))
+    elif action == "wave": draw.line((5, 3, 7, 0), fill=rgba(WALKER_SKIN))
     return image
 
 
@@ -587,8 +596,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "city-sign-horizontal": prop_city_sign(False), "city-sign-vertical": prop_city_sign(True),
         "guardrail-horizontal": prop_guardrail(False), "guardrail-vertical": prop_guardrail(True),
         "playground-small": prop_playground(),
-        "walker-north": prop_walker("N", "#4f8ca5ff"), "walker-east": prop_walker("E", "#c07a55ff"),
-        "walker-south": prop_walker("S", "#6f9a59ff"), "walker-west": prop_walker("W", "#9a6aa5ff"),
+        "walker-north": prop_walker("N", WALKER_SHIRTS[0]), "walker-east": prop_walker("E", WALKER_SHIRTS[1]),
+        "walker-south": prop_walker("S", WALKER_SHIRTS[2]), "walker-west": prop_walker("W", WALKER_SHIRTS[3]),
         "boat-horizontal-a": prop_boat(True, 0), "boat-horizontal-b": prop_boat(True, 1),
         "boat-vertical-a": prop_boat(False, 0), "boat-vertical-b": prop_boat(False, 1),
         "fisher-north": prop_fisher("N", 0), "fisher-east": prop_fisher("E", 1),
@@ -605,8 +614,10 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         target = prop_dir / f"{key}.png"
         image.save(target, optimize=True)
         if key == "playground-small": footprint = [3, 2]
-        elif key in {"bus-stop-horizontal", "guardrail-horizontal", "boat-horizontal-a", "boat-horizontal-b", "fence-horizontal"}: footprint = [2, 1]
-        elif key in {"bus-stop-vertical", "guardrail-vertical", "boat-vertical-a", "boat-vertical-b", "fence-vertical"}: footprint = [1, 2]
+        elif key in {"boat-horizontal-a", "boat-horizontal-b"}: footprint = [3, 1]
+        elif key in {"boat-vertical-a", "boat-vertical-b"}: footprint = [1, 3]
+        elif key in {"bus-stop-horizontal", "guardrail-horizontal", "fence-horizontal"}: footprint = [2, 1]
+        elif key in {"bus-stop-vertical", "guardrail-vertical", "fence-vertical"}: footprint = [1, 2]
         elif key.startswith(("hill-", "mountain-")): footprint = [max(1, image.width // CELL), max(1, image.height // CELL)]
         else: footprint = [1, 1]
         prop_manifest[key] = {

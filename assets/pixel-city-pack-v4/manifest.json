@@ -3098,15 +3098,15 @@
       "label": "Boat Horizontal A",
       "path": "props/boat-horizontal-a.png",
       "size": [
-        16,
+        24,
         8
       ],
       "footprintCells": [
-        2,
+        3,
         1
       ],
       "anchorPx": [
-        8,
+        12,
         8
       ]
     },
@@ -3114,15 +3114,15 @@
       "label": "Boat Horizontal B",
       "path": "props/boat-horizontal-b.png",
       "size": [
-        16,
+        24,
         8
       ],
       "footprintCells": [
-        2,
+        3,
         1
       ],
       "anchorPx": [
-        8,
+        12,
         8
       ]
     },
@@ -3131,15 +3131,15 @@
       "path": "props/boat-vertical-a.png",
       "size": [
         8,
-        16
+        24
       ],
       "footprintCells": [
         1,
-        2
+        3
       ],
       "anchorPx": [
         4,
-        16
+        24
       ]
     },
     "boat-vertical-b": {
@@ -3147,15 +3147,15 @@
       "path": "props/boat-vertical-b.png",
       "size": [
         8,
-        16
+        24
       ],
       "footprintCells": [
         1,
-        2
+        3
       ],
       "anchorPx": [
         4,
-        16
+        24
       ]
     },
     "fisher-north": {
@@ -3163,7 +3163,7 @@
       "path": "props/fisher-north.png",
       "size": [
         8,
-        16
+        8
       ],
       "footprintCells": [
         1,
@@ -3171,7 +3171,7 @@
       ],
       "anchorPx": [
         4,
-        16
+        8
       ]
     },
     "fisher-east": {
@@ -3179,7 +3179,7 @@
       "path": "props/fisher-east.png",
       "size": [
         8,
-        16
+        8
       ],
       "footprintCells": [
         1,
@@ -3187,7 +3187,7 @@
       ],
       "anchorPx": [
         4,
-        16
+        8
       ]
     },
     "fisher-south": {
@@ -3195,7 +3195,7 @@
       "path": "props/fisher-south.png",
       "size": [
         8,
-        16
+        8
       ],
       "footprintCells": [
         1,
@@ -3203,7 +3203,7 @@
       ],
       "anchorPx": [
         4,
-        16
+        8
       ]
     },
     "fisher-west": {
@@ -3211,7 +3211,7 @@
       "path": "props/fisher-west.png",
       "size": [
         8,
-        16
+        8
       ],
       "footprintCells": [
         1,
@@ -3219,7 +3219,7 @@
       ],
       "anchorPx": [
         4,
-        16
+        8
       ]
     },
     "resident-reader": {
