@@ -10,3 +10,4 @@
 ## Operations
 
 - Explicit Tasktopia CPU/RAM budgets for coexistence with the second Docker project.
+- Released to production after a validated PostgreSQL backup; both Docker projects remained healthy without OOM or restarts.

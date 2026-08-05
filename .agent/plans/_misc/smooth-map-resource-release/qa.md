@@ -38,3 +38,13 @@
 - Dependency audit: 0 vulnerabilities.
 - MCP smoke: 20 tools, modern + legacy protocols, strict Bearer, Origin, revocation, scopes and resources pass.
 - `docker compose config`: app 1.5 CPU / 1 GiB / 160 PIDs; PostgreSQL 0.75 CPU / 768 MiB / 100 PIDs.
+
+## Production evidence — 2026-08-05
+
+- Pre-release PostgreSQL custom-format backup created and validated with `pg_restore -l`.
+- GitHub `main` and `/srv/tasktopia/app` synchronized at `1e30bbd`; public health reports `1.3.2`.
+- Tasktopia app: 1.5 CPU / 1 GiB / 160 PIDs; PostgreSQL: 0.75 CPU / 768 MiB / 100 PIDs; both healthy, restart 0, OOM false.
+- Neighboring Eternal World app, daemon, MongoDB, Centrifugo and Redis: all healthy, restart 0, OOM false.
+- Host after release: 9.6 GiB available RAM, 12 KiB swap used, load 2.33 / 3.17 / 3.02 on 8 vCPU.
+- Public CSP contains `connect-src 'self' data: ws: wss:` and `worker-src 'self' blob:`; MCP without Bearer returns 401.
+- `https://tasktopia.online/ai.md` reports version 1.3.2; TLS certificate valid through 2026-11-02.
