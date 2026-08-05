@@ -32,7 +32,7 @@ Remove the artificial district SP gate and ship a safer, more legible and more v
 
 # Current status
 
-Implementation and local release verification complete. Independent reviews were resolved: feature ownership/cascades, full prop footprints, active-district affected bounds, conservative city-road cleanup and compact chunk task previews are covered. Production backup/deploy and dual-project health checks remain.
+Released as `1.4.0`. Independent reviews were resolved: feature ownership/cascades, full prop footprints, active-district affected bounds, conservative city-road cleanup and compact chunk task previews are covered. Production migration, public assets and health checks passed; Tasktopia and Eternal World remained healthy with zero restarts and about 9 GiB host memory available.
 
 # Risks
 
@@ -46,4 +46,4 @@ Implementation and local release verification complete. Independent reviews were
 - [x] Review findings resolved
 - [x] Tests and asset audit pass
 - [x] Docs/changelog/QA updated
-- [ ] Backup, production deploy and dual-project resource check complete
+- [x] Backup, production deploy and dual-project resource check complete
