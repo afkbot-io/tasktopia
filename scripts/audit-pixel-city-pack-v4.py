@@ -16,6 +16,11 @@ RUNTIME = PACK / "runtime"
 MANIFEST_PATH = PACK / "manifest.json"
 CELL = 8
 PALETTE_BUDGET = 32
+GAS_STATION_KEYS = {
+    "commercial-gas-station",
+    "commercial-gas-station-compact",
+    "commercial-highway-service-plaza",
+}
 
 
 def alpha_contract(image: Image.Image, label: str, violations: list[str]) -> tuple[int, int, int, int] | None:
@@ -49,6 +54,7 @@ def audit() -> dict[str, Any]:
     referenced: set[str] = set()
     palette_counts: Counter[str] = Counter()
     category_counts: Counter[str] = Counter()
+    gas_station_finished: dict[str, bytes] = {}
 
     if manifest.get("gridPx") != CELL:
         violations.append(f"manifest: gridPx must be {CELL}")
@@ -91,6 +97,20 @@ def audit() -> dict[str, Any]:
             stage_bytes.append(image.tobytes())
         if len(stage_bytes) == 5 and len(set(stage_bytes)) != 5:
             violations.append(f"{key}: construction stages contain duplicate images")
+        if key in GAS_STATION_KEYS and len(stage_bytes) == 5:
+            gas_station_finished[key] = stage_bytes[-1]
+            if height < 32:
+                violations.append(f"{key}: fuel-station canvas needs at least 32px height for a readable silhouette")
+            finished = load_image(stages[-1], f"{key}/finished-readability", violations)
+            if finished is not None:
+                bounds = finished.getchannel("A").getbbox()
+                if bounds is None or bounds[2] - bounds[0] < width * 0.8 or bounds[3] - bounds[1] < height * 0.6:
+                    violations.append(f"{key}: finished fuel-station silhouette is too small at native scale")
+
+    if set(gas_station_finished) != GAS_STATION_KEYS:
+        violations.append("fuel stations: expected compact, standard and highway variants")
+    elif len(set(gas_station_finished.values())) != len(GAS_STATION_KEYS):
+        violations.append("fuel stations: finished variants must not share the same drawing")
 
     def audit_grid_asset(relative_path: str, label: str, expected_size: tuple[int, int] | None = None) -> Image.Image | None:
         referenced.add(relative_path)

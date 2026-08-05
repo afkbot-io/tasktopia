@@ -43,7 +43,7 @@ Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`. `src/shar
 }
 ```
 
-Затем выполните `npm run assets:build && npm run assets:verify`. Builder создаст пять стадий, обновит manifest/public pack и перерисует contact sheet. Read-only audit отдельно проверит все runtime PNG: пять уникальных непустых стадий, сетку и footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, одинаковую геометрию цветовых машин, отсутствие механического поворота ракурса, потерянных ссылок и лишних файлов.
+Затем выполните `npm run assets:build && npm run assets:verify`. Builder создаст пять стадий, обновит manifest/public pack и перерисует contact sheet. Read-only audit отдельно проверит все runtime PNG: пять уникальных непустых стадий, сетку и footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, одинаковую геометрию цветовых машин, отсутствие механического поворота ракурса, потерянных ссылок и лишних файлов. Для семейства АЗС дополнительно проверяются три разные композиции, высота и читаемая площадь силуэта; визуальное сравнение с домами сохраняется в `screenshots/gas-station-style-study.png`.
 
 ## Подключить нарисованные вручную спрайты
 

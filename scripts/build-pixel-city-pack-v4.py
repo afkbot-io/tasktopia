@@ -420,26 +420,85 @@ def draw_frame(draw: ImageDraw.ImageDraw, width: int, top: int, bottom: int) -> 
     draw.rectangle((2, top, width - 3, bottom), outline=rgba(OUTLINE))
 
 
+def draw_gas_station(image: Image.Image, spec: HouseSpec, scaffold: bool) -> None:
+    """Draw a fuel station using the same visual grammar as the houses.
+
+    The shop is a compact building with a roof plane, front wall and shaded
+    right wall.  The canopy, pumps and price pylon make the service role
+    readable at native scale without relying on text or runtime labels.
+    """
+    draw = ImageDraw.Draw(image)
+    width, height = spec.size
+    bottom = height - 2
+    if spec.style == "gas-compact":
+        shop_left, shop_top, shop_right = width - 16, 13, width - 2
+        canopy_left, canopy_right, canopy_top = 3, shop_left + 2, 8
+        pump_centers = (10, 19)
+        sign_left, sign_top = 1, 4
+    elif spec.style == "gas-highway":
+        shop_left, shop_top, shop_right = width - 23, 15, width - 2
+        canopy_left, canopy_right, canopy_top = 8, shop_left + 3, 8
+        pump_centers = (17, 29, 40)
+        sign_left, sign_top = 1, 5
+    else:
+        shop_left, shop_top, shop_right = width - 19, 13, width - 2
+        canopy_left, canopy_right, canopy_top = 5, shop_left + 3, 7
+        pump_centers = (13, 24)
+        sign_left, sign_top = 1, 4
+
+    # Freestanding price/service pylon. The two-color panel remains legible at
+    # 1x and avoids fake unreadable lettering.
+    draw.rectangle((sign_left + 2, sign_top + 5, sign_left + 3, bottom), fill=rgba(spec.dark), outline=rgba(OUTLINE))
+    draw.rectangle((sign_left, sign_top, sign_left + 6, sign_top + 7), fill=rgba(spec.wall), outline=rgba(OUTLINE))
+    draw.rectangle((sign_left + 1, sign_top + 1, sign_left + 5, sign_top + 3), fill=rgba(spec.roof))
+    draw.rectangle((sign_left + 1, sign_top + 4, sign_left + 5, sign_top + 5), fill=rgba(spec.accent))
+
+    # Shop: a small but complete building, matching house roof/front/side
+    # construction rather than a flat white rectangle.
+    side_width = 3
+    draw.rectangle((shop_left, shop_top + 4, shop_right - side_width, bottom), fill=rgba(spec.wall), outline=rgba(OUTLINE))
+    draw.rectangle((shop_right - side_width, shop_top + 5, shop_right, bottom), fill=rgba(spec.dark), outline=rgba(OUTLINE))
+    draw.polygon(
+        [(shop_left - 1, shop_top + 2), (shop_right - 3, shop_top + 2), (shop_right, shop_top + 5), (shop_left + 2, shop_top + 5)],
+        fill=rgba(spec.roof), outline=rgba(OUTLINE),
+    )
+    window_right = max(shop_left + 5, shop_right - 9)
+    draw.rectangle((shop_left + 2, shop_top + 8, window_right, bottom - 4), fill=rgba(GLASS), outline=rgba(spec.dark))
+    draw.line((shop_left + 4, shop_top + 9, shop_left + 4, bottom - 5), fill=rgba("#d9e2ddff"))
+    draw.rectangle((shop_right - 8, bottom - 8, shop_right - 4, bottom), fill=rgba(spec.accent), outline=rgba(OUTLINE))
+
+    # Canopy is a shallow roof plane with a dark fascia and a shaded right
+    # face. Its overlap with the shop visually joins both parts of the station.
+    draw.polygon(
+        [(canopy_left, canopy_top + 2), (canopy_right - 3, canopy_top + 2),
+         (canopy_right, canopy_top + 5), (canopy_left + 3, canopy_top + 5)],
+        fill=rgba(spec.roof), outline=rgba(OUTLINE),
+    )
+    draw.line((canopy_left + 3, canopy_top + 5, canopy_right, canopy_top + 5), fill=rgba(spec.dark), width=2)
+    draw.line((canopy_left + 5, canopy_top + 3, canopy_right - 4, canopy_top + 3), fill=rgba(spec.accent))
+
+    # Columns sit behind the pumps. Pumps have a cyan display, colored body
+    # and one-pixel hose, which reads much more clearly than yellow squares.
+    for center in pump_centers:
+        if center >= shop_left:
+            continue
+        draw.rectangle((center - 1, canopy_top + 6, center, bottom), fill=rgba("#aeb9b6ff"), outline=rgba(OUTLINE))
+        pump_top = bottom - 9
+        draw.rectangle((center - 3, pump_top, center + 2, bottom - 1), fill=rgba(spec.accent), outline=rgba(OUTLINE))
+        draw.rectangle((center - 2, pump_top + 1, center + 1, pump_top + 3), fill=rgba(GLASS), outline=rgba(spec.dark))
+        draw.line((center + 3, pump_top + 2, center + 4, pump_top + 4, center + 4, bottom - 2), fill=rgba(spec.dark))
+
+    if scaffold:
+        draw_frame(draw, width, max(4, canopy_top - 2), bottom)
+
+
 def draw_finished_house(image: Image.Image, spec: HouseSpec, scaffold: bool) -> None:
     draw = ImageDraw.Draw(image)
     width, height = spec.size
     bottom = height - 2
     top = max(4, height // 4)
-    if spec.style == "gas-plaza":
-        # A service plaza is deliberately wider and visually sits on the
-        # asphalt platform supplied by the runtime footprint layer.
-        draw.rectangle((width - 24, 14, width - 5, bottom), fill=rgba(spec.wall), outline=rgba(OUTLINE))
-        draw.polygon([(width - 25, 11), (width - 4, 11), (width - 1, 14), (width - 22, 14)], fill=rgba(spec.roof), outline=rgba(OUTLINE))
-        draw.polygon([(2, 8), (width - 24, 8), (width - 20, 11), (6, 11)], fill=rgba(spec.roof), outline=rgba(OUTLINE))
-        for x in (8, 20, 32):
-            if x < width - 24:
-                draw.line((x, 11, x, bottom), fill=rgba("#a8b3afff"))
-                draw.rectangle((x - 2, bottom - 8, x + 2, bottom - 2), fill=rgba(spec.accent), outline=rgba(OUTLINE))
-        draw.rectangle((width - 20, 17, width - 8, min(bottom - 2, 22)), fill=rgba(GLASS), outline=rgba(spec.dark))
-        draw.rectangle((width - 15, bottom - 7, width - 10, bottom), fill=rgba(spec.accent), outline=rgba(OUTLINE))
-        draw.rectangle((2, 17, 5, bottom), fill=rgba("#d7d1b8ff"), outline=rgba(OUTLINE))
-        if scaffold:
-            draw_frame(draw, width, 6, bottom)
+    if spec.style.startswith("gas-"):
+        draw_gas_station(image, spec, scaffold)
         return
     body_top = top + (5 if spec.style in {"gabled", "duplex"} else 2)
     draw.rectangle((2, body_top, width - 4, bottom), fill=rgba(spec.wall), outline=rgba(OUTLINE))
@@ -497,9 +556,9 @@ def copy_v3_runtime() -> None:
         topdown_vertical_car(palette).save(RUNTIME / "vehicles" / f"car-{color}-vertical.png", optimize=True)
     (RUNTIME / "tiles" / "curb.png").unlink(missing_ok=True)
     classic_station = HouseSpec(
-        key="commercial-gas-station", label="Заправка", size=(48, 24), footprint=(6, 3),
+        key="commercial-gas-station", label="Заправка", size=(48, 32), footprint=(6, 3),
         wall="#d9d2bdff", dark="#657277ff", roof="#3f7f72ff", accent="#e2be4fff",
-        style="gas-plaza", rarity="UNCOMMON", category="COMMERCIAL",
+        style="gas-standard", rarity="UNCOMMON", category="COMMERCIAL",
     )
     destination = RUNTIME / "buildings" / "commercial" / classic_station.key
     for stage in range(1, 6): building_stage(classic_station, stage).save(destination / f"stage-{stage}.png", optimize=True)
@@ -573,6 +632,11 @@ def building_metadata(key: str, raw: dict) -> dict:
 def build_manifest(specs: list[HouseSpec]) -> dict:
     source_manifest = json.loads((V3 / "manifest.json").read_text())
     buildings = {key: building_metadata(key, value) for key, value in source_manifest["buildings"].items()}
+    # The original key remains stable for saved worlds, while its regenerated
+    # sprite gets the extra vertical cell needed for a house-like roof plane.
+    classic_station = buildings["commercial-gas-station"]
+    classic_station["spriteSize"] = [48, 32]
+    classic_station["anchorPx"] = [24, 32]
     if len({spec.key for spec in specs}) != len(specs):
         raise ValueError("generated-buildings.json contains duplicate keys")
     for spec in specs:
@@ -782,6 +846,34 @@ def contact_sheet(manifest: dict, specs: list[HouseSpec]) -> None:
     image.convert("RGB").save(SCREENSHOTS / "pixel-city-v4-expanded-assets.png", optimize=True)
 
 
+def gas_station_style_sheet(manifest: dict) -> None:
+    """Render a nearest-neighbour comparison against representative houses."""
+    keys = (
+        "house-cottage", "house-gabled", "house-modern-lowrise", "house-corner-apartments",
+        "commercial-gas-station-compact", "commercial-gas-station", "commercial-highway-service-plaza",
+    )
+    scale = 6
+    card_width, card_height = 240, 210
+    image = Image.new("RGB", (card_width * 4, card_height * 2), rgba("#132126ff")[:3])
+    draw = ImageDraw.Draw(image)
+    for index, key in enumerate(keys):
+        building = manifest["buildings"][key]
+        sprite = Image.open(RUNTIME / building["stages"][-1]).convert("RGBA")
+        sprite = sprite.resize((sprite.width * scale, sprite.height * scale), Image.Resampling.NEAREST)
+        column, row = index % 4, index // 4
+        left, top = column * card_width, row * card_height
+        ground_y = top + card_height - 28
+        draw.rectangle((left + 8, top + 8, left + card_width - 8, top + card_height - 8), fill=rgba("#1b2c30ff")[:3], outline=rgba("#3a5359ff")[:3])
+        draw.rectangle((left + 9, ground_y, left + card_width - 9, top + card_height - 9), fill=rgba("#526d35ff")[:3])
+        x = left + (card_width - sprite.width) // 2
+        y = ground_y - sprite.height
+        image.paste(sprite, (x, y), sprite)
+        draw.text((left + 16, top + 16), key, fill=rgba("#d9e2ddff")[:3])
+    draw.text((card_width * 3 + 16, card_height + 16), "houses -> fuel stations", fill=rgba("#e2be4fff")[:3])
+    SCREENSHOTS.mkdir(parents=True, exist_ok=True)
+    image.save(SCREENSHOTS / "gas-station-style-study.png", optimize=True)
+
+
 def main() -> None:
     if RUNTIME.exists(): shutil.rmtree(RUNTIME)
     RUNTIME.mkdir(parents=True, exist_ok=True)
@@ -791,6 +883,7 @@ def main() -> None:
     (PACK / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     validate(manifest)
     contact_sheet(manifest, specs)
+    gas_station_style_sheet(manifest)
     if PUBLIC.exists(): shutil.rmtree(PUBLIC)
     shutil.copytree(RUNTIME, PUBLIC)
     shutil.copy2(PACK / "manifest.json", PUBLIC / "manifest.json")

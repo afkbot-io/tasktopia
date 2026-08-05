@@ -1113,7 +1113,7 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         48,
-        24
+        32
       ],
       "footprintCells": [
         6,
@@ -1121,7 +1121,7 @@
       ],
       "anchorPx": [
         24,
-        24
+        32
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station/stage-1.png",
@@ -2154,7 +2154,7 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         40,
-        24
+        32
       ],
       "footprintCells": [
         5,
@@ -2162,7 +2162,7 @@
       ],
       "anchorPx": [
         20,
-        24
+        32
       ],
       "stages": [
         "buildings/house/commercial-gas-station-compact/stage-1.png",
