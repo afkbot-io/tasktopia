@@ -37,9 +37,8 @@ Bring Tasktopia to a clean, current release state: remove verified dead UI code,
 
 ## Current status
 
-Implementation and local release gates are complete on
-`codex/release-hardening-ai-md` from release `v1.1.2` (`116d03e`). Production
-deployment evidence is the remaining release step.
+Released as Tasktopia `v1.2.0` from `codex/release-hardening-ai-md` and deployed
+to production on 2026-08-05.
 
 ## Risks
 
@@ -55,4 +54,4 @@ deployment evidence is the remaining release step.
 - [x] Stale code/docs audit complete
 - [x] Full verification green
 - [x] Docs, QA, architecture, changelog, and `/ai.md` synchronized
-- [ ] Commit, push, release/deployment evidence recorded
+- [x] Commit, push, release/deployment evidence recorded

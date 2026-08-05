@@ -14,5 +14,5 @@
   - Verify: stale-doc search and link/contract checks
 - [x] World, asset, performance, and complete regression gates
   - Verify: coverage, E2E, `assets:verify`, isolated `test:scale`
-- [ ] Independent code review and production release
+- [x] Independent code review and production release
   - Verify: Standards/Spec findings resolved; health and smoke checks green

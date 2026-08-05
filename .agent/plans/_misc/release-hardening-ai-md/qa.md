@@ -49,3 +49,17 @@
   strict Bearer, GET/POST/DELETE Origin checks, revocation and least-privilege
   scope denials passed.
 - Independent spec and standards re-reviews have no remaining P0–P3 findings.
+
+## Production evidence — 2026-08-05
+
+- Database backup: `backups/tasktopia-2026-08-05-100708.dump` (56 KiB).
+- Health: version 1.2.0; app and PostgreSQL containers healthy.
+- Public `/ai.md`: HTTP 200, `text/markdown; charset=utf-8`.
+- Live modern/legacy MCP smoke passed all 17 tools, resources, strict auth,
+  revocation, scopes and GET/POST/DELETE Origin checks; the temporary smoke
+  account was deleted after verification.
+- Anonymous MCP challenge: HTTP 401 with `WWW-Authenticate: Bearer`.
+- nginx config and certbot timer are healthy; TLS certificate is valid through
+  2026-11-02; Node is exposed only on `127.0.0.1:3000`.
+- Post-deploy application logs contain no error-level entries or unhandled
+  warnings.
