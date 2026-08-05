@@ -145,7 +145,7 @@ def build_scene() -> Path:
     draw.rectangle((0, 0, width, 66), fill="#0d191dcc")
     draw.line((0, 65, width, 65), fill="#34474b", width=1)
     draw.text((24, 20), "▦  TASKTOPIA", font=font(20, True), fill="#f0f2e8")
-    draw.text((224, 16), "СТРАНА / ПРОЕКТ", font=font(9, True), fill="#7e979a")
+    draw.text((224, 16), "СТРАНА", font=font(9, True), fill="#7e979a")
     draw.text((224, 31), "Product Platform", font=font(14, True), fill="#dce5dd")
     draw.text((850, 24), "●  синхронизировано", font=font(12), fill="#9fc8a0")
     draw.text((1035, 24), "2 города", font=font(12), fill="#afbec0")

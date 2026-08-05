@@ -3,9 +3,9 @@ import { api } from "../api";
 import { Button, Field } from "./ui";
 
 const domainLevels = [
-  ["Страна", "проект", "01"],
-  ["Город", "эпик / подпроект", "02"],
-  ["Район", "спринт", "03"],
+  ["Страна", "ваш мир", "01"],
+  ["Город", "центр развития", "02"],
+  ["Район", "этап строительства", "03"],
   ["Здание", "задача", "04"],
 ] as const;
 
@@ -67,7 +67,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
       <div className="relative z-[2] mt-16 max-w-3xl lg:mt-[14vh]">
         <p className="eyebrow">УПРАВЛЕНИЕ, КОТОРОЕ ВИДНО</p>
         <h1 className="m-0 max-w-3xl text-balance text-[clamp(42px,5.5vw,78px)] font-black leading-[.96] tracking-[-.055em] text-[#f4efdf]">Стройте планы.<br />Наблюдайте за страной.</h1>
-        <p className="mt-6 max-w-xl text-[15px] leading-7 text-[#aec0bc] sm:text-[17px]">Tasktopia превращает структуру продукта в живой город. Прогресс команды становится понятен без ещё одной таблицы.</p>
+        <p className="mt-6 max-w-xl text-[15px] leading-7 text-[#aec0bc] sm:text-[17px]">Tasktopia превращает ваши дела в живую страну. Развитие городов становится понятным без ещё одной таблицы.</p>
       </div>
       <div className="auth-atlas" aria-hidden="true">
         <i className="atlas-water" /><i className="atlas-road atlas-road-h" /><i className="atlas-road atlas-road-v" />
@@ -80,7 +80,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
       <div className="w-full max-w-[500px] rounded-[24px] border border-[#304a52] bg-[linear-gradient(155deg,#14282e,#0c181c)] p-5 shadow-[0_28px_80px_#0007] sm:p-8">
         <p className="eyebrow">{mode === "login" ? "С ВОЗВРАЩЕНИЕМ" : "НОВОЕ ПРОСТРАНСТВО"}</p>
         <h2 className="m-0 text-3xl font-black tracking-[-.04em] text-[#f1f2e8] sm:text-4xl">{mode === "login" ? "Войти в Tasktopia" : "Основать страну"}</h2>
-        <p className="mt-3 text-sm leading-6 text-[#91a7aa]">{mode === "login" ? "Продолжите работу с вашей командой и картой." : "Создадим проект и первый эпик — карта будет готова сразу после регистрации."}</p>
+        <p className="mt-3 text-sm leading-6 text-[#91a7aa]">{mode === "login" ? "Вернитесь к управлению страной и её городами." : "Создадим страну и первый город — карта будет готова сразу после регистрации."}</p>
 
         <dl className="mt-5 grid grid-cols-2 gap-2" aria-label="Как устроена Tasktopia">
           {domainLevels.map(([world, work, number]) => <div key={world} className="grid grid-cols-[24px_1fr] gap-x-2 rounded-xl border border-[#2a444c] bg-[#0a171a] px-3 py-2.5">
@@ -94,8 +94,8 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
           {mode === "register" && <>
             <Field label="Имя" name="name" minLength={2} maxLength={60} required autoComplete="name" />
             <div className="grid gap-3.5 sm:grid-cols-2">
-              <Field label="Название вашей первой страны" name="countryName" minLength={2} maxLength={100} required placeholder="Например, Tasktopia" hint="Это проект" />
-              <Field label="Название первого города" name="cityName" minLength={2} maxLength={100} required placeholder="Например, Первый релиз" hint="Это эпик или подпроект" />
+              <Field label="Название вашей первой страны" name="countryName" minLength={2} maxLength={100} required placeholder="Например, Атутаелия" hint="Её имя появится на карте" />
+              <Field label="Название первого города" name="cityName" minLength={2} maxLength={100} required placeholder="Например, Столица" hint="Первый город создаётся сразу" />
             </div>
           </>}
           <Field label="Email" name="email" type="email" required autoComplete="email" />

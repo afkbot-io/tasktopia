@@ -1,16 +1,12 @@
 # Tasktopia AI integration guide
 
-Version: 1.2  
+Version: 1.3
 Last updated: 2026-08-05  
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
-Tasktopia turns project work into a living city:
-
-- country = project or workspace;
-- city = epic or subproject;
-- district = sprint or delivery phase;
-- building = task.
+Tasktopia turns work into a living country. Countries contain cities, cities
+contain districts, and every task is represented by a building.
 
 This document is intended for AI agents and developers integrating through the
 Model Context Protocol (MCP).

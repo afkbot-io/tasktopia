@@ -1,0 +1,10 @@
+{
+  "name": "Tasktopia — цифровая страна",
+  "short_name": "Tasktopia",
+  "description": "Живая цифровая страна ваших дел",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#081316",
+  "theme_color": "#0e1d21",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

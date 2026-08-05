@@ -201,7 +201,7 @@ export type BootstrapDto = {
   countryRole: CountryRole;
   initialCity: CityDto | null;
   viewBounds: Rect;
-  stats: { cities: number; districts: number; tasks: number };
+  stats: { cities: number; districts: number; tasks: number; activeDistricts: number; unfinishedBuildings: number };
   chunkSize: number;
   assetVersion: 4;
 };

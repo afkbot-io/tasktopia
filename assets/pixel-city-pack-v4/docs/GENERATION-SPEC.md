@@ -100,6 +100,6 @@ npm run assets:build
 
 ## Provenance
 
-- V3 runtime assets: существующий пакет проекта.
+- V3 runtime assets: существующий пакет приложения.
 - V4 terrain/props/new houses: детерминированный procedural pixel drawing.
 - `reference/expanded-city-assets-reference.png`: AI-generated reference-only sheet; не используется runtime напрямую.

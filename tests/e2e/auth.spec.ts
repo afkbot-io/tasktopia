@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("shows a clear duplicate-registration error and keeps the form usable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
-  await page.getByLabel("Имя").fill("Duplicate Mayor");
+  await page.getByLabel("Имя", { exact: true }).fill("Duplicate Mayor");
   await page.getByLabel("Название вашей первой страны").fill("Duplicate Product");
   await page.getByLabel("Название первого города").fill("Duplicate Epic");
   await page.getByLabel("Email").fill("demo@tasktopia.local");

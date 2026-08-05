@@ -41,7 +41,11 @@ test("key screens do not overflow at supported breakpoints", async ({ page }) =>
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await page.locator(".country-title-button").click();
-  await expect(page.getByRole("dialog", { name: "Страны и команда" })).toBeVisible();
+  const switcher = page.getByRole("dialog", { name: "Выбор страны" });
+  await expect(switcher).toBeVisible();
+  expect(seriousViolations(await new AxeBuilder({ page }).include(".country-switcher").analyze())).toEqual([]);
+  await switcher.getByRole("button", { name: "Редактировать страну" }).click();
+  await expect(page.getByRole("dialog", { name: "Тестовая страна" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
-  expect(seriousViolations(await new AxeBuilder({ page }).include("[aria-labelledby='countries-title']").analyze())).toEqual([]);
+  expect(seriousViolations(await new AxeBuilder({ page }).include(".country-government-dialog").analyze())).toEqual([]);
 });

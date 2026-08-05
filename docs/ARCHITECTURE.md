@@ -9,7 +9,7 @@ Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `App
 | Семейство | Сущности | Владелец и граница | Жизненный цикл |
 | --- | --- | --- | --- |
 | Identity | `users`, `sessions` | пользователь; session хранится только как SHA-256 hash | register/login → restore → expire/logout/delete |
-| Access | `countries`, `country_members` | `OWNER`, редактор `MEMBER`, read-only `VIEWER`; все чтения мира ограничены выбранной страной | create → invite/select → revoke member → delete country |
+| Access | `countries`, `country_members` | глава `OWNER`, министр `MEMBER`, наблюдатель `VIEWER`; все чтения мира ограничены выбранной страной | create → invite/select → revoke member → delete country |
 | MCP | `mcp_tokens` | персональный token; права = текущая роль ∩ scopes, новые expiry 30/90/365 дней | issue → use/last-used → reissue/revoke/expire |
 | City | `cities_v3` | `country_id` | create active → расширение bounds районами; archive зарезервирован контрактом |
 | District | `districts_v3` | город выбранной страны | planned → active → completed; один active на город |
@@ -40,7 +40,7 @@ Pixi canvas живёт весь срок выбранной страны. Ground
 
 ## Realtime и отзыв доступа
 
-Socket.IO проверяет HttpOnly session на handshake и помещает соединение только в комнату выбранной страны. Каждую минуту long-lived соединение повторно проверяет session и active country. Событие несёт `affectedBounds`; клиент перечитывает только пересекающиеся resident chunks и игнорирует событие другой страны. Удаление участника из палаты отключает его соединения этой страны, logout отключает все сокеты session user.
+Socket.IO проверяет HttpOnly session на handshake и помещает соединение только в комнату выбранной страны. Каждую минуту long-lived соединение повторно проверяет session и active country. Событие несёт `affectedBounds`; клиент перечитывает только пересекающиеся resident chunks и игнорирует событие другой страны. Удаление участника из правительства отключает его соединения этой страны, logout отключает все сокеты session user.
 
 ## Миграции и эксплуатационные границы
 

@@ -14,6 +14,12 @@ test("public AI integration guide is directly accessible", async ({ request }) =
   expect(guide).toContain('"Authorization": "Bearer <PERSONAL_MCP_KEY>"');
   expect(guide).toContain("`country.get_current`");
   expect(guide).toContain("`task.report_progress`");
+  const favicon = await request.get("/favicon.svg");
+  expect(favicon.ok()).toBe(true);
+  expect(favicon.headers()["content-type"]).toContain("image/svg+xml");
+  const manifest = await request.get("/site.webmanifest");
+  expect(manifest.ok()).toBe(true);
+  expect((await manifest.json()).name).toBe("Tasktopia — цифровая страна");
 });
 
 test("login, map and MCP token management", async ({ page, context }) => {
@@ -22,10 +28,15 @@ test("login, map and MCP token management", async ({ page, context }) => {
   const consoleErrors: string[] = [];
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
   await page.goto("/");
+  await expect(page).toHaveTitle("Tasktopia — цифровая страна");
+  await expect(page.locator("body")).not.toContainText(/проект|команда/i);
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await expect(page).toHaveTitle("Tasktopia — Тестовая страна");
   await expect(page.getByText("Riverside", { exact: true })).toBeVisible();
+  await expect(page.getByText("Районов строится · 1", { exact: true })).toBeVisible();
+  await expect(page.getByText("Зданий строится · 20", { exact: true })).toBeVisible();
   await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
   const mapWarmup = { timeout: 90_000 };
   const mapHost = page.locator(".world-canvas");
@@ -52,13 +63,13 @@ test("login, map and MCP token management", async ({ page, context }) => {
   const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
   await page.getByRole("button", { name: "План" }).click();
   let cityDirectory = page.getByRole("complementary", { name: "План страны" });
-  await expect(cityDirectory.getByText("20 задач")).toBeVisible();
+  await expect(cityDirectory.getByText("20 зданий")).toBeVisible();
   await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
   await cityDirectory.getByRole("button", { name: /Задача района 1\.1/ }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await capture(page, "screenshots/release-task-modal.png");
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
-  await cityDirectory.getByRole("button", { name: "Закрыть план" }).click();
+  await expect(cityDirectory).toBeHidden();
 
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 800);
@@ -73,7 +84,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("button", { name: "План" }).click();
   cityDirectory = page.getByRole("complementary", { name: "План страны" });
   await expect(cityDirectory).toBeVisible();
-  await expect(cityDirectory.getByText("20 задач")).toBeVisible();
+  await expect(cityDirectory.getByText("20 зданий")).toBeVisible();
   await capture(page, "screenshots/release-city-directory.png");
   await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
   await expect(cityDirectory.getByText(/Задача района 1\.1/)).toBeVisible();
@@ -110,13 +121,37 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
   await page.getByRole("button", { name: "Закрыть" }).click();
   await page.locator(".country-title-button").click();
-  await expect(page.getByRole("heading", { name: "Страны и команда" })).toBeVisible();
-  await expect(page.getByText("Основатель").first()).toBeVisible();
-  await capture(page, "screenshots/release-countries-chamber.png");
-  await page.getByLabel("Название страны").fill("Тестовая страна 2");
-  await page.getByRole("button", { name: "Сохранить" }).click();
-  await expect(page.getByRole("dialog")).toBeHidden();
+  const countrySwitcher = page.getByRole("dialog", { name: "Выбор страны" });
+  await expect(countrySwitcher).toBeVisible();
+  await expect(countrySwitcher.getByText("Глава страны", { exact: false }).first()).toBeVisible();
+  await countrySwitcher.getByRole("button", { name: "Редактировать страну" }).click();
+  await expect(page.getByRole("dialog", { name: "Тестовая страна" })).toBeVisible();
+  await capture(page, "screenshots/release-country-government.png");
+  await page.getByLabel("Название").fill("Тестовая страна 2");
+  await page.getByRole("button", { name: "Сохранить название" }).click();
   await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
+  await page.getByRole("button", { name: "Закрыть" }).click();
+
+  await page.locator(".country-title-button").click();
+  await countrySwitcher.getByRole("button", { name: /Новая страна/ }).click();
+  await page.getByLabel("Название страны").fill("Временная страна");
+  await page.getByRole("button", { name: "Создать страну" }).click();
+  await expect(page.locator(".country-title-button")).toContainText("Временная страна");
+  await page.getByRole("button", { name: "План" }).click();
+  await expect(page.getByRole("complementary", { name: "План страны" }).getByText("Нет городов", { exact: true })).toBeVisible();
+  await page.locator(".map-region").click({ position: { x: 20, y: 20 } });
+  await expect(page.getByRole("complementary", { name: "План страны" })).toBeHidden();
+  await page.locator(".country-title-button").click();
+  await countrySwitcher.getByRole("button", { name: "Редактировать страну" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Удалить страну" }).click();
+  await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
+  await expect(canvas).toBeVisible();
+
+  await page.locator(".country-title-button").click();
+  await expect(countrySwitcher).toBeVisible();
+  await canvas.click({ position: { x: 40, y: 40 } });
+  await expect(countrySwitcher).toBeHidden();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toBeVisible();
   await expect(page.getByRole("button", { name: "План" })).toBeVisible();
@@ -136,7 +171,7 @@ test("registration creates the named country and first city", async ({ page }) =
   const email = `new-mayor-${Date.now()}@example.test`;
   await page.goto("/");
   await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
-  await page.getByLabel("Имя").fill("New Mayor");
+  await page.getByLabel("Имя", { exact: true }).fill("New Mayor");
   await page.getByLabel("Название вашей первой страны").fill("Новый продукт");
   await page.getByLabel("Название первого города").fill("Первый релиз");
   await page.getByLabel("Email").fill(email);

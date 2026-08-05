@@ -14,7 +14,7 @@ import {
 } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 
-describe("countries, chamber and personal task history", () => {
+describe("countries, government and personal task history", () => {
   let db: Db;
 
   beforeEach(async () => { db = await createTestDb(); });

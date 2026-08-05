@@ -63,7 +63,7 @@ describe("authentication HTTP boundary", () => {
     expect(bootstrap.json()).toMatchObject({ user: { email: "mayor@example.test" }, countryRole: "OWNER" });
     expect(bootstrap.json()).not.toHaveProperty("districts");
     expect(bootstrap.json()).not.toHaveProperty("tasks");
-    expect(bootstrap.json().stats).toEqual({ cities: 1, districts: 0, tasks: 0 });
+    expect(bootstrap.json().stats).toEqual({ cities: 1, districts: 0, tasks: 0, activeDistricts: 0, unfinishedBuildings: 0 });
 
     const countryId = bootstrap.json().country.id as string;
     const city = await service.createCity(countryId, { name: "Scoped City", idempotencyKey: "http-city" });
@@ -71,7 +71,7 @@ describe("authentication HTTP boundary", () => {
     const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Scoped task", estimate: 1, idempotencyKey: "http-task" });
 
     const populatedBootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } })).json();
-    expect(populatedBootstrap.stats).toEqual({ cities: 2, districts: 1, tasks: 1 });
+    expect(populatedBootstrap.stats).toEqual({ cities: 2, districts: 1, tasks: 1, activeDistricts: 1, unfinishedBuildings: 1 });
     expect(JSON.stringify(populatedBootstrap)).not.toContain("footprint");
     const planCities = await app.inject({ method: "GET", url: "/api/plan/cities", headers: { cookie } });
     expect(planCities.json()).toEqual(expect.arrayContaining([
@@ -142,7 +142,7 @@ describe("authentication HTTP boundary", () => {
     expect(bootstrap).toMatchObject({
       country: { name: "Платформа" },
       initialCity: { name: "Мобильное приложение" },
-      stats: { cities: 1, districts: 0, tasks: 0 },
+      stats: { cities: 1, districts: 0, tasks: 0, activeDistricts: 0, unfinishedBuildings: 0 },
     });
   }, 15_000);
 

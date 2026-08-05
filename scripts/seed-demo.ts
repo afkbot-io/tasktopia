@@ -12,7 +12,7 @@ const password = "tasktopia-demo";
 
 let user;
 try {
-  user = (await registerUser(db, { email, password, name: "Городская команда" })).user;
+  user = (await registerUser(db, { email, password, name: "Глава страны" })).user;
 } catch {
   user = (await loginUser(db, email, password)).user;
 }
@@ -20,7 +20,7 @@ try {
 // world so fixture revisions cannot collide with old idempotency payloads;
 // account, sessions, memberships and personal MCP credentials remain intact.
 await transaction(db, async () => {
-  await db.prepare("UPDATE users SET name = ? WHERE id = ?").run("Городская команда", user.id);
+  await db.prepare("UPDATE users SET name = ? WHERE id = ?").run("Глава страны", user.id);
   await db.prepare("UPDATE countries SET name = ? WHERE id = ?").run("Страна Tasktopia", user.countryId);
   await db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(user.countryId);

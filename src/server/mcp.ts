@@ -54,12 +54,12 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     cacheHints: { "tools/list": { ttlMs: 300_000, cacheScope: "private" }, "resources/list": { ttlMs: 300_000, cacheScope: "private" } },
   });
   const actor = await db.prepare("SELECT name FROM users WHERE id = ?").get<{ name: string }>(identity.userId);
-  const actorName = actor?.name ?? "Участник палаты";
+  const actorName = actor?.name ?? "Представитель страны";
   const resolveMember = async (email: string | undefined): Promise<string | undefined> => {
     if (!email) return undefined;
     const row = await db.prepare(`SELECT u.id FROM users u JOIN country_members cm ON cm.user_id = u.id
       WHERE cm.country_id = ? AND u.email = ?`).get<{ id: string }>(identity.countryId, email.trim().toLowerCase());
-    if (!row) throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен быть зарегистрирован и состоять в палате страны");
+    if (!row) throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен быть зарегистрирован и состоять в правительстве страны");
     return row.id;
   };
   const cityCreateSchema = z.object({
@@ -202,7 +202,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("task.assign", {
-    description: "Назначить ответственного из палаты страны или снять назначение.",
+    description: "Назначить ответственного из правительства страны или снять назначение.",
     inputSchema: z.object({ taskId: z.string().uuid(), assigneeEmail: z.string().email().nullable(), idempotencyKey: z.string().min(4).max(160) }),
     annotations: { idempotentHint: true },
   }, async ({ taskId, assigneeEmail, idempotencyKey }) => {

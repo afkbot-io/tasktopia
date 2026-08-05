@@ -10,13 +10,13 @@ const email = "demo@tasktopia.local";
 const password = "tasktopia-demo";
 let user;
 try {
-  user = (await registerUser(db, { email, password, name: "Тестовая команда" })).user;
+  user = (await registerUser(db, { email, password, name: "Тестовый правитель" })).user;
 } catch {
   user = (await loginUser(db, email, password)).user;
 }
 
 await transaction(db, async () => {
-  await db.prepare("UPDATE users SET name = ? WHERE id = ?").run("Тестовая команда", user.id);
+  await db.prepare("UPDATE users SET name = ? WHERE id = ?").run("Тестовый правитель", user.id);
   await db.prepare("UPDATE countries SET name = ? WHERE id = ?").run("Тестовая страна", user.countryId);
   await db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(user.countryId);

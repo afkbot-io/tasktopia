@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BootstrapDto, PlanCityDto, PlanCityPageDto, PlanDistrictDto, PlanTaskDto } from "../../shared/contracts";
 import { api } from "../api";
 
@@ -22,12 +22,29 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
   const [cities, setCities] = useState<PlanCityDto[]>([]);
   const [districts, setDistricts] = useState<PlanDistrictDto[]>([]);
   const [tasks, setTasks] = useState<PlanTaskDto[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  const drawerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (!(event.target instanceof Element)) return;
+      if (!drawerRef.current?.contains(event.target) && !event.target.closest("[data-plan-trigger]")) onClose();
+    };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
 
   useEffect(() => {
     const controller = new AbortController();
     setError("");
+    setCitiesLoading(true);
     const loadCities = async () => {
       const result: PlanCityDto[] = [];
       let cursor: string | null = null;
@@ -47,7 +64,8 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
       })
       .catch((reason: unknown) => {
         if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Не удалось загрузить города");
-      });
+      })
+      .finally(() => { if (!controller.signal.aborted) setCitiesLoading(false); });
     return () => controller.abort();
   }, [bootstrap.country.id, refreshToken, reload]);
 
@@ -82,14 +100,15 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
     if (city) onCityFocus(city);
   };
 
-  return <aside className="plan-drawer" aria-label="План страны">
+  return <aside ref={drawerRef} className="plan-drawer" aria-label="План страны">
     <header className="plan-head"><div><p className="eyebrow">ПЛАН СТРАНЫ</p><strong>{bootstrap.country.name}</strong></div><button onClick={onClose} aria-label="Закрыть план">×</button></header>
     {error && <div className="plan-error" role="alert">{error} <button onClick={() => setReload((value) => value + 1)}>Повторить</button></div>}
     <div className="plan-columns">
       <section><h3>Города <span>{bootstrap.stats.cities}</span></h3>
-        {cities.length === 0 && !error && <p className="plan-placeholder">Загружаем города…</p>}
+        {citiesLoading && !error && <p className="plan-placeholder">Загружаем города…</p>}
+        {!citiesLoading && cities.length === 0 && !error && <p className="plan-placeholder">Нет городов</p>}
         {cities.map((city) => <button key={city.id} className={city.id === cityId ? "selected" : ""} onClick={() => chooseCity(city.id)}>
-          <i>▦</i><span><strong>{city.name}</strong><small>{city.taskCount} задач</small></span>
+          <i>▦</i><span><strong>{city.name}</strong>{city.taskCount > 0 && <small>{city.taskCount} зданий</small>}</span>
         </button>)}
       </section>
       <section><h3>Районы <span>{districts.length}</span></h3>

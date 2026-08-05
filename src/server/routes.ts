@@ -215,7 +215,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
     const body = parse(countrySchema, request.body);
     if (!await renameCountry(db, user.id, countryId, body.name)) {
-      throw new DomainError("FORBIDDEN", "Переименовать страну может только её основатель");
+      throw new DomainError("FORBIDDEN", "Переименовать страну может только её глава");
     }
     return await service.getCountry(countryId);
   });
@@ -224,7 +224,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
     const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
-    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Удалять страну может только её основатель");
+    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Удалять страну может только её глава");
     const remaining = (await listAccessibleCountries(db, user.id)).filter((country) => country.id !== countryId);
     if (remaining.length === 0) throw new DomainError("CONFLICT", "Нельзя удалить единственную доступную страну");
     await transaction(db, async () => {
@@ -244,7 +244,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
             const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
-            if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к палате этой страны");
+            if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к правительству этой страны");
             return await listCountryMembers(db, countryId);
           });
 
@@ -252,10 +252,10 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
     const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
-    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Состав палаты меняет только основатель страны");
+    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Состав правительства меняет только глава страны");
     const body = parse(invitationSchema, request.body);
     const memberBefore = (await listCountryMembers(db, countryId)).find((entry) => entry.email === body.email.toLowerCase());
-    if (memberBefore) throw new DomainError("CONFLICT", "Этот человек уже состоит в палате");
+    if (memberBefore) throw new DomainError("CONFLICT", "Этот человек уже состоит в правительстве");
     const member = await inviteCountryMember(db, countryId, user.id, body.email, body.role);
     if (!member) throw new DomainError("NOT_FOUND", "Пользователь с таким email ещё не зарегистрирован");
     return member;
@@ -267,8 +267,8 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const params = request.params as { countryId: string; userId: string };
     const countryId = parse(z.string().uuid(), params.countryId);
     const userId = parse(z.string().uuid(), params.userId);
-    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Состав палаты меняет только основатель страны");
-    if (!await removeCountryMember(db, countryId, userId)) throw new DomainError("NOT_FOUND", "Участник палаты не найден");
+    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Состав правительства меняет только глава страны");
+    if (!await removeCountryMember(db, countryId, userId)) throw new DomainError("NOT_FOUND", "Участник правительства не найден");
     await hooks.onCountryAccessRevoked?.(countryId, userId);
     return { ok: true };
   });

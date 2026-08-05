@@ -68,6 +68,59 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .form-error strong { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 .country-title-button { padding-right: 10px; border-top: 0; border-right: 0; border-bottom: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .country-title-button:hover strong { color: #8bc8e4; }
+.country-title-button::after { content: "⌄"; position: absolute; right: -3px; bottom: 2px; color: #688389; font-size: 11px; transition: transform .16s ease; }
+.country-title-button[aria-expanded="true"]::after { transform: rotate(180deg); }
+.country-switcher { position: absolute; left: 0; top: calc(100% + 14px); z-index: 30; width: min(360px, calc(100vw - 24px)); overflow: hidden; border: 1px solid #39545c; border-radius: 16px; background: #0c1a1ef5; box-shadow: 0 24px 70px #000c, inset 0 1px #ffffff0b; backdrop-filter: blur(18px); animation: country-menu-in .16s ease-out; }
+@keyframes country-menu-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+.country-switcher-head { display: flex; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #294149; color: #8ea4a7; font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.country-switcher-head strong { color: #79b8d3; }
+.country-switcher-error { padding: 10px 13px; border-bottom: 1px solid #753f45; background: #3b2025; color: #ffd1d1; font-size: 11px; }
+.country-switcher-list { max-height: min(390px, 55vh); overflow: auto; padding: 7px; }
+.country-switcher-item { width: 100%; display: grid; grid-template-columns: 38px minmax(0, 1fr) 22px; align-items: center; gap: 10px; min-height: 58px; padding: 8px 9px; border: 1px solid transparent; border-radius: 11px; background: transparent; color: #e7ede7; text-align: left; cursor: pointer; }
+.country-switcher-item:hover { background: #13292f; }
+.country-switcher-item.selected { border-color: #3d626d; background: #17333b; }
+.country-switcher-item > span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
+.country-switcher-item strong, .country-switcher-item small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.country-switcher-item strong { font-size: 13px; }
+.country-switcher-item small { color: #b2c2c2; font-size: 10px; }
+.country-switcher-item i { color: #75c2df; font-style: normal; text-align: center; }
+.country-switcher-seal { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid #3b5961; border-radius: 10px; background: #203b43; color: #8ed0e9; font-size: 14px; font-weight: 950; }
+.country-switcher-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 9px; border-top: 1px solid #294149; background: #0a1619; }
+.country-switcher-actions button { min-height: 42px; padding: 8px 10px; border: 1px solid #38535b; border-radius: 9px; background: #152a30; color: #dce7e3; font-size: 11px; font-weight: 850; cursor: pointer; }
+.country-switcher-actions button:hover { border-color: #598091; background: #1a343c; }
+.country-switcher-actions .country-create-action { border-color: #776629; background: #292616; color: #f1cf5c; }
+
+.country-government-dialog { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); width: min(1040px, 100%); max-height: min(820px, calc(100dvh - 32px)); overflow: hidden; border: 1px solid #38545d; border-radius: 22px; background: #0e1d21; box-shadow: 0 30px 100px #000c; }
+.country-government-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px 26px; border-bottom: 1px solid #29434a; background: linear-gradient(120deg, #13282e, #102126); }
+.country-government-head h2 { margin: 2px 0 0; color: #f1f2e8; font-size: clamp(28px, 4vw, 38px); letter-spacing: -.045em; }
+.country-government-head p:last-child { margin: 7px 0 0; color: #8da3a7; font-size: 13px; line-height: 1.55; }
+.country-government-body { min-height: 0; overflow: auto; padding: 20px; }
+.country-government-grid { display: grid; grid-template-columns: minmax(260px, .72fr) minmax(440px, 1.28fr); gap: 18px; }
+.country-government-card { border: 1px solid #2d4850; border-radius: 15px; background: #0a171a; padding: 17px; }
+.country-government-card h3 { margin: 0; color: #e8ede5; font-size: 14px; }
+.country-government-card > p { margin: 6px 0 0; color: #82999d; font-size: 11px; line-height: 1.55; }
+.country-government-card form button { justify-self: start; }
+.country-facts dl { display: grid; gap: 0; margin: 12px 0 0; }
+.country-facts dl div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid #22383e; }
+.country-facts dt { color: #84999d; font-size: 11px; }
+.country-facts dd { margin: 0; color: #e2e9e4; font-size: 11px; font-weight: 850; }
+.government-title { display: flex; justify-content: space-between; gap: 14px; padding: 17px; border-bottom: 1px solid #294149; background: #102126; }
+.government-title p { margin: 5px 0 0; color: #789095; font-size: 11px; }
+.government-title > span { color: #79bdd9; font: 700 12px/1 monospace; }
+.government-invite { display: grid; grid-template-columns: minmax(0, 1fr) 145px auto; align-items: end; gap: 10px; padding: 15px; border-bottom: 1px solid #263e45; }
+.government-invite select { min-height: 46px; padding: 10px 12px; border: 1px solid #365159; border-radius: 9px; background: #0b171a; color: #e8eee9; }
+.government-list { display: grid; gap: 2px; padding: 8px; }
+.government-list article { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 9px; border-radius: 11px; }
+.government-list article:hover { background: #10252b; }
+.government-list article > span { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; background: #24424c; color: #8ccce5; font-weight: 900; }
+.government-list article > div { min-width: 0; display: grid; gap: 3px; }
+.government-list strong, .government-list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.government-list strong { color: #e8ede5; font-size: 12px; }
+.government-list small { color: #82999d; font-size: 10px; }
+.government-readonly { margin: 8px 14px 14px !important; padding: 11px; border-radius: 9px; background: #10252b; }
+.country-create-form { width: min(520px, 100%); display: grid; gap: 18px; justify-items: stretch; margin: 20px auto 28px; padding: 26px; border: 1px solid #304d55; border-radius: 18px; background: #0a171a; }
+.country-create-form button { min-height: 46px; }
+.country-large-seal { width: 64px; height: 64px; display: grid; place-items: center; justify-self: center; border: 1px solid #776629; border-radius: 18px; background: #292616; color: #f1cf5c; font-size: 28px; }
 
 .token-list button, .token-secret button { padding: 7px 10px; border: 1px solid #42606a; border-radius: 7px; background: #1b3137; cursor: pointer; }
 
@@ -197,6 +250,9 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   .auth-atlas { right: -120px; bottom: -190px; transform: scale(.72) rotate(-2deg); }
   .country-title-button { max-width: 128px; display: grid; padding-left: 0; border-left: 0; }
   .country-title-button strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .country-switcher { left: -4px; }
+  .country-government-dialog { width: 100%; max-height: calc(100dvh - 24px); border-radius: 16px; }
+  .country-government-grid { grid-template-columns: 1fr; }
   .task-grid { grid-template-columns: repeat(2, 1fr); }
   .plan-columns { grid-template-columns: 1fr; height: min(680px, calc(100vh - 150px)); }
   .plan-columns > section { min-height: 170px; border-right: 0; border-bottom: 1px solid #294047; }
@@ -213,6 +269,15 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   .world-empty p { font-size: 14px; }
   .world-empty .primary-button { min-height: 46px; }
   .modal-backdrop { padding: 0; }
+  .country-switcher { position: fixed; left: 8px; right: 8px; top: 66px; width: auto; }
+  .country-switcher-actions { grid-template-columns: 1fr; }
+  .country-government-dialog { width: 100%; height: 100dvh; max-height: none; border: 0; border-radius: 0; }
+  .country-government-head { padding: 18px 16px; }
+  .country-government-body { padding: 12px; }
+  .government-invite { grid-template-columns: 1fr; }
+  .government-list article { grid-template-columns: 40px minmax(0, 1fr); }
+  .government-list article > button { grid-column: 1 / -1; justify-self: start; }
+  .country-create-form { margin: 8px auto; padding: 20px 16px; }
   .token-panel.settings-panel { width: 100%; height: 100dvh; border: 0; border-radius: 0; }
   .settings-header { padding: 18px 54px 0 16px; }
   .settings-header h2 { font-size: 24px; }

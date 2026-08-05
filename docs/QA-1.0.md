@@ -51,7 +51,7 @@ npm run test:db:stop
 2. Вход восстанавливает выбранную страну; неверный пароль и повторный email дают понятное сообщение на русском.
 3. При временной ошибке загрузки страны кнопка повторения восстанавливает сессию без повторной отправки пароля.
 4. Выход возвращает экран входа, а защищённые endpoint отвечают `401`.
-5. Проверить выбор страны, палату, карточку задачи, трёхуровневый план и выпуск MCP-ключа со scopes и сроком 30/90/365 дней.
+5. Проверить выбор страны, правительство, карточку задачи, трёхуровневый план и выпуск MCP-ключа со scopes и сроком 30/90/365 дней.
 6. В новой пустой стране loader карты не создаётся; описание и кнопка «Подключить MCP» не пересекаются, кнопка кликабельна.
 7. MCP-модалка открывается с видимым заголовком, показывает production endpoint, Streamable HTTP и Bearer-схему; URL и секрет копируются кнопками.
 8. На ширинах 375, 768 и 1440 px нет горизонтального overflow; заголовок настроек остаётся видимым, тело прокручивается отдельно, touch-targets не меньше 44 px.
@@ -59,9 +59,9 @@ npm run test:db:stop
 10. На desktop и mobile не должно быть технических или дорелизных формулировок, чёрных краёв карты и ошибок в консоли.
 11. Cookie содержит `HttpOnly; SameSite=Strict`; state-changing запрос с чужим `Origin`, даже с подставленным `X-Forwarded-Host`, получает `403`.
 12. После logout сокет пользователя отключается; после удаления участника он перестаёт получать события отозванной страны.
-13. Приглашённый редактор сохраняет прежние write-возможности. Наблюдатель видит карту и план, может выпустить только read-scopes, а попытка `city.create` через MCP возвращает ошибку scope.
+13. Приглашённый министр сохраняет write-возможности. Наблюдатель видит карту и план, может выпустить только read-scopes, а попытка `city.create` через MCP возвращает ошибку scope.
 14. Отозванный, истёкший и повреждённый MCP-токен не проходит handshake. Legacy-токен без срока остаётся действительным до отзыва.
 
 Release-скриншоты Playwright не перезаписывает по умолчанию. Для осознанного обновления контрольных кадров запустить с `E2E_CAPTURE_SCREENSHOTS=true`.
 
-Контрольные кадры: `screenshots/release-city-desktop.png`, `screenshots/release-city-districts.png`, `screenshots/release-plan-tasks.png`, `screenshots/release-task-modal.png`, `screenshots/release-countries-chamber.png`, `screenshots/release-empty-country.png`, `screenshots/release-mcp-settings.png`, `screenshots/release-mcp-mobile.png`.
+Контрольные кадры: `screenshots/release-city-desktop.png`, `screenshots/release-city-districts.png`, `screenshots/release-plan-tasks.png`, `screenshots/release-task-modal.png`, `screenshots/release-country-government.png`, `screenshots/release-empty-country.png`, `screenshots/release-mcp-settings.png`, `screenshots/release-mcp-mobile.png`.

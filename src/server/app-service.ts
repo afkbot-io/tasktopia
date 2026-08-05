@@ -317,8 +317,10 @@ export class AppService {
     const stats = await this.db.prepare(`SELECT
       (SELECT COUNT(*) FROM cities_v3 WHERE country_id = ?) AS cities,
       (SELECT COUNT(*) FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE c.country_id = ?) AS districts,
-      (SELECT COUNT(*) FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id WHERE c.country_id = ?) AS tasks`)
-                      .get(user.countryId, user.countryId, user.countryId) as Row;
+      (SELECT COUNT(*) FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id WHERE c.country_id = ?) AS tasks,
+      (SELECT COUNT(*) FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE c.country_id = ? AND d.status = 'ACTIVE') AS active_districts,
+      (SELECT COUNT(*) FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id WHERE c.country_id = ? AND t.status <> 'COMPLETED') AS unfinished_buildings`)
+                      .get(user.countryId, user.countryId, user.countryId, user.countryId, user.countryId) as Row;
     const initialCityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE country_id = ? ORDER BY created_at LIMIT 1").get(user.countryId) as Row | undefined;
     const published = await this.db.prepare(`SELECT
       MIN((bounds_json->>'minX')::integer) AS min_x,
@@ -343,7 +345,10 @@ export class AppService {
       countryRole: user.countryRole,
       initialCity: initialCityRow ? cityDto(initialCityRow) : null,
       viewBounds,
-      stats: { cities: Number(stats.cities), districts: Number(stats.districts), tasks: Number(stats.tasks) },
+      stats: {
+        cities: Number(stats.cities), districts: Number(stats.districts), tasks: Number(stats.tasks),
+        activeDistricts: Number(stats.active_districts), unfinishedBuildings: Number(stats.unfinished_buildings),
+      },
       chunkSize: CHUNK_SIZE,
       assetVersion: 4,
     };
@@ -1990,7 +1995,7 @@ export class AppService {
                       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
                       for (const [field, userId] of [["создатель", input.creatorUserId], ["ответственный", input.assigneeUserId]] as const) {
                         if (userId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, userId)) {
-                          throw new DomainError("ASSIGNEE_NOT_MEMBER", `${field} должен состоять в палате страны`);
+                          throw new DomainError("ASSIGNEE_NOT_MEMBER", `${field} должен состоять в правительстве страны`);
                         }
                       }
                       const districtRow = input.districtId
@@ -2097,7 +2102,7 @@ export class AppService {
     return await this.mutate(countryId, "task.assign.v7", input.idempotencyKey, input, async () => {
                       const task = await this.getTask(countryId, input.taskId);
                       if (input.assigneeUserId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, input.assigneeUserId)) {
-                        throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен состоять в палате страны");
+                        throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен состоять в правительстве страны");
                       }
                       const previous = task.assignee?.id ?? null;
                       const updatedAt = now();
