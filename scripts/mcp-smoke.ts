@@ -31,13 +31,22 @@ try {
   const tools = await client.listTools();
   const expected = [
     "country.get_current", "country.list", "country.select",
-    "city.list", "city.get", "city.create",
-    "district.list", "district.create", "district.activate", "district.complete",
-    "task.list", "task.get", "task.create", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
+    "city.list", "city.get", "city.create", "city.rename",
+    "district.list", "district.create", "district.rename", "district.activate", "district.complete",
+    "task.list", "task.get", "task.create", "task.rename", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
   ];
   if (tools.tools.length !== expected.length) throw new Error(`Expected ${expected.length} MCP tools, got ${tools.tools.length}`);
   for (const name of expected) {
     if (!tools.tools.some((tool) => tool.name === name)) throw new Error(`Missing MCP tool: ${name}`);
+  }
+  const missingId = "00000000-0000-4000-8000-000000000001";
+  for (const [name, arguments_] of [
+    ["city.rename", { cityId: missingId, name: "Renamed city", idempotencyKey: "smoke-rename-city" }],
+    ["district.rename", { districtId: missingId, name: "Renamed district", idempotencyKey: "smoke-rename-district" }],
+    ["task.rename", { taskId: missingId, title: "Renamed task", idempotencyKey: "smoke-rename-task" }],
+  ] as const) {
+    const result = await client.callTool({ name, arguments: arguments_ });
+    if (!result.isError || !JSON.stringify(result.content).includes("NOT_FOUND")) throw new Error(`${name} did not reach its protected domain handler`);
   }
   const result = await client.callTool({ name: "country.get_current", arguments: {} });
   if (result.isError) throw new Error(`country.get_current failed: ${JSON.stringify(result.content)}`);
@@ -58,7 +67,7 @@ const legacyTransport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mc
 try {
   await legacyClient.connect(legacyTransport);
   if (legacyClient.getProtocolEra() !== "legacy") throw new Error(`Expected legacy MCP era, got ${legacyClient.getProtocolEra()}`);
-  if ((await legacyClient.listTools()).tools.length !== 17) throw new Error("Legacy MCP client did not receive all tools");
+  if ((await legacyClient.listTools()).tools.length !== 20) throw new Error("Legacy MCP client did not receive all tools");
   console.log("Legacy 2025 MCP fallback passed.");
 } finally {
   await legacyClient.close();

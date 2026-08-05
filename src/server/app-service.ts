@@ -1164,6 +1164,18 @@ export class AppService {
                     });
   }
 
+  async renameCity(countryId: string, input: { cityId: string; name: string; idempotencyKey: string }): Promise<CityDto> {
+    const name = input.name.trim();
+    if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название города должно содержать от 2 до 100 символов");
+    return await this.mutate(countryId, "city.rename.v1", input.idempotencyKey, input, async () => {
+                      const row = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
+                      if (!row) throw new DomainError("NOT_FOUND", "Город не найден");
+                      await this.db.prepare("UPDATE cities_v3 SET name = ? WHERE id = ?").run(name, input.cityId);
+                      const data = cityDto({ ...row, name });
+                      return { data, eventType: "city.renamed", eventPayload: { cityId: input.cityId, name, affectedBounds: data.bounds } };
+                    });
+  }
+
   private districtShape(origin: Cell, width: number, height: number, seed: number): Cell[] {
     // Cut whole triangular corners instead of removing random border cells. This
     // keeps every generated district four-neighbour connected while still giving
@@ -1475,6 +1487,19 @@ export class AppService {
                                                         .run(id, city.id, name, input.goal?.trim().slice(0, 2000) ?? "", status, capacity, JSON.stringify(site.cells), JSON.stringify(lots), growthDirection, archetype, color, createdAt);
                       const data: DistrictDto = { id, cityId: city.id, name, goal: input.goal?.trim() ?? "", status, capacitySp: capacity, cells: site.cells, lots, growthDirection, archetype, color, createdAt };
                       return { data, eventType: "district.created", eventPayload: { districtId: id, cityId: city.id, affectedBounds: boundsOf(site.cells) } };
+                    });
+  }
+
+  async renameDistrict(countryId: string, input: { districtId: string; name: string; idempotencyKey: string }): Promise<DistrictDto> {
+    const name = input.name.trim();
+    if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название района должно содержать от 2 до 100 символов");
+    return await this.mutate(countryId, "district.rename.v1", input.idempotencyKey, input, async () => {
+                      const row = await this.db.prepare(`SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
+                        WHERE d.id = ? AND c.country_id = ?`).get(input.districtId, countryId) as Row | undefined;
+                      if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
+                      await this.db.prepare("UPDATE districts_v3 SET name = ? WHERE id = ?").run(name, input.districtId);
+                      const data = districtDto({ ...row, name });
+                      return { data, eventType: "district.renamed", eventPayload: { districtId: input.districtId, cityId: data.cityId, name, affectedBounds: boundsOf(data.cells) } };
                     });
   }
 
@@ -2055,6 +2080,19 @@ export class AppService {
                       this.surfaceCache.delete(countryId);
                       const data = await this.getTask(countryId, id);
                       return { data, eventType: "task.created", eventPayload: { taskId: id, districtId: district.id, buildingType: entry.key, affectedBounds: boundsOf(data.footprint) } };
+                    });
+  }
+
+  async renameTask(countryId: string, input: { taskId: string; title: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
+    const title = input.title.trim();
+    if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название задачи должно содержать от 2 до 160 символов");
+    return await this.mutate(countryId, "task.rename.v1", input.idempotencyKey, input, async () => {
+                      const task = await this.getTask(countryId, input.taskId);
+                      const updatedAt = now();
+                      await this.db.prepare("UPDATE tasks_v3 SET title = ?, updated_at = ? WHERE id = ?").run(title, updatedAt, input.taskId);
+                      await this.recordTaskEvent(input.taskId, "TITLE_CHANGED", input.actor ?? "MCP", input.actorUserId, { from: task.title, to: title }, updatedAt);
+                      const data = await this.getTask(countryId, input.taskId);
+                      return { data, eventType: "task.renamed", eventPayload: { taskId: input.taskId, districtId: task.districtId, title, affectedBounds: boundsOf(data.footprint) } };
                     });
   }
 

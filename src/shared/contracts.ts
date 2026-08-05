@@ -104,7 +104,7 @@ export type TaskCommentDto = {
 export type TaskEventDto = {
   id: number;
   taskId: string;
-  type: "CREATED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED";
+  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED";
   actor: string;
   actorUserId: string | null;
   details: Record<string, unknown>;

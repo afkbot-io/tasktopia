@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.3
+Version: 1.3.1
 Last updated: 2026-08-05  
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -89,7 +89,7 @@ text, comments, logs, or tool arguments.
 
 ## Tools
 
-The server exposes 17 tools.
+The server exposes 20 tools.
 
 ### Countries
 
@@ -154,6 +154,16 @@ Allowed morphology values are `BALANCED`, `DENSE_CORE`, `GARDEN_CITY`, and
 
 Required scope: `cities:write`.
 
+#### `city.rename`
+
+Renames an existing city.
+
+```json
+{ "cityId": "<city-id>", "name": "New city name", "idempotencyKey": "rename-city-v1" }
+```
+
+Required scope: `cities:write`.
+
 ### Districts
 
 #### `district.list`
@@ -169,12 +179,12 @@ Required scope: `country:read`.
 
 #### `district.create`
 
-Creates a sprint-like district.
+Creates a district.
 
 ```json
 {
   "cityId": "<city-id>",
-  "name": "Sprint 12",
+  "name": "Northern district",
   "goal": "Ship billing recovery",
   "capacitySp": 26,
   "activate": false,
@@ -185,6 +195,16 @@ Creates a sprint-like district.
 
 `cityId`, `name`, and `idempotencyKey` are required. Allowed archetypes are
 `NEW_BUILD`, `PRIVATE`, `MIXED_URBAN`, `COMMERCIAL`, and `CIVIC`.
+
+Required scope: `districts:write`.
+
+#### `district.rename`
+
+Renames an existing district without changing its geometry or status.
+
+```json
+{ "districtId": "<district-id>", "name": "New district name", "idempotencyKey": "rename-district-v1" }
+```
 
 Required scope: `districts:write`.
 
@@ -261,6 +281,17 @@ estimates are `1`, `2`, `3`, or `6`. Allowed priorities are `LOW`, `NORMAL`,
 `buildingHint` is an optional exact building key. Read
 `tasktopia://catalog/buildings` first and use only a compatible catalog key;
 omit the field when no exact building was requested.
+
+Required scope: `tasks:write`.
+
+#### `task.rename`
+
+Renames a task and the title associated with its building. The change is added
+to the task event history.
+
+```json
+{ "taskId": "<task-id>", "title": "New task title", "idempotencyKey": "rename-task-v1" }
+```
 
 Required scope: `tasks:write`.
 
@@ -365,7 +396,7 @@ still necessary, reuse the original `idempotencyKey`.
 
 - Confirm the selected country before writing.
 - Never guess entity IDs or silently create substitute entities.
-- Preserve the user's hierarchy: project → epic → sprint → task.
+- Preserve the user's hierarchy: country → city → district → task/building.
 - Prefer one small, verifiable mutation at a time.
 - Respect task transition rules reported by the server.
 - Do not mark work complete merely because code was generated.

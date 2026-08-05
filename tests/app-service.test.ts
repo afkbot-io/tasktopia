@@ -39,6 +39,25 @@ describe("Tasktopia square-world application service", () => {
     }
   });
 
+  it("renames a city, district, and task with idempotent realtime events", async () => {
+    const emitted: string[] = [];
+    service = new AppService(db, (event) => emitted.push(event.type));
+    const city = await service.createCity(countryId, { name: "Old City", idempotencyKey: "rename-city-create" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Old District", activate: true, idempotencyKey: "rename-district-create" });
+    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Old Task", estimate: 1, idempotencyKey: "rename-task-create" });
+
+    const renamedCity = await service.renameCity(countryId, { cityId: city.id, name: "New City", idempotencyKey: "rename-city" });
+    const renamedDistrict = await service.renameDistrict(countryId, { districtId: district.id, name: "New District", idempotencyKey: "rename-district" });
+    const renamedTask = await service.renameTask(countryId, { taskId: task.id, title: "New Task", actor: "Tester", idempotencyKey: "rename-task" });
+
+    expect(renamedCity.name).toBe("New City");
+    expect(renamedDistrict.name).toBe("New District");
+    expect(renamedTask.title).toBe("New Task");
+    expect(renamedTask.events?.at(-1)).toMatchObject({ type: "TITLE_CHANGED", actor: "Tester", details: { from: "Old Task", to: "New Task" } });
+    expect(emitted.slice(-3)).toEqual(["city.renamed", "district.renamed", "task.renamed"]);
+    expect(await service.renameTask(countryId, { taskId: task.id, title: "New Task", actor: "Tester", idempotencyKey: "rename-task" })).toEqual(renamedTask);
+  });
+
   it("creates a planned district and advances a sprite building through five stages", async () => {
     const city = await service.createCity(countryId, { name: "Southport", idempotencyKey: "c1" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Core", archetype: "MIXED_URBAN", activate: true, idempotencyKey: "d1" });

@@ -9,7 +9,7 @@ const statusLabel: Record<TaskDto["status"], string> = {
 const priorityLabel: Record<TaskDto["priority"], string> = { LOW: "Низкий", NORMAL: "Обычный", HIGH: "Высокий", CRITICAL: "Критический" };
 const platformLabel: Record<TaskDto["platformType"], string> = { YARD: "Двор", STONE: "Камень", ASPHALT: "Асфальт", SERVICE: "Служебная", PARK: "Парк" };
 const eventLabel: Record<NonNullable<TaskDto["events"]>[number]["type"], string> = {
-  CREATED: "Задача создана", STATUS_CHANGED: "Изменён этап строительства", COMMENT_ADDED: "Добавлен комментарий", ASSIGNEE_CHANGED: "Изменён ответственный",
+  CREATED: "Задача создана", TITLE_CHANGED: "Задача переименована", STATUS_CHANGED: "Изменён этап строительства", COMMENT_ADDED: "Добавлен комментарий", ASSIGNEE_CHANGED: "Изменён ответственный",
 };
 
 export function TaskModal({ taskId, revision, onClose }: { taskId: string; revision: number; onClose: () => void }) {

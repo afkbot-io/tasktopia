@@ -2,12 +2,18 @@ import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
 const seedCommand = process.env.E2E_SEED_COMMAND ?? "npm run seed:test";
+const serverPort = new URL(baseURL).port || (baseURL.startsWith("https:") ? "443" : "80");
+const webCommand = process.env.E2E_WEB_COMMAND
+  ?? `${seedCommand} && npm run build && NODE_ENV=production PORT=${serverPort} SESSION_COOKIE_SECURE=false npm start`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 60_000,
+  // Stateful UI scenarios intentionally share one seeded country. Running
+  // them concurrently makes tests rename/delete data underneath each other.
+  workers: 1,
   webServer: {
-    command: `${seedCommand} && npm run dev`,
+    command: webCommand,
     url: baseURL,
     // `localhost` and `127.0.0.1` are distinct origins. Tie the API's CSRF
     // allow-list to the exact origin Playwright opens in every environment.

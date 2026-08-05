@@ -29,10 +29,10 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 При выпуске выбираются срок `30 | 90 | 365` дней и непустое подмножество scopes:
 
 - `country:read` — страны, города, районы и MCP resources; полный `city.get` дополнительно требует `tasks:read` из-за списка задач;
-- `cities:write` — создание городов;
-- `districts:write` — создание и смена состояния районов;
+- `cities:write` — создание и переименование городов;
+- `districts:write` — создание, переименование и смена состояния районов;
 - `tasks:read` — чтение задач;
-- `tasks:write` — создание, назначение и смена стадии задач;
+- `tasks:write` — создание, переименование, назначение и смена стадии задач;
 - `comments:write` — добавление комментариев.
 
 Глава страны и министр могут выбрать любые scopes. Наблюдателю доступны только `country:read` и `tasks:read`. Сервер заново проверяет активную страну и текущую роль на каждом MCP HTTP-запросе, поэтому сохранённые в старом ключе write-scopes не дают наблюдателю право записи. Истёкший, отозванный, повреждённый или пустой по разрешениям ключ отклоняется. Существующие ключи с `expires_at = NULL` продолжают работать до отзыва; все новые имеют явный срок.
@@ -40,9 +40,9 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 ## Основные инструменты
 
 - `country.get_current`, `country.list`, `country.select`
-- `city.list`, `city.get`, `city.create`
-- `district.list`, `district.create`, `district.activate`, `district.complete`
-- `task.list`, `task.get`, `task.create`
+- `city.list`, `city.get`, `city.create`, `city.rename`
+- `district.list`, `district.create`, `district.rename`, `district.activate`, `district.complete`
+- `task.list`, `task.get`, `task.create`, `task.rename`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
 
 ## Минимальный сценарий

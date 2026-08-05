@@ -34,11 +34,14 @@ await app.register(fastifyHelmet, {
       defaultSrc: ["'self'"],
       connectSrc: ["'self'", "ws:", "wss:"],
       imgSrc: ["'self'", "data:", "blob:"],
+      workerSrc: ["'self'", "blob:"],
       styleSrc: ["'self'", "'unsafe-inline'"],
     },
   },
 });
-await app.register(fastifyRateLimit, { max: 180, timeWindow: "1 minute" });
+// The interactive map loads many small chunks and production assets in bursts.
+// Sensitive endpoints keep their stricter route-level limits below.
+await app.register(fastifyRateLimit, { max: 600, timeWindow: "1 minute" });
 
 const io = new SocketServer(app.server, {
   path: "/socket.io",

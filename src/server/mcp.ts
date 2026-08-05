@@ -46,7 +46,7 @@ export async function getMcpAuthentication(db: Db, headers: IncomingHttpHeaders)
 export async function createMcpServer(db: Db, service: AppService, identity: McpIdentity): Promise<McpServer> {
   const server = new McpServer({ name: "tasktopia", version: APP_VERSION }, {
     instructions: [
-      "Tasktopia turns delivery work into a city: country=project, city=epic, district=sprint, building=task.",
+      "Tasktopia turns work into a living country: countries contain cities, cities contain districts, and tasks become buildings.",
       "Start with country.get_current, then read IDs before calling write tools.",
       "Every write requires a stable idempotencyKey. Reuse it only for an identical retry.",
       "Task stages are PLANNING -> STARTED -> IN_PROGRESS -> TESTING -> COMPLETED; only TESTING -> IN_PROGRESS may move backward and requires a comment.",
@@ -122,6 +122,11 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
+  server.registerTool("city.rename", { description: "Переименовать существующий город.", inputSchema: z.object({ cityId: z.string().uuid(), name: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async (input) => {
+    try { requireScope(identity, "cities:write"); return response(await service.renameCity(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
   server.registerTool("district.list", { description: "Получить районы, при необходимости только одного города.", inputSchema: z.object({ cityId: z.string().uuid().optional() }), annotations: { readOnlyHint: true } }, async ({ cityId }) => {
     try { requireScope(identity, "country:read"); return response(await service.listDistricts(identity.countryId, cityId)); }
     catch (error) { return failure(error); }
@@ -129,6 +134,11 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
 
   server.registerTool("district.create", { description: "Создать расширяемый район с улицами, тротуарами и архетипом застройки. Если archetype не передан, сервер выберет его по цели района и характеру города.", inputSchema: districtCreateSchema, annotations: { idempotentHint: true } }, async (input) => {
     try { requireScope(identity, "districts:write"); return response(await service.createDistrict(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("district.rename", { description: "Переименовать существующий район.", inputSchema: z.object({ districtId: z.string().uuid(), name: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async (input) => {
+    try { requireScope(identity, "districts:write"); return response(await service.renameDistrict(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
@@ -172,6 +182,15 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.assigneeEmail), idempotencyKey: input.idempotencyKey,
                                               }));
     } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.rename", {
+    description: "Переименовать задачу и связанное с ней здание.",
+    inputSchema: z.object({ taskId: z.string().uuid(), title: z.string().min(2).max(160), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "tasks:write"); return response(await service.renameTask(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    catch (error) { return failure(error); }
   });
 
   const statusInput = {
