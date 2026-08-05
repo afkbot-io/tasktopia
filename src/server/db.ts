@@ -70,6 +70,10 @@ class PostgresDb implements Db {
   }
 
   async transaction<T>(callback: () => Promise<T> | T): Promise<T> {
+    // Domain services compose transactional operations (for example account +
+    // country + first city onboarding). Reuse the active connection instead of
+    // opening an unrelated nested transaction that could commit partially.
+    if (transactionContext.getStore()) return await callback();
     return await this.pool.begin(async (sql) => transactionContext.run(sql, callback)) as T;
   }
 

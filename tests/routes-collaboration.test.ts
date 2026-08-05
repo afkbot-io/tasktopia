@@ -57,6 +57,21 @@ describe("country collaboration HTTP boundary", () => {
     expect(renamed.json().user.name).toBe("Updated Member Name");
   });
 
+  it("lets only the owner rename a country", async () => {
+    const ownerCookie = await register("rename-owner@example.com", "Rename Owner");
+    const memberCookie = await register("rename-member@example.com", "Rename Member");
+    const created = await app.inject({ method: "POST", url: "/api/countries", headers: { cookie: ownerCookie }, payload: { name: "Old name" } });
+    const countryId = created.json().id as string;
+    await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: ownerCookie }, payload: { email: "rename-member@example.com" } });
+
+    const forbidden = await app.inject({ method: "PATCH", url: `/api/countries/${countryId}`, headers: { cookie: memberCookie }, payload: { name: "Hacked name" } });
+    expect(forbidden.statusCode).toBe(403);
+
+    const renamed = await app.inject({ method: "PATCH", url: `/api/countries/${countryId}`, headers: { cookie: ownerCookie }, payload: { name: "New product name" } });
+    expect(renamed.statusCode).toBe(200);
+    expect(renamed.json()).toMatchObject({ id: countryId, name: "New product name" });
+  });
+
   it("notifies the realtime boundary when country access is revoked", async () => {
     const revoked: Array<{ countryId: string; userId: string }> = [];
     await app.close();

@@ -1,7 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, ui-monospace, monospace;
+  --color-ink: #081316;
+  --color-panel: #102126;
+  --color-line: #2d4850;
+  --color-skyline: #73bddc;
+  --color-signal: #f2c84b;
+  --color-paper: #edf0e5;
+}
+
+@layer components {
 :root {
   color: #e9eddf;
   background: #0a1316;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Avenir Next", Avenir, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   --panel: #101c20;
   --panel-2: #152429;
@@ -302,4 +316,5 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
 }

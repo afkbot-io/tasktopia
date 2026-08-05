@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -48,6 +48,7 @@
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -58,6 +59,7 @@
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.8.0",
+    "tailwindcss": "^4.3.3",
     "tsx": "latest",
     "typescript": "latest",
     "typescript-eslint": "^8.65.0",

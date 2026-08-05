@@ -30,6 +30,18 @@ test("key screens do not overflow at supported breakpoints", async ({ page }) =>
   for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
+    await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
+    await expect(page.getByLabel("Название вашей первой страны")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
   }
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("demo@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.locator(".country-title-button").click();
+  await expect(page.getByRole("dialog", { name: "Страны и команда" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  expect(seriousViolations(await new AxeBuilder({ page }).include("[aria-labelledby='countries-title']").analyze())).toEqual([]);
 });

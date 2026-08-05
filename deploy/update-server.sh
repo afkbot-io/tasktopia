@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly APP_DIR="/opt/tasktopia"
+readonly APP_DIR="/srv/tasktopia/app"
 
 cd "$APP_DIR"
 git pull --ff-only origin main

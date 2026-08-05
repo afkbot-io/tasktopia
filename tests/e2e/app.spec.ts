@@ -91,10 +91,13 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
   await page.getByRole("button", { name: "Закрыть" }).click();
   await page.locator(".country-title-button").click();
-  await expect(page.getByRole("heading", { name: "Страны и палата" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Страны и команда" })).toBeVisible();
   await expect(page.getByText("Основатель").first()).toBeVisible();
   await capture(page, "screenshots/release-countries-chamber.png");
-  await page.getByRole("button", { name: "Закрыть" }).click();
+  await page.getByLabel("Название страны").fill("Тестовая страна 2");
+  await page.getByRole("button", { name: "Сохранить" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toBeVisible();
   await expect(page.getByRole("button", { name: "План" })).toBeVisible();
@@ -108,29 +111,18 @@ test("login, map and MCP token management", async ({ page, context }) => {
   expect(consoleErrors).toEqual([]);
 });
 
-test("registration automatically creates an empty country", async ({ page }) => {
+test("registration creates the named country and first city", async ({ page }) => {
   const email = `new-mayor-${Date.now()}@example.test`;
   await page.goto("/");
   await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
   await page.getByLabel("Имя").fill("New Mayor");
+  await page.getByLabel("Название вашей первой страны").fill("Новый продукт");
+  await page.getByLabel("Название первого города").fill("Первый релиз");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Пароль").fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
-  await expect(page.getByRole("heading", { name: "Создайте первый город через MCP" })).toBeVisible();
-  const emptyDescription = page.getByText("Подключите Tasktopia к MCP-клиенту");
-  const connectButton = page.getByRole("button", { name: "Подключить MCP" });
-  await expect(emptyDescription).toBeVisible();
-  await expect(connectButton).toBeVisible();
-  const descriptionBox = await emptyDescription.boundingBox();
-  const buttonBox = await connectButton.boundingBox();
-  expect(buttonBox!.y).toBeGreaterThan(descriptionBox!.y + descriptionBox!.height);
-  await capture(page, "screenshots/release-empty-country.png");
-  await connectButton.click();
-  await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
-  await expect(page.getByText(`${new URL(page.url()).origin}/mcp`, { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Профиль" }).click();
-  await expect(page.getByText(email)).toBeVisible();
-  await page.getByRole("button", { name: "Закрыть" }).click();
-  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeHidden();
-  await expect(page.getByRole("heading", { name: "Создайте первый город через MCP" })).toBeVisible();
+  await expect(page.getByText("Новый продукт", { exact: true })).toBeVisible();
+  await expect(page.getByText("Первый релиз", { exact: true })).toBeVisible();
+  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
+  await capture(page, "screenshots/release-onboarding-city.png");
 });

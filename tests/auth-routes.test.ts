@@ -1,6 +1,6 @@
 import fastifyCookie from "@fastify/cookie";
 import Fastify, { type FastifyInstance } from "fastify";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
@@ -103,6 +103,44 @@ describe("authentication HTTP boundary", () => {
     expect(loggedIn.statusCode).toBe(200);
     expect(loggedIn.headers["set-cookie"]).toBeDefined();
   }, 15_000);
+
+  it("creates the named country and first city during onboarding", async () => {
+    const registered = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        email: "founder@example.test",
+        name: "Product Founder",
+        password: "safe-password-123",
+        countryName: "Платформа",
+        cityName: "Мобильное приложение",
+      },
+    });
+    expect(registered.statusCode).toBe(200);
+    const setCookie = registered.headers["set-cookie"]!;
+    const cookie = (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;
+
+    const bootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } })).json();
+    expect(bootstrap).toMatchObject({
+      country: { name: "Платформа" },
+      initialCity: { name: "Мобильное приложение" },
+      stats: { cities: 1, districts: 0, tasks: 0 },
+    });
+  }, 15_000);
+
+  it("rolls back the whole onboarding when first-city generation fails", async () => {
+    vi.spyOn(service, "createCity").mockRejectedValueOnce(new Error("world generation failed"));
+    const response = await app.inject({
+      method: "POST", url: "/api/auth/register",
+      payload: {
+        email: "rollback@example.test", name: "Rollback Founder", password: "safe-password-123",
+        countryName: "Rollback Product", cityName: "Rollback Epic",
+      },
+    });
+    expect(response.statusCode).toBe(500);
+    expect(await db.prepare("SELECT 1 FROM users WHERE email = ?").get("rollback@example.test")).toBeUndefined();
+    expect(await db.prepare("SELECT 1 FROM countries WHERE name = ?").get("Rollback Product")).toBeUndefined();
+  });
 
   it("returns a clear conflict instead of Bad Request or 500 for an existing email", async () => {
     const payload = { email: "duplicate@example.test", name: "First Mayor", password: "safe-password-123" };

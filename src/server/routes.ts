@@ -14,6 +14,7 @@ import {
   loginUser,
   logout,
   registerUser,
+  renameCountry,
   removeCountryMember,
   requireUser,
   SESSION_COOKIE,
@@ -30,6 +31,8 @@ const registerSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
   name: z.string().trim().min(2, { message: "Имя должно содержать минимум 2 символа" }).max(60, { message: "Имя слишком длинное" }),
   password: z.string().min(8, { message: "Пароль должен содержать минимум 8 символов" }).max(128, { message: "Пароль слишком длинный" }),
+  countryName: z.string().trim().min(2, { message: "Название страны должно содержать минимум 2 символа" }).max(100, { message: "Название страны слишком длинное" }).optional(),
+  cityName: z.string().trim().min(2, { message: "Название города должно содержать минимум 2 символа" }).max(100, { message: "Название города слишком длинное" }).optional(),
 }).strict();
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
@@ -103,7 +106,16 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const body = parse(registerSchema, request.body);
     let result;
     try {
-      result = await registerUser(db, body);
+      result = await transaction(db, async () => {
+        const registered = await registerUser(db, body);
+        if (body.cityName) {
+          await service.createCity(registered.user.countryId, {
+            name: body.cityName,
+            idempotencyKey: `onboarding:${registered.user.id}`,
+          });
+        }
+        return registered;
+      });
     } catch (error) {
       if (error instanceof EmailAlreadyRegisteredError) throw new DomainError("CONFLICT", error.message);
       throw error;
@@ -203,6 +215,17 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const role = await setActiveCountry(db, user.id, countryId);
     if (!role) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
     return await service.getBootstrap({ ...user, countryId, countryRole: role });
+  });
+
+  app.patch("/api/countries/:countryId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
+    const body = parse(countrySchema, request.body);
+    if (!await renameCountry(db, user.id, countryId, body.name)) {
+      throw new DomainError("FORBIDDEN", "Переименовать страну может только её основатель");
+    }
+    return await service.getCountry(countryId);
   });
 
   app.delete("/api/countries/:countryId", async (request, reply) => {

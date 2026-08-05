@@ -7,6 +7,7 @@ import { CountryPanel } from "./components/CountryPanel";
 import { PlanDrawer } from "./components/PlanDrawer";
 import { TaskModal } from "./components/TaskModal";
 import { TokenPanel } from "./components/TokenPanel";
+import { Button, cx } from "./components/ui";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
 
@@ -110,19 +111,33 @@ export function App() {
   }
 
   const activeCity = focusCity ?? bootstrap.initialCity;
-  return <main className="app-shell app-shell-v3">
-    <header className="topbar">
-      <div className="brand-mark"><span>▦</span> TASKTOPIA</div>
-      <button className="country-title country-title-button" onClick={() => setCountriesOpen(true)}><span>СТРАНА</span><strong>{bootstrap.country.name}</strong></button>
-      {activeCity && <div className="country-title city-title"><span>ГОРОД</span><strong>{activeCity.name}</strong></div>}
-      <div className="topbar-stats">
-        <span><i className={online ? "online" : "offline"} />{online ? "Синхронизировано" : "Переподключение"}</span>
-        <span>{bootstrap.stats.cities} городов</span><span>{bootstrap.stats.districts} районов</span><span>{bootstrap.stats.tasks} задач</span>
+  return <main className="grid h-full grid-rows-[72px_minmax(0,1fr)] bg-[#081316]">
+    <header className="relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:grid-cols-[minmax(0,1.2fr)_auto_auto] md:px-5" aria-label="Панель управления страной">
+      <div className="flex min-w-0 items-center gap-2.5 md:gap-4">
+        <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
+        <button className="country-title-button grid min-w-0 border-0 border-l-0 px-0 text-left xl:border-l xl:border-[#304850] xl:pl-5" onClick={() => setCountriesOpen(true)}>
+          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">СТРАНА · ПРОЕКТ</span>
+          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7] md:max-w-[240px]">{bootstrap.country.name}</strong>
+        </button>
+        {activeCity && <div className="hidden min-w-0 border-l border-[#304850] pl-4 sm:grid">
+          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">ГОРОД · ЭПИК</span>
+          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7]">{activeCity.name}</strong>
+        </div>}
       </div>
-      <button className={`topbar-button ${planOpen ? "active" : ""}`} onClick={() => setPlanOpen((value) => !value)}>План</button>
-      <button className={`topbar-button ${showDistricts ? "active" : ""}`} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Районы</button>
-      <button className="icon-button" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</button>
-      <button className="icon-button account-button" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</button>
+
+      <div className="hidden items-center gap-4 text-xs text-[#9cafb2] md:flex xl:gap-6">
+        <span className="flex items-center gap-2 whitespace-nowrap"><i className={cx("h-2 w-2 rounded-full", online ? "bg-[#78be6d] shadow-[0_0_8px_#78be6d]" : "bg-[#d66e5d]")} />{online ? "В сети" : "Подключение"}</span>
+        <span className="hidden whitespace-nowrap lg:inline">{bootstrap.stats.cities} городов</span>
+        <span className="hidden whitespace-nowrap xl:inline">{bootstrap.stats.districts} районов</span>
+        <span className="hidden whitespace-nowrap xl:inline">{bootstrap.stats.tasks} задач</span>
+      </div>
+
+      <nav className="flex items-center justify-end gap-1.5 sm:gap-2" aria-label="Действия карты">
+        <Button className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "border-skyline bg-[#1a3942] text-white")} onClick={() => setPlanOpen((value) => !value)}>План</Button>
+        <Button className={cx("hidden min-h-10 px-3 text-xs sm:inline-flex sm:px-4", showDistricts && "border-skyline bg-[#1a3942] text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Районы</Button>
+        <Button className="h-10 min-h-10 w-10 px-0 text-lg text-signal" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</Button>
+        <Button className="h-10 min-h-10 w-10 rounded-full px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
+      </nav>
     </header>
 
     <section className="map-region">

@@ -109,6 +109,16 @@ export async function createCountry(db: Db, userId: string, nameInput: string): 
   return id;
 }
 
+export async function renameCountry(db: Db, userId: string, countryId: string, nameInput: string): Promise<boolean> {
+  const name = nameInput.trim();
+  const result = await db.prepare(`UPDATE countries SET name = ?
+    WHERE id = ? AND EXISTS (
+      SELECT 1 FROM country_members
+      WHERE country_id = countries.id AND user_id = ? AND role = 'OWNER'
+    )`).run(name, countryId, userId);
+  return Number(result.changes) > 0;
+}
+
 export async function inviteCountryMember(db: Db, countryId: string, inviterUserId: string, emailInput: string, role: Extract<CountryRole, "MEMBER" | "VIEWER"> = "MEMBER"): Promise<CountryMemberDto | null> {
   const email = emailInput.trim().toLowerCase();
   const invited = await db.prepare("SELECT id, email, name FROM users WHERE email = ?").get(email);
@@ -136,7 +146,7 @@ export async function updateAccountName(db: Db, userId: string, name: string): P
   await db.prepare("UPDATE users SET name = ? WHERE id = ?").run(name.trim(), userId);
 }
 
-export async function registerUser(db: Db, input: { email: string; name: string; password: string }): Promise<{ user: AuthUser; session: string }> {
+export async function registerUser(db: Db, input: { email: string; name: string; password: string; countryName?: string }): Promise<{ user: AuthUser; session: string }> {
   const email = input.email.trim().toLowerCase();
   const name = input.name.trim();
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Введите корректный email");
@@ -152,8 +162,9 @@ export async function registerUser(db: Db, input: { email: string; name: string;
                       const seed = randomBytes(4).readUInt32LE(0) & 0x7fffffff;
                       await db.prepare("INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)")
                                                         .run(userId, email, name, passwordHash, createdAt);
+                      const countryName = input.countryName?.trim() || `${name}: страна`;
                       await db.prepare("INSERT INTO countries (id, user_id, name, seed, world_version, created_at) VALUES (?, ?, ?, ?, 1, ?)")
-                                                        .run(countryId, userId, `${name}: страна`, seed, createdAt);
+                                                        .run(countryId, userId, countryName, seed, createdAt);
                       await db.prepare("INSERT INTO country_members (country_id, user_id, role, invited_by_user_id, created_at) VALUES (?, ?, 'OWNER', ?, ?)")
                                                         .run(countryId, userId, userId, createdAt);
                       await db.prepare("UPDATE users SET active_country_id = ? WHERE id = ?").run(countryId, userId);

@@ -4,6 +4,8 @@ test("shows a clear duplicate-registration error and keeps the form usable", asy
   await page.goto("/");
   await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
   await page.getByLabel("Имя").fill("Duplicate Mayor");
+  await page.getByLabel("Название вашей первой страны").fill("Duplicate Product");
+  await page.getByLabel("Название первого города").fill("Duplicate Epic");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();

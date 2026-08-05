@@ -9,9 +9,9 @@ apt-get update
 apt-get install -y ca-certificates curl git nginx certbot python3-certbot-nginx docker.io docker-compose-v2
 systemctl enable --now docker nginx
 
-install -d -m 0755 /opt/tasktopia
-# Репозиторий клонируется в /opt/tasktopia через read-only GitHub deploy key.
-cd /opt/tasktopia
+install -d -m 0755 /srv/tasktopia/app
+# Репозиторий клонируется в /srv/tasktopia/app через read-only GitHub deploy key.
+cd /srv/tasktopia/app
 cp deploy/.env.production.example .env
 chmod 0600 .env
 
@@ -44,7 +44,7 @@ LOG_LEVEL=info
 ## Обновление
 
 ```bash
-/opt/tasktopia/deploy/update-server.sh
+/srv/tasktopia/app/deploy/update-server.sh
 ```
 
 Скрипт использует только fast-forward `git pull`, пересобирает один сервис, ждёт health check и не публикует порт 3000 наружу.
@@ -54,7 +54,7 @@ LOG_LEVEL=info
 Перед обновлениями схемы:
 
 ```bash
-cd /opt/tasktopia
+cd /srv/tasktopia/app
 install -d -m 0700 backups
 docker compose exec -T postgres pg_dump -U tasktopia -d tasktopia -Fc \
   > "backups/tasktopia-$(date +%F-%H%M).dump"
