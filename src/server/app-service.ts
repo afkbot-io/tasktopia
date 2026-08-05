@@ -1650,7 +1650,7 @@ export class AppService {
                         ...(await this.listWorldFeatures(countryId)).flatMap((feature) => feature.footprint).map(cellKey),
                       ]);
                       const site = await this.selectDistrictSite(countryId, city, seed, width, height, (origin, cells) => {
-                                                                                const candidatePlan = planBlockDistrict({ districtId: id, origin, width, height, cells, archetype });
+                                                                                const candidatePlan = planBlockDistrict({ districtId: id, origin, width, height, cells, archetype, groupOffset: existingDistricts.length });
                                                                                 return candidatePlan.lots.length >= 3
                                                                                   && cells.every((cell) => !existingRoads.has(cellKey(cell)))
                                                                                   && candidatePlan.lots.every((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)
@@ -1662,7 +1662,7 @@ export class AppService {
                       }
                       await this.normalizeUrbanHighways(countryId, expandedCity);
                       const center = { x: site.origin.x + Math.floor(width / 2), y: site.origin.y + Math.floor(height / 2) };
-                      const blockPlan = planBlockDistrict({ districtId: id, origin: site.origin, width, height, cells: site.cells, archetype });
+                      const blockPlan = planBlockDistrict({ districtId: id, origin: site.origin, width, height, cells: site.cells, archetype, groupOffset: existingDistricts.length });
                       const roadsBefore = await this.roadCells(countryId);
                       const sealed = await this.completedDistrictCells(countryId);
                       const safeAnchors = [...roadsBefore.values()].filter((road) => !sealed.has(cellKey(road)) || neighbors4(road).some((cell) => !sealed.has(cellKey(cell))));
@@ -2560,8 +2560,22 @@ export class AppService {
       }];
     });
     const chunkTasks = nearbyTasks.filter((task) => task.footprint.some((cell) => contains(chunkBounds, cell)));
-    const worldFeatures = nearbyFeatures.filter((feature) => feature.footprint.some((cell) => contains(chunkBounds, cell)) || feature.accessPath.some((cell) => contains(chunkBounds, cell)));
-    const surfaces = lod === "OVERVIEW" ? [] : [...buildSurfaceMap({
+    const worldFeatures = lod === "OVERVIEW" ? [] : nearbyFeatures.filter((feature) => feature.footprint.some((cell) => contains(chunkBounds, cell)) || feature.accessPath.some((cell) => contains(chunkBounds, cell)));
+    const surfaces = lod === "OVERVIEW" ? (() => {
+      const roadKeys = new Set(roads.map(cellKey));
+      const blockedKeys = new Set([
+        ...chunkTasks.flatMap((task) => task.footprint).map(cellKey),
+        ...nearbyFeatures.flatMap((feature) => feature.footprint).map(cellKey),
+      ]);
+      const paths = new Map<string, SurfaceCellDto>();
+      const publish = (cell: Cell) => {
+        const key = cellKey(cell);
+        if (contains(chunkBounds, cell) && !roadKeys.has(key) && !blockedKeys.has(key)) paths.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
+      };
+      for (const district of nearbyDistricts) for (const lot of district.lots) for (const cell of lot.sharedAccess ?? []) publish(cell);
+      for (const task of nearbyTasks) if (task.accessKind === "PATH") for (const cell of task.accessPath) publish(cell);
+      return [...paths.values()];
+    })() : [...buildSurfaceMap({
                       roads: new Map((await roadRows(surfaceScope)).map((road) => [cellKey(road), road])),
                       cities: nearbyCities,
                       districts: nearbyDistricts,

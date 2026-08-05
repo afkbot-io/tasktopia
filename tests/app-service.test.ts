@@ -98,7 +98,10 @@ describe("Tasktopia square-world application service", () => {
     expect(task.stage).toBe(1);
     const taskChunk = await service.chunkForCell(task.origin);
     expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY)).tasks.find((item) => item.id === task.id)?.stage).toBe(1);
-    expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW")).tasks.find((item) => item.id === task.id)).not.toHaveProperty("descriptionPreview");
+    const overview = await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW");
+    expect(overview.tasks.find((item) => item.id === task.id)).not.toHaveProperty("descriptionPreview");
+    expect(overview.surfaces.some((surface) => surface.kind === "PATH")).toBe(true);
+    expect(overview.worldFeatures).toEqual([]);
     for (const [index, status] of ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"].entries()) {
       task = await service.updateTaskStatus(countryId, { taskId: task.id, status: status as typeof task.status, comment: `stage ${index}`, idempotencyKey: `status-${index}` });
       if (index === 0) {

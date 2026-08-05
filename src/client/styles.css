@@ -127,6 +127,8 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .map-region { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
 .world-canvas-wrap { position: relative; width: 100%; height: 100%; }
 .world-first-frame-loading { position: absolute; inset: 0; z-index: 4; background: #0d1b1e; }
+.world-streaming-indicator { position: absolute; top: 14px; left: 50%; z-index: 5; display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 7px 12px; border: 1px solid #3c5961; border-radius: 9px; background: #0d1b1ee8; box-shadow: 0 8px 24px #0008; color: #dbe8e3; font-size: 12px; font-weight: 750; pointer-events: none; transform: translateX(-50%); backdrop-filter: blur(6px); }
+.world-streaming-dot { width: 8px; height: 8px; border-radius: 2px; background: #f2c84b; animation: pulse 1s ease-in-out infinite; }
 .map-retry-button { cursor: pointer; border: 1px solid #3e6973; border-radius: 8px; background: #173039; color: #edf3e7; padding: 8px 14px; font-weight: 700; }
 .map-retry-button:hover { border-color: #66b8cc; background: #1d3c46; }
 .plan-drawer { position: absolute; top: 16px; right: 16px; z-index: 8; width: min(930px, calc(100% - 32px)); max-height: calc(100% - 74px); overflow: hidden; border: 1px solid #355057; border-radius: 14px; background: #101d21f5; box-shadow: 0 24px 72px #000a; backdrop-filter: blur(14px); }

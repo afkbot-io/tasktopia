@@ -248,8 +248,8 @@ function drawDecoration(decoration: ChunkDto["decorations"][number]): Sprite | n
 }
 
 function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean): { platform?: Container; visual?: Sprite } | null {
+  if (!includePlatform) return null;
   if (feature.assetKind === "AREA") {
-    if (!includePlatform) return null;
     const platform = new Container();
     const occupied = new Set(feature.footprint.map(key));
     for (const cell of feature.footprint) {
@@ -300,7 +300,7 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
         urls.add(assetUrl(PLATFORM_TILE[task.platformType]));
       }
     }
-    for (const feature of chunk.worldFeatures) {
+    for (const feature of lod === "DETAIL" ? chunk.worldFeatures : []) {
       if (feature.assetKind === "PROP") {
         const metadata = PROP_CATALOG[feature.assetKey];
         if (metadata) urls.add(metadata.path);
@@ -344,6 +344,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
   onTaskSelect: (taskId: string) => void;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const [mapLoadError, setMapLoadError] = useState<string>();
   const hostRef = useRef<HTMLDivElement>(null);
   const districtLayerRef = useRef<Container | null>(null);
@@ -393,6 +394,17 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
     delete host.dataset.residentChunks;
     delete host.dataset.chunkRange;
     let disposed = false;
+    let paintedFrame = false;
+    let streamingTimer = 0;
+    const beginStreamingFeedback = () => {
+      window.clearTimeout(streamingTimer);
+      if (!paintedFrame) return;
+      streamingTimer = window.setTimeout(() => { if (!disposed) setStreaming(true); }, 160);
+    };
+    const endStreamingFeedback = () => {
+      window.clearTimeout(streamingTimer);
+      if (!disposed) setStreaming(false);
+    };
     const app = new Application();
     const chunks = new Map<string, ChunkDto>();
     const chunkLods = new Map<string, MapLod>();
@@ -667,8 +679,17 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
               .fill(TERRAIN_COLORS[cell.terrain] ?? TERRAIN_COLORS.GRASS);
           }
           terrain.addChild(terrainGraphics);
+          const surfaceGraphics = new Graphics();
+          for (const surface of chunk.surfaces) {
+            const color = surface.finish === "ASPHALT" ? 0x59636c : surface.finish === "PAVERS" ? 0x8d8f87 : 0x8b6949;
+            surfaceGraphics.rect(surface.x * CELL_SIZE + 1, surface.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2).fill({ color, alpha: 0.92 });
+          }
+          surfaces.addChild(surfaceGraphics);
           const roadGraphics = new Graphics();
-          for (const road of chunk.roads) roadGraphics.rect(road.x * CELL_SIZE, road.y * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(0x35414f);
+          for (const road of chunk.roads) {
+            const color = road.roadClass === "HIGHWAY" ? 0x283542 : road.roadClass === "ARTERIAL" ? 0x32414d : road.roadClass === "COLLECTOR" ? 0x3e4e58 : 0x4b5a61;
+            roadGraphics.rect(road.x * CELL_SIZE, road.y * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(color);
+          }
           roads.addChild(roadGraphics);
         }
         terrainLayer.addChild(terrain); surfaceLayer.addChild(surfaces); roadLayer.addChild(roads);
@@ -951,6 +972,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
         }
         setFirstFrameReady(true);
+        paintedFrame = true;
       };
       const pruneGroundCache = (active: Set<string>) => {
         if (groundContainers.size <= GROUND_CACHE_LIMIT) return;
@@ -1003,6 +1025,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
               if (!disposed && generation === loadGeneration && !(error instanceof DOMException && error.name === "AbortError")) {
                 host!.dataset.loadError = "true";
                 host!.dataset.loading = "false";
+                endStreamingFeedback();
                 loadRetryAttempt += 1;
                 if (loadRetryAttempt <= 2) {
                   window.clearTimeout(loadRetryTimer);
@@ -1050,6 +1073,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
             host!.dataset.chunkRange = renderedRange;
             host!.dataset.mapLod = currentLod.toLowerCase();
             host!.dataset.loading = "false";
+            endStreamingFeedback();
             delete host!.dataset.loadError;
             loadRetryAttempt = 0;
             setMapLoadError(undefined);
@@ -1104,6 +1128,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         pendingMovementRebuild ||= Boolean(options.rebuildMovement);
         loadGeneration += 1;
         host!.dataset.loading = "true";
+        beginStreamingFeedback();
         void drainVisibleLoads();
       }
 
@@ -1197,7 +1222,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap = () => {
         if (districtLayerRef.current === districtLayer) districtLayerRef.current = null;
         if (runtimeRef.current) runtimeRef.current = null;
-        resizeObserver.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer);
+        resizeObserver.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer); window.clearTimeout(streamingTimer);
         intersectionObserver.disconnect();
         for (const pending of pendingChunks.values()) pending.controller.abort();
         pendingChunks.clear();
@@ -1215,6 +1240,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />
     {!firstFrameReady && !mapLoadError && <div className="app-loading world-first-frame-loading" role="status"><div className="loader-square" /><span>Готовим карту…</span></div>}
+    {firstFrameReady && streaming && !mapLoadError && <div className="world-streaming-indicator" role="status"><span className="world-streaming-dot" />Подгружаем карту…</div>}
     {mapLoadError && <div className="app-loading world-first-frame-loading" role="alert"><span>{mapLoadError}</span><button type="button" className="map-retry-button" onClick={() => runtimeRef.current?.retry()}>Повторить</button></div>}
   </div>;
 }

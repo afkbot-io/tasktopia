@@ -5,6 +5,7 @@ import { AppService } from "../src/server/app-service";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
 import { APP_VERSION } from "../src/server/version";
+import type { SurfaceCellDto } from "../src/shared/contracts";
 
 describe("authentication HTTP boundary", () => {
   let db: Db;
@@ -102,7 +103,9 @@ describe("authentication HTTP boundary", () => {
     const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: { cookie } })).json();
     expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
     expect(overviewChunk.terrain).toHaveLength(256);
-    expect(overviewChunk.surfaces).toEqual([]);
+    expect(overviewChunk.surfaces.length).toBeLessThan(160);
+    expect(overviewChunk.surfaces.every((surface: SurfaceCellDto) => surface.kind === "PATH")).toBe(true);
+    expect(overviewChunk.worldFeatures).toEqual([]);
     expect(detailChunk.terrain).toHaveLength(4096);
     // A task footprint may legally straddle a chunk whose access surface is in
     // the adjacent chunk. The detail contract guarantees the collection, not

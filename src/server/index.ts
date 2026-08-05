@@ -39,9 +39,11 @@ await app.register(fastifyHelmet, {
     },
   },
 });
-// The interactive map loads many small chunks and production assets in bursts.
-// Sensitive endpoints keep their stricter route-level limits below.
-await app.register(fastifyRateLimit, { max: 600, timeWindow: "1 minute" });
+// HTML, hashed bundles, sprites and chunks share one client IP (and often one
+// office/NAT). Keep the global ceiling as a broad abuse guard, not a map asset
+// budget. Sensitive endpoints and chunk/MCP traffic retain stricter route-level
+// groups below, so raising this does not weaken authentication or mutations.
+await app.register(fastifyRateLimit, { max: 5_000, timeWindow: "1 minute" });
 
 const io = new SocketServer(app.server, {
   path: "/socket.io",

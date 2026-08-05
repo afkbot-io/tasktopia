@@ -83,7 +83,12 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
     await page.mouse.move(box!.x + box!.width * 0.75 - step * 45, box!.y + box!.height * 0.5, { steps: 1 });
   }
   await page.mouse.up();
+  const currentLod = await host.getAttribute("data-map-lod");
+  await canvas.hover();
+  for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, currentLod === "overview" ? -800 : 800);
+  await expect(page.getByText("Подгружаем карту…", { exact: true })).toBeVisible();
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  await expect(page.getByText("Подгружаем карту…", { exact: true })).toBeHidden();
 
   const requestCounts = new Map<string, number>();
   for (const request of chunkRequests) requestCounts.set(request, (requestCounts.get(request) ?? 0) + 1);
@@ -179,11 +184,11 @@ test("progressively replaces LOD and recovers a rapid zoom reversal", async ({ p
   const initialLod = await host.getAttribute("data-map-lod") as "overview" | "detail";
   slowLod = initialLod === "overview" ? "detail" : "overview";
   armed = true;
-  const beforeRebuilds = Number(await host.getAttribute("data-ground-rebuilds"));
   await canvas.hover();
   for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, slowLod === "overview" ? 800 : -800);
   await expect.poll(async () => slowOverviewStarted).toBe(true);
-  await expect.poll(async () => Number(await host.getAttribute("data-ground-rebuilds"))).toBeGreaterThan(beforeRebuilds);
+  await expect(page.getByText("Подгружаем карту…", { exact: true })).toBeVisible();
+  expect(Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
   expect(slowOverviewResolved).toBe(false);
   for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, slowLod === "overview" ? -800 : 800);
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");

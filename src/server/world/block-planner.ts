@@ -180,11 +180,28 @@ export function planBlockDistrict(input: PlanInput): BlockDistrictPlan {
     const [dx, dy] = composition[slot.rowIndex % 3]!;
     return { ...slot, x: slot.x + (slot.role === "PRIMARY" ? dx : 0), baseline: slot.baseline + dy };
   });
-  const spineX = Math.min(...slots.map((slot) => slot.x)) - 1;
-  const access = new Map(slots.map((slot, index) => [index, uniqueCells([
-    ...horizontalLine(spineX, slot.x + slot.width - 1, slot.baseline),
-    ...verticalLine(spineX, Math.min(slot.baseline, sidewalkY), Math.max(slot.baseline, sidewalkY)),
-  ])]));
+  const leftSpineX = Math.min(...slots.map((slot) => slot.x)) - 1;
+  const rightSpineX = Math.max(...slots.map((slot) => slot.x + slot.width));
+  // The asphalt frontage stays deliberately small, while five pedestrian
+  // skeletons prevent every district from looking like the same three-line
+  // diagram. Side spines always sit outside building footprints; alternating
+  // rows form mews, split courts and staggered neighbourhoods without paving
+  // empty land or compromising future task access.
+  const accessTopology = groupIndex % 5;
+  const useRightSpine = (slot: Slot): boolean => {
+    if (accessTopology === 1) return true;
+    if (accessTopology === 2) return slot.rowIndex % 2 === 1;
+    if (accessTopology === 3) return slot.rowIndex % 2 === 0;
+    if (accessTopology === 4) return slot.role === "SUPPORT";
+    return false;
+  };
+  const access = new Map(slots.map((slot, index) => {
+    const spineX = useRightSpine(slot) ? rightSpineX : leftSpineX;
+    return [index, uniqueCells([
+      ...horizontalLine(Math.min(spineX, slot.x), Math.max(spineX, slot.x + slot.width - 1), slot.baseline),
+      ...verticalLine(spineX, Math.min(slot.baseline, sidewalkY), Math.max(slot.baseline, sidewalkY)),
+    ])];
+  }));
   const template = { slots, access };
   const groupId = `${input.districtId}:block:${String(groupIndex).padStart(3, "0")}`;
   const facadeFamily = input.archetype === "NEW_BUILD"

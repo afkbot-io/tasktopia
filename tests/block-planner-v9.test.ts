@@ -45,6 +45,27 @@ describe("V9 block city generation", () => {
     expect(mirrored.lots.every((lot) => lot.frontageSide === "N")).toBe(true);
   });
 
+  it("applies a different authored composition to each newly created district", async () => {
+    db = await createTestDb();
+    const registered = await registerUser(db, {
+      email: "district-variety@tasktopia.local",
+      name: "District Variety",
+      password: "district-variety-password",
+    });
+    const service = new AppService(db);
+    const city = await service.createCity(registered.user.countryId, { name: "Разнообразный", idempotencyKey: "city" });
+    const first = await service.createDistrict(registered.user.countryId, {
+      cityId: city.id, name: "Северный", archetype: "PRIVATE", idempotencyKey: "district-1",
+    });
+    const second = await service.createDistrict(registered.user.countryId, {
+      cityId: city.id, name: "Южный", archetype: "PRIVATE", idempotencyKey: "district-2",
+    });
+
+    expect(new Set(first.lots.map((lot) => lot.facadeFamily))).not.toEqual(new Set(second.lots.map((lot) => lot.facadeFamily)));
+    expect(new Set(first.lots.flatMap((lot) => lot.sharedAccess ?? []).map(cellKey)).size).toBeGreaterThan(0);
+    expect(new Set(second.lots.flatMap((lot) => lot.sharedAccess ?? []).map(cellKey)).size).toBeGreaterThan(0);
+  });
+
   it("fills a 3x3 high-rise group automatically without changing its road network", async () => {
     db = await createTestDb();
     const registered = await registerUser(db, {
