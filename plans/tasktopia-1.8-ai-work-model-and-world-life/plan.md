@@ -43,7 +43,14 @@
 - [x] UI and tooltips
 - [x] Native sprites and simulation behavior
 - [x] Documentation and public AI skill
-- [ ] Verification, review, release and production rollout
+- [x] Verification, review, release and production rollout
+
+## Release evidence
+
+- Release: `1.8.0`, commit `ddd7bab`, deployed to `https://tasktopia.online` on 2026-08-06.
+- Gates: lint/typecheck/build, 90 unit/integration tests, asset audit, 11 browser tests and authenticated 29-tool MCP smoke passed.
+- Production: migration `0004_ai_work_model.sql` applied; app/PostgreSQL and all six Eternal World containers healthy; no container reports `OOMKilled`.
+- Backup: `/srv/tasktopia/app/backups/tasktopia-pre-1.8.0-20260806-0848.dump`, SHA-256 `daf359308afa33683b0482b9c23a7e5c5d773a4b2792eda5f2776cbf421738fb`.
 
 ## Risks and controls
 
