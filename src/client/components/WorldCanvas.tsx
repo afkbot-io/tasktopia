@@ -20,6 +20,7 @@ import {
   fitCameraScale,
   minimumCameraScale,
 } from "../world-camera";
+import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
 
 const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1.12;
@@ -149,7 +150,7 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, road
   return group;
 }
 
-function drawDistrictBoundary(district: ChunkDistrictDto): Container {
+function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Container): Container {
   const group = new Container();
   group.eventMode = "static";
   group.cursor = "help";
@@ -191,11 +192,17 @@ function drawDistrictBoundary(district: ChunkDistrictDto): Container {
       tooltip = new Container(); tooltip.eventMode = "none"; tooltip.addChild(panel, label);
       const anchor = district.cells.reduce((best, cell) => cell.y < best.y || cell.y === best.y && cell.x < best.x ? cell : best, district.cells[0]!);
       tooltip.position.set(anchor.x * CELL_SIZE, anchor.y * CELL_SIZE - label.height - 12);
-      group.addChild(tooltip);
+      tooltipLayer.addChild(tooltip);
     }
     tooltip.visible = true;
   });
   group.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
+  group.once("destroyed", () => {
+    if (!tooltip?.destroyed) {
+      tooltip?.removeFromParent();
+      tooltip?.destroy({ children: true });
+    }
+  });
   return group;
 }
 
@@ -466,6 +473,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
   const [mapLoadError, setMapLoadError] = useState<string>();
   const hostRef = useRef<HTMLDivElement>(null);
   const districtLayerRef = useRef<Container | null>(null);
+  const districtTooltipLayerRef = useRef<Container | null>(null);
   const runtimeRef = useRef<WorldRuntime | null>(null);
   const showDistrictsRef = useRef(showDistricts);
   const focusArea = useMemo(() => {
@@ -485,6 +493,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
   useEffect(() => {
     showDistrictsRef.current = showDistricts;
     if (districtLayerRef.current) districtLayerRef.current.visible = showDistricts;
+    if (districtTooltipLayerRef.current) districtTooltipLayerRef.current.visible = showDistricts;
   }, [showDistricts]);
 
   useEffect(() => {
@@ -547,6 +556,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       const roadLayer = new Container();
       const districtLayer = new Container();
       districtLayerRef.current = districtLayer;
+      const districtTooltipLayer = new Container();
+      districtTooltipLayerRef.current = districtTooltipLayer;
       const platformLayer = new Container();
       const featurePlatformLayer = new Container();
       const decorationLayer = new Container();
@@ -557,7 +568,24 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       const flightLayer = new Container();
       flightLayer.eventMode = "none";
       districtLayer.visible = showDistrictsRef.current;
-      world.addChild(backdropLayer, terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, agentLayer, buildingLayer, incidentLayer, featureLayer, flightLayer);
+      districtTooltipLayer.visible = showDistrictsRef.current;
+      const worldLayers: Record<WorldLayerName, Container | Graphics> = {
+        backdrop: backdropLayer,
+        terrain: terrainLayer,
+        surface: surfaceLayer,
+        road: roadLayer,
+        platform: platformLayer,
+        featurePlatform: featurePlatformLayer,
+        decoration: decorationLayer,
+        agent: agentLayer,
+        building: buildingLayer,
+        incident: incidentLayer,
+        feature: featureLayer,
+        flight: flightLayer,
+        district: districtLayer,
+        districtTooltip: districtTooltipLayer,
+      };
+      world.addChild(...WORLD_LAYER_ORDER.map((name) => worldLayers[name]));
       app.stage.addChild(world);
       type RenderNode = Container | Graphics | Sprite;
       const districtViews = new Map<string, EntityViewRecord<Container>>();
@@ -885,7 +913,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           });
         };
 
-        reconcile(districts, districtViews, districtLayer, drawDistrictBoundary);
+        reconcile(districts, districtViews, districtLayer, (district) => drawDistrictBoundary(district, districtTooltipLayer));
         reconcile(
           currentLod === "DETAIL" ? tasks : new Map<string, ChunkTaskDto>(),
           taskPlatformViews,
@@ -1399,6 +1427,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       updateAnimation();
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap = () => {
         if (districtLayerRef.current === districtLayer) districtLayerRef.current = null;
+        if (districtTooltipLayerRef.current === districtTooltipLayer) districtTooltipLayerRef.current = null;
         if (runtimeRef.current) runtimeRef.current = null;
         resizeObserver.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer); window.clearTimeout(streamingTimer);
         intersectionObserver.disconnect();
