@@ -281,8 +281,8 @@ def prop_walker(direction: str, color: str) -> Image.Image:
 def prop_animal(species: str, direction: str) -> Image.Image:
     image = transparent_tile()
     draw = ImageDraw.Draw(image)
-    body = "#b7653fff" if species == "fox" else "#9b774fff"
-    light = "#dfb071ff" if species == "fox" else "#c6a879ff"
+    body = {"fox": "#b7653fff", "deer": "#9b774fff", "rabbit": "#aaa89cff", "boar": "#665044ff"}[species]
+    light = {"fox": "#dfb071ff", "deer": "#c6a879ff", "rabbit": "#ddd8c8ff", "boar": "#9a7960ff"}[species]
     if direction in "EW":
         draw.rectangle((2, 3, 6, 5), fill=rgba(body), outline=rgba(OUTLINE))
         head_x = 6 if direction == "E" else 1
@@ -297,6 +297,10 @@ def prop_animal(species: str, direction: str) -> Image.Image:
         draw.point((2, 7 if direction == "S" else 1), fill=rgba(OUTLINE)); draw.point((5, 7 if direction == "S" else 1), fill=rgba(OUTLINE))
     if species == "deer":
         draw.point((2, 1), fill=rgba("#5a4435ff")); draw.point((5, 1), fill=rgba("#5a4435ff"))
+    elif species == "rabbit":
+        draw.point((2, 1), fill=rgba(light)); draw.point((5, 1), fill=rgba(light))
+    elif species == "boar":
+        draw.point((1 if direction == "W" else 6, 5), fill=rgba("#e5d2a8ff"))
     return image
 
 
@@ -330,21 +334,28 @@ def prop_boat(horizontal: bool, variant: int) -> Image.Image:
     return image
 
 
-def prop_airplane() -> Image.Image:
+def prop_airplane(variant: int = 0) -> Image.Image:
     """Small left-to-right aircraft in the pack's frontal-top projection."""
     image = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     # Fuselage and nose.
-    draw.polygon([(2, 7), (7, 5), (25, 5), (30, 7), (25, 9), (7, 9)], fill=rgba("#d9dfd8ff"), outline=rgba(OUTLINE))
-    draw.rectangle((7, 6, 24, 8), fill=rgba("#c1ccc9ff"))
-    draw.polygon([(25, 6), (30, 7), (25, 8)], fill=rgba("#e5c552ff"), outline=rgba(OUTLINE))
+    fuselage = ("#d9dfd8ff", "#d8cfb4ff", "#cadbe1ff")[variant]
+    accent = ("#e5c552ff", "#c65b4fff", "#4f8ca5ff")[variant]
+    draw.polygon([(2, 7), (7, 5), (25, 5), (30, 7), (25, 9), (7, 9)], fill=rgba(fuselage), outline=rgba(OUTLINE))
+    draw.rectangle((7, 6, 24, 8), fill=rgba(("#c1ccc9ff", "#b8aa8dff", "#abc5ceff")[variant]))
+    draw.polygon([(25, 6), (30, 7), (25, 8)], fill=rgba(accent), outline=rgba(OUTLINE))
     # Swept wings expose a shallow top plane, matching the map camera.
-    draw.polygon([(13, 6), (18, 1), (22, 1), (19, 7), (22, 13), (18, 13), (13, 8)], fill=rgba("#8faeb5ff"), outline=rgba(OUTLINE))
+    wing = [(13, 6), (18, 1), (22, 1), (19, 7), (22, 13), (18, 13), (13, 8)] if variant != 2 else [(12, 6), (16, 0), (20, 0), (19, 7), (20, 14), (16, 14), (12, 8)]
+    draw.polygon(wing, fill=rgba(("#8faeb5ff", "#9b8e76ff", "#7aa0adff")[variant]), outline=rgba(OUTLINE))
     draw.line((17, 3, 20, 3), fill=rgba("#d9dfd8ff"))
     draw.line((17, 11, 20, 11), fill=rgba("#657983ff"))
     # Tail fin and cockpit window keep the silhouette readable at 1x.
     draw.polygon([(5, 6), (2, 2), (6, 2), (9, 7), (6, 8), (3, 12), (1, 12), (3, 8)], fill=rgba("#557988ff"), outline=rgba(OUTLINE))
     draw.rectangle((23, 6, 25, 7), fill=rgba(GLASS), outline=rgba("#657983ff"))
+    if variant == 1:
+        draw.rectangle((10, 5, 11, 9), fill=rgba(accent)); draw.rectangle((19, 5, 20, 9), fill=rgba(accent))
+    elif variant == 2:
+        draw.point((11, 7), fill=rgba("#f4f6edff")); draw.point((21, 7), fill=rgba("#f4f6edff"))
     return image
 
 
@@ -727,7 +738,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "city-sign-horizontal": prop_city_sign(False), "city-sign-vertical": prop_city_sign(True),
         "guardrail-horizontal": prop_guardrail(False), "guardrail-vertical": prop_guardrail(True),
         "playground-small": prop_playground(),
-        "airplane-small": prop_airplane(),
+        "airplane-small": prop_airplane(0), "airplane-courier": prop_airplane(1), "airplane-twin": prop_airplane(2),
         "walker-north": prop_walker("N", WALKER_SHIRTS[0]), "walker-east": prop_walker("E", WALKER_SHIRTS[1]),
         "walker-south": prop_walker("S", WALKER_SHIRTS[2]), "walker-west": prop_walker("W", WALKER_SHIRTS[3]),
         "boat-horizontal-a": prop_boat(True, 0), "boat-horizontal-b": prop_boat(True, 1),
@@ -740,7 +751,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "fence-horizontal": prop_fence(False), "fence-vertical": prop_fence(True),
         "active-district-flag": prop_active_marker(),
     }
-    for species in ("fox", "deer"):
+    for species in ("fox", "deer", "rabbit", "boar"):
         for direction in ("north", "east", "south", "west"):
             generated_props[f"animal-{species}-{direction}"] = prop_animal(species, direction[0].upper())
     prop_dir = RUNTIME / "props"

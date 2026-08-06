@@ -2,6 +2,8 @@ export type TaskStatus = "PLANNING" | "STARTED" | "IN_PROGRESS" | "TESTING" | "C
 export type DistrictStatus = "PLANNED" | "ACTIVE" | "COMPLETED";
 export type CityStatus = "ACTIVE" | "ARCHIVED";
 export type TaskPriority = "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
+export type WorkItemType = "TASK" | "BUG" | "RELEASE" | "HOTFIX";
+export type TaskDefectStatus = "OPEN" | "FIXED";
 export type Estimate = 1 | 2 | 3 | 6;
 export type TerrainKind = "GRASS" | "MEADOW" | "FOREST" | "HILL" | "MOUNTAIN" | "SAND" | "WET_SAND" | "CLAY" | "STONE" | "SHALLOW_WATER" | "DEEP_WATER" | "DIRT";
 export type PlatformKind = "YARD" | "STONE" | "ASPHALT" | "SERVICE" | "PARK";
@@ -25,6 +27,11 @@ export type Rect = { minX: number; minY: number; maxX: number; maxY: number };
 export type CountryDto = {
   id: string;
   name: string;
+  description: string;
+  goal: string;
+  productContext: string;
+  successCriteria: string;
+  constraints: string;
   worldVersion: number;
   generatorVersion: "square-v7";
   createdAt: string;
@@ -49,6 +56,9 @@ export type CityDto = {
   id: string;
   name: string;
   description: string;
+  goal: string;
+  acceptanceCriteria: string;
+  deadline: string | null;
   status: CityStatus;
   center: Cell;
   bounds: Rect;
@@ -83,6 +93,8 @@ export type DistrictDto = {
   cityId: string;
   name: string;
   goal: string;
+  description: string;
+  deadline: string | null;
   status: DistrictStatus;
   capacitySp: number;
   cells: Cell[];
@@ -104,11 +116,25 @@ export type TaskCommentDto = {
 export type TaskEventDto = {
   id: number;
   taskId: string;
-  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED";
+  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED" | "FIELDS_UPDATED" | "DEFECT_CREATED" | "DEFECT_UPDATED";
   actor: string;
   actorUserId: string | null;
   details: Record<string, unknown>;
   createdAt: string;
+};
+
+export type TaskDefectDto = {
+  id: string;
+  taskId: string;
+  title: string;
+  description: string;
+  reproductionSteps: string;
+  actualResult: string;
+  expectedResult: string;
+  status: TaskDefectStatus;
+  fixedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type TaskDto = {
@@ -117,6 +143,12 @@ export type TaskDto = {
   districtId: string;
   title: string;
   description: string;
+  workItemType: WorkItemType;
+  acceptanceCriteria: string;
+  systemAnalysis: string;
+  architecture: string;
+  designSystem: string;
+  implementationPlan: string;
   estimate: Estimate;
   priority: TaskPriority;
   status: TaskStatus;
@@ -136,6 +168,7 @@ export type TaskDto = {
   creator?: AccountRefDto | null;
   assignee?: AccountRefDto | null;
   events?: TaskEventDto[];
+  defects?: TaskDefectDto[];
 };
 
 export type RoadCellDto = Cell & {
@@ -167,6 +200,7 @@ export type WorldFeatureDto = {
   footprint: Cell[];
   orientation: CardinalOrientation;
   accessPath: Cell[];
+  label?: string;
 };
 
 export type DecorationDto = {
@@ -175,7 +209,7 @@ export type DecorationDto = {
   origin: Cell;
 };
 
-export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "status" | "color" | "archetype"> & {
+export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "name" | "deadline" | "status" | "color" | "archetype"> & {
   cells: Cell[];
 };
 
@@ -231,13 +265,13 @@ export type McpTokenDto = {
 };
 
 export type PlanDistrictDto = Pick<DistrictDto,
-  "id" | "cityId" | "name" | "goal" | "status" | "capacitySp" | "archetype" | "color" | "createdAt"
+  "id" | "cityId" | "name" | "goal" | "description" | "deadline" | "status" | "capacitySp" | "archetype" | "color" | "createdAt"
 > & {
   taskCount: number;
 };
 
 export type PlanTaskDto = Pick<TaskDto,
-  "id" | "cityId" | "districtId" | "title" | "estimate" | "priority" | "status" | "progress" | "dueAt" | "stage" | "updatedAt"
+  "id" | "cityId" | "districtId" | "title" | "workItemType" | "estimate" | "priority" | "status" | "progress" | "dueAt" | "stage" | "updatedAt"
 >;
 
 export type RealtimeEvent = {

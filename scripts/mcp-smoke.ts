@@ -30,10 +30,10 @@ try {
   if (client.getProtocolEra() !== "modern") throw new Error(`Expected modern MCP era, got ${client.getProtocolEra()}`);
   const tools = await client.listTools();
   const expected = [
-    "country.get_current", "country.list", "country.select",
-    "city.list", "city.get", "city.create", "city.rename", "city.delete",
-    "district.list", "district.create", "district.rename", "district.activate", "district.complete", "district.delete",
-    "task.list", "task.get", "task.create", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
+    "country.get_current", "country.list", "country.select", "country.update_profile",
+    "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
+    "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
+    "task.list", "task.get", "task.create", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
   ];
   if (tools.tools.length !== expected.length) throw new Error(`Expected ${expected.length} MCP tools, got ${tools.tools.length}`);
   for (const name of expected) {
@@ -70,7 +70,7 @@ const legacyTransport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mc
 try {
   await legacyClient.connect(legacyTransport);
   if (legacyClient.getProtocolEra() !== "legacy") throw new Error(`Expected legacy MCP era, got ${legacyClient.getProtocolEra()}`);
-  if ((await legacyClient.listTools()).tools.length !== 23) throw new Error("Legacy MCP client did not receive all tools");
+  if ((await legacyClient.listTools()).tools.length !== 29) throw new Error("Legacy MCP client did not receive all tools");
   console.log("Legacy 2025 MCP fallback passed.");
 } finally {
   await legacyClient.close();

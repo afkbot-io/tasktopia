@@ -44,6 +44,36 @@ const tokenSchema = z.object({
   expiresInDays: z.union([z.literal(30), z.literal(90), z.literal(365)]).optional(),
 }).strict();
 const countrySchema = z.object({ name: z.string().trim().min(2).max(100) }).strict();
+const countryProfileSchema = z.object({
+  name: z.string().trim().min(2).max(100).optional(), description: z.string().max(8000).optional(), goal: z.string().max(4000).optional(),
+  productContext: z.string().max(8000).optional(), successCriteria: z.string().max(8000).optional(), constraints: z.string().max(8000).optional(),
+  idempotencyKey: z.string().min(4).max(160).optional(),
+}).strict();
+const cityUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(100).optional(), description: z.string().max(8000).optional(), goal: z.string().max(4000).optional(),
+  acceptanceCriteria: z.string().max(8000).optional(), deadline: z.string().datetime().nullable().optional(), idempotencyKey: z.string().min(4).max(160),
+}).strict();
+const districtUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(100).optional(), goal: z.string().max(4000).optional(), description: z.string().max(8000).optional(),
+  deadline: z.string().datetime().nullable().optional(), capacitySp: z.number().int().positive().optional(), idempotencyKey: z.string().min(4).max(160),
+}).strict();
+const taskFieldsSchema = z.object({
+  title: z.string().trim().min(2).max(160).optional(), description: z.string().max(8000).optional(),
+  workItemType: z.enum(["TASK", "BUG", "RELEASE", "HOTFIX"]).optional(), acceptanceCriteria: z.string().max(8000).optional(),
+  systemAnalysis: z.string().max(16000).optional(), architecture: z.string().max(16000).optional(), designSystem: z.string().max(16000).optional(),
+  implementationPlan: z.string().max(16000).optional(), estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]).optional(),
+  priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().nullable().optional(),
+  idempotencyKey: z.string().min(4).max(160),
+}).strict();
+const defectCreateSchema = z.object({
+  title: z.string().trim().min(2).max(160), description: z.string().max(8000).optional(), reproductionSteps: z.string().min(1).max(12000),
+  actualResult: z.string().min(1).max(8000), expectedResult: z.string().min(1).max(8000), idempotencyKey: z.string().min(4).max(160),
+}).strict();
+const defectUpdateSchema = z.object({
+  title: z.string().trim().min(2).max(160).optional(), description: z.string().max(8000).optional(), reproductionSteps: z.string().trim().min(1).max(12000).optional(),
+  actualResult: z.string().trim().min(1).max(8000).optional(), expectedResult: z.string().trim().min(1).max(8000).optional(), status: z.enum(["OPEN", "FIXED"]).optional(),
+  idempotencyKey: z.string().min(4).max(160),
+}).strict();
 const accountSchema = z.object({ name: z.string().trim().min(2).max(60) }).strict();
 const invitationSchema = z.object({ email: z.string().trim().email().max(254), role: z.enum(["MEMBER", "VIEWER"]).default("MEMBER") }).strict();
 const deleteCitySchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
@@ -217,11 +247,15 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
     const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
-    const body = parse(countrySchema, request.body);
-    if (!await renameCountry(db, user.id, countryId, body.name)) {
-      throw new DomainError("FORBIDDEN", "Переименовать страну может только её глава");
-    }
-    return await service.getCountry(countryId);
+    const body = parse(countryProfileSchema, request.body);
+    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Изменять страну может только её глава");
+    const hasProfile = [body.description, body.goal, body.productContext, body.successCriteria, body.constraints].some((value) => value !== undefined);
+    return await transaction(db, async () => {
+      if (body.name && !await renameCountry(db, user.id, countryId, body.name)) throw new DomainError("FORBIDDEN", "Переименовать страну может только её глава");
+      return hasProfile
+        ? await service.updateCountryProfile(countryId, { ...body, idempotencyKey: body.idempotencyKey ?? crypto.randomUUID() })
+        : await service.getCountry(countryId);
+    });
   });
 
   app.post("/api/countries/:countryId/regenerate", { config: { rateLimit: { max: 2, timeWindow: "1 hour" } } }, async (request, reply) => {
@@ -311,6 +345,46 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
             return await service.getTask(user.countryId, taskId);
           });
+
+  app.patch("/api/cities/:cityId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять города");
+    const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
+    return service.updateCity(user.countryId, { cityId, ...parse(cityUpdateSchema, request.body) });
+  });
+
+  app.patch("/api/districts/:districtId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять районы");
+    const districtId = parse(z.string().uuid(), (request.params as { districtId: string }).districtId);
+    return service.updateDistrict(user.countryId, { districtId, ...parse(districtUpdateSchema, request.body) });
+  });
+
+  app.patch("/api/tasks/:taskId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять задачи");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    return service.updateTaskFields(user.countryId, { taskId, ...parse(taskFieldsSchema, request.body), actor: user.name, actorUserId: user.id });
+  });
+
+  app.post("/api/tasks/:taskId/defects", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может добавлять дефекты");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    return service.createTaskDefect(user.countryId, { taskId, ...parse(defectCreateSchema, request.body), actor: user.name, actorUserId: user.id });
+  });
+
+  app.patch("/api/defects/:defectId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять дефекты");
+    const defectId = parse(z.string().uuid(), (request.params as { defectId: string }).defectId);
+    return service.updateTaskDefect(user.countryId, { defectId, ...parse(defectUpdateSchema, request.body), actor: user.name, actorUserId: user.id });
+  });
 
   app.delete("/api/cities/:cityId", async (request, reply) => {
     const user = await requireUser(db, request, reply);

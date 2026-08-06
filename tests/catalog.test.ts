@@ -41,9 +41,12 @@ describe("building catalog V4", () => {
     expect(PROP_CATALOG["playground-small"]?.footprint).toEqual({ width: 3, height: 2 });
   });
 
-  it("registers the rare flyby as a crisp screen-space pixel prop", () => {
-    expect(PROP_CATALOG["airplane-small"]).toMatchObject({ size: { width: 32, height: 16 }, footprint: { width: 1, height: 1 } });
-    expect(existsSync(resolve("public", PROP_CATALOG["airplane-small"]!.path.replace("/game-assets/v4/", "game-assets/v4/")))).toBe(true);
+  it("registers three crisp world-space flyby variants", () => {
+    for (const key of ["airplane-small", "airplane-courier", "airplane-twin"]) {
+      expect(PROP_CATALOG[key]).toMatchObject({ size: { width: 32, height: 16 }, footprint: { width: 1, height: 1 } });
+      expect(existsSync(resolve("public", PROP_CATALOG[key]!.path.replace("/game-assets/v4/", "game-assets/v4/")))).toBe(true);
+    }
+    for (const species of ["fox", "deer", "rabbit", "boar"]) expect(PROP_CATALOG[`animal-${species}-east`]).toBeDefined();
   });
 
   it("keeps every human on the walker scale and gives crewed boats a slender footprint", () => {

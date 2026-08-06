@@ -14,6 +14,11 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
   const [members, setMembers] = useState<CountryMemberDto[]>([]);
   const [countryName, setCountryName] = useState("");
   const [renameValue, setRenameValue] = useState(bootstrap.country.name);
+  const [description, setDescription] = useState(bootstrap.country.description);
+  const [goal, setGoal] = useState(bootstrap.country.goal);
+  const [productContext, setProductContext] = useState(bootstrap.country.productContext);
+  const [successCriteria, setSuccessCriteria] = useState(bootstrap.country.successCriteria);
+  const [constraints, setConstraints] = useState(bootstrap.country.constraints);
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Extract<CountryRole, "MEMBER" | "VIEWER">>("MEMBER");
   const [error, setError] = useState("");
@@ -26,6 +31,8 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
   useEffect(() => {
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setRenameValue(bootstrap.country.name);
+    setDescription(bootstrap.country.description); setGoal(bootstrap.country.goal); setProductContext(bootstrap.country.productContext);
+    setSuccessCriteria(bootstrap.country.successCriteria); setConstraints(bootstrap.country.constraints);
     if (mode === "manage") void loadMembers().catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось открыть правительство"));
     closeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
@@ -40,7 +47,8 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
     };
     window.addEventListener("keydown", onKey);
     return () => { window.removeEventListener("keydown", onKey); previouslyFocused?.focus({ preventScroll: true }); };
-  }, [bootstrap.country.name, loadMembers, mode, onClose]);
+  }, [bootstrap.country.name, bootstrap.country.description, bootstrap.country.goal, bootstrap.country.productContext,
+    bootstrap.country.successCriteria, bootstrap.country.constraints, loadMembers, mode, onClose]);
 
   const safely = async (action: () => Promise<void>) => {
     setError(""); setPending(true);
@@ -55,7 +63,9 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
     onBootstrap(next); onClose();
   }); };
   const rename = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    await api(`/api/countries/${bootstrap.country.id}`, { method: "PATCH", json: { name: renameValue } });
+    await api(`/api/countries/${bootstrap.country.id}`, {
+      method: "PATCH", json: { name: renameValue, description, goal, productContext, successCriteria, constraints, idempotencyKey: crypto.randomUUID() },
+    });
     await reloadBootstrap();
   }); };
   const invite = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
@@ -97,10 +107,15 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
         </form> : <div className="country-government-grid">
           <div className="grid content-start gap-5">
             {bootstrap.countryRole === "OWNER" && <section className="country-government-card">
-              <h3>Название страны</h3><p>Новое название сразу появится в верхней панели.</p>
-              <form className="mt-4 grid gap-2" onSubmit={rename}>
+              <h3>Паспорт страны</h3><p>Устойчивый контекст проекта, который AI прочитает перед работой.</p>
+              <form className="mt-4 grid gap-3" onSubmit={rename}>
                 <Field label="Название" value={renameValue} onChange={(event) => setRenameValue(event.target.value)} minLength={2} maxLength={100} required />
-                <Button type="submit" disabled={pending || renameValue.trim() === bootstrap.country.name}>Сохранить название</Button>
+                <label className="country-textarea-field">Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={8000} placeholder="Что создаёт этот проект и для кого" /></label>
+                <label className="country-textarea-field">Цель<textarea value={goal} onChange={(event) => setGoal(event.target.value)} maxLength={4000} placeholder="Какого результата должна достичь страна" /></label>
+                <label className="country-textarea-field">Продуктовый контекст<textarea value={productContext} onChange={(event) => setProductContext(event.target.value)} maxLength={8000} placeholder="Пользователи, рынок, текущее состояние" /></label>
+                <label className="country-textarea-field">Критерии успеха<textarea value={successCriteria} onChange={(event) => setSuccessCriteria(event.target.value)} maxLength={8000} placeholder="Проверяемые метрики и результаты" /></label>
+                <label className="country-textarea-field">Ограничения<textarea value={constraints} onChange={(event) => setConstraints(event.target.value)} maxLength={8000} placeholder="Технологии, сроки, совместимость, запреты" /></label>
+                <Button type="submit" disabled={pending}>Сохранить паспорт</Button>
               </form>
             </section>}
             <section className="country-government-card country-facts">

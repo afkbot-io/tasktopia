@@ -37,6 +37,10 @@ APP_ORIGIN=https://tasktopia.online
 POSTGRES_PASSWORD=<длинный-случайный-пароль>
 SESSION_COOKIE_SECURE=true
 LOG_LEVEL=info
+APP_MEMORY_LIMIT=1536m
+APP_CPU_LIMIT=2.00
+POSTGRES_MEMORY_LIMIT=1g
+POSTGRES_CPU_LIMIT=1.00
 ```
 
 Публичный MCP endpoint: `https://tasktopia.online/mcp`. Публичная инструкция для интеграций: `https://tasktopia.online/ai.md`. Обе ссылки отображаются в настройках из `location.origin`, поэтому отдельный клиентский env не требуется.
@@ -49,7 +53,7 @@ LOG_LEVEL=info
 
 Скрипт использует только fast-forward `git pull`, пересобирает один сервис, ждёт health check и не публикует порт 3000 наружу.
 
-Compose ограничивает Tasktopia отдельно от соседних проектов: приложение — 1,5 CPU, 1 GiB RAM и 160 процессов; PostgreSQL — 0,75 CPU, 768 MiB RAM и 100 процессов. Это верхние границы, а не резервирование: неиспользованные CPU остаются доступны другим контейнерам. После изменения бюджетов проверяйте `docker inspect`, `docker stats --no-stream` и флаг `OOMKilled`; не снимайте лимиты соседнего проекта для ускорения Tasktopia.
+Compose ограничивает Tasktopia отдельно от соседних проектов: приложение — 2 CPU, 1,5 GiB RAM и 160 процессов; PostgreSQL — 1 CPU, 1 GiB RAM и 100 процессов. Это верхние границы, а не резервирование: неиспользованные CPU остаются доступны другим контейнерам. После изменения бюджетов проверяйте `docker inspect`, `docker stats --no-stream` и флаг `OOMKilled`; не снимайте лимиты соседнего проекта для ускорения Tasktopia.
 
 ## Резервная копия
 

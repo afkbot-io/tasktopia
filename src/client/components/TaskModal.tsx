@@ -9,8 +9,10 @@ const statusLabel: Record<TaskDto["status"], string> = {
 };
 const priorityLabel: Record<TaskDto["priority"], string> = { LOW: "Низкий", NORMAL: "Обычный", HIGH: "Высокий", CRITICAL: "Критический" };
 const platformLabel: Record<TaskDto["platformType"], string> = { YARD: "Двор", STONE: "Камень", ASPHALT: "Асфальт", SERVICE: "Служебная", PARK: "Парк" };
+const workItemLabel: Record<TaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
 const eventLabel: Record<NonNullable<TaskDto["events"]>[number]["type"], string> = {
   CREATED: "Задача создана", TITLE_CHANGED: "Задача переименована", STATUS_CHANGED: "Изменён этап строительства", COMMENT_ADDED: "Добавлен комментарий", ASSIGNEE_CHANGED: "Изменён ответственный",
+  FIELDS_UPDATED: "Обновлена постановка", DEFECT_CREATED: "Зафиксирован связанный дефект", DEFECT_UPDATED: "Обновлён связанный дефект",
 };
 
 export function TaskModal({ taskId, revision, canEdit, onClose, onDeleted }: { taskId: string; revision: number; canEdit: boolean; onClose: () => void; onDeleted: () => Promise<void> }) {
@@ -47,7 +49,7 @@ export function TaskModal({ taskId, revision, canEdit, onClose, onDeleted }: { t
         {!task ? <div className="modal-loading">Загружаем задачу…</div> : <>
           <header className="task-header">
             <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
-            <div><p className="eyebrow">{getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
+            <div><p className="eyebrow">{workItemLabel[task.workItemType]} · {getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
           </header>
           <div className="task-status-row">
             <span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span>
@@ -63,6 +65,20 @@ export function TaskModal({ taskId, revision, canEdit, onClose, onDeleted }: { t
             <div><span>Ответственный</span><strong>{task.assignee?.name ?? "Не назначен"}</strong></div>
           </div>
           <section className="task-description"><h3>Описание</h3><p>{task.description || "Описание пока не передано через MCP."}</p></section>
+          {task.acceptanceCriteria && <section className="task-description"><h3>Критерии приёмки</h3><p>{task.acceptanceCriteria}</p></section>}
+          <section className="task-ai-fields"><h3>Материалы для реализации</h3>
+            <div><strong>Системный анализ</strong><p>{task.systemAnalysis || "Не заполнен"}</p></div>
+            <div><strong>Архитектура</strong><p>{task.architecture || "Не заполнена"}</p></div>
+            <div><strong>Дизайн-система</strong><p>{task.designSystem || "Не требуется или не заполнена"}</p></div>
+            <div><strong>План</strong><p>{task.implementationPlan || "Не заполнен"}</p></div>
+          </section>
+          <section className="task-defects"><h3>Связанные дефекты <span>{task.defects?.filter((defect) => defect.status === "OPEN").length ?? 0} открыто</span></h3>
+            {task.defects?.length ? task.defects.map((defect) => <article key={defect.id} className={defect.status === "FIXED" ? "fixed" : "open"}>
+              <header><strong>{defect.title}</strong><span>{defect.status === "FIXED" ? "Исправлен" : "Открыт"}</span></header>
+              {defect.description && <p>{defect.description}</p>}
+              <dl><div><dt>Шаги</dt><dd>{defect.reproductionSteps}</dd></div><div><dt>Фактически</dt><dd>{defect.actualResult}</dd></div><div><dt>Ожидалось</dt><dd>{defect.expectedResult}</dd></div></dl>
+            </article>) : <p className="muted">Связанных дефектов нет.</p>}
+          </section>
           <section className="comments"><h3>Ход работы</h3>
             {task.comments?.length ? task.comments.map((comment) => <article key={comment.id}><div><strong>{comment.actor}</strong><time>{new Date(comment.createdAt).toLocaleString("ru-RU")}</time></div><p>{comment.body}</p></article>) : <p className="muted">Комментариев пока нет.</p>}
           </section>

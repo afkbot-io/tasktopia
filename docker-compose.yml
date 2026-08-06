@@ -16,8 +16,8 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 100
-    mem_limit: ${POSTGRES_MEMORY_LIMIT:-768m}
-    cpus: ${POSTGRES_CPU_LIMIT:-0.75}
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-1g}
+    cpus: ${POSTGRES_CPU_LIMIT:-1.00}
     cpu_shares: 512
 
   app:
@@ -49,8 +49,8 @@ services:
     cap_drop:
       - ALL
     pids_limit: 160
-    mem_limit: ${APP_MEMORY_LIMIT:-1g}
-    cpus: ${APP_CPU_LIMIT:-1.50}
+    mem_limit: ${APP_MEMORY_LIMIT:-1536m}
+    cpus: ${APP_CPU_LIMIT:-2.00}
     cpu_shares: 1024
     init: true
     logging:

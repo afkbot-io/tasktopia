@@ -62,12 +62,26 @@ describe("Tasktopia square-world application service", () => {
   });
 
   it("atomically regenerates spatial data while preserving task identity and history", async () => {
-    const city = await service.createCity(countryId, { name: "Renewable City", idempotencyKey: "regen-city" });
-    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Renewable District", archetype: "PRIVATE", activate: true, idempotencyKey: "regen-district" });
+    await service.updateCountryProfile(countryId, { goal: "Release safely", productContext: "AI delivery", idempotencyKey: "regen-country-profile" });
+    const deadline = "2026-12-20T12:00:00.000Z";
+    const city = await service.createCity(countryId, { name: "Renewable City", goal: "Ship epic", acceptanceCriteria: "Users can finish", deadline, idempotencyKey: "regen-city" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Renewable District", description: "Two-week iteration", deadline, archetype: "PRIVATE", activate: true, idempotencyKey: "regen-district" });
     const greenFeatures = await service.listWorldFeatures(countryId);
     expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
     expect(greenFeatures.some((feature) => ["bench-horizontal", "picnic-table", "playground-small", "trash-bin", "streetlamp"].includes(feature.assetKey))).toBe(true);
-    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Preserved work", description: "Keep this", estimate: 1, buildingHint: "house-cottage", idempotencyKey: "regen-task" });
+    const task = await service.createTask(countryId, {
+      cityId: city.id, districtId: district.id, title: "Preserved work", description: "Keep this", workItemType: "HOTFIX",
+      acceptanceCriteria: "Regression is covered", systemAnalysis: "Impact is bounded", architecture: "Patch service boundary",
+      designSystem: "Use existing tokens", implementationPlan: "Test, patch, verify", estimate: 1, dueAt: deadline,
+      buildingHint: "house-cottage", idempotencyKey: "regen-task",
+    });
+    const defect = await service.createTaskDefect(countryId, {
+      taskId: task.id, title: "Broken path", reproductionSteps: "Open the map", actualResult: "Path breaks", expectedResult: "Path stays whole",
+      idempotencyKey: "regen-defect",
+    });
+    await expect(service.updateTaskDefect(countryId, { defectId: defect.id, reproductionSteps: "   ", idempotencyKey: "regen-defect-empty-steps" }))
+      .rejects.toThrowError(/не могут быть пустыми/);
+    await service.updateTaskDefect(countryId, { defectId: defect.id, status: "FIXED", idempotencyKey: "regen-defect-fixed" });
     await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", comment: "History survives", actor: "Tester", idempotencyKey: "regen-start" });
     const seedBefore = Number((await db.prepare("SELECT seed FROM countries WHERE id = ?").get(countryId) as { seed: number }).seed);
     const geometryBefore = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
@@ -79,7 +93,15 @@ describe("Tasktopia square-world application service", () => {
     expect((await service.listCities(countryId))[0]?.id).toBe(city.id);
     expect((await service.listDistricts(countryId))[0]?.id).toBe(district.id);
     const preserved = await service.getTask(countryId, task.id);
-    expect(preserved).toMatchObject({ id: task.id, title: "Preserved work", description: "Keep this", status: "STARTED" });
+    expect(await service.getCountry(countryId)).toMatchObject({ goal: "Release safely", productContext: "AI delivery" });
+    expect((await service.listCities(countryId))[0]).toMatchObject({ id: city.id, goal: "Ship epic", acceptanceCriteria: "Users can finish", deadline });
+    expect((await service.listDistricts(countryId))[0]).toMatchObject({ id: district.id, description: "Two-week iteration", deadline });
+    expect(preserved).toMatchObject({
+      id: task.id, title: "Preserved work", description: "Keep this", workItemType: "HOTFIX", acceptanceCriteria: "Regression is covered",
+      systemAnalysis: "Impact is bounded", architecture: "Patch service boundary", designSystem: "Use existing tokens",
+      implementationPlan: "Test, patch, verify", dueAt: deadline, status: "STARTED",
+    });
+    expect(preserved.defects).toContainEqual(expect.objectContaining({ id: defect.id, status: "FIXED", expectedResult: "Path stays whole", fixedAt: expect.any(String) }));
     expect(preserved.comments?.map((comment) => comment.body)).toContain("History survives");
     expect(preserved.events?.some((event) => event.type === "STATUS_CHANGED")).toBe(true);
     const geometryAfter = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });

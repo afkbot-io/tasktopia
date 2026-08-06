@@ -1,7 +1,7 @@
 # Tasktopia AI integration guide
 
-Version: 1.7.0
-Last updated: 2026-08-05  
+Version: 1.8.0
+Last updated: 2026-08-06
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
@@ -22,6 +22,21 @@ AI must preserve:
 | City | A long-lived project association, product direction, epic, or subproject | Grouping work that shares one stable domain and outcome |
 | District | A sprint, iteration, milestone, phase, or bounded work package | A goal and advisory workload target for the current delivery cycle |
 | Task/building | One concrete, verifiable unit of work | An outcome with acceptance criteria, estimate, owner, and progress |
+
+### Fields AI agents must preserve
+
+| Level | Fields | Purpose |
+| --- | --- | --- |
+| Country/project | `description`, `goal`, `productContext`, `successCriteria`, `constraints` | Stable product brief; read before planning any epic |
+| City/epic | `description`, `goal`, `acceptanceCriteria`, `deadline` | Scope, expected epic outcome, exit conditions and target date |
+| District/sprint | `goal`, `description`, `deadline`, `capacitySp` | Sprint goal, operating notes, timebox and advisory team workload |
+| Task/work item | `workItemType`, `description`, `acceptanceCriteria`, `systemAnalysis`, `architecture`, `designSystem`, `implementationPlan`, `estimate`, `priority`, `dueAt` | Executable brief for an implementation agent |
+| Linked defect | `title`, `description`, `reproductionSteps`, `actualResult`, `expectedResult`, `status` | Reproducible observation attached to a task; `status` is `OPEN` or `FIXED` |
+
+`workItemType` is one of `TASK`, `BUG`, `RELEASE`, `HOTFIX`. A `BUG` work
+item is delivery work in the roadmap. A linked defect is an observation found
+inside any task and is managed through `task.defect_create` and
+`task.defect_update`. Do not use one as a substitute for the other.
 
 Do not create a city for one task, use a district as a label, or move work into
 an arbitrary entity because its ID is convenient. When the country, city, or
@@ -110,10 +125,10 @@ A key can contain any combination of these scopes:
 | Scope | Allows |
 | --- | --- |
 | `country:read` | Read the selected country and list available countries |
-| `cities:write` | Create, rename, and delete cities |
-| `districts:write` | Create, rename, activate, complete, and delete districts |
+| `cities:write` | Update the country profile and create, update, rename, or delete cities |
+| `districts:write` | Create, update, rename, activate, complete, and delete districts |
 | `tasks:read` | Read tasks and task details |
-| `tasks:write` | Create, update, report progress, assign, and delete tasks |
+| `tasks:write` | Create/update tasks and linked defects, report progress, assign, and delete tasks |
 | `comments:write` | Add task comments |
 
 Request only the permissions an integration needs. A key is bound to its owner.
@@ -158,7 +173,7 @@ text, comments, logs, or tool arguments.
 
 ## Tools
 
-The server exposes 23 tools.
+The server exposes 29 tools.
 
 ### Countries
 
@@ -186,6 +201,22 @@ Arguments:
 
 Required scope: `country:read`.
 
+#### `country.update_profile`
+
+Updates the long-lived project brief. It requires an owner account and
+`cities:write`. Omitted fields remain unchanged; an empty string deliberately
+clears a text field.
+
+```json
+{
+  "goal": "Reduce onboarding time to under five minutes",
+  "productContext": "B2B teams migrating from spreadsheets",
+  "successCriteria": "Activation >= 60%; no critical accessibility defects",
+  "constraints": "PostgreSQL, public API compatibility, RU/EN UI",
+  "idempotencyKey": "country-profile-onboarding-v2"
+}
+```
+
 ### Cities
 
 #### `city.list`
@@ -211,7 +242,10 @@ Creates a city in the selected country.
 ```json
 {
   "name": "Payments platform",
-  "description": "Optional city goal",
+  "description": "Payments domain and its boundaries",
+  "goal": "Make retryable payments production-ready",
+  "acceptanceCriteria": "Recovery metrics and rollback are verified",
+  "deadline": "2026-09-30T18:00:00.000Z",
   "morphology": "BALANCED",
   "idempotencyKey": "create-city-payments-v1"
 }
@@ -232,6 +266,12 @@ Renames an existing city.
 ```
 
 Required scope: `cities:write`.
+
+#### `city.update`
+
+Updates a city/epic without changing its ID or geometry. It accepts optional
+`name`, `description`, `goal`, `acceptanceCriteria`, and nullable `deadline`,
+plus required `idempotencyKey`. Use `deadline: null` to clear the date.
 
 #### `city.delete`
 
@@ -265,6 +305,8 @@ Creates a district.
   "cityId": "<city-id>",
   "name": "Northern district",
   "goal": "Ship billing recovery",
+  "description": "Two-week iteration for recovery and observability",
+  "deadline": "2026-08-21T18:00:00.000Z",
   "capacitySp": 40,
   "activate": false,
   "archetype": "COMMERCIAL",
@@ -302,6 +344,12 @@ Renames an existing district without changing its geometry or status.
 ```
 
 Required scope: `districts:write`.
+
+#### `district.update`
+
+Updates sprint metadata without rebuilding the district. It accepts optional
+`name`, `goal`, `description`, nullable `deadline`, advisory `capacitySp`, and
+required `idempotencyKey`. Exceeding `capacitySp` remains valid.
 
 #### `district.activate`
 
@@ -360,7 +408,13 @@ Creates a task/building.
   "cityId": "<city-id>",
   "districtId": "<optional-district-id>",
   "title": "Add retry policy",
-  "description": "Optional acceptance context",
+  "workItemType": "TASK",
+  "description": "Retry transient provider errors without duplicate charges",
+  "acceptanceCriteria": "Idempotency and backoff tests pass; metrics are visible",
+  "systemAnalysis": "Provider timeouts are ambiguous and require idempotent reconciliation",
+  "architecture": "Policy belongs at the payment-provider adapter boundary",
+  "designSystem": "No UI change",
+  "implementationPlan": "Add policy, unit tests, integration test, metrics and runbook",
   "estimate": 3,
   "priority": "HIGH",
   "dueAt": "2026-08-12T12:00:00.000Z",
@@ -376,6 +430,52 @@ estimates are `1`, `2`, `3`, or `6`. Allowed priorities are `LOW`, `NORMAL`,
 `buildingHint` is an optional exact building key. Read
 `tasktopia://catalog/buildings` first and use only a compatible catalog key;
 omit the field when no exact building was requested.
+
+Required scope: `tasks:write`.
+
+#### `task.update_fields`
+
+Updates the executable brief without changing workflow status. Optional fields
+are `title`, `description`, `workItemType`, `acceptanceCriteria`,
+`systemAnalysis`, `architecture`, `designSystem`, `implementationPlan`,
+`estimate`, `priority`, and nullable `dueAt`. `idempotencyKey` is required.
+
+Use the fields deliberately:
+
+- `systemAnalysis`: actors, current/desired behavior, data and integration impact, edge cases;
+- `architecture`: component boundaries, contracts, storage, rollout and trade-offs;
+- `designSystem`: components/tokens/states/accessibility rules; leave empty when no UI exists;
+- `implementationPlan`: ordered, verifiable implementation steps, not a progress diary;
+- `acceptanceCriteria`: observable conditions that gate `TESTING` and `COMPLETED`.
+
+Required scope: `tasks:write`.
+
+#### `task.defect_create`
+
+Creates a linked defect on an existing task. Provide `taskId`, `title`, optional
+`description`, non-empty `reproductionSteps`, `actualResult`, `expectedResult`,
+and `idempotencyKey`. It starts as `OPEN`. Do not silently change the parent
+task type or status.
+
+```json
+{
+  "taskId": "<task-id>",
+  "title": "Duplicate payment after timeout",
+  "reproductionSteps": "1. Delay provider response\n2. Retry checkout\n3. Open ledger",
+  "actualResult": "Two capture rows exist",
+  "expectedResult": "One capture row is reconciled",
+  "idempotencyKey": "defect-duplicate-capture-v1"
+}
+```
+
+Required scope: `tasks:write`.
+
+#### `task.defect_update`
+
+Updates defect evidence or its `OPEN | FIXED` status. Passing `FIXED` records
+`fixedAt`; returning it to `OPEN` clears `fixedAt`. Re-read the parent with
+`task.get` after the mutation. A fixed defect alone does not prove all task
+acceptance criteria.
 
 Required scope: `tasks:write`.
 

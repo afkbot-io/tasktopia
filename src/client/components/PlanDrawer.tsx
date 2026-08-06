@@ -9,6 +9,7 @@ const districtStatus: Record<PlanDistrictDto["status"], string> = {
 const taskStatus: Record<PlanTaskDto["status"], string> = {
   PLANNING: "Планирование", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
 };
+const taskType: Record<PlanTaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
 
 export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTaskSelect, onMutation }: {
   bootstrap: BootstrapDto;
@@ -125,21 +126,21 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
         {citiesLoading && !error && <p className="plan-placeholder">Загружаем города…</p>}
         {!citiesLoading && cities.length === 0 && !error && <p className="plan-placeholder">Нет городов</p>}
         {cities.map((city) => <div key={city.id} className="plan-row"><button className={city.id === cityId ? "selected" : ""} onClick={() => chooseCity(city.id)}>
-          <i>▦</i><span><strong>{city.name}</strong>{city.taskCount > 0 && <small>{city.taskCount} зданий</small>}</span>
+          <i>▦</i><span><strong>{city.name}</strong>{city.description && <small>{city.description.slice(0, 64)}</small>}{city.taskCount > 0 && <small>{city.taskCount} зданий</small>}</span>
         </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить город «${city.name}»`} aria-label={`Удалить город «${city.name}»`} onClick={() => void removeEntity(`/api/cities/${city.id}`, city.id, city.name, "confirmName")}>{deletingId === city.id ? "…" : "×"}</button>}</div>)}
       </section>
       <section><h3>Районы <span>{districts.length}</span></h3>
         {!cityId && <p className="plan-placeholder">Выберите город</p>}
         {cityId && districts.length === 0 && !error && <p className="plan-placeholder">Загружаем районы…</p>}
         {districts.map((district) => <div key={district.id} className="plan-row"><button className={district.id === districtId ? "selected" : ""} onClick={() => setDistrictId(district.id)}>
-          <i className={`district-dot district-${district.status.toLowerCase()}`} /><span><strong>{district.name}</strong><small>{districtStatus[district.status]} · {district.taskCount} задач</small></span>
+          <i className={`district-dot district-${district.status.toLowerCase()}`} /><span><strong>{district.name}</strong><small>{districtStatus[district.status]} · {district.taskCount} задач{district.deadline ? ` · до ${new Date(district.deadline).toLocaleDateString("ru-RU")}` : ""}</small></span>
         </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить район «${district.name}»`} aria-label={`Удалить район «${district.name}»`} onClick={() => void removeEntity(`/api/districts/${district.id}`, district.id, district.name, "confirmName")}>{deletingId === district.id ? "…" : "×"}</button>}</div>)}
       </section>
       <section className="plan-tasks"><h3>Задачи <span>{tasks.length}</span></h3>
         {!districtId && <p className="plan-placeholder">Выберите район</p>}
         {districtId && tasks.length === 0 && !error && <p className="plan-placeholder">В районе пока нет задач</p>}
         {tasks.map((task) => <div key={task.id} className="plan-row"><button onClick={() => onTaskSelect(task.id)}>
-          <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>{task.title}</strong><small>{taskStatus[task.status]} · {task.progress}% · {task.estimate} SP</small></span>
+          <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>{task.title}</strong><small>{taskType[task.workItemType]} · {taskStatus[task.status]} · {task.progress}% · {task.estimate} SP</small></span>
         </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить задачу «${task.title}»`} aria-label={`Удалить задачу «${task.title}»`} onClick={() => void removeEntity(`/api/tasks/${task.id}`, task.id, task.title, "confirmTitle")}>{deletingId === task.id ? "…" : "×"}</button>}</div>)}
       </section>
     </div>

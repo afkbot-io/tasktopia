@@ -5,13 +5,16 @@ const documentedTools = [
   "country.get_current",
   "country.list",
   "country.select",
+  "country.update_profile",
   "city.list",
   "city.get",
   "city.create",
+  "city.update",
   "city.rename",
   "city.delete",
   "district.list",
   "district.create",
+  "district.update",
   "district.rename",
   "district.activate",
   "district.complete",
@@ -19,6 +22,9 @@ const documentedTools = [
   "task.list",
   "task.get",
   "task.create",
+  "task.update_fields",
+  "task.defect_create",
+  "task.defect_update",
   "task.rename",
   "task.delete",
   "task.set_status",
@@ -37,6 +43,8 @@ describe("public AI integration guide", () => {
     expect(guide).toContain('"capacitySp": 40');
     expect(guide).toContain("never blocks task");
     expect(guide).toContain("isError: true");
+    expect(guide).toContain("systemAnalysis");
+    expect(guide).toContain("reproductionSteps");
     expect(guide).toContain("across all cities in the\nselected country");
     expect(guide).toContain("`tasktopia://country/current`");
     expect(guide).toContain("`tasktopia://catalog/buildings`");

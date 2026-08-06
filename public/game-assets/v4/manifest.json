@@ -3059,6 +3059,38 @@
         16
       ]
     },
+    "airplane-courier": {
+      "label": "Airplane Courier",
+      "path": "props/airplane-courier.png",
+      "size": [
+        32,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        16,
+        16
+      ]
+    },
+    "airplane-twin": {
+      "label": "Airplane Twin",
+      "path": "props/airplane-twin.png",
+      "size": [
+        32,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        16,
+        16
+      ]
+    },
     "walker-north": {
       "label": "Walker North",
       "path": "props/walker-north.png",
@@ -3510,6 +3542,134 @@
     "animal-deer-west": {
       "label": "Animal Deer West",
       "path": "props/animal-deer-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-rabbit-north": {
+      "label": "Animal Rabbit North",
+      "path": "props/animal-rabbit-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-rabbit-east": {
+      "label": "Animal Rabbit East",
+      "path": "props/animal-rabbit-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-rabbit-south": {
+      "label": "Animal Rabbit South",
+      "path": "props/animal-rabbit-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-rabbit-west": {
+      "label": "Animal Rabbit West",
+      "path": "props/animal-rabbit-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-boar-north": {
+      "label": "Animal Boar North",
+      "path": "props/animal-boar-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-boar-east": {
+      "label": "Animal Boar East",
+      "path": "props/animal-boar-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-boar-south": {
+      "label": "Animal Boar South",
+      "path": "props/animal-boar-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "animal-boar-west": {
+      "label": "Animal Boar West",
+      "path": "props/animal-boar-west.png",
       "size": [
         8,
         8

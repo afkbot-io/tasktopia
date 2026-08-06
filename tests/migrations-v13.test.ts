@@ -11,8 +11,18 @@ describe("PostgreSQL migrations", () => {
 
   it("records immutable migration checksums", async () => {
     const rows = await db.prepare("SELECT name, checksum FROM schema_migrations ORDER BY name").all<{ name: string; checksum: string }>();
-    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql"]);
+    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql"]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("adds AI planning fields and cascading task defects with safe defaults", async () => {
+    const columns = await db.prepare(`SELECT column_name FROM information_schema.columns
+      WHERE table_name IN ('countries','cities_v3','districts_v3','tasks_v3')`).all<{ column_name: string }>();
+    const names = new Set(columns.map((column) => column.column_name));
+    for (const name of ["product_context", "acceptance_criteria", "deadline", "work_item_type", "system_analysis", "implementation_plan"]) {
+      expect(names.has(name), name).toBe(true);
+    }
+    expect(await db.prepare("SELECT to_regclass('task_defects_v18') AS table_name").get()).toMatchObject({ table_name: "task_defects_v18" });
   });
 
   it("maintains chunk membership through JSONB triggers", async () => {

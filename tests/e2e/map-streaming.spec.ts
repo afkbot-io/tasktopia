@@ -13,6 +13,7 @@ async function openDemoMap(page: import("@playwright/test").Page) {
   for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "detail"; step += 1) await page.mouse.wheel(0, -800);
   await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
   await expect.poll(async () => Number(await host.getAttribute("data-cars")), { timeout: 90_000 }).toBeGreaterThan(0);
+  await expect(host).toHaveAttribute("data-airplane-space", "world");
   return { host, canvas };
 }
 

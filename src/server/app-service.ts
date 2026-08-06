@@ -25,8 +25,10 @@ import {
   type RoadCellDto,
   type SurfaceCellDto,
   type TaskDto,
+  type TaskDefectDto,
   type TaskPriority,
   type TaskStatus,
+  type WorkItemType,
   type WorldFeatureDto,
 } from "../shared/contracts";
 import type { Db } from "./db";
@@ -96,6 +98,9 @@ function cityDto(row: Row): CityDto {
     id: String(row.id),
     name: String(row.name),
     description: String(row.description),
+    goal: String(row.goal ?? ""),
+    acceptanceCriteria: String(row.acceptance_criteria ?? ""),
+    deadline: row.deadline ? String(row.deadline) : null,
     status: String(row.status) as CityDto["status"],
     center: { x: Number(row.center_x), y: Number(row.center_y) },
     bounds: json<Rect>(row.bounds_json),
@@ -111,6 +116,8 @@ function districtDto(row: Row): DistrictDto {
     cityId: String(row.city_id),
     name: String(row.name),
     goal: String(row.goal),
+    description: String(row.description ?? ""),
+    deadline: row.deadline ? String(row.deadline) : null,
     status: String(row.status) as DistrictStatus,
     capacitySp: Number(row.capacity_sp),
     cells: json<Cell[]>(row.cells_json),
@@ -137,6 +144,12 @@ function taskDto(row: Row): TaskDto {
     districtId: String(row.district_id),
     title: String(row.title),
     description: String(row.description),
+    workItemType: String(row.work_item_type ?? "TASK") as WorkItemType,
+    acceptanceCriteria: String(row.acceptance_criteria ?? ""),
+    systemAnalysis: String(row.system_analysis ?? ""),
+    architecture: String(row.architecture ?? ""),
+    designSystem: String(row.design_system ?? ""),
+    implementationPlan: String(row.implementation_plan ?? ""),
     estimate: Number(row.estimate) as Estimate,
     priority: String(row.priority) as TaskPriority,
     status,
@@ -225,14 +238,19 @@ export class AppService {
   }
 
   private invalidateChunkCache(countryId: string, event: RealtimeEvent): void {
-    if (event.type === "task.comment_added" || event.type === "task.assignee_changed") return;
+    if (event.type === "task.comment_added" || event.type === "task.assignee_changed" || event.type === "country.profile_updated") return;
     const candidate = event.payload.affectedBounds as Partial<Rect> | undefined;
     const hasBounds = candidate
       && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite);
     // Road and district generation can touch connectors beyond the published
     // entity envelope, so structural mutations conservatively clear this
-    // country's bounded cache. Status changes only alter the building sprite.
-    if (event.type !== "task.status_changed" || !hasBounds) {
+    // country's bounded cache. Metadata, status and defect changes only alter
+    // entities inside their published envelope and stay chunk-local.
+    const boundedMutation = new Set([
+      "task.status_changed", "task.fields_updated", "task.defect_created", "task.defect_updated",
+      "city.updated", "district.updated",
+    ]).has(event.type);
+    if (!boundedMutation || !hasBounds) {
       for (const key of this.chunkCache.keys()) if (key.startsWith(`${countryId}:`)) this.chunkCache.delete(key);
       return;
     }
@@ -358,7 +376,28 @@ export class AppService {
 
   async getCountry(countryId: string): Promise<CountryDto> {
     const row = await this.countryRow(countryId);
-    return { id: String(row.id), name: String(row.name), worldVersion: Number(row.world_version), generatorVersion: "square-v7", createdAt: String(row.created_at) };
+    return {
+      id: String(row.id), name: String(row.name), description: String(row.description ?? ""), goal: String(row.goal ?? ""),
+      productContext: String(row.product_context ?? ""), successCriteria: String(row.success_criteria ?? ""), constraints: String(row.constraints ?? ""),
+      worldVersion: Number(row.world_version), generatorVersion: "square-v7", createdAt: String(row.created_at),
+    };
+  }
+
+  async updateCountryProfile(countryId: string, input: {
+    description?: string; goal?: string; productContext?: string; successCriteria?: string; constraints?: string; idempotencyKey: string;
+  }): Promise<CountryDto> {
+    return this.mutate(countryId, "country.profile.v18", input.idempotencyKey, input, async () => {
+      const current = await this.getCountry(countryId);
+      const description = input.description === undefined ? current.description : input.description.trim().slice(0, 8000);
+      const goal = input.goal === undefined ? current.goal : input.goal.trim().slice(0, 4000);
+      const productContext = input.productContext === undefined ? current.productContext : input.productContext.trim().slice(0, 8000);
+      const successCriteria = input.successCriteria === undefined ? current.successCriteria : input.successCriteria.trim().slice(0, 8000);
+      const constraints = input.constraints === undefined ? current.constraints : input.constraints.trim().slice(0, 8000);
+      await this.db.prepare(`UPDATE countries SET description = ?, goal = ?, product_context = ?, success_criteria = ?, constraints = ? WHERE id = ?`)
+        .run(description, goal, productContext, successCriteria, constraints, countryId);
+      const data = await this.getCountry(countryId);
+      return { data, eventType: "country.profile_updated", eventPayload: { countryId } };
+    });
   }
 
   /**
@@ -398,13 +437,15 @@ export class AppService {
       for (const task of tasks) tasksByDistrict.set(task.districtId, [...tasksByDistrict.get(task.districtId) ?? [], task]);
       for (const city of cities) {
         const generated = await generator.createCity(temporaryCountryId, {
-          name: city.name, description: city.description, morphology: city.morphology,
+          name: city.name, description: city.description, goal: city.goal, acceptanceCriteria: city.acceptanceCriteria,
+          deadline: city.deadline ?? undefined, morphology: city.morphology,
           idempotencyKey: `regenerate-city:${city.id}`,
         });
         cityMap.set(city.id, generated.id);
         for (const district of districtsByCity.get(city.id) ?? []) {
           const generatedDistrict = await generator.createDistrict(temporaryCountryId, {
-            cityId: generated.id, name: district.name, goal: district.goal, capacitySp: district.capacitySp,
+            cityId: generated.id, name: district.name, goal: district.goal, description: district.description,
+            deadline: district.deadline ?? undefined, capacitySp: district.capacitySp,
             activate: district.status === "ACTIVE", archetype: district.archetype,
             idempotencyKey: `regenerate-district:${district.id}`,
           });
@@ -412,7 +453,9 @@ export class AppService {
           for (const task of tasksByDistrict.get(district.id) ?? []) {
             const generatedTask = await generator.createTask(temporaryCountryId, {
               cityId: generated.id, districtId: generatedDistrict.id, title: task.title,
-              description: task.description, estimate: task.estimate, priority: task.priority,
+              description: task.description, workItemType: task.workItemType, acceptanceCriteria: task.acceptanceCriteria,
+              systemAnalysis: task.systemAnalysis, architecture: task.architecture, designSystem: task.designSystem,
+              implementationPlan: task.implementationPlan, estimate: task.estimate, priority: task.priority,
               dueAt: task.dueAt ?? undefined, buildingHint: task.buildingType,
               idempotencyKey: `regenerate-task:${task.id}`,
             });
@@ -585,11 +628,12 @@ export class AppService {
   async listPlanDistricts(countryId: string, cityId: string): Promise<PlanDistrictDto[]> {
     const city = await this.db.prepare("SELECT 1 FROM cities_v3 WHERE id = ? AND country_id = ?").get(cityId, countryId);
     if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
-    const rows = await this.db.prepare(`SELECT d.id, d.city_id, d.name, d.goal, d.status, d.capacity_sp, d.archetype, d.color, d.created_at,
+    const rows = await this.db.prepare(`SELECT d.id, d.city_id, d.name, d.goal, d.description, d.deadline, d.status, d.capacity_sp, d.archetype, d.color, d.created_at,
       (SELECT COUNT(*) FROM tasks_v3 t WHERE t.district_id = d.id) AS task_count
       FROM districts_v3 d WHERE d.city_id = ? ORDER BY d.created_at`).all(cityId) as Row[];
     return rows.map((row) => ({
       id: String(row.id), cityId: String(row.city_id), name: String(row.name), goal: String(row.goal),
+      description: String(row.description), deadline: row.deadline ? String(row.deadline) : null,
       status: String(row.status) as DistrictStatus, capacitySp: Number(row.capacity_sp),
       archetype: String(row.archetype) as DistrictArchetype, color: String(row.color),
       createdAt: String(row.created_at), taskCount: Number(row.task_count),
@@ -600,12 +644,13 @@ export class AppService {
     const district = await this.db.prepare(`SELECT 1 FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
       WHERE d.id = ? AND c.country_id = ?`).get(districtId, countryId);
     if (!district) throw new DomainError("NOT_FOUND", "Район не найден");
-    const rows = await this.db.prepare(`SELECT id, city_id, district_id, title, estimate, priority, status, progress, due_at, updated_at
+    const rows = await this.db.prepare(`SELECT id, city_id, district_id, title, work_item_type, estimate, priority, status, progress, due_at, updated_at
       FROM tasks_v3 WHERE district_id = ? ORDER BY created_at`).all(districtId) as Row[];
     return rows.map((row) => {
       const status = String(row.status) as TaskStatus;
       return {
         id: String(row.id), cityId: String(row.city_id), districtId: String(row.district_id), title: String(row.title),
+        workItemType: String(row.work_item_type) as WorkItemType,
         estimate: Number(row.estimate) as Estimate, priority: String(row.priority) as TaskPriority,
         status, progress: Number(row.progress), dueAt: row.due_at ? String(row.due_at) : null,
         stage: TASK_STAGE[status], updatedAt: String(row.updated_at),
@@ -678,6 +723,12 @@ export class AppService {
       id: Number(event.id), taskId, type: String(event.event_type) as NonNullable<TaskDto["events"]>[number]["type"],
       actor: String(event.actor_label), actorUserId: event.actor_user_id ? String(event.actor_user_id) : null,
       details: json<Record<string, unknown>>(event.details_json), createdAt: String(event.created_at),
+    }));
+    task.defects = (await this.db.prepare("SELECT * FROM task_defects_v18 WHERE task_id = ? ORDER BY created_at, id").all(taskId) as Row[]).map((defect) => ({
+      id: String(defect.id), taskId, title: String(defect.title), description: String(defect.description),
+      reproductionSteps: String(defect.reproduction_steps), actualResult: String(defect.actual_result), expectedResult: String(defect.expected_result),
+      status: String(defect.status) as TaskDefectDto["status"], fixedAt: defect.fixed_at ? String(defect.fixed_at) : null,
+      createdAt: String(defect.created_at), updatedAt: String(defect.updated_at),
     }));
     return task;
   }
@@ -1264,7 +1315,10 @@ export class AppService {
     }
   }
 
-  async createCity(countryId: string, input: { name: string; description?: string; morphology?: CityMorphology; idempotencyKey: string }): Promise<CityDto> {
+  async createCity(countryId: string, input: {
+    name: string; description?: string; goal?: string; acceptanceCriteria?: string; deadline?: string;
+    morphology?: CityMorphology; idempotencyKey: string;
+  }): Promise<CityDto> {
     const name = input.name.trim();
     if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название города должно содержать от 2 до 100 символов");
     return await this.mutate(countryId, "city.create.v3", input.idempotencyKey, input, async () => {
@@ -1277,8 +1331,8 @@ export class AppService {
                       const createdAt = now();
                       const styleId = `style-${Math.floor(hashCoordinate(seed, center.x, center.y, 433) * 8)}`;
                       const morphology = input.morphology ?? cityMorphology(hashCoordinate(seed, center.x, center.y, 439));
-                      await this.db.prepare("INSERT INTO cities_v3 (id, country_id, name, description, status, center_x, center_y, bounds_json, style_id, morphology, created_at) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?)")
-                                                        .run(id, countryId, name, input.description?.trim().slice(0, 4000) ?? "", center.x, center.y, JSON.stringify(bounds), styleId, morphology, createdAt);
+                      await this.db.prepare("INSERT INTO cities_v3 (id, country_id, name, description, goal, acceptance_criteria, deadline, status, center_x, center_y, bounds_json, style_id, morphology, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?)")
+                                                        .run(id, countryId, name, input.description?.trim().slice(0, 8000) ?? "", input.goal?.trim().slice(0, 4000) ?? "", input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.deadline ?? null, center.x, center.y, JSON.stringify(bounds), styleId, morphology, createdAt);
 
                       const nearest = cities.length > 0
                         ? cities.reduce((best, city) => manhattan(city.center, center) < manhattan(best.center, center) ? city : best, cities[0]!)
@@ -1312,7 +1366,11 @@ export class AppService {
                       await this.normalizeUrbanHighways(countryId, bounds);
                       await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, connector, gateway.horizontalApproach);
 
-                      const data: CityDto = { id, name, description: input.description?.trim() ?? "", status: "ACTIVE", center, bounds, styleId, morphology, createdAt };
+                      const data: CityDto = {
+                        id, name, description: input.description?.trim() ?? "", goal: input.goal?.trim() ?? "",
+                        acceptanceCriteria: input.acceptanceCriteria?.trim() ?? "", deadline: input.deadline ?? null,
+                        status: "ACTIVE", center, bounds, styleId, morphology, createdAt,
+                      };
                       return { data, eventType: "city.created", eventPayload: { cityId: id, center, affectedBounds: bounds } };
                     });
   }
@@ -1327,6 +1385,30 @@ export class AppService {
                       const data = cityDto({ ...row, name });
                       return { data, eventType: "city.renamed", eventPayload: { cityId: input.cityId, name, affectedBounds: data.bounds } };
                     });
+  }
+
+  async updateCity(countryId: string, input: {
+    cityId: string; name?: string; description?: string; goal?: string; acceptanceCriteria?: string;
+    deadline?: string | null; idempotencyKey: string;
+  }): Promise<CityDto> {
+    return this.mutate(countryId, "city.update.v18", input.idempotencyKey, input, async () => {
+      const row = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
+      if (!row) throw new DomainError("NOT_FOUND", "Город не найден");
+      const current = cityDto(row);
+      const name = input.name === undefined ? current.name : input.name.trim();
+      if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название города должно содержать от 2 до 100 символов");
+      await this.db.prepare(`UPDATE cities_v3 SET name = ?, description = ?, goal = ?, acceptance_criteria = ?, deadline = ? WHERE id = ?`).run(
+        name,
+        input.description === undefined ? current.description : input.description.trim().slice(0, 8000),
+        input.goal === undefined ? current.goal : input.goal.trim().slice(0, 4000),
+        input.acceptanceCriteria === undefined ? current.acceptanceCriteria : input.acceptanceCriteria.trim().slice(0, 8000),
+        input.deadline === undefined ? current.deadline : input.deadline,
+        input.cityId,
+      );
+      const updated = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(input.cityId) as Row;
+      const data = cityDto(updated);
+      return { data, eventType: "city.updated", eventPayload: { cityId: data.id, affectedBounds: data.bounds } };
+    });
   }
 
   /** Remove city-owned streets while retaining only genuine national/through
@@ -1615,7 +1697,10 @@ export class AppService {
     return dy >= 0 ? "S" : "N";
   }
 
-  async createDistrict(countryId: string, input: { cityId: string; name: string; goal?: string; capacitySp?: number; activate?: boolean; archetype?: DistrictArchetype; idempotencyKey: string }): Promise<DistrictDto> {
+  async createDistrict(countryId: string, input: {
+    cityId: string; name: string; goal?: string; description?: string; deadline?: string; capacitySp?: number;
+    activate?: boolean; archetype?: DistrictArchetype; idempotencyKey: string;
+  }): Promise<DistrictDto> {
     const name = input.name.trim();
     if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название района должно содержать от 2 до 100 символов");
     return await this.mutate(countryId, "district.create.v3", input.idempotencyKey, input, async () => {
@@ -1708,10 +1793,13 @@ export class AppService {
                       const count = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM districts_v3 WHERE city_id = ?").get(city.id) as Row).count);
                       const color = SPRINT_COLORS[count % SPRINT_COLORS.length]!;
                       const growthDirection = this.outwardDirection(city, center);
-                      await this.db.prepare("INSERT INTO districts_v3 (id, city_id, name, goal, status, capacity_sp, cells_json, lots_json, growth_direction, archetype, color, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                                                        .run(id, city.id, name, input.goal?.trim().slice(0, 2000) ?? "", status, capacity, JSON.stringify(site.cells), JSON.stringify(lots), growthDirection, archetype, color, createdAt);
+                      await this.db.prepare("INSERT INTO districts_v3 (id, city_id, name, goal, description, deadline, status, capacity_sp, cells_json, lots_json, growth_direction, archetype, color, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                                                        .run(id, city.id, name, input.goal?.trim().slice(0, 4000) ?? "", input.description?.trim().slice(0, 8000) ?? "", input.deadline ?? null, status, capacity, JSON.stringify(site.cells), JSON.stringify(lots), growthDirection, archetype, color, createdAt);
                       await this.publishDistrictGreenFeature(countryId, city, id, seed, site.cells, archetype, existingDistricts.length, lots);
-                      const data: DistrictDto = { id, cityId: city.id, name, goal: input.goal?.trim() ?? "", status, capacitySp: capacity, cells: site.cells, lots, growthDirection, archetype, color, createdAt };
+                      const data: DistrictDto = {
+                        id, cityId: city.id, name, goal: input.goal?.trim() ?? "", description: input.description?.trim() ?? "",
+                        deadline: input.deadline ?? null, status, capacitySp: capacity, cells: site.cells, lots, growthDirection, archetype, color, createdAt,
+                      };
                       return { data, eventType: "district.created", eventPayload: { districtId: id, cityId: city.id, affectedBounds: boundsOf(site.cells) } };
                     });
   }
@@ -1727,6 +1815,29 @@ export class AppService {
                       const data = districtDto({ ...row, name });
                       return { data, eventType: "district.renamed", eventPayload: { districtId: input.districtId, cityId: data.cityId, name, affectedBounds: boundsOf(data.cells) } };
                     });
+  }
+
+  async updateDistrict(countryId: string, input: {
+    districtId: string; name?: string; goal?: string; description?: string; deadline?: string | null;
+    capacitySp?: number; idempotencyKey: string;
+  }): Promise<DistrictDto> {
+    return this.mutate(countryId, "district.update.v18", input.idempotencyKey, input, async () => {
+      const row = await this.db.prepare(`SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
+        WHERE d.id = ? AND c.country_id = ?`).get(input.districtId, countryId) as Row | undefined;
+      if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
+      const current = districtDto(row);
+      const name = input.name === undefined ? current.name : input.name.trim();
+      if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название района должно содержать от 2 до 100 символов");
+      const capacitySp = input.capacitySp === undefined ? current.capacitySp : Math.max(1, Math.round(input.capacitySp));
+      await this.db.prepare(`UPDATE districts_v3 SET name = ?, goal = ?, description = ?, deadline = ?, capacity_sp = ? WHERE id = ?`).run(
+        name, input.goal === undefined ? current.goal : input.goal.trim().slice(0, 4000),
+        input.description === undefined ? current.description : input.description.trim().slice(0, 8000),
+        input.deadline === undefined ? current.deadline : input.deadline, capacitySp, input.districtId,
+      );
+      const updated = await this.db.prepare("SELECT * FROM districts_v3 WHERE id = ?").get(input.districtId) as Row;
+      const data = districtDto(updated);
+      return { data, eventType: "district.updated", eventPayload: { districtId: data.id, cityId: data.cityId, affectedBounds: boundsOf(data.cells) } };
+    });
   }
 
   async deleteDistrict(countryId: string, input: { districtId: string; confirmName: string; idempotencyKey: string }): Promise<{ deleted: true; districtId: string; cityId: string; name: string; tasksDeleted: number; activatedDistrictId: string | null }> {
@@ -2256,6 +2367,12 @@ export class AppService {
     districtId?: string;
     title: string;
     description?: string;
+    workItemType?: WorkItemType;
+    acceptanceCriteria?: string;
+    systemAnalysis?: string;
+    architecture?: string;
+    designSystem?: string;
+    implementationPlan?: string;
     estimate: Estimate;
     priority?: TaskPriority;
     dueAt?: string;
@@ -2312,9 +2429,12 @@ export class AppService {
                       const lots = selected.lots.map((lot) => lot.id === selected.lot.id ? { ...lot, taskId: id } : lot);
                       await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?").run(JSON.stringify(lots), district.id);
                       await this.db.prepare(`INSERT INTO tasks_v3
-        (id, city_id, district_id, title, description, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-                                                        id, input.cityId, district.id, title, input.description?.trim().slice(0, 8000) ?? "", input.estimate,
+        (id, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+                                                        id, input.cityId, district.id, title, input.description?.trim().slice(0, 8000) ?? "", input.workItemType ?? "TASK",
+                                                        input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.systemAnalysis?.trim().slice(0, 16000) ?? "",
+                                                        input.architecture?.trim().slice(0, 16000) ?? "", input.designSystem?.trim().slice(0, 16000) ?? "",
+                                                        input.implementationPlan?.trim().slice(0, 16000) ?? "", input.estimate,
                                                         input.priority ?? "NORMAL", "PLANNING", 0, input.dueAt ?? null, entry.key, entry.platform,
                                                         selected.placement.origin.x, selected.placement.origin.y, JSON.stringify(selected.placement.footprint),
                                                         selected.placement.entrance.x, selected.placement.entrance.y, JSON.stringify(selected.placement.accessPath), selected.placement.accessKind,
@@ -2343,6 +2463,89 @@ export class AppService {
                       const data = await this.getTask(countryId, input.taskId);
                       return { data, eventType: "task.renamed", eventPayload: { taskId: input.taskId, districtId: task.districtId, title, affectedBounds: boundsOf(data.footprint) } };
                     });
+  }
+
+  async updateTaskFields(countryId: string, input: {
+    taskId: string; title?: string; description?: string; workItemType?: WorkItemType; acceptanceCriteria?: string;
+    systemAnalysis?: string; architecture?: string; designSystem?: string; implementationPlan?: string;
+    estimate?: Estimate; priority?: TaskPriority; dueAt?: string | null; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskDto> {
+    return this.mutate(countryId, "task.fields.v18", input.idempotencyKey, input, async () => {
+      const current = await this.getTask(countryId, input.taskId);
+      const title = input.title === undefined ? current.title : input.title.trim();
+      if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название задачи должно содержать от 2 до 160 символов");
+      const updatedAt = now();
+      await this.db.prepare(`UPDATE tasks_v3 SET title = ?, description = ?, work_item_type = ?, acceptance_criteria = ?,
+        system_analysis = ?, architecture = ?, design_system = ?, implementation_plan = ?, estimate = ?, priority = ?, due_at = ?, updated_at = ?
+        WHERE id = ?`).run(
+        title, input.description === undefined ? current.description : input.description.trim().slice(0, 8000),
+        input.workItemType ?? current.workItemType,
+        input.acceptanceCriteria === undefined ? current.acceptanceCriteria : input.acceptanceCriteria.trim().slice(0, 8000),
+        input.systemAnalysis === undefined ? current.systemAnalysis : input.systemAnalysis.trim().slice(0, 16000),
+        input.architecture === undefined ? current.architecture : input.architecture.trim().slice(0, 16000),
+        input.designSystem === undefined ? current.designSystem : input.designSystem.trim().slice(0, 16000),
+        input.implementationPlan === undefined ? current.implementationPlan : input.implementationPlan.trim().slice(0, 16000),
+        input.estimate ?? current.estimate, input.priority ?? current.priority,
+        input.dueAt === undefined ? current.dueAt : input.dueAt, updatedAt, input.taskId,
+      );
+      const changedFields = Object.keys(input).filter((field) => !["taskId", "idempotencyKey", "actor", "actorUserId"].includes(field));
+      await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { changedFields }, updatedAt);
+      const data = await this.getTask(countryId, input.taskId);
+      return { data, eventType: "task.fields_updated", eventPayload: { taskId: data.id, districtId: data.districtId, changedFields, affectedBounds: boundsOf(data.footprint) } };
+    });
+  }
+
+  async createTaskDefect(countryId: string, input: {
+    taskId: string; title: string; description?: string; reproductionSteps: string; actualResult: string; expectedResult: string;
+    actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskDefectDto> {
+    return this.mutate(countryId, "task.defect.create.v18", input.idempotencyKey, input, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const title = input.title.trim();
+      if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название дефекта должно содержать от 2 до 160 символов");
+      const id = randomUUID();
+      const createdAt = now();
+      await this.db.prepare(`INSERT INTO task_defects_v18
+        (id, task_id, title, description, reproduction_steps, actual_result, expected_result, status, fixed_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'OPEN', NULL, ?, ?)`).run(
+        id, task.id, title, input.description?.trim().slice(0, 8000) ?? "", input.reproductionSteps.trim().slice(0, 12000),
+        input.actualResult.trim().slice(0, 8000), input.expectedResult.trim().slice(0, 8000), createdAt, createdAt,
+      );
+      await this.recordTaskEvent(task.id, "DEFECT_CREATED", input.actor ?? "MCP", input.actorUserId, { defectId: id, title }, createdAt);
+      const data = (await this.getTask(countryId, task.id)).defects!.find((defect) => defect.id === id)!;
+      return { data, eventType: "task.defect_created", eventPayload: { taskId: task.id, defectId: id, affectedBounds: boundsOf(task.footprint) } };
+    });
+  }
+
+  async updateTaskDefect(countryId: string, input: {
+    defectId: string; title?: string; description?: string; reproductionSteps?: string; actualResult?: string; expectedResult?: string;
+    status?: TaskDefectDto["status"]; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskDefectDto> {
+    return this.mutate(countryId, "task.defect.update.v18", input.idempotencyKey, input, async () => {
+      const row = await this.db.prepare(`SELECT defect.*, task.city_id FROM task_defects_v18 defect
+        JOIN tasks_v3 task ON task.id = defect.task_id JOIN cities_v3 city ON city.id = task.city_id
+        WHERE defect.id = ? AND city.country_id = ?`).get(input.defectId, countryId) as Row | undefined;
+      if (!row) throw new DomainError("NOT_FOUND", "Связанный дефект не найден");
+      for (const [field, value] of [["шаги воспроизведения", input.reproductionSteps], ["фактический результат", input.actualResult], ["ожидаемый результат", input.expectedResult]] as const) {
+        if (value !== undefined && value.trim().length === 0) throw new DomainError("INVALID_INPUT", `${field} не могут быть пустыми`);
+      }
+      const task = await this.getTask(countryId, String(row.task_id));
+      const status = input.status ?? String(row.status) as TaskDefectDto["status"];
+      const updatedAt = now();
+      const fixedAt = status === "FIXED" ? (row.fixed_at ? String(row.fixed_at) : updatedAt) : null;
+      await this.db.prepare(`UPDATE task_defects_v18 SET title = ?, description = ?, reproduction_steps = ?, actual_result = ?,
+        expected_result = ?, status = ?, fixed_at = ?, updated_at = ? WHERE id = ?`).run(
+        input.title === undefined ? row.title : input.title.trim().slice(0, 160),
+        input.description === undefined ? row.description : input.description.trim().slice(0, 8000),
+        input.reproductionSteps === undefined ? row.reproduction_steps : input.reproductionSteps.trim().slice(0, 12000),
+        input.actualResult === undefined ? row.actual_result : input.actualResult.trim().slice(0, 8000),
+        input.expectedResult === undefined ? row.expected_result : input.expectedResult.trim().slice(0, 8000),
+        status, fixedAt, updatedAt, input.defectId,
+      );
+      await this.recordTaskEvent(task.id, "DEFECT_UPDATED", input.actor ?? "MCP", input.actorUserId, { defectId: input.defectId, status }, updatedAt);
+      const data = (await this.getTask(countryId, task.id)).defects!.find((defect) => defect.id === input.defectId)!;
+      return { data, eventType: "task.defect_updated", eventPayload: { taskId: task.id, defectId: input.defectId, status, affectedBounds: boundsOf(task.footprint) } };
+    });
   }
 
   async deleteTask(countryId: string, input: { taskId: string; confirmTitle: string; idempotencyKey: string }): Promise<{ deleted: true; taskId: string; districtId: string; cityId: string; title: string }> {
@@ -2482,8 +2685,8 @@ export class AppService {
       } else if (cell.terrain === "MOUNTAIN" && chance < 0.075) {
         kind = chance < 0.03 ? "mountain-peak" : chance < 0.052 ? "mountain-ridge" : "rock-cluster";
       }
-      else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.012) {
-        const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple", "bush-light", "rock-small"];
+      else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.016) {
+        const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple", "bush-dark", "bush-light", "bush-berries", "rock-small"];
         kind = variants[Math.floor(hashCoordinate(seed, cell.x, cell.y, 709) * variants.length)];
       } else if (cell.terrain === "STONE" && chance < 0.035) kind = chance < 0.017 ? "rock-small" : "rock-cluster";
       else if (cell.terrain === "SHALLOW_WATER" && chance < 0.02) kind = chance < 0.01 ? "reed-green" : "reed-cattail";
@@ -2556,11 +2759,15 @@ export class AppService {
     const districts = nearbyDistricts.flatMap((district) => {
       const cells = district.cells.filter((cell) => contains(chunkBounds, cell));
       return cells.length === 0 ? [] : [{
-        id: district.id, cityId: district.cityId, status: district.status, color: district.color, archetype: district.archetype, cells,
+        id: district.id, cityId: district.cityId, name: district.name, deadline: district.deadline,
+        status: district.status, color: district.color, archetype: district.archetype, cells,
       }];
     });
     const chunkTasks = nearbyTasks.filter((task) => task.footprint.some((cell) => contains(chunkBounds, cell)));
-    const worldFeatures = lod === "OVERVIEW" ? [] : nearbyFeatures.filter((feature) => feature.footprint.some((cell) => contains(chunkBounds, cell)) || feature.accessPath.some((cell) => contains(chunkBounds, cell)));
+    const cityNames = new Map(nearbyCities.map((city) => [city.id, city.name]));
+    const worldFeatures = lod === "OVERVIEW" ? [] : nearbyFeatures
+      .filter((feature) => feature.footprint.some((cell) => contains(chunkBounds, cell)) || feature.accessPath.some((cell) => contains(chunkBounds, cell)))
+      .map((feature) => feature.kind === "CITY_SIGN" && feature.cityId ? { ...feature, label: cityNames.get(feature.cityId) } : feature);
     const surfaces = lod === "OVERVIEW" ? (() => {
       const roadKeys = new Set(roads.map(cellKey));
       const blockedKeys = new Set([

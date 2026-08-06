@@ -138,11 +138,15 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, road
 
 function drawDistrictBoundary(district: ChunkDistrictDto): Container {
   const group = new Container();
+  group.eventMode = "static";
+  group.cursor = "help";
   const graphics = new Graphics();
+  const hit = new Graphics();
   const cells = new Set(district.cells.map(key));
   const color = Number.parseInt(district.color.slice(1), 16);
   for (const cell of district.cells) {
     const p = position(cell);
+    hit.rect(p.x, p.y, CELL_SIZE, CELL_SIZE);
     for (let direction = 0; direction < GRID_DIRECTIONS.length; direction += 1) {
       const delta = GRID_DIRECTIONS[direction]!;
       if (cells.has(key({ x: cell.x + delta.x, y: cell.y + delta.y }))) continue;
@@ -153,13 +157,32 @@ function drawDistrictBoundary(district: ChunkDistrictDto): Container {
     }
   }
   graphics.stroke({ color, width: district.status === "ACTIVE" ? 2.6 : 1.2, alpha: district.status === "ACTIVE" ? 1 : 0.62, cap: "square" });
-  group.addChild(graphics);
+  hit.fill({ color, alpha: 0.001 });
+  group.addChild(hit, graphics);
   if (district.status === "ACTIVE" && district.cells.length > 0) {
     const markerCell = district.cells.reduce((best, cell) => cell.y < best.y || cell.y === best.y && cell.x < best.x ? cell : best, district.cells[0]!);
     const marker = sprite(PROP_SPRITES["active-district-flag"]!, markerCell.x * CELL_SIZE + CELL_SIZE / 2, markerCell.y * CELL_SIZE + CELL_SIZE);
     marker.anchor.set(0.5, 1);
     group.addChild(marker);
   }
+  let tooltip: Container | undefined;
+  group.on("pointerover", () => {
+    if (!tooltip) {
+      const deadline = district.deadline ? `\nДедлайн: ${new Date(district.deadline).toLocaleDateString("ru-RU")}` : "\nДедлайн не задан";
+      const label = new Text({
+        text: `${district.name}${deadline}`, resolution: 4,
+        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "700", lineHeight: 11, fill: 0xf2f5ed }),
+      });
+      const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3)
+        .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color, width: 1 });
+      tooltip = new Container(); tooltip.eventMode = "none"; tooltip.addChild(panel, label);
+      const anchor = district.cells.reduce((best, cell) => cell.y < best.y || cell.y === best.y && cell.x < best.x ? cell : best, district.cells[0]!);
+      tooltip.position.set(anchor.x * CELL_SIZE, anchor.y * CELL_SIZE - label.height - 12);
+      group.addChild(tooltip);
+    }
+    tooltip.visible = true;
+  });
+  group.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
   return group;
 }
 
@@ -247,7 +270,7 @@ function drawDecoration(decoration: ChunkDto["decorations"][number]): Sprite | n
   return result;
 }
 
-function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean): { platform?: Container; visual?: Sprite } | null {
+function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean): { platform?: Container; visual?: Container } | null {
   if (!includePlatform) return null;
   if (feature.assetKind === "AREA") {
     const platform = new Container();
@@ -263,12 +286,28 @@ function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean): {
   if (feature.assetKind === "PROP") {
     const metadata = PROP_CATALOG[feature.assetKey];
     if (!metadata) return null;
-    const visual = sprite(
+    const prop = sprite(
       metadata.path,
-      feature.origin.x * CELL_SIZE + metadata.footprint.width * CELL_SIZE / 2,
-      feature.origin.y * CELL_SIZE + metadata.footprint.height * CELL_SIZE,
+      0, 0,
     );
-    visual.anchor.set(metadata.anchor.x / metadata.size.width, metadata.anchor.y / metadata.size.height);
+    prop.anchor.set(metadata.anchor.x / metadata.size.width, metadata.anchor.y / metadata.size.height);
+    const visual = new Container();
+    visual.position.set(feature.origin.x * CELL_SIZE + metadata.footprint.width * CELL_SIZE / 2, feature.origin.y * CELL_SIZE + metadata.footprint.height * CELL_SIZE);
+    visual.addChild(prop);
+    if (feature.kind === "CITY_SIGN" && feature.label) {
+      visual.eventMode = "static"; visual.cursor = "help";
+      visual.hitArea = new Rectangle(-metadata.size.width / 2, -metadata.size.height, metadata.size.width, metadata.size.height);
+      let tooltip: Container | undefined;
+      visual.on("pointerover", () => {
+        if (!tooltip) {
+          const label = new Text({ text: feature.label!, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "800", fill: 0xf2f5ed }) });
+          const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3).fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x5ba6ca, width: 1 });
+          tooltip = new Container(); tooltip.eventMode = "none"; tooltip.position.set(-label.width / 2, -metadata.size.height - label.height - 8); tooltip.addChild(panel, label); visual.addChild(tooltip);
+        }
+        tooltip.visible = true;
+      });
+      visual.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
+    }
     return { visual };
   }
   const entry = getBuilding(feature.assetKey);
@@ -291,7 +330,7 @@ function assetUrl(path: string): string {
 function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   const urls = new Set<string>();
   urls.add(PROP_SPRITES["active-district-flag"]!);
-  urls.add(PROP_SPRITES["airplane-small"]!);
+  for (const plane of ["airplane-small", "airplane-courier", "airplane-twin"] as const) urls.add(PROP_SPRITES[plane]!);
   for (const chunk of chunks) {
     for (const task of chunk.tasks) {
       const entry = getBuilding(task.buildingType);
@@ -327,7 +366,7 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
     for (const path of Object.values(TILE_SPRITES)) urls.add(path);
     for (const path of Object.values(VEHICLE_SPRITES).flatMap((axes) => [axes.horizontal, axes.vertical])) urls.add(path);
     for (const key of ["walker-east", "walker-west", "walker-south", "walker-north"] as const) urls.add(PROP_SPRITES[key]!);
-    for (const species of ["fox", "deer"] as const) for (const direction of ["north", "east", "south", "west"] as const) {
+    for (const species of ["fox", "deer", "rabbit", "boar"] as const) for (const direction of ["north", "east", "south", "west"] as const) {
       urls.add(PROP_SPRITES[`animal-${species}-${direction}`]!);
     }
   }
@@ -435,18 +474,18 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       const buildingLayer = new Container();
       const featureLayer = new Container();
       const agentLayer = new Container();
-      const skyLayer = new Container();
-      skyLayer.eventMode = "none";
+      const flightLayer = new Container();
+      flightLayer.eventMode = "none";
       districtLayer.visible = showDistrictsRef.current;
-      world.addChild(backdropLayer, terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, agentLayer, buildingLayer, featureLayer);
-      app.stage.addChild(world, skyLayer);
+      world.addChild(backdropLayer, terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, agentLayer, buildingLayer, featureLayer, flightLayer);
+      app.stage.addChild(world);
       type RenderNode = Container | Graphics | Sprite;
       const districtViews = new Map<string, EntityViewRecord<Container>>();
       const taskPlatformViews = new Map<string, EntityViewRecord<Container>>();
       const taskBuildingViews = new Map<string, EntityViewRecord<Container>>();
       const decorationViews = new Map<string, EntityViewRecord<Sprite>>();
       const ambientDecorationViews = new Map<string, { view: Sprite; baseX: number; baseY: number; phase: number; kind: string }>();
-      const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Sprite }>();
+      const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Container }>();
       let entityReplacementCount = 0;
       let currentViewBounds = initialViewBoundsRef.current;
       let currentLod: MapLod = world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
@@ -483,15 +522,18 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       let spawnState = sessionSeed;
       let nextAgentId = 1;
       let simulationTimeMs = 0;
-      let airplane: { view: Sprite; speed: number; startY: number; phase: number } | undefined;
+      let airplane: { view: Sprite; speed: number; startY: number; phase: number; endX: number; nextTrailX: number; trail: Graphics[] } | undefined;
       let nextFlybyMs = 20_000 + nextSeededRandom(sessionSeed).value * 35_000;
+      host.dataset.airplaneSpace = flightLayer.parent === world ? "world" : "screen";
       let activeCrosswalks = new Set<string>();
       let activityCells = new Set<string>();
       const orientVehicle = (agent: MovingAgent): void => {
         if (agent.kind !== "CAR") return;
-        agent.view.scale.set(1.08);
-        if (agent.next.x < agent.current.x) agent.view.scale.x = -1.08;
-        if (agent.next.y < agent.current.y) agent.view.scale.y = -1.08;
+        // Vehicle sprites no longer touch the tile edge, which reads as driving
+        // on the curb at gameplay zoom. Directional mirroring keeps that inset.
+        agent.view.scale.set(0.9);
+        if (agent.next.x < agent.current.x) agent.view.scale.x = -0.9;
+        if (agent.next.y < agent.current.y) agent.view.scale.y = -0.9;
       };
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
@@ -558,29 +600,42 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         if (!airplane) {
           nextFlybyMs -= elapsed;
           if (nextFlybyMs <= 0) {
-            const texture = Assets.get<Texture>(PROP_SPRITES["airplane-small"]!);
+            const random = nextSeededRandom(spawnState);
+            spawnState = random.state;
+            const planeKeys = ["airplane-small", "airplane-courier", "airplane-twin"] as const;
+            const planeKey = planeKeys[Math.floor(random.value * planeKeys.length)]!;
+            const texture = Assets.get<Texture>(PROP_SPRITES[planeKey]!);
             if (texture) {
-              const random = nextSeededRandom(spawnState);
-              spawnState = random.state;
               const view = new Sprite(texture);
               view.texture.source.scaleMode = "nearest";
               view.anchor.set(0.5);
               view.scale.set(1.35);
-              const startY = app.screen.height * (0.16 + random.value * 0.5);
-              view.position.set(-28, startY);
-              skyLayer.addChild(view);
-              airplane = { view, speed: 0.075 + random.value * 0.02, startY, phase: random.value };
+              const startY = (currentViewBounds.minY + (currentViewBounds.maxY - currentViewBounds.minY) * (0.14 + random.value * 0.58)) * CELL_SIZE;
+              const startX = currentViewBounds.minX * CELL_SIZE - 40;
+              const endX = currentViewBounds.maxX * CELL_SIZE + 40;
+              view.position.set(startX, startY);
+              flightLayer.addChild(view);
+              airplane = { view, speed: 0.075 + random.value * 0.02, startY, phase: random.value, endX, nextTrailX: startX + 8, trail: [] };
               host.dataset.airplane = "flying";
+              host.dataset.airplaneVariant = planeKey;
             }
           }
         } else {
           airplane.view.x += elapsed * airplane.speed;
           airplane.view.y = airplane.startY + Math.sin(simulationTimeMs * 0.002 + airplane.phase * Math.PI * 2) * 3;
-          if (airplane.view.x > app.screen.width + 32) {
+          if (airplane.view.x >= airplane.nextTrailX) {
+            const puff = new Graphics().rect(-5, -1, 6, 2).fill({ color: 0xf4f6ed, alpha: 0.48 });
+            puff.position.set(airplane.view.x - 20, airplane.view.y + 1); flightLayer.addChildAt(puff, 0); airplane.trail.push(puff); airplane.nextTrailX += 9;
+            while (airplane.trail.length > 12) airplane.trail.shift()?.destroy();
+          }
+          for (let index = 0; index < airplane.trail.length; index += 1) airplane.trail[index]!.alpha = (index + 1) / airplane.trail.length * 0.5;
+          if (airplane.view.x > airplane.endX) {
             airplane.view.removeFromParent();
             airplane.view.destroy();
+            for (const puff of airplane.trail) puff.destroy();
             airplane = undefined;
             delete host.dataset.airplane;
+            delete host.dataset.airplaneVariant;
             const random = nextSeededRandom(spawnState);
             spawnState = random.state;
             nextFlybyMs = 45_000 + random.value * 75_000;
@@ -816,7 +871,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
             const next = planned.route[1] ?? nextWithoutUTurn(graph, current);
             if (!next) continue;
             const horizontal = next.x !== current.x;
-            const variant = kind === "ANIMAL" ? (created % 2 === 0 ? "fox" : "deer") : colors[created % colors.length] ?? "blue";
+            const animalSpecies = ["fox", "deer", "rabbit", "boar"] as const;
+            const variant = kind === "ANIMAL" ? animalSpecies[created % animalSpecies.length]! : colors[created % colors.length] ?? "blue";
             const direction = horizontal ? next.x > current.x ? "east" : "west" : next.y > current.y ? "south" : "north";
             const url = kind === "CAR"
               ? VEHICLE_SPRITES[variant]![horizontal ? "horizontal" : "vertical"]
@@ -885,7 +941,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
           addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR");
           addAgents(walkGraph, Math.min(24, Math.max(4, Math.floor(walkGraph.size / 120))), "WALKER");
-          addAgents(animalGraph, Math.min(4, Math.floor(animalGraph.size / 1800)), "ANIMAL");
+          addAgents(animalGraph, Math.min(6, Math.floor(animalGraph.size / 1400)), "ANIMAL");
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
           host!.dataset.agentChanges = String(Math.abs(before - movingAgents.length));
         }

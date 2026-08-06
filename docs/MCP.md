@@ -31,20 +31,21 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 При выпуске выбираются срок `30 | 90 | 365` дней и непустое подмножество scopes:
 
 - `country:read` — страны, города, районы и MCP resources; полный `city.get` дополнительно требует `tasks:read` из-за списка задач;
-- `cities:write` — создание, переименование и безопасное удаление городов;
-- `districts:write` — создание, переименование, смена состояния и безопасное удаление районов;
+- `cities:write` — профиль страны, создание, обновление, переименование и безопасное удаление городов;
+- `districts:write` — создание, обновление, переименование, смена состояния и безопасное удаление районов;
 - `tasks:read` — чтение задач;
-- `tasks:write` — создание, переименование, назначение, смена стадии и безопасное удаление задач;
+- `tasks:write` — создание/уточнение задач и связанных дефектов, назначение, смена стадии и безопасное удаление задач;
 - `comments:write` — добавление комментариев.
 
 Глава страны и министр могут выбрать любые scopes. Наблюдателю доступны только `country:read` и `tasks:read`. Сервер заново проверяет активную страну и текущую роль на каждом MCP HTTP-запросе, поэтому сохранённые в старом ключе write-scopes не дают наблюдателю право записи. Истёкший, отозванный, повреждённый или пустой по разрешениям ключ отклоняется. Существующие ключи с `expires_at = NULL` продолжают работать до отзыва; все новые имеют явный срок.
 
 ## Основные инструменты
 
-- `country.get_current`, `country.list`, `country.select`
-- `city.list`, `city.get`, `city.create`, `city.rename`, `city.delete`
-- `district.list`, `district.create`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
-- `task.list`, `task.get`, `task.create`, `task.rename`, `task.delete`
+- `country.get_current`, `country.list`, `country.select`, `country.update_profile`
+- `city.list`, `city.get`, `city.create`, `city.update`, `city.rename`, `city.delete`
+- `district.list`, `district.create`, `district.update`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
+- `task.list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.delete`
+- `task.defect_create`, `task.defect_update`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
 
 ## Минимальный сценарий
@@ -86,6 +87,12 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
   "cityId": "<uuid города>",
   "title": "Открыть районную аптеку",
   "description": "Каталог, поиск и карточка лекарства",
+  "workItemType": "TASK",
+  "acceptanceCriteria": "Основные сценарии и ошибки покрыты проверками",
+  "systemAnalysis": "Описаны роли, данные, интеграции и граничные случаи",
+  "architecture": "Определены контракты и границы компонентов",
+  "designSystem": "Использовать существующие компоненты формы и error state",
+  "implementationPlan": "Контракт → реализация → тесты → browser QA",
   "estimate": 3,
   "priority": "HIGH",
   "assigneeEmail": "member@example.com",
@@ -96,6 +103,13 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 `districtId` у `task.create` необязателен: без него используется активный район города. `buildingHint` позволяет запросить конкретный ключ из `tasktopia://catalog/buildings`; если вариант не подходит оценке или нарушает квоту, сервер возвращает явную ошибку.
 
 `assigneeEmail` необязателен, но указанный человек должен быть зарегистрирован и состоять в правительстве выбранной страны. Создателем задачи автоматически становится владелец персонального MCP-ключа. Назначение можно позже изменить через `task.assign`.
+
+`country.update_profile`, `city.update`, `district.update` и `task.update_fields`
+меняют только переданные поля и сохраняют ID. Пустая строка очищает текст,
+`deadline: null`/`dueAt: null` снимает дату. Тип задачи:
+`TASK | BUG | RELEASE | HOTFIX`. Связанные наблюдения создаются отдельно через
+`task.defect_create` с шагами, фактическим и ожидаемым результатом, а затем
+переводятся `task.defect_update` между `OPEN` и `FIXED`.
 
 Отправить прогресс:
 

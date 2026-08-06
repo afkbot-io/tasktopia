@@ -13,14 +13,14 @@ import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 
 function city(): CityDto {
   return {
-    id: "city", name: "City", description: "", status: "ACTIVE", center: { x: 0, y: 0 },
+    id: "city", name: "City", description: "", goal: "", acceptanceCriteria: "", deadline: null, status: "ACTIVE", center: { x: 0, y: 0 },
     bounds: { minX: -20, minY: -20, maxX: 20, maxY: 20 }, styleId: "style", morphology: "BALANCED", createdAt: "now",
   };
 }
 
 function district(id: string, archetype: DistrictDto["archetype"], status: DistrictDto["status"] = "ACTIVE"): DistrictDto {
   return {
-    id, cityId: "city", name: id, goal: "", status, capacitySp: 26,
+    id, cityId: "city", name: id, goal: "", description: "", deadline: null, status, capacitySp: 26,
     cells: rectangleFootprint({ x: -10, y: -10 }, 20, 20), lots: [], growthDirection: "E", archetype, color: "#fff", createdAt: "now",
   };
 }

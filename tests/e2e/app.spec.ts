@@ -144,7 +144,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page.getByRole("dialog", { name: "Тестовая страна" })).toBeVisible();
   await capture(page, "screenshots/release-country-government.png");
   await page.getByLabel("Название").fill("Тестовая страна 2");
-  await page.getByRole("button", { name: "Сохранить название" }).click();
+  await page.getByRole("button", { name: "Сохранить паспорт" }).click();
   await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
   await page.getByRole("button", { name: "Закрыть" }).click();
 

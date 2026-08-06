@@ -50,6 +50,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "Start with country.get_current, then read IDs before calling write tools.",
       "Every write requires a stable idempotencyKey. Reuse it only for an identical retry.",
       "District capacitySp is an advisory workload target and never blocks task creation.",
+      "Keep project context on the country, epic outcomes on the city, sprint goal and deadline on the district, and executable analysis on the task.",
+      "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
       "Task stages are PLANNING -> STARTED -> IN_PROGRESS -> TESTING -> COMPLETED; only TESTING -> IN_PROGRESS may move backward and requires a comment.",
     ].join(" "),
@@ -65,12 +67,14 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     return row.id;
   };
   const cityCreateSchema = z.object({
-    name: z.string().min(2).max(100), description: z.string().max(4000).optional(),
+    name: z.string().min(2).max(100), description: z.string().max(8000).optional(), goal: z.string().max(4000).optional(),
+    acceptanceCriteria: z.string().max(8000).optional(), deadline: z.string().datetime().optional(),
     morphology: z.enum(["BALANCED", "DENSE_CORE", "GARDEN_CITY", "POLYCENTRIC"]).optional(),
     idempotencyKey: z.string().min(4).max(160),
   });
   const districtCreateSchema = z.object({
-    cityId: z.string().uuid(), name: z.string().min(2).max(100), goal: z.string().max(2000).optional(),
+    cityId: z.string().uuid(), name: z.string().min(2).max(100), goal: z.string().max(4000).optional(),
+    description: z.string().max(8000).optional(), deadline: z.string().datetime().optional(),
     capacitySp: z.number().int().positive().optional().describe("Необязательный ориентир нагрузки в SP; не ограничивает число или сумму задач"), activate: z.boolean().optional(),
     archetype: z.enum(["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"]).optional(),
     idempotencyKey: z.string().min(4).max(160),
@@ -104,6 +108,20 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     } catch (error) { return failure(error); }
   });
 
+  server.registerTool("country.update_profile", {
+    description: "Обновить устойчивый контекст страны-проекта: описание, цель, продуктовый контекст, критерии успеха и ограничения.",
+    inputSchema: z.object({
+      description: z.string().max(8000).optional(), goal: z.string().max(4000).optional(), productContext: z.string().max(8000).optional(),
+      successCriteria: z.string().max(8000).optional(), constraints: z.string().max(8000).optional(), idempotencyKey: z.string().min(4).max(160),
+    }), annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "cities:write");
+      if (identity.countryRole !== "OWNER") throw new DomainError("FORBIDDEN", "Профиль страны изменяет только её глава");
+      return response(await service.updateCountryProfile(identity.countryId, input));
+    } catch (error) { return failure(error); }
+  });
+
   server.registerTool("city.list", { description: "Получить города текущей страны.", inputSchema: z.object({}), annotations: { readOnlyHint: true } }, async () => {
     try { requireScope(identity, "country:read"); return response(await service.listCities(identity.countryId)); }
     catch (error) { return failure(error); }
@@ -130,6 +148,18 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
+  server.registerTool("city.update", {
+    description: "Обновить город-эпик: название, описание, ожидаемый результат, критерии приёмки и срок.",
+    inputSchema: z.object({
+      cityId: z.string().uuid(), name: z.string().min(2).max(100).optional(), description: z.string().max(8000).optional(),
+      goal: z.string().max(4000).optional(), acceptanceCriteria: z.string().max(8000).optional(), deadline: z.string().datetime().nullable().optional(),
+      idempotencyKey: z.string().min(4).max(160),
+    }), annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "cities:write"); return response(await service.updateCity(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
   server.registerTool("city.delete", { description: "Безвозвратно удалить город со всеми районами, задачами и городскими объектами. Для защиты передайте точное текущее название.", inputSchema: z.object({ cityId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
     try { requireScope(identity, "cities:write"); return response(await service.deleteCity(identity.countryId, input)); }
     catch (error) { return failure(error); }
@@ -151,6 +181,18 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
 
   server.registerTool("district.rename", { description: "Переименовать существующий район.", inputSchema: z.object({ districtId: z.string().uuid(), name: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async (input) => {
     try { requireScope(identity, "districts:write"); return response(await service.renameDistrict(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("district.update", {
+    description: "Обновить район-спринт: название, sprint goal, описание, дедлайн и ориентир нагрузки SP.",
+    inputSchema: z.object({
+      districtId: z.string().uuid(), name: z.string().min(2).max(100).optional(), goal: z.string().max(4000).optional(),
+      description: z.string().max(8000).optional(), deadline: z.string().datetime().nullable().optional(),
+      capacitySp: z.number().int().positive().optional().describe("Ориентир команды, не серверный лимит"), idempotencyKey: z.string().min(4).max(160),
+    }), annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "districts:write"); return response(await service.updateDistrict(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
@@ -184,6 +226,9 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     inputSchema: z.object({
       cityId: z.string().uuid(), districtId: z.string().uuid().optional(),
       title: z.string().min(2).max(160), description: z.string().max(8000).optional(),
+      workItemType: z.enum(["TASK", "BUG", "RELEASE", "HOTFIX"]).optional(), acceptanceCriteria: z.string().max(8000).optional(),
+      systemAnalysis: z.string().max(16000).optional(), architecture: z.string().max(16000).optional(),
+      designSystem: z.string().max(16000).optional(), implementationPlan: z.string().max(16000).optional(),
       estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]),
       priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().optional(),
       buildingHint: z.string().max(100).optional(), assigneeEmail: z.string().email().optional(),
@@ -195,6 +240,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       requireScope(identity, "tasks:write");
       const task = await service.createTask(identity.countryId, {
                                                 cityId: input.cityId, districtId: input.districtId, title: input.title, description: input.description,
+                                                workItemType: input.workItemType, acceptanceCriteria: input.acceptanceCriteria, systemAnalysis: input.systemAnalysis,
+                                                architecture: input.architecture, designSystem: input.designSystem, implementationPlan: input.implementationPlan,
                                                 estimate: input.estimate, priority: input.priority, dueAt: input.dueAt, buildingHint: input.buildingHint,
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.assigneeEmail), idempotencyKey: input.idempotencyKey,
                                               });
@@ -208,6 +255,45 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     annotations: { idempotentHint: true },
   }, async (input) => {
     try { requireScope(identity, "tasks:write"); return response(await service.renameTask(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.update_fields", {
+    description: "Обновить постановку задачи: тип поставки, описание, критерии приёмки, системный анализ, архитектуру, дизайн-систему, план, SP, приоритет и дедлайн. Статус меняйте отдельной командой.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), title: z.string().min(2).max(160).optional(), description: z.string().max(8000).optional(),
+      workItemType: z.enum(["TASK", "BUG", "RELEASE", "HOTFIX"]).optional(), acceptanceCriteria: z.string().max(8000).optional(),
+      systemAnalysis: z.string().max(16000).optional(), architecture: z.string().max(16000).optional(), designSystem: z.string().max(16000).optional(),
+      implementationPlan: z.string().max(16000).optional(), estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]).optional(),
+      priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().nullable().optional(),
+      idempotencyKey: z.string().min(4).max(160),
+    }), annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "tasks:write"); return response(await service.updateTaskFields(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.defect_create", {
+    description: "Зафиксировать связанный дефект внутри задачи с воспроизводимыми шагами и ожидаемым результатом.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), title: z.string().min(2).max(160), description: z.string().max(8000).optional(),
+      reproductionSteps: z.string().min(1).max(12000), actualResult: z.string().min(1).max(8000), expectedResult: z.string().min(1).max(8000),
+      idempotencyKey: z.string().min(4).max(160),
+    }), annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "tasks:write"); return response(await service.createTaskDefect(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.defect_update", {
+    description: "Уточнить связанный дефект или отметить его FIXED/снова OPEN. Не завершайте задачу автоматически: проверяйте все критерии отдельно.",
+    inputSchema: z.object({
+      defectId: z.string().uuid(), title: z.string().min(2).max(160).optional(), description: z.string().max(8000).optional(),
+      reproductionSteps: z.string().trim().min(1).max(12000).optional(), actualResult: z.string().trim().min(1).max(8000).optional(), expectedResult: z.string().trim().min(1).max(8000).optional(),
+      status: z.enum(["OPEN", "FIXED"]).optional(), idempotencyKey: z.string().min(4).max(160),
+    }), annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "tasks:write"); return response(await service.updateTaskDefect(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
     catch (error) { return failure(error); }
   });
 
