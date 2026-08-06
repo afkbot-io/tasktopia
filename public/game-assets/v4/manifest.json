@@ -3091,6 +3091,86 @@
         16
       ]
     },
+    "fire-engine-horizontal": {
+      "label": "Fire Engine Horizontal",
+      "path": "props/fire-engine-horizontal.png",
+      "size": [
+        24,
+        8
+      ],
+      "footprintCells": [
+        3,
+        1
+      ],
+      "anchorPx": [
+        12,
+        8
+      ]
+    },
+    "incident-flame-a": {
+      "label": "Incident Flame A",
+      "path": "props/incident-flame-a.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "incident-flame-b": {
+      "label": "Incident Flame B",
+      "path": "props/incident-flame-b.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ]
+    },
+    "incident-smoke-a": {
+      "label": "Incident Smoke A",
+      "path": "props/incident-smoke-a.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "incident-smoke-b": {
+      "label": "Incident Smoke B",
+      "path": "props/incident-smoke-b.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
     "walker-north": {
       "label": "Walker North",
       "path": "props/walker-north.png",

@@ -200,11 +200,16 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .task-ai-fields strong { font-size: 11px; color: #83bfd1; }
 .task-ai-fields p { margin: 6px 0 0; white-space: pre-wrap; color: #c4d0cd; font-size: 12px; line-height: 1.5; }
 .task-defects h3 span { float: right; color: #e2b65b; font-size: 10px; }
+.task-defect-hint { margin: -2px 0 12px; color: #8ea2a4; font-size: 11px; line-height: 1.45; }
 .task-defects article { margin-top: 10px; padding: 13px; border: 1px solid #664449; border-radius: 10px; background: #211619; }
 .task-defects article.fixed { border-color: #355b49; background: #102019; opacity: .82; }
+.task-defects article.in_progress { border-color: #9b6d35; background: #241d12; }
+.task-defects article.verifying { border-color: #3f7188; background: #102028; }
 .task-defects article header { display: flex; justify-content: space-between; gap: 12px; }
 .task-defects article header span { color: #e9a9a9; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .task-defects article.fixed header span { color: #8ed09a; }
+.task-defects article.in_progress header span { color: #f0c36b; }
+.task-defects article.verifying header span { color: #82cae8; }
 .task-defects article p { white-space: pre-wrap; color: #cbd5d2; font-size: 12px; line-height: 1.5; }
 .task-defects dl { display: grid; gap: 8px; margin: 12px 0 0; }
 .task-defects dl div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; }

@@ -13,6 +13,7 @@ import {
   mustYieldAtCrosswalk,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
+import { incidentMode, type IncidentMode } from "../task-incidents";
 import {
   chunkRangeForViewport,
   clampCameraPosition,
@@ -30,6 +31,18 @@ const GROUND_CACHE_LIMIT = 96;
 type MapLod = "DETAIL" | "OVERVIEW";
 type MapInvalidation = { id: number; type: string; affectedBounds?: Rect };
 type FocusArea = { point: Cell; bounds: Rect };
+type IncidentView = {
+  signature: string;
+  container: Container;
+  mode: IncidentMode;
+  flameA: Sprite;
+  flameB: Sprite;
+  smokeA: Sprite;
+  smokeB: Sprite;
+  beacon: Graphics;
+  water: Graphics;
+  phaseMs: number;
+};
 type WorldRuntime = {
   focus(area: FocusArea): void;
   invalidate(event: MapInvalidation): void;
@@ -327,6 +340,71 @@ function assetUrl(path: string): string {
   return path.startsWith("/") ? path : `/game-assets/v4/${path}`;
 }
 
+const INCIDENT_ASSET_KEYS = ["fire-engine-horizontal", "incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"] as const;
+
+function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE">, signature: string): IncidentView {
+  const entry = getBuilding(task.buildingType);
+  const container = new Container();
+  container.eventMode = "none";
+  container.position.set(
+    task.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2,
+    task.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE,
+  );
+
+  const engineX = entry.spriteSize.width / 2 + 11;
+  const engine = sprite(PROP_SPRITES["fire-engine-horizontal"]!, engineX, 2);
+  engine.anchor.set(0.5, 1);
+
+  const beacon = new Graphics().rect(-2, -2, 4, 2).fill(0x71d7f2);
+  beacon.position.set(engineX - 4, -7);
+
+  const flameX = Math.max(-6, Math.min(4, entry.spriteSize.width / 8));
+  const flameY = -Math.max(12, entry.spriteSize.height * 0.58);
+  const flameA = sprite(PROP_SPRITES["incident-flame-a"]!, flameX, flameY);
+  const flameB = sprite(PROP_SPRITES["incident-flame-b"]!, flameX, flameY);
+  flameA.anchor.set(0.5, 1); flameB.anchor.set(0.5, 1);
+
+  const smokeX = flameX - 1;
+  const smokeY = flameY - 5;
+  const smokeA = sprite(PROP_SPRITES["incident-smoke-a"]!, smokeX, smokeY);
+  const smokeB = sprite(PROP_SPRITES["incident-smoke-b"]!, smokeX, smokeY);
+  smokeA.anchor.set(0.5, 1); smokeB.anchor.set(0.5, 1);
+
+  const water = new Graphics();
+  const targetX = flameX + 3;
+  const targetY = flameY - 2;
+  const sourceX = engineX - 10;
+  const sourceY = -5;
+  for (let step = 0; step < 9; step += 1) {
+    const ratio = step / 8;
+    water.rect(
+      Math.round(sourceX + (targetX - sourceX) * ratio),
+      Math.round(sourceY + (targetY - sourceY) * ratio),
+      2,
+      2,
+    );
+  }
+  water.fill({ color: 0x8bd7e8, alpha: 0.88 });
+
+  const hasFlame = mode === "DEFECT_REPAIRING" || mode === "HOTFIX_ACTIVE";
+  const hasSmoke = mode === "DEFECT_VERIFYING" || mode === "HOTFIX_ACTIVE";
+  const hasWater = mode === "DEFECT_REPAIRING" || mode === "HOTFIX_ACTIVE";
+  flameA.visible = hasFlame; flameB.visible = false;
+  smokeA.visible = hasSmoke; smokeB.visible = false;
+  water.visible = hasWater;
+  if (mode === "DEFECT_REPAIRING") {
+    flameA.scale.set(0.78); flameB.scale.set(0.78);
+    smokeA.scale.set(0.78); smokeB.scale.set(0.78);
+  } else if (mode === "HOTFIX_ACTIVE") {
+    flameA.scale.set(1.18); flameB.scale.set(1.18);
+    smokeA.scale.set(1.08); smokeB.scale.set(1.08);
+  }
+  if (mode === "DEFECT_REPORTED") engine.alpha = 0.9;
+  container.addChild(water, smokeA, smokeB, flameA, flameB, engine, beacon);
+  const phaseMs = [...task.id].reduce((value, char) => ((value * 33) ^ char.charCodeAt(0)) >>> 0, 5381) % 700;
+  return { signature, container, mode, flameA, flameB, smokeA, smokeB, beacon, water, phaseMs };
+}
+
 function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   const urls = new Set<string>();
   urls.add(PROP_SPRITES["active-district-flag"]!);
@@ -337,6 +415,7 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
       if (lod === "DETAIL") {
         urls.add(entry.stages[task.stage - 1]!);
         urls.add(assetUrl(PLATFORM_TILE[task.platformType]));
+        if (incidentMode(task) !== "NONE") for (const key of INCIDENT_ASSET_KEYS) urls.add(PROP_SPRITES[key]!);
       }
     }
     for (const feature of lod === "DETAIL" ? chunk.worldFeatures : []) {
@@ -472,17 +551,19 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
       const featurePlatformLayer = new Container();
       const decorationLayer = new Container();
       const buildingLayer = new Container();
+      const incidentLayer = new Container();
       const featureLayer = new Container();
       const agentLayer = new Container();
       const flightLayer = new Container();
       flightLayer.eventMode = "none";
       districtLayer.visible = showDistrictsRef.current;
-      world.addChild(backdropLayer, terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, agentLayer, buildingLayer, featureLayer, flightLayer);
+      world.addChild(backdropLayer, terrainLayer, surfaceLayer, roadLayer, districtLayer, platformLayer, featurePlatformLayer, decorationLayer, agentLayer, buildingLayer, incidentLayer, featureLayer, flightLayer);
       app.stage.addChild(world);
       type RenderNode = Container | Graphics | Sprite;
       const districtViews = new Map<string, EntityViewRecord<Container>>();
       const taskPlatformViews = new Map<string, EntityViewRecord<Container>>();
       const taskBuildingViews = new Map<string, EntityViewRecord<Container>>();
+      const incidentViews = new Map<string, IncidentView>();
       const decorationViews = new Map<string, EntityViewRecord<Sprite>>();
       const ambientDecorationViews = new Map<string, { view: Sprite; baseX: number; baseY: number; phase: number; kind: string }>();
       const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Container }>();
@@ -596,6 +677,20 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
             ambient.view.position.set(ambient.baseX, ambient.baseY + Math.abs(cycle) * 0.25);
             ambient.view.rotation = cycle * 0.008;
           }
+        }
+        for (const incident of incidentViews.values()) {
+          const time = simulationTimeMs + incident.phaseMs;
+          const flameFrame = Math.floor(time / 210) % 2;
+          const smokeFrame = Math.floor(time / 360) % 2;
+          const hasFlame = incident.mode === "DEFECT_REPAIRING" || incident.mode === "HOTFIX_ACTIVE";
+          const hasSmoke = incident.mode === "DEFECT_VERIFYING" || incident.mode === "HOTFIX_ACTIVE";
+          incident.flameA.visible = hasFlame && flameFrame === 0;
+          incident.flameB.visible = hasFlame && flameFrame === 1;
+          incident.smokeA.visible = hasSmoke && smokeFrame === 0;
+          incident.smokeB.visible = hasSmoke && smokeFrame === 1;
+          incident.smokeA.alpha = incident.smokeB.alpha = 0.72 + Math.sin(time * 0.004) * 0.12;
+          incident.beacon.alpha = Math.floor(time / 160) % 2 ? 1 : 0.28;
+          incident.water.alpha = 0.7 + Math.sin(time * 0.018) * 0.22;
         }
         if (!airplane) {
           nextFlybyMs -= elapsed;
@@ -799,6 +894,29 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           (task) => JSON.stringify([task.platformType, task.footprint]),
         );
         reconcile(tasks, taskBuildingViews, buildingLayer, (task) => currentLod === "DETAIL" ? drawBuilding(task, onTaskSelect) : drawOverviewBuilding(task, onTaskSelect), (task) => `${currentLod}:${JSON.stringify(task)}`);
+        const visibleIncidentIds = new Set<string>();
+        if (currentLod === "DETAIL") for (const [id, task] of tasks) {
+          const mode = incidentMode(task);
+          if (mode === "NONE") continue;
+          visibleIncidentIds.add(id);
+          const signature = JSON.stringify([mode, task.origin, task.buildingType, task.defectSummary]);
+          const current = incidentViews.get(id);
+          if (current?.signature === signature) continue;
+          if (current) {
+            current.container.removeFromParent();
+            current.container.destroy({ children: true });
+          }
+          const view = drawTaskIncident(task, mode, signature);
+          incidentLayer.addChild(view.container);
+          incidentViews.set(id, view);
+          entityReplacementCount += 1;
+        }
+        for (const [id, view] of incidentViews) {
+          if (visibleIncidentIds.has(id)) continue;
+          view.container.removeFromParent();
+          view.container.destroy({ children: true });
+          incidentViews.delete(id);
+        }
         reconcile(currentLod === "DETAIL" ? decorations : new Map<string, ChunkDto["decorations"][number]>(), decorationViews, decorationLayer, drawDecoration);
         const animatedDecorationIds = new Set<string>();
         if (currentLod === "DETAIL") for (const [id, decoration] of decorations) {
@@ -845,10 +963,14 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         }
         decorationLayer.children.sort((a, b) => a.y - b.y);
         buildingLayer.children.sort((a, b) => a.y - b.y || a.x - b.x);
+        incidentLayer.children.sort((a, b) => a.y - b.y || a.x - b.x);
         featureLayer.children.sort((a, b) => a.y - b.y || a.x - b.x);
         host!.dataset.entityViews = String(
-          districtViews.size + taskPlatformViews.size + taskBuildingViews.size + decorationViews.size + featureViews.size,
+          districtViews.size + taskPlatformViews.size + taskBuildingViews.size + incidentViews.size + decorationViews.size + featureViews.size,
         );
+        host!.dataset.incidents = String(incidentViews.size);
+        host!.dataset.hotfixIncidents = String([...incidentViews.values()].filter((view) => view.mode === "HOTFIX_ACTIVE").length);
+        host!.dataset.incidentModes = [...incidentViews.values()].map((view) => view.mode).sort().join(",");
         host!.dataset.entityReplacements = String(entityReplacementCount);
 
         const addAgents = (graph: Map<string, Cell>, count: number, kind: MovingAgent["kind"]): void => {

@@ -71,7 +71,7 @@ const defectCreateSchema = z.object({
 }).strict();
 const defectUpdateSchema = z.object({
   title: z.string().trim().min(2).max(160).optional(), description: z.string().max(8000).optional(), reproductionSteps: z.string().trim().min(1).max(12000).optional(),
-  actualResult: z.string().trim().min(1).max(8000).optional(), expectedResult: z.string().trim().min(1).max(8000).optional(), status: z.enum(["OPEN", "FIXED"]).optional(),
+  actualResult: z.string().trim().min(1).max(8000).optional(), expectedResult: z.string().trim().min(1).max(8000).optional(), status: z.enum(["OPEN", "IN_PROGRESS", "VERIFYING", "FIXED"]).optional(),
   idempotencyKey: z.string().min(4).max(160),
 }).strict();
 const accountSchema = z.object({ name: z.string().trim().min(2).max(60) }).strict();

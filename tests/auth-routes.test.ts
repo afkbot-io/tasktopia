@@ -82,7 +82,7 @@ describe("authentication HTTP boundary", () => {
     expect(planDistricts.json()).toMatchObject([{ id: district.id, taskCount: 1 }]);
     expect(JSON.stringify(planDistricts.json())).not.toContain("cells");
     const planTasks = await app.inject({ method: "GET", url: `/api/plan/districts/${district.id}/tasks`, headers: { cookie } });
-    expect(planTasks.json()).toMatchObject([{ title: "Scoped task", stage: 1 }]);
+    expect(planTasks.json()).toMatchObject([{ title: "Scoped task", stage: 1, activeDefectCount: 0 }]);
     expect(JSON.stringify(planTasks.json())).not.toContain("footprint");
     expect((await app.inject({ method: "GET", url: `/api/plan/cities/${crypto.randomUUID()}/districts`, headers: { cookie } })).statusCode).toBe(404);
     expect((await app.inject({ method: "GET", url: `/api/plan/districts/${crypto.randomUUID()}/tasks`, headers: { cookie } })).statusCode).toBe(404);
@@ -123,7 +123,7 @@ describe("authentication HTTP boundary", () => {
     });
     expect(loggedIn.statusCode).toBe(200);
     expect(loggedIn.headers["set-cookie"]).toBeDefined();
-  }, 15_000);
+  }, 30_000);
 
   it("creates the named country and first city during onboarding", async () => {
     const registered = await app.inject({

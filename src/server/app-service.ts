@@ -6,6 +6,7 @@ import {
   type BootstrapDto,
   type Cell,
   type ChunkDto,
+  type ChunkTaskDto,
   type CityDto,
   type CityMorphology,
   type DistrictArchetype,
@@ -169,6 +170,13 @@ function taskDto(row: Row): TaskDto {
     updatedAt: String(row.updated_at),
   };
 }
+
+const DEFECT_TRANSITIONS: Record<TaskDefectDto["status"], ReadonlySet<TaskDefectDto["status"]>> = {
+  OPEN: new Set(["OPEN", "IN_PROGRESS", "FIXED"]),
+  IN_PROGRESS: new Set(["IN_PROGRESS", "VERIFYING"]),
+  VERIFYING: new Set(["VERIFYING", "IN_PROGRESS", "FIXED"]),
+  FIXED: new Set(["FIXED", "OPEN"]),
+};
 
 function featureDto(row: Row): WorldFeatureDto {
   return {
@@ -644,7 +652,8 @@ export class AppService {
     const district = await this.db.prepare(`SELECT 1 FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
       WHERE d.id = ? AND c.country_id = ?`).get(districtId, countryId);
     if (!district) throw new DomainError("NOT_FOUND", "Район не найден");
-    const rows = await this.db.prepare(`SELECT id, city_id, district_id, title, work_item_type, estimate, priority, status, progress, due_at, updated_at
+    const rows = await this.db.prepare(`SELECT id, city_id, district_id, title, work_item_type, estimate, priority, status, progress, due_at, updated_at,
+      (SELECT COUNT(*) FROM task_defects_v18 defect WHERE defect.task_id = tasks_v3.id AND defect.status <> 'FIXED') AS active_defect_count
       FROM tasks_v3 WHERE district_id = ? ORDER BY created_at`).all(districtId) as Row[];
     return rows.map((row) => {
       const status = String(row.status) as TaskStatus;
@@ -653,7 +662,7 @@ export class AppService {
         workItemType: String(row.work_item_type) as WorkItemType,
         estimate: Number(row.estimate) as Estimate, priority: String(row.priority) as TaskPriority,
         status, progress: Number(row.progress), dueAt: row.due_at ? String(row.due_at) : null,
-        stage: TASK_STAGE[status], updatedAt: String(row.updated_at),
+        stage: TASK_STAGE[status], updatedAt: String(row.updated_at), activeDefectCount: Number(row.active_defect_count),
       };
     });
   }
@@ -2530,7 +2539,11 @@ export class AppService {
         if (value !== undefined && value.trim().length === 0) throw new DomainError("INVALID_INPUT", `${field} не могут быть пустыми`);
       }
       const task = await this.getTask(countryId, String(row.task_id));
+      const previousStatus = String(row.status) as TaskDefectDto["status"];
       const status = input.status ?? String(row.status) as TaskDefectDto["status"];
+      if (!DEFECT_TRANSITIONS[previousStatus].has(status)) {
+        throw new DomainError("INVALID_TRANSITION", `Недопустимый переход дефекта ${previousStatus} → ${status}`);
+      }
       const updatedAt = now();
       const fixedAt = status === "FIXED" ? (row.fixed_at ? String(row.fixed_at) : updatedAt) : null;
       await this.db.prepare(`UPDATE task_defects_v18 SET title = ?, description = ?, reproduction_steps = ?, actual_result = ?,
@@ -2578,6 +2591,10 @@ export class AppService {
                         throw new DomainError("INVALID_TRANSITION", "Обратный переход разрешён только из тестирования в работу с комментарием");
                       }
                       if (to > from + 1) throw new DomainError("INVALID_TRANSITION", "Нельзя пропускать стадии строительства");
+                      if (input.status === "COMPLETED") {
+                        const activeDefects = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM task_defects_v18 WHERE task_id = ? AND status <> 'FIXED'").get(task.id) as Row).count);
+                        if (activeDefects > 0) throw new DomainError("OPEN_DEFECTS", `Задачу нельзя завершить: осталось неисправленных дефектов — ${activeDefects}`);
+                      }
                       const range = STATUS_PROGRESS_RANGE[input.status];
                       const defaults: Record<TaskStatus, number> = { PLANNING: 0, STARTED: 0, IN_PROGRESS: 50, TESTING: 90, COMPLETED: 100 };
                       const progress = input.progress == null ? defaults[input.status] : Math.max(range[0], Math.min(range[1], Math.round(input.progress)));
@@ -2764,6 +2781,22 @@ export class AppService {
       }];
     });
     const chunkTasks = nearbyTasks.filter((task) => task.footprint.some((cell) => contains(chunkBounds, cell)));
+    const defectSummaryByTask = new Map<string, NonNullable<ChunkTaskDto["defectSummary"]>>();
+    if (lod === "DETAIL" && chunkTasks.length > 0) {
+      const rows = await this.db.prepare(`SELECT task_id, status, COUNT(*) AS count FROM task_defects_v18
+        WHERE task_id = ANY(?::text[]) AND status <> 'FIXED' GROUP BY task_id, status`)
+        .all(chunkTasks.map((task) => task.id)) as Row[];
+      for (const row of rows) {
+        const taskId = String(row.task_id);
+        const summary = defectSummaryByTask.get(taskId) ?? { open: 0, inProgress: 0, verifying: 0, active: 0 };
+        const count = Number(row.count);
+        if (row.status === "OPEN") summary.open += count;
+        else if (row.status === "IN_PROGRESS") summary.inProgress += count;
+        else if (row.status === "VERIFYING") summary.verifying += count;
+        summary.active += count;
+        defectSummaryByTask.set(taskId, summary);
+      }
+    }
     const cityNames = new Map(nearbyCities.map((city) => [city.id, city.name]));
     const worldFeatures = lod === "OVERVIEW" ? [] : nearbyFeatures
       .filter((feature) => feature.footprint.some((cell) => contains(chunkBounds, cell)) || feature.accessPath.some((cell) => contains(chunkBounds, cell)))
@@ -2801,6 +2834,8 @@ export class AppService {
       tasks: chunkTasks.map((task) => ({
         id: task.id, cityId: task.cityId, districtId: task.districtId, title: task.title,
         ...(lod === "DETAIL" && task.description ? { descriptionPreview: task.description.trim().replace(/\s+/g, " ").slice(0, 128) } : {}),
+        workItemType: task.workItemType,
+        ...(lod === "DETAIL" && defectSummaryByTask.has(task.id) ? { defectSummary: defectSummaryByTask.get(task.id) } : {}),
         status: task.status, progress: task.progress, stage: task.stage,
         buildingType: task.buildingType, platformType: task.platformType, origin: task.origin, footprint: task.footprint,
       })),

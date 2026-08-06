@@ -180,6 +180,42 @@ describe("Tasktopia square-world application service", () => {
       .rejects.toThrowError(/пропускать стадии/);
   });
 
+  it("repairs linked defects without rolling back a task in testing and blocks premature completion", async () => {
+    const city = await service.createCity(countryId, { name: "Incident City", idempotencyKey: "incident-city" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Release verification", activate: true, idempotencyKey: "incident-district" });
+    let task = await service.createTask(countryId, {
+      cityId: city.id, districtId: district.id, title: "Payment hotfix", workItemType: "HOTFIX", estimate: 2, idempotencyKey: "incident-task",
+    });
+    for (const [status, progress] of [["STARTED", 0], ["IN_PROGRESS", 60], ["TESTING", 90]] as const) {
+      task = await service.updateTaskStatus(countryId, { taskId: task.id, status, progress, comment: `Enter ${status}`, idempotencyKey: `incident-${status}` });
+    }
+    const defect = await service.createTaskDefect(countryId, {
+      taskId: task.id, title: "Duplicate charge", reproductionSteps: "Retry a timed out payment", actualResult: "Charged twice",
+      expectedResult: "One idempotent charge", idempotencyKey: "incident-defect",
+    });
+    for (const status of ["IN_PROGRESS", "VERIFYING"] as const) {
+      await service.updateTaskDefect(countryId, { defectId: defect.id, status, idempotencyKey: `incident-defect-${status}` });
+      expect(await service.getTask(countryId, task.id)).toMatchObject({ status: "TESTING", progress: 90 });
+    }
+    const taskChunk = await service.chunkForCell(task.origin);
+    expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY)).tasks.find((item) => item.id === task.id)).toMatchObject({
+      workItemType: "HOTFIX", defectSummary: { open: 0, inProgress: 0, verifying: 1, active: 1 },
+    });
+    expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW")).tasks.find((item) => item.id === task.id))
+      .not.toHaveProperty("defectSummary");
+    expect((await service.listPlanTasks(countryId, district.id)).find((item) => item.id === task.id))
+      .toMatchObject({ activeDefectCount: 1 });
+    await expect(service.updateTaskStatus(countryId, { taskId: task.id, status: "COMPLETED", progress: 100, idempotencyKey: "incident-complete-too-early" }))
+      .rejects.toThrowError(/неисправленн/);
+    await service.updateTaskDefect(countryId, { defectId: defect.id, status: "FIXED", idempotencyKey: "incident-defect-fixed" });
+    expect(await service.updateTaskStatus(countryId, { taskId: task.id, status: "COMPLETED", progress: 100, idempotencyKey: "incident-complete" }))
+      .toMatchObject({ status: "COMPLETED", progress: 100 });
+    await expect(service.updateTaskDefect(countryId, { defectId: defect.id, status: "IN_PROGRESS", idempotencyKey: "incident-invalid-restart" }))
+      .rejects.toThrowError(/переход/);
+    expect(await service.updateTaskDefect(countryId, { defectId: defect.id, status: "OPEN", idempotencyKey: "incident-reopen" }))
+      .toMatchObject({ status: "OPEN", fixedAt: null });
+  });
+
   it("deletes tasks, districts and cities safely while keeping retries idempotent", async () => {
     const city = await service.createCity(countryId, { name: "Lifecycle City", idempotencyKey: "lifecycle-city" });
     const active = await service.createDistrict(countryId, { cityId: city.id, name: "Active District", activate: true, idempotencyKey: "lifecycle-active" });

@@ -11,7 +11,7 @@ describe("PostgreSQL migrations", () => {
 
   it("records immutable migration checksums", async () => {
     const rows = await db.prepare("SELECT name, checksum FROM schema_migrations ORDER BY name").all<{ name: string; checksum: string }>();
-    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql"]);
+    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql", "0005_incident_response.sql"]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
   });
 
@@ -23,6 +23,9 @@ describe("PostgreSQL migrations", () => {
       expect(names.has(name), name).toBe(true);
     }
     expect(await db.prepare("SELECT to_regclass('task_defects_v18') AS table_name").get()).toMatchObject({ table_name: "task_defects_v18" });
+    const statuses = await db.prepare(`SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
+      WHERE conrelid = 'task_defects_v18'::regclass AND contype = 'c'`).all<{ definition: string }>();
+    expect(statuses.some((constraint) => constraint.definition.includes("IN_PROGRESS") && constraint.definition.includes("VERIFYING"))).toBe(true);
   });
 
   it("maintains chunk membership through JSONB triggers", async () => {

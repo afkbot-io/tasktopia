@@ -109,7 +109,9 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 `deadline: null`/`dueAt: null` снимает дату. Тип задачи:
 `TASK | BUG | RELEASE | HOTFIX`. Связанные наблюдения создаются отдельно через
 `task.defect_create` с шагами, фактическим и ожидаемым результатом, а затем
-переводятся `task.defect_update` между `OPEN` и `FIXED`.
+ведутся `task.defect_update` по отдельному циклу `OPEN → IN_PROGRESS → VERIFYING → FIXED`.
+Во время обычного исправления родительская задача остаётся в `TESTING` со своим
+прогрессом; завершение задачи блокируется, пока любой связанный дефект не `FIXED`.
 
 Отправить прогресс:
 

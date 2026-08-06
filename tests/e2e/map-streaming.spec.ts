@@ -209,6 +209,12 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
   await page.getByRole("button", { name: "Открыть страну" }).click();
   const host = page.locator(".world-canvas");
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  requestedChunks.clear();
+  await canvas.hover();
+  for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "detail"; step += 1) await page.mouse.wheel(0, -800);
+  await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
 
   const integration = await page.evaluate(async (visibleChunkKeys) => {
     const cities = await fetch("/api/plan/cities").then((response) => response.json()) as Array<{ id: string }>;
@@ -250,6 +256,39 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
     await expect.poll(async () => Number(await host.getAttribute("data-ground-rebuilds")), { timeout: 30_000 }).toBeGreaterThan(beforeRebuilds);
     expect(requestedChunks.has(integration.chunkKey)).toBe(true);
     expect(Number(await host.getAttribute("data-movement-rebuilds"))).toBe(beforeMovementRebuilds);
+
+    const defectId = await page.evaluate(async (taskId) => {
+      const response = await fetch(`/api/tasks/${taskId}/defects`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: "E2E visual incident",
+          reproductionSteps: "Open the visible building",
+          actualResult: "Incident is present",
+          expectedResult: "Incident is resolved",
+          idempotencyKey: `e2e-incident-${Date.now()}`,
+        }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return (await response.json() as { id: string }).id;
+    }, integration.taskId);
+    await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_REPORTED");
+    const updateDefect = async (status: "IN_PROGRESS" | "VERIFYING" | "FIXED") => {
+      await page.evaluate(async ({ defectId: targetId, status: nextStatus }) => {
+        const response = await fetch(`/api/defects/${targetId}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ status: nextStatus, idempotencyKey: `e2e-incident-${nextStatus}-${Date.now()}` }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+      }, { defectId, status });
+    };
+    await updateDefect("IN_PROGRESS");
+    await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_REPAIRING");
+    await updateDefect("VERIFYING");
+    await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_VERIFYING");
+    await updateDefect("FIXED");
+    await expect.poll(async () => Number(await host.getAttribute("data-incidents")), { timeout: 30_000 }).toBe(0);
   } finally {
     await client.close().catch(() => undefined);
     await page.evaluate(async (tokenId) => { await fetch(`/api/tokens/${tokenId}`, { method: "DELETE" }); }, integration.id);

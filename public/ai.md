@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.8.0
+Version: 1.9.0
 Last updated: 2026-08-06
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -31,7 +31,7 @@ AI must preserve:
 | City/epic | `description`, `goal`, `acceptanceCriteria`, `deadline` | Scope, expected epic outcome, exit conditions and target date |
 | District/sprint | `goal`, `description`, `deadline`, `capacitySp` | Sprint goal, operating notes, timebox and advisory team workload |
 | Task/work item | `workItemType`, `description`, `acceptanceCriteria`, `systemAnalysis`, `architecture`, `designSystem`, `implementationPlan`, `estimate`, `priority`, `dueAt` | Executable brief for an implementation agent |
-| Linked defect | `title`, `description`, `reproductionSteps`, `actualResult`, `expectedResult`, `status` | Reproducible observation attached to a task; `status` is `OPEN` or `FIXED` |
+| Linked defect | `title`, `description`, `reproductionSteps`, `actualResult`, `expectedResult`, `status` | Reproducible observation attached to a task; its own lifecycle is `OPEN → IN_PROGRESS → VERIFYING → FIXED` |
 
 `workItemType` is one of `TASK`, `BUG`, `RELEASE`, `HOTFIX`. A `BUG` work
 item is delivery work in the roadmap. A linked defect is an observation found
@@ -472,10 +472,19 @@ Required scope: `tasks:write`.
 
 #### `task.defect_update`
 
-Updates defect evidence or its `OPEN | FIXED` status. Passing `FIXED` records
-`fixedAt`; returning it to `OPEN` clears `fixedAt`. Re-read the parent with
-`task.get` after the mutation. A fixed defect alone does not prove all task
-acceptance criteria.
+Updates defect evidence and its independent lifecycle:
+
+- `OPEN → IN_PROGRESS` when repair work starts;
+- `IN_PROGRESS → VERIFYING` when the fix is ready for a retest;
+- `VERIFYING → FIXED` only after a successful retest;
+- `VERIFYING → IN_PROGRESS` when the retest fails;
+- `FIXED → OPEN` when the defect is reproduced again.
+
+Keep the parent task in `TESTING` and preserve its progress while an ordinary
+linked defect is repaired. Move the parent `TESTING → IN_PROGRESS` only when
+the task itself needs scope-level rework. Task completion is rejected while any
+linked defect is not `FIXED`. Passing `FIXED` records `fixedAt`; reopening clears
+it. Re-read the parent with `task.get` after every mutation.
 
 Required scope: `tasks:write`.
 

@@ -359,6 +359,50 @@ def prop_airplane(variant: int = 0) -> Image.Image:
     return image
 
 
+def prop_fire_engine() -> Image.Image:
+    """Three-cell emergency vehicle using the same top/front car grammar."""
+    image = Image.new("RGBA", (24, 8), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((2, 2, 16, 6), fill=rgba("#b83e3eff"), outline=rgba(OUTLINE))
+    draw.polygon([(16, 2), (20, 2), (22, 4), (22, 6), (16, 6)], fill=rgba("#e7e1d2ff"), outline=rgba(OUTLINE))
+    draw.rectangle((17, 3, 20, 4), fill=rgba(GLASS), outline=rgba("#4b6972ff"))
+    draw.rectangle((4, 1, 14, 2), fill=rgba("#d7d9d2ff"), outline=rgba(OUTLINE))
+    for x in (5, 9, 13): draw.point((x, 1), fill=rgba("#71878cff"))
+    for x in (5, 17):
+        draw.rectangle((x, 6, x + 3, 7), fill=rgba("#141e23ff"))
+        draw.point((x + 1, 6), fill=rgba("#78878aff"))
+    draw.rectangle((10, 0, 12, 1), fill=rgba("#4fa8d1ff"), outline=rgba("#d8ecf1ff"))
+    draw.point((22, 4), fill=rgba("#f3da7aff"))
+    return image
+
+
+def prop_incident_flame(variant: int) -> Image.Image:
+    image = transparent_tile()
+    draw = ImageDraw.Draw(image)
+    if variant == 0:
+        draw.polygon([(1, 7), (1, 4), (3, 1), (4, 4), (6, 2), (7, 6), (6, 7)], fill=rgba("#d34b35ff"), outline=rgba(OUTLINE))
+        draw.polygon([(3, 7), (3, 5), (4, 3), (5, 5), (6, 7)], fill=rgba("#f3c94eff"))
+    else:
+        draw.polygon([(1, 7), (2, 3), (3, 5), (5, 1), (6, 4), (7, 7)], fill=rgba("#d34b35ff"), outline=rgba(OUTLINE))
+        draw.polygon([(3, 7), (4, 4), (5, 3), (6, 7)], fill=rgba("#f0a53eff"))
+    return image
+
+
+def prop_incident_smoke(variant: int) -> Image.Image:
+    image = Image.new("RGBA", (8, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    dark, light = "#596568ff", "#87918fff"
+    if variant == 0:
+        draw.rectangle((3, 9, 5, 14), fill=rgba(dark))
+        draw.rectangle((2, 5, 6, 10), fill=rgba(dark), outline=rgba(OUTLINE))
+        draw.rectangle((0, 2, 4, 6), fill=rgba(light), outline=rgba(OUTLINE))
+    else:
+        draw.rectangle((2, 10, 4, 15), fill=rgba(dark))
+        draw.rectangle((1, 6, 5, 11), fill=rgba(light), outline=rgba(OUTLINE))
+        draw.rectangle((3, 2, 7, 7), fill=rgba(dark), outline=rgba(OUTLINE))
+    return image
+
+
 def prop_fisher(direction: str, variant: int) -> Image.Image:
     image = prop_walker(direction, WALKER_SHIRTS[variant % len(WALKER_SHIRTS)])
     draw = ImageDraw.Draw(image)
@@ -739,6 +783,9 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "guardrail-horizontal": prop_guardrail(False), "guardrail-vertical": prop_guardrail(True),
         "playground-small": prop_playground(),
         "airplane-small": prop_airplane(0), "airplane-courier": prop_airplane(1), "airplane-twin": prop_airplane(2),
+        "fire-engine-horizontal": prop_fire_engine(),
+        "incident-flame-a": prop_incident_flame(0), "incident-flame-b": prop_incident_flame(1),
+        "incident-smoke-a": prop_incident_smoke(0), "incident-smoke-b": prop_incident_smoke(1),
         "walker-north": prop_walker("N", WALKER_SHIRTS[0]), "walker-east": prop_walker("E", WALKER_SHIRTS[1]),
         "walker-south": prop_walker("S", WALKER_SHIRTS[2]), "walker-west": prop_walker("W", WALKER_SHIRTS[3]),
         "boat-horizontal-a": prop_boat(True, 0), "boat-horizontal-b": prop_boat(True, 1),
@@ -760,7 +807,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         target = prop_dir / f"{key}.png"
         image.save(target, optimize=True)
         if key == "playground-small": footprint = [3, 2]
-        elif key in {"boat-horizontal-a", "boat-horizontal-b"}: footprint = [3, 1]
+        elif key in {"boat-horizontal-a", "boat-horizontal-b", "fire-engine-horizontal"}: footprint = [3, 1]
         elif key in {"boat-vertical-a", "boat-vertical-b"}: footprint = [1, 3]
         elif key in {"bus-stop-horizontal", "guardrail-horizontal", "fence-horizontal"}: footprint = [2, 1]
         elif key in {"bus-stop-vertical", "guardrail-vertical", "fence-vertical"}: footprint = [1, 2]

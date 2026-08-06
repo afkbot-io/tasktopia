@@ -3,7 +3,7 @@ export type DistrictStatus = "PLANNED" | "ACTIVE" | "COMPLETED";
 export type CityStatus = "ACTIVE" | "ARCHIVED";
 export type TaskPriority = "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
 export type WorkItemType = "TASK" | "BUG" | "RELEASE" | "HOTFIX";
-export type TaskDefectStatus = "OPEN" | "FIXED";
+export type TaskDefectStatus = "OPEN" | "IN_PROGRESS" | "VERIFYING" | "FIXED";
 export type Estimate = 1 | 2 | 3 | 6;
 export type TerrainKind = "GRASS" | "MEADOW" | "FOREST" | "HILL" | "MOUNTAIN" | "SAND" | "WET_SAND" | "CLAY" | "STONE" | "SHALLOW_WATER" | "DEEP_WATER" | "DIRT";
 export type PlatformKind = "YARD" | "STONE" | "ASPHALT" | "SERVICE" | "PARK";
@@ -214,8 +214,11 @@ export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "name" | "dea
 };
 
 export type ChunkTaskDto = Pick<TaskDto,
-  "id" | "cityId" | "districtId" | "title" | "status" | "progress" | "stage" | "buildingType" | "platformType" | "origin" | "footprint"
-> & { descriptionPreview?: string };
+  "id" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "platformType" | "origin" | "footprint"
+> & {
+  descriptionPreview?: string;
+  defectSummary?: { open: number; inProgress: number; verifying: number; active: number };
+};
 
 export type ChunkDto = {
   chunkX: number;
@@ -272,7 +275,7 @@ export type PlanDistrictDto = Pick<DistrictDto,
 
 export type PlanTaskDto = Pick<TaskDto,
   "id" | "cityId" | "districtId" | "title" | "workItemType" | "estimate" | "priority" | "status" | "progress" | "dueAt" | "stage" | "updatedAt"
->;
+> & { activeDefectCount: number };
 
 export type RealtimeEvent = {
   id: number;

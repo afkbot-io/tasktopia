@@ -15,7 +15,7 @@ Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `App
 | City | `cities_v3` | `country_id` | create active → расширение bounds районами; хранит описание, цель, критерии приёмки и deadline |
 | District | `districts_v3` | город выбранной страны | planned → active → completed; один active на город; хранит описание и deadline |
 | Task | `tasks_v3` | район и город одной страны | planning → started → in-progress → testing → completed; тип работы и AI-поля не меняют жизненный цикл |
-| Defect | `task_defects_v18` | дочерний объект задачи | open → fixed; хранит шаги, фактический и ожидаемый результат |
+| Defect | `task_defects_v18` | дочерний объект задачи | `OPEN → IN_PROGRESS → VERIFYING → FIXED`; хранит шаги, фактический и ожидаемый результат |
 | History | `task_comments_v3`, `task_events_v7` | задача; actor может ссылаться на пользователя | append-only; удаляется каскадом только вместе с задачей |
 | World | `roads_v3`, `world_features_v6` | страна; feature может принадлежать городу, району и родительской area | создаются/расширяются генератором; районные и дочерние features удаляются каскадом |
 | Spatial read model | `world_chunk_entities_v11` | страна + chunk + entity kind/id | trigger insert/update/delete и одноразовый backfill |
@@ -26,7 +26,7 @@ Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `App
 
 - Transport не принимает `countryId` как доверенную границу мира: HTTP использует session active country, MCP — заново аутентифицированный персональный token.
 - Чужие city/district/task id возвращают `404`/`403` без геометрии или данных другой страны.
-- Изменяющие MCP-команды требуют `idempotencyKey`; запись домена, `worldVersion`, event и сохранённый ответ коммитятся атомарно. Тип задачи (`TASK`, `BUG`, `RELEASE`, `HOTFIX`) не заменяет связанный дефект: дефект всегда остаётся отдельной проверяемой сущностью.
+- Изменяющие MCP-команды требуют `idempotencyKey`; запись домена, `worldVersion`, event и сохранённый ответ коммитятся атомарно. Тип задачи (`TASK`, `BUG`, `RELEASE`, `HOTFIX`) не заменяет связанный дефект: дефект всегда остаётся отдельной проверяемой сущностью. Его ремонт не откатывает родительскую задачу из `TESTING`, а переход задачи в `COMPLETED` блокируется до исправления всех связанных дефектов.
 - `/mcp` обслуживается официальным web-standard MCP v2 server handler через streaming Fetch→Fastify bridge: основной протокол `2026-07-28`, stateless fallback `2025-11-25`. Аутентификация принимает только персональный `Authorization: Bearer ttp_mcp_...`; Origin проверяется для всех transport methods. Отдельный Hono/Node adapter не используется, поэтому runtime не зависит от несовместимого framework major override.
 - Районы четырёхсвязны, не пересекаются и находятся внутри актуальных city bounds. Footprint задач не пересекаются с дорогой, водой и друг другом; вход имеет короткий путь к пешеходной сети.
 - `NEW_BUILD` и `PRIVATE` используют квартальные шаблоны; полный видимый asphalt (дороги, asphalt platforms и driveways) не превышает 20% района.

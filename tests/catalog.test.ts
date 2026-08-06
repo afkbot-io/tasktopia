@@ -49,6 +49,15 @@ describe("building catalog V4", () => {
     for (const species of ["fox", "deer", "rabbit", "boar"]) expect(PROP_CATALOG[`animal-${species}-east`]).toBeDefined();
   });
 
+  it("registers crisp incident-response sprites on the same pixel grid", () => {
+    expect(PROP_CATALOG["fire-engine-horizontal"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
+    for (const key of ["incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"]) {
+      expect(PROP_CATALOG[key]?.size.width, key).toBe(8);
+      expect(PROP_CATALOG[key]?.size.height % 8, key).toBe(0);
+      expect(existsSync(resolve("public", PROP_CATALOG[key]!.path.replace("/game-assets/v4/", "game-assets/v4/"))), key).toBe(true);
+    }
+  });
+
   it("keeps every human on the walker scale and gives crewed boats a slender footprint", () => {
     const walkerSize = PROP_CATALOG["walker-south"]?.size;
     expect(walkerSize).toEqual({ width: 8, height: 8 });

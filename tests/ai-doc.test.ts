@@ -45,6 +45,8 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("isError: true");
     expect(guide).toContain("systemAnalysis");
     expect(guide).toContain("reproductionSteps");
+    expect(guide).toContain("OPEN → IN_PROGRESS → VERIFYING → FIXED");
+    expect(guide).toContain("completion is rejected while any\nlinked defect is not `FIXED`");
     expect(guide).toContain("across all cities in the\nselected country");
     expect(guide).toContain("`tasktopia://country/current`");
     expect(guide).toContain("`tasktopia://catalog/buildings`");
@@ -63,6 +65,8 @@ describe("public AI integration guide", () => {
     expect(skill).toContain("Район | Спринт");
     expect(skill).toContain("`task.report_progress`");
     expect(skill).toContain("`TESTING → IN_PROGRESS`");
+    expect(skill).toContain("`OPEN → IN_PROGRESS → VERIFYING → FIXED`");
+    expect(skill).toContain("родительскую задачу сохранять в\n`TESTING`");
     expect(skill).toContain("Готово: <конкретный результат");
     expect(skill).not.toContain("TODO");
     for (const tool of documentedTools) expect(skill).toContain(`\`${tool}\``);

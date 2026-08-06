@@ -52,6 +52,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "District capacitySp is an advisory workload target and never blocks task creation.",
       "Keep project context on the country, epic outcomes on the city, sprint goal and deadline on the district, and executable analysis on the task.",
       "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
+      "Linked defects use OPEN -> IN_PROGRESS -> VERIFYING -> FIXED. Keep the parent task in TESTING while an ordinary linked defect is repaired; completion is blocked until every linked defect is FIXED.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
       "Task stages are PLANNING -> STARTED -> IN_PROGRESS -> TESTING -> COMPLETED; only TESTING -> IN_PROGRESS may move backward and requires a comment.",
     ].join(" "),
@@ -286,11 +287,11 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("task.defect_update", {
-    description: "Уточнить связанный дефект или отметить его FIXED/снова OPEN. Не завершайте задачу автоматически: проверяйте все критерии отдельно.",
+    description: "Вести отдельный цикл связанного дефекта: OPEN → IN_PROGRESS → VERIFYING → FIXED; при неудачной проверке VERIFYING → IN_PROGRESS, при повторном открытии FIXED → OPEN. Родительскую задачу на тестировании не откатывать.",
     inputSchema: z.object({
       defectId: z.string().uuid(), title: z.string().min(2).max(160).optional(), description: z.string().max(8000).optional(),
       reproductionSteps: z.string().trim().min(1).max(12000).optional(), actualResult: z.string().trim().min(1).max(8000).optional(), expectedResult: z.string().trim().min(1).max(8000).optional(),
-      status: z.enum(["OPEN", "FIXED"]).optional(), idempotencyKey: z.string().min(4).max(160),
+      status: z.enum(["OPEN", "IN_PROGRESS", "VERIFYING", "FIXED"]).optional(), idempotencyKey: z.string().min(4).max(160),
     }), annotations: { idempotentHint: true },
   }, async (input) => {
     try { requireScope(identity, "tasks:write"); return response(await service.updateTaskDefect(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
