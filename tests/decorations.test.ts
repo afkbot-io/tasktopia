@@ -46,7 +46,8 @@ describe("procedural decoration footprints", () => {
     }
     const surfaces: SurfaceCellDto[] = Array.from({ length: 76 }, (_, index) => ({ x: index + 10, y: 50, kind: "PATH" }));
     const city: CityDto = {
-      id: "city", name: "Harbour", description: "", goal: "", acceptanceCriteria: "", deadline: null, status: "ACTIVE", center: { x: 48, y: 68 },
+      id: "city", name: "Harbour", description: "", goal: "", acceptanceCriteria: "", deadline: null, status: "ACTIVE",
+ kind: "WORK", center: { x: 48, y: 68 },
       bounds: { minX: 24, minY: 48, maxX: 72, maxY: 88 }, styleId: "pixel-v4", morphology: "BALANCED", createdAt: "2026-01-01T00:00:00.000Z",
     };
     const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;
@@ -68,7 +69,8 @@ describe("procedural decoration footprints", () => {
     const road = Array.from({ length: 256 }, (_, x) => ({ x, y: 31 }));
     const blocked = new Set(road.map(cellKey));
     const city: CityDto = {
-      id: "city", name: "Shore road", description: "", goal: "", acceptanceCriteria: "", deadline: null, status: "ACTIVE", center: { x: 128, y: 38 },
+      id: "city", name: "Shore road", description: "", goal: "", acceptanceCriteria: "", deadline: null, status: "ACTIVE",
+ kind: "WORK", center: { x: 128, y: 38 },
       bounds: { minX: 0, minY: 24, maxX: 255, maxY: 63 }, styleId: "pixel-v4", morphology: "BALANCED", createdAt: "2026-01-01T00:00:00.000Z",
     };
     const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;

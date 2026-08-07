@@ -111,6 +111,7 @@ function cityDto(row: Row): CityDto {
     acceptanceCriteria: String(row.acceptance_criteria ?? ""),
     deadline: row.deadline ? String(row.deadline) : null,
     status: String(row.status) as CityDto["status"],
+    kind: String(row.kind ?? "WORK") as CityDto["kind"],
     center: { x: Number(row.center_x), y: Number(row.center_y) },
     bounds: json<Rect>(row.bounds_json),
     styleId: String(row.style_id),
@@ -1599,7 +1600,7 @@ export class AppService {
                       const data: CityDto = {
                         id, name, description: input.description?.trim() ?? "", goal: input.goal?.trim() ?? "",
                         acceptanceCriteria: input.acceptanceCriteria?.trim() ?? "", deadline: input.deadline ?? null,
-                        status: "ACTIVE", center, bounds, styleId, morphology, createdAt,
+                        status: "ACTIVE", kind: "WORK", center, bounds, styleId, morphology, createdAt,
                       };
                       return { data, eventType: "city.created", eventPayload: { cityId: id, center, affectedBounds: bounds } };
                     });

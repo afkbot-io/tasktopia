@@ -13,7 +13,8 @@ import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 
 function city(): CityDto {
   return {
-    id: "city", name: "City", description: "", goal: "", acceptanceCriteria: "", deadline: null, status: "ACTIVE", center: { x: 0, y: 0 },
+    id: "city", name: "City", description: "", goal: "", acceptanceCriteria: "", deadline: null, status: "ACTIVE",
+ kind: "WORK", center: { x: 0, y: 0 },
     bounds: { minX: -20, minY: -20, maxX: 20, maxY: 20 }, styleId: "style", morphology: "BALANCED", createdAt: "now",
   };
 }

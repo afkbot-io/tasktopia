@@ -61,6 +61,7 @@ export type CityDto = {
   acceptanceCriteria: string;
   deadline: string | null;
   status: CityStatus;
+  kind: "WORK" | "TEMPLATE";
   center: Cell;
   bounds: Rect;
   styleId: string;
