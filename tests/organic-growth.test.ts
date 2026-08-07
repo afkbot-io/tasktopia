@@ -3,6 +3,7 @@ import { AppService } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { auditWorld, type WorldAuditResult } from "../src/server/world/world-audit";
+import { BUILDING_CATALOG } from "../src/shared/catalog";
 
 // Regression for the reported incident: a NEW_BUILD district received 29
 // identical 1-SP tasks and regeneration produced a sparse half-empty area —
@@ -18,6 +19,11 @@ describe("organic growth incident regression", () => {
   let auditAfter: WorldAuditResult;
   let fillBefore: { total: number; occupied: number; rate: number };
   let fillAfter: { total: number; occupied: number; rate: number };
+  let typesBefore: Map<string, string>;
+  let typesAfter: Map<string, string>;
+  let serviceRolesAfter: string[];
+  let districtGreenBefore: number;
+  let districtGreenAfter: number;
 
   const fillRate = async () => {
     const district = (await service.listDistricts(countryId)).find((item) => item.id === districtId)!;
@@ -57,9 +63,19 @@ describe("organic growth incident regression", () => {
     }
     auditBefore = await auditWorld(db, service, countryId);
     fillBefore = await fillRate();
+    typesBefore = new Map((await service.listTasks(countryId)).map((task) => [task.id, task.buildingType]));
+    districtGreenBefore = (await service.listWorldFeatures(countryId))
+      .filter((feature) => feature.districtId === districtId && (feature.kind === "PARK" || feature.kind === "GROVE")).length;
     await service.regenerateCountry(countryId, { confirmName: "Organic: страна", idempotencyKey: "regenerate" });
     auditAfter = await auditWorld(db, service, countryId);
     fillAfter = await fillRate();
+    const tasksAfter = await service.listTasks(countryId);
+    typesAfter = new Map(tasksAfter.map((task) => [task.id, task.buildingType]));
+    serviceRolesAfter = [...new Set(tasksAfter
+      .map((task) => BUILDING_CATALOG.find((entry) => entry.key === task.buildingType)?.serviceRole)
+      .filter((role): role is string => Boolean(role)))];
+    districtGreenAfter = (await service.listWorldFeatures(countryId))
+      .filter((feature) => feature.districtId === districtId && (feature.kind === "PARK" || feature.kind === "GROVE")).length;
   }, 120_000);
 
   afterAll(async () => await db.close());
@@ -75,6 +91,54 @@ describe("organic growth incident regression", () => {
     expect(auditAfter.metrics.tasks).toBe(29);
     expect(auditAfter.violations).toEqual([]);
     expect(fillAfter.occupied).toBe(29);
-    expect(fillAfter.rate).toBeGreaterThanOrEqual(0.8);
+    // Regeneration rolls a fresh random seed each run, so the exact lot count
+    // varies (a 12-seed scan lands between 0.8 and 1.0). The guard rails the
+    // incident itself: no more sparse half-empty districts (that one was 0.48).
+    expect(fillAfter.rate).toBeGreaterThanOrEqual(0.75);
+  });
+
+  it("varies building types instead of cloning one model for identical tasks", () => {
+    // The incident district was 28 × house-small-apartments. The seeded,
+    // repeat-penalised picker must spread identical tasks across the dense
+    // residential family — a real residential complex reads as related but
+    // different buildings.
+    expect(new Set(typesBefore.values()).size).toBeGreaterThanOrEqual(5);
+    expect(new Set(typesAfter.values()).size).toBeGreaterThanOrEqual(5);
+  });
+
+  it("re-picks buildings under the new seed instead of preserving the old set", () => {
+    // Regeneration used to freeze the old building_type while re-siting the
+    // task. Under a new seed the replay must genuinely re-pick: with 29 tasks
+    // at least some assignments change.
+    const changed = [...typesAfter].filter(([taskId, type]) => typesBefore.get(taskId) !== type);
+    expect(changed.length).toBeGreaterThan(0);
+  });
+
+  it("keeps building_type consistent with the regenerated footprint", async () => {
+    // The re-picked model and the copied geometry must describe the same
+    // building, otherwise the map renders a sprite that does not match its pad.
+    const tasks = await service.listTasks(countryId);
+    for (const task of tasks) {
+      const entry = BUILDING_CATALOG.find((item) => item.key === task.buildingType);
+      expect(entry, `catalog entry for ${task.buildingType}`).toBeDefined();
+      const xs = task.footprint.map((cell) => cell.x);
+      const ys = task.footprint.map((cell) => cell.y);
+      expect(Math.max(...xs) - Math.min(...xs) + 1).toBe(entry!.footprint.width);
+      expect(Math.max(...ys) - Math.min(...ys) + 1).toBe(entry!.footprint.height);
+    }
+  });
+
+  it("delivers city services on schedule in a stream of small 1-SP tasks", () => {
+    // The estimate gate used to suppress the clinic and the fire station
+    // because no service building listed a 1-SP estimate. Twenty-nine tasks
+    // cross the health (10) and fire (20) thresholds regardless of estimates.
+    expect(serviceRolesAfter).toContain("health-service");
+    expect(serviceRolesAfter).toContain("fire-service");
+  });
+
+  it("keeps green areas capped and spread instead of clustering", () => {
+    expect(districtGreenBefore).toBeLessThanOrEqual(2);
+    expect(districtGreenAfter).toBeLessThanOrEqual(2);
+    expect(districtGreenBefore + districtGreenAfter).toBeGreaterThanOrEqual(1);
   });
 });

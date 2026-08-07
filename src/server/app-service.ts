@@ -494,9 +494,12 @@ export class AppService {
       for (const task of tasks) {
         const generated = generatedTasks.get(taskMap.get(task.id)!);
         if (!generated) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию задачи");
-        await this.db.prepare(`UPDATE tasks_v3 SET platform_type = ?, origin_x = ?, origin_y = ?, footprint_json = ?,
+        // Geometry AND identity come from the fresh build: the replay picks
+        // buildings under the new seed, so the visible model must follow the
+        // re-pick instead of freezing the pre-regeneration type.
+        await this.db.prepare(`UPDATE tasks_v3 SET building_type = ?, platform_type = ?, origin_x = ?, origin_y = ?, footprint_json = ?,
           entrance_x = ?, entrance_y = ?, access_json = ?, access_kind = ? WHERE id = ?`).run(
-          generated.platformType, generated.origin.x, generated.origin.y, JSON.stringify(generated.footprint),
+          generated.buildingType, generated.platformType, generated.origin.x, generated.origin.y, JSON.stringify(generated.footprint),
           generated.entrance.x, generated.entrance.y, JSON.stringify(generated.accessPath), generated.accessKind, task.id,
         );
       }
@@ -1168,14 +1171,20 @@ export class AppService {
   ): Promise<void> {
     const existingFeatures = await this.listWorldFeatures(countryId);
     const existingGreen = existingFeatures.filter((feature) => feature.cityId === city.id && (feature.kind === "PARK" || feature.kind === "GROVE"));
+    const districtGreen = existingGreen.filter((feature) => feature.districtId === districtId);
+    // One green area per district is the norm, a second appears rarely, and
+    // a third never. The old roll was constant for the whole district, so
+    // every new complex of a lucky district spawned another park and they
+    // clustered into one pocket.
+    if (districtGreen.length >= 2) return;
     const chance = archetype === "PRIVATE" ? 0.58 : archetype === "CIVIC" ? 0.48 : archetype === "COMMERCIAL" ? 0.24 : 0.4;
-    const roll = hashCoordinate(seed, city.center.x, city.center.y, 811 + districtIndex);
+    const roll = hashCoordinate(seed, city.center.x, city.center.y, 811 + districtIndex * 7 + districtGreen.length * 13 + Math.floor(reservedLots.length / 4));
     // Every city must eventually receive a public green area. Keep trying on
     // subsequent districts until one actually fits; the old `districtIndex ===
     // 1` gate permanently skipped parks when that single district had no valid
     // parcel.
     const forceFirstGreen = existingGreen.length === 0;
-    if (!forceFirstGreen && roll > chance) return;
+    if (!forceFirstGreen && (districtGreen.length >= 1 ? roll > 0.18 : roll > chance)) return;
 
     const cityIndex = (await this.listCities(countryId)).findIndex((candidate) => candidate.id === city.id);
     const kind: Extract<WorldFeatureDto["kind"], "PARK" | "GROVE"> = (cityIndex + districtIndex + existingGreen.length) % 2 === 0 ? "GROVE" : "PARK";
@@ -1201,8 +1210,15 @@ export class AppService {
         })) continue;
         const accessPath = this.areaAccessPath(seed, allowed, footprint, roads, surfaces, occupied);
         if (accessPath === null) continue;
-        const centerDistance = manhattan({ x: x + Math.floor(size[0] / 2), y: y + Math.floor(size[1] / 2) }, city.center);
-        candidates.push({ origin, footprint, accessPath, score: accessPath.length * 100 + centerDistance * 0.08 + hashCoordinate(seed, x, y, 823) });
+        const center = { x: x + Math.floor(size[0] / 2), y: y + Math.floor(size[1] / 2) };
+        const centerDistance = manhattan(center, city.center);
+        // Parks spread across the territory instead of stacking next to the
+        // previous one: a spot near an existing green is heavily penalised.
+        const nearExistingGreen = existingGreen.some((feature) => {
+          const gb = boundsOf(feature.footprint);
+          return manhattan(center, { x: Math.floor((gb.minX + gb.maxX) / 2), y: Math.floor((gb.minY + gb.maxY) / 2) }) < 14;
+        });
+        candidates.push({ origin, footprint, accessPath, score: accessPath.length * 100 + (nearExistingGreen ? 250 : 0) + centerDistance * 0.08 + hashCoordinate(seed, x, y, 823) });
       }
     }
     const selected = candidates.sort((left, right) => left.score - right.score || left.origin.y - right.origin.y || left.origin.x - right.origin.x)[0];
@@ -1613,7 +1629,10 @@ export class AppService {
     if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "Закрытый район больше не расширяется");
     const seed = Number((await this.countryRow(countryId)).seed);
     const taskCount = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE district_id = ?").get(district.id) as Row).count);
-    const targetLots = Math.max(4, Math.min(16, Math.ceil(Math.max(1, district.capacitySp - taskCount) * 1.15)));
+    // Headroom stays small on purpose: a complex planned far beyond the
+    // remaining demand leaves a tail of empty pads — exactly the sparse
+    // district from the incident report. 8% slack absorbs rounding only.
+    const targetLots = Math.max(3, Math.min(16, Math.ceil(Math.max(1, district.capacitySp - taskCount) * 1.08)));
     const complexIndex = new Set(district.lots.map((lot) => lot.groupId).filter(Boolean)).size;
 
     const infill = await this.tryGrowComplex(countryId, district, entry, boundsOf(district.cells), complexIndex, targetLots, seed);
@@ -2205,7 +2224,7 @@ export class AppService {
     return (await this.db.prepare("SELECT * FROM tasks_v3 WHERE city_id = ?").all(cityId) as Row[]).map(taskDto);
   }
 
-  private async requiredServiceRole(cityId: string, districtId: string, estimate: Estimate): Promise<string | undefined> {
+  private async requiredServiceRole(cityId: string, districtId: string): Promise<string | undefined> {
     const tasks = await this.listTasksForCity(cityId);
     const present = new Set(tasks.map((task) => BUILDING_CATALOG.find((entry) => entry.key === task.buildingType)?.serviceRole).filter(Boolean));
     const district = (await this.listDistricts(String((await this.db.prepare("SELECT country_id FROM cities_v3 WHERE id = ?").get(cityId) as Row).country_id), cityId))
@@ -2219,26 +2238,34 @@ export class AppService {
       if (present.has(item.role)) continue;
       const due = district?.archetype === "CIVIC" || tasks.length + 1 >= item.threshold;
       if (!due) continue;
+      // City services arrive on schedule regardless of the task's estimate:
+      // a stream of small 1-SP chores still deserves a fire station by twenty.
       for (const entry of BUILDING_CATALOG) {
-        if (entry.serviceRole === item.role && entry.estimates.includes(estimate) && await this.entryAllowed(entry, cityId, districtId)) return item.role;
+        if (entry.serviceRole === item.role && await this.entryAllowed(entry, cityId, districtId)) return item.role;
       }
     }
     return undefined;
   }
 
-  private async selectBuilding(cityId: string, districtId: string, estimate: Estimate, title: string, description: string, hint?: string): Promise<BuildingCatalogEntry> {
+  /**
+   * Ranked building candidates for a task, best first. The caller walks the
+   * list until one candidate actually fits the ground: a top-ranked tower that
+   * has no lot wide enough must never deadlock growth when the next-ranked
+   * house would fit.
+   */
+  private async selectBuilding(cityId: string, districtId: string, estimate: Estimate, title: string, description: string, hint?: string): Promise<BuildingCatalogEntry[]> {
     const district = (await this.db.prepare("SELECT * FROM districts_v3 WHERE id = ? AND city_id = ?").get(districtId, cityId) as Row | undefined);
     if (!district) throw new DomainError("NOT_FOUND", "Район не найден");
     const archetype = districtDto(district).archetype;
     if (hint) {
-      const exact = BUILDING_CATALOG.find((entry) => entry.key === hint && entry.estimates.includes(estimate));
-      if (!exact) throw new DomainError("INVALID_BUILDING_HINT", "Указанный тип здания не подходит оценке или не существует");
+      const exact = BUILDING_CATALOG.find((entry) => entry.key === hint);
+      if (!exact) throw new DomainError("INVALID_BUILDING_HINT", "Указанный тип здания не существует");
       if (!await this.entryAllowed(exact, cityId, districtId)) throw new DomainError("BUILDING_QUOTA_REACHED", "Лимит этого типа здания уже достигнут");
       if (!buildingCompatibleWithArchetype(exact, archetype)) throw new DomainError("BUILDING_ZONE_CONFLICT", "Этот тип здания несовместим с архитектурой района");
-      return exact;
+      return [exact];
     }
     const tags = new Set(inferTaskTags(title, description));
-    const requiredService = await this.requiredServiceRole(cityId, districtId, estimate);
+    const requiredService = await this.requiredServiceRole(cityId, districtId);
     const cityRows = await this.db.prepare("SELECT building_type FROM tasks_v3 WHERE city_id = ?").all(cityId) as Row[];
     const districtRows = await this.db.prepare("SELECT id, building_type FROM tasks_v3 WHERE district_id = ?").all(districtId) as Row[];
     const cityCounts = new Map<string, number>();
@@ -2270,14 +2297,16 @@ export class AppService {
       complexCounts.set(lot.groupId, group);
     }
     const complexRepeat = (key: string) => Math.max(0, ...[...complexCounts.values()].map((group) => group.get(key) ?? 0));
+    // The estimate no longer gates the catalog: any archetype-compatible
+    // building may host a task of any size. Estimate stays as planning
+    // metadata with only a soft nudge in the score below.
     const compatible: BuildingCatalogEntry[] = [];
     for (const entry of BUILDING_CATALOG) {
-      if (entry.estimates.includes(estimate)
-        && await this.entryAllowed(entry, cityId, districtId)
+      if (await this.entryAllowed(entry, cityId, districtId)
         && buildingCompatibleWithArchetype(entry, archetype)
         && (!requiredService || entry.serviceRole === requiredService)) compatible.push(entry);
     }
-    if (compatible.length === 0) throw new DomainError("NO_BUILDING_VARIANT", "В каталоге нет здания этой оценки, совместимого с архитектурой района");
+    if (compatible.length === 0) throw new DomainError("NO_BUILDING_VARIANT", "В каталоге нет здания, совместимого с архитектурой района");
     const existingSupport = districtRows.filter((row) => {
       const entry = BUILDING_CATALOG.find((item) => item.key === String(row.building_type));
       return entry ? !primaryZoningRole(archetype, buildingZoningRole(entry)) : false;
@@ -2297,17 +2326,27 @@ export class AppService {
       : wantsSupport && existingSupport < supportLimit && supportCandidates.length > 0
         ? supportCandidates
         : primaryCandidates.length > 0 ? primaryCandidates : compatible;
+    const countryId = String((await this.db.prepare("SELECT country_id FROM cities_v3 WHERE id = ?").get(cityId) as Row).country_id);
+    const seed = Number((await this.countryRow(countryId)).seed);
+    const taskOrdinal = cityRows.length + 1;
     return candidates.map((entry) => {
       const semanticBonus = entry.tags.filter((tag) => tags.has(tag)).length * 8;
       const morphologyBonus = archetypeAffinity(entry, archetype);
       const rarityPenalty = entry.rarity === "UNIQUE" ? 4 : entry.rarity === "RARE" ? 2 : 0;
       const unrelatedServicePenalty = entry.serviceRole && !requiredService && !tags.has("civic") ? 18 : 0;
+      // Estimate is a soft nudge only (the gate above is gone): matching
+      // sizes are mildly preferred, everything stays possible.
+      const estimatePenalty = entry.estimates.includes(estimate) ? 0 : 3;
+      // Regeneration replays the same task stream under a new country seed.
+      // Seeding the tie-break with that seed makes the replay genuinely
+      // re-pick buildings instead of reproducing the old set in new spots.
+      const seededJitter = hashCoordinate(seed, taskOrdinal, Math.floor(stringHash(entry.key) * 10_000), 887) * 5;
       const score = (cityCounts.get(entry.key) ?? 0) * 7 + (districtCounts.get(entry.key) ?? 0) * 9
         + complexRepeat(entry.key) * 12
-        + (categoryCounts.get(entry.category) ?? 0) * 1.2 + rarityPenalty + unrelatedServicePenalty - semanticBonus - morphologyBonus
+        + (categoryCounts.get(entry.category) ?? 0) * 1.2 + rarityPenalty + unrelatedServicePenalty + estimatePenalty + seededJitter - semanticBonus - morphologyBonus
         + stringHash(`${title}:${entry.key}`) * 2;
       return { entry, score };
-    }).sort((a, b) => a.score - b.score)[0]!.entry;
+    }).sort((a, b) => a.score - b.score).map((ranked) => ranked.entry);
   }
 
   private async placementInLot(
@@ -2321,7 +2360,6 @@ export class AppService {
   ): Promise<{ origin: Cell; footprint: Cell[]; entrance: Cell; accessPath: Cell[]; accessKind: TaskDto["accessKind"] } | null> {
     if (lot.taskId || entry.footprint.width > lot.width || entry.footprint.height > lot.height) return null;
     const seed = Number((await this.countryRow(countryId)).seed);
-    const lotCenterX = lot.origin.x + lot.width / 2;
     // The courtyard skeleton of a block-v3 lot is published lazily (only with a
     // committed building). Project it into a local surface copy so the access
     // planner can already walk along the future path.
@@ -2355,13 +2393,19 @@ export class AppService {
           maxLength: 6,
         });
         if (!access) continue;
-        const buildingCenterX = origin.x + entry.footprint.width / 2;
         // Every facade faces its street (south): prefer the building flush to
-        // the sidewalk at the bottom edge of the lot, then centred horizontally.
+        // the sidewalk at the bottom edge of the lot. Horizontally it shares a
+        // party wall with a built neighbour when possible — no stray one-cell
+        // gaps between houses — and otherwise hugs the lot's left edge so a
+        // free-standing row still reads as one continuous facade line.
         const bottomGap = lot.origin.y + lot.height - (origin.y + entry.footprint.height);
+        const touchesWest = footprint.some((cell) => occupied.has(cellKey({ x: origin.x - 1, y: cell.y })));
+        const touchesEast = footprint.some((cell) => occupied.has(cellKey({ x: origin.x + entry.footprint.width, y: cell.y })));
+        const partyBonus = (touchesWest ? -25 : 0) + (touchesEast ? -25 : 0);
+        const edgePenalty = (origin.x - lot.origin.x) * 2;
         candidates.push({
           origin, footprint, entrance: access.entrance, accessPath: access.path,
-          score: access.distance * 100 + bottomGap * 30 + Math.abs(buildingCenterX - lotCenterX),
+          score: access.distance * 100 + bottomGap * 30 + partyBonus + edgePenalty,
         });
       }
     }
@@ -2459,28 +2503,46 @@ export class AppService {
                       if (!districtRow) throw new DomainError("NO_ACTIVE_DISTRICT", "Сначала создайте или активируйте район");
                       let district = districtDto(districtRow as Row);
                       if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "В завершённый район нельзя добавлять задачи");
-                      const entry = await this.selectBuilding(input.cityId, district.id, input.estimate, title, input.description ?? "", input.buildingHint);
+                      const ranked = await this.selectBuilding(input.cityId, district.id, input.estimate, title, input.description ?? "", input.buildingHint);
                       let roads = await this.roadCells(countryId);
-                      let surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
                       const occupiedTasks = new Set((await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey));
-                      let districtCellKeys = new Set(district.cells.map(cellKey));
-                      let options = await this.taskPlacementOptions(countryId, district, entry, roads, surfaces, occupiedTasks, districtCellKeys);
-                      // Organic growth: a task that no longer fits triggers the
-                      // next complex inside the territory, then territory growth.
-                      for (let growth = 0; options.length === 0 && growth < 4; growth += 1) {
-                        district = await this.growDistrict(countryId, district, entry);
-                        roads = await this.roadCells(countryId);
-                        surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
-                        districtCellKeys = new Set(district.cells.map(cellKey));
-                        options = await this.taskPlacementOptions(countryId, district, entry, roads, surfaces, occupiedTasks, districtCellKeys);
+                      // Walk the ranked candidates until one actually fits the
+                      // ground. The favourite may be a tower with no lot wide
+                      // enough; the next house down the list keeps growth alive
+                      // instead of deadlocking the district.
+                      let entry: BuildingCatalogEntry | undefined;
+                      let selected: Awaited<ReturnType<AppService["taskPlacementOptions"]>>[number] | undefined;
+                      for (const candidate of ranked.slice(0, 8)) {
+                        let surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
+                        let districtCellKeys = new Set(district.cells.map(cellKey));
+                        let options = await this.taskPlacementOptions(countryId, district, candidate, roads, surfaces, occupiedTasks, districtCellKeys);
+                        // Organic growth: a task that no longer fits triggers the
+                        // next complex inside the territory, then territory growth.
+                        let blocked = false;
+                        for (let growth = 0; options.length === 0 && growth < 4 && !blocked; growth += 1) {
+                          try {
+                            district = await this.growDistrict(countryId, district, candidate);
+                          } catch (error) {
+                            if (!(error instanceof DomainError) || error.code !== "PLACEMENT_BLOCKED") throw error;
+                            blocked = true;
+                            break;
+                          }
+                          roads = await this.roadCells(countryId);
+                          surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
+                          districtCellKeys = new Set(district.cells.map(cellKey));
+                          options = await this.taskPlacementOptions(countryId, district, candidate, roads, surfaces, occupiedTasks, districtCellKeys);
+                        }
+                        if (options.length === 0) continue;
+                        entry = candidate;
+                        selected = options.sort((a, b) => {
+                          if (a.order !== b.order) return a.order - b.order;
+                          const wasteA = a.lot.width * a.lot.height - candidate.footprint.width * candidate.footprint.height;
+                          const wasteB = b.lot.width * b.lot.height - candidate.footprint.width * candidate.footprint.height;
+                          return wasteA - wasteB || a.lot.origin.y - b.lot.origin.y || a.lot.origin.x - b.lot.origin.x;
+                        })[0];
+                        break;
                       }
-                      const selected = options.sort((a, b) => {
-                        if (a.order !== b.order) return a.order - b.order;
-                        const wasteA = a.lot.width * a.lot.height - entry.footprint.width * entry.footprint.height;
-                        const wasteB = b.lot.width * b.lot.height - entry.footprint.width * entry.footprint.height;
-                        return wasteA - wasteB || a.lot.origin.y - b.lot.origin.y || a.lot.origin.x - b.lot.origin.x;
-                      })[0];
-                      if (!selected) throw new DomainError("PLACEMENT_BLOCKED", "После расширения не появился подходящий участок для здания");
+                      if (!selected || !entry) throw new DomainError("PLACEMENT_BLOCKED", "После расширения не появился подходящий участок для здания");
                       const id = randomUUID();
                       const createdAt = now();
                       const lots = district.lots.map((lot) => lot.id === selected.lot.id ? { ...lot, taskId: id, vacant: false } : lot);
