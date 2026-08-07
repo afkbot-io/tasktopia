@@ -128,7 +128,8 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
   }
   const surfaceKeys = new Set(surfaceMap.keys());
 
-  if (!connected(roads)) addViolation(violations, "ROAD_NETWORK_DISCONNECTED", "Глобальная дорожная сеть состоит из нескольких компонентов");
+  // A country without any road yet is empty land, not a disconnected network.
+  if (roads.length > 0 && !connected(roads)) addViolation(violations, "ROAD_NETWORK_DISCONNECTED", "Глобальная дорожная сеть состоит из нескольких компонентов");
 
   const occupiedDistrictCells = new Map<string, string>();
   for (const district of districts) {
