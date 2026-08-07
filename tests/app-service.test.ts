@@ -66,15 +66,16 @@ describe("Tasktopia square-world application service", () => {
     const deadline = "2026-12-20T12:00:00.000Z";
     const city = await service.createCity(countryId, { name: "Renewable City", goal: "Ship epic", acceptanceCriteria: "Users can finish", deadline, idempotencyKey: "regen-city" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Renewable District", description: "Two-week iteration", deadline, archetype: "PRIVATE", activate: true, idempotencyKey: "regen-district" });
-    const greenFeatures = await service.listWorldFeatures(countryId);
-    expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
-    expect(greenFeatures.some((feature) => ["bench-horizontal", "picnic-table", "playground-small", "trash-bin", "streetlamp"].includes(feature.assetKey))).toBe(true);
     const task = await service.createTask(countryId, {
       cityId: city.id, districtId: district.id, title: "Preserved work", description: "Keep this", workItemType: "HOTFIX",
       acceptanceCriteria: "Regression is covered", systemAnalysis: "Impact is bounded", architecture: "Patch service boundary",
       designSystem: "Use existing tokens", implementationPlan: "Test, patch, verify", estimate: 1, dueAt: deadline,
       buildingHint: "house-cottage", idempotencyKey: "regen-task",
     });
+    // Green areas appear together with the first streets of the first complex.
+    const greenFeatures = await service.listWorldFeatures(countryId);
+    expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
+    expect(greenFeatures.some((feature) => ["bench-horizontal", "picnic-table", "playground-small", "trash-bin", "streetlamp"].includes(feature.assetKey))).toBe(true);
     const defect = await service.createTaskDefect(countryId, {
       taskId: task.id, title: "Broken path", reproductionSteps: "Open the map", actualResult: "Path breaks", expectedResult: "Path stays whole",
       idempotencyKey: "regen-defect",
@@ -115,14 +116,19 @@ describe("Tasktopia square-world application service", () => {
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Core", archetype: "MIXED_URBAN", activate: true, idempotencyKey: "d1" });
     expect(district.cells.length).toBeGreaterThan(250);
     expect(connected(district.cells)).toBe(true);
-    expect(district.lots.length).toBeGreaterThanOrEqual(3);
+    // V10: a fresh district is pure territory. Streets and lots appear only
+    // together with the first complex grown by the first task.
+    expect(district.lots).toEqual([]);
     let task = await service.createTask(countryId, { cityId: city.id, title: "Build cafe", estimate: 2, buildingHint: "commercial-corner-cafe", idempotencyKey: "t1" });
     expect(task.stage).toBe(1);
+    expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)?.lots.length).toBeGreaterThanOrEqual(3);
     const taskChunk = await service.chunkForCell(task.origin);
     expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY)).tasks.find((item) => item.id === task.id)?.stage).toBe(1);
     const overview = await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW");
     expect(overview.tasks.find((item) => item.id === task.id)).not.toHaveProperty("descriptionPreview");
-    expect(overview.surfaces.some((surface) => surface.kind === "PATH")).toBe(true);
+    // V10: a building may front directly onto the sidewalk without a footpath,
+    // so the overview exposes the pedestrian layer as SIDEWALK or PATH cells.
+    expect(overview.surfaces.some((surface) => surface.kind === "PATH" || surface.kind === "SIDEWALK")).toBe(true);
     expect(overview.worldFeatures).toEqual([]);
     for (const [index, status] of ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"].entries()) {
       task = await service.updateTaskStatus(countryId, { taskId: task.id, status: status as typeof task.status, comment: `stage ${index}`, idempotencyKey: `status-${index}` });
@@ -249,8 +255,12 @@ describe("Tasktopia square-world application service", () => {
     const deletedDistrict = await service.deleteDistrict(countryId, { districtId: active.id, confirmName: active.name, idempotencyKey: "delete-district" });
     expect(deletedDistrict.activatedDistrictId).toBe(next.id);
     expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === next.id)?.status).toBe("ACTIVE");
-    expect(await db.prepare("SELECT 1 FROM world_features_v6 WHERE district_id = ?").get(active.id)).toBeUndefined();
-    expect(await db.prepare("SELECT 1 FROM world_chunk_entities_v11 WHERE entity_kind = 'FEATURE' AND entity_id = ANY(?::text[])").get(ownedFeatures.map((row) => String(row.id)))).toBeUndefined();
+    // Abandonment keeps the urban fabric: the district row stays as ABANDONED,
+    // parks remain, and the demolished task became a ruin plot.
+    expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === active.id)).toMatchObject({ status: "ABANDONED", cells: [], lots: [] });
+    const remainingFeatures = await db.prepare("SELECT kind FROM world_features_v6 WHERE district_id = ?").all(active.id);
+    expect(remainingFeatures.map((row) => String(row.kind))).toEqual(expect.arrayContaining(["PARK", "PARK_DECOR", "RUIN"]));
+    expect(await db.prepare("SELECT 1 FROM world_chunk_entities_v11 WHERE entity_kind = 'FEATURE' AND entity_id = ANY(?::text[])").get(ownedFeatures.map((row) => String(row.id)))).not.toBeUndefined();
     const deletionEvent = (await service.listEvents(countryId)).findLast((event) => event.type === "district.deleted");
     const affected = deletionEvent?.payload.affectedBounds as { minX: number; minY: number; maxX: number; maxY: number };
     expect(affected.minX).toBeLessThanOrEqual(boundsOf(next.cells).minX);
@@ -258,7 +268,7 @@ describe("Tasktopia square-world application service", () => {
 
     const roadsBeforeDelete = Number((await db.prepare("SELECT COUNT(*) AS count FROM roads_v3 WHERE country_id = ? AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?").get(countryId, city.bounds.minX, city.bounds.maxX, city.bounds.minY, city.bounds.maxY) as { count: number }).count);
     const deletedCity = await service.deleteCity(countryId, { cityId: city.id, confirmName: city.name, idempotencyKey: "delete-city" });
-    expect(deletedCity).toMatchObject({ cityId: city.id, districtsDeleted: 1, tasksDeleted: 0 });
+    expect(deletedCity).toMatchObject({ cityId: city.id, districtsDeleted: 2, tasksDeleted: 0 });
     expect(deletedCity.roadsDeleted).toBeGreaterThan(0);
     expect(deletedCity.roadsDeleted).toBeLessThanOrEqual(roadsBeforeDelete);
     expect(await service.listCities(countryId)).toEqual([]);

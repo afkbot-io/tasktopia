@@ -1,5 +1,5 @@
 export type TaskStatus = "PLANNING" | "STARTED" | "IN_PROGRESS" | "TESTING" | "COMPLETED";
-export type DistrictStatus = "PLANNED" | "ACTIVE" | "COMPLETED";
+export type DistrictStatus = "PLANNED" | "ACTIVE" | "COMPLETED" | "ABANDONED";
 export type CityStatus = "ACTIVE" | "ARCHIVED";
 export type TaskPriority = "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
 export type WorkItemType = "TASK" | "BUG" | "RELEASE" | "HOTFIX";
@@ -10,7 +10,7 @@ export type PlatformKind = "YARD" | "STONE" | "ASPHALT" | "SERVICE" | "PARK";
 export type CityMorphology = "BALANCED" | "DENSE_CORE" | "GARDEN_CITY" | "POLYCENTRIC";
 export type DistrictArchetype = "NEW_BUILD" | "PRIVATE" | "MIXED_URBAN" | "COMMERCIAL" | "CIVIC";
 export type SurfaceKind = "SIDEWALK" | "PATH" | "DRIVEWAY" | "SHOULDER" | "CROSSWALK";
-export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "PARK_DECOR";
+export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "PARK_DECOR" | "RUIN";
 export type CardinalOrientation = "N" | "E" | "S" | "W";
 export type CountryRole = "OWNER" | "MEMBER" | "VIEWER";
 export type McpScope = "country:read" | "cities:write" | "districts:write" | "tasks:read" | "tasks:write" | "comments:write";
@@ -18,8 +18,9 @@ export const MCP_SCOPES: readonly McpScope[] = [
   "country:read", "cities:write", "districts:write", "tasks:read", "tasks:write", "comments:write",
 ];
 export const MCP_READ_SCOPES: readonly McpScope[] = ["country:read", "tasks:read"];
-export type BlockPattern = "DENSE_SUPERBLOCK_3X3" | "DENSE_ROW" | "PRIVATE_STREET_ROW" | "PRIVATE_TWO_SIDED" | "PRIVATE_MEWS" | "COMMERCIAL_STRIP" | "CIVIC_CLUSTER";
+export type BlockPattern = "COMPLEX_ROW" | "COMPLEX_SLAB" | "COMPLEX_SQUARE" | "COMPLEX_L_SHAPE" | "COMPLEX_COURT" | "COMPLEX_POINT";
 export type PlannedLotRole = "PRIMARY" | "SUPPORT";
+export type PlannedLotPosition = "FRONTAGE" | "CORNER" | "COURTYARD";
 
 export type Cell = { x: number; y: number };
 export type Rect = { minX: number; minY: number; maxX: number; maxY: number };
@@ -73,19 +74,22 @@ export type PlannedLotDto = {
   width: number;
   height: number;
   taskId: string | null;
-  /** Optional V9 metadata. Old square-v7 districts remain valid without it. */
-  layoutVersion?: "block-v2";
+  /** V10 complex planning metadata. */
+  layoutVersion?: "block-v3";
+  /** Complex (ЖК) identifier — one perimeter block along one street group. */
   groupId?: string;
   pattern?: BlockPattern;
   slotIndex?: number;
   slotCount?: number;
-  rowIndex?: number;
   role?: PlannedLotRole;
+  /** Position inside the complex: street frontage, street corner or courtyard infill. */
+  position?: PlannedLotPosition;
   frontageSide?: CardinalOrientation;
   facadeFamily?: string;
-  alignmentX?: "START" | "CENTER" | "END";
-  alignmentY?: "START" | "CENTER" | "END";
+  /** Courtyard-loop skeleton; published as PATH only once the lot is committed. */
   sharedAccess?: Cell[];
+  /** Demolished building site (пустырь): kept reserved until redevelopment. */
+  vacant?: boolean;
 };
 
 export type DistrictDto = {

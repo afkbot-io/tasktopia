@@ -103,8 +103,10 @@ describe("authentication HTTP boundary", () => {
     const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: { cookie } })).json();
     expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
     expect(overviewChunk.terrain).toHaveLength(256);
-    expect(overviewChunk.surfaces.length).toBeLessThan(160);
-    expect(overviewChunk.surfaces.every((surface: SurfaceCellDto) => surface.kind === "PATH")).toBe(true);
+    // V10: the overview pedestrian layer contains SIDEWALK cells along every
+    // street plus PATH cells where a lot needed an extra footpath.
+    expect(overviewChunk.surfaces.length).toBeLessThan(400);
+    expect(overviewChunk.surfaces.every((surface: SurfaceCellDto) => surface.kind === "PATH" || surface.kind === "SIDEWALK")).toBe(true);
     expect(overviewChunk.worldFeatures).toEqual([]);
     expect(detailChunk.terrain).toHaveLength(4096);
     // A task footprint may legally straddle a chunk whose access surface is in

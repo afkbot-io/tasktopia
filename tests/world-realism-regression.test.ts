@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import manifest from "../assets/pixel-city-pack-v4/manifest.json";
-import { planBlockDistrict } from "../src/server/world/block-planner";
+import { planComplex } from "../src/server/world/complex-planner";
 import { rectangleFootprint } from "../src/server/world/grid";
 
 describe("world realism release invariants", () => {
@@ -8,23 +8,23 @@ describe("world realism release invariants", () => {
     expect(Object.hasOwn(manifest.tiles, "curb")).toBe(false);
   });
 
-  it("provides ten deterministic district compositions instead of mirrored copies", () => {
-    const origin = { x: 20, y: 30 };
-    const cells = rectangleFootprint(origin, 48, 32);
-    const signatures = Array.from({ length: 10 }, (_, groupOffset) => {
-      const plan = planBlockDistrict({
+  it("provides ten deterministic complex compositions instead of mirrored copies", () => {
+    const cells = rectangleFootprint({ x: 20, y: 30 }, 48, 32);
+    const signatures = Array.from({ length: 10 }, (_, complexIndex) => {
+      const plan = planComplex({
         districtId: "district",
-        origin,
-        width: 48,
-        height: 32,
+        complexIndex,
+        rect: { minX: 20, minY: 30, maxX: 67, maxY: 61 },
         cells,
         archetype: "PRIVATE",
-        groupOffset,
+        targetLots: 14,
+        seed: 4242 + complexIndex * 131,
       });
       return JSON.stringify({
-        road: plan.main,
-        lots: plan.lots.map((lot) => [lot.origin, lot.width, lot.height, lot.rowIndex]),
-        access: plan.lots.map((lot) => lot.sharedAccess),
+        shape: plan.shape,
+        streets: plan.streets,
+        lots: plan.lots.map((lot) => [lot.origin, lot.width, lot.height, lot.position]),
+        access: plan.courtyard,
       });
     });
     expect(new Set(signatures).size).toBe(10);

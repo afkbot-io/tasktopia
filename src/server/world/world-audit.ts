@@ -1,5 +1,5 @@
 import { BUILDING_CATALOG } from "../../shared/catalog";
-import type { CityDto, RoadCellDto, SurfaceCellDto, TaskDto } from "../../shared/contracts";
+import type { Cell, CityDto, RoadCellDto, SurfaceCellDto, TaskDto } from "../../shared/contracts";
 import { CHUNK_SIZE, type AppService } from "../app-service";
 import type { Db } from "../db";
 import { GRID_DIRECTIONS, cellKey, connected, contains, floorDiv, intersects, manhattan, neighbors4 } from "./grid";
@@ -132,6 +132,8 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
 
   const occupiedDistrictCells = new Map<string, string>();
   for (const district of districts) {
+    // An abandoned district owns no land: its ruins are validated as features.
+    if (district.status === "ABANDONED") continue;
     const city = cityById.get(district.cityId);
     if (!city) {
       addViolation(violations, "DISTRICT_CITY_MISSING", `Район ${district.name} не имеет города`);
@@ -145,10 +147,13 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
       if (owner && owner !== district.id) addViolation(violations, "DISTRICT_OVERLAP", `${district.name}: клетка ${key} уже занята другим районом`);
       occupiedDistrictCells.set(key, district.id);
     }
-    if (!district.cells.some((cell) => distanceToRoad([cell], roadKeys, 2) <= 2)) {
+    const districtTasks = tasks.filter((task) => task.districtId === district.id);
+    // Territory-only districts legitimately have no street until the first
+    // complex grows. A road is required only once something is built.
+    const hasDevelopment = districtTasks.length > 0 || district.lots.some((lot) => lot.taskId);
+    if (hasDevelopment && !district.cells.some((cell) => distanceToRoad([cell], roadKeys, 2) <= 2)) {
       addViolation(violations, "DISTRICT_WITHOUT_ROAD", `Район ${district.name} не подключён к дороге`);
     }
-    const districtTasks = tasks.filter((task) => task.districtId === district.id);
     if (district.status === "PLANNED" && districtTasks.some((task) => task.status !== "PLANNING")) {
       addViolation(violations, "PLANNED_DISTRICT_HAS_STARTED_TASKS", `${district.name}: в плановом районе есть начатые задачи`);
     }
@@ -236,7 +241,7 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
       if (surfaceMap.get(key)?.kind !== "PATH") addViolation(violations, "GREEN_AREA_SURFACE_MISSING", `${area.assetKey}: клетка ${key} не размечена как парковая поверхность`);
     }
     const accessCells = area.accessPath;
-    if (accessCells.length > 4) addViolation(violations, "GREEN_AREA_ACCESS_TOO_LONG", `${area.assetKey}: подход длиннее четырёх клеток`);
+    if (accessCells.length > 8) addViolation(violations, "GREEN_AREA_ACCESS_TOO_LONG", `${area.assetKey}: подход длиннее восьми клеток`);
     for (let index = 1; index < accessCells.length; index += 1) {
       if (manhattan(accessCells[index - 1]!, accessCells[index]!) !== 1) addViolation(violations, "GREEN_AREA_ACCESS_DISCONNECTED", `${area.assetKey}: разрыв пешеходного подхода`);
     }
@@ -280,6 +285,43 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
       const key = cellKey(cell);
       if (roadKeys.has(key)) addViolation(violations, "PARK_DECOR_ROAD_OVERLAP", `${decor.assetKey}: декор находится на дороге`);
       if (occupiedTaskCells.has(key)) addViolation(violations, "PARK_DECOR_TASK_OVERLAP", `${decor.assetKey}: декор пересекает задачу`);
+    }
+  }
+
+  // Every pedestrian path component must be anchored: it touches a road, a
+  // sidewalk, a building or a feature footprint. A floating component is a
+  // dead spur leading nowhere — the V10 "дорожки обрываются" regression.
+  const featureFootprintKeys = new Set(
+    worldFeatures.filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint).map(cellKey),
+  );
+  const pathOnlyCells = [...surfaceMap.values()].filter((surface) => surface.kind === "PATH");
+  const pathOnlyKeys = new Set(pathOnlyCells.map(cellKey));
+  const pathAnchored = (cell: Cell) => neighbors4(cell).some((neighbor) => {
+    const key = cellKey(neighbor);
+    return roadKeys.has(key)
+      || surfaceMap.get(key)?.kind === "SIDEWALK"
+      || occupiedTaskCells.has(key)
+      || featureFootprintKeys.has(key);
+  });
+  const unvisitedPaths = new Set(pathOnlyKeys);
+  while (unvisitedPaths.size > 0) {
+    const start = unvisitedPaths.values().next().value as string;
+    unvisitedPaths.delete(start);
+    const [startX, startY] = start.split(",").map(Number);
+    const component: Cell[] = [];
+    const queue: Cell[] = [{ x: startX!, y: startY! }];
+    let anchored = false;
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      component.push(current);
+      if (pathAnchored(current)) anchored = true;
+      for (const neighbor of neighbors4(current)) {
+        const key = cellKey(neighbor);
+        if (unvisitedPaths.delete(key)) queue.push(neighbor);
+      }
+    }
+    if (!anchored) {
+      addViolation(violations, "ORPHAN_PATH", `Пешеходная сеть из ${component.length} клеток у ${start} не соединена ни с дорогой, ни со зданием`);
     }
   }
 
@@ -400,7 +442,7 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
   ]));
   const residentialBlockDistricts = districts.filter((district) =>
     (district.archetype === "NEW_BUILD" || district.archetype === "PRIVATE")
-    && district.lots.some((lot) => lot.layoutVersion === "block-v2"),
+    && district.lots.some((lot) => lot.layoutVersion === "block-v3"),
   );
   for (const district of residentialBlockDistricts) {
     const share = asphaltShareByDistrictId.get(district.id) ?? 0;

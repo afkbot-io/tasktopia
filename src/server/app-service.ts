@@ -51,7 +51,7 @@ import {
 } from "./world/grid";
 import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "./world/terrain";
 import { stampRoadCorridor } from "./world/road-geometry";
-import { planBlockDistrict } from "./world/block-planner";
+import { planComplex } from "./world/complex-planner";
 import {
   ROAD_WIDTH,
   archetypeAffinity,
@@ -450,7 +450,7 @@ export class AppService {
           idempotencyKey: `regenerate-city:${city.id}`,
         });
         cityMap.set(city.id, generated.id);
-        for (const district of districtsByCity.get(city.id) ?? []) {
+        for (const district of (districtsByCity.get(city.id) ?? []).filter((item) => item.status !== "ABANDONED")) {
           const generatedDistrict = await generator.createDistrict(temporaryCountryId, {
             cityId: generated.id, name: district.name, goal: district.goal, description: district.description,
             deadline: district.deadline ?? undefined, capacitySp: district.capacitySp,
@@ -464,7 +464,7 @@ export class AppService {
               description: task.description, workItemType: task.workItemType, acceptanceCriteria: task.acceptanceCriteria,
               systemAnalysis: task.systemAnalysis, architecture: task.architecture, designSystem: task.designSystem,
               implementationPlan: task.implementationPlan, estimate: task.estimate, priority: task.priority,
-              dueAt: task.dueAt ?? undefined, buildingHint: task.buildingType,
+              dueAt: task.dueAt ?? undefined,
               idempotencyKey: `regenerate-task:${task.id}`,
             });
             taskMap.set(task.id, generatedTask.id);
@@ -484,7 +484,7 @@ export class AppService {
         await this.db.prepare(`UPDATE cities_v3 SET center_x = ?, center_y = ?, bounds_json = ?, style_id = ? WHERE id = ?`)
           .run(generated.center.x, generated.center.y, JSON.stringify(generated.bounds), generated.styleId, city.id);
       }
-      for (const district of districts) {
+      for (const district of districts.filter((item) => item.status !== "ABANDONED")) {
         const generated = generatedDistricts.get(districtMap.get(district.id)!);
         if (!generated) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию района");
         const lots = generated.lots.map((lot) => ({ ...lot, taskId: lot.taskId ? reverseTaskMap.get(lot.taskId) ?? null : null }));
@@ -903,7 +903,7 @@ export class AppService {
     const sealed = await this.completedDistrictCells(countryId);
     const reservedFootprints = [
       ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, task.entrance, ...task.accessPath]),
-      ...(await this.listWorldFeatures(countryId)).flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
+      ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
       ...(await this.listDistricts(countryId)).flatMap((district) => district.lots.flatMap((lot) => [
                     ...rectangleFootprint(lot.origin, lot.width, lot.height),
                     ...(lot.sharedAccess ?? []),
@@ -963,7 +963,7 @@ export class AppService {
     const sealed = await this.completedDistrictCells(countryId);
     const committedFootprints = new Set([
       ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, task.entrance, ...task.accessPath]),
-      ...(await this.listWorldFeatures(countryId)).flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
+      ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
     ].map(cellKey));
     // Pathfinding protects the road centerline. The final two/three-cell-wide
     // corridor needs its own guard because a lateral lane may otherwise spill
@@ -988,6 +988,25 @@ export class AppService {
       }
       corridor = corridor.filter((cell) => connectedToNetwork.has(cellKey(cell)));
     }
+    // Prune dangling bridge tips: a corridor cap that lands on water at a path
+    // end (or a lateral lane beside it) becomes a one-sided bridge with no
+    // second land portal. Through-bridges keep land on both sides and survive.
+    // Existing road cells are never pruned — only cells this path would add.
+    let pruned = true;
+    while (pruned) {
+      pruned = false;
+      const present = new Set([...roads.keys(), ...corridor.map(cellKey)]);
+      corridor = corridor.filter((cell) => {
+        if (roads.has(cellKey(cell))) return true;
+        if (!isWater(terrainAt(seed, cell.x, cell.y).terrain)) return true;
+        const degree = neighbors4(cell).filter((next) => present.has(cellKey(next))).length;
+        if (degree <= 1) {
+          pruned = true;
+          return false;
+        }
+        return true;
+      });
+    }
     const upsert = this.db.prepare("INSERT INTO roads_v3 (country_id, x, y, mask, structure, road_class) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(country_id, x, y) DO UPDATE SET structure = excluded.structure, road_class = excluded.road_class");
     for (const cell of corridor) {
       const terrain = terrainAt(seed, cell.x, cell.y).terrain;
@@ -1002,6 +1021,8 @@ export class AppService {
       upsert.run(countryId, cell.x, cell.y, updated.mask, structure, selectedClass);
     }
     await this.recalculateRoadMasks(countryId, corridor);
+    // A road corridor redevelops any ruin plot it crosses.
+    await this.clearRuins(countryId, corridor);
     this.surfaceCache.delete(countryId);
   }
 
@@ -1055,7 +1076,7 @@ export class AppService {
   private async highwayAnchor(countryId: string, target: Cell, cities: CityDto[]): Promise<Cell | undefined> {
     const highways = [...(await this.roadCells(countryId)).values()].filter((road) => road.roadClass === "HIGHWAY");
     const originalCities = cities.map((city) => rectForCenter(city.center));
-    const districtEnvelopes = (await this.listDistricts(countryId)).map((district) => expandRect(boundsOf(district.cells), 3));
+    const districtEnvelopes = (await this.listDistricts(countryId)).filter((district) => district.cells.length > 0).map((district) => expandRect(boundsOf(district.cells), 3));
     const rural = highways.filter((road) =>
       !originalCities.some((bounds) => contains(bounds, road))
       && !districtEnvelopes.some((bounds) => contains(bounds, road)),
@@ -1073,7 +1094,7 @@ export class AppService {
     const roads = await this.roadCells(countryId);
     const occupied = new Set([
       ...(await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey),
-      ...(await this.listWorldFeatures(countryId)).flatMap((feature) => feature.footprint).map(cellKey),
+      ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint).map(cellKey),
     ]);
     return footprint.every((cell) => !roads.has(cellKey(cell))
       && !occupied.has(cellKey(cell))
@@ -1116,16 +1137,19 @@ export class AppService {
     for (const start of starts.values()) if (surfaces.get(cellKey(start))?.kind === "SIDEWALK") return [start];
     const queue = [...starts.values()].map((cell) => ({ cell, path: [cell] }));
     const visited = new Set<string>();
+    // A park alley may run up to eight cells: green areas legitimately sit a
+    // short walk behind the frontage rows, unlike building entrances.
+    const maxAlley = 8;
     while (queue.length > 0) {
       const state = queue.shift()!;
       const stateKey = cellKey(state.cell);
-      if (visited.has(stateKey) || state.path.length > 4) continue;
+      if (visited.has(stateKey) || state.path.length > maxAlley) continue;
       visited.add(stateKey);
       if (roads.has(stateKey) || occupied.has(stateKey) || footprintKeys.has(stateKey) || !isBuildableTerrain(terrainAt(seed, state.cell.x, state.cell.y).terrain)) continue;
       for (const next of neighbors4(state.cell)) {
         const nextKey = cellKey(next);
         if (surfaces.get(nextKey)?.kind === "SIDEWALK") return state.path;
-        if (state.path.length >= 4 || !allowed.has(nextKey) || surfaces.has(nextKey) || roads.has(nextKey) || footprintKeys.has(nextKey) || occupied.has(nextKey)) continue;
+        if (state.path.length >= maxAlley || !allowed.has(nextKey) || surfaces.has(nextKey) || roads.has(nextKey) || footprintKeys.has(nextKey) || occupied.has(nextKey)) continue;
         queue.push({ cell: next, path: [...state.path, next] });
       }
     }
@@ -1162,7 +1186,7 @@ export class AppService {
     const surfaces = await this.localSurfaceCells(countryId, bounds, roads);
     const occupied = new Set([
       ...(await this.listTasks(countryId)).flatMap((task) => task.footprint),
-      ...existingFeatures.flatMap((feature) => feature.footprint),
+      ...existingFeatures.filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint),
       ...reservedLots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)),
       ...reservedLots.flatMap((lot) => lot.sharedAccess ?? []),
     ].map(cellKey));
@@ -1195,6 +1219,7 @@ export class AppService {
                               orientation: "S",
                               accessPath: selected.accessPath,
                             });
+    await this.clearRuins(countryId, selected.footprint);
 
     const decor = kind === "PARK"
       ? [
@@ -1356,19 +1381,42 @@ export class AppService {
                       const hub = this.cityHub(seed, center);
                       const protectedUrbanEnvelopes = [
                         ...cities.map((city) => rectForCenter(city.center)),
-                        ...(await this.listDistricts(countryId)).map((district) => expandRect(boundsOf(district.cells), 3)),
+                        ...(await this.listDistricts(countryId)).filter((district) => district.cells.length > 0).map((district) => expandRect(boundsOf(district.cells), 3)),
                       ];
                       // A connector branches from a rural highway and routes around every
                       // existing district. The new 100x100 reservation is protected as well so
                       // the route reaches only its chosen portal.
                       const connector = await this.route(countryId, seed, source, portal, [...protectedUrbanEnvelopes, bounds], [], 3);
-                      await this.addRoadPath(countryId, seed, connector, "HIGHWAY");
+                      // The first-city approach point sits at the viewport edge
+                      // without a terrain check. When that edge is water, the
+                      // stamped highway would begin mid-lake — a bridge with a
+                      // single land portal. Trim the leading water cells so the
+                      // highway starts on the first dry shoreline; interior
+                      // water spans further along stay proper two-portal bridges.
+                      const dryConnector = nearest ? connector : (() => {
+                        let startIndex = 0;
+                        const dryAt = (cell: Cell) => [-2, -1, 0, 1, 2].every((offset) =>
+                          isBuildableTerrain(terrainAt(seed, cell.x + offset, cell.y).terrain)
+                          && isBuildableTerrain(terrainAt(seed, cell.x, cell.y + offset).terrain));
+                        while (startIndex < connector.length - 1 && !dryAt(connector[startIndex]!)) startIndex += 1;
+                        return connector.slice(startIndex);
+                      })();
+                      await this.addRoadPath(countryId, seed, dryConnector, "HIGHWAY");
                       await this.addRoadPath(countryId, seed, orthogonalPath(portal, gateway.cell, gateway.horizontalApproach), "HIGHWAY");
                       await this.addRoadPath(countryId, seed, orthogonalPath(gateway.cell, hub, gateway.horizontalApproach), "ARTERIAL");
+                      // The hub cross is stamped, not routed: trim each ray so a
+                      // collector never dead-ends into water. Interior water spans
+                      // stay and become proper bridges with two land portals.
+                      const hubRay = (dx: number, dy: number) => {
+                        const cells: Cell[] = [];
+                        for (let step = 1; step <= 11; step += 1) cells.push({ x: hub.x + dx * step, y: hub.y + dy * step });
+                        while (cells.length > 0 && !isBuildableTerrain(terrainAt(seed, cells.at(-1)!.x, cells.at(-1)!.y).terrain)) cells.pop();
+                        return cells;
+                      };
                       const hubArm = gateway.horizontalApproach
-                        ? orthogonalPath({ x: hub.x, y: hub.y - 11 }, { x: hub.x, y: hub.y + 11 }, false)
-                        : orthogonalPath({ x: hub.x - 11, y: hub.y }, { x: hub.x + 11, y: hub.y }, true);
-                      await this.addRoadPath(countryId, seed, hubArm, "COLLECTOR");
+                        ? [...hubRay(0, -1).reverse(), { x: hub.x, y: hub.y }, ...hubRay(0, 1)]
+                        : [...hubRay(-1, 0).reverse(), { x: hub.x, y: hub.y }, ...hubRay(1, 0)];
+                      if (hubArm.length > 1) await this.addRoadPath(countryId, seed, hubArm, "COLLECTOR");
                       // A later intercity connector may briefly reuse the exit road of an
                       // existing city. Its urban portion must remain an arterial.
                       for (const existingCity of cities) await this.normalizeUrbanHighways(countryId, existingCity.bounds);
@@ -1543,79 +1591,290 @@ export class AppService {
     return limit + 1;
   }
 
-  private planLots(
-    cells: Cell[],
-    roads: Map<string, RoadCellDto>,
-    surfaces: Map<string, SurfaceCellDto>,
-    existing: PlannedLotDto[] = [],
-    preferredSizes: ReadonlyArray<readonly [number, number]> = [],
-    lotLimit = 64,
-    archetype: DistrictArchetype = "MIXED_URBAN",
-  ): PlannedLotDto[] {
-    const allowed = new Set(cells.map(cellKey));
-    const occupied = new Set<string>();
-    for (const lot of existing) for (const cell of rectangleFootprint(lot.origin, lot.width, lot.height)) occupied.add(cellKey(cell));
-    const lots = [...existing];
-    const bounds = boundsOf(cells);
-    const defaultSizes = archetype === "NEW_BUILD"
-      ? [[7, 6], [6, 5], [5, 5], [5, 4], [4, 4], [4, 3]] as const
-      : archetype === "PRIVATE"
-        ? [[5, 4], [4, 4], [4, 3], [3, 3], [3, 2], [2, 2]] as const
-        : archetype === "COMMERCIAL" || archetype === "CIVIC"
-          ? [[8, 6], [7, 5], [6, 5], [6, 4], [5, 4], [4, 3], [3, 2]] as const
-          : [[7, 5], [6, 5], [6, 4], [5, 4], [4, 3], [3, 3], [3, 2], [2, 2]] as const;
-    const sizes = [...preferredSizes, ...defaultSizes]
-      .filter(([width, height], index, all) => all.findIndex(([otherWidth, otherHeight]) => width === otherWidth && height === otherHeight) === index);
-    let added = true;
-    // A district may contain many one-point tasks. Keep a generous inventory of
-    // differently sized plots; the SP limit remains the product-level capacity
-    // guard, while this limit only protects the planning loop from malformed data.
-    while (added && lots.length < lotLimit) {
-      added = false;
-      for (const [width, height] of sizes) {
-        let placed = false;
-        for (let y = bounds.minY; y <= bounds.maxY - height + 1 && !placed; y += 1) {
-          for (let x = bounds.minX; x <= bounds.maxX - width + 1 && !placed; x += 1) {
-            const footprint = rectangleFootprint({ x, y }, width, height);
-            if (!footprint.every((cell) => allowed.has(cellKey(cell)) && !roads.has(cellKey(cell)) && !surfaces.has(cellKey(cell)) && !occupied.has(cellKey(cell)))) continue;
-            const access = footprint.some((cell) => this.distanceToSurface(cell, surfaces, 6) <= 6);
-            if (!access) continue;
-            const lot: PlannedLotDto = { id: randomUUID(), origin: { x, y }, width, height, taskId: null };
-            lots.push(lot);
-            for (const cell of footprint) occupied.add(cellKey(cell));
-            placed = true;
-            added = true;
-          }
-        }
-      }
+  /** Demolished plots whose footprint intersects the given cells are removed. */
+  private async clearRuins(countryId: string, cells: Cell[]): Promise<void> {
+    if (cells.length === 0) return;
+    const keys = new Set(cells.map(cellKey));
+    const ruins = (await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "RUIN");
+    const remove = this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?");
+    for (const ruin of ruins) {
+      if (ruin.footprint.some((cell) => keys.has(cellKey(cell)))) await remove.run(ruin.id);
     }
-    return lots;
   }
 
-  private async replanDistrictLots(countryId: string, district: DistrictDto, entry: BuildingCatalogEntry): Promise<DistrictDto> {
-    // Block-v2 lots are deliberately oversized reservations. They are compacted
-    // to the selected building footprint at assignment time; a generic scan
-    // would destroy row order and regress back to independent scattered lots.
-    if (district.lots.some((lot) => lot.layoutVersion === "block-v2")) return district;
-    const committed = district.lots.filter((lot) => lot.taskId);
-    const preferred = [
-      [entry.footprint.width, entry.footprint.height],
-      [entry.footprint.width + 1, entry.footprint.height],
-      [entry.footprint.width, entry.footprint.height + 1],
-    ] as const;
-    const roads = await this.roadCells(countryId);
-    const lots = this.planLots(
-      district.cells,
-      roads,
-      await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]),
-      committed,
-      preferred,
-      Math.max(96, committed.length + 48),
-      district.archetype,
+  /**
+   * V10 organic growth. The next complex (ЖК) is placed inside the district
+   * territory directly against the existing development; when the territory is
+   * full, the territory itself grows first and the complex follows. Streets are
+   * published only together with the complex that needs them — a road never
+   * appears ahead of demand.
+   */
+  private async growDistrict(countryId: string, district: DistrictDto, entry: BuildingCatalogEntry): Promise<DistrictDto> {
+    if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "Закрытый район больше не расширяется");
+    const seed = Number((await this.countryRow(countryId)).seed);
+    const taskCount = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE district_id = ?").get(district.id) as Row).count);
+    const targetLots = Math.max(4, Math.min(16, Math.ceil(Math.max(1, district.capacitySp - taskCount) * 1.15)));
+    const complexIndex = new Set(district.lots.map((lot) => lot.groupId).filter(Boolean)).size;
+
+    const infill = await this.tryGrowComplex(countryId, district, entry, boundsOf(district.cells), complexIndex, targetLots, seed);
+    if (infill) return infill;
+
+    const originalBounds = boundsOf(district.cells);
+    const existingKeys = new Set(district.cells.map(cellKey));
+    const blockedByDistrict = new Set(
+      (await this.listDistricts(countryId))
+                        .filter((candidate) => candidate.id !== district.id)
+                        .flatMap((candidate) => candidate.cells)
+                        .map(cellKey),
     );
-    await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?").run(JSON.stringify(lots), district.id);
-    return { ...district, lots };
+    const directions = ([district.growthDirection, "E", "S", "W", "N"] as GrowthDirection[])
+      .filter((value, index, all) => all.indexOf(value) === index);
+    for (const thickness of [24, 28, 32]) {
+      for (const direction of directions) {
+        const shoulder = 4;
+        let patchRect: Rect;
+        if (direction === "E") patchRect = { minX: originalBounds.maxX + 1, maxX: originalBounds.maxX + thickness, minY: originalBounds.minY - shoulder, maxY: originalBounds.maxY + shoulder };
+        else if (direction === "W") patchRect = { minX: originalBounds.minX - thickness, maxX: originalBounds.minX - 1, minY: originalBounds.minY - shoulder, maxY: originalBounds.maxY + shoulder };
+        else if (direction === "S") patchRect = { minX: originalBounds.minX - shoulder, maxX: originalBounds.maxX + shoulder, minY: originalBounds.maxY + 1, maxY: originalBounds.maxY + thickness };
+        else patchRect = { minX: originalBounds.minX - shoulder, maxX: originalBounds.maxX + shoulder, minY: originalBounds.minY - thickness, maxY: originalBounds.minY - 1 };
+
+        const available = rectangleFootprint(
+          { x: patchRect.minX, y: patchRect.minY },
+          patchRect.maxX - patchRect.minX + 1,
+          patchRect.maxY - patchRect.minY + 1,
+        ).filter((cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain) && !blockedByDistrict.has(cellKey(cell)));
+        const availableKeys = new Set(available.map(cellKey));
+        const queue = available.filter((cell) => neighbors4(cell).some((next) => existingKeys.has(cellKey(next))));
+        const reachable = new Map<string, Cell>();
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          const key = cellKey(current);
+          if (reachable.has(key)) continue;
+          reachable.set(key, current);
+          for (const next of neighbors4(current)) if (availableKeys.has(cellKey(next)) && !reachable.has(cellKey(next))) queue.push(next);
+        }
+        const patch = [...reachable.values()];
+        if (patch.length < 300) continue;
+        const patchBounds = boundsOf(patch);
+        const grown: DistrictDto = { ...district, cells: [...district.cells, ...patch], growthDirection: direction };
+        const sited = await this.tryGrowComplex(countryId, grown, entry, patchBounds, complexIndex, targetLots, seed);
+        if (!sited) continue;
+        const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
+        const city = cityDto(cityRow);
+        const expandedCity = unionRect(city.bounds, expandRect(patchBounds, 8));
+        if (JSON.stringify(expandedCity) !== JSON.stringify(city.bounds)) await this.db.prepare("UPDATE cities_v3 SET bounds_json = ? WHERE id = ?").run(JSON.stringify(expandedCity), city.id);
+        await this.normalizeUrbanHighways(countryId, expandedCity);
+        return sited;
+      }
+    }
+    throw new DomainError("PLACEMENT_BLOCKED", "Район не удалось расширить новым комплексом без пересечений");
   }
+
+  /**
+   * Site one complex inside the search bounds, connect it to the road network
+   * and publish its streets. Returns the updated district or null when no
+   * valid site exists there.
+   */
+  private async tryGrowComplex(
+    countryId: string,
+    district: DistrictDto,
+    entry: BuildingCatalogEntry,
+    searchBounds: Rect,
+    complexIndex: number,
+    targetLots: number,
+    seed: number,
+  ): Promise<DistrictDto | null> {
+    const allowed = new Set(district.cells.map(cellKey));
+    const roads = await this.roadCells(countryId);
+    const occupied = new Set([
+      ...(await this.listTasks(countryId)).flatMap((task) => task.footprint),
+      ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint),
+    ].map(cellKey));
+    const blockedByDistrict = new Set(
+      (await this.listDistricts(countryId))
+                        .filter((candidate) => candidate.id !== district.id)
+                        .flatMap((candidate) => candidate.cells)
+                        .map(cellKey),
+    );
+    const sealed = await this.completedDistrictCells(countryId);
+    // Streets are shared infrastructure: a connector may cross a still-growing
+    // neighbour's empty territory (its future complexes simply avoid the road),
+    // but never a sealed district. The first pass still prefers a corridor that
+    // stays on neutral ground.
+    const foreignSoft = new Set([...blockedByDistrict].filter((key) => !sealed.has(key)));
+    const districtRoads = [...roads.values()].filter((road) => allowed.has(cellKey(road)));
+    const safeRoads = [...roads.values()].filter((road) => !sealed.has(cellKey(road)) || neighbors4(road).some((cell) => !sealed.has(cellKey(cell))));
+    // Infill grows directly against the district's own streets. A fresh
+    // territory lobe can sit away from them, so there the complex anchors to
+    // the shared road network and reaches it with a longer access road.
+    const nearDistrictRoads = districtRoads.filter((road) => contains(expandRect(searchBounds, 16), road));
+    const anchors = nearDistrictRoads.length > 0 ? nearDistrictRoads : safeRoads;
+    const maxAdjacency = nearDistrictRoads.length > 0 ? 8 : 24;
+    if (anchors.length === 0) return null;
+    const expectedRole = this.lotRoleForEntry(district.archetype, entry);
+    const strictRoles = district.archetype === "NEW_BUILD" || district.archetype === "PRIVATE";
+
+    // Demand-driven footprint: roughly sixty cells per planned building with a
+    // seeded aspect, so complexes vary between wide slabs and compact courts.
+    // The rect is capped to the search bounds — a smaller territory simply
+    // hosts a smaller first complex and grows more of them later. The first
+    // complex never swallows the whole territory: at most ~70% of it, so a
+    // pocket park and later infill always have land left.
+    const boundsWidth = searchBounds.maxX - searchBounds.minX + 1;
+    const boundsHeight = searchBounds.maxY - searchBounds.minY + 1;
+    if (boundsWidth < 14 || boundsHeight < 12) return null;
+    const territoryCap = complexIndex === 0 ? Math.max(240, Math.floor(allowed.size * 0.7)) : Number.POSITIVE_INFINITY;
+    const area = Math.min(targetLots * 60, territoryCap);
+    const aspect = 0.7 + hashCoordinate(seed, searchBounds.minX, searchBounds.minY, 941 + complexIndex) * 0.9;
+    const rectWidth = Math.max(12, Math.min(40, boundsWidth - 2, Math.round(Math.sqrt(area * aspect))));
+    const rectHeight = Math.max(10, Math.min(34, boundsHeight - 2, Math.round(area / rectWidth)));
+
+    const searchCenter = {
+      x: Math.floor((searchBounds.minX + searchBounds.maxX) / 2),
+      y: Math.floor((searchBounds.minY + searchBounds.maxY) / 2),
+    };
+    const candidates: Array<{ rect: Rect; score: number }> = [];
+    for (let y = searchBounds.minY + 1; y + rectHeight - 1 <= searchBounds.maxY - 1; y += 3) {
+      for (let x = searchBounds.minX + 1; x + rectWidth - 1 <= searchBounds.maxX - 1; x += 3) {
+        const rect: Rect = { minX: x, minY: y, maxX: x + rectWidth - 1, maxY: y + rectHeight - 1 };
+        const rectCells = rectangleFootprint({ x, y }, rectWidth, rectHeight);
+        // The district silhouette has cut corners, so a complex nearly as big
+        // as the territory can never be fully inside it. Accept sites that are
+        // mostly inside; the planner drops the few lots that fall outside.
+        const insideCount = rectCells.filter((cell) => allowed.has(cellKey(cell))).length;
+        if (insideCount / rectCells.length < 0.9) continue;
+        if (rectCells.some((cell) => roads.has(cellKey(cell)) || occupied.has(cellKey(cell)))) continue;
+        const unsuitable = rectCells.filter((cell) => !isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain)).length;
+        if (unsuitable / rectCells.length > 0.06) continue;
+        // Organic rule: the next complex grows directly against the existing
+        // streets. The first complex of a district anchors to the closest road.
+        const adjacency = Math.min(...anchors.map((road) => {
+          const dx = Math.max(0, rect.minX - road.x, road.x - rect.maxX);
+          const dy = Math.max(0, rect.minY - road.y, road.y - rect.maxY);
+          return dx + dy;
+        }));
+        if (adjacency > maxAdjacency) continue;
+        const center = { x: x + Math.floor(rectWidth / 2), y: y + Math.floor(rectHeight / 2) };
+        const score = adjacency * 6 + unsuitable * 30 + manhattan(center, searchCenter) * 0.5 + hashCoordinate(seed, x, y, 953) * 4;
+        candidates.push({ rect, score });
+      }
+    }
+
+    for (const candidate of candidates.sort((left, right) => left.score - right.score).slice(0, 12)) {
+      const plan = planComplex({
+        districtId: district.id,
+        complexIndex,
+        rect: candidate.rect,
+        cells: district.cells,
+        archetype: district.archetype,
+        targetLots,
+        seed,
+        reserveSupport: !district.lots.some((lot) => lot.role === "SUPPORT"),
+      });
+      // Strict archetypes never sacrifice their few service slots to housing,
+      // but a service building may occupy a regular lot when no service slot
+      // fits it — zoning guides placement, it never deadlocks growth.
+      const fitsEntry = (lots: PlannedLotDto[]) => {
+        const fittingLots = lots.filter((lot) => entry.footprint.width <= lot.width && entry.footprint.height <= lot.height);
+        const roleFitting = fittingLots.filter((lot) => lot.role === expectedRole);
+        return strictRoles && expectedRole === "PRIMARY" ? roleFitting.length > 0 : fittingLots.length > 0;
+      };
+      if (!fitsEntry(plan.lots)) continue;
+      const corridors = plan.streets.flatMap((segment) => this.roadCorridor(segment, "LOCAL"));
+      if (corridors.some((cell) => occupied.has(cellKey(cell)) || blockedByDistrict.has(cellKey(cell)))) continue;
+      const reserved = plan.lots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height));
+      const reservedKeys = new Set(reserved.map(cellKey));
+      const endpoints = plan.streets.flatMap((segment) => [segment[0]!, segment.at(-1)!]);
+      const pairs = anchors.flatMap((road) => endpoints.map((endpoint) => ({ road, endpoint, distance: manhattan(road, endpoint) })))
+        .sort((left, right) => left.distance - right.distance)
+        .slice(0, 24);
+      // Committed buildings/features and sealed districts are hard stops.
+      // Planned lots are soft reservations and a growing neighbour's empty
+      // territory is shared ground: the passes prefer a clean corridor, then
+      // allow crossing foreign territory, and finally let the connector cut
+      // through at most two corner lots — sacrificing those plots to the
+      // street rather than losing the complex.
+      let connector: Cell[] | null = null;
+      let sacrificedLotIds = new Set<string>();
+      const connectorClass = complexIndex === 0 ? "COLLECTOR" : "LOCAL";
+      for (const [allowLotClipping, allowForeign] of [[false, false], [false, true], [true, true]] as const) {
+        for (const pair of pairs) {
+          try {
+            // Short hops stay cheap: take the orthogonal line first and only
+            // pay for A* when the direct corridor clips a reservation.
+            let path = pair.distance <= 4
+              ? orthogonalPath(pair.road, pair.endpoint, Math.abs(pair.road.x - pair.endpoint.x) >= Math.abs(pair.road.y - pair.endpoint.y))
+              : await this.route(countryId, seed, pair.road, pair.endpoint, [], allowLotClipping ? [] : reserved, 1, true);
+            let corridorCells = this.roadCorridor(path, connectorClass);
+            const hardBlocked = (cell: Cell) => {
+              const key = cellKey(cell);
+              return occupied.has(key) || (blockedByDistrict.has(key) && !allowForeign && foreignSoft.has(key))
+                || (blockedByDistrict.has(key) && !foreignSoft.has(key));
+            };
+            const softBlocked = (cell: Cell) => hardBlocked(cell) || (!allowLotClipping && reservedKeys.has(cellKey(cell)));
+            if (pair.distance <= 4 && corridorCells.some(softBlocked)) {
+              path = await this.route(countryId, seed, pair.road, pair.endpoint, [], allowLotClipping ? [] : reserved, 1, true);
+              corridorCells = this.roadCorridor(path, connectorClass);
+            }
+            if (corridorCells.some(hardBlocked)) continue;
+            if (!allowLotClipping) {
+              if (corridorCells.some((cell) => reservedKeys.has(cellKey(cell)))) continue;
+            } else {
+              const clippedKeys = new Set(corridorCells.filter((cell) => reservedKeys.has(cellKey(cell))).map(cellKey));
+              const hit = clippedKeys.size === 0
+                ? []
+                : plan.lots.filter((lot) => rectangleFootprint(lot.origin, lot.width, lot.height).some((cell) => clippedKeys.has(cellKey(cell))));
+              if (hit.length > 2) continue;
+              if (!fitsEntry(plan.lots.filter((lot) => !hit.some((dropped) => dropped.id === lot.id)))) continue;
+              sacrificedLotIds = new Set(hit.map((lot) => lot.id));
+            }
+            connector = path;
+            break;
+          } catch (error) {
+            if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+          }
+        }
+        if (connector) break;
+      }
+      if (!connector) continue;
+      await this.addRoadPath(countryId, seed, connector, connectorClass);
+      // Segments stick only where they meet the existing network, so streets
+      // go out in reachability order: each pass publishes every segment that
+      // touches a road published so far — the spine streets bridge the
+      // parallel tier streets into one connected component.
+      const published = new Set((await this.roadCells(countryId)).keys());
+      let pending = [...plan.streets];
+      while (pending.length > 0) {
+        const ready = pending.filter((segment) => segment.some((cell) =>
+          published.has(cellKey(cell)) || neighbors4(cell).some((next) => published.has(cellKey(next)))));
+        const batch = ready.length > 0 ? ready : pending;
+        for (const segment of batch) {
+          await this.addRoadPath(countryId, seed, segment, "LOCAL");
+          for (const cell of this.roadCorridor(segment, "LOCAL")) published.add(cellKey(cell));
+        }
+        pending = pending.filter((segment) => !batch.includes(segment));
+      }
+      await this.clearRuins(countryId, [...this.roadCorridor(connector, connectorClass), ...corridors]);
+      const lots = [...district.lots, ...plan.lots.filter((lot) => !sacrificedLotIds.has(lot.id))];
+      await this.db.prepare("UPDATE districts_v3 SET cells_json = ?, lots_json = ?, growth_direction = ? WHERE id = ?")
+                                                  .run(JSON.stringify(district.cells), JSON.stringify(lots), district.growthDirection, district.id);
+      // Green areas arrive together with the first streets: a pocket park or
+      // grove is tucked into the remaining territory, away from planned lots.
+      const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
+      const districtIndex = (await this.listDistricts(countryId, district.cityId)).findIndex((item) => item.id === district.id);
+      await this.publishDistrictGreenFeature(countryId, cityDto(cityRow), district.id, seed, district.cells, district.archetype, Math.max(0, districtIndex), lots);
+      return { ...district, lots };
+    }
+    // Demand overshoots the remaining land: retry with a smaller complex
+    // (16 → 9 → 5 → 3 lots). The failure path mutated nothing, and a compact
+    // infill block beats surrendering to a full territory patch.
+    const nextTarget = Math.floor(targetLots * 0.6);
+    if (nextTarget >= 3 && nextTarget < targetLots) {
+      return this.tryGrowComplex(countryId, district, entry, searchBounds, complexIndex, nextTarget, seed);
+    }
+    return null;
+  }
+
 
   private districtGrowthReserve(district: DistrictDto, depth = 16): Rect {
     const bounds = boundsOf(district.cells);
@@ -1669,6 +1928,7 @@ export class AppService {
             ? 201
             : Math.min(...frontageEndpoints.flatMap((endpoint) => preferredRoads.map((road) => manhattan(endpoint, road))));
           const districtDistance = cityDistricts.length === 0 ? 0 : Math.min(...cityDistricts.map((district) => {
+            if (district.cells.length === 0) return 24;
             const other = boundsOf(district.cells);
             const dx = Math.max(0, other.minX - candidateBounds.maxX - 1, candidateBounds.minX - other.maxX - 1);
             const dy = Math.max(0, other.minY - candidateBounds.maxY - 1, candidateBounds.minY - other.maxY - 1);
@@ -1677,6 +1937,7 @@ export class AppService {
           const centerDistance = manhattan(center, city.center);
           const candidateDirection = this.outwardDirection(city, center);
           const repeatedDirection = cityDistricts.filter((district) => {
+            if (district.cells.length === 0) return false;
             const districtBounds = boundsOf(district.cells);
             const districtCenter = {
               x: Math.floor((districtBounds.minX + districtBounds.maxX) / 2),
@@ -1729,71 +1990,53 @@ export class AppService {
                         existing: existingDistricts,
                         variation: hashCoordinate(seed, city.center.x, city.center.y, 533 + existingDistricts.length),
                       });
-                      // A V9 district reserves a whole coherent block. The extra depth holds
-                      // pedestrian courtyards and three building rows while one frontage road
-                      // serves the entire group.
-                      // Six untouched cells on the outer edge are reserved for a pocket park
-                      // or grove; the block planner itself still keeps buildings tightly packed.
-                      const width = 40;
-                      const height = 28;
+                      // V10: a district starts as pure territory — no streets, no
+                      // lots. The first task grows the first complex (ЖК) inside it,
+                      // so roads never appear ahead of demand. The territory is sized
+                      // to the planned capacity (~64 cells per building) and takes a
+                      // seeded aspect so districts read as varied urban shapes.
+                      const area = Math.max(576, Math.min(2600, capacity * 64));
+                      const aspects = [1, 1.6, 0.62, 1.9, 0.53] as const;
+                      const aspect = aspects[Math.floor(hashCoordinate(seed, city.center.x, city.center.y, 557 + existingDistricts.length) * aspects.length)]!;
+                      const width = Math.max(18, Math.min(44, Math.round(Math.sqrt(area * aspect))));
+                      const height = Math.max(14, Math.min(36, Math.round(area / width)));
                       const id = randomUUID();
                       const existingRoads = await this.roadCells(countryId);
                       const occupied = new Set([
                         ...existingRoads.keys(),
                         ...(await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey),
-                        ...(await this.listWorldFeatures(countryId)).flatMap((feature) => feature.footprint).map(cellKey),
+                        ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint).map(cellKey),
                       ]);
-                      const site = await this.selectDistrictSite(countryId, city, seed, width, height, (origin, cells) => {
-                                                                                const candidatePlan = planBlockDistrict({ districtId: id, origin, width, height, cells, archetype, groupOffset: existingDistricts.length });
-                                                                                return candidatePlan.lots.length >= 3
-                                                                                  && cells.every((cell) => !existingRoads.has(cellKey(cell)))
-                                                                                  && candidatePlan.lots.every((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)
-                                                                                    .every((cell) => !occupied.has(cellKey(cell))));
-                                                                              });
+                      const site = await this.selectDistrictSite(countryId, city, seed, width, height, (_origin, cells) =>
+                                                                                cells.every((cell) => !occupied.has(cellKey(cell))));
+                      // A remote site receives its access road together with the
+                      // territory: a collector stub runs from the nearest street
+                      // to the site edge, so the first complex can anchor later.
+                      // Sites already near the network skip it — their complexes
+                      // connect on their own when they grow.
+                      if (existingDistricts.length > 0) {
+                        const sealedCells = await this.completedDistrictCells(countryId);
+                        const anchorRoads = [...existingRoads.values()].filter((road) =>
+                          road.roadClass !== "HIGHWAY" && (!sealedCells.has(cellKey(road)) || neighbors4(road).some((cell) => !sealedCells.has(cellKey(cell)))));
+                        if (anchorRoads.length > 0) {
+                          const siteBounds = boundsOf(site.cells);
+                          const gapTo = (road: Cell) =>
+                            Math.max(0, siteBounds.minX - road.x, road.x - siteBounds.maxX)
+                            + Math.max(0, siteBounds.minY - road.y, road.y - siteBounds.maxY);
+                          const nearest = anchorRoads.reduce((best, road) => gapTo(road) < gapTo(best) ? road : best);
+                          if (gapTo(nearest) > 24) {
+                            const target = site.cells.reduce((best, cell) => manhattan(cell, nearest) < manhattan(best, nearest) ? cell : best);
+                            const stub = await this.route(countryId, seed, nearest, target, [], [], 1, true);
+                            await this.addRoadPath(countryId, seed, stub, "COLLECTOR");
+                          }
+                        }
+                      }
                       const expandedCity = unionRect(city.bounds, expandRect(boundsOf(site.cells), 8));
                       if (JSON.stringify(expandedCity) !== JSON.stringify(city.bounds)) {
                         await this.db.prepare("UPDATE cities_v3 SET bounds_json = ? WHERE id = ?").run(JSON.stringify(expandedCity), city.id);
                       }
                       await this.normalizeUrbanHighways(countryId, expandedCity);
                       const center = { x: site.origin.x + Math.floor(width / 2), y: site.origin.y + Math.floor(height / 2) };
-                      const blockPlan = planBlockDistrict({ districtId: id, origin: site.origin, width, height, cells: site.cells, archetype, groupOffset: existingDistricts.length });
-                      const roadsBefore = await this.roadCells(countryId);
-                      const sealed = await this.completedDistrictCells(countryId);
-                      const safeAnchors = [...roadsBefore.values()].filter((road) => !sealed.has(cellKey(road)) || neighbors4(road).some((cell) => !sealed.has(cellKey(cell))));
-                      const streetSegments = [blockPlan.main, ...blockPlan.branches];
-                      let connectedSegment = 0;
-                      if (safeAnchors.length > 0) {
-                        const endpoints = streetSegments.flatMap((segment, segmentIndex) => [
-                          { entrance: segment[0]!, segmentIndex },
-                          { entrance: segment.at(-1)!, segmentIndex },
-                        ]);
-                        const pairs = safeAnchors.flatMap((road) => endpoints.map(({ entrance, segmentIndex }) => ({ road, entrance, segmentIndex, distance: manhattan(road, entrance) })))
-                          .sort((left, right) => left.distance - right.distance)
-                          .slice(0, 96);
-                        const reservedBlock = blockPlan.lots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height));
-                        let connection: { connector: Cell[]; segmentIndex: number } | undefined;
-                        for (const pair of pairs) {
-                          try {
-                            const connector = pair.distance <= 4
-                              ? orthogonalPath(pair.road, pair.entrance, Math.abs(pair.road.x - pair.entrance.x) >= Math.abs(pair.road.y - pair.entrance.y))
-                              : await this.route(countryId, seed, pair.road, pair.entrance, [], reservedBlock, 1, true);
-                            connection = { connector, segmentIndex: pair.segmentIndex };
-                            break;
-                          } catch (error) {
-                            if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
-                          }
-                        }
-                        if (!connection) throw new DomainError("ROUTE_BLOCKED", "Не удалось безопасно соединить новый район с дорожной сетью");
-                        connectedSegment = connection.segmentIndex;
-                        // The connector is semantically a collector for catalog/service
-                        // rules, but V9 gives collector and local streets the same compact
-                        // two-lane physical profile.
-                        await this.addRoadPath(countryId, seed, connection.connector, "COLLECTOR");
-                      }
-                      const publicationOrder = [streetSegments[connectedSegment]!, ...streetSegments.filter((_, index) => index !== connectedSegment)];
-                      for (const segment of publicationOrder) await this.addRoadPath(countryId, seed, segment, "LOCAL");
-                      const lots = blockPlan.lots;
-                      if (lots.length < 3) throw new DomainError("PLACEMENT_UNAVAILABLE", "Район не образовал достаточно доступных участков");
                       const status: DistrictStatus = input.activate ? "ACTIVE" : "PLANNED";
                       if (status === "ACTIVE" && await this.db.prepare("SELECT 1 FROM districts_v3 WHERE city_id = ? AND status = 'ACTIVE'").get(city.id)) {
                         throw new DomainError("CONFLICT", "У города уже есть активный район");
@@ -1803,11 +2046,10 @@ export class AppService {
                       const color = SPRINT_COLORS[count % SPRINT_COLORS.length]!;
                       const growthDirection = this.outwardDirection(city, center);
                       await this.db.prepare("INSERT INTO districts_v3 (id, city_id, name, goal, description, deadline, status, capacity_sp, cells_json, lots_json, growth_direction, archetype, color, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                                                        .run(id, city.id, name, input.goal?.trim().slice(0, 4000) ?? "", input.description?.trim().slice(0, 8000) ?? "", input.deadline ?? null, status, capacity, JSON.stringify(site.cells), JSON.stringify(lots), growthDirection, archetype, color, createdAt);
-                      await this.publishDistrictGreenFeature(countryId, city, id, seed, site.cells, archetype, existingDistricts.length, lots);
+                                                        .run(id, city.id, name, input.goal?.trim().slice(0, 4000) ?? "", input.description?.trim().slice(0, 8000) ?? "", input.deadline ?? null, status, capacity, JSON.stringify(site.cells), "[]", growthDirection, archetype, color, createdAt);
                       const data: DistrictDto = {
                         id, cityId: city.id, name, goal: input.goal?.trim() ?? "", description: input.description?.trim() ?? "",
-                        deadline: input.deadline ?? null, status, capacitySp: capacity, cells: site.cells, lots, growthDirection, archetype, color, createdAt,
+                        deadline: input.deadline ?? null, status, capacitySp: capacity, cells: site.cells, lots: [], growthDirection, archetype, color, createdAt,
                       };
                       return { data, eventType: "district.created", eventPayload: { districtId: id, cityId: city.id, affectedBounds: boundsOf(site.cells) } };
                     });
@@ -1857,20 +2099,34 @@ export class AppService {
                       const district = districtDto(row);
                       if (input.confirmName.trim() !== district.name) throw new DomainError("CONFIRMATION_MISMATCH", "Для удаления укажите точное текущее название района");
                       const tasksDeleted = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE district_id = ?").get(district.id) as Row).count);
-                      await this.db.prepare("DELETE FROM districts_v3 WHERE id = ?").run(district.id);
+                      const affectedBounds = boundsOf(district.cells);
+                      // Abandonment keeps the urban fabric: streets and parks stay
+                      // on the map, every building becomes a ruin plot, and the
+                      // territory returns to free land that future districts can
+                      // grow over.
+                      const districtTasks = (await this.db.prepare("SELECT * FROM tasks_v3 WHERE district_id = ?").all(district.id) as Row[]).map(taskDto);
+                      for (const task of districtTasks) {
+                        await this.insertWorldFeature(countryId, {
+                                                          cityId: task.cityId, districtId: task.districtId, parentFeatureId: null,
+                                                          kind: "RUIN", assetKind: "AREA", assetKey: "demolished-lot",
+                                                          origin: task.origin, footprint: task.footprint, orientation: "S", accessPath: [],
+                                                        });
+                      }
+                      await this.db.prepare("DELETE FROM tasks_v3 WHERE district_id = ?").run(district.id);
+                      await this.db.prepare("UPDATE districts_v3 SET status = 'ABANDONED', cells_json = '[]', lots_json = '[]' WHERE id = ?").run(district.id);
                       let activatedDistrictId: string | null = null;
-                      let affectedBounds = boundsOf(district.cells);
+                      let eventBounds = affectedBounds;
                       if (district.status === "ACTIVE") {
                         const next = await this.db.prepare("SELECT * FROM districts_v3 WHERE city_id = ? AND status = 'PLANNED' ORDER BY created_at LIMIT 1").get(district.cityId) as Row | undefined;
                         if (next) {
                           activatedDistrictId = String(next.id);
                           await this.db.prepare("UPDATE districts_v3 SET status = 'ACTIVE' WHERE id = ?").run(activatedDistrictId);
-                          affectedBounds = unionRect(affectedBounds, boundsOf(districtDto(next).cells));
+                          eventBounds = unionRect(eventBounds, boundsOf(districtDto(next).cells));
                         }
                       }
                       this.surfaceCache.delete(countryId);
                       const data = { deleted: true as const, districtId: district.id, cityId: district.cityId, name: district.name, tasksDeleted, activatedDistrictId };
-                      return { data, eventType: "district.deleted", eventPayload: { ...data, affectedBounds } };
+                      return { data, eventType: "district.deleted", eventPayload: { ...data, affectedBounds: eventBounds } };
                     });
   }
 
@@ -1879,6 +2135,7 @@ export class AppService {
                       const row = await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE d.id = ? AND c.country_id = ?").get(districtId, countryId) as Row | undefined;
                       if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
                       if (row.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "Завершённый район нельзя снова активировать");
+                      if (row.status === "ABANDONED") throw new DomainError("DISTRICT_ABANDONED", "Заброшенный район нельзя активировать");
                       await this.db.prepare("UPDATE districts_v3 SET status = 'PLANNED' WHERE city_id = ? AND status = 'ACTIVE'").run(String(row.city_id));
                       await this.db.prepare("UPDATE districts_v3 SET status = 'ACTIVE' WHERE id = ?").run(districtId);
                       const data = districtDto({ ...row, status: "ACTIVE" });
@@ -1890,6 +2147,7 @@ export class AppService {
     return await this.mutate(countryId, "district.complete.v3", idempotencyKey, { districtId }, async () => {
                       const row = await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE d.id = ? AND c.country_id = ?").get(districtId, countryId) as Row | undefined;
                       if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
+                      if (row.status === "ABANDONED") throw new DomainError("DISTRICT_ABANDONED", "Заброшенный район нельзя завершить");
                       const unfinished = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE district_id = ? AND status <> 'COMPLETED'").get(districtId) as Row).count);
                       if (unfinished > 0) throw new DomainError("DISTRICT_HAS_OPEN_TASKS", `В районе осталось незавершённых задач: ${unfinished}`);
                       await this.db.prepare("UPDATE districts_v3 SET status = 'COMPLETED' WHERE id = ?").run(districtId);
@@ -1902,7 +2160,9 @@ export class AppService {
   private async districtHasCollector(districtId: string): Promise<boolean> {
     const row = await this.db.prepare("SELECT cells_json, city_id FROM districts_v3 WHERE id = ?").get(districtId) as Row | undefined;
     if (!row) return false;
-    const bounds = expandRect(boundsOf(json<Cell[]>(row.cells_json)), 3);
+    const cells = json<Cell[]>(row.cells_json);
+    if (cells.length === 0) return false;
+    const bounds = expandRect(boundsOf(cells), 3);
     return Boolean(await this.db.prepare(`SELECT 1 FROM roads_v3 r JOIN cities_v3 c ON c.country_id = r.country_id
       WHERE c.id = ? AND r.x BETWEEN ? AND ? AND r.y BETWEEN ? AND ?
       AND r.road_class IN ('COLLECTOR', 'ARTERIAL', 'HIGHWAY') LIMIT 1`)
@@ -1980,7 +2240,7 @@ export class AppService {
     const tags = new Set(inferTaskTags(title, description));
     const requiredService = await this.requiredServiceRole(cityId, districtId, estimate);
     const cityRows = await this.db.prepare("SELECT building_type FROM tasks_v3 WHERE city_id = ?").all(cityId) as Row[];
-    const districtRows = await this.db.prepare("SELECT building_type FROM tasks_v3 WHERE district_id = ?").all(districtId) as Row[];
+    const districtRows = await this.db.prepare("SELECT id, building_type FROM tasks_v3 WHERE district_id = ?").all(districtId) as Row[];
     const cityCounts = new Map<string, number>();
     const categoryCounts = new Map<string, number>();
     const districtCounts = new Map<string, number>();
@@ -1990,10 +2250,26 @@ export class AppService {
       const entry = BUILDING_CATALOG.find((item) => item.key === key);
       if (entry) categoryCounts.set(entry.category, (categoryCounts.get(entry.category) ?? 0) + 1);
     }
+    const buildingByTaskId = new Map<string, string>();
     for (const row of districtRows) {
       const key = String(row.building_type);
       districtCounts.set(key, (districtCounts.get(key) ?? 0) + 1);
+      buildingByTaskId.set(String(row.id), key);
     }
+    // Complex-level variety: repeating the same model inside one complex (ЖК)
+    // is penalised more than repeating it somewhere else in the district, so a
+    // single residential group reads as a family of related but different
+    // buildings instead of cloned rows.
+    const complexCounts = new Map<string, Map<string, number>>();
+    for (const lot of districtDto(district).lots) {
+      if (!lot.taskId || !lot.groupId) continue;
+      const key = buildingByTaskId.get(lot.taskId);
+      if (!key) continue;
+      const group = complexCounts.get(lot.groupId) ?? new Map<string, number>();
+      group.set(key, (group.get(key) ?? 0) + 1);
+      complexCounts.set(lot.groupId, group);
+    }
+    const complexRepeat = (key: string) => Math.max(0, ...[...complexCounts.values()].map((group) => group.get(key) ?? 0));
     const compatible: BuildingCatalogEntry[] = [];
     for (const entry of BUILDING_CATALOG) {
       if (entry.estimates.includes(estimate)
@@ -2027,6 +2303,7 @@ export class AppService {
       const rarityPenalty = entry.rarity === "UNIQUE" ? 4 : entry.rarity === "RARE" ? 2 : 0;
       const unrelatedServicePenalty = entry.serviceRole && !requiredService && !tags.has("civic") ? 18 : 0;
       const score = (cityCounts.get(entry.key) ?? 0) * 7 + (districtCounts.get(entry.key) ?? 0) * 9
+        + complexRepeat(entry.key) * 12
         + (categoryCounts.get(entry.category) ?? 0) * 1.2 + rarityPenalty + unrelatedServicePenalty - semanticBonus - morphologyBonus
         + stringHash(`${title}:${entry.key}`) * 2;
       return { entry, score };
@@ -2044,7 +2321,15 @@ export class AppService {
   ): Promise<{ origin: Cell; footprint: Cell[]; entrance: Cell; accessPath: Cell[]; accessKind: TaskDto["accessKind"] } | null> {
     if (lot.taskId || entry.footprint.width > lot.width || entry.footprint.height > lot.height) return null;
     const seed = Number((await this.countryRow(countryId)).seed);
-    const lotCenter = { x: lot.origin.x + lot.width / 2, y: lot.origin.y + lot.height / 2 };
+    const lotCenterX = lot.origin.x + lot.width / 2;
+    // The courtyard skeleton of a block-v3 lot is published lazily (only with a
+    // committed building). Project it into a local surface copy so the access
+    // planner can already walk along the future path.
+    const projected = new Map(surfaces);
+    for (const cell of lot.sharedAccess ?? []) {
+      const key = cellKey(cell);
+      if (!roads.has(key) && !projected.has(key)) projected.set(key, { ...cell, kind: "PATH" });
+    }
     // Access is a public path through the district, not a private path trapped
     // inside the lot rectangle. Restricting the search to the lot made a valid
     // entrance unable to walk around the platform and caused artificial growth.
@@ -2057,7 +2342,7 @@ export class AppService {
         const origin = { x: lot.origin.x + offsetX, y: lot.origin.y + offsetY };
         const footprint = rectangleFootprint(origin, entry.footprint.width, entry.footprint.height);
         const footprintKeys = new Set(footprint.map(cellKey));
-        if (footprint.some((cell) => roads.has(cellKey(cell)) || surfaces.has(cellKey(cell)) || occupied.has(cellKey(cell)))) continue;
+        if (footprint.some((cell) => roads.has(cellKey(cell)) || projected.has(cellKey(cell)) || occupied.has(cellKey(cell)))) continue;
         const access = findAccessPlan({
           entry,
           origin,
@@ -2065,17 +2350,19 @@ export class AppService {
           buildingFootprint: footprintKeys,
           occupied,
           roads,
-          surfaces,
+          surfaces: projected,
           isWalkableTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
           maxLength: 6,
         });
         if (!access) continue;
-        const buildingCenter = {
-          x: origin.x + entry.footprint.width / 2,
-          y: origin.y + entry.footprint.height / 2,
-        };
-        const centering = Math.abs(buildingCenter.x - lotCenter.x) + Math.abs(buildingCenter.y - lotCenter.y);
-        candidates.push({ origin, footprint, entrance: access.entrance, accessPath: access.path, score: access.distance * 100 + centering });
+        const buildingCenterX = origin.x + entry.footprint.width / 2;
+        // Every facade faces its street (south): prefer the building flush to
+        // the sidewalk at the bottom edge of the lot, then centred horizontally.
+        const bottomGap = lot.origin.y + lot.height - (origin.y + entry.footprint.height);
+        candidates.push({
+          origin, footprint, entrance: access.entrance, accessPath: access.path,
+          score: access.distance * 100 + bottomGap * 30 + Math.abs(buildingCenterX - lotCenterX),
+        });
       }
     }
     const selected = candidates.sort((left, right) => left.score - right.score || left.origin.y - right.origin.y || left.origin.x - right.origin.x)[0];
@@ -2088,28 +2375,6 @@ export class AppService {
 
   private lotRoleForEntry(archetype: DistrictArchetype, entry: BuildingCatalogEntry): PlannedLotRole {
     return primaryZoningRole(archetype, buildingZoningRole(entry)) ? "PRIMARY" : "SUPPORT";
-  }
-
-  private compactBlockLot(lots: PlannedLotDto[], selectedId: string, entry: BuildingCatalogEntry): { lots: PlannedLotDto[]; lot: PlannedLotDto } {
-    const selected = lots.find((lot) => lot.id === selectedId)!;
-    const widthDelta = selected.width - entry.footprint.width;
-    const baseline = selected.origin.y + selected.height;
-    const compacted: PlannedLotDto = {
-      ...selected,
-      origin: { x: selected.origin.x, y: baseline - entry.footprint.height },
-      width: entry.footprint.width,
-      height: entry.footprint.height,
-    };
-    const nextLots = lots.map((lot) => {
-      if (lot.id === selectedId) return compacted;
-      const followsInRow = lot.layoutVersion === "block-v2"
-        && lot.groupId === selected.groupId
-        && lot.rowIndex === selected.rowIndex
-        && (lot.slotIndex ?? -1) > (selected.slotIndex ?? -1)
-        && !lot.taskId;
-      return followsInRow ? { ...lot, origin: { x: lot.origin.x - widthDelta, y: lot.origin.y } } : lot;
-    });
-    return { lots: nextLots, lot: nextLots.find((lot) => lot.id === selectedId)! };
   }
 
   private async taskPlacementOptions(
@@ -2127,248 +2392,36 @@ export class AppService {
                                 order: number;
                               }>> {
     const expectedRole = this.lotRoleForEntry(district.archetype, entry);
-    const blockLots = district.lots.filter((lot) => lot.layoutVersion === "block-v2");
-    if (blockLots.length > 0) {
-      const occupiedPerGroup = new Map<string, number>();
-      for (const lot of blockLots) if (lot.taskId && lot.groupId) occupiedPerGroup.set(lot.groupId, (occupiedPerGroup.get(lot.groupId) ?? 0) + 1);
-      const fitting = blockLots.filter((lot) => !lot.taskId && entry.footprint.width <= lot.width && entry.footprint.height <= lot.height);
-      const roleCandidates = fitting.filter((lot) => lot.role === expectedRole);
-      // Residential identity is a hard boundary. Commercial/civic blocks use
-      // roles as a preference: once their limited service catalog or support
-      // strip is exhausted, a compatible non-residential building may occupy
-      // another free strip slot instead of forcing premature district growth.
-      const strictRoles = district.archetype === "NEW_BUILD" || district.archetype === "PRIVATE";
-      const candidates = (roleCandidates.length > 0 || strictRoles ? roleCandidates : fitting)
-        .sort((left, right) => {
-          const groupFill = (occupiedPerGroup.get(right.groupId ?? "") ?? 0) - (occupiedPerGroup.get(left.groupId ?? "") ?? 0);
-          if (groupFill !== 0) return groupFill;
-          const group = String(left.groupId).localeCompare(String(right.groupId));
-          if (group !== 0) return group;
-          return (left.slotIndex ?? 0) - (right.slotIndex ?? 0);
-        });
-      const options: Awaited<ReturnType<AppService["taskPlacementOptions"]>> = [];
-      for (let index = 0; index < candidates.length; index += 1) {
-        const compacted = this.compactBlockLot(district.lots, candidates[index]!.id, entry);
-        const placement = await this.placementInLot(countryId, compacted.lot, entry, roads, surfaces, occupied, districtCells);
-        if (placement) options.push({ lot: compacted.lot, lots: compacted.lots, placement, order: index });
-      }
-      return options;
-    }
+    const occupiedPerGroup = new Map<string, number>();
+    for (const lot of district.lots) if (lot.taskId && lot.groupId) occupiedPerGroup.set(lot.groupId, (occupiedPerGroup.get(lot.groupId) ?? 0) + 1);
+    const fitting = district.lots.filter((lot) => !lot.taskId && entry.footprint.width <= lot.width && entry.footprint.height <= lot.height);
+    const roleCandidates = fitting.filter((lot) => lot.role === expectedRole);
+    // Residential identity is a hard boundary for housing: a residential task
+    // never consumes the few service slots of a strict district. A service
+    // building, in turn, falls back to a regular lot when every service slot
+    // is taken or unusable — zoning guides placement, it never deadlocks growth.
+    const strictRoles = (district.archetype === "NEW_BUILD" || district.archetype === "PRIVATE") && expectedRole === "PRIMARY";
+    const pool = strictRoles ? roleCandidates : [...roleCandidates, ...fitting.filter((lot) => lot.role !== expectedRole)];
+    const candidates = pool
+      .sort((left, right) => {
+        const role = Number(right.role === expectedRole) - Number(left.role === expectedRole);
+        if (role !== 0) return role;
+        // Redevelopment first: a vacant plot left by a demolition is filled
+        // before virgin land is consumed.
+        const vacant = Number(right.vacant ?? false) - Number(left.vacant ?? false);
+        if (vacant !== 0) return vacant;
+        const groupFill = (occupiedPerGroup.get(right.groupId ?? "") ?? 0) - (occupiedPerGroup.get(left.groupId ?? "") ?? 0);
+        if (groupFill !== 0) return groupFill;
+        const group = String(left.groupId).localeCompare(String(right.groupId));
+        if (group !== 0) return group;
+        return (left.slotIndex ?? 0) - (right.slotIndex ?? 0);
+      });
     const options: Awaited<ReturnType<AppService["taskPlacementOptions"]>> = [];
-    for (const lot of district.lots) {
-      const placement = await this.placementInLot(countryId, lot, entry, roads, surfaces, occupied, districtCells);
-      if (placement) options.push({ lot, lots: district.lots, placement, order: 0 });
+    for (let index = 0; index < candidates.length; index += 1) {
+      const placement = await this.placementInLot(countryId, candidates[index]!, entry, roads, surfaces, occupied, districtCells);
+      if (placement) options.push({ lot: candidates[index]!, lots: district.lots, placement, order: index });
     }
     return options;
-  }
-
-  private async expandBlockDistrict(countryId: string, district: DistrictDto, entry: BuildingCatalogEntry): Promise<DistrictDto> {
-    const seed = Number((await this.countryRow(countryId)).seed);
-    const originalBounds = boundsOf(district.cells);
-    const existingKeys = new Set(district.cells.map(cellKey));
-    const blockedByDistrict = new Set(
-      (await this.listDistricts(countryId))
-                        .filter((candidate) => candidate.id !== district.id)
-                        .flatMap((candidate) => candidate.cells)
-                        .map(cellKey),
-    );
-    const directions = ([district.growthDirection, "E", "S", "W", "N"] as GrowthDirection[])
-      .filter((value, index, all) => all.indexOf(value) === index);
-    const existingGroupCount = new Set(district.lots.map((lot) => lot.groupId).filter(Boolean)).size;
-    for (const thickness of [38, 42, 46]) {
-      for (const direction of directions) {
-        const shoulder = 4;
-        let patchRect: Rect;
-        if (direction === "E") patchRect = { minX: originalBounds.maxX + 1, maxX: originalBounds.maxX + thickness, minY: originalBounds.minY - shoulder, maxY: originalBounds.maxY + shoulder };
-        else if (direction === "W") patchRect = { minX: originalBounds.minX - thickness, maxX: originalBounds.minX - 1, minY: originalBounds.minY - shoulder, maxY: originalBounds.maxY + shoulder };
-        else if (direction === "S") patchRect = { minX: originalBounds.minX - shoulder, maxX: originalBounds.maxX + shoulder, minY: originalBounds.maxY + 1, maxY: originalBounds.maxY + thickness };
-        else patchRect = { minX: originalBounds.minX - shoulder, maxX: originalBounds.maxX + shoulder, minY: originalBounds.minY - thickness, maxY: originalBounds.minY - 1 };
-
-        const available = rectangleFootprint(
-          { x: patchRect.minX, y: patchRect.minY },
-          patchRect.maxX - patchRect.minX + 1,
-          patchRect.maxY - patchRect.minY + 1,
-        ).filter((cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain) && !blockedByDistrict.has(cellKey(cell)));
-        const availableKeys = new Set(available.map(cellKey));
-        const queue = available.filter((cell) => neighbors4(cell).some((next) => existingKeys.has(cellKey(next))));
-        const reachable = new Map<string, Cell>();
-        while (queue.length > 0) {
-          const current = queue.shift()!;
-          const key = cellKey(current);
-          if (reachable.has(key)) continue;
-          reachable.set(key, current);
-          for (const next of neighbors4(current)) if (availableKeys.has(cellKey(next)) && !reachable.has(cellKey(next))) queue.push(next);
-        }
-        const patch = [...reachable.values()];
-        if (patch.length < 420) continue;
-        const patchBounds = boundsOf(patch);
-        const blockPlan = planBlockDistrict({
-          districtId: district.id,
-          origin: { x: patchBounds.minX, y: patchBounds.minY },
-          width: patchBounds.maxX - patchBounds.minX + 1,
-          height: patchBounds.maxY - patchBounds.minY + 1,
-          cells: patch,
-          archetype: district.archetype,
-          groupOffset: existingGroupCount,
-        });
-        const expectedRole = this.lotRoleForEntry(district.archetype, entry);
-        const strictRoles = district.archetype === "NEW_BUILD" || district.archetype === "PRIVATE";
-        if (!blockPlan.lots.some((lot) => (!strictRoles || lot.role === expectedRole) && entry.footprint.width <= lot.width && entry.footprint.height <= lot.height)) continue;
-
-        const roadsBefore = await this.roadCells(countryId);
-        const districtRoads = [...roadsBefore.values()].filter((road) => existingKeys.has(cellKey(road)));
-        const safeRoads = districtRoads.length > 0 ? districtRoads : [...roadsBefore.values()];
-        const endpoints = [blockPlan.main[0]!, blockPlan.main.at(-1)!];
-        const pair = safeRoads.flatMap((road) => endpoints.map((endpoint) => ({ road, endpoint, distance: manhattan(road, endpoint) })))
-          .sort((left, right) => left.distance - right.distance)[0];
-        let connector: Cell[] = [];
-        if (pair) {
-          if (pair.distance <= 4) connector = orthogonalPath(pair.road, pair.endpoint, Math.abs(pair.road.x - pair.endpoint.x) >= Math.abs(pair.road.y - pair.endpoint.y));
-          else try {
-              const reservedBlock = blockPlan.lots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height));
-              connector = await this.route(countryId, seed, pair.road, pair.endpoint, [], reservedBlock, 1, true);
-            } catch (error) {
-              if (error instanceof DomainError && error.code === "ROUTE_BLOCKED") continue;
-              throw error;
-            }
-        }
-        const updatedCells = [...district.cells, ...patch];
-        const lots = [...district.lots, ...blockPlan.lots];
-        const candidateDistrict = { ...district, cells: updatedCells, lots, growthDirection: direction };
-        const projectionScope = expandRect(boundsOf(updatedCells), 8);
-        const projectedRoads = new Map([...roadsBefore].filter(([, road]) => contains(projectionScope, road)));
-        for (const cell of [...this.roadCorridor(connector, "LOCAL"), ...this.roadCorridor(blockPlan.main, "LOCAL")]) {
-          projectedRoads.set(cellKey(cell), { ...cell, mask: 0, structure: "ROAD", roadClass: "LOCAL" });
-        }
-        const projectedSurfaces = await this.localSurfaceCells(countryId, boundsOf(updatedCells), projectedRoads, [candidateDistrict]);
-        const occupiedTasks = new Set((await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey));
-        const options = await this.taskPlacementOptions(
-                          countryId,
-                          candidateDistrict,
-                          entry,
-                          projectedRoads,
-                          projectedSurfaces,
-                          occupiedTasks,
-                          new Set(updatedCells.map(cellKey)),
-                        );
-        if (options.length === 0) continue;
-        if (pair) await this.addRoadPath(countryId, seed, connector, "LOCAL");
-        await this.addRoadPath(countryId, seed, blockPlan.main, "LOCAL");
-        await this.db.prepare("UPDATE districts_v3 SET cells_json = ?, lots_json = ?, growth_direction = ? WHERE id = ?")
-                                                  .run(JSON.stringify(updatedCells), JSON.stringify(lots), direction, district.id);
-        const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
-        const city = cityDto(cityRow);
-        const expandedCity = unionRect(city.bounds, expandRect(patchBounds, 8));
-        if (JSON.stringify(expandedCity) !== JSON.stringify(city.bounds)) await this.db.prepare("UPDATE cities_v3 SET bounds_json = ? WHERE id = ?").run(JSON.stringify(expandedCity), city.id);
-        await this.normalizeUrbanHighways(countryId, expandedCity);
-        return candidateDistrict;
-      }
-    }
-    throw new DomainError("PLACEMENT_BLOCKED", "Район не удалось расширить целым кварталом без пересечений");
-  }
-
-  private async expandDistrict(countryId: string, district: DistrictDto, entry: BuildingCatalogEntry): Promise<DistrictDto> {
-    if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "Закрытый район больше не расширяется");
-    if (district.lots.some((lot) => lot.layoutVersion === "block-v2")) return await this.expandBlockDistrict(countryId, district, entry);
-    const seed = Number((await this.countryRow(countryId)).seed);
-    const originalBounds = boundsOf(district.cells);
-    const existingKeys = new Set(district.cells.map(cellKey));
-    const blockedByDistrict = new Set(
-      (await this.listDistricts(countryId))
-                        .filter((candidate) => candidate.id !== district.id)
-                        .flatMap((candidate) => candidate.cells)
-                        .map(cellKey),
-    );
-    const directions = ([district.growthDirection, "E", "S", "W", "N"] as GrowthDirection[])
-      .filter((value, index, all) => all.indexOf(value) === index);
-    for (const thickness of [10, 14, 18]) {
-      for (const direction of directions) {
-        const shoulder = 4;
-        let patchRect: Rect;
-        if (direction === "E") patchRect = { minX: originalBounds.maxX + 1, maxX: originalBounds.maxX + thickness, minY: originalBounds.minY - shoulder, maxY: originalBounds.maxY + shoulder };
-        else if (direction === "W") patchRect = { minX: originalBounds.minX - thickness, maxX: originalBounds.minX - 1, minY: originalBounds.minY - shoulder, maxY: originalBounds.maxY + shoulder };
-        else if (direction === "S") patchRect = { minX: originalBounds.minX - shoulder, maxX: originalBounds.maxX + shoulder, minY: originalBounds.maxY + 1, maxY: originalBounds.maxY + thickness };
-        else patchRect = { minX: originalBounds.minX - shoulder, maxX: originalBounds.maxX + shoulder, minY: originalBounds.minY - thickness, maxY: originalBounds.minY - 1 };
-
-        const available = rectangleFootprint(
-          { x: patchRect.minX, y: patchRect.minY },
-          patchRect.maxX - patchRect.minX + 1,
-          patchRect.maxY - patchRect.minY + 1,
-        ).filter((cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain) && !blockedByDistrict.has(cellKey(cell)));
-        const availableKeys = new Set(available.map(cellKey));
-        const queue = available.filter((cell) => neighbors4(cell).some((next) => existingKeys.has(cellKey(next))));
-        const reachable = new Map<string, Cell>();
-        while (queue.length > 0) {
-          const current = queue.shift()!;
-          const key = cellKey(current);
-          if (reachable.has(key)) continue;
-          reachable.set(key, current);
-          for (const next of neighbors4(current)) if (availableKeys.has(cellKey(next)) && !reachable.has(cellKey(next))) queue.push(next);
-        }
-        const patch = [...reachable.values()];
-        if (patch.length < 48) continue;
-        const updatedCells = [...district.cells, ...patch];
-        const patchBounds = boundsOf(patch);
-        const patchCenter = { x: Math.floor((patchBounds.minX + patchBounds.maxX) / 2), y: Math.floor((patchBounds.minY + patchBounds.maxY) / 2) };
-        const roadsBefore = await this.roadCells(countryId);
-        const horizontal = patchBounds.maxX - patchBounds.minX >= patchBounds.maxY - patchBounds.minY;
-        const spine = horizontal
-          ? orthogonalPath({ x: patchBounds.minX + 1, y: patchCenter.y }, { x: patchBounds.maxX - 1, y: patchCenter.y }, true)
-          : orthogonalPath({ x: patchCenter.x, y: patchBounds.minY + 1 }, { x: patchCenter.x, y: patchBounds.maxY - 1 }, false);
-        const districtRoads = [...roadsBefore.values()].filter((road) => existingKeys.has(cellKey(road)));
-        const sealed = await this.completedDistrictCells(countryId);
-        const safeRoads = [...roadsBefore.values()].filter((road) => !sealed.has(cellKey(road)) || neighbors4(road).some((cell) => !sealed.has(cellKey(cell))));
-        const nearest = (districtRoads.length > 0 ? districtRoads : safeRoads)
-          .reduce<Cell | undefined>((best, road) => !best || manhattan(road, patchCenter) < manhattan(best, patchCenter) ? road : best, undefined);
-        const spineEntrance = nearest
-          ? [spine[0]!, spine.at(-1)!].sort((a, b) => manhattan(a, nearest) - manhattan(b, nearest))[0]!
-          : spine[0]!;
-        let connector: Cell[] = [];
-        if (nearest) {
-          try {
-            connector = await this.route(countryId, seed, nearest, spineEntrance, [], [], 1, true);
-          } catch (error) {
-            if (error instanceof DomainError && error.code === "ROUTE_BLOCKED") continue;
-            throw error;
-          }
-        }
-        const candidateDistrict = { ...district, cells: updatedCells, growthDirection: direction };
-        const projectionScope = expandRect(boundsOf(updatedCells), 8);
-        const projectedRoads = new Map([...roadsBefore].filter(([, road]) => contains(projectionScope, road)));
-        for (const cell of [...this.roadCorridor(connector, "LOCAL"), ...this.roadCorridor(spine, "LOCAL")]) {
-          projectedRoads.set(cellKey(cell), { ...cell, mask: 0, structure: "ROAD", roadClass: "LOCAL" });
-        }
-        const projectedSurfaces = await this.localSurfaceCells(countryId, boundsOf(updatedCells), projectedRoads, [candidateDistrict]);
-        const occupiedTasks = new Set((await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey));
-        const committed = district.lots.filter((lot) => lot.taskId);
-        const preferred = [
-          [entry.footprint.width, entry.footprint.height],
-          [entry.footprint.width + 1, entry.footprint.height],
-          [entry.footprint.width, entry.footprint.height + 1],
-        ] as const;
-        const lots = this.planLots(updatedCells, projectedRoads, projectedSurfaces, committed, preferred, Math.max(96, committed.length + 48), district.archetype);
-        const updatedCellKeys = new Set(updatedCells.map(cellKey));
-        let hasPlacement = false;
-        for (const lot of lots) {
-          if (!lot.taskId && await this.placementInLot(countryId, lot, entry, projectedRoads, projectedSurfaces, occupiedTasks, updatedCellKeys)) {
-            hasPlacement = true;
-            break;
-          }
-        }
-        if (!hasPlacement) continue;
-        if (nearest) await this.addRoadPath(countryId, seed, connector, "LOCAL");
-        await this.addRoadPath(countryId, seed, spine, "LOCAL");
-        await this.db.prepare("UPDATE districts_v3 SET cells_json = ?, lots_json = ?, growth_direction = ? WHERE id = ?")
-                                                  .run(JSON.stringify(updatedCells), JSON.stringify(lots), direction, district.id);
-        const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
-        const city = cityDto(cityRow);
-        const expandedCity = unionRect(city.bounds, expandRect(patchBounds, 8));
-        if (JSON.stringify(expandedCity) !== JSON.stringify(city.bounds)) await this.db.prepare("UPDATE cities_v3 SET bounds_json = ? WHERE id = ?").run(JSON.stringify(expandedCity), city.id);
-        await this.normalizeUrbanHighways(countryId, expandedCity);
-        return { ...district, cells: updatedCells, lots, growthDirection: direction };
-      }
-    }
-    throw new DomainError("PLACEMENT_BLOCKED", "Район не удалось расширить без пересечения воды или соседнего района");
   }
 
   async createTask(countryId: string, input: {
@@ -2412,15 +2465,10 @@ export class AppService {
                       const occupiedTasks = new Set((await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey));
                       let districtCellKeys = new Set(district.cells.map(cellKey));
                       let options = await this.taskPlacementOptions(countryId, district, entry, roads, surfaces, occupiedTasks, districtCellKeys);
-                      if (options.length === 0) {
-                        district = await this.replanDistrictLots(countryId, district, entry);
-                        roads = await this.roadCells(countryId);
-                        surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
-                        districtCellKeys = new Set(district.cells.map(cellKey));
-                        options = await this.taskPlacementOptions(countryId, district, entry, roads, surfaces, occupiedTasks, districtCellKeys);
-                      }
-                      for (let expansion = 0; options.length === 0 && expansion < 4; expansion += 1) {
-                        district = await this.expandDistrict(countryId, district, entry);
+                      // Organic growth: a task that no longer fits triggers the
+                      // next complex inside the territory, then territory growth.
+                      for (let growth = 0; options.length === 0 && growth < 4; growth += 1) {
+                        district = await this.growDistrict(countryId, district, entry);
                         roads = await this.roadCells(countryId);
                         surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
                         districtCellKeys = new Set(district.cells.map(cellKey));
@@ -2435,8 +2483,10 @@ export class AppService {
                       if (!selected) throw new DomainError("PLACEMENT_BLOCKED", "После расширения не появился подходящий участок для здания");
                       const id = randomUUID();
                       const createdAt = now();
-                      const lots = selected.lots.map((lot) => lot.id === selected.lot.id ? { ...lot, taskId: id } : lot);
+                      const lots = district.lots.map((lot) => lot.id === selected.lot.id ? { ...lot, taskId: id, vacant: false } : lot);
                       await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?").run(JSON.stringify(lots), district.id);
+                      // A new building redevelops any ruin plot it overlaps.
+                      await this.clearRuins(countryId, selected.placement.footprint);
                       await this.db.prepare(`INSERT INTO tasks_v3
         (id, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
@@ -2567,9 +2617,17 @@ export class AppService {
                       if (input.confirmTitle.trim() !== task.title) throw new DomainError("CONFIRMATION_MISMATCH", "Для удаления укажите точное текущее название задачи");
                       const districtRow = await this.db.prepare("SELECT lots_json FROM districts_v3 WHERE id = ?").get(task.districtId) as Row | undefined;
                       if (districtRow) {
-                        const lots = json<PlannedLotDto[]>(districtRow.lots_json).map((lot) => lot.taskId === task.id ? { ...lot, taskId: null } : lot);
+                        const lots = json<PlannedLotDto[]>(districtRow.lots_json).map((lot) => lot.taskId === task.id ? { ...lot, taskId: null, vacant: true } : lot);
                         await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?").run(JSON.stringify(lots), task.districtId);
                       }
+                      // Demolition leaves a ruin plot on the map. It blocks nothing
+                      // and is cleared automatically when a new building, road or
+                      // park redevelops the cell.
+                      await this.insertWorldFeature(countryId, {
+                                                        cityId: task.cityId, districtId: task.districtId, parentFeatureId: null,
+                                                        kind: "RUIN", assetKind: "AREA", assetKey: "demolished-lot",
+                                                        origin: task.origin, footprint: task.footprint, orientation: "S", accessPath: [],
+                                                      });
                       await this.db.prepare("DELETE FROM tasks_v3 WHERE id = ?").run(task.id);
                       this.surfaceCache.delete(countryId);
                       const data = { deleted: true as const, taskId: task.id, districtId: task.districtId, cityId: task.cityId, title: task.title };
@@ -2812,7 +2870,21 @@ export class AppService {
         const key = cellKey(cell);
         if (contains(chunkBounds, cell) && !roadKeys.has(key) && !blockedKeys.has(key)) paths.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
       };
-      for (const district of nearbyDistricts) for (const lot of district.lots) for (const cell of lot.sharedAccess ?? []) publish(cell);
+      // The pedestrian layer follows the streets: every road edge carries a
+      // sidewalk in the overview too, so frontage access stays visible at the
+      // zoomed-out level even when no extra footpath was needed.
+      for (const road of roads) {
+        for (const cell of neighbors4(road)) {
+          const key = cellKey(cell);
+          if (contains(chunkBounds, cell) && !roadKeys.has(key) && !blockedKeys.has(key) && !paths.has(key)) {
+            paths.set(key, { ...cell, kind: "SIDEWALK" });
+          }
+        }
+      }
+      for (const district of nearbyDistricts) for (const lot of district.lots) {
+        if (!lot.taskId) continue;
+        for (const cell of lot.sharedAccess ?? []) publish(cell);
+      }
       for (const task of nearbyTasks) if (task.accessKind === "PATH") for (const cell of task.accessPath) publish(cell);
       return [...paths.values()];
     })() : [...buildSurfaceMap({

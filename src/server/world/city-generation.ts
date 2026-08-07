@@ -129,9 +129,12 @@ export function buildSurfaceMap(input: {
   isSurfaceTerrain: (cell: Cell) => boolean;
 }): Map<string, SurfaceCellDto> {
   const surfaces = new Map<string, SurfaceCellDto>();
+  // V10: RUIN plots are vacant land. They neither block surfaces nor publish
+  // any surface of their own — the cell stays plain terrain until redevelopment.
+  const activeFeatures = input.features.filter((feature) => feature.kind !== "RUIN");
   const blocked = new Set([
     ...input.tasks.flatMap((task) => task.footprint).map(cellKey),
-    ...input.features.flatMap((feature) => feature.footprint).map(cellKey),
+    ...activeFeatures.flatMap((feature) => feature.footprint).map(cellKey),
   ]);
   const completedOwners = new Map<string, string>();
   for (const district of input.districts.filter((item) => item.status === "COMPLETED")) {
@@ -163,12 +166,13 @@ export function buildSurfaceMap(input: {
 
   publishCrosswalks(input.roads, surfaces);
 
-  // V9 block plans publish their shared pedestrian skeleton before tasks are
-  // assigned. Rear residential rows can therefore reuse one stable courtyard
-  // path instead of asking the road generator for another street.
+  // V10: a complex publishes its courtyard skeleton only together with the
+  // first committed courtyard building. Empty lots stay plain grass, so the
+  // map never shows pedestrian spurs leading nowhere.
   for (const district of input.districts) {
     const finish = pathFinish(district.id);
     for (const lot of district.lots) {
+      if (!lot.taskId) continue;
       for (const cell of lot.sharedAccess ?? []) {
         const key = cellKey(cell);
         if (!input.roads.has(key) && !blocked.has(key) && input.isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
@@ -187,7 +191,7 @@ export function buildSurfaceMap(input: {
       }
     }
   }
-  for (const feature of input.features) {
+  for (const feature of activeFeatures) {
     const finish = pathFinish(feature.districtId ?? feature.cityId ?? feature.id);
     if (feature.assetKind === "AREA") {
       for (const cell of feature.footprint) {

@@ -3,7 +3,7 @@ import type { BootstrapDto, PlanCityDto, PlanCityPageDto, PlanDistrictDto, PlanT
 import { api } from "../api";
 
 const districtStatus: Record<PlanDistrictDto["status"], string> = {
-  PLANNED: "Запланирован", ACTIVE: "Строится", COMPLETED: "Завершён",
+  PLANNED: "Запланирован", ACTIVE: "Строится", COMPLETED: "Завершён", ABANDONED: "Заброшен",
 };
 
 const taskStatus: Record<PlanTaskDto["status"], string> = {
