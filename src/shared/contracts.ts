@@ -117,10 +117,42 @@ export type TaskCommentDto = {
   createdAt: string;
 };
 
+export type TaskLinkDto = {
+  url: string;
+  title: string;
+  actor: string;
+  addedAt: string;
+};
+
+export type TaskAttachmentDto = {
+  id: string;
+  taskId: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  actor: string;
+  createdAt: string;
+};
+
+export type TaskSearchResultDto = {
+  id: string;
+  taskNumber: number;
+  title: string;
+  workItemType: WorkItemType;
+  status: TaskStatus;
+  progress: number;
+  stage: number;
+  cityId: string;
+  cityName: string;
+  districtId: string;
+  districtName: string;
+  origin: Cell;
+};
+
 export type TaskEventDto = {
   id: number;
   taskId: string;
-  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED" | "FIELDS_UPDATED" | "DEFECT_CREATED" | "DEFECT_UPDATED";
+  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED" | "FIELDS_UPDATED" | "DEFECT_CREATED" | "DEFECT_UPDATED" | "LINK_ADDED" | "LINK_REMOVED" | "ATTACHMENT_ADDED";
   actor: string;
   actorUserId: string | null;
   details: Record<string, unknown>;
@@ -143,6 +175,7 @@ export type TaskDefectDto = {
 
 export type TaskDto = {
   id: string;
+  taskNumber: number;
   cityId: string;
   districtId: string;
   title: string;
@@ -168,6 +201,8 @@ export type TaskDto = {
   stage: number;
   createdAt: string;
   updatedAt: string;
+  mergeRequests: TaskLinkDto[];
+  attachments?: TaskAttachmentDto[];
   comments?: TaskCommentDto[];
   creator?: AccountRefDto | null;
   assignee?: AccountRefDto | null;
@@ -218,9 +253,8 @@ export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "name" | "dea
 };
 
 export type ChunkTaskDto = Pick<TaskDto,
-  "id" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "platformType" | "origin" | "footprint"
+  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "platformType" | "origin" | "footprint"
 > & {
-  descriptionPreview?: string;
   defectSummary?: { open: number; inProgress: number; verifying: number; active: number };
 };
 
@@ -278,7 +312,7 @@ export type PlanDistrictDto = Pick<DistrictDto,
 };
 
 export type PlanTaskDto = Pick<TaskDto,
-  "id" | "cityId" | "districtId" | "title" | "workItemType" | "estimate" | "priority" | "status" | "progress" | "dueAt" | "stage" | "updatedAt"
+  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "estimate" | "priority" | "status" | "progress" | "dueAt" | "stage" | "updatedAt"
 > & { activeDefectCount: number };
 
 export type RealtimeEvent = {

@@ -26,8 +26,8 @@ describe("world chunk spatial read model", () => {
       VALUES (?, ?, 'Negative District', '', 'ACTIVE', 14, ?, '[]', 'E', 'MIXED_URBAN', '#fff', ?)`)
                               .run(districtId, cityId, JSON.stringify([{ x: -65, y: -1 }, { x: -64, y: 0 }]), createdAt);
     await db.prepare(`INSERT INTO tasks_v3
-      (id, city_id, district_id, title, estimate, building_type, platform_type, origin_x, origin_y, footprint_json, access_json, created_at, updated_at)
-      VALUES (?, ?, ?, 'Indexed task', 1, 'house-small-blue', 'YARD', -65, -1, ?, ?, ?, ?)`)
+      (id, task_number, city_id, district_id, title, estimate, building_type, platform_type, origin_x, origin_y, footprint_json, access_json, created_at, updated_at)
+      VALUES (?, 1, ?, ?, 'Indexed task', 1, 'house-small-blue', 'YARD', -65, -1, ?, ?, ?, ?)`)
                               .run(taskId, cityId, districtId, JSON.stringify([{ x: -65, y: -1 }]), JSON.stringify([{ x: -64, y: -1 }]), createdAt, createdAt);
 
     const memberships = async () => await db.prepare(`SELECT chunk_x, chunk_y FROM world_chunk_entities_v11

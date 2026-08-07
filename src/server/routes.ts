@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { createReadStream } from "node:fs";
 import type { AppService } from "./app-service";
 import { DomainError } from "./app-service";
 import { transaction, type Db } from "./db";
@@ -80,6 +81,17 @@ const deleteCitySchema = z.object({ confirmName: z.string().trim().min(1).max(10
 const deleteDistrictSchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
 const deleteTaskSchema = z.object({ confirmTitle: z.string().trim().min(1).max(160), idempotencyKey: z.string().min(1).max(160) }).strict();
 const regenerateCountrySchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
+const taskLinkSchema = z.object({
+  url: z.string().trim().min(8).max(2000), title: z.string().trim().max(200).optional(), idempotencyKey: z.string().min(4).max(160),
+}).strict();
+const taskLinkRemoveSchema = z.object({
+  url: z.string().trim().min(8).max(2000), idempotencyKey: z.string().min(4).max(160),
+}).strict();
+const attachmentSchema = z.object({
+  fileName: z.string().trim().min(1).max(200), mimeType: z.string().trim().max(120).optional(),
+  contentBase64: z.string().min(1), idempotencyKey: z.string().min(4).max(160),
+}).strict();
+const attachmentDeleteSchema = z.object({ idempotencyKey: z.string().min(4).max(160) }).strict();
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -339,12 +351,74 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             return await service.getChunk(user.countryId, chunkX, chunkY, lod === "overview" ? "OVERVIEW" : "DETAIL");
           });
 
+  app.get("/api/tasks/search", async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            if (!user) return reply;
+            const query = parse(z.object({
+              q: z.string().trim().min(1).max(160),
+              limit: z.coerce.number().int().min(1).max(25).default(10),
+            }).strict(), request.query);
+            return await service.searchTasks(user.countryId, query.q, query.limit);
+          });
+
   app.get("/api/tasks/:taskId", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
             const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
             return await service.getTask(user.countryId, taskId);
           });
+
+  app.post("/api/tasks/:taskId/links", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять задачи");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    return service.addTaskLink(user.countryId, { taskId, ...parse(taskLinkSchema, request.body), actor: user.name, actorUserId: user.id });
+  });
+
+  app.delete("/api/tasks/:taskId/links", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять задачи");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    return service.removeTaskLink(user.countryId, { taskId, ...parse(taskLinkRemoveSchema, request.body), actor: user.name, actorUserId: user.id });
+  });
+
+  app.post("/api/tasks/:taskId/attachments", {
+    // Attachment payloads are base64 JSON: allow up to ~1.4× the byte cap.
+    bodyLimit: Math.ceil(config.maxAttachmentBytes * 1.5),
+    config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+  }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять задачи");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    const body = parse(attachmentSchema, request.body);
+    const content = Buffer.from(body.contentBase64, "base64");
+    return service.addTaskAttachment(user.countryId, {
+      taskId, fileName: body.fileName, mimeType: body.mimeType, content,
+      actor: user.name, actorUserId: user.id, idempotencyKey: body.idempotencyKey,
+    });
+  });
+
+  app.get("/api/attachments/:attachmentId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const attachmentId = parse(z.string().uuid(), (request.params as { attachmentId: string }).attachmentId);
+    const { attachment, absolutePath } = await service.getTaskAttachment(user.countryId, attachmentId);
+    const encoded = encodeURIComponent(attachment.fileName).replaceAll("'", "%27");
+    reply.header("content-type", attachment.mimeType);
+    reply.header("content-disposition", `attachment; filename="attachment"; filename*=UTF-8''${encoded}`);
+    return reply.send(createReadStream(absolutePath));
+  });
+
+  app.delete("/api/attachments/:attachmentId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может удалять файлы");
+    const attachmentId = parse(z.string().uuid(), (request.params as { attachmentId: string }).attachmentId);
+    return service.deleteTaskAttachment(user.countryId, { attachmentId, ...parse(attachmentDeleteSchema, request.body) });
+  });
 
   app.patch("/api/cities/:cityId", async (request, reply) => {
     const user = await requireUser(db, request, reply);

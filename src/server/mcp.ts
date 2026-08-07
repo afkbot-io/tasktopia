@@ -6,11 +6,17 @@ import type { AppService } from "./app-service";
 import { DomainError } from "./app-service";
 import type { Db } from "./db";
 import { authenticateMcpToken, listAccessibleCountries, setActiveCountry } from "./auth";
-import type { CountryRole, McpScope } from "../shared/contracts";
+import type { CountryRole, McpScope, TaskDto } from "../shared/contracts";
+import { config } from "./config";
 import { APP_VERSION } from "./version";
 
 export type McpIdentity = { userId: string; countryId: string; countryRole: CountryRole; tokenId: string; scopes: McpScope[] };
 export type McpAuthentication = { identity: McpIdentity; authInfo: AuthInfo };
+
+/** Shareable web link to the task card; humans open it in the app. */
+function taskUrl(task: Pick<TaskDto, "taskNumber">): string {
+  return `${config.APP_ORIGIN}/task/${task.taskNumber}`;
+}
 
 function response(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }], structuredContent: { result: data } };
@@ -52,6 +58,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "District capacitySp is an advisory workload target and never blocks task creation.",
       "Keep project context on the country, epic outcomes on the city, sprint goal and deadline on the district, and executable analysis on the task.",
       "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
+      "Task text fields (description, acceptance criteria, analysis, architecture, design system, plan, comments) render Markdown in the app — structure them with headings, lists and code blocks.",
+      "Every task has a human-facing number and url; share the url when reporting to people. Attach merge request links with task.link_add and files of any format with task.attachment_add.",
       "Linked defects use OPEN -> IN_PROGRESS -> VERIFYING -> FIXED. Keep the parent task in TESTING while an ordinary linked defect is repaired; completion is blocked until every linked defect is FIXED.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
       "Task stages are PLANNING -> STARTED -> IN_PROGRESS -> TESTING -> COMPLETED; only TESTING -> IN_PROGRESS may move backward and requires a comment.",
@@ -217,8 +225,12 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("task.get", { description: "Получить задачу, здание и комментарии.", inputSchema: z.object({ taskId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ taskId }) => {
-    try { requireScope(identity, "tasks:read"); return response(await service.getTask(identity.countryId, taskId)); }
+  server.registerTool("task.get", { description: "Получить задачу, здание, комментарии, ссылки на MR, файлы и веб-ссылку для людей.", inputSchema: z.object({ taskId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ taskId }) => {
+    try {
+      requireScope(identity, "tasks:read");
+      const task = await service.getTask(identity.countryId, taskId);
+      return response({ ...task, url: taskUrl(task) });
+    }
     catch (error) { return failure(error); }
   });
 
@@ -246,7 +258,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
                                                 estimate: input.estimate, priority: input.priority, dueAt: input.dueAt, buildingHint: input.buildingHint,
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.assigneeEmail), idempotencyKey: input.idempotencyKey,
                                               });
-      return response({ ...task, workload: await service.getDistrictWorkload(identity.countryId, task.districtId) });
+      return response({ ...task, url: taskUrl(task), workload: await service.getDistrictWorkload(identity.countryId, task.districtId) });
     } catch (error) { return failure(error); }
   });
 
@@ -349,6 +361,64 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
                                                 taskId, assigneeUserId: assigneeEmail ? await resolveMember(assigneeEmail) ?? null : null,
                                                 actor: actorName, actorUserId: identity.userId, idempotencyKey,
                                               }));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.link_add", {
+    description: "Прикрепить к задаче ссылку на merge request (или другой http/https URL), чтобы она была видна в карточке задачи.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), url: z.string().min(8).max(2000), title: z.string().max(200).optional(),
+      idempotencyKey: z.string().min(4).max(160),
+    }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      const task = await service.addTaskLink(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId });
+      return response({ taskNumber: task.taskNumber, mergeRequests: task.mergeRequests, url: taskUrl(task) });
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.link_remove", {
+    description: "Убрать ссылку на merge request из задачи.",
+    inputSchema: z.object({ taskId: z.string().uuid(), url: z.string().min(8).max(2000), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      const task = await service.removeTaskLink(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId });
+      return response({ taskNumber: task.taskNumber, mergeRequests: task.mergeRequests, url: taskUrl(task) });
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.attachment_add", {
+    description: "Прикрепить к задаче файл любого формата (логи, скриншоты, схемы): имя, необязательный MIME и содержимое в base64.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), fileName: z.string().min(1).max(200), mimeType: z.string().max(120).optional(),
+      contentBase64: z.string().min(1), idempotencyKey: z.string().min(4).max(160),
+    }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      const attachment = await service.addTaskAttachment(identity.countryId, {
+        taskId: input.taskId, fileName: input.fileName, mimeType: input.mimeType,
+        content: Buffer.from(input.contentBase64, "base64"),
+        actor: actorName, actorUserId: identity.userId, idempotencyKey: input.idempotencyKey,
+      });
+      return response(attachment);
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.attachment_list", {
+    description: "Получить список файлов, прикреплённых к задаче.",
+    inputSchema: z.object({ taskId: z.string().uuid() }),
+    annotations: { readOnlyHint: true },
+  }, async ({ taskId }) => {
+    try {
+      requireScope(identity, "tasks:read");
+      const task = await service.getTask(identity.countryId, taskId);
+      return response({ taskNumber: task.taskNumber, attachments: task.attachments ?? [] });
     } catch (error) { return failure(error); }
   });
 

@@ -9,6 +9,8 @@ const schema = z.object({
   SESSION_COOKIE_SECURE: z.enum(["true", "false"]).optional(),
   TRUST_PROXY: z.enum(["true", "false"]).default("false"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+  UPLOAD_DIR: z.string().default("data/uploads"),
+  MAX_ATTACHMENT_BYTES: z.coerce.number().int().min(1024).max(50 * 1024 * 1024).default(10 * 1024 * 1024),
 });
 
 const raw = schema.parse(process.env);
@@ -18,4 +20,6 @@ export const config = {
   databaseUrl: raw.DATABASE_URL,
   secureCookie: raw.SESSION_COOKIE_SECURE === "true" || (raw.SESSION_COOKIE_SECURE === undefined && raw.NODE_ENV === "production"),
   trustProxy: raw.TRUST_PROXY === "true",
+  uploadDir: raw.UPLOAD_DIR,
+  maxAttachmentBytes: raw.MAX_ATTACHMENT_BYTES,
 };

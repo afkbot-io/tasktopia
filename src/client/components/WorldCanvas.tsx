@@ -240,11 +240,13 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): C
   let tooltip: Container | undefined;
   group.on("pointerover", () => {
     if (!tooltip) {
-      const details = task.descriptionPreview?.trim().replace(/\s+/g, " ") ?? "";
+      // Compact card: task number + title, then stage and progress. The
+      // long description preview used to turn dense districts into walls of
+      // overlapping text; details live in the task modal one tap away.
       tooltip = new Container();
       tooltip.eventMode = "none";
       const tooltipText = new Text({
-        text: `${task.title}\n${TASK_STATUS_LABEL[task.status]} · ${task.progress}%${details ? `\n${details.slice(0, 96)}${details.length > 96 ? "…" : ""}` : ""}`,
+        text: `#${task.taskNumber} · ${task.title}\n${TASK_STATUS_LABEL[task.status]} · ${task.progress}%`,
         resolution: 4,
         style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "600", lineHeight: 11, fill: 0xeaf2ee, wordWrap: true, wordWrapWidth: 144 }),
       });
@@ -471,11 +473,12 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, invalidation, showDistricts, onTaskSelect }: {
+export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect }: {
   countryId: string;
   chunkSize: number;
   viewBounds: Rect;
   focusCity?: BootstrapDto["initialCity"];
+  focusTask?: { origin: Cell; token: number } | null;
   invalidation?: MapInvalidation;
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
@@ -519,6 +522,18 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
   useEffect(() => {
     if (invalidation) runtimeRef.current?.invalidate(invalidation);
   }, [invalidation]);
+
+  // Search-driven focus: jump the camera to the found building with a
+  // neighbourhood-sized window around it.
+  const focusTaskToken = focusTask?.token;
+  useEffect(() => {
+    if (!focusTaskToken || !focusTask) return;
+    const { x, y } = focusTask.origin;
+    runtimeRef.current?.focus({
+      point: { x, y },
+      bounds: { minX: x - 14, minY: y - 14, maxX: x + 14, maxY: y + 14 },
+    });
+  }, [focusTaskToken, focusTask]);
 
   useEffect(() => {
     const [minX, minY, maxX, maxY] = viewBoundsKey.split(",").map(Number);

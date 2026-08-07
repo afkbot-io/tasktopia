@@ -11,7 +11,7 @@ describe("PostgreSQL migrations", () => {
 
   it("records immutable migration checksums", async () => {
     const rows = await db.prepare("SELECT name, checksum FROM schema_migrations ORDER BY name").all<{ name: string; checksum: string }>();
-    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql", "0005_incident_response.sql"]);
+    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql", "0005_incident_response.sql", "0006_task_extras.sql"]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
   });
 
@@ -44,8 +44,8 @@ describe("PostgreSQL migrations", () => {
       VALUES (?,?,'Migration district','ACTIVE',?::jsonb,'[]'::jsonb,'E','#fff',?)`)
       .run(districtId, cityId, JSON.stringify([{ x: -65, y: -1 }]), timestamp);
     await db.prepare(`INSERT INTO tasks_v3
-      (id,city_id,district_id,title,estimate,building_type,platform_type,origin_x,origin_y,footprint_json,access_json,created_at,updated_at)
-      VALUES (?,?,?,'Migration task',1,'house-small','GRASS',-65,-1,?::jsonb,?::jsonb,?,?)`)
+      (id,task_number,city_id,district_id,title,estimate,building_type,platform_type,origin_x,origin_y,footprint_json,access_json,created_at,updated_at)
+      VALUES (?,1,?,?,'Migration task',1,'house-small','GRASS',-65,-1,?::jsonb,?::jsonb,?,?)`)
       .run(taskId, cityId, districtId, JSON.stringify([{ x: -65, y: -1 }]), JSON.stringify([{ x: -1, y: -1 }]), timestamp, timestamp);
 
     const memberships = () => db.prepare(`SELECT chunk_x, chunk_y FROM world_chunk_entities_v11

@@ -140,7 +140,7 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
         {!districtId && <p className="plan-placeholder">Выберите район</p>}
         {districtId && tasks.length === 0 && !error && <p className="plan-placeholder">В районе пока нет задач</p>}
         {tasks.map((task) => <div key={task.id} className="plan-row"><button onClick={() => onTaskSelect(task.id)}>
-          <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>{task.title}</strong><small>{taskType[task.workItemType]} · {taskStatus[task.status]} · {task.progress}% · {task.estimate} SP{task.activeDefectCount > 0 ? ` · ${task.activeDefectCount} деф.` : ""}</small></span>
+          <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>#{task.taskNumber} · {task.title}</strong><small>{taskType[task.workItemType]} · {taskStatus[task.status]} · {task.progress}% · {task.estimate} SP{task.activeDefectCount > 0 ? ` · ${task.activeDefectCount} деф.` : ""}</small></span>
         </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить задачу «${task.title}»`} aria-label={`Удалить задачу «${task.title}»`} onClick={() => void removeEntity(`/api/tasks/${task.id}`, task.id, task.title, "confirmTitle")}>{deletingId === task.id ? "…" : "×"}</button>}</div>)}
       </section>
     </div>

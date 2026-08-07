@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { BUILDING_CATALOG, PROP_CATALOG, getBuilding, inferTaskTags, type BuildingCatalogEntry } from "../shared/catalog";
 import {
   STATUS_PROGRESS_RANGE,
@@ -25,13 +27,17 @@ import {
   type Rect,
   type RoadCellDto,
   type SurfaceCellDto,
+  type TaskAttachmentDto,
   type TaskDto,
   type TaskDefectDto,
+  type TaskLinkDto,
   type TaskPriority,
+  type TaskSearchResultDto,
   type TaskStatus,
   type WorkItemType,
   type WorldFeatureDto,
 } from "../shared/contracts";
+import { config } from "./config";
 import type { Db } from "./db";
 import { now, onTransactionCommit, onTransactionRollback, transaction } from "./db";
 import { listAccessibleCountries, registerUser, type AuthUser, type RegistrationInput } from "./auth";
@@ -141,6 +147,7 @@ function taskDto(row: Row): TaskDto {
     : origin;
   return {
     id: String(row.id),
+    taskNumber: Number(row.task_number ?? 0),
     cityId: String(row.city_id),
     districtId: String(row.district_id),
     title: String(row.title),
@@ -168,7 +175,33 @@ function taskDto(row: Row): TaskDto {
     stage: TASK_STAGE[status],
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    mergeRequests: json<TaskLinkDto[]>(row.merge_requests_json ?? []),
   };
+}
+
+function attachmentDto(row: Row): TaskAttachmentDto {
+  return {
+    id: String(row.id), taskId: String(row.task_id), fileName: String(row.file_name),
+    mimeType: String(row.mime_type), sizeBytes: Number(row.size_bytes),
+    actor: String(row.actor), createdAt: String(row.created_at),
+  };
+}
+
+function normalizeLinkUrl(raw: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    throw new DomainError("INVALID_INPUT", "Ссылка должна быть полным URL, например https://gitlab.example.com/repo/-/merge_requests/1");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new DomainError("INVALID_INPUT", "Допустимы только http/https-ссылки");
+  return parsed.toString();
+}
+
+function sanitizeFileName(raw: string): string {
+  const cleaned = raw.trim().replaceAll("\\", "/").split("/").pop()!.replaceAll(/[^\p{L}\p{N}._() -]/gu, "_").slice(0, 160);
+  if (!cleaned) throw new DomainError("INVALID_INPUT", "Некорректное имя файла");
+  return cleaned;
 }
 
 const DEFECT_TRANSITIONS: Record<TaskDefectDto["status"], ReadonlySet<TaskDefectDto["status"]>> = {
@@ -209,7 +242,11 @@ export class AppService {
   private readonly chunkCache = new Map<string, ChunkDto>();
   private static readonly CHUNK_CACHE_LIMIT = 64;
 
-  constructor(private readonly db: Db, private readonly onEvent?: (event: RealtimeEvent) => void) {}
+  constructor(
+    private readonly db: Db,
+    private readonly onEvent?: (event: RealtimeEvent) => void,
+    private readonly uploadDir: string = config.uploadDir,
+  ) {}
 
   async onboardUser(input: RegistrationInput): Promise<Awaited<ReturnType<typeof registerUser>>> {
     return transaction(this.db, async () => {
@@ -655,13 +692,13 @@ export class AppService {
     const district = await this.db.prepare(`SELECT 1 FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
       WHERE d.id = ? AND c.country_id = ?`).get(districtId, countryId);
     if (!district) throw new DomainError("NOT_FOUND", "Район не найден");
-    const rows = await this.db.prepare(`SELECT id, city_id, district_id, title, work_item_type, estimate, priority, status, progress, due_at, updated_at,
+    const rows = await this.db.prepare(`SELECT id, task_number, city_id, district_id, title, work_item_type, estimate, priority, status, progress, due_at, updated_at,
       (SELECT COUNT(*) FROM task_defects_v18 defect WHERE defect.task_id = tasks_v3.id AND defect.status <> 'FIXED') AS active_defect_count
       FROM tasks_v3 WHERE district_id = ? ORDER BY created_at`).all(districtId) as Row[];
     return rows.map((row) => {
       const status = String(row.status) as TaskStatus;
       return {
-        id: String(row.id), cityId: String(row.city_id), districtId: String(row.district_id), title: String(row.title),
+        id: String(row.id), taskNumber: Number(row.task_number), cityId: String(row.city_id), districtId: String(row.district_id), title: String(row.title),
         workItemType: String(row.work_item_type) as WorkItemType,
         estimate: Number(row.estimate) as Estimate, priority: String(row.priority) as TaskPriority,
         status, progress: Number(row.progress), dueAt: row.due_at ? String(row.due_at) : null,
@@ -742,7 +779,118 @@ export class AppService {
       status: String(defect.status) as TaskDefectDto["status"], fixedAt: defect.fixed_at ? String(defect.fixed_at) : null,
       createdAt: String(defect.created_at), updatedAt: String(defect.updated_at),
     }));
+    task.attachments = (await this.db.prepare("SELECT * FROM task_attachments_v1 WHERE task_id = ? ORDER BY created_at, id").all(taskId) as Row[]).map(attachmentDto);
     return task;
+  }
+
+  async searchTasks(countryId: string, query: string, limit = 10): Promise<TaskSearchResultDto[]> {
+    const text = query.trim();
+    if (text.length === 0) return [];
+    const bounded = Math.max(1, Math.min(25, limit));
+    const rows = /^\d{1,9}$/.test(text)
+      ? await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id, t.origin_x, t.origin_y,
+          city.name AS city_name, district.name AS district_name
+          FROM tasks_v3 t JOIN cities_v3 city ON city.id = t.city_id JOIN districts_v3 district ON district.id = t.district_id
+          WHERE city.country_id = ? AND t.task_number = ?`).all(countryId, Number(text)) as Row[]
+      : await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id, t.origin_x, t.origin_y,
+          city.name AS city_name, district.name AS district_name
+          FROM tasks_v3 t JOIN cities_v3 city ON city.id = t.city_id JOIN districts_v3 district ON district.id = t.district_id
+          WHERE city.country_id = ? AND t.title ILIKE ? ESCAPE '\\'
+          ORDER BY t.updated_at DESC LIMIT ?`).all(countryId, `%${text.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_")}%`, bounded) as Row[];
+    return rows.map((row) => {
+      const status = String(row.status) as TaskStatus;
+      return {
+        id: String(row.id), taskNumber: Number(row.task_number), title: String(row.title),
+        workItemType: String(row.work_item_type ?? "TASK") as WorkItemType,
+        status, progress: Number(row.progress), stage: TASK_STAGE[status],
+        cityId: String(row.city_id), cityName: String(row.city_name),
+        districtId: String(row.district_id), districtName: String(row.district_name),
+        origin: { x: Number(row.origin_x), y: Number(row.origin_y) },
+      };
+    });
+  }
+
+  async addTaskLink(countryId: string, input: {
+    taskId: string; url: string; title?: string; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskDto> {
+    return this.mutate(countryId, "task.link.add.v1", input.idempotencyKey, input, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const url = normalizeLinkUrl(input.url);
+      if (task.mergeRequests.some((link) => link.url === url)) throw new DomainError("CONFLICT", "Такая ссылка уже добавлена к задаче");
+      const entry: TaskLinkDto = {
+        url,
+        title: input.title?.trim().slice(0, 200) || url,
+        actor: input.actor ?? "MCP",
+        addedAt: now(),
+      };
+      await this.db.prepare("UPDATE tasks_v3 SET merge_requests_json = ? , updated_at = ? WHERE id = ?")
+        .run(JSON.stringify([...task.mergeRequests, entry]), entry.addedAt, task.id);
+      await this.recordTaskEvent(task.id, "LINK_ADDED", input.actor ?? "MCP", input.actorUserId, { url }, entry.addedAt);
+      const data = await this.getTask(countryId, task.id);
+      return { data, eventType: "task.fields_updated", eventPayload: { taskId: task.id, districtId: task.districtId, changedFields: ["mergeRequests"], affectedBounds: boundsOf(task.footprint) } };
+    });
+  }
+
+  async removeTaskLink(countryId: string, input: {
+    taskId: string; url: string; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskDto> {
+    return this.mutate(countryId, "task.link.remove.v1", input.idempotencyKey, input, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const url = normalizeLinkUrl(input.url);
+      const remaining = task.mergeRequests.filter((link) => link.url !== url);
+      if (remaining.length === task.mergeRequests.length) throw new DomainError("NOT_FOUND", "Такой ссылки у задачи нет");
+      const updatedAt = now();
+      await this.db.prepare("UPDATE tasks_v3 SET merge_requests_json = ?, updated_at = ? WHERE id = ?")
+        .run(JSON.stringify(remaining), updatedAt, task.id);
+      await this.recordTaskEvent(task.id, "LINK_REMOVED", input.actor ?? "MCP", input.actorUserId, { url }, updatedAt);
+      const data = await this.getTask(countryId, task.id);
+      return { data, eventType: "task.fields_updated", eventPayload: { taskId: task.id, districtId: task.districtId, changedFields: ["mergeRequests"], affectedBounds: boundsOf(task.footprint) } };
+    });
+  }
+
+  async addTaskAttachment(countryId: string, input: {
+    taskId: string; fileName: string; mimeType?: string; content: Buffer; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskAttachmentDto> {
+    const fileName = sanitizeFileName(input.fileName);
+    if (input.content.length === 0) throw new DomainError("INVALID_INPUT", "Файл пустой");
+    if (input.content.length > config.maxAttachmentBytes) {
+      throw new DomainError("INVALID_INPUT", `Файл больше допустимых ${Math.floor(config.maxAttachmentBytes / 1024 / 1024)} МБ`);
+    }
+    return this.mutate(countryId, "task.attachment.add.v1", input.idempotencyKey, { ...input, content: undefined, fileName, sizeBytes: input.content.length }, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const id = randomUUID();
+      const createdAt = now();
+      const relative = join(countryId, task.id, `${id}-${fileName}`);
+      const absolute = join(this.uploadDir, relative);
+      await mkdir(join(this.uploadDir, countryId, task.id), { recursive: true });
+      await writeFile(absolute, input.content);
+      await this.db.prepare(`INSERT INTO task_attachments_v1
+        (id, task_id, country_id, file_name, mime_type, size_bytes, storage_path, actor, actor_user_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        id, task.id, countryId, fileName, (input.mimeType?.trim() || "application/octet-stream").slice(0, 120),
+        input.content.length, relative, input.actor ?? "MCP", input.actorUserId ?? null, createdAt,
+      );
+      await this.recordTaskEvent(task.id, "ATTACHMENT_ADDED", input.actor ?? "MCP", input.actorUserId, { fileName, sizeBytes: input.content.length }, createdAt);
+      const row = await this.db.prepare("SELECT * FROM task_attachments_v1 WHERE id = ?").get(id) as Row;
+      return { data: attachmentDto(row), eventType: "task.fields_updated", eventPayload: { taskId: task.id, districtId: task.districtId, changedFields: ["attachments"], affectedBounds: boundsOf(task.footprint) } };
+    });
+  }
+
+  /** Attachment row plus its absolute file location, country-checked. */
+  async getTaskAttachment(countryId: string, attachmentId: string): Promise<{ attachment: TaskAttachmentDto; absolutePath: string }> {
+    const row = await this.db.prepare("SELECT * FROM task_attachments_v1 WHERE id = ? AND country_id = ?").get(attachmentId, countryId) as Row | undefined;
+    if (!row) throw new DomainError("NOT_FOUND", "Файл не найден");
+    return { attachment: attachmentDto(row), absolutePath: join(this.uploadDir, String(row.storage_path)) };
+  }
+
+  async deleteTaskAttachment(countryId: string, input: { attachmentId: string; idempotencyKey: string }): Promise<{ ok: true }> {
+    return this.mutate(countryId, "task.attachment.delete.v1", input.idempotencyKey, input, async () => {
+      const row = await this.db.prepare("SELECT * FROM task_attachments_v1 WHERE id = ? AND country_id = ?").get(input.attachmentId, countryId) as Row | undefined;
+      if (!row) throw new DomainError("NOT_FOUND", "Файл не найден");
+      await this.db.prepare("DELETE FROM task_attachments_v1 WHERE id = ?").run(input.attachmentId);
+      await unlink(join(this.uploadDir, String(row.storage_path))).catch(() => undefined);
+      return { data: { ok: true as const }, eventType: "task.fields_updated", eventPayload: { taskId: String(row.task_id), changedFields: ["attachments"] } };
+    });
   }
 
   private async recordTaskEvent(taskId: string, type: NonNullable<TaskDto["events"]>[number]["type"], actor: string, actorUserId: string | undefined, details: Record<string, unknown>, createdAt = now()): Promise<void> {
@@ -2545,14 +2693,19 @@ export class AppService {
                       if (!selected || !entry) throw new DomainError("PLACEMENT_BLOCKED", "После расширения не появился подходящий участок для здания");
                       const id = randomUUID();
                       const createdAt = now();
+                      // Per-country serial, human-facing: #1, #2, ... Assigned
+                      // inside the creation transaction so concurrent creates
+                      // on one country serialize and never collide.
+                      const taskNumber = Number((await this.db.prepare(`SELECT COALESCE(MAX(t.task_number), 0) + 1 AS next
+                        FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id WHERE c.country_id = ?`).get(countryId) as Row).next);
                       const lots = district.lots.map((lot) => lot.id === selected.lot.id ? { ...lot, taskId: id, vacant: false } : lot);
                       await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?").run(JSON.stringify(lots), district.id);
                       // A new building redevelops any ruin plot it overlaps.
                       await this.clearRuins(countryId, selected.placement.footprint);
                       await this.db.prepare(`INSERT INTO tasks_v3
-        (id, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-                                                        id, input.cityId, district.id, title, input.description?.trim().slice(0, 8000) ?? "", input.workItemType ?? "TASK",
+        (id, task_number, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+                                                        id, taskNumber, input.cityId, district.id, title, input.description?.trim().slice(0, 8000) ?? "", input.workItemType ?? "TASK",
                                                         input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.systemAnalysis?.trim().slice(0, 16000) ?? "",
                                                         input.architecture?.trim().slice(0, 16000) ?? "", input.designSystem?.trim().slice(0, 16000) ?? "",
                                                         input.implementationPlan?.trim().slice(0, 16000) ?? "", input.estimate,
@@ -2966,8 +3119,7 @@ export class AppService {
     return this.storeChunk(cacheKey, {
       chunkX, chunkY, size: CHUNK_SIZE, terrain, roads, surfaces, districts,
       tasks: chunkTasks.map((task) => ({
-        id: task.id, cityId: task.cityId, districtId: task.districtId, title: task.title,
-        ...(lod === "DETAIL" && task.description ? { descriptionPreview: task.description.trim().replace(/\s+/g, " ").slice(0, 128) } : {}),
+        id: task.id, taskNumber: task.taskNumber, cityId: task.cityId, districtId: task.districtId, title: task.title,
         workItemType: task.workItemType,
         ...(lod === "DETAIL" && defectSummaryByTask.has(task.id) ? { defectSummary: defectSummaryByTask.get(task.id) } : {}),
         status: task.status, progress: task.progress, stage: task.stage,

@@ -1,10 +1,11 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import type { BootstrapDto, CityDto, RealtimeEvent, Rect } from "../shared/contracts";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import type { BootstrapDto, CityDto, RealtimeEvent, Rect, TaskSearchResultDto } from "../shared/contracts";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
 import { CountryPanel } from "./components/CountryPanel";
 import { CountrySwitcher } from "./components/CountrySwitcher";
 import { PlanDrawer } from "./components/PlanDrawer";
+import { TaskSearch } from "./components/TaskSearch";
 import { Button, cx } from "./components/ui";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
@@ -35,6 +36,8 @@ export function App() {
   const [countryDialog, setCountryDialog] = useState<"manage" | "create" | null>(null);
   const [showDistricts, setShowDistricts] = useState(false);
   const [focusCity, setFocusCity] = useState<CityDto | null>(null);
+  const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
+  const deepLinkHandledRef = useRef(false);
   const [revision, setRevision] = useState(0);
   const [mapInvalidation, setMapInvalidation] = useState<MapInvalidation>();
   const [online, setOnline] = useState(true);
@@ -91,6 +94,30 @@ export function App() {
   useEffect(() => {
     document.title = bootstrap ? `Tasktopia — ${bootstrap.country.name}` : "Tasktopia — цифровая страна";
   }, [bootstrap]);
+
+  // Shareable task links: /task/<number> opens the card (and focuses its
+  // building) once the session is ready. Anonymous visitors get the auth
+  // screen first and land on the card after signing in.
+  useEffect(() => {
+    if (!bootstrap || deepLinkHandledRef.current) return;
+    const match = /^\/task\/(\d{1,9})\/?$/.exec(window.location.pathname);
+    if (!match) return;
+    deepLinkHandledRef.current = true;
+    const number = Number(match[1]);
+    void api<TaskSearchResultDto[]>(`/api/tasks/search?q=${number}&limit=1`)
+      .then((found) => {
+        const result = found.find((item) => item.taskNumber === number);
+        if (!result) return;
+        setFocusTask({ origin: result.origin, token: Date.now() });
+        setSelectedTask(result.id);
+      })
+      .catch(() => undefined);
+  }, [bootstrap]);
+
+  const openTaskFromSearch = useCallback((result: TaskSearchResultDto) => {
+    setFocusTask({ origin: result.origin, token: Date.now() });
+    setSelectedTask(result.id);
+  }, []);
   useEffect(() => {
     if (!countryId) return;
     let active = true;
@@ -124,9 +151,9 @@ export function App() {
   }
 
   const activeCity = focusCity ?? bootstrap.initialCity;
-  return <main className="grid h-full grid-rows-[72px_minmax(0,1fr)] bg-[#081316]">
-    <header className="relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:grid-cols-[minmax(0,1.2fr)_auto_auto] md:px-5" aria-label="Панель управления страной">
-      <div className="flex min-w-0 items-center gap-2.5 md:gap-4">
+  return <main className="grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
+    <header className="relative z-10 grid min-h-[72px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 py-2 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:h-[72px] md:grid-cols-[minmax(0,1.2fr)_minmax(0,340px)_auto_auto] md:gap-3 md:px-5 md:py-0" aria-label="Панель управления страной">
+      <div className="order-1 flex min-w-0 items-center gap-2.5 md:gap-4">
         <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
         <div className="relative min-w-0">
         <button className="country-title-button grid min-w-0 border-0 border-l-0 px-0 text-left xl:border-l xl:border-[#304850] xl:pl-5" aria-haspopup="dialog" aria-expanded={countryMenuOpen} onClick={() => { setPlanOpen(false); setCountryMenuOpen((value) => !value); }}>
@@ -141,13 +168,17 @@ export function App() {
         </div>}
       </div>
 
-      <div className="hidden items-center gap-4 text-xs text-[#9cafb2] md:flex xl:gap-6">
+      <div className="order-3 col-span-2 min-w-0 md:order-2 md:col-span-1">
+        <TaskSearch onSelect={openTaskFromSearch} />
+      </div>
+
+      <div className="order-3 hidden items-center gap-4 text-xs text-[#9cafb2] md:flex xl:gap-6">
         <span className="flex items-center gap-2 whitespace-nowrap"><i className={cx("h-2 w-2 rounded-full", online ? "bg-[#78be6d] shadow-[0_0_8px_#78be6d]" : "bg-[#d66e5d]")} />{online ? "В сети" : "Подключение"}</span>
         <span className="hidden whitespace-nowrap lg:inline">Районов строится · {bootstrap.stats.activeDistricts}</span>
         <span className="hidden whitespace-nowrap xl:inline">Зданий строится · {bootstrap.stats.unfinishedBuildings}</span>
       </div>
 
-      <nav className="flex items-center justify-end gap-1.5 sm:gap-2" aria-label="Действия карты">
+      <nav className="order-2 flex items-center justify-end gap-1.5 sm:gap-2 md:order-4" aria-label="Действия карты">
         <Button data-plan-trigger className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={planOpen} onClick={() => { setCountryMenuOpen(false); setPlanOpen((value) => !value); }}>План</Button>
         <Button className={cx("min-h-10 px-3 text-xs sm:px-4", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>
         <Button className="h-10 min-h-10 w-10 px-0 text-lg text-signal" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</Button>
@@ -158,7 +189,7 @@ export function App() {
     <section className="map-region">
       {bootstrap.stats.cities > 0 ? <>
         <Suspense fallback={<div className="app-loading" role="status"><div className="loader-square" /><span>Загружаем карту…</span></div>}>
-          <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} />
+          <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} />
         </Suspense>
         <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}

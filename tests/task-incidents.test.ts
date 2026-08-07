@@ -5,6 +5,7 @@ import type { ChunkTaskDto } from "../src/shared/contracts";
 function task(overrides: Partial<ChunkTaskDto> = {}): ChunkTaskDto {
   return {
     id: "task-1",
+    taskNumber: 1,
     cityId: "city-1",
     districtId: "district-1",
     title: "Проверить оплату",

@@ -33,6 +33,9 @@ services:
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       TRUST_PROXY: "true"
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - tasktopia_uploads:/data/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,3 +64,4 @@ services:
 
 volumes:
   tasktopia_postgres:
+  tasktopia_uploads:
