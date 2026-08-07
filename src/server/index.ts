@@ -21,7 +21,7 @@ const app = Fastify({
     level: config.LOG_LEVEL,
     redact: { paths: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"], censor: "[REDACTED]" },
   },
-  bodyLimit: 1_000_000,
+  bodyLimit: 20_000_000,
   trustProxy: config.trustProxy,
 });
 const db = await createDb(config.databaseUrl);
@@ -158,7 +158,21 @@ app.route({
 
 const publicRoot = join(process.cwd(), "dist/public");
 if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
-  await app.register(fastifyStatic, { root: publicRoot, prefix: "/" });
+  await app.register(fastifyStatic, {
+    root: publicRoot,
+    prefix: "/",
+    setHeaders: (reply, path) => {
+      // Versioned game assets and Vite-hashed bundles are immutable; cache for one year.
+      if (path.includes("/game-assets/") || /\/assets\/[^/]+-[a-f0-9]{8,}\.js\.map?$/.test(path) || /\/assets\/[^/]+-[a-f0-9]{8,}\.(js|css|woff2?)$/.test(path)) {
+        reply.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return;
+      }
+      // HTML and unhashed entry files must never be cached by the browser.
+      if (path.endsWith(".html") || path === "/index.html") {
+        reply.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      }
+    },
+  });
   app.setNotFoundHandler((request, reply) => {
     if (request.url.startsWith("/api") || request.url.startsWith("/mcp")) return reply.code(404).send({ error: "NOT_FOUND" });
     return reply.sendFile("index.html");

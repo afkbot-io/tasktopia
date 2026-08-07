@@ -348,7 +348,12 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
               throw new DomainError("INVALID_INPUT", "Некорректные координаты чанка");
             }
             const lod = parse(z.enum(["detail", "overview"]).default("detail"), (request.query as { lod?: string }).lod);
-            return await service.getChunk(user.countryId, chunkX, chunkY, lod === "overview" ? "OVERVIEW" : "DETAIL");
+            const chunk = await service.getChunk(user.countryId, chunkX, chunkY, lod === "overview" ? "OVERVIEW" : "DETAIL");
+            const etag = `"${chunk.worldVersion}-${chunkX}-${chunkY}-${lod}"`;
+            if (request.headers["if-none-match"] === etag) {
+              return reply.code(304).send();
+            }
+            return reply.header("ETag", etag).header("Cache-Control", "private, no-cache, must-revalidate").send(chunk);
           });
 
   app.get("/api/tasks/search", async (request, reply) => {
