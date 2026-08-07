@@ -60,6 +60,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
       "Task text fields (description, acceptance criteria, analysis, architecture, design system, plan, comments) render Markdown in the app — structure them with headings, lists and code blocks.",
       "Every task has a human-facing number and url; share the url when reporting to people. Attach merge request links with task.link_add and files of any format with task.attachment_add.",
+      "Use task.dependency_add to express task order (must be in the same city); task.activity returns the full audit trail of events, comments, defects, attachments and dependencies.",
       "Linked defects use OPEN -> IN_PROGRESS -> VERIFYING -> FIXED. Keep the parent task in TESTING while an ordinary linked defect is repaired; completion is blocked until every linked defect is FIXED.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
       "Task stages are PLANNING -> STARTED -> IN_PROGRESS -> TESTING -> COMPLETED; only TESTING -> IN_PROGRESS may move backward and requires a comment.",
@@ -245,6 +246,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]),
       priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().optional(),
       buildingHint: z.string().max(100).optional(), assigneeEmail: z.string().email().optional(),
+      assigneeRole: z.string().max(80).optional().describe("Роль ответственного, например backend-lead, ai-agent:hermes, qa"),
+      forUserEmail: z.string().email().optional().describe("Заказчик/владелец задачи — для кого делается работа"),
       idempotencyKey: z.string().min(4).max(160),
     }),
     annotations: { idempotentHint: true },
@@ -256,7 +259,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
                                                 workItemType: input.workItemType, acceptanceCriteria: input.acceptanceCriteria, systemAnalysis: input.systemAnalysis,
                                                 architecture: input.architecture, designSystem: input.designSystem, implementationPlan: input.implementationPlan,
                                                 estimate: input.estimate, priority: input.priority, dueAt: input.dueAt, buildingHint: input.buildingHint,
-                                                creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.assigneeEmail), idempotencyKey: input.idempotencyKey,
+                                                creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.assigneeEmail), assigneeRole: input.assigneeRole,
+                                                forUserId: await resolveMember(input.forUserEmail), idempotencyKey: input.idempotencyKey,
                                               });
       return response({ ...task, url: taskUrl(task), workload: await service.getDistrictWorkload(identity.countryId, task.districtId) });
     } catch (error) { return failure(error); }
@@ -272,17 +276,27 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("task.update_fields", {
-    description: "Обновить постановку задачи: тип поставки, описание, критерии приёмки, системный анализ, архитектуру, дизайн-систему, план, SP, приоритет и дедлайн. Статус меняйте отдельной командой.",
+    description: "Обновить постановку задачи: тип поставки, описание, критерии приёмки, системный анализ, архитектуру, дизайн-систему, план, SP, приоритет, дедлайн, роль ответственного и заказчика. Статус меняйте отдельной командой.",
     inputSchema: z.object({
       taskId: z.string().uuid(), title: z.string().min(2).max(160).optional(), description: z.string().max(8000).optional(),
       workItemType: z.enum(["TASK", "BUG", "RELEASE", "HOTFIX"]).optional(), acceptanceCriteria: z.string().max(8000).optional(),
       systemAnalysis: z.string().max(16000).optional(), architecture: z.string().max(16000).optional(), designSystem: z.string().max(16000).optional(),
       implementationPlan: z.string().max(16000).optional(), estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]).optional(),
       priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().nullable().optional(),
+      assigneeRole: z.string().max(80).optional().describe("Роль ответственного, например backend-lead, ai-agent:hermes, qa"),
+      forUserEmail: z.string().email().optional().describe("Заказчик/владелец задачи"),
       idempotencyKey: z.string().min(4).max(160),
     }), annotations: { idempotentHint: true },
   }, async (input) => {
-    try { requireScope(identity, "tasks:write"); return response(await service.updateTaskFields(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    try {
+      requireScope(identity, "tasks:write");
+      const forUserId = input.forUserEmail !== undefined
+        ? (input.forUserEmail ? await resolveMember(input.forUserEmail) : undefined)
+        : undefined;
+      return response(await service.updateTaskFields(identity.countryId, {
+        ...input, forUserId, actor: actorName, actorUserId: identity.userId,
+      }));
+    }
     catch (error) { return failure(error); }
   });
 
@@ -351,16 +365,53 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("task.assign", {
-    description: "Назначить ответственного из правительства страны или снять назначение.",
-    inputSchema: z.object({ taskId: z.string().uuid(), assigneeEmail: z.string().email().nullable(), idempotencyKey: z.string().min(4).max(160) }),
+    description: "Назначить ответственного из правительства страны или снять назначение. Можно задать роль, например ai-agent:hermes, backend-lead, qa.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), assigneeEmail: z.string().email().nullable(),
+      assigneeRole: z.string().max(80).optional().describe("Роль ответственного, например backend-lead, ai-agent:hermes, qa"),
+      idempotencyKey: z.string().min(4).max(160),
+    }),
     annotations: { idempotentHint: true },
-  }, async ({ taskId, assigneeEmail, idempotencyKey }) => {
+  }, async ({ taskId, assigneeEmail, assigneeRole, idempotencyKey }) => {
     try {
       requireScope(identity, "tasks:write");
       return response(await service.assignTask(identity.countryId, {
                                                 taskId, assigneeUserId: assigneeEmail ? await resolveMember(assigneeEmail) ?? null : null,
-                                                actor: actorName, actorUserId: identity.userId, idempotencyKey,
+                                                assigneeRole, actor: actorName, actorUserId: identity.userId, idempotencyKey,
                                               }));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.activity", {
+    description: "Получить полную активность по задаче: события, комментарии, дефекты, вложения и связи с другими задачами (для MCP-агента как audit trail).",
+    inputSchema: z.object({ taskId: z.string().uuid() }),
+    annotations: { readOnlyHint: true },
+  }, async ({ taskId }) => {
+    try {
+      requireScope(identity, "tasks:read");
+      return response(await service.getTaskActivity(identity.countryId, taskId));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.dependency_add", {
+    description: "Добавить зависимость задачи от другой задачи в том же городе. Связанная задача должна быть выполнена раньше.",
+    inputSchema: z.object({ taskId: z.string().uuid(), dependsOnTaskId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      return response(await service.addTaskDependency(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId }));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.dependency_remove", {
+    description: "Убрать зависимость задачи от другой задачи.",
+    inputSchema: z.object({ taskId: z.string().uuid(), dependsOnTaskId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      return response(await service.removeTaskDependency(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId }));
     } catch (error) { return failure(error); }
   });
 

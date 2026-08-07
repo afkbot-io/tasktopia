@@ -164,12 +164,12 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
     setHeaders: (reply, path) => {
       // Versioned game assets and Vite-hashed bundles are immutable; cache for one year.
       if (path.includes("/game-assets/") || /\/assets\/[^/]+-[a-f0-9]{8,}\.js\.map?$/.test(path) || /\/assets\/[^/]+-[a-f0-9]{8,}\.(js|css|woff2?)$/.test(path)) {
-        reply.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        reply.header("Cache-Control", "public, max-age=31536000, immutable");
         return;
       }
       // HTML and unhashed entry files must never be cached by the browser.
       if (path.endsWith(".html") || path === "/index.html") {
-        reply.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        reply.header("Cache-Control", "no-cache, no-store, must-revalidate");
       }
     },
   });

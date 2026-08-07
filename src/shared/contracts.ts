@@ -206,6 +206,9 @@ export type TaskDto = {
   comments?: TaskCommentDto[];
   creator?: AccountRefDto | null;
   assignee?: AccountRefDto | null;
+  assigneeRole?: string | null;
+  forUser?: AccountRefDto | null;
+  dependencies?: { id: string; taskNumber: number; title: string; status: TaskStatus }[];
   events?: TaskEventDto[];
   defects?: TaskDefectDto[];
 };

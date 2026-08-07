@@ -30,6 +30,8 @@ import {
   type TaskAttachmentDto,
   type TaskDto,
   type TaskDefectDto,
+  type TaskEventDto,
+  type TaskCommentDto,
   type TaskLinkDto,
   type TaskPriority,
   type TaskSearchResultDto,
@@ -176,6 +178,7 @@ function taskDto(row: Row): TaskDto {
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
     mergeRequests: json<TaskLinkDto[]>(row.merge_requests_json ?? []),
+    assigneeRole: row.assignee_role ? String(row.assignee_role) : null,
   };
 }
 
@@ -768,6 +771,12 @@ export class AppService {
     };
     task.creator = await account(row.creator_user_id);
     task.assignee = await account(row.assignee_user_id);
+    task.forUser = await account(row.for_user_id);
+    task.dependencies = (await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.status
+      FROM task_dependencies_v1 d JOIN tasks_v3 t ON t.id = d.depends_on_task_id
+      WHERE d.task_id = ?`).all(taskId) as Row[]).map((dep) => ({
+      id: String(dep.id), taskNumber: Number(dep.task_number), title: String(dep.title), status: String(dep.status) as TaskStatus,
+    }));
     task.events = (await this.db.prepare("SELECT * FROM task_events_v7 WHERE task_id = ? ORDER BY id").all(taskId) as Row[]).map((event) => ({
       id: Number(event.id), taskId, type: String(event.event_type) as NonNullable<TaskDto["events"]>[number]["type"],
       actor: String(event.actor_label), actorUserId: event.actor_user_id ? String(event.actor_user_id) : null,
@@ -2633,6 +2642,8 @@ export class AppService {
     buildingHint?: string;
     creatorUserId?: string;
     assigneeUserId?: string;
+    assigneeRole?: string;
+    forUserId?: string;
     idempotencyKey: string;
   }): Promise<TaskDto> {
     const title = input.title.trim();
@@ -2640,11 +2651,12 @@ export class AppService {
     return await this.mutate(countryId, "task.create.v3", input.idempotencyKey, input, async () => {
                       const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
                       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
-                      for (const [field, userId] of [["создатель", input.creatorUserId], ["ответственный", input.assigneeUserId]] as const) {
+                      for (const [field, userId] of [["создатель", input.creatorUserId], ["ответственный", input.assigneeUserId], ["заказчик", input.forUserId]] as const) {
                         if (userId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, userId)) {
                           throw new DomainError("ASSIGNEE_NOT_MEMBER", `${field} должен состоять в правительстве страны`);
                         }
                       }
+                      if (input.assigneeRole?.trim() && input.assigneeRole.length > 80) throw new DomainError("INVALID_INPUT", "Роль ответственного не длиннее 80 символов");
                       const districtRow = input.districtId
                         ? await this.db.prepare("SELECT * FROM districts_v3 WHERE id = ? AND city_id = ?").get(input.districtId, input.cityId)
                         : await this.db.prepare("SELECT * FROM districts_v3 WHERE city_id = ? AND status = 'ACTIVE'").get(input.cityId);
@@ -2703,8 +2715,8 @@ export class AppService {
                       // A new building redevelops any ruin plot it overlaps.
                       await this.clearRuins(countryId, selected.placement.footprint);
                       await this.db.prepare(`INSERT INTO tasks_v3
-        (id, task_number, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        (id, task_number, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, assignee_role, for_user_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
                                                         id, taskNumber, input.cityId, district.id, title, input.description?.trim().slice(0, 8000) ?? "", input.workItemType ?? "TASK",
                                                         input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.systemAnalysis?.trim().slice(0, 16000) ?? "",
                                                         input.architecture?.trim().slice(0, 16000) ?? "", input.designSystem?.trim().slice(0, 16000) ?? "",
@@ -2712,13 +2724,13 @@ export class AppService {
                                                         input.priority ?? "NORMAL", "PLANNING", 0, input.dueAt ?? null, entry.key, entry.platform,
                                                         selected.placement.origin.x, selected.placement.origin.y, JSON.stringify(selected.placement.footprint),
                                                         selected.placement.entrance.x, selected.placement.entrance.y, JSON.stringify(selected.placement.accessPath), selected.placement.accessKind,
-                                                        input.creatorUserId ?? null, input.assigneeUserId ?? null, createdAt, createdAt,
+                                                        input.creatorUserId ?? null, input.assigneeUserId ?? null, input.assigneeRole?.trim().slice(0, 80) ?? null, input.forUserId ?? null, createdAt, createdAt,
                                                       );
                       const creator = input.creatorUserId
                         ? await this.db.prepare("SELECT name FROM users WHERE id = ?").get(input.creatorUserId) as { name: string } | undefined
                         : undefined;
                       await this.recordTaskEvent(id, "CREATED", creator?.name ?? "Система страны", input.creatorUserId, {
-                                                        status: "PLANNING", estimate: input.estimate, assigneeUserId: input.assigneeUserId ?? null,
+                                                        status: "PLANNING", estimate: input.estimate, assigneeUserId: input.assigneeUserId ?? null, assigneeRole: input.assigneeRole?.trim() ?? null, forUserId: input.forUserId ?? null,
                                                       }, createdAt);
                       this.surfaceCache.delete(countryId);
                       const data = await this.getTask(countryId, id);
@@ -2742,15 +2754,20 @@ export class AppService {
   async updateTaskFields(countryId: string, input: {
     taskId: string; title?: string; description?: string; workItemType?: WorkItemType; acceptanceCriteria?: string;
     systemAnalysis?: string; architecture?: string; designSystem?: string; implementationPlan?: string;
-    estimate?: Estimate; priority?: TaskPriority; dueAt?: string | null; actor?: string; actorUserId?: string; idempotencyKey: string;
+    estimate?: Estimate; priority?: TaskPriority; dueAt?: string | null; assigneeRole?: string; forUserId?: string;
+    actor?: string; actorUserId?: string; idempotencyKey: string;
   }): Promise<TaskDto> {
     return this.mutate(countryId, "task.fields.v18", input.idempotencyKey, input, async () => {
       const current = await this.getTask(countryId, input.taskId);
       const title = input.title === undefined ? current.title : input.title.trim();
       if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название задачи должно содержать от 2 до 160 символов");
+      if (input.forUserId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, input.forUserId)) {
+        throw new DomainError("ASSIGNEE_NOT_MEMBER", "Заказчик должен состоять в правительстве страны");
+      }
+      if (input.assigneeRole?.trim() && input.assigneeRole.length > 80) throw new DomainError("INVALID_INPUT", "Роль ответственного не длиннее 80 символов");
       const updatedAt = now();
       await this.db.prepare(`UPDATE tasks_v3 SET title = ?, description = ?, work_item_type = ?, acceptance_criteria = ?,
-        system_analysis = ?, architecture = ?, design_system = ?, implementation_plan = ?, estimate = ?, priority = ?, due_at = ?, updated_at = ?
+        system_analysis = ?, architecture = ?, design_system = ?, implementation_plan = ?, estimate = ?, priority = ?, due_at = ?, assignee_role = ?, for_user_id = ?, updated_at = ?
         WHERE id = ?`).run(
         title, input.description === undefined ? current.description : input.description.trim().slice(0, 8000),
         input.workItemType ?? current.workItemType,
@@ -2760,7 +2777,10 @@ export class AppService {
         input.designSystem === undefined ? current.designSystem : input.designSystem.trim().slice(0, 16000),
         input.implementationPlan === undefined ? current.implementationPlan : input.implementationPlan.trim().slice(0, 16000),
         input.estimate ?? current.estimate, input.priority ?? current.priority,
-        input.dueAt === undefined ? current.dueAt : input.dueAt, updatedAt, input.taskId,
+        input.dueAt === undefined ? current.dueAt : input.dueAt,
+        input.assigneeRole === undefined ? current.assigneeRole : (input.assigneeRole?.trim().slice(0, 80) ?? null),
+        input.forUserId === undefined ? current.forUser?.id ?? null : (input.forUserId ?? null),
+        updatedAt, input.taskId,
       );
       const changedFields = Object.keys(input).filter((field) => !["taskId", "idempotencyKey", "actor", "actorUserId"].includes(field));
       await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { changedFields }, updatedAt);
@@ -2894,22 +2914,62 @@ export class AppService {
                     });
   }
 
-  async assignTask(countryId: string, input: { taskId: string; assigneeUserId: string | null; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
+  async assignTask(countryId: string, input: { taskId: string; assigneeUserId: string | null; assigneeRole?: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
     return await this.mutate(countryId, "task.assign.v7", input.idempotencyKey, input, async () => {
                       const task = await this.getTask(countryId, input.taskId);
                       if (input.assigneeUserId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, input.assigneeUserId)) {
                         throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен состоять в правительстве страны");
                       }
+                      if (input.assigneeRole?.trim() && input.assigneeRole.length > 80) throw new DomainError("INVALID_INPUT", "Роль ответственного не длиннее 80 символов");
                       const previous = task.assignee?.id ?? null;
                       const updatedAt = now();
-                      await this.db.prepare("UPDATE tasks_v3 SET assignee_user_id = ?, updated_at = ? WHERE id = ?")
-                                                        .run(input.assigneeUserId, updatedAt, input.taskId);
+                      await this.db.prepare("UPDATE tasks_v3 SET assignee_user_id = ?, assignee_role = ?, updated_at = ? WHERE id = ?")
+                                                        .run(input.assigneeUserId, input.assigneeRole?.trim().slice(0, 80) ?? null, updatedAt, input.taskId);
                       await this.recordTaskEvent(input.taskId, "ASSIGNEE_CHANGED", input.actor ?? "MCP", input.actorUserId, {
-                                                        fromUserId: previous, toUserId: input.assigneeUserId,
+                                                        fromUserId: previous, toUserId: input.assigneeUserId, assigneeRole: input.assigneeRole?.trim() ?? null,
                                                       }, updatedAt);
                       const data = await this.getTask(countryId, input.taskId);
                       return { data, eventType: "task.assignee_changed", eventPayload: { taskId: input.taskId, assigneeUserId: input.assigneeUserId, affectedBounds: boundsOf(data.footprint) } };
                     });
+  }
+
+  async addTaskDependency(countryId: string, input: { taskId: string; dependsOnTaskId: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
+    return await this.mutate(countryId, "task.dependency.add.v1", input.idempotencyKey, input, async () => {
+                      const task = await this.getTask(countryId, input.taskId);
+                      const dependency = await this.getTask(countryId, input.dependsOnTaskId);
+                      if (task.cityId !== dependency.cityId) throw new DomainError("INVALID_INPUT", "Связь возможна только между задачами одного города");
+                      try {
+                        await this.db.prepare("INSERT INTO task_dependencies_v1 (task_id, depends_on_task_id, created_at) VALUES (?, ?, ?)")
+                          .run(input.taskId, input.dependsOnTaskId, now());
+                      } catch (error) {
+                        if (String(error).includes("UNIQUE")) throw new DomainError("CONFLICT", "Связь уже существует");
+                        throw error;
+                      }
+                      await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { dependsOnTaskId: input.dependsOnTaskId }, now());
+                      const data = await this.getTask(countryId, input.taskId);
+                      return { data, eventType: "task.fields_updated", eventPayload: { taskId: input.taskId, districtId: data.districtId, changedFields: ["dependencies"], affectedBounds: boundsOf(data.footprint) } };
+                    });
+  }
+
+  async removeTaskDependency(countryId: string, input: { taskId: string; dependsOnTaskId: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
+    return await this.mutate(countryId, "task.dependency.remove.v1", input.idempotencyKey, input, async () => {
+                      await this.getTask(countryId, input.taskId);
+                      await this.db.prepare("DELETE FROM task_dependencies_v1 WHERE task_id = ? AND depends_on_task_id = ?").run(input.taskId, input.dependsOnTaskId);
+                      await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { removedDependsOnTaskId: input.dependsOnTaskId }, now());
+                      const data = await this.getTask(countryId, input.taskId);
+                      return { data, eventType: "task.fields_updated", eventPayload: { taskId: input.taskId, districtId: data.districtId, changedFields: ["dependencies"], affectedBounds: boundsOf(data.footprint) } };
+                    });
+  }
+
+  async getTaskActivity(countryId: string, taskId: string): Promise<{ events: TaskEventDto[]; comments: TaskCommentDto[]; defects: TaskDefectDto[]; attachments: TaskAttachmentDto[]; dependencies: TaskDto["dependencies"] }> {
+    const task = await this.getTask(countryId, taskId);
+    return {
+      events: task.events ?? [],
+      comments: task.comments ?? [],
+      defects: task.defects ?? [],
+      attachments: task.attachments ?? [],
+      dependencies: task.dependencies ?? [],
+    };
   }
 
   private decorations(

@@ -64,6 +64,8 @@ const taskFieldsSchema = z.object({
   systemAnalysis: z.string().max(16000).optional(), architecture: z.string().max(16000).optional(), designSystem: z.string().max(16000).optional(),
   implementationPlan: z.string().max(16000).optional(), estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]).optional(),
   priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().nullable().optional(),
+  assigneeRole: z.string().trim().max(80).optional(),
+  forUserId: z.string().uuid().optional(),
   idempotencyKey: z.string().min(4).max(160),
 }).strict();
 const defectCreateSchema = z.object({
@@ -372,6 +374,34 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
             return await service.getTask(user.countryId, taskId);
           });
+
+  app.get("/api/tasks/:taskId/activity", async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            if (!user) return reply;
+            const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+            return await service.getTaskActivity(user.countryId, taskId);
+          });
+
+  const dependencySchema = z.object({ dependsOnTaskId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }).strict();
+
+  app.post("/api/tasks/:taskId/dependencies", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять задачи");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    return service.addTaskDependency(user.countryId, { taskId, ...parse(dependencySchema, request.body), actor: user.name, actorUserId: user.id });
+  });
+
+  app.delete("/api/tasks/:taskId/dependencies/:dependsOnTaskId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять задачи");
+    const params = request.params as { taskId: string; dependsOnTaskId: string };
+    const taskId = parse(z.string().uuid(), params.taskId);
+    const dependsOnTaskId = parse(z.string().uuid(), params.dependsOnTaskId);
+    const body = parse(z.object({ idempotencyKey: z.string().min(4).max(160) }).strict(), request.body);
+    return service.removeTaskDependency(user.countryId, { taskId, dependsOnTaskId, ...body, actor: user.name, actorUserId: user.id });
+  });
 
   app.post("/api/tasks/:taskId/links", async (request, reply) => {
     const user = await requireUser(db, request, reply);
