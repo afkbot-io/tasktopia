@@ -404,6 +404,16 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .task-ai-fields .markdown { margin-top: 6px; font-size: 12px; }
 .task-defects .markdown { font-size: 12px; }
 
+/* ── Reference cards / starter city ─────────────────────────── */
+.reference-kind { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.kind-template { background: #2a3a52; color: #8fc8e2; }
+.kind-convention { background: #3a4a2a; color: #a8d878; }
+.kind-context { background: #4a3a2a; color: #f2c84b; }
+.reference-kind-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.plan-row .reference-kind-dot { margin-right: 6px; }
+.reference-card-modal .task-header { align-items: flex-start; gap: 12px; }
+.reference-card-modal .task-description { margin-top: 18px; }
+
 /* ── Small-screen polish ───────────────────────────────────── */
 @media (max-width: 600px) {
   .task-modal { width: 100%; height: 100dvh; max-height: none; padding: 20px 16px 28px; border: 0; border-radius: 0; }

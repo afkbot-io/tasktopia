@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { BootstrapDto, PlanCityDto, PlanCityPageDto, PlanDistrictDto, PlanTaskDto } from "../../shared/contracts";
+import type { BootstrapDto, PlanCityDto, PlanCityPageDto, PlanDistrictDto, PlanTaskDto, ReferenceCardDto } from "../../shared/contracts";
 import { api } from "../api";
 
 const districtStatus: Record<PlanDistrictDto["status"], string> = {
@@ -10,13 +10,15 @@ const taskStatus: Record<PlanTaskDto["status"], string> = {
   PLANNING: "Планирование", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
 };
 const taskType: Record<PlanTaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
+const kindLabel: Record<ReferenceCardDto["kind"], string> = { TEMPLATE: "Шаблон", CONVENTION: "Конвенция", CONTEXT: "Контекст" };
 
-export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTaskSelect, onMutation }: {
+export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTaskSelect, onReferenceCardSelect, onMutation }: {
   bootstrap: BootstrapDto;
   refreshToken: number;
   onClose: () => void;
   onCityFocus: (city: PlanCityDto) => void;
   onTaskSelect: (taskId: string) => void;
+  onReferenceCardSelect: (cardId: string) => void;
   onMutation: () => Promise<void>;
 }) {
   const [cityId, setCityId] = useState(bootstrap.initialCity?.id ?? "");
@@ -24,6 +26,7 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
   const [cities, setCities] = useState<PlanCityDto[]>([]);
   const [districts, setDistricts] = useState<PlanDistrictDto[]>([]);
   const [tasks, setTasks] = useState<PlanTaskDto[]>([]);
+  const [referenceCards, setReferenceCards] = useState<ReferenceCardDto[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(true);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
@@ -73,7 +76,19 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
   }, [bootstrap.country.id, refreshToken, reload]);
 
   useEffect(() => {
-    if (!cityId) { setDistricts([]); return; }
+    if (!cityId) { setDistricts([]); setReferenceCards([]); return; }
+    const city = cities.find((c) => c.id === cityId);
+    if (city?.kind === "TEMPLATE") {
+      const controller = new AbortController();
+      setError("");
+      void api<ReferenceCardDto[]>(`/api/cities/${cityId}/reference-cards`, { signal: controller.signal })
+        .then(setReferenceCards)
+        .catch((reason: unknown) => {
+          if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Не удалось загрузить карточки");
+        });
+      return () => controller.abort();
+    }
+    setReferenceCards([]);
     const controller = new AbortController();
     setError("");
     void api<PlanDistrictDto[]>(`/api/plan/cities/${cityId}/districts`, { signal: controller.signal })
@@ -82,7 +97,7 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
         if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Не удалось загрузить районы");
       });
     return () => controller.abort();
-  }, [cityId, refreshToken, reload]);
+  }, [cityId, cities, refreshToken, reload]);
 
   useEffect(() => {
     if (!districtId) { setTasks([]); return; }
@@ -126,9 +141,16 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
         {citiesLoading && !error && <p className="plan-placeholder">Загружаем города…</p>}
         {!citiesLoading && cities.length === 0 && !error && <p className="plan-placeholder">Нет городов</p>}
         {cities.map((city) => <div key={city.id} className="plan-row"><button className={city.id === cityId ? "selected" : ""} onClick={() => chooseCity(city.id)}>
-          <i>▦</i><span><strong>{city.name}</strong>{city.description && <small>{city.description.slice(0, 64)}</small>}{city.taskCount > 0 && <small>{city.taskCount} зданий</small>}</span>
+          <i>{city.kind === "TEMPLATE" ? "⌂" : "▦"}</i><span><strong>{city.name}</strong>{city.description && <small>{city.description.slice(0, 64)}</small>}{city.kind === "TEMPLATE" ? <small>Стартовый город</small> : city.taskCount > 0 && <small>{city.taskCount} зданий</small>}</span>
         </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить город «${city.name}»`} aria-label={`Удалить город «${city.name}»`} onClick={() => void removeEntity(`/api/cities/${city.id}`, city.id, city.name, "confirmName")}>{deletingId === city.id ? "…" : "×"}</button>}</div>)}
       </section>
+      {cities.find((c) => c.id === cityId)?.kind === "TEMPLATE" ? <section className="plan-tasks"><h3>Справочные карточки <span>{referenceCards.length}</span></h3>
+        {!cityId && <p className="plan-placeholder">Выберите город</p>}
+        {cityId && referenceCards.length === 0 && !error && <p className="plan-placeholder">В стартовом городе пока нет карточек</p>}
+        {referenceCards.map((card) => <div key={card.id} className="plan-row"><button onClick={() => onReferenceCardSelect(card.id)}>
+          <i className={`reference-kind-dot kind-${card.kind.toLowerCase()}`} />{kindLabel[card.kind]}<span><strong>{card.title}</strong>{card.body && <small>{card.body.slice(0, 80)}</small>}</span>
+        </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить карточку «${card.title}»`} aria-label={`Удалить карточку «${card.title}»`} onClick={() => void removeEntity(`/api/reference-cards/${card.id}`, card.id, card.title, "confirmTitle")}>{deletingId === card.id ? "…" : "×"}</button>}</div>)}
+      </section> : <>
       <section><h3>Районы <span>{districts.length}</span></h3>
         {!cityId && <p className="plan-placeholder">Выберите город</p>}
         {cityId && districts.length === 0 && !error && <p className="plan-placeholder">Загружаем районы…</p>}
@@ -143,6 +165,7 @@ export function PlanDrawer({ bootstrap, refreshToken, onClose, onCityFocus, onTa
           <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>#{task.taskNumber} · {task.title}</strong><small>{taskType[task.workItemType]} · {taskStatus[task.status]} · {task.progress}% · {task.estimate} SP{task.activeDefectCount > 0 ? ` · ${task.activeDefectCount} деф.` : ""}</small></span>
         </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить задачу «${task.title}»`} aria-label={`Удалить задачу «${task.title}»`} onClick={() => void removeEntity(`/api/tasks/${task.id}`, task.id, task.title, "confirmTitle")}>{deletingId === task.id ? "…" : "×"}</button>}</div>)}
       </section>
+      </>}
     </div>
   </aside>;
 }

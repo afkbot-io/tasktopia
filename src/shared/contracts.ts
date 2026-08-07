@@ -135,6 +135,20 @@ export type TaskAttachmentDto = {
   createdAt: string;
 };
 
+export type ReferenceCardKind = "TEMPLATE" | "CONVENTION" | "CONTEXT";
+
+export type ReferenceCardDto = {
+  id: string;
+  countryId: string;
+  cityId: string;
+  kind: ReferenceCardKind;
+  title: string;
+  body: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TaskSearchResultDto = {
   id: string;
   taskNumber: number;

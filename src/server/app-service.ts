@@ -25,6 +25,8 @@ import {
   type PlanTaskDto,
   type RealtimeEvent,
   type Rect,
+  type ReferenceCardDto,
+  type ReferenceCardKind,
   type RoadCellDto,
   type SurfaceCellDto,
   type TaskAttachmentDto,
@@ -180,6 +182,20 @@ function taskDto(row: Row): TaskDto {
     updatedAt: String(row.updated_at),
     mergeRequests: json<TaskLinkDto[]>(row.merge_requests_json ?? []),
     assigneeRole: row.assignee_role ? String(row.assignee_role) : null,
+  };
+}
+
+function referenceCardDto(row: Row): ReferenceCardDto {
+  return {
+    id: String(row.id),
+    countryId: String(row.country_id),
+    cityId: String(row.city_id),
+    kind: String(row.kind) as ReferenceCardDto["kind"],
+    title: String(row.title),
+    body: String(row.body ?? ""),
+    tags: json<string[]>(row.tags_json ?? []),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
   };
 }
 
@@ -1525,7 +1541,7 @@ export class AppService {
 
   async createCity(countryId: string, input: {
     name: string; description?: string; goal?: string; acceptanceCriteria?: string; deadline?: string;
-    morphology?: CityMorphology; idempotencyKey: string;
+    morphology?: CityMorphology; kind?: "WORK" | "TEMPLATE"; idempotencyKey: string;
   }): Promise<CityDto> {
     const name = input.name.trim();
     if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название города должно содержать от 2 до 100 символов");
@@ -1533,14 +1549,16 @@ export class AppService {
                       const country = await this.countryRow(countryId);
                       const seed = Number(country.seed);
                       const cities = await this.listCities(countryId);
+                      const kind = input.kind ?? "WORK";
+                      if (kind === "TEMPLATE" && cities.some((c) => c.kind === "TEMPLATE")) throw new DomainError("CONFLICT", "В стране может быть только один стартовый город");
                       const center = await this.nextCityCenter(countryId, seed);
                       const bounds = rectForCenter(center);
                       const id = randomUUID();
                       const createdAt = now();
                       const styleId = `style-${Math.floor(hashCoordinate(seed, center.x, center.y, 433) * 8)}`;
                       const morphology = input.morphology ?? cityMorphology(hashCoordinate(seed, center.x, center.y, 439));
-                      await this.db.prepare("INSERT INTO cities_v3 (id, country_id, name, description, goal, acceptance_criteria, deadline, status, center_x, center_y, bounds_json, style_id, morphology, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?)")
-                                                        .run(id, countryId, name, input.description?.trim().slice(0, 8000) ?? "", input.goal?.trim().slice(0, 4000) ?? "", input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.deadline ?? null, center.x, center.y, JSON.stringify(bounds), styleId, morphology, createdAt);
+                      await this.db.prepare("INSERT INTO cities_v3 (id, country_id, name, description, goal, acceptance_criteria, deadline, status, kind, center_x, center_y, bounds_json, style_id, morphology, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?)")
+                                                        .run(id, countryId, name, input.description?.trim().slice(0, 8000) ?? "", input.goal?.trim().slice(0, 4000) ?? "", input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.deadline ?? null, kind, center.x, center.y, JSON.stringify(bounds), styleId, morphology, createdAt);
 
                       const nearest = cities.length > 0
                         ? cities.reduce((best, city) => manhattan(city.center, center) < manhattan(best.center, center) ? city : best, cities[0]!)
@@ -1600,7 +1618,7 @@ export class AppService {
                       const data: CityDto = {
                         id, name, description: input.description?.trim() ?? "", goal: input.goal?.trim() ?? "",
                         acceptanceCriteria: input.acceptanceCriteria?.trim() ?? "", deadline: input.deadline ?? null,
-                        status: "ACTIVE", kind: "WORK", center, bounds, styleId, morphology, createdAt,
+                        status: "ACTIVE", kind, center, bounds, styleId, morphology, createdAt,
                       };
                       return { data, eventType: "city.created", eventPayload: { cityId: id, center, affectedBounds: bounds } };
                     });
@@ -2154,6 +2172,7 @@ export class AppService {
                       const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
                       if (!cityRow) throw new DomainError("NOT_FOUND", "Город не найден");
                       const city = cityDto(cityRow);
+                      if (city.kind === "TEMPLATE") throw new DomainError("INVALID_INPUT", "В стартовом городе нельзя создавать районы");
                       const seed = Number((await this.countryRow(countryId)).seed);
                       // The target is planning metadata, not a hard sprint gate: a two-week
                       // solo sprint and a month-long team sprint cannot share one limit.
@@ -2652,6 +2671,7 @@ export class AppService {
     return await this.mutate(countryId, "task.create.v3", input.idempotencyKey, input, async () => {
                       const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
                       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
+                      if (String(city.kind ?? "WORK") === "TEMPLATE") throw new DomainError("INVALID_INPUT", "В стартовом городе нельзя создавать задачи; используйте карточки-справочники");
                       for (const [field, userId] of [["создатель", input.creatorUserId], ["ответственный", input.assigneeUserId], ["заказчик", input.forUserId]] as const) {
                         if (userId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, userId)) {
                           throw new DomainError("ASSIGNEE_NOT_MEMBER", `${field} должен состоять в правительстве страны`);
@@ -2971,6 +2991,73 @@ export class AppService {
       attachments: task.attachments ?? [],
       dependencies: task.dependencies ?? [],
     };
+  }
+
+  async getReferenceCard(countryId: string, cardId: string): Promise<ReferenceCardDto> {
+    const row = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ? AND country_id = ?").get(cardId, countryId) as Row | undefined;
+    if (!row) throw new DomainError("NOT_FOUND", "Карточка не найдена");
+    return referenceCardDto(row);
+  }
+
+  async listReferenceCards(countryId: string, cityId: string): Promise<ReferenceCardDto[]> {
+    const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(cityId, countryId) as Row | undefined;
+    if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
+    const rows = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE city_id = ? ORDER BY kind, created_at").all(cityId) as Row[];
+    return rows.map(referenceCardDto);
+  }
+
+  async createReferenceCard(countryId: string, input: {
+    cityId: string; kind: ReferenceCardKind; title: string; body?: string; tags?: string[]; idempotencyKey: string;
+  }): Promise<ReferenceCardDto> {
+    const title = input.title.trim();
+    if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название карточки должно содержать от 2 до 160 символов");
+    if (!["TEMPLATE", "CONVENTION", "CONTEXT"].includes(input.kind)) throw new DomainError("INVALID_INPUT", "Тип карточки должен быть TEMPLATE, CONVENTION или CONTEXT");
+    return await this.mutate(countryId, "reference_card.create.v1", input.idempotencyKey, input, async () => {
+      const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
+      if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
+      if (String(city.kind ?? "WORK") !== "TEMPLATE") throw new DomainError("INVALID_INPUT", "Карточки можно создавать только в стартовом (TEMPLATE) городе");
+      const id = randomUUID();
+      const createdAt = now();
+      const tags = Array.isArray(input.tags) ? input.tags.map((t) => String(t).trim().slice(0, 40)).filter(Boolean).slice(0, 10) : [];
+      await this.db.prepare(`INSERT INTO city_reference_cards_v1
+        (id, country_id, city_id, kind, title, body, tags_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        id, countryId, input.cityId, input.kind, title,
+        input.body?.trim().slice(0, 32000) ?? "",
+        JSON.stringify(tags), createdAt, createdAt,
+      );
+      const data = referenceCardDto(await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ?").get(id) as Row);
+      return { data, eventType: "reference_card.created", eventPayload: { cityId: input.cityId, referenceCardId: id } };
+    });
+  }
+
+  async updateReferenceCard(countryId: string, input: {
+    cardId: string; title?: string; body?: string; tags?: string[]; idempotencyKey: string;
+  }): Promise<ReferenceCardDto> {
+    return await this.mutate(countryId, "reference_card.update.v1", input.idempotencyKey, input, async () => {
+      const row = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ? AND country_id = ?").get(input.cardId, countryId) as Row | undefined;
+      if (!row) throw new DomainError("NOT_FOUND", "Карточка не найдена");
+      if (input.title !== undefined && (input.title.trim().length < 2 || input.title.trim().length > 160)) throw new DomainError("INVALID_INPUT", "Название карточки должно содержать от 2 до 160 символов");
+      const tags = input.tags === undefined ? json<string[]>(row.tags_json) : input.tags.map((t) => String(t).trim().slice(0, 40)).filter(Boolean).slice(0, 10);
+      const updatedAt = now();
+      await this.db.prepare("UPDATE city_reference_cards_v1 SET title = ?, body = ?, tags_json = ?, updated_at = ? WHERE id = ?").run(
+        input.title === undefined ? row.title : input.title.trim().slice(0, 160),
+        input.body === undefined ? row.body : input.body.trim().slice(0, 32000),
+        JSON.stringify(tags), updatedAt, input.cardId,
+      );
+      const data = referenceCardDto(await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ?").get(input.cardId) as Row);
+      return { data, eventType: "reference_card.updated", eventPayload: { cityId: data.cityId, referenceCardId: input.cardId } };
+    });
+  }
+
+  async deleteReferenceCard(countryId: string, input: { cardId: string; confirmTitle: string; idempotencyKey: string }): Promise<{ id: string }> {
+    return await this.mutate(countryId, "reference_card.delete.v1", input.idempotencyKey, input, async () => {
+      const row = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ? AND country_id = ?").get(input.cardId, countryId) as Row | undefined;
+      if (!row) throw new DomainError("NOT_FOUND", "Карточка не найдена");
+      if (String(row.title) !== input.confirmTitle.trim()) throw new DomainError("INVALID_INPUT", "Подтверждающее название не совпадает");
+      await this.db.prepare("DELETE FROM city_reference_cards_v1 WHERE id = ?").run(input.cardId);
+      return { data: { id: input.cardId }, eventType: "reference_card.deleted", eventPayload: { cityId: String(row.city_id), referenceCardId: input.cardId } };
+    });
   }
 
   private decorations(

@@ -10,6 +10,7 @@ import { Button, cx } from "./components/ui";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
+const ReferenceCardModal = lazy(() => import("./components/ReferenceCardModal").then((module) => ({ default: module.ReferenceCardModal })));
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
 type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
@@ -29,6 +30,7 @@ export function App() {
   const [sessionState, setSessionState] = useState<SessionState>("INITIALIZING");
   const [authError, setAuthError] = useState("");
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const [selectedReferenceCard, setSelectedReferenceCard] = useState<string | null>(null);
   const [tokensOpen, setTokensOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<"mcp" | "account">("mcp");
   const [planOpen, setPlanOpen] = useState(false);
@@ -43,6 +45,7 @@ export function App() {
   const [online, setOnline] = useState(true);
   const countryId = bootstrap?.country.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
+  const closeReferenceCard = useCallback(() => setSelectedReferenceCard(null), []);
   const closeSettings = useCallback(() => setTokensOpen(false), []);
   const openSettings = useCallback((section: "mcp" | "account") => {
     setSettingsSection(section);
@@ -193,10 +196,11 @@ export function App() {
         </Suspense>
         <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
-      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onMutation={refreshWorld} />}
+      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onReferenceCardSelect={setSelectedReferenceCard} onMutation={refreshWorld} />}
     </section>
 
     {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} canEdit={bootstrap.countryRole !== "VIEWER"} onClose={closeTask} onDeleted={refreshWorld} /></Suspense>}
+    {selectedReferenceCard && <Suspense fallback={null}><ReferenceCardModal cardId={selectedReferenceCard} onClose={closeReferenceCard} /></Suspense>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
   </main>;

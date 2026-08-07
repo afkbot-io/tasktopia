@@ -80,6 +80,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     name: z.string().min(2).max(100), description: z.string().max(8000).optional(), goal: z.string().max(4000).optional(),
     acceptanceCriteria: z.string().max(8000).optional(), deadline: z.string().datetime().optional(),
     morphology: z.enum(["BALANCED", "DENSE_CORE", "GARDEN_CITY", "POLYCENTRIC"]).optional(),
+    kind: z.enum(["WORK", "TEMPLATE"]).optional().describe("WORK — обычный эпик-город; TEMPLATE — стартовый город справочников (только один на страну)"),
     idempotencyKey: z.string().min(4).max(160),
   });
   const districtCreateSchema = z.object({
@@ -471,6 +472,50 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       const task = await service.getTask(identity.countryId, taskId);
       return response({ taskNumber: task.taskNumber, attachments: task.attachments ?? [] });
     } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("reference_card.list", {
+    description: "Получить список справочных карточек стартового города: шаблоны, конвенции и контекст.",
+    inputSchema: z.object({ cityId: z.string().uuid() }),
+    annotations: { readOnlyHint: true },
+  }, async ({ cityId }) => {
+    try { requireScope(identity, "tasks:read"); return response(await service.listReferenceCards(identity.countryId, cityId)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("reference_card.create", {
+    description: "Создать карточку в стартовом городе: TEMPLATE, CONVENTION или CONTEXT.",
+    inputSchema: z.object({
+      cityId: z.string().uuid(), kind: z.enum(["TEMPLATE", "CONVENTION", "CONTEXT"]), title: z.string().min(2).max(160),
+      body: z.string().max(32000).optional(), tags: z.array(z.string().max(40)).max(10).optional(),
+      idempotencyKey: z.string().min(4).max(160),
+    }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "cities:write"); return response(await service.createReferenceCard(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("reference_card.update", {
+    description: "Обновить справочную карточку стартового города.",
+    inputSchema: z.object({
+      cardId: z.string().uuid(), title: z.string().min(2).max(160).optional(),
+      body: z.string().max(32000).optional(), tags: z.array(z.string().max(40)).max(10).optional(),
+      idempotencyKey: z.string().min(4).max(160),
+    }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "cities:write"); return response(await service.updateReferenceCard(identity.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("reference_card.delete", {
+    description: "Удалить карточку из стартового города. Для защиты передайте точное текущее название.",
+    inputSchema: z.object({ cardId: z.string().uuid(), confirmTitle: z.string().min(2).max(160), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { destructiveHint: true, idempotentHint: true },
+  }, async (input) => {
+    try { requireScope(identity, "cities:write"); return response(await service.deleteReferenceCard(identity.countryId, input)); }
+    catch (error) { return failure(error); }
   });
 
   server.registerResource("current-country", "tasktopia://country/current", { mimeType: "application/json" }, async (uri) => {
