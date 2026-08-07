@@ -13,7 +13,7 @@ import {
   mustYieldAtCrosswalk,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
-import { incidentMode, type IncidentMode } from "../task-incidents";
+import { incidentMode, planIncidentEngines, type IncidentMode } from "../task-incidents";
 import {
   chunkRangeForViewport,
   clampCameraPosition,
@@ -36,6 +36,7 @@ type IncidentView = {
   signature: string;
   container: Container;
   mode: IncidentMode;
+  fullResponse: boolean;
   flameA: Sprite;
   flameB: Sprite;
   smokeA: Sprite;
@@ -349,7 +350,7 @@ function assetUrl(path: string): string {
 
 const INCIDENT_ASSET_KEYS = ["fire-engine-horizontal", "incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"] as const;
 
-function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE">, signature: string): IncidentView {
+function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE">, signature: string, fullResponse: boolean): IncidentView {
   const entry = getBuilding(task.buildingType);
   const container = new Container();
   container.eventMode = "none";
@@ -362,11 +363,17 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const engine = sprite(PROP_SPRITES["fire-engine-horizontal"]!, engineX, 2);
   engine.anchor.set(0.5, 1);
 
-  const beacon = new Graphics().rect(-2, -2, 4, 2).fill(0x71d7f2);
-  beacon.position.set(engineX - 4, -7);
-
   const flameX = Math.max(-6, Math.min(4, entry.spriteSize.width / 8));
   const flameY = -Math.max(12, entry.spriteSize.height * 0.58);
+
+  // Full response parks an engine with a flashing beacon at the curb. The
+  // compact response is a small pulsing roof alarm: the emergency stays
+  // readable without a truck in front of every second house.
+  const beacon = fullResponse
+    ? new Graphics().rect(-2, -2, 4, 2).fill(0x71d7f2)
+    : new Graphics().rect(-2, -2, 4, 4).fill(0xf2574c);
+  beacon.position.set(fullResponse ? engineX - 4 : flameX - 2, fullResponse ? -7 : flameY - 3);
+
   const flameA = sprite(PROP_SPRITES["incident-flame-a"]!, flameX, flameY);
   const flameB = sprite(PROP_SPRITES["incident-flame-b"]!, flameX, flameY);
   flameA.anchor.set(0.5, 1); flameB.anchor.set(0.5, 1);
@@ -395,21 +402,26 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
 
   const hasFlame = mode === "DEFECT_REPAIRING" || mode === "HOTFIX_ACTIVE";
   const hasSmoke = mode === "DEFECT_VERIFYING" || mode === "HOTFIX_ACTIVE";
-  const hasWater = mode === "DEFECT_REPAIRING" || mode === "HOTFIX_ACTIVE";
+  const hasWater = fullResponse && (mode === "DEFECT_REPAIRING" || mode === "HOTFIX_ACTIVE");
   flameA.visible = hasFlame; flameB.visible = false;
   smokeA.visible = hasSmoke; smokeB.visible = false;
   water.visible = hasWater;
+  engine.visible = fullResponse;
+  // Verification smoke is a fading remnant, not a column over the rooftops.
+  if (mode === "DEFECT_VERIFYING") {
+    smokeA.scale.set(0.66); smokeB.scale.set(0.66);
+  }
   if (mode === "DEFECT_REPAIRING") {
     flameA.scale.set(0.78); flameB.scale.set(0.78);
-    smokeA.scale.set(0.78); smokeB.scale.set(0.78);
+    smokeA.scale.set(0.6); smokeB.scale.set(0.6);
   } else if (mode === "HOTFIX_ACTIVE") {
     flameA.scale.set(1.18); flameB.scale.set(1.18);
-    smokeA.scale.set(1.08); smokeB.scale.set(1.08);
+    smokeA.scale.set(fullResponse ? 1.0 : 0.8); smokeB.scale.set(fullResponse ? 1.0 : 0.8);
   }
   if (mode === "DEFECT_REPORTED") engine.alpha = 0.9;
   container.addChild(water, smokeA, smokeB, flameA, flameB, engine, beacon);
   const phaseMs = [...task.id].reduce((value, char) => ((value * 33) ^ char.charCodeAt(0)) >>> 0, 5381) % 700;
-  return { signature, container, mode, flameA, flameB, smokeA, smokeB, beacon, water, phaseMs };
+  return { signature, container, mode, fullResponse, flameA, flameB, smokeA, smokeB, beacon, water, phaseMs };
 }
 
 function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
@@ -716,7 +728,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           incident.flameB.visible = hasFlame && flameFrame === 1;
           incident.smokeA.visible = hasSmoke && smokeFrame === 0;
           incident.smokeB.visible = hasSmoke && smokeFrame === 1;
-          incident.smokeA.alpha = incident.smokeB.alpha = 0.72 + Math.sin(time * 0.004) * 0.12;
+          const smokeBase = incident.mode === "DEFECT_VERIFYING" ? 0.42 : incident.fullResponse ? 0.72 : 0.55;
+          incident.smokeA.alpha = incident.smokeB.alpha = smokeBase + Math.sin(time * 0.004) * 0.12;
           incident.beacon.alpha = Math.floor(time / 160) % 2 ? 1 : 0.28;
           incident.water.alpha = 0.7 + Math.sin(time * 0.018) * 0.22;
         }
@@ -923,21 +936,28 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
         );
         reconcile(tasks, taskBuildingViews, buildingLayer, (task) => currentLod === "DETAIL" ? drawBuilding(task, onTaskSelect) : drawOverviewBuilding(task, onTaskSelect), (task) => `${currentLod}:${JSON.stringify(task)}`);
         const visibleIncidentIds = new Set<string>();
-        if (currentLod === "DETAIL") for (const [id, task] of tasks) {
-          const mode = incidentMode(task);
-          if (mode === "NONE") continue;
-          visibleIncidentIds.add(id);
-          const signature = JSON.stringify([mode, task.origin, task.buildingType, task.defectSummary]);
-          const current = incidentViews.get(id);
-          if (current?.signature === signature) continue;
-          if (current) {
-            current.container.removeFromParent();
-            current.container.destroy({ children: true });
+        if (currentLod === "DETAIL") {
+          const candidates: Array<{ id: string; task: ChunkTaskDto; mode: Exclude<IncidentMode, "NONE"> }> = [];
+          for (const [id, task] of tasks) {
+            const mode = incidentMode(task);
+            if (mode !== "NONE") candidates.push({ id, task, mode });
           }
-          const view = drawTaskIncident(task, mode, signature);
-          incidentLayer.addChild(view.container);
-          incidentViews.set(id, view);
-          entityReplacementCount += 1;
+          const engineAllowance = planIncidentEngines(candidates);
+          for (const { id, task, mode } of candidates) {
+            const fullResponse = engineAllowance.has(id);
+            visibleIncidentIds.add(id);
+            const signature = JSON.stringify([mode, fullResponse, task.origin, task.buildingType, task.defectSummary]);
+            const current = incidentViews.get(id);
+            if (current?.signature === signature) continue;
+            if (current) {
+              current.container.removeFromParent();
+              current.container.destroy({ children: true });
+            }
+            const view = drawTaskIncident(task, mode, signature, fullResponse);
+            incidentLayer.addChild(view.container);
+            incidentViews.set(id, view);
+            entityReplacementCount += 1;
+          }
         }
         for (const [id, view] of incidentViews) {
           if (visibleIncidentIds.has(id)) continue;
@@ -997,6 +1017,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, inval
           districtViews.size + taskPlatformViews.size + taskBuildingViews.size + incidentViews.size + decorationViews.size + featureViews.size,
         );
         host!.dataset.incidents = String(incidentViews.size);
+        host!.dataset.incidentEngines = String([...incidentViews.values()].filter((view) => view.fullResponse).length);
         host!.dataset.hotfixIncidents = String([...incidentViews.values()].filter((view) => view.mode === "HOTFIX_ACTIVE").length);
         host!.dataset.incidentModes = [...incidentViews.values()].map((view) => view.mode).sort().join(",");
         host!.dataset.entityReplacements = String(entityReplacementCount);
