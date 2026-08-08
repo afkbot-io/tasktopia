@@ -1539,6 +1539,37 @@ export class AppService {
     }
   }
 
+  private async publishTemplateCityLandmark(countryId: string, cityId: string, seed: number, hub: Cell): Promise<void> {
+    // The starter city gets one distinctive central landmark — a tall unique
+    // building ("highrise-landmark") placed on the first open patch of buildable
+    // ground near its hub. It visually marks the TEMPLATE city on the world map.
+    const assetKey = "highrise-landmark";
+    const width = 6;
+    const height = 4;
+    for (const dx of [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]) {
+      for (const dy of [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]) {
+        const origin = { x: hub.x + dx, y: hub.y + dy };
+        const footprint = rectangleFootprint(origin, width, height);
+        if (await this.featurePlacementOpen(countryId, seed, footprint)) {
+          await this.insertWorldFeature(countryId, {
+            cityId,
+            districtId: null,
+            parentFeatureId: null,
+            kind: "LANDMARK",
+            assetKind: "BUILDING",
+            assetKey,
+            origin,
+            footprint,
+            orientation: "S",
+            accessPath: [],
+          });
+          return;
+        }
+      }
+    }
+    // If nothing is open, skip the landmark rather than corrupt the road net.
+  }
+
   async createCity(countryId: string, input: {
     name: string; description?: string; goal?: string; acceptanceCriteria?: string; deadline?: string;
     morphology?: CityMorphology; kind?: "WORK" | "TEMPLATE"; idempotencyKey: string;
@@ -1613,7 +1644,11 @@ export class AppService {
                       // existing city. Its urban portion must remain an arterial.
                       for (const existingCity of cities) await this.normalizeUrbanHighways(countryId, existingCity.bounds);
                       await this.normalizeUrbanHighways(countryId, bounds);
-                      await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, connector, gateway.horizontalApproach);
+                      await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, dryConnector, gateway.horizontalApproach);
+                      if (kind === "TEMPLATE") {
+                        await this.publishTemplateCityLandmark(countryId, id, seed, hub);
+                        await this.seedReferenceCards(countryId, id);
+                      }
 
                       const data: CityDto = {
                         id, name, description: input.description?.trim() ?? "", goal: input.goal?.trim() ?? "",
@@ -3058,6 +3093,31 @@ export class AppService {
       await this.db.prepare("DELETE FROM city_reference_cards_v1 WHERE id = ?").run(input.cardId);
       return { data: { id: input.cardId }, eventType: "reference_card.deleted", eventPayload: { cityId: String(row.city_id), referenceCardId: input.cardId } };
     });
+  }
+
+  private async seedReferenceCards(countryId: string, cityId: string): Promise<void> {
+    const cards: Array<{ kind: ReferenceCardKind; title: string; body: string; tags: string[] }> = [
+      { kind: "CONTEXT", title: "Архитектура эпика", body: "## Контекст эпика\n\n- Цель продукта и пользовательские сценарии\n- Ключевые технологии и ограничения\n- Границы эпика и связи с другими системами", tags: ["context", "architecture"] },
+      { kind: "TEMPLATE", title: "Шаблон задачи Feature", body: "## Feature\n\n**Acceptance criteria**\n- \n\n**Implementation plan**\n1. \n2. \n3. \n\n**Estimate**: _SP\n**Building hint**: _", tags: ["template", "feature"] },
+      { kind: "TEMPLATE", title: "Шаблон задачи Bug", body: "## Bug\n\n**Reproduction steps**\n1. \n2. \n\n**Actual result**\n\n**Expected result**\n\n**Root cause**\n", tags: ["template", "bug"] },
+      { kind: "TEMPLATE", title: "Шаблон задачи Hotfix", body: "## Hotfix\n\n- Инцидент и влияние\n- Минимальное исправление\n- План отката\n- Пост-мортем", tags: ["template", "hotfix"] },
+      { kind: "CONVENTION", title: "Definition of Done", body: "- Код написан и покрыт тестами\n- Typecheck и lint проходят\n- Code review пройден\n- Документация обновлена\n- Статус в Tasktopia = COMPLETED", tags: ["convention", "dod"] },
+      { kind: "CONVENTION", title: "Именование веток и коммитов", body: "- Ветки: `feature/TASK-123-short`, `bugfix/TASK-124`, `hotfix/TASK-125`\n- Коммиты: `feat(scope): описание`, `fix(scope): описание`, `chore: описание`\n- MR связывается с задачей в Tasktopia", tags: ["convention", "git"] },
+      { kind: "CONVENTION", title: "Code style и review", body: "- Читаемость и явность превыше оптимизации\n- Один тест на одно поведение (TDD)\n- Никаких магических строк; используем константы\n- Review через независимого reviewer", tags: ["convention", "quality"] },
+      { kind: "CONVENTION", title: "Оценка и story points", body: "- 1 SP — тривиально, известно\n- 2 SP — небольшая задача\n- 3 SP — стандартная задача\n- 5 SP — сложная, требует исследования\n- 8+ SP — нужно декомпозировать", tags: ["convention", "estimation"] },
+      { kind: "CONTEXT", title: "Роли и ответственность агентов", body: "- `ai-agent:hermes` — ведёт задачи, MCP, интеграции\n- `backend-lead` — архитектура и ревью backend\n- `frontend-lead` — UI/UX и компоненты\n- `qa` — тестирование и баги\n- Поле `forUser` — для кого задача и чей агент", tags: ["context", "roles"] },
+      { kind: "CONTEXT", title: "Интеграции и MCP", body: "- Tasktopia MCP: подключение по SSE из переменных окружения\n- Repowise MCP: codebase context\n- GitLab webhook: push → `repowise update`\n- Все задачи ведутся в Tasktopia; GitLab — связанный контекст", tags: ["context", "integrations"] },
+    ];
+    const createdAt = now();
+    for (const card of cards) {
+      const id = randomUUID();
+      const tags = card.tags.map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 10);
+      await this.db.prepare(`INSERT INTO city_reference_cards_v1
+        (id, country_id, city_id, kind, title, body, tags_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        id, countryId, cityId, card.kind, card.title, card.body.slice(0, 32000), JSON.stringify(tags), createdAt, createdAt,
+      );
+    }
   }
 
   private decorations(
