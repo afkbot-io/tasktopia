@@ -1027,6 +1027,13 @@ export class AppService {
                       .map(cellKey));
   }
 
+  private async institutionalAccessRoads(countryId: string): Promise<Set<string>> {
+    return new Set((await this.listWorldFeatures(countryId))
+      .filter((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")
+      .flatMap((feature) => stampRoadCorridor(feature.accessPath, "LOCAL", ROAD_WIDTH))
+      .map(cellKey));
+  }
+
   private async normalizeUrbanHighways(countryId: string, bounds: Rect): Promise<void> {
     const inset = 8;
     if (bounds.maxX - bounds.minX <= inset * 2 || bounds.maxY - bounds.minY <= inset * 2) return;
@@ -1709,7 +1716,12 @@ export class AppService {
       for (const offset of candidates) {
         const origin = { x: anchor.x + offset.x, y: anchor.y + offset.y };
         const footprint = rectangleFootprint(origin, ARCHIVE_COMPOUND.width, ARCHIVE_COMPOUND.height);
-        if (!footprint.every((cell) => !roads.has(cellKey(cell)) && !occupied.has(cellKey(cell)) && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain))) continue;
+        // Reserve the security perimeter and a four-cell south approach from
+        // day one. The archive may grow, but its fence and gate must never be
+        // forced onto water, an existing road or somebody else's building.
+        const securedSite = rectangleFootprint({ x: origin.x - 1, y: origin.y - 1 }, ARCHIVE_COMPOUND.width + 2, ARCHIVE_COMPOUND.height + 2);
+        const approach = rectangleFootprint({ x: origin.x + 9, y: origin.y + ARCHIVE_COMPOUND.height }, 2, 4);
+        if (![...securedSite, ...approach].every((cell) => !roads.has(cellKey(cell)) && !occupied.has(cellKey(cell)) && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain))) continue;
         compound = await this.insertWorldFeature(countryId, {
           cityId: null, districtId: null, parentFeatureId: null,
           kind: "COUNTRY_ARCHIVE", assetKind: "AREA", assetKey: "state-archive-complex",
@@ -1719,6 +1731,70 @@ export class AppService {
       }
     }
     if (!compound) return undefined;
+
+    const seed = Number((await this.countryRow(countryId)).seed);
+    if (compound.accessPath.length === 0) {
+      const gateCenter = { x: compound.origin.x + 10, y: compound.origin.y + ARCHIVE_COMPOUND.height };
+      const apron = Array.from({ length: 4 }, (_, index) => ({ x: gateCenter.x, y: gateCenter.y + index }));
+      const exclusion = expandRect(boundsOf(compound.footprint), 4);
+      const roads = [...(await this.roadCells(countryId)).values()]
+        .filter((road) => !contains(exclusion, road))
+        .sort((left, right) => {
+          const classPenalty = (road: RoadCellDto) => road.roadClass === "HIGHWAY" ? 10_000 : 0;
+          return manhattan(left, apron[apron.length - 1]!) + classPenalty(left)
+            - manhattan(right, apron[apron.length - 1]!) - classPenalty(right);
+        });
+      let connector: Cell[] | undefined;
+      for (const target of roads.slice(0, 24)) {
+        try {
+          const routed = await this.route(countryId, seed, apron[apron.length - 1]!, target, [], [], 1, true);
+          connector = [...apron, ...routed.slice(1)];
+          break;
+        } catch (error) {
+          if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+        }
+      }
+      if (!connector) throw new DomainError("ROUTE_BLOCKED", "Не удалось соединить Государственный архив с дорожной сетью");
+      await this.addRoadPath(countryId, seed, connector, "LOCAL");
+      await this.db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify(connector), compound.id);
+      compound = { ...compound, accessPath: connector };
+    }
+
+    const infrastructure: Array<{ assetKey: string; origin: Cell; footprint: Cell[]; orientation: "E" | "S" }> = [];
+    const addInfrastructure = (assetKey: string, origin: Cell, orientation: "E" | "S", width: number, height: number) => {
+      infrastructure.push({ assetKey, origin, orientation, footprint: rectangleFootprint(origin, width, height) });
+    };
+    const origin = compound.origin;
+    for (let offset = -1; offset <= ARCHIVE_COMPOUND.width - 1; offset += 2) {
+      addInfrastructure("archive-fence-horizontal", { x: origin.x + offset, y: origin.y - 1 }, "E", 2, 1);
+    }
+    for (const offset of [-1, 1, 3, 5, 7, 11, 13, 15, 17]) {
+      addInfrastructure("archive-fence-horizontal", { x: origin.x + offset, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 2, 1);
+    }
+    for (const sideX of [origin.x - 1, origin.x + ARCHIVE_COMPOUND.width]) {
+      for (let offset = 0; offset < ARCHIVE_COMPOUND.height; offset += 2) {
+        addInfrastructure("archive-fence-vertical", { x: sideX, y: origin.y + offset }, "S", 1, 2);
+      }
+    }
+    addInfrastructure("archive-security-barrier", { x: origin.x + 9, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 2, 1);
+
+    const infrastructureKeys = new Set(infrastructure.map((item) => `${item.assetKey}:${cellKey(item.origin)}`));
+    const existingInfrastructure = (await this.listWorldFeatures(countryId)).filter((feature) =>
+      feature.parentFeatureId === compound!.id && feature.assetKind === "PROP"
+      && (feature.assetKey.startsWith("archive-fence-") || feature.assetKey === "archive-security-barrier"));
+    for (const feature of existingInfrastructure) {
+      if (infrastructureKeys.has(`${feature.assetKey}:${cellKey(feature.origin)}`)) continue;
+      await this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?").run(feature.id);
+    }
+    const existingKeys = new Set(existingInfrastructure.map((feature) => `${feature.assetKey}:${cellKey(feature.origin)}`));
+    for (const item of infrastructure) {
+      if (existingKeys.has(`${item.assetKey}:${cellKey(item.origin)}`)) continue;
+      await this.insertWorldFeature(countryId, {
+        cityId: null, districtId: null, parentFeatureId: compound.id,
+        kind: "COUNTRY_ARCHIVE", assetKind: "PROP", assetKey: item.assetKey,
+        origin: item.origin, footprint: item.footprint, orientation: item.orientation, accessPath: [],
+      });
+    }
 
     const currentChildren = new Map(features
       .filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "BUILDING")
@@ -1739,7 +1815,20 @@ export class AppService {
     }
     await this.db.prepare("UPDATE country_archives_v1 SET updated_at = ? WHERE id = ?").run(now(), archive.id);
     this.surfaceCache.delete(countryId);
-    return boundsOf(compound.footprint);
+    return boundsOf([...compound.footprint, ...compound.accessPath, ...infrastructure.flatMap((item) => item.footprint)]);
+  }
+
+  async upgradeCountryArchiveInfrastructure(): Promise<number> {
+    const countries = await this.db.prepare(`SELECT country.id
+      FROM countries country
+      WHERE EXISTS (SELECT 1 FROM cities_v3 city WHERE city.country_id = country.id)
+      ORDER BY country.created_at, country.id`).all<{ id: string }>();
+    let upgraded = 0;
+    for (const country of countries) {
+      const affectedBounds = await this.db.transaction(async () => this.syncCountryArchiveComplex(country.id));
+      if (affectedBounds) upgraded += 1;
+    }
+    return upgraded;
   }
 
   async createCity(countryId: string, input: {
@@ -2024,6 +2113,11 @@ export class AppService {
                         .flatMap((candidate) => candidate.cells)
                         .map(cellKey),
     );
+    const archiveFeatures = (await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "COUNTRY_ARCHIVE");
+    const institutionalReserved = new Set([
+      ...archiveFeatures.flatMap((feature) => feature.footprint).map(cellKey),
+      ...await this.institutionalAccessRoads(countryId),
+    ]);
     const directions = ([district.growthDirection, "E", "S", "W", "N"] as GrowthDirection[])
       .filter((value, index, all) => all.indexOf(value) === index);
     for (const thickness of [24, 28, 32]) {
@@ -2039,7 +2133,8 @@ export class AppService {
           { x: patchRect.minX, y: patchRect.minY },
           patchRect.maxX - patchRect.minX + 1,
           patchRect.maxY - patchRect.minY + 1,
-        ).filter((cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain) && !blockedByDistrict.has(cellKey(cell)));
+        ).filter((cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain)
+          && !blockedByDistrict.has(cellKey(cell)) && !institutionalReserved.has(cellKey(cell)));
         const availableKeys = new Set(available.map(cellKey));
         const queue = available.filter((cell) => neighbors4(cell).some((next) => existingKeys.has(cellKey(next))));
         const reachable = new Map<string, Cell>();
@@ -2094,13 +2189,15 @@ export class AppService {
                         .map(cellKey),
     );
     const sealed = await this.completedDistrictCells(countryId);
+    const institutionalRoads = await this.institutionalAccessRoads(countryId);
     // Streets are shared infrastructure: a connector may cross a still-growing
     // neighbour's empty territory (its future complexes simply avoid the road),
     // but never a sealed district. The first pass still prefers a corridor that
     // stays on neutral ground.
     const foreignSoft = new Set([...blockedByDistrict].filter((key) => !sealed.has(key)));
-    const districtRoads = [...roads.values()].filter((road) => allowed.has(cellKey(road)));
-    const safeRoads = [...roads.values()].filter((road) => !sealed.has(cellKey(road)) || neighbors4(road).some((cell) => !sealed.has(cellKey(cell))));
+    const districtRoads = [...roads.values()].filter((road) => allowed.has(cellKey(road)) && !institutionalRoads.has(cellKey(road)));
+    const safeRoads = [...roads.values()].filter((road) => !institutionalRoads.has(cellKey(road))
+      && (!sealed.has(cellKey(road)) || neighbors4(road).some((cell) => !sealed.has(cellKey(cell)))));
     // Infill grows directly against the district's own streets. A fresh
     // territory lobe can sit away from them, so there the complex anchors to
     // the shared road network and reaches it with a longer access road.
@@ -2293,9 +2390,13 @@ export class AppService {
     candidateValid?: (origin: Cell, cells: Cell[]) => boolean,
   ): Promise<{ origin: Cell; cells: Cell[] }> {
     const roads = await this.roadCells(countryId);
+    const institutionalRoads = await this.institutionalAccessRoads(countryId);
     const districts = await this.listDistricts(countryId);
     const cityDistricts = districts.filter((district) => district.cityId === city.id);
-    const preferredRoads = [...roads.values()].filter((road) => road.roadClass !== "HIGHWAY" && contains(expandRect(city.bounds, 24), road));
+    // A national institution is connected for traffic, but its guarded access
+    // road is not public frontage and must never attract a residential sprint.
+    const preferredRoads = [...roads.values()].filter((road) => road.roadClass !== "HIGHWAY"
+      && !institutionalRoads.has(cellKey(road)) && contains(expandRect(city.bounds, 24), road));
     const occupied = new Set(districts.flatMap((district) => district.cells).map(cellKey));
     const growthReservations = districts
       .filter((district) => district.status === "ACTIVE")
@@ -2415,8 +2516,10 @@ export class AppService {
                       // connect on their own when they grow.
                       if (existingDistricts.length > 0) {
                         const sealedCells = await this.completedDistrictCells(countryId);
+                        const institutionalRoads = await this.institutionalAccessRoads(countryId);
                         const anchorRoads = [...existingRoads.values()].filter((road) =>
-                          road.roadClass !== "HIGHWAY" && (!sealedCells.has(cellKey(road)) || neighbors4(road).some((cell) => !sealedCells.has(cellKey(cell)))));
+                          road.roadClass !== "HIGHWAY" && !institutionalRoads.has(cellKey(road))
+                          && (!sealedCells.has(cellKey(road)) || neighbors4(road).some((cell) => !sealedCells.has(cellKey(cell)))));
                         if (anchorRoads.length > 0) {
                           const siteBounds = boundsOf(site.cells);
                           const gapTo = (road: Cell) =>

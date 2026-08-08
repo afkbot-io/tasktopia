@@ -691,6 +691,50 @@ def prop_fence(vertical: bool) -> Image.Image:
     return image
 
 
+def prop_archive_fence(vertical: bool) -> Image.Image:
+    """Steel perimeter fence for the State Archive, readable at native 1x."""
+    image = Image.new("RGBA", (8, 16) if vertical else (16, 8), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    outline = rgba(OUTLINE)
+    steel = rgba("#6f8588ff")
+    light = rgba("#a9b8b5ff")
+    brass = rgba("#d3ad58ff")
+    if vertical:
+        draw.rectangle((2, 0, 5, 15), fill=outline)
+        draw.line((3, 0, 3, 15), fill=light)
+        draw.line((4, 0, 4, 15), fill=steel)
+        for y in (1, 7, 13): draw.rectangle((1, y, 6, min(15, y + 1)), fill=outline); draw.line((2, y, 5, y), fill=steel)
+        for y in (0, 14): draw.point((3, y), fill=brass)
+    else:
+        draw.rectangle((0, 2, 15, 5), fill=outline)
+        draw.line((0, 3, 15, 3), fill=light)
+        draw.line((0, 4, 15, 4), fill=steel)
+        for x in (1, 7, 13): draw.rectangle((x, 1, min(15, x + 1), 6), fill=outline); draw.line((x, 2, x, 5), fill=steel)
+        for x in (1, 13): draw.point((x, 1), fill=brass)
+    return image
+
+
+def prop_archive_barrier() -> Image.Image:
+    """Two-lane red/white boom gate aligned with the archive fence opening."""
+    image = Image.new("RGBA", (16, 8), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    outline = rgba(OUTLINE)
+    steel = rgba("#62777bff")
+    light = rgba("#d9e1dcff")
+    signal = rgba("#c9564fff")
+    # Control pedestal and weighted hinge remain on the roadside edge.
+    draw.rectangle((0, 3, 3, 7), fill=outline)
+    draw.rectangle((1, 4, 2, 6), fill=steel)
+    draw.point((1, 3), fill=rgba("#f0c85aff"))
+    # The boom spans both traffic lanes without hiding the asphalt below.
+    draw.rectangle((3, 2, 15, 4), fill=outline)
+    for x in range(4, 15):
+        draw.point((x, 3), fill=signal if (x - 4) // 3 % 2 == 0 else light)
+    draw.rectangle((14, 4, 15, 7), fill=outline)
+    draw.point((14, 5), fill=steel)
+    return image
+
+
 def prop_active_marker() -> Image.Image:
     image = Image.new("RGBA", (8, 16), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
@@ -1684,6 +1728,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "resident-sweeper": prop_resident("sweeper", 2), "resident-phone": prop_resident("phone", 3),
         "resident-worker": prop_resident("worker", 0), "resident-wave": prop_resident("wave", 1),
         "fence-horizontal": prop_fence(False), "fence-vertical": prop_fence(True),
+        "archive-fence-horizontal": prop_archive_fence(False), "archive-fence-vertical": prop_archive_fence(True),
+        "archive-security-barrier": prop_archive_barrier(),
         "active-district-flag": prop_active_marker(),
     }
     for species in ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"):
@@ -1698,8 +1744,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         elif key == "playground-small": footprint = [3, 2]
         elif key in {"boat-horizontal-a", "boat-horizontal-b", "fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"}: footprint = [3, 1]
         elif key in {"boat-vertical-a", "boat-vertical-b"}: footprint = [1, 3]
-        elif key in {"bus-stop-horizontal", "guardrail-horizontal", "fence-horizontal"}: footprint = [2, 1]
-        elif key in {"bus-stop-vertical", "guardrail-vertical", "fence-vertical"}: footprint = [1, 2]
+        elif key in {"bus-stop-horizontal", "guardrail-horizontal", "fence-horizontal", "archive-fence-horizontal", "archive-security-barrier"}: footprint = [2, 1]
+        elif key in {"bus-stop-vertical", "guardrail-vertical", "fence-vertical", "archive-fence-vertical"}: footprint = [1, 2]
         elif key.startswith(("hill-", "mountain-")): footprint = [max(1, image.width // CELL), max(1, image.height // CELL)]
         else: footprint = [1, 1]
         prop_manifest[key] = {

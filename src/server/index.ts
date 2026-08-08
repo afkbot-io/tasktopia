@@ -90,6 +90,8 @@ io.on("connection", (socket) => {
 const service = new AppService(db, (event) => {
   io.to(`country:${event.countryId}`).emit("world:event", event);
 });
+const upgradedArchives = await service.upgradeCountryArchiveInfrastructure();
+if (upgradedArchives > 0) app.log.info({ countries: upgradedArchives }, "State archive infrastructure synchronized");
 const mcpHandler = createTasktopiaMcpHandler(db, service, (error) => app.log.error({ err: error }, "MCP handler error"));
 
 await registerRoutes(app, db, service, {

@@ -347,7 +347,12 @@ describe("Tasktopia square-world application service", () => {
     expect(features.filter((feature) => feature.kind === "CITY_SIGN").length).toBeGreaterThan(0);
     expect(features.filter((feature) => feature.kind === "BUS_STOP").length).toBeGreaterThan(0);
     for (const feature of features) {
-      for (const cell of feature.footprint) expect(roads.some((road) => cellKey(road) === cellKey(cell))).toBe(false);
+      // A boom barrier intentionally spans the archive driveway at the fence
+      // line. All other world features must remain outside drivable cells.
+      if (feature.assetKey === "archive-security-barrier") continue;
+      for (const cell of feature.footprint) {
+        expect(roads.some((road) => cellKey(road) === cellKey(cell)), `${feature.assetKey} overlaps road at ${cellKey(cell)}`).toBe(false);
+      }
     }
   }, 15_000);
 

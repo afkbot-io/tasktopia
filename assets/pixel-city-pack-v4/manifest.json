@@ -10848,6 +10848,54 @@
         16
       ]
     },
+    "archive-fence-horizontal": {
+      "label": "Archive Fence Horizontal",
+      "path": "props/archive-fence-horizontal.png",
+      "size": [
+        16,
+        8
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        8
+      ]
+    },
+    "archive-fence-vertical": {
+      "label": "Archive Fence Vertical",
+      "path": "props/archive-fence-vertical.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        2
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "archive-security-barrier": {
+      "label": "Archive Security Barrier",
+      "path": "props/archive-security-barrier.png",
+      "size": [
+        16,
+        8
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        8
+      ]
+    },
     "active-district-flag": {
       "label": "Active District Flag",
       "path": "props/active-district-flag.png",

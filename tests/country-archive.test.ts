@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { AppService } from "../src/server/app-service";
+import { AppService, CHUNK_SIZE } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
+import { cellKey } from "../src/server/world/grid";
 
 describe("Государственный архив", () => {
   let db: Db;
@@ -39,6 +40,56 @@ describe("Государственный архив", () => {
     expect(features.filter((feature) => feature.asset_kind === "BUILDING").map((feature) => feature.asset_key))
       .toEqual(["state-archive-core"]);
     expect(features.every((feature) => feature.city_id === null)).toBe(true);
+  });
+
+  it("соединяет ограждённый архив с дорожной сетью через единственный шлагбаум", async () => {
+    await service.createCity(countryId, { name: "Столица", idempotencyKey: "archive-secure-city" });
+    const features = await service.listWorldFeatures(countryId);
+    const compound = features.find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA");
+    expect(compound).toBeDefined();
+
+    const infrastructure = features.filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "PROP");
+    const fences = infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"));
+    const barriers = infrastructure.filter((feature) => feature.assetKey === "archive-security-barrier");
+    expect(fences).toHaveLength(31);
+    expect(barriers).toHaveLength(1);
+    expect(compound!.accessPath.length).toBeGreaterThanOrEqual(4);
+
+    const origin = compound!.origin;
+    const gateCells = new Set([cellKey({ x: origin.x + 9, y: origin.y + 12 }), cellKey({ x: origin.x + 10, y: origin.y + 12 })]);
+    const fenceCells = new Set(fences.flatMap((feature) => feature.footprint).map(cellKey));
+    expect([...gateCells].every((key) => !fenceCells.has(key))).toBe(true);
+    expect(new Set(barriers[0]!.footprint.map(cellKey))).toEqual(gateCells);
+
+    const relevantCells = [...compound!.footprint, ...compound!.accessPath, ...barriers[0]!.footprint];
+    const chunkKeys = new Set(relevantCells.map((cell) => `${Math.floor(cell.x / CHUNK_SIZE)},${Math.floor(cell.y / CHUNK_SIZE)}`));
+    const roads = new Set<string>();
+    for (const chunkKey of chunkKeys) {
+      const [chunkX, chunkY] = chunkKey.split(",").map(Number);
+      const chunk = await service.getChunk(countryId, chunkX!, chunkY!, "DETAIL");
+      for (const road of chunk.roads) roads.add(cellKey(road));
+    }
+    expect(compound!.accessPath.every((cell) => roads.has(cellKey(cell)))).toBe(true);
+    expect(compound!.accessPath.some((cell) => cell.y > origin.y + 13)).toBe(true);
+  });
+
+  it("достраивает периметр и въезд существующего архива при запуске", async () => {
+    await service.createCity(countryId, { name: "Старый мир", idempotencyKey: "archive-upgrade-city" });
+    const compound = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA");
+    expect(compound).toBeDefined();
+    await db.prepare("DELETE FROM world_features_v6 WHERE parent_feature_id = ? AND asset_kind = 'PROP'").run(compound!.id);
+    await db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify([]), compound!.id);
+
+    expect(await service.upgradeCountryArchiveInfrastructure()).toBe(1);
+    expect(await service.upgradeCountryArchiveInfrastructure()).toBe(1);
+
+    const restored = await service.listWorldFeatures(countryId);
+    const restoredCompound = restored.find((feature) => feature.id === compound!.id);
+    const infrastructure = restored.filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "PROP");
+    expect(restoredCompound!.accessPath.length).toBeGreaterThanOrEqual(4);
+    expect(infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"))).toHaveLength(31);
+    expect(infrastructure.filter((feature) => feature.assetKey === "archive-security-barrier")).toHaveLength(1);
   });
 
   it("добавляет уникальные здания только на порогах роста архива", async () => {
