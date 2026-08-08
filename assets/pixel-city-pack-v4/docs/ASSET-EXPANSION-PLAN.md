@@ -1,8 +1,8 @@
 # План расширения Pixel City Pack V4
 
-**Версия:** 1.0
-**Статус:** план на генерацию (runtime PNG + manifest)
-**Цель:** довести разнообразие городов до уровня классических city-builder-ов, добавить уникальные объекты для TEMPLATE-города и 1-на-город, увеличить в 2 раза число вариантов каждой категории зданий, разнообразить заправки, фонари и парки.
+**Версия:** 2.0
+**Статус:** реализовано и проверено 08.08.2026 (runtime PNG + manifest + world generator)
+**Цель:** довести разнообразие городов до уровня классических city-builder-ов, развивать уникальный Государственный архив и объекты 1-на-город, увеличить число вариантов зданий, заправок, фонарей и парков.
 
 ---
 
@@ -13,15 +13,15 @@
 - **V3 base** — скопированные каталоги `buildings`, `props`, `tiles`, `vehicles`.
 - **V4 procedural** — детерминированный Python-скрипт `scripts/build-pixel-city-pack-v4.py`, который генерирует terrain, transitions, часть props, транспорт и новые здания из `assets/pixel-city-pack-v4/catalog/generated-buildings.json`.
 
-| Категория | Сейчас (V4) | Цель (×2) | Добавить |
+| Категория | Итог (V4) | Цель | Статус |
 |---|---|---|---|
-| HOUSE | 16 | 32 | 16 |
-| COMMERCIAL | 12 | 24 | 12 |
-| CIVIC | 12 | 24 | 12 |
-| HIGHRISE | 6 | 12 | 6 |
-| Props | 86 | ~120+ | уличные фонари, парковая мебель, деревья, большие формы |
-| AREA (parks/groves) | 2 логических типа | 6+ типов | большие парки, рощи, ботанический сад |
-| Unique landmarks | 1 (`highrise-landmark`) | 4 | TEMPLATE-observatory, ferris-wheel, megatall, monument |
+| HOUSE | 52 | ≥52 | выполнено |
+| COMMERCIAL | 51 | ≥49 | выполнено |
+| CIVIC | 56 | ≥49 | выполнено |
+| HIGHRISE | 34 | ≥33 | выполнено |
+| Props | 150 | ≥150 | выполнено |
+| AREA (parks/groves) | 5 логических типов | 5 | выполнено |
+| Unique landmarks | 13 | 13 | выполнено |
 
 **Правила, которые нельзя ломать:**
 
@@ -31,6 +31,22 @@
 - `anchorPx` — нижний центр спрайта.
 - `runtimeAI: false`: все PNG готовятся заранее, не генерируются в браузере.
 - Контракт в `manifest.json` — единственный источник истины для каталога.
+
+### Расширение V5
+
+Каталог `catalog/generated-buildings-v5.json` добавляет ровно по 20 новых
+`HOUSE`, `COMMERCIAL`, `CIVIC`, `HIGHRISE` и 10 новых городских ориентиров.
+Каждый объект имеет собственный силуэт и пять стадий; `assets:verify` проверяет
+размеры, hard alpha, палитру, различимость стадий и отсутствие одинаковых
+финальных масок. Ориентиры выбираются из всего набора `landmark-*`
+детерминированно и остаются максимум одним объектом на город.
+
+Природный набор расширен до 14 видов деревьев, шести кустарников и восьми
+видов животных. Инциденты используют три пожарные машины и четыре кадра огня
+и дыма. Генератор рельефа выбирает один из восьми глобально устойчивых типов
+гидрологии; формулы используют мировые координаты, поэтому не расходятся на
+границах чанков. Обоснование каталога и правила размещения находятся в
+`docs/research/city-builder-world-diversity-2026.md`.
 
 ---
 
@@ -51,39 +67,16 @@
 
 ---
 
-## 3. TEMPLATE-город — большое уникальное здание
+## 3. Государственный архив — реализованный уникальный комплекс
 
-Сейчас TEMPLATE-город использует `highrise-landmark`. Предлагается выделить для него собственный архетип — **«Башня знаний / Observatory»** — символ «стартерового» эпика, который видно издалека.
+Архив является объектом страны, а не городом или задачей. С первого рабочего
+города резервируется площадка `state-archive-complex`; по порогам 3, 6 и 10
+записей добавляются `state-archive-wing`, `state-archive-vault` и
+`state-archive-tower` к обязательному `state-archive-core`.
 
-### `starter-city-observatory`
-
-| Поле | Значение |
-|---|---|
-| key | `starter-city-observatory` |
-| label | «Башня знаний» |
-| category | `CIVIC` (или новый `LANDMARK`, если ввести) |
-| platform | `SERVICE` |
-| rarity | `UNIQUE` |
-| spriteSize | `[64, 112]` (8×14 клеток) |
-| footprintCells | `[8, 8]` |
-| anchorPx | `[32, 112]` |
-| estimates | `[6]` |
-| maxPerCity | 1 |
-| maxPerDistrict | null |
-| serviceRole | `knowledge-service` |
-| ruleIds | `UNIQUE_SERVICE` |
-| entrances | `[{ side: "S", offset: 4 }]` |
-| tags | `civic`, `service`, `landmark`, `starter` |
-
-**Визуальное описание:**
-
-- Основание 8×8 клеток — широкая ступенчатая терраса из светлого камня.
-- Центральный ствол 4×4 клетки — стеклянная библиотечная башня с видимыми этажами.
-- Верхний ярус — купол-обсерватория с антеннами и меридианным кольцом.
-- Свет сверху-слева, тёмный сине-серый контур, приглушённые акценты синего/золотого.
-- 5 стадий: строительная площадка → фундамент террасы → каркас башни → стеклянный ствол + строительные леса → готовый купол.
-
-**В коде:** заменить `highrise-landmark` в `publishTemplateCityLandmark` на `starter-city-observatory` или добавить выбор по seed (TEMPLATE всегда observatory, иногда другой landmark).
+Все четыре корпуса имеют hand-authored source в `sources/archive`, hard alpha,
+нижний центральный anchor и входят в воспроизводимый build manifest через
+`catalog/imported-buildings.json`. Оперативного штаба в наборе нет.
 
 ---
 
@@ -476,7 +469,7 @@
 
 - **Эпохи:** колониальные, холодной войны, современные здания.
 - **Ландмарки:** дворец, статуи Эль Президенте.
-- **Урок:** для TEMPLATE-города и столицы можно использовать «эпохальные» стили (колониальный/современный).
+- **Урок:** для Государственного архива и столицы можно использовать «эпохальные» стили (колониальный/современный).
 
 ### 12.5. Pharaoh / Caesar / Zeus
 
@@ -500,37 +493,37 @@
 
 ---
 
-## 13. Этапы реализации
+## 13. Этапы реализации — выполнено
 
 ### 13.1. Фаза 1 — генерация runtime PNG
 
-1. Расширить `draw_finished_house` новыми стилями: `colonial`, `craftsman`, `ranch`, `split-level`, `townhouse-brick`, `townhouse-stone`, `garden-apartment`, `eco-cottage`, `narrow-shotgun`, `courtyard-block`, `modern-villa`, `duplex-brick`, `studio-loft`, `rowhouse-corner`, `suburban-brick`, `apartment-walkup`, `shopfront`, `market`, `warehouse`, `civic-monumental`, `civic-modern`, `industrial`, `tower`.
-2. Расширить `draw_gas_station` для стилей `gas-electric`, `gas-truck`, `gas-cafe`, `gas-wash`.
-3. Добавить функции `draw_tower` для HIGHRISE и `draw_monumental` для CIVIC.
-4. Добавить функции генерации `starter-city-observatory`, `landmark-ferris-wheel`, `landmark-megatall-tower`, `landmark-monument`.
-5. Добавить prop-функции: `prop_streetlamp(style)`, `prop_tree(kind)`, `prop_fountain_large`, `prop_gazebo`, `prop_bandstand`, `prop_statue`, `prop_topiary`, `prop_pond`, `prop_flower_bed`, `prop_playground_slide`, `prop_carousel`, `prop_park_bridge`, `prop_park_lamp`.
-6. Добавить `prop.stages` для крупных пропов и поддержку в рендерере (опционально, см. раздел 14).
+1. [x] Расширены стили HOUSE, COMMERCIAL, CIVIC и HIGHRISE.
+2. [x] Добавлены `gas-electric`, `gas-truck`, `gas-cafe`, `gas-wash`.
+3. [x] Добавлены отдельные отрисовщики высоток, civic-зданий и ландмарков.
+4. [x] Добавлены три городских ландмарка и честные стадии корпусов архива.
+5. [x] Добавлены 6 деревьев, 6 фонарей и 16 крупных парковых пропов.
+6. [x] Для всех объектов работы сохранены 5 стадий; ambient-пропы остаются законченными вариантами.
 
 ### 13.2. Фаза 2 — manifest + каталог
 
-1. Добавить 16 HOUSE, 12 COMMERCIAL, 4 gas-station, 12 CIVIC, 6 HIGHRISE, 4 landmarks, 1 starter observatory в `catalog/generated-buildings.json`.
-2. Добавить новые props в `generated_props`.
-3. Обновить `manifest.json` будет сделано автоматически `build_manifest`.
+1. [x] Добавлены 16 HOUSE, 12 COMMERCIAL, 4 gas-station, 12 CIVIC, 6 HIGHRISE и 3 landmarks.
+2. [x] Новые props включены в `generated_props`.
+3. [x] Manifest воспроизводимо собирается `build_manifest`.
 
 ### 13.3. Фаза 3 — world generator
 
-1. В `publishTemplateCityLandmark` использовать `starter-city-observatory`.
-2. Добавить `publishCityLandmark` — один уникальный landmark на город.
-3. В `publishDistrictGreenFeature` добавить большие размеры, новые area assetKey и декор по архетипу.
-4. В `publishCityGatewayFeatures` / `publishRoadsideDecor` привязать фонари к архетипу.
+1. [x] `COUNTRY_ARCHIVE` остаётся самостоятельным комплексом страны.
+2. [x] `publishCityLandmark` размещает максимум один ландмарк на город.
+3. [x] `publishDistrictGreenFeature` использует пять композиций и декор по архетипу.
+4. [x] Фонари и деревья выбираются по архетипу и seed.
 
 ### 13.4. Фаза 4 — приёмка
 
-1. `npm run assets:build` — без ошибок.
-2. `validate` проходит: 5 стадий, кратность 8, hard alpha, уникальные ID, валидные ruleIds и entrances.
-3. `npm run typecheck` — без ошибок.
-4. `screenshots/pixel-city-v4-expanded-assets.png` и `screenshots/gas-station-style-study.png` читаемы.
-5. property-test: создать 20 случайных городов, убедиться что уникальные здания не дублируются, парки не пересекают дороги, фонари не лезут в воду.
+1. [x] `npm run assets:build` — 103 здания, 515 стадий, 114 пропов.
+2. [x] Оба аудита проходят: кратность 8, hard alpha, стадии, anchors, палитра ≤32, без сирот и пропавших ссылок.
+3. [x] `npm run typecheck` и `npm run lint -- --quiet`.
+4. [x] Контрольные листы динамические и визуально проверены.
+5. [x] Полный набор тестов: 27 файлов / 125 тестов, включая PostgreSQL world-generation.
 
 ---
 
@@ -538,7 +531,7 @@
 
 ### 14.1. Стадии для пропов
 
-Мелкие пропы (фонари, деревья, скамейки) остаются одностадийными вариантами — это согласовано с текущим рендерером и не требует переделки `PROP_CATALOG`. **Крупные пропы** (фонтаны, беседки, статуи, карусели) идут с 5 стадиями; для этого в `manifest.json` в props добавить поле `stages`, а в `WorldCanvas.drawWorldFeature` для PROP проверять `stages` и рендерить текущую стадию, если она есть. Если `stages` нет — использовать `path` как сейчас.
+Декоративные props не связаны с задачей и не изображают прогресс, поэтому используют один законченный PNG. Пять стадий обязательны для BUILDING-объектов работы и ландмарков. Если крупный prop когда-либо станет результатом задачи, его следует перевести в BUILDING-контракт вместо добавления фиктивных стадий к ambient-декору.
 
 ### 14.2. AREA не имеет спрайта
 
@@ -546,7 +539,7 @@
 
 ### 14.3. Уникальные здания и задачи
 
-`landmark-ferris-wheel`, `landmark-megatall-tower`, `landmark-monument` и `starter-city-observatory` публикуются как `worldFeature` (`assetKind: "BUILDING"`), а не как задачи. Они не имеют `taskId` и не открывают `TaskModal`. При клике можно показать информационную панель (отдельная задача — вне скопа плана).
+`landmark-ferris-wheel`, `landmark-megatall-tower`, `landmark-monument` и корпуса `state-archive-*` публикуются как `worldFeature` (`assetKind: "BUILDING"`), а не как задачи. Архивные корпуса открывают раздел Государственного архива.
 
 ### 14.4. Квоты
 
@@ -556,12 +549,12 @@
 
 ---
 
-## 15. Приложение A — итоговый список новых ключей
+## 15. Приложение A — итоговый список ключей расширения
 
-### Здания (51 новый ключ)
+### Здания (53 новых + 4 корпуса архива)
 
-**TEMPLATE:**
-- `starter-city-observatory`
+**Государственный архив:**
+- `state-archive-core`, `state-archive-wing`, `state-archive-vault`, `state-archive-tower`
 
 **City landmarks (1 на город):**
 - `landmark-ferris-wheel`
@@ -583,13 +576,13 @@
 **HIGHRISE (+6):**
 `highrise-residential-tower`, `highrise-hotel`, `highrise-office`, `highrise-medical-tower`, `highrise-luxury-tower`, `highrise-sustainable-tower`
 
-### Props (новые ключи, без stages, кроме крупных)
+### Props (новые законченные ambient-варианты)
 
 **Фонари:** `streetlamp-vintage`, `streetlamp-modern`, `streetlamp-solar`, `streetlamp-industrial`, `streetlamp-double`, `streetlamp-festive`
 
 **Деревья:** `tree-birch`, `tree-pine`, `tree-willow`, `tree-oak`, `tree-apple`, `tree-cherry`
 
-**Крупные пропы (5 стадий):** `fountain-large`, `gazebo`, `bandstand`, `statue-hero`, `statue-abstract`, `topiary-spiral`, `topiary-animal`, `pond-small`, `flower-bed-horizontal`, `flower-bed-vertical`, `park-bench-double`, `park-bridge`, `park-lamp`, `park-path-circle`, `playground-slide`, `playground-carousel`
+**Крупные пропы:** `fountain-large`, `gazebo`, `bandstand`, `statue-hero`, `statue-abstract`, `topiary-spiral`, `topiary-animal`, `pond-small`, `flower-bed-horizontal`, `flower-bed-vertical`, `park-bench-double`, `park-bridge`, `park-lamp`, `park-path-circle`, `playground-slide`, `playground-carousel`
 
 ### AREA assetKey
 
@@ -601,32 +594,14 @@
 
 ---
 
-## 16. Приложение B — примерная смета труда
+## 16. Итог реализации
 
-| Работа | Оценка (story points) | Примечание |
-|---|---|---|
-| Новые стили генерации зданий (16 стилей) | 8 | самая большая часть Python-кода |
-| Генерация 4 ландмарков + observatory | 5 | крупные спрайты, 5 стадий |
-| Генерация 4 новых заправок | 3 | на базе существующей `draw_gas_station` |
-| Генерация 6 новых деревьев и 6 фонарей | 3 | мелкие пропы, быстро |
-| Генерация 16 крупных пропов с 5 стадиями | 5 | нужны стадийные функции |
-| Обновление `generated-buildings.json` и manifest | 2 | механическая работа |
-| Изменения в world generator (парки, фонари, ландмарки) | 5 | логика размещения и квот |
-| Приёмка: contact sheets, property tests, typecheck | 3 |  |
-| **Итого** | **34 SP** | ~2-3 итерации по одному разработчику |
+Реализовано:
 
----
-
-## 17. Резюме для коммита
-
-План предлагает:
-
-1. **TEMPLATE-город:** `starter-city-observatory` — 8×8 клеток, 64×112 px, 5 стадий.
+1. **Государственный архив:** четыре уникальных корпуса, добавляемых по мере наполнения архива.
 2. **1-на-город:** колесо обозрения, мегавысотка, памятник — все 5 стадий, `maxPerCity: 1`.
 3. **×2 разнообразие:** 16 новых домов, 12 коммерческих, 4 заправки, 12 civic, 6 высоток.
 4. **Разнообразие инфраструктуры:** 6 видов фонарей, привязка к архетипу района; 4 новые заправки.
 5. **Парки и рощи:** 5 типов area, большие размеры до 12×12, 16+ новых парковых пропов, 6 новых деревьев.
-6. **Все здания и крупные пропы — 5 стадий.** Мелкие пропы — варианты.
-7. **Пайплайн:** расширить `catalog/generated-buildings.json` и `scripts/build-pixel-city-pack-v4.py`, затем `npm run assets:build`.
-
-Следующий шаг — либо поручить художнику/скрипту сгенерировать runtime PNG по этому плану, либо сразу реализовать Python-генераторы.
+6. **Все здания — 5 стадий.** Декоративные пропы — самостоятельные законченные варианты.
+7. **Пайплайн:** каталог → детерминированная сборка → двойной автоматический аудит → контрольные листы → интеграционные тесты.

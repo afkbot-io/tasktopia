@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -26,7 +26,7 @@
     "study:worldgen": "tsx scripts/worldgen-algorithm-study.ts",
     "assets:setup": "python3 -m venv .venv-assets && .venv-assets/bin/python -m pip install -r requirements-assets.txt",
     "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack-v4.py",
-    "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack-v4.py"
+    "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack-v4.py && .venv-assets/bin/python .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py --manifest assets/pixel-city-pack-v4/manifest.json --runtime assets/pixel-city-pack-v4/runtime --report tmp/pixel-city-style-audit.json"
   },
   "dependencies": {
     "@fastify/compress": "^9.1.1",

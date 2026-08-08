@@ -146,9 +146,19 @@ describe("authentication HTTP boundary", () => {
     const bootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } })).json();
     expect(bootstrap).toMatchObject({
       country: { name: "Платформа" },
+      archive: { name: "Государственный архив", stage: 1, recordCount: 0 },
       initialCity: { name: "Мобильное приложение" },
       stats: { cities: 1, districts: 0, tasks: 0, activeDistricts: 0, unfinishedBuildings: 0 },
     });
+
+    const createdRecord = await app.inject({
+      method: "POST", url: "/api/archive/records", headers: { cookie },
+      payload: { kind: "REPOSITORY", title: "Репозиторий", sourceUrl: "https://github.com/example/project", tags: ["git"], idempotencyKey: "archive-http-create" },
+    });
+    expect(createdRecord.statusCode).toBe(200);
+    expect(createdRecord.json()).toMatchObject({ kind: "REPOSITORY", tags: ["git"] });
+    const records = await app.inject({ method: "GET", url: "/api/archive/records", headers: { cookie } });
+    expect(records.json()).toMatchObject([{ title: "Репозиторий" }]);
   }, 15_000);
 
   it("exposes exact-confirmed city, district and task deletion to an authenticated editor", async () => {

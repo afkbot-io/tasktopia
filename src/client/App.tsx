@@ -10,11 +10,12 @@ import { Button, cx } from "./components/ui";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
-const ReferenceCardModal = lazy(() => import("./components/ReferenceCardModal").then((module) => ({ default: module.ReferenceCardModal })));
+const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
 type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
-type MapInvalidation = { id: number; type: string; affectedBounds?: Rect };
+type MapInvalidation = { id: number; type: string; affectedBounds?: Rect; taskId?: string; status?: string; progress?: number };
+type RealtimeNotice = { id: number; text: string; tone: "info" | "success" };
 
 function eventInvalidation(event: RealtimeEvent): MapInvalidation {
   const candidate = event.payload.affectedBounds as Partial<Rect> | undefined;
@@ -22,7 +23,32 @@ function eventInvalidation(event: RealtimeEvent): MapInvalidation {
     && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite)
     ? candidate as Rect
     : undefined;
-  return { id: event.id, type: event.type, affectedBounds };
+  return {
+    id: event.id, type: event.type, affectedBounds,
+    taskId: typeof event.payload.taskId === "string" ? event.payload.taskId : undefined,
+    status: typeof event.payload.status === "string" ? event.payload.status : undefined,
+    progress: typeof event.payload.progress === "number" ? event.payload.progress : undefined,
+  };
+}
+
+function playCompletionChime(): void {
+  if (document.hidden) return;
+  const AudioContextClass = window.AudioContext;
+  if (!AudioContextClass) return;
+  try {
+    const context = new AudioContextClass();
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.055, context.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.42);
+    gain.connect(context.destination);
+    for (const [offset, frequency] of [[0, 659], [0.12, 784], [0.24, 988]] as const) {
+      const oscillator = context.createOscillator();
+      oscillator.type = "triangle"; oscillator.frequency.value = frequency; oscillator.connect(gain);
+      oscillator.start(context.currentTime + offset); oscillator.stop(context.currentTime + offset + 0.18);
+    }
+    window.setTimeout(() => { void context.close(); }, 900);
+  } catch { /* Audio is optional when the browser has not granted activation. */ }
 }
 
 export function App() {
@@ -30,10 +56,11 @@ export function App() {
   const [sessionState, setSessionState] = useState<SessionState>("INITIALIZING");
   const [authError, setAuthError] = useState("");
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
-  const [selectedReferenceCard, setSelectedReferenceCard] = useState<string | null>(null);
+  const [selectedArchiveRecord, setSelectedArchiveRecord] = useState<string | null>(null);
   const [tokensOpen, setTokensOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<"mcp" | "account">("mcp");
   const [planOpen, setPlanOpen] = useState(false);
+  const [planSection, setPlanSection] = useState<"cities" | "archive">("cities");
   const [countryMenuOpen, setCountryMenuOpen] = useState(false);
   const [countryDialog, setCountryDialog] = useState<"manage" | "create" | null>(null);
   const [showDistricts, setShowDistricts] = useState(false);
@@ -43,13 +70,18 @@ export function App() {
   const [revision, setRevision] = useState(0);
   const [mapInvalidation, setMapInvalidation] = useState<MapInvalidation>();
   const [online, setOnline] = useState(true);
+  const [notices, setNotices] = useState<RealtimeNotice[]>([]);
   const countryId = bootstrap?.country.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
-  const closeReferenceCard = useCallback(() => setSelectedReferenceCard(null), []);
+  const closeArchiveRecord = useCallback(() => setSelectedArchiveRecord(null), []);
   const closeSettings = useCallback(() => setTokensOpen(false), []);
   const openSettings = useCallback((section: "mcp" | "account") => {
     setSettingsSection(section);
     setTokensOpen(true);
+  }, []);
+  const openArchive = useCallback(() => {
+    setPlanSection("archive");
+    setPlanOpen(true);
   }, []);
 
   const logout = useCallback(async () => {
@@ -134,6 +166,17 @@ export function App() {
       socket.on("world:event", (event: RealtimeEvent) => {
         if (event.countryId !== countryId) return;
         setMapInvalidation(eventInvalidation(event));
+        const completed = event.type === "task.status_changed" && event.payload.status === "COMPLETED";
+        if (event.type.startsWith("task.") && event.type !== "task.comment_added") {
+          const notice: RealtimeNotice = {
+            id: event.id,
+            text: completed ? "Здание завершено — город обновлён" : event.type === "task.created" ? "Новое здание добавлено на карту" : "Задача обновлена на карте",
+            tone: completed ? "success" : "info",
+          };
+          setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));
+          window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), completed ? 8_000 : 5_000);
+          if (completed) playCompletionChime();
+        }
         if (event.type === "task.comment_added" || event.type === "task.status_changed") {
           setBootstrap((current) => {
             if (!current) return current;
@@ -182,7 +225,7 @@ export function App() {
       </div>
 
       <nav className="order-2 flex items-center justify-end gap-1.5 sm:gap-2 md:order-4" aria-label="Действия карты">
-        <Button data-plan-trigger className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={planOpen} onClick={() => { setCountryMenuOpen(false); setPlanOpen((value) => !value); }}>План</Button>
+        <Button data-plan-trigger className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={planOpen} onClick={() => { setCountryMenuOpen(false); setPlanSection("cities"); setPlanOpen((value) => !value); }}>План</Button>
         <Button className={cx("min-h-10 px-3 text-xs sm:px-4", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>
         <Button className="h-10 min-h-10 w-10 px-0 text-lg text-signal" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</Button>
         <Button className="h-10 min-h-10 w-10 rounded-full px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
@@ -192,16 +235,19 @@ export function App() {
     <section className="map-region">
       {bootstrap.stats.cities > 0 ? <>
         <Suspense fallback={<div className="app-loading" role="status"><div className="loader-square" /><span>Загружаем карту…</span></div>}>
-          <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} />
+          <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />
         </Suspense>
         <div className="map-help"><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
-      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onReferenceCardSelect={setSelectedReferenceCard} onMutation={refreshWorld} />}
+      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
     </section>
 
     {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} canEdit={bootstrap.countryRole !== "VIEWER"} onClose={closeTask} onDeleted={refreshWorld} /></Suspense>}
-    {selectedReferenceCard && <Suspense fallback={null}><ReferenceCardModal cardId={selectedReferenceCard} onClose={closeReferenceCard} /></Suspense>}
+    {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
+    <aside className="realtime-notices" aria-live="polite" aria-label="Обновления города">
+      {notices.map((notice) => <button key={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`} onClick={() => setNotices((current) => current.filter((item) => item.id !== notice.id))}>{notice.text}<span aria-hidden="true">×</span></button>)}
+    </aside>
   </main>;
 }

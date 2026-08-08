@@ -1,0 +1,78 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+import manifest from "../assets/pixel-city-pack-v4/manifest.json";
+import v5Buildings from "../assets/pixel-city-pack-v4/catalog/generated-buildings-v5.json";
+
+const runtime = resolve("assets/pixel-city-pack-v4/runtime");
+const buildings = manifest.buildings as Record<string, {
+  stages: string[];
+  maxPerCity: number | null;
+  maxPerDistrict: number | null;
+  ruleIds: string[];
+}>;
+
+const expansionKeys = [
+  "landmark-ferris-wheel", "landmark-megatall-tower", "landmark-monument",
+  "house-colonial", "house-craftsman", "house-ranch", "house-split-level",
+  "house-townhouse-brick", "house-townhouse-stone", "house-garden-apartment",
+  "house-eco-cottage", "house-narrow-shotgun", "house-courtyard-block",
+  "house-modern-villa", "house-duplex-brick", "house-studio-loft",
+  "house-rowhouse-corner", "house-suburban-brick", "house-apartment-walkup",
+  "shop-cafe", "shop-butcher", "shop-electronics", "shop-furniture", "shop-bookstore",
+  "shop-clothing", "shop-restaurant", "shop-bar", "office-small", "hotel-small",
+  "commercial-market-stalls", "commercial-storage", "commercial-gas-station-electric",
+  "commercial-gas-station-truck", "commercial-gas-station-cafe", "commercial-gas-station-wash",
+  "civic-museum", "civic-hospital", "civic-university", "civic-courthouse", "civic-embassy",
+  "civic-community-center", "civic-aquatic-center", "civic-transport-hub",
+  "civic-waste-station", "civic-power-substation", "civic-memorial-hall", "civic-youth-center",
+  "highrise-residential-tower", "highrise-hotel", "highrise-office",
+  "highrise-medical-tower", "highrise-luxury-tower", "highrise-sustainable-tower",
+] as const;
+
+describe("Pixel City V4 expansion contract", () => {
+  it("publishes every planned building as five distinct runtime stages", () => {
+    for (const key of [...expansionKeys, ...v5Buildings.map((entry) => entry.key)]) {
+      const building = buildings[key];
+      expect(building, key).toBeDefined();
+      expect(building.stages, key).toHaveLength(5);
+      expect(new Set(building.stages).size, key).toBe(5);
+      for (const stage of building.stages) expect(existsSync(resolve(runtime, stage)), `${key}: ${stage}`).toBe(true);
+    }
+  });
+
+  it("keeps city landmarks unique in both the city and district", () => {
+    for (const key of Object.keys(buildings).filter((key) => key.startsWith("landmark-"))) {
+      expect(buildings[key]).toMatchObject({ maxPerCity: 1, maxPerDistrict: 1 });
+      expect(buildings[key]!.ruleIds).toContain("UNIQUE_SERVICE");
+    }
+  });
+
+  it("publishes the new tree, streetlight, and large park-prop families", () => {
+    const props = manifest.props as Record<string, { footprintCells: number[] }>;
+    for (const key of [
+      "tree-birch", "tree-pine", "tree-willow", "tree-oak", "tree-apple", "tree-cherry",
+      "tree-maple", "tree-cedar", "tree-cypress", "tree-palm", "tree-aspen", "tree-deadwood", "tree-magnolia", "tree-redwood",
+      "shrub-hazel", "shrub-fern", "shrub-flowering", "shrub-dry", "shrub-hedge", "shrub-juniper",
+      "streetlamp-vintage", "streetlamp-modern", "streetlamp-solar",
+      "streetlamp-industrial", "streetlamp-double", "streetlamp-festive",
+      "fountain-large", "gazebo", "bandstand", "statue-hero", "statue-abstract",
+      "topiary-spiral", "topiary-animal", "pond-small", "flower-bed-horizontal",
+      "flower-bed-vertical", "park-bench-double", "park-bridge", "park-lamp",
+      "park-path-circle", "playground-slide", "playground-carousel",
+    ]) expect(props[key], key).toBeDefined();
+    expect(props["fountain-large"]?.footprintCells).toEqual([4, 4]);
+    expect(props["gazebo"]?.footprintCells).toEqual([4, 3]);
+  });
+
+  it("publishes four incident animation frames, three engine silhouettes, and eight animal species", () => {
+    const props = manifest.props as Record<string, { footprintCells: number[] }>;
+    for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) expect(props[key], key).toBeDefined();
+    for (const prefix of ["incident-flame", "incident-smoke"]) {
+      for (const suffix of ["a", "b", "c", "d"]) expect(props[`${prefix}-${suffix}`], `${prefix}-${suffix}`).toBeDefined();
+    }
+    for (const species of ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"]) {
+      for (const direction of ["north", "east", "south", "west"]) expect(props[`animal-${species}-${direction}`], `${species}-${direction}`).toBeDefined();
+    }
+  });
+});

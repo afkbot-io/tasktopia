@@ -24,6 +24,7 @@ describe("organic growth incident regression", () => {
   let serviceRolesAfter: string[];
   let districtGreenBefore: number;
   let districtGreenAfter: number;
+  let regeneratedSeed: number;
 
   const fillRate = async () => {
     const district = (await service.listDistricts(countryId)).find((item) => item.id === districtId)!;
@@ -66,7 +67,7 @@ describe("organic growth incident regression", () => {
     typesBefore = new Map((await service.listTasks(countryId)).map((task) => [task.id, task.buildingType]));
     districtGreenBefore = (await service.listWorldFeatures(countryId))
       .filter((feature) => feature.districtId === districtId && (feature.kind === "PARK" || feature.kind === "GROVE")).length;
-    await service.regenerateCountry(countryId, { confirmName: "Organic: страна", idempotencyKey: "regenerate" });
+    regeneratedSeed = (await service.regenerateCountry(countryId, { confirmName: "Organic: страна", idempotencyKey: "regenerate" })).seed;
     auditAfter = await auditWorld(db, service, countryId);
     fillAfter = await fillRate();
     const tasksAfter = await service.listTasks(countryId);
@@ -88,6 +89,7 @@ describe("organic growth incident regression", () => {
   });
 
   it("replays the same density after regeneration", () => {
+    expect(regeneratedSeed).toBe(1_206_325_679);
     expect(auditAfter.metrics.tasks).toBe(29);
     expect(auditAfter.violations).toEqual([]);
     expect(fillAfter.occupied).toBe(29);

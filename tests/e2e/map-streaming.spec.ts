@@ -289,6 +289,15 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
     await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_VERIFYING");
     await updateDefect("FIXED");
     await expect.poll(async () => Number(await host.getAttribute("data-incidents")), { timeout: 30_000 }).toBe(0);
+    for (const [status, progress] of [["IN_PROGRESS", 55], ["TESTING", 90], ["COMPLETED", 100]] as const) {
+      const result = await client.callTool({
+        name: "task.set_status",
+        arguments: { taskId: integration.taskId, status, progress, idempotencyKey: `e2e-map-${status}-${Date.now()}` },
+      });
+      expect(result.isError).not.toBe(true);
+    }
+    await expect(page.locator(".realtime-notice-success")).toContainText("Здание завершено — город обновлён");
+    await expect.poll(async () => Number(await host.getAttribute("data-celebrations") ?? 0), { timeout: 30_000 }).toBeGreaterThan(0);
   } finally {
     await client.close().catch(() => undefined);
     await page.evaluate(async (tokenId) => { await fetch(`/api/tokens/${tokenId}`, { method: "DELETE" }); }, integration.id);

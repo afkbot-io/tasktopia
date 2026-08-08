@@ -6,6 +6,11 @@ const documentedTools = [
   "country.list",
   "country.select",
   "country.update_profile",
+  "archive.get",
+  "archive.record_list",
+  "archive.record_create",
+  "archive.record_update",
+  "archive.record_delete",
   "city.list",
   "city.get",
   "city.create",
@@ -31,6 +36,13 @@ const documentedTools = [
   "task.report_progress",
   "task.add_comment",
   "task.assign",
+  "task.activity",
+  "task.dependency_add",
+  "task.dependency_remove",
+  "task.link_add",
+  "task.link_remove",
+  "task.attachment_add",
+  "task.attachment_list",
 ] as const;
 
 describe("public AI integration guide", () => {

@@ -10,7 +10,7 @@ export type PlatformKind = "YARD" | "STONE" | "ASPHALT" | "SERVICE" | "PARK";
 export type CityMorphology = "BALANCED" | "DENSE_CORE" | "GARDEN_CITY" | "POLYCENTRIC";
 export type DistrictArchetype = "NEW_BUILD" | "PRIVATE" | "MIXED_URBAN" | "COMMERCIAL" | "CIVIC";
 export type SurfaceKind = "SIDEWALK" | "PATH" | "DRIVEWAY" | "SHOULDER" | "CROSSWALK";
-export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "PARK_DECOR" | "RUIN" | "LANDMARK";
+export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "PARK_DECOR" | "RUIN" | "LANDMARK" | "COUNTRY_ARCHIVE";
 export type CardinalOrientation = "N" | "E" | "S" | "W";
 export type CountryRole = "OWNER" | "MEMBER" | "VIEWER";
 export type McpScope = "country:read" | "cities:write" | "districts:write" | "tasks:read" | "tasks:write" | "comments:write";
@@ -61,7 +61,6 @@ export type CityDto = {
   acceptanceCriteria: string;
   deadline: string | null;
   status: CityStatus;
-  kind: "WORK" | "TEMPLATE";
   center: Cell;
   bounds: Rect;
   styleId: string;
@@ -135,15 +134,26 @@ export type TaskAttachmentDto = {
   createdAt: string;
 };
 
-export type ReferenceCardKind = "TEMPLATE" | "CONVENTION" | "CONTEXT";
+export type ArchiveRecordKind = "PROJECT" | "REPOSITORY" | "ARCHITECTURE" | "CONVENTION" | "ENVIRONMENT" | "TEMPLATE";
 
-export type ReferenceCardDto = {
+export type CountryArchiveDto = {
   id: string;
   countryId: string;
-  cityId: string;
-  kind: ReferenceCardKind;
+  name: "Государственный архив";
+  stage: 1 | 2 | 3 | 4;
+  recordCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ArchiveRecordDto = {
+  id: string;
+  archiveId: string;
+  countryId: string;
+  kind: ArchiveRecordKind;
   title: string;
   body: string;
+  sourceUrl: string | null;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -295,6 +305,7 @@ export type BootstrapDto = {
   country: CountryDto;
   countries: CountryAccessDto[];
   countryRole: CountryRole;
+  archive: CountryArchiveDto;
   initialCity: CityDto | null;
   viewBounds: Rect;
   stats: { cities: number; districts: number; tasks: number; activeDistricts: number; unfinishedBuildings: number };

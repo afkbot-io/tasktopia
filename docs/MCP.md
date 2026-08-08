@@ -31,7 +31,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 При выпуске выбираются срок `30 | 90 | 365` дней и непустое подмножество scopes:
 
 - `country:read` — страны, города, районы и MCP resources; полный `city.get` дополнительно требует `tasks:read` из-за списка задач;
-- `cities:write` — профиль страны, создание, обновление, переименование и безопасное удаление городов;
+- `cities:write` — профиль страны и Государственный архив, создание, обновление, переименование и безопасное удаление городов;
 - `districts:write` — создание, обновление, переименование, смена состояния и безопасное удаление районов;
 - `tasks:read` — чтение задач;
 - `tasks:write` — создание/уточнение задач и связанных дефектов, назначение, смена стадии и безопасное удаление задач;
@@ -42,11 +42,13 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 ## Основные инструменты
 
 - `country.get_current`, `country.list`, `country.select`, `country.update_profile`
+- `archive.get`, `archive.record_list`, `archive.record_create`, `archive.record_update`, `archive.record_delete`
 - `city.list`, `city.get`, `city.create`, `city.update`, `city.rename`, `city.delete`
 - `district.list`, `district.create`, `district.update`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
 - `task.list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.delete`
 - `task.defect_create`, `task.defect_update`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
+- `task.activity`, `task.dependency_add`, `task.dependency_remove`, `task.link_add`, `task.link_remove`, `task.attachment_add`, `task.attachment_list`
 
 ## Минимальный сценарий
 

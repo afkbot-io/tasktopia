@@ -5,6 +5,7 @@ import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
 import { isWater, terrainAt } from "../src/server/world/terrain";
+import { BUILDING_CATALOG } from "../src/shared/catalog";
 
 describe("Tasktopia square-world application service", () => {
   let db: Db;
@@ -75,7 +76,10 @@ describe("Tasktopia square-world application service", () => {
     // Green areas appear together with the first streets of the first complex.
     const greenFeatures = await service.listWorldFeatures(countryId);
     expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
-    expect(greenFeatures.some((feature) => ["bench-horizontal", "picnic-table", "playground-small", "trash-bin", "streetlamp"].includes(feature.assetKey))).toBe(true);
+    expect(greenFeatures.some((feature) => feature.kind === "PARK_DECOR")).toBe(true);
+    const cityLandmarks = greenFeatures.filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK");
+    expect(cityLandmarks).toHaveLength(1);
+    expect(BUILDING_CATALOG.filter((entry) => entry.key.startsWith("landmark-")).map((entry) => entry.key)).toContain(cityLandmarks[0]!.assetKey);
     const defect = await service.createTaskDefect(countryId, {
       taskId: task.id, title: "Broken path", reproductionSteps: "Open the map", actualResult: "Path breaks", expectedResult: "Path stays whole",
       idempotencyKey: "regen-defect",
@@ -345,22 +349,6 @@ describe("Tasktopia square-world application service", () => {
     for (const feature of features) {
       for (const cell of feature.footprint) expect(roads.some((road) => cellKey(road) === cellKey(cell))).toBe(false);
     }
-  }, 15_000);
-
-  it("keeps committed tasks fixed when spatial growth is needed", async () => {
-    await db.prepare("UPDATE countries SET seed = 424242 WHERE id = ?").run(countryId);
-    const city = await service.createCity(countryId, { name: "Growth City", idempotencyKey: "growth-city" });
-    await service.createDistrict(countryId, { cityId: city.id, name: "Growth", archetype: "PRIVATE", capacitySp: 26, activate: true, idempotencyKey: "growth-district" });
-    const first = await service.createTask(countryId, { cityId: city.id, title: "First home", estimate: 1, buildingHint: "house-cottage", idempotencyKey: "growth-task-0" });
-    const committed = JSON.stringify(first.footprint);
-    for (let index = 1; index < 25; index += 1) {
-      await service.createTask(countryId, { cityId: city.id, title: `Home ${index}`, estimate: 1, idempotencyKey: `growth-task-${index}` });
-    }
-    const district = (await service.listDistricts(countryId, city.id))[0]!;
-    expect(district.cells.length).toBeGreaterThan(300);
-    expect(JSON.stringify((await service.getTask(countryId, first.id)).footprint)).toBe(committed);
-    const roadKeys = new Set((await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(countryId) as Array<{ x: number; y: number }>).map(cellKey));
-    for (const task of await service.listTasks(countryId)) for (const cell of task.footprint) expect(roadKeys.has(cellKey(cell))).toBe(false);
   }, 15_000);
 
   it("expands a city envelope to fit eight non-overlapping districts", async () => {

@@ -6,6 +6,8 @@ import {
   STATUS_PROGRESS_RANGE,
   TASK_STAGE,
   type BootstrapDto,
+  type ArchiveRecordDto,
+  type ArchiveRecordKind,
   type Cell,
   type ChunkDto,
   type ChunkTaskDto,
@@ -25,8 +27,7 @@ import {
   type PlanTaskDto,
   type RealtimeEvent,
   type Rect,
-  type ReferenceCardDto,
-  type ReferenceCardKind,
+  type CountryArchiveDto,
   type RoadCellDto,
   type SurfaceCellDto,
   type TaskAttachmentDto,
@@ -81,6 +82,13 @@ const CITY_SPACING = 320;
 const COUNTRY_VIEW_MARGIN = 54;
 const SPRINT_COLORS = ["#52a8d8", "#dfa94b", "#9877c7", "#69ad67", "#c86f67", "#4fb49f", "#d585b4"];
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
+const ARCHIVE_COMPOUND = { width: 18, height: 12 } as const;
+const ARCHIVE_BUILDINGS = [
+  { assetKey: "state-archive-core", offset: { x: 5, y: 6 }, width: 8, height: 5 },
+  { assetKey: "state-archive-wing", offset: { x: 0, y: 1 }, width: 8, height: 4 },
+  { assetKey: "state-archive-vault", offset: { x: 10, y: 1 }, width: 7, height: 5 },
+  { assetKey: "state-archive-tower", offset: { x: 10, y: 6 }, width: 7, height: 5 },
+] as const;
 
 type Row = Record<string, unknown>;
 type GrowthDirection = DistrictDto["growthDirection"];
@@ -113,7 +121,6 @@ function cityDto(row: Row): CityDto {
     acceptanceCriteria: String(row.acceptance_criteria ?? ""),
     deadline: row.deadline ? String(row.deadline) : null,
     status: String(row.status) as CityDto["status"],
-    kind: String(row.kind ?? "WORK") as CityDto["kind"],
     center: { x: Number(row.center_x), y: Number(row.center_y) },
     bounds: json<Rect>(row.bounds_json),
     styleId: String(row.style_id),
@@ -185,14 +192,35 @@ function taskDto(row: Row): TaskDto {
   };
 }
 
-function referenceCardDto(row: Row): ReferenceCardDto {
+function archiveStage(recordCount: number): CountryArchiveDto["stage"] {
+  if (recordCount >= 10) return 4;
+  if (recordCount >= 6) return 3;
+  if (recordCount >= 3) return 2;
+  return 1;
+}
+
+function archiveDto(row: Row): CountryArchiveDto {
+  const recordCount = Number(row.record_count ?? 0);
   return {
     id: String(row.id),
     countryId: String(row.country_id),
-    cityId: String(row.city_id),
-    kind: String(row.kind) as ReferenceCardDto["kind"],
+    name: "Государственный архив",
+    stage: archiveStage(recordCount),
+    recordCount,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+function archiveRecordDto(row: Row): ArchiveRecordDto {
+  return {
+    id: String(row.id),
+    archiveId: String(row.archive_id),
+    countryId: String(row.country_id),
+    kind: String(row.kind) as ArchiveRecordKind,
     title: String(row.title),
     body: String(row.body ?? ""),
+    sourceUrl: row.source_url ? String(row.source_url) : null,
     tags: json<string[]>(row.tags_json ?? []),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -428,6 +456,7 @@ export class AppService {
                                 ...await this.getCountry(access.id), role: access.role, memberCount: access.memberCount,
                               }))),
       countryRole: user.countryRole,
+      archive: await this.getArchive(user.countryId),
       initialCity: initialCityRow ? cityDto(initialCityRow) : null,
       viewBounds,
       stats: {
@@ -483,7 +512,11 @@ export class AppService {
       const districts = await this.listDistricts(countryId);
       const tasks = await this.listTasks(countryId);
       const oldBounds = cities.length > 0 ? cities.map((city) => city.bounds).reduce(unionRect) : undefined;
-      const seedBytes = createHash("sha256").update(`${countryId}:${input.idempotencyKey}:${now()}`).digest();
+      // Regeneration must be reproducible. A new idempotency key deliberately
+      // produces a new world, while the same source seed and key always replay
+      // the same geometry — without a wall-clock value that makes incidents
+      // impossible to reproduce in tests or production diagnostics.
+      const seedBytes = createHash("sha256").update(`${country.seed}:${input.idempotencyKey}`).digest();
       let seed = seedBytes.readUInt32LE(0) & 0x7fff_ffff;
       if (seed === Number(country.seed)) seed = (seed + 1) & 0x7fff_ffff;
       const temporaryCountryId = randomUUID();
@@ -586,6 +619,7 @@ export class AppService {
       }
       await this.db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(seed, countryId);
       await this.db.prepare("DELETE FROM countries WHERE id = ?").run(temporaryCountryId);
+      await this.syncCountryArchiveComplex(countryId);
       this.roadCache.delete(countryId);
       this.surfaceCache.delete(countryId);
       const rebuiltCities = await this.listCities(countryId);
@@ -935,7 +969,13 @@ export class AppService {
         else water += 1;
       }
     }
-    return buildable * 4 - water * 8 + hashCoordinate(seed, center.x, center.y, 417);
+    const nationalApproach = { x: bounds.minX - COUNTRY_VIEW_MARGIN, y: center.y + 9 };
+    const approachDry = [-2, -1, 0, 1, 2].every((offset) =>
+      isBuildableTerrain(terrainAt(seed, nationalApproach.x, nationalApproach.y + offset).terrain));
+    // A first city is only useful when its published west-edge entry begins
+    // on land. Otherwise dangling-water pruning can erase the national road
+    // until it appears from the middle of the city.
+    return buildable * 4 - water * 8 + (approachDry ? 400 : -10_000) + hashCoordinate(seed, center.x, center.y, 417);
   }
 
   private async nextCityCenter(countryId: string, seed: number): Promise<Cell> {
@@ -943,7 +983,7 @@ export class AppService {
     const index = cities.length;
     if (index === 0) {
       const candidates: Cell[] = [];
-      for (let radius = 0; radius <= 60; radius += 10) {
+      for (let radius = 0; radius <= 120; radius += 10) {
         for (let y = -radius; y <= radius; y += 10) {
           for (let x = -radius; x <= radius; x += 10) if (Math.max(Math.abs(x), Math.abs(y)) === radius) candidates.push({ x, y });
         }
@@ -1362,7 +1402,15 @@ export class AppService {
 
     const cityIndex = (await this.listCities(countryId)).findIndex((candidate) => candidate.id === city.id);
     const kind: Extract<WorldFeatureDto["kind"], "PARK" | "GROVE"> = (cityIndex + districtIndex + existingGreen.length) % 2 === 0 ? "GROVE" : "PARK";
-    const size: readonly [number, number] = kind === "GROVE" ? [6, 5] : [5, 4];
+    const parkVariant = archetype === "CIVIC"
+      ? (districtIndex % 2 === 0 ? "urban-central" : "urban-botanical")
+      : archetype === "COMMERCIAL" ? "urban-amusement"
+        : archetype === "PRIVATE" ? "urban-botanical" : "urban-park";
+    const assetKey = kind === "GROVE" ? "urban-grove" : parkVariant;
+    const size: readonly [number, number] = assetKey === "urban-central" ? [8, 7]
+      : assetKey === "urban-botanical" ? [7, 6]
+        : assetKey === "urban-amusement" ? [7, 5]
+          : kind === "GROVE" ? [6, 5] : [5, 4];
     const allowed = new Set(districtCells.map(cellKey));
     const roads = await this.roadCells(countryId);
     const bounds = boundsOf(districtCells);
@@ -1403,7 +1451,7 @@ export class AppService {
                               parentFeatureId: null,
                               kind,
                               assetKind: "AREA",
-                              assetKey: kind === "GROVE" ? "urban-grove" : "urban-park",
+                              assetKey,
                               origin: selected.origin,
                               footprint: selected.footprint,
                               orientation: "S",
@@ -1411,16 +1459,39 @@ export class AppService {
                             });
     await this.clearRuins(countryId, selected.footprint);
 
-    const decor = kind === "PARK"
-      ? [
-          ["playground-small", 1, 1, 3, 2], ["bench-horizontal", 1, 3, 2, 1],
-          ["tree-flowering", 4, 0, 1, 1], ["streetlamp", 4, 3, 1, 1], ["trash-bin", 0, 3, 1, 1],
-        ] as const
-      : [
-          ["tree-round", 1, 1, 1, 1], ["tree-conifer", 3, 1, 1, 1], ["tree-flowering", 4, 2, 1, 1],
-          ["tree-round", 1, 3, 1, 1], ["picnic-table", 2, 3, 2, 2], ["bench-horizontal", 3, 0, 2, 1],
-          ["streetlamp", 5, 4, 1, 1], ["trash-bin", 0, 4, 1, 1],
-        ] as const;
+    const lampByArchetype: Record<DistrictArchetype, string> = {
+      PRIVATE: "streetlamp-vintage", NEW_BUILD: "streetlamp-modern", MIXED_URBAN: "streetlamp-double",
+      CIVIC: "streetlamp-solar", COMMERCIAL: "streetlamp-industrial",
+    };
+    const treeVariants = ["tree-birch", "tree-pine", "tree-willow", "tree-oak", "tree-apple", "tree-cherry", "tree-maple", "tree-cedar", "tree-cypress", "tree-aspen", "tree-magnolia", "tree-redwood"] as const;
+    const primaryTree = treeVariants[(cityIndex + districtIndex) % treeVariants.length]!;
+    const secondaryTree = treeVariants[(cityIndex + districtIndex + 3) % treeVariants.length]!;
+    type DecorPlacement = readonly [assetKey: string, offsetX: number, offsetY: number, width: number, height: number];
+    const decorByArea: Record<string, readonly DecorPlacement[]> = {
+      "urban-central": [
+        ["fountain-large", 2, 1, 4, 4], ["park-bench-double", 0, 5, 3, 1],
+        ["statue-abstract", 5, 4, 2, 2], [lampByArchetype[archetype], 7, 5, 1, 1], [primaryTree, 0, 0, 1, 1],
+      ],
+      "urban-botanical": [
+        ["pond-small", 0, 0, 3, 3], ["gazebo", 3, 2, 4, 3],
+        ["topiary-spiral", 1, 4, 1, 1], ["flower-bed-vertical", 2, 3, 1, 3],
+        [secondaryTree, 6, 0, 1, 1], [lampByArchetype[archetype], 0, 4, 1, 1],
+      ],
+      "urban-amusement": [
+        ["playground-carousel", 0, 1, 3, 3], ["playground-slide", 4, 1, 3, 2],
+        ["topiary-animal", 4, 3, 2, 1], [lampByArchetype[archetype], 3, 3, 1, 1], ["trash-bin", 6, 4, 1, 1],
+      ],
+      "urban-park": [
+        ["playground-small", 0, 0, 3, 2], ["park-bench-double", 1, 3, 3, 1],
+        [primaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1],
+      ],
+      "urban-grove": [
+        ["gazebo", 1, 1, 4, 3], [primaryTree, 0, 0, 1, 1], ["tree-pine", 5, 0, 1, 1],
+        [secondaryTree, 5, 3, 1, 1], ["picnic-table", 0, 3, 2, 2],
+        [lampByArchetype[archetype], 4, 4, 1, 1], ["trash-bin", 2, 4, 1, 1],
+      ],
+    };
+    const decor = decorByArea[assetKey] ?? decorByArea["urban-park"]!;
     for (const [assetKey, offsetX, offsetY, width, height] of decor) {
       const origin = { x: selected.origin.x + offsetX, y: selected.origin.y + offsetY };
       const footprint = rectangleFootprint(origin, width, height);
@@ -1429,6 +1500,76 @@ export class AppService {
                                         cityId: city.id, districtId, parentFeatureId: area.id, kind: "PARK_DECOR", assetKind: "PROP", assetKey,
                                         origin, footprint, orientation: "S", accessPath: [],
                                       });
+    }
+  }
+
+  private async publishCityLandmark(
+    countryId: string,
+    city: CityDto,
+    districtId: string,
+    seed: number,
+    districtCells: Cell[],
+    reservedLots: PlannedLotDto[] = [],
+  ): Promise<void> {
+    const existingFeatures = await this.listWorldFeatures(countryId);
+    if (existingFeatures.some((feature) => feature.cityId === city.id && feature.kind === "LANDMARK")) return;
+
+    const landmarkKeys = BUILDING_CATALOG.filter((entry) => entry.key.startsWith("landmark-")).map((entry) => entry.key);
+    const preferred = Math.floor(hashCoordinate(seed, city.center.x, city.center.y, 887) * landmarkKeys.length);
+    const orderedKeys = landmarkKeys.map((_, index) => landmarkKeys[(preferred + index) % landmarkKeys.length]!);
+    const allowed = new Set(districtCells.map(cellKey));
+    const roads = await this.roadCells(countryId);
+    const bounds = boundsOf(districtCells);
+    const surfaces = await this.localSurfaceCells(countryId, bounds, roads);
+    const occupied = new Set([
+      ...(await this.listTasks(countryId)).flatMap((task) => task.footprint),
+      ...existingFeatures.filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint),
+      ...reservedLots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)),
+      ...reservedLots.flatMap((lot) => lot.sharedAccess ?? []),
+    ].map(cellKey));
+
+    for (const assetKey of orderedKeys) {
+      const catalog = getBuilding(assetKey);
+      const candidates: Array<{ origin: Cell; footprint: Cell[]; accessPath: Cell[]; score: number }> = [];
+      for (let y = bounds.minY; y <= bounds.maxY - catalog.footprint.height + 1; y += 1) {
+        for (let x = bounds.minX; x <= bounds.maxX - catalog.footprint.width + 1; x += 1) {
+          const origin = { x, y };
+          const footprint = rectangleFootprint(origin, catalog.footprint.width, catalog.footprint.height);
+          if (!footprint.every((cell) => {
+            const key = cellKey(cell);
+            return allowed.has(key) && !roads.has(key) && !occupied.has(key)
+              && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain);
+          })) continue;
+          const accessPath = this.areaAccessPath(seed, allowed, footprint, roads, surfaces, occupied);
+          if (accessPath === null) continue;
+          const center = {
+            x: x + Math.floor(catalog.footprint.width / 2),
+            y: y + Math.floor(catalog.footprint.height / 2),
+          };
+          candidates.push({
+            origin,
+            footprint,
+            accessPath,
+            score: accessPath.length * 100 + manhattan(center, city.center) * 0.12 + hashCoordinate(seed, x, y, 907),
+          });
+        }
+      }
+      const selected = candidates.sort((left, right) => left.score - right.score || left.origin.y - right.origin.y || left.origin.x - right.origin.x)[0];
+      if (!selected) continue;
+      await this.insertWorldFeature(countryId, {
+        cityId: city.id,
+        districtId,
+        parentFeatureId: null,
+        kind: "LANDMARK",
+        assetKind: "BUILDING",
+        assetKey,
+        origin: selected.origin,
+        footprint: selected.footprint,
+        orientation: "S",
+        accessPath: selected.accessPath,
+      });
+      await this.clearRuins(countryId, [...selected.footprint, ...selected.accessPath]);
+      return;
     }
   }
 
@@ -1539,40 +1680,71 @@ export class AppService {
     }
   }
 
-  private async publishTemplateCityLandmark(countryId: string, cityId: string, seed: number, hub: Cell): Promise<void> {
-    // The starter city gets one distinctive central landmark — a tall unique
-    // building ("highrise-landmark") placed on the first open patch of buildable
-    // ground near its hub. It visually marks the TEMPLATE city on the world map.
-    const assetKey = "highrise-landmark";
-    const width = 6;
-    const height = 4;
-    for (const dx of [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]) {
-      for (const dy of [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]) {
-        const origin = { x: hub.x + dx, y: hub.y + dy };
-        const footprint = rectangleFootprint(origin, width, height);
-        if (await this.featurePlacementOpen(countryId, seed, footprint)) {
-          await this.insertWorldFeature(countryId, {
-            cityId,
-            districtId: null,
-            parentFeatureId: null,
-            kind: "LANDMARK",
-            assetKind: "BUILDING",
-            assetKey,
-            origin,
-            footprint,
-            orientation: "S",
-            accessPath: [],
-          });
-          return;
-        }
+  private async syncCountryArchiveComplex(countryId: string, preferredAnchor?: Cell): Promise<Rect | undefined> {
+    const archive = await this.getArchive(countryId);
+    const features = (await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "COUNTRY_ARCHIVE");
+    let compound = features.find((feature) => feature.assetKind === "AREA");
+    if (!compound) {
+      const city = preferredAnchor ? undefined : (await this.listCities(countryId))[0];
+      const anchor = preferredAnchor ?? city?.center;
+      if (!anchor) return undefined;
+      const seed = Number((await this.countryRow(countryId)).seed);
+      // Keep the archive close enough to the capital to read as a national
+      // institution, but outside its hub roads. The full final footprint is
+      // reserved from day one so later wings cannot collide with work lots.
+      const preferredCandidates = [
+        { x: -76, y: 18 }, { x: -76, y: -28 }, { x: 58, y: 18 }, { x: 58, y: -28 },
+        { x: -30, y: -66 }, { x: 14, y: -66 }, { x: -30, y: 56 }, { x: 14, y: 56 },
+      ];
+      const fallbackCandidates: Cell[] = [];
+      for (let y = -44; y <= 38; y += 4) for (const x of [-92, -84, -76, -68, -60, 56, 64, 72, 80, 88]) fallbackCandidates.push({ x, y });
+      for (let x = -44; x <= 34; x += 4) for (const y of [-82, -74, -66, -58, 56, 64, 72, 80]) fallbackCandidates.push({ x, y });
+      fallbackCandidates.sort((left, right) => manhattan(left, { x: -58, y: 0 }) - manhattan(right, { x: -58, y: 0 }));
+      const candidates = [...preferredCandidates, ...fallbackCandidates];
+      const roads = await this.roadCells(countryId);
+      const occupied = new Set([
+        ...(await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey),
+        ...features.flatMap((feature) => feature.footprint).map(cellKey),
+      ]);
+      for (const offset of candidates) {
+        const origin = { x: anchor.x + offset.x, y: anchor.y + offset.y };
+        const footprint = rectangleFootprint(origin, ARCHIVE_COMPOUND.width, ARCHIVE_COMPOUND.height);
+        if (!footprint.every((cell) => !roads.has(cellKey(cell)) && !occupied.has(cellKey(cell)) && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain))) continue;
+        compound = await this.insertWorldFeature(countryId, {
+          cityId: null, districtId: null, parentFeatureId: null,
+          kind: "COUNTRY_ARCHIVE", assetKind: "AREA", assetKey: "state-archive-complex",
+          origin, footprint, orientation: "S", accessPath: [],
+        });
+        break;
       }
     }
-    // If nothing is open, skip the landmark rather than corrupt the road net.
+    if (!compound) return undefined;
+
+    const currentChildren = new Map(features
+      .filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "BUILDING")
+      .map((feature) => [feature.assetKey, feature]));
+    const wanted = new Set(ARCHIVE_BUILDINGS.slice(0, archive.stage).map((building) => building.assetKey));
+    for (const feature of currentChildren.values()) {
+      if (wanted.has(feature.assetKey as (typeof ARCHIVE_BUILDINGS)[number]["assetKey"])) continue;
+      await this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?").run(feature.id);
+    }
+    for (const building of ARCHIVE_BUILDINGS.slice(0, archive.stage)) {
+      if (currentChildren.has(building.assetKey)) continue;
+      const origin = { x: compound.origin.x + building.offset.x, y: compound.origin.y + building.offset.y };
+      await this.insertWorldFeature(countryId, {
+        cityId: null, districtId: null, parentFeatureId: compound.id,
+        kind: "COUNTRY_ARCHIVE", assetKind: "BUILDING", assetKey: building.assetKey,
+        origin, footprint: rectangleFootprint(origin, building.width, building.height), orientation: "S", accessPath: [],
+      });
+    }
+    await this.db.prepare("UPDATE country_archives_v1 SET updated_at = ? WHERE id = ?").run(now(), archive.id);
+    this.surfaceCache.delete(countryId);
+    return boundsOf(compound.footprint);
   }
 
   async createCity(countryId: string, input: {
     name: string; description?: string; goal?: string; acceptanceCriteria?: string; deadline?: string;
-    morphology?: CityMorphology; kind?: "WORK" | "TEMPLATE"; idempotencyKey: string;
+    morphology?: CityMorphology; idempotencyKey: string;
   }): Promise<CityDto> {
     const name = input.name.trim();
     if (name.length < 2 || name.length > 100) throw new DomainError("INVALID_INPUT", "Название города должно содержать от 2 до 100 символов");
@@ -1580,16 +1752,14 @@ export class AppService {
                       const country = await this.countryRow(countryId);
                       const seed = Number(country.seed);
                       const cities = await this.listCities(countryId);
-                      const kind = input.kind ?? "WORK";
-                      if (kind === "TEMPLATE" && cities.some((c) => c.kind === "TEMPLATE")) throw new DomainError("CONFLICT", "В стране может быть только один стартовый город");
                       const center = await this.nextCityCenter(countryId, seed);
                       const bounds = rectForCenter(center);
                       const id = randomUUID();
                       const createdAt = now();
                       const styleId = `style-${Math.floor(hashCoordinate(seed, center.x, center.y, 433) * 8)}`;
                       const morphology = input.morphology ?? cityMorphology(hashCoordinate(seed, center.x, center.y, 439));
-                      await this.db.prepare("INSERT INTO cities_v3 (id, country_id, name, description, goal, acceptance_criteria, deadline, status, kind, center_x, center_y, bounds_json, style_id, morphology, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?)")
-                                                        .run(id, countryId, name, input.description?.trim().slice(0, 8000) ?? "", input.goal?.trim().slice(0, 4000) ?? "", input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.deadline ?? null, kind, center.x, center.y, JSON.stringify(bounds), styleId, morphology, createdAt);
+                      await this.db.prepare("INSERT INTO cities_v3 (id, country_id, name, description, goal, acceptance_criteria, deadline, status, center_x, center_y, bounds_json, style_id, morphology, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?)")
+                                                        .run(id, countryId, name, input.description?.trim().slice(0, 8000) ?? "", input.goal?.trim().slice(0, 4000) ?? "", input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.deadline ?? null, center.x, center.y, JSON.stringify(bounds), styleId, morphology, createdAt);
 
                       const nearest = cities.length > 0
                         ? cities.reduce((best, city) => manhattan(city.center, center) < manhattan(best.center, center) ? city : best, cities[0]!)
@@ -1645,15 +1815,12 @@ export class AppService {
                       for (const existingCity of cities) await this.normalizeUrbanHighways(countryId, existingCity.bounds);
                       await this.normalizeUrbanHighways(countryId, bounds);
                       await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, dryConnector, gateway.horizontalApproach);
-                      if (kind === "TEMPLATE") {
-                        await this.publishTemplateCityLandmark(countryId, id, seed, hub);
-                        await this.seedReferenceCards(countryId, id);
-                      }
+                      await this.syncCountryArchiveComplex(countryId, hub);
 
                       const data: CityDto = {
                         id, name, description: input.description?.trim() ?? "", goal: input.goal?.trim() ?? "",
                         acceptanceCriteria: input.acceptanceCriteria?.trim() ?? "", deadline: input.deadline ?? null,
-                        status: "ACTIVE", kind, center, bounds, styleId, morphology, createdAt,
+                        status: "ACTIVE", center, bounds, styleId, morphology, createdAt,
                       };
                       return { data, eventType: "city.created", eventPayload: { cityId: id, center, affectedBounds: bounds } };
                     });
@@ -2092,7 +2259,9 @@ export class AppService {
       // grove is tucked into the remaining territory, away from planned lots.
       const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
       const districtIndex = (await this.listDistricts(countryId, district.cityId)).findIndex((item) => item.id === district.id);
-      await this.publishDistrictGreenFeature(countryId, cityDto(cityRow), district.id, seed, district.cells, district.archetype, Math.max(0, districtIndex), lots);
+      const city = cityDto(cityRow);
+      await this.publishCityLandmark(countryId, city, district.id, seed, district.cells, lots);
+      await this.publishDistrictGreenFeature(countryId, city, district.id, seed, district.cells, district.archetype, Math.max(0, districtIndex), lots);
       return { ...district, lots };
     }
     // Demand overshoots the remaining land: retry with a smaller complex
@@ -2207,7 +2376,6 @@ export class AppService {
                       const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
                       if (!cityRow) throw new DomainError("NOT_FOUND", "Город не найден");
                       const city = cityDto(cityRow);
-                      if (city.kind === "TEMPLATE") throw new DomainError("INVALID_INPUT", "В стартовом городе нельзя создавать районы");
                       const seed = Number((await this.countryRow(countryId)).seed);
                       // The target is planning metadata, not a hard sprint gate: a two-week
                       // solo sprint and a month-long team sprint cannot share one limit.
@@ -2472,6 +2640,7 @@ export class AppService {
     if (hint) {
       const exact = BUILDING_CATALOG.find((entry) => entry.key === hint);
       if (!exact) throw new DomainError("INVALID_BUILDING_HINT", "Указанный тип здания не существует");
+      if (exact.tags.includes("archive")) throw new DomainError("INVALID_BUILDING_HINT", "Корпуса Государственного архива не являются зданиями задач");
       if (!await this.entryAllowed(exact, cityId, districtId)) throw new DomainError("BUILDING_QUOTA_REACHED", "Лимит этого типа здания уже достигнут");
       if (!buildingCompatibleWithArchetype(exact, archetype)) throw new DomainError("BUILDING_ZONE_CONFLICT", "Этот тип здания несовместим с архитектурой района");
       return [exact];
@@ -2514,7 +2683,7 @@ export class AppService {
     // metadata with only a soft nudge in the score below.
     const compatible: BuildingCatalogEntry[] = [];
     for (const entry of BUILDING_CATALOG) {
-      if (await this.entryAllowed(entry, cityId, districtId)
+      if (!entry.tags.includes("archive") && await this.entryAllowed(entry, cityId, districtId)
         && buildingCompatibleWithArchetype(entry, archetype)
         && (!requiredService || entry.serviceRole === requiredService)) compatible.push(entry);
     }
@@ -2706,7 +2875,6 @@ export class AppService {
     return await this.mutate(countryId, "task.create.v3", input.idempotencyKey, input, async () => {
                       const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
                       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
-                      if (String(city.kind ?? "WORK") === "TEMPLATE") throw new DomainError("INVALID_INPUT", "В стартовом городе нельзя создавать задачи; используйте карточки-справочники");
                       for (const [field, userId] of [["создатель", input.creatorUserId], ["ответственный", input.assigneeUserId], ["заказчик", input.forUserId]] as const) {
                         if (userId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, userId)) {
                           throw new DomainError("ASSIGNEE_NOT_MEMBER", `${field} должен состоять в правительстве страны`);
@@ -2728,19 +2896,25 @@ export class AppService {
                       // instead of deadlocking the district.
                       let entry: BuildingCatalogEntry | undefined;
                       let selected: Awaited<ReturnType<AppService["taskPlacementOptions"]>>[number] | undefined;
-                      for (const candidate of ranked.slice(0, 8)) {
+                      const preferredCandidates = ranked.slice(0, 8);
+                      // A varied large-building catalog must not deadlock a
+                      // nearly full block. Keep a few compact fallbacks after
+                      // the semantic favourites instead of scanning all 193
+                      // entries (and repeatedly growing the district).
+                      const compactFallbacks = ranked
+                        .filter((candidate) => candidate.footprint.width * candidate.footprint.height <= 12 && !preferredCandidates.includes(candidate))
+                        .slice(0, 4);
+                      for (const candidate of [...preferredCandidates, ...compactFallbacks]) {
                         let surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
                         let districtCellKeys = new Set(district.cells.map(cellKey));
                         let options = await this.taskPlacementOptions(countryId, district, candidate, roads, surfaces, occupiedTasks, districtCellKeys);
                         // Organic growth: a task that no longer fits triggers the
                         // next complex inside the territory, then territory growth.
-                        let blocked = false;
-                        for (let growth = 0; options.length === 0 && growth < 4 && !blocked; growth += 1) {
+                        for (let growth = 0; options.length === 0 && growth < 4; growth += 1) {
                           try {
                             district = await this.growDistrict(countryId, district, candidate);
                           } catch (error) {
                             if (!(error instanceof DomainError) || error.code !== "PLACEMENT_BLOCKED") throw error;
-                            blocked = true;
                             break;
                           }
                           roads = await this.roadCells(countryId);
@@ -2772,7 +2946,7 @@ export class AppService {
                       await this.clearRuins(countryId, selected.placement.footprint);
                       await this.db.prepare(`INSERT INTO tasks_v3
         (id, task_number, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, assignee_role, for_user_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
                                                         id, taskNumber, input.cityId, district.id, title, input.description?.trim().slice(0, 8000) ?? "", input.workItemType ?? "TASK",
                                                         input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.systemAnalysis?.trim().slice(0, 16000) ?? "",
                                                         input.architecture?.trim().slice(0, 16000) ?? "", input.designSystem?.trim().slice(0, 16000) ?? "",
@@ -3028,96 +3202,96 @@ export class AppService {
     };
   }
 
-  async getReferenceCard(countryId: string, cardId: string): Promise<ReferenceCardDto> {
-    const row = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ? AND country_id = ?").get(cardId, countryId) as Row | undefined;
-    if (!row) throw new DomainError("NOT_FOUND", "Карточка не найдена");
-    return referenceCardDto(row);
+  async getArchive(countryId: string): Promise<CountryArchiveDto> {
+    const row = await this.db.prepare(`SELECT archive.*, COUNT(record.id)::int AS record_count
+      FROM country_archives_v1 archive
+      LEFT JOIN country_archive_records_v1 record ON record.archive_id = archive.id
+      WHERE archive.country_id = ? GROUP BY archive.id`).get(countryId) as Row | undefined;
+    if (!row) throw new DomainError("NOT_FOUND", "Государственный архив не найден");
+    return archiveDto(row);
   }
 
-  async listReferenceCards(countryId: string, cityId: string): Promise<ReferenceCardDto[]> {
-    const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(cityId, countryId) as Row | undefined;
-    if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
-    const rows = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE city_id = ? ORDER BY kind, created_at").all(cityId) as Row[];
-    return rows.map(referenceCardDto);
+  async getArchiveRecord(countryId: string, recordId: string): Promise<ArchiveRecordDto> {
+    const row = await this.db.prepare("SELECT * FROM country_archive_records_v1 WHERE id = ? AND country_id = ?")
+      .get(recordId, countryId) as Row | undefined;
+    if (!row) throw new DomainError("NOT_FOUND", "Запись архива не найдена");
+    return archiveRecordDto(row);
   }
 
-  async createReferenceCard(countryId: string, input: {
-    cityId: string; kind: ReferenceCardKind; title: string; body?: string; tags?: string[]; idempotencyKey: string;
-  }): Promise<ReferenceCardDto> {
+  async listArchiveRecords(countryId: string): Promise<ArchiveRecordDto[]> {
+    await this.getArchive(countryId);
+    const rows = await this.db.prepare(`SELECT * FROM country_archive_records_v1
+      WHERE country_id = ? ORDER BY kind, created_at, id`).all(countryId) as Row[];
+    return rows.map(archiveRecordDto);
+  }
+
+  async createArchiveRecord(countryId: string, input: {
+    kind: ArchiveRecordKind; title: string; body?: string; sourceUrl?: string; tags?: string[]; idempotencyKey: string;
+  }): Promise<ArchiveRecordDto> {
     const title = input.title.trim();
-    if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название карточки должно содержать от 2 до 160 символов");
-    if (!["TEMPLATE", "CONVENTION", "CONTEXT"].includes(input.kind)) throw new DomainError("INVALID_INPUT", "Тип карточки должен быть TEMPLATE, CONVENTION или CONTEXT");
-    return await this.mutate(countryId, "reference_card.create.v1", input.idempotencyKey, input, async () => {
-      const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
-      if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
-      if (String(city.kind ?? "WORK") !== "TEMPLATE") throw new DomainError("INVALID_INPUT", "Карточки можно создавать только в стартовом (TEMPLATE) городе");
+    if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название записи должно содержать от 2 до 160 символов");
+    if (!["PROJECT", "REPOSITORY", "ARCHITECTURE", "CONVENTION", "ENVIRONMENT", "TEMPLATE"].includes(input.kind)) {
+      throw new DomainError("INVALID_INPUT", "Неизвестный тип записи Государственного архива");
+    }
+    return this.mutate(countryId, "archive.record.create.v1", input.idempotencyKey, input, async () => {
+      const archive = await this.getArchive(countryId);
       const id = randomUUID();
       const createdAt = now();
-      const tags = Array.isArray(input.tags) ? input.tags.map((t) => String(t).trim().slice(0, 40)).filter(Boolean).slice(0, 10) : [];
-      await this.db.prepare(`INSERT INTO city_reference_cards_v1
-        (id, country_id, city_id, kind, title, body, tags_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-        id, countryId, input.cityId, input.kind, title,
-        input.body?.trim().slice(0, 32000) ?? "",
+      const tags = (input.tags ?? []).map((tag) => tag.trim().slice(0, 40)).filter(Boolean).slice(0, 10);
+      const sourceUrl = input.sourceUrl?.trim() ? normalizeLinkUrl(input.sourceUrl) : null;
+      await this.db.prepare(`INSERT INTO country_archive_records_v1
+        (id, archive_id, country_id, kind, title, body, source_url, tags_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        id, archive.id, countryId, input.kind, title, input.body?.trim().slice(0, 32000) ?? "", sourceUrl,
         JSON.stringify(tags), createdAt, createdAt,
       );
-      const data = referenceCardDto(await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ?").get(id) as Row);
-      return { data, eventType: "reference_card.created", eventPayload: { cityId: input.cityId, referenceCardId: id } };
+      const affectedBounds = await this.syncCountryArchiveComplex(countryId);
+      const data = await this.getArchiveRecord(countryId, id);
+      return { data, eventType: "archive.record_created", eventPayload: { archiveId: archive.id, recordId: id, affectedBounds } };
     });
   }
 
-  async updateReferenceCard(countryId: string, input: {
-    cardId: string; title?: string; body?: string; tags?: string[]; idempotencyKey: string;
-  }): Promise<ReferenceCardDto> {
-    return await this.mutate(countryId, "reference_card.update.v1", input.idempotencyKey, input, async () => {
-      const row = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ? AND country_id = ?").get(input.cardId, countryId) as Row | undefined;
-      if (!row) throw new DomainError("NOT_FOUND", "Карточка не найдена");
-      if (input.title !== undefined && (input.title.trim().length < 2 || input.title.trim().length > 160)) throw new DomainError("INVALID_INPUT", "Название карточки должно содержать от 2 до 160 символов");
-      const tags = input.tags === undefined ? json<string[]>(row.tags_json) : input.tags.map((t) => String(t).trim().slice(0, 40)).filter(Boolean).slice(0, 10);
+  async updateArchiveRecord(countryId: string, input: {
+    recordId: string; kind?: ArchiveRecordKind; title?: string; body?: string; sourceUrl?: string | null;
+    tags?: string[]; idempotencyKey: string;
+  }): Promise<ArchiveRecordDto> {
+    return this.mutate(countryId, "archive.record.update.v1", input.idempotencyKey, input, async () => {
+      const current = await this.getArchiveRecord(countryId, input.recordId);
+      if (input.title !== undefined && (input.title.trim().length < 2 || input.title.trim().length > 160)) {
+        throw new DomainError("INVALID_INPUT", "Название записи должно содержать от 2 до 160 символов");
+      }
+      const kind = input.kind ?? current.kind;
+      if (!["PROJECT", "REPOSITORY", "ARCHITECTURE", "CONVENTION", "ENVIRONMENT", "TEMPLATE"].includes(kind)) {
+        throw new DomainError("INVALID_INPUT", "Неизвестный тип записи Государственного архива");
+      }
+      const tags = input.tags === undefined ? current.tags : input.tags.map((tag) => tag.trim().slice(0, 40)).filter(Boolean).slice(0, 10);
+      const sourceUrl = input.sourceUrl === undefined ? current.sourceUrl
+        : input.sourceUrl?.trim() ? normalizeLinkUrl(input.sourceUrl) : null;
       const updatedAt = now();
-      await this.db.prepare("UPDATE city_reference_cards_v1 SET title = ?, body = ?, tags_json = ?, updated_at = ? WHERE id = ?").run(
-        input.title === undefined ? row.title : input.title.trim().slice(0, 160),
-        input.body === undefined ? row.body : input.body.trim().slice(0, 32000),
-        JSON.stringify(tags), updatedAt, input.cardId,
+      await this.db.prepare(`UPDATE country_archive_records_v1
+        SET kind = ?, title = ?, body = ?, source_url = ?, tags_json = ?, updated_at = ? WHERE id = ?`).run(
+        kind, input.title === undefined ? current.title : input.title.trim(),
+        input.body === undefined ? current.body : input.body.trim().slice(0, 32000),
+        sourceUrl, JSON.stringify(tags), updatedAt, input.recordId,
       );
-      const data = referenceCardDto(await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ?").get(input.cardId) as Row);
-      return { data, eventType: "reference_card.updated", eventPayload: { cityId: data.cityId, referenceCardId: input.cardId } };
+      const data = await this.getArchiveRecord(countryId, input.recordId);
+      return { data, eventType: "archive.record_updated", eventPayload: { archiveId: data.archiveId, recordId: data.id } };
     });
   }
 
-  async deleteReferenceCard(countryId: string, input: { cardId: string; confirmTitle: string; idempotencyKey: string }): Promise<{ id: string }> {
-    return await this.mutate(countryId, "reference_card.delete.v1", input.idempotencyKey, input, async () => {
-      const row = await this.db.prepare("SELECT * FROM city_reference_cards_v1 WHERE id = ? AND country_id = ?").get(input.cardId, countryId) as Row | undefined;
-      if (!row) throw new DomainError("NOT_FOUND", "Карточка не найдена");
-      if (String(row.title) !== input.confirmTitle.trim()) throw new DomainError("INVALID_INPUT", "Подтверждающее название не совпадает");
-      await this.db.prepare("DELETE FROM city_reference_cards_v1 WHERE id = ?").run(input.cardId);
-      return { data: { id: input.cardId }, eventType: "reference_card.deleted", eventPayload: { cityId: String(row.city_id), referenceCardId: input.cardId } };
+  async deleteArchiveRecord(countryId: string, input: {
+    recordId: string; confirmTitle: string; idempotencyKey: string;
+  }): Promise<{ id: string }> {
+    return this.mutate(countryId, "archive.record.delete.v1", input.idempotencyKey, input, async () => {
+      const current = await this.getArchiveRecord(countryId, input.recordId);
+      if (current.title !== input.confirmTitle.trim()) throw new DomainError("INVALID_INPUT", "Подтверждающее название не совпадает");
+      await this.db.prepare("DELETE FROM country_archive_records_v1 WHERE id = ?").run(input.recordId);
+      const affectedBounds = await this.syncCountryArchiveComplex(countryId);
+      return {
+        data: { id: input.recordId }, eventType: "archive.record_deleted",
+        eventPayload: { archiveId: current.archiveId, recordId: input.recordId, affectedBounds },
+      };
     });
-  }
-
-  private async seedReferenceCards(countryId: string, cityId: string): Promise<void> {
-    const cards: Array<{ kind: ReferenceCardKind; title: string; body: string; tags: string[] }> = [
-      { kind: "CONTEXT", title: "Архитектура эпика", body: "## Контекст эпика\n\n- Цель продукта и пользовательские сценарии\n- Ключевые технологии и ограничения\n- Границы эпика и связи с другими системами", tags: ["context", "architecture"] },
-      { kind: "TEMPLATE", title: "Шаблон задачи Feature", body: "## Feature\n\n**Acceptance criteria**\n- \n\n**Implementation plan**\n1. \n2. \n3. \n\n**Estimate**: _SP\n**Building hint**: _", tags: ["template", "feature"] },
-      { kind: "TEMPLATE", title: "Шаблон задачи Bug", body: "## Bug\n\n**Reproduction steps**\n1. \n2. \n\n**Actual result**\n\n**Expected result**\n\n**Root cause**\n", tags: ["template", "bug"] },
-      { kind: "TEMPLATE", title: "Шаблон задачи Hotfix", body: "## Hotfix\n\n- Инцидент и влияние\n- Минимальное исправление\n- План отката\n- Пост-мортем", tags: ["template", "hotfix"] },
-      { kind: "CONVENTION", title: "Definition of Done", body: "- Код написан и покрыт тестами\n- Typecheck и lint проходят\n- Code review пройден\n- Документация обновлена\n- Статус в Tasktopia = COMPLETED", tags: ["convention", "dod"] },
-      { kind: "CONVENTION", title: "Именование веток и коммитов", body: "- Ветки: `feature/TASK-123-short`, `bugfix/TASK-124`, `hotfix/TASK-125`\n- Коммиты: `feat(scope): описание`, `fix(scope): описание`, `chore: описание`\n- MR связывается с задачей в Tasktopia", tags: ["convention", "git"] },
-      { kind: "CONVENTION", title: "Code style и review", body: "- Читаемость и явность превыше оптимизации\n- Один тест на одно поведение (TDD)\n- Никаких магических строк; используем константы\n- Review через независимого reviewer", tags: ["convention", "quality"] },
-      { kind: "CONVENTION", title: "Оценка и story points", body: "- 1 SP — тривиально, известно\n- 2 SP — небольшая задача\n- 3 SP — стандартная задача\n- 5 SP — сложная, требует исследования\n- 8+ SP — нужно декомпозировать", tags: ["convention", "estimation"] },
-      { kind: "CONTEXT", title: "Роли и ответственность агентов", body: "- `ai-agent:hermes` — ведёт задачи, MCP, интеграции\n- `backend-lead` — архитектура и ревью backend\n- `frontend-lead` — UI/UX и компоненты\n- `qa` — тестирование и баги\n- Поле `forUser` — для кого задача и чей агент", tags: ["context", "roles"] },
-      { kind: "CONTEXT", title: "Интеграции и MCP", body: "- Tasktopia MCP: подключение по SSE из переменных окружения\n- Repowise MCP: codebase context\n- GitLab webhook: push → `repowise update`\n- Все задачи ведутся в Tasktopia; GitLab — связанный контекст", tags: ["context", "integrations"] },
-    ];
-    const createdAt = now();
-    for (const card of cards) {
-      const id = randomUUID();
-      const tags = card.tags.map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 10);
-      await this.db.prepare(`INSERT INTO city_reference_cards_v1
-        (id, country_id, city_id, kind, title, body, tags_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-        id, countryId, cityId, card.kind, card.title, card.body.slice(0, 32000), JSON.stringify(tags), createdAt, createdAt,
-      );
-    }
   }
 
   private decorations(
@@ -3169,22 +3343,25 @@ export class AppService {
         kind = `fisher-${shoreDirection}`;
       } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && ambientCounts.residents < 4 && chance < 0.014) {
         const residents = ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"];
-        kind = chance < 0.01 ? "streetlamp" : residents[Math.floor(hashCoordinate(seed, cell.x, cell.y, 733) * residents.length)];
+        const lampByArchetype: Record<DistrictArchetype, string> = {
+          PRIVATE: "streetlamp-vintage", NEW_BUILD: "streetlamp-modern", MIXED_URBAN: "streetlamp-double",
+          CIVIC: "streetlamp-solar", COMMERCIAL: "streetlamp-industrial",
+        };
+        kind = chance < 0.01 ? lampByArchetype[district?.archetype ?? "MIXED_URBAN"] : residents[Math.floor(hashCoordinate(seed, cell.x, cell.y, 733) * residents.length)];
       } else if (district && district.status !== "ACTIVE" && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.006) {
         const own = districtCellKeys.get(district.id)!;
         const edge = GRID_DIRECTIONS.findIndex((direction) => !own.has(cellKey({ x: cell.x + direction.x, y: cell.y + direction.y })));
         if (edge >= 0) kind = edge % 2 === 0 ? "fence-horizontal" : "fence-vertical";
       } else if (cell.terrain === "FOREST" && chance < 0.17) {
-        if (chance < 0.055) kind = "tree-conifer";
-        else if (chance < 0.125) kind = "tree-round";
-        else kind = "tree-flowering";
+        const forestTrees = ["tree-conifer", "tree-round", "tree-birch", "tree-pine", "tree-oak", "tree-cherry", "tree-maple", "tree-cedar", "tree-aspen", "tree-redwood", "tree-deadwood"];
+        kind = forestTrees[Math.floor(hashCoordinate(seed, cell.x, cell.y, 739) * forestTrees.length)];
       } else if (cell.terrain === "HILL" && chance < 0.085) {
-        kind = chance < 0.035 ? "hill-rocky" : chance < 0.06 ? "hill-small" : "tree-conifer";
+        kind = chance < 0.035 ? "hill-rocky" : chance < 0.06 ? "hill-small" : "tree-pine";
       } else if (cell.terrain === "MOUNTAIN" && chance < 0.075) {
         kind = chance < 0.03 ? "mountain-peak" : chance < 0.052 ? "mountain-ridge" : "rock-cluster";
       }
       else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.016) {
-        const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple", "bush-dark", "bush-light", "bush-berries", "rock-small"];
+        const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple", "bush-dark", "bush-light", "bush-berries", "shrub-hazel", "shrub-fern", "shrub-flowering", "shrub-dry", "shrub-juniper", "rock-small"];
         kind = variants[Math.floor(hashCoordinate(seed, cell.x, cell.y, 709) * variants.length)];
       } else if (cell.terrain === "STONE" && chance < 0.035) kind = chance < 0.017 ? "rock-small" : "rock-cluster";
       else if (cell.terrain === "SHALLOW_WATER" && chance < 0.02) kind = chance < 0.01 ? "reed-green" : "reed-cattail";

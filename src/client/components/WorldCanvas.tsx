@@ -30,7 +30,7 @@ const CHUNK_FETCH_CONCURRENCY = 6;
 const CHUNK_DATA_CACHE_LIMIT = 160;
 const GROUND_CACHE_LIMIT = 96;
 type MapLod = "DETAIL" | "OVERVIEW";
-type MapInvalidation = { id: number; type: string; affectedBounds?: Rect };
+type MapInvalidation = { id: number; type: string; affectedBounds?: Rect; taskId?: string; status?: string; progress?: number };
 type FocusArea = { point: Cell; bounds: Rect };
 type IncidentView = {
   signature: string;
@@ -293,7 +293,7 @@ function drawDecoration(decoration: ChunkDto["decorations"][number]): Sprite | n
   return result;
 }
 
-function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean): { platform?: Container; visual?: Container } | null {
+function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean, onArchiveSelect: () => void): { platform?: Container; visual?: Container } | null {
   if (!includePlatform) return null;
   if (feature.assetKind === "AREA") {
     const platform = new Container();
@@ -343,6 +343,26 @@ function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean): {
   }
   const visual = sprite(entry.stages[4]!, feature.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2, feature.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE);
   visual.anchor.set(0.5, 1);
+  if (feature.kind === "COUNTRY_ARCHIVE") {
+    visual.eventMode = "static";
+    visual.cursor = "pointer";
+    visual.hitArea = new Rectangle(-entry.spriteSize.width / 2, -entry.spriteSize.height, entry.spriteSize.width, entry.spriteSize.height);
+    let tooltip: Container | undefined;
+    visual.on("pointerover", () => {
+      if (!tooltip) {
+        const label = new Text({ text: "Государственный архив", resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "800", fill: 0xf2f5ed }) });
+        const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3).fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0xd3ad58, width: 1 });
+        tooltip = new Container();
+        tooltip.eventMode = "none";
+        tooltip.position.set(-label.width / 2, -entry.spriteSize.height - label.height - 8);
+        tooltip.addChild(panel, label);
+        visual.addChild(tooltip);
+      }
+      tooltip.visible = true;
+    });
+    visual.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
+    visual.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onArchiveSelect(); });
+  }
   return { platform, visual };
 }
 
@@ -350,7 +370,11 @@ function assetUrl(path: string): string {
   return path.startsWith("/") ? path : `/game-assets/v4/${path}`;
 }
 
-const INCIDENT_ASSET_KEYS = ["fire-engine-horizontal", "incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"] as const;
+const FIRE_ENGINE_KEYS = ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"] as const;
+const FLAME_KEYS = ["incident-flame-a", "incident-flame-b", "incident-flame-c", "incident-flame-d"] as const;
+const SMOKE_KEYS = ["incident-smoke-a", "incident-smoke-b", "incident-smoke-c", "incident-smoke-d"] as const;
+const INCIDENT_ASSET_KEYS = [...FIRE_ENGINE_KEYS, ...FLAME_KEYS, ...SMOKE_KEYS] as const;
+const ANIMAL_SPECIES = ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"] as const;
 
 function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE">, signature: string, fullResponse: boolean): IncidentView {
   const entry = getBuilding(task.buildingType);
@@ -361,8 +385,9 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
     task.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE,
   );
 
+  const visualSeed = [...task.id].reduce((value, char) => ((value * 33) ^ char.charCodeAt(0)) >>> 0, 5381);
   const engineX = entry.spriteSize.width / 2 + 11;
-  const engine = sprite(PROP_SPRITES["fire-engine-horizontal"]!, engineX, 2);
+  const engine = sprite(PROP_SPRITES[FIRE_ENGINE_KEYS[visualSeed % FIRE_ENGINE_KEYS.length]!]!, engineX, 2);
   engine.anchor.set(0.5, 1);
 
   const flameX = Math.max(-6, Math.min(4, entry.spriteSize.width / 8));
@@ -376,14 +401,14 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
     : new Graphics().rect(-2, -2, 4, 4).fill(0xf2574c);
   beacon.position.set(fullResponse ? engineX - 4 : flameX - 2, fullResponse ? -7 : flameY - 3);
 
-  const flameA = sprite(PROP_SPRITES["incident-flame-a"]!, flameX, flameY);
-  const flameB = sprite(PROP_SPRITES["incident-flame-b"]!, flameX, flameY);
+  const flameA = sprite(PROP_SPRITES[FLAME_KEYS[visualSeed % FLAME_KEYS.length]!]!, flameX, flameY);
+  const flameB = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + 1) % FLAME_KEYS.length]!]!, flameX, flameY);
   flameA.anchor.set(0.5, 1); flameB.anchor.set(0.5, 1);
 
   const smokeX = flameX - 1;
   const smokeY = flameY - 5;
-  const smokeA = sprite(PROP_SPRITES["incident-smoke-a"]!, smokeX, smokeY);
-  const smokeB = sprite(PROP_SPRITES["incident-smoke-b"]!, smokeX, smokeY);
+  const smokeA = sprite(PROP_SPRITES[SMOKE_KEYS[visualSeed % SMOKE_KEYS.length]!]!, smokeX, smokeY);
+  const smokeB = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + 1) % SMOKE_KEYS.length]!]!, smokeX, smokeY);
   smokeA.anchor.set(0.5, 1); smokeB.anchor.set(0.5, 1);
 
   const water = new Graphics();
@@ -422,7 +447,7 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   }
   if (mode === "DEFECT_REPORTED") engine.alpha = 0.9;
   container.addChild(water, smokeA, smokeB, flameA, flameB, engine, beacon);
-  const phaseMs = [...task.id].reduce((value, char) => ((value * 33) ^ char.charCodeAt(0)) >>> 0, 5381) % 700;
+  const phaseMs = visualSeed % 700;
   return { signature, container, mode, fullResponse, flameA, flameB, smokeA, smokeB, beacon, water, phaseMs };
 }
 
@@ -466,14 +491,14 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
     for (const path of Object.values(TILE_SPRITES)) urls.add(path);
     for (const path of Object.values(VEHICLE_SPRITES).flatMap((axes) => [axes.horizontal, axes.vertical])) urls.add(path);
     for (const key of ["walker-east", "walker-west", "walker-south", "walker-north"] as const) urls.add(PROP_SPRITES[key]!);
-    for (const species of ["fox", "deer", "rabbit", "boar"] as const) for (const direction of ["north", "east", "south", "west"] as const) {
+    for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
       urls.add(PROP_SPRITES[`animal-${species}-${direction}`]!);
     }
   }
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect }: {
+export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
   countryId: string;
   chunkSize: number;
   viewBounds: Rect;
@@ -482,6 +507,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
   invalidation?: MapInvalidation;
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
+  onArchiveSelect: () => void;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
   const [streaming, setStreaming] = useState(false);
@@ -566,6 +592,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
     const groundContainers = new Map<string, { terrain: Container; surfaces: Container; roads: Container; lod: MapLod; usedAt: number }>();
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const invalidatedGroundKeys = new Set<string>();
+    const groundFades: Array<{ containers: Container[]; elapsed: number; duration: number }> = [];
     const initialFocus = initialFocusRef.current;
 
     void (async () => {
@@ -660,6 +687,22 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       let simulationTimeMs = 0;
       let airplane: { view: Sprite; speed: number; startY: number; phase: number; endX: number; nextTrailX: number; trail: Graphics[] } | undefined;
       let nextFlybyMs = 20_000 + nextSeededRandom(sessionSeed).value * 35_000;
+      const celebrations: Array<{ particles: Array<{ view: Graphics; vx: number; vy: number }>; elapsed: number }> = [];
+      const launchCelebration = (bounds: Rect) => {
+        if (reducedMotion) return;
+        const centerX = (bounds.minX + bounds.maxX + 1) * CELL_SIZE / 2;
+        const centerY = bounds.minY * CELL_SIZE - 10;
+        const colors = [0xf2c84b, 0x73bddc, 0xd66e5d, 0x78be6d, 0xc59ae8];
+        const particles = Array.from({ length: 28 }, (_, index) => {
+          const angle = index / 28 * Math.PI * 2;
+          const speed = 0.025 + (index % 5) * 0.006;
+          const view = new Graphics().rect(-1, -1, 2, 2).fill(colors[index % colors.length]!);
+          view.position.set(centerX, centerY); flightLayer.addChild(view);
+          return { view, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 0.012 };
+        });
+        celebrations.push({ particles, elapsed: 0 });
+        host.dataset.celebrations = String(Number(host.dataset.celebrations ?? 0) + 1);
+      };
       host.dataset.airplaneSpace = flightLayer.parent === world ? "world" : "screen";
       let activeCrosswalks = new Set<string>();
       let activityCells = new Set<string>();
@@ -677,6 +720,27 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         if (reducedMotion) return;
         const elapsed = Math.min(50, app.ticker.deltaMS);
         simulationTimeMs += elapsed;
+        for (let index = groundFades.length - 1; index >= 0; index -= 1) {
+          const fade = groundFades[index]!;
+          fade.elapsed += elapsed;
+          const alpha = Math.min(1, fade.elapsed / fade.duration);
+          for (const container of fade.containers) if (!container.destroyed) container.alpha = alpha;
+          if (alpha >= 1) groundFades.splice(index, 1);
+        }
+        for (let index = celebrations.length - 1; index >= 0; index -= 1) {
+          const celebration = celebrations[index]!;
+          celebration.elapsed += elapsed;
+          for (const particle of celebration.particles) {
+            particle.vy += elapsed * 0.000035;
+            particle.view.x += particle.vx * elapsed;
+            particle.view.y += particle.vy * elapsed;
+            particle.view.alpha = Math.max(0, 1 - celebration.elapsed / 1_350);
+          }
+          if (celebration.elapsed >= 1_350) {
+            for (const particle of celebration.particles) particle.view.destroy();
+            celebrations.splice(index, 1);
+          }
+        }
         for (const agent of movingAgents) {
           if (agent.pauseMs > 0) {
             agent.pauseMs = Math.max(0, agent.pauseMs - elapsed);
@@ -863,7 +927,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         groundContainers.delete(cacheKey);
       }
 
-      function buildGround(cacheKey: string, chunk: ChunkDto, lod: MapLod): void {
+      function buildGround(cacheKey: string, chunk: ChunkDto, lod: MapLod, animate = false): void {
         removeGround(cacheKey);
         const terrain = new Container();
         const surfaces = new Container();
@@ -899,6 +963,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           roads.addChild(roadGraphics);
         }
         terrainLayer.addChild(terrain); surfaceLayer.addChild(surfaces); roadLayer.addChild(roads);
+        if (animate && !reducedMotion) {
+          terrain.alpha = surfaces.alpha = roads.alpha = 0;
+          groundFades.push({ containers: [terrain, surfaces, roads], elapsed: 0, duration: 360 });
+        }
         groundContainers.set(cacheKey, { terrain, surfaces, roads, lod, usedAt: performance.now() });
       }
 
@@ -936,7 +1004,13 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         ) => {
           entityReplacementCount += reconcileEntityViews({
             source, records, signatureOf, create: factory,
-            attach: (view) => { layer.addChild(view); },
+            attach: (view) => {
+              layer.addChild(view);
+              if (!reducedMotion) {
+                view.alpha = 0;
+                groundFades.push({ containers: [view], elapsed: 0, duration: 280 });
+              }
+            },
             dispose: (view) => { view.removeFromParent(); view.destroy({ children: true }); },
           });
         };
@@ -1012,7 +1086,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             current.platform?.removeFromParent(); current.platform?.destroy({ children: true });
             current.visual?.removeFromParent(); current.visual?.destroy({ children: true });
           }
-          const drawn = drawWorldFeature(feature, currentLod === "DETAIL");
+          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", onArchiveSelect);
           if (!drawn) { featureViews.delete(id); continue; }
           if (drawn.platform && currentLod === "DETAIL") featurePlatformLayer.addChild(drawn.platform);
           else if (drawn.platform) drawn.platform.destroy({ children: true });
@@ -1057,8 +1131,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             const next = planned.route[1] ?? nextWithoutUTurn(graph, current);
             if (!next) continue;
             const horizontal = next.x !== current.x;
-            const animalSpecies = ["fox", "deer", "rabbit", "boar"] as const;
-            const variant = kind === "ANIMAL" ? animalSpecies[created % animalSpecies.length]! : colors[created % colors.length] ?? "blue";
+            const variant = kind === "ANIMAL" ? ANIMAL_SPECIES[created % ANIMAL_SPECIES.length]! : colors[created % colors.length] ?? "blue";
             const direction = horizontal ? next.x > current.x ? "east" : "west" : next.y > current.y ? "south" : "north";
             const url = kind === "CAR"
               ? VEHICLE_SPRITES[variant]![horizontal ? "horizontal" : "vertical"]
@@ -1202,9 +1275,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         chunks.set(cacheKey, chunk);
         chunkLods.set(cacheKey, lod);
         const ground = groundContainers.get(cacheKey);
-        const rebuildGround = invalidatedGroundKeys.delete(cacheKey) || ground?.lod !== lod;
+        const wasInvalidated = invalidatedGroundKeys.delete(cacheKey);
+        const rebuildGround = wasInvalidated || ground?.lod !== lod;
         if (!rebuildGround && ground) ground.usedAt = performance.now();
-        else buildGround(cacheKey, chunk, lod);
+        else buildGround(cacheKey, chunk, lod, wasInvalidated);
         scheduleEntityReconcile(rebuildMovement);
         host!.dataset.groundRebuilds = String(Number(host!.dataset.groundRebuilds ?? 0) + (rebuildGround ? 1 : 0));
         host!.dataset.residentChunks = String(chunks.size);
@@ -1391,6 +1465,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           void loadVisible();
         },
         invalidate(event) {
+          if (event.type === "task.status_changed" && event.status === "COMPLETED" && event.affectedBounds) launchCelebration(event.affectedBounds);
           const forceKeys = new Set<string>();
           const affectedKeys = new Set<string>();
           if (event.affectedBounds) {
@@ -1478,7 +1553,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap?.();
       if (app.renderer) app.destroy({ removeView: true }, { children: true });
     };
-  }, [chunkSize, countryId, onTaskSelect]);
+  }, [chunkSize, countryId, onArchiveSelect, onTaskSelect]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />

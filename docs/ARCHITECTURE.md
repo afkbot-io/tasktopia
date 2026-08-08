@@ -12,6 +12,7 @@ Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `App
 | Access | `countries`, `country_members` | глава `OWNER`, министр `MEMBER`, наблюдатель `VIEWER`; все чтения мира ограничены выбранной страной | create → invite/select → revoke member → delete country |
 | MCP | `mcp_tokens` | персональный token; права = текущая роль ∩ scopes, новые expiry 30/90/365 дней | issue → use/last-used → reissue/revoke/expire |
 | Country context | поля `countries` | страна выбранного аккаунта | описание, цель, продуктовый контекст, критерии успеха и ограничения обновляются независимо от геометрии |
+| State Archive | `country_archives_v1`, `country_archive_records_v1` | singleton страны | короткие устойчивые записи; стадия 1–4 выводится из количества, комплекс на карте не входит в статистику городов |
 | City | `cities_v3` | `country_id` | create active → расширение bounds районами; хранит описание, цель, критерии приёмки и deadline |
 | District | `districts_v3` | город выбранной страны | planned → active → completed; один active на город; хранит описание и deadline |
 | Task | `tasks_v3` | район и город одной страны | planning → started → in-progress → testing → completed; тип работы и AI-поля не меняют жизненный цикл |
@@ -34,7 +35,7 @@ Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `App
 
 ## Чтение и производительность карты
 
-`/api/bootstrap` отдаёт только identity, выбранную страну, первый город, общие bounds, counters, chunk size и asset version. План загружает города стабильными cursor-страницами `/api/plan/cities-page` по `(created_at, id)`, затем районы выбранного города, затем задачи выбранного района. Старый массив `/api/plan/cities` сохранён для совместимости. Геометрия приходит только из `/api/chunks/:x/:y?lod=overview|detail`.
+`/api/bootstrap` отдаёт только identity, выбранную страну, сводку Государственного архива, первый город, общие bounds, counters, chunk size и asset version. План отдельно загружает записи архива и города стабильными cursor-страницами `/api/plan/cities-page` по `(created_at, id)`, затем районы выбранного города, затем задачи выбранного района. Старый массив `/api/plan/cities` сохранён для совместимости. Геометрия приходит только из `/api/chunks/:x/:y?lod=overview|detail`.
 
 Overview содержит 256 terrain samples, ограниченный набор общих PATH-связей и не содержит decorations, world features, nearby-city expansion или описаний задач; detail содержит 4096 клеток и номер с названием задачи, а полное описание читается из task detail. JSON-ответы от 1 KiB сжимаются Brotli/gzip. Клиент держит только viewport + 0,25 viewport prefetch и загружает до шести чанков одновременно. Параллельные чтения одного chunk/LOD объединяются; законченные ответы хранятся в LRU до 160 записей, а готовый ground — до 96 чанков. Обычное панорамирование не отменяет уже начатое полезное чтение, но адресная realtime-инвалидация отменяет устаревший запрос изменённого чанка. Detail/overview переключается с гистерезисом, а старый ground удаляется только после готовности замены. Сервер держит LRU до 64 готовых чанков; структурные события очищают cache страны, изменения статуса, рабочих полей, дефектов и метаданных города/района — только пересекающиеся ключи, а паспорт страны и комментарии геометрию не инвалидируют.
 

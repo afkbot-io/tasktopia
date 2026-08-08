@@ -40,7 +40,7 @@ npm run test:db:stop
 1. `/api/bootstrap` не содержит `districts` и `tasks`; присутствуют `initialCity`, `viewBounds` и агрегированные `stats`.
 2. На дальнем масштабе `data-map-lod` равен `overview`, машины и пешеходы не создаются; initial viewport держит малый prefetch-ring.
 3. Overview-чанк содержит 256 terrain cells, пустые `surfaces`/`decorations`; detail — 4096 terrain cells и полный городской слой.
-4. Открытие плана последовательно вызывает `/api/plan/cities-page?limit=50`, затем районы стартового города, но не задачи. Задачи запрашиваются только после выбора района; cursor-страницы не содержат пропусков и дублей.
+4. Открытие плана вызывает компактный `/api/archive/records` и `/api/plan/cities-page?limit=50`, затем районы выбранного города, но не задачи. Задачи запрашиваются только после выбора района; cursor-страницы не содержат пропусков и дублей.
 5. Небольшое перемещение внутри прежнего `data-chunk-range` увеличивает `data-skipped-reconciles`, но не `data-ground-rebuilds`.
 6. Создание задачи или смена статуса через MCP/API не добавляет второй canvas. `data-ground-rebuilds` растёт только на число чанков, пересекающих `affectedBounds`; `data-entity-replacements` растёт только для изменившихся entity views.
 7. При скрытии вкладки `data-animation-active` становится `false`; после возврата ticker возобновляется.

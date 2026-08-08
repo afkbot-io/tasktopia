@@ -358,53 +358,59 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             return reply.header("ETag", etag).header("Cache-Control", "private, no-cache, must-revalidate").send(chunk);
           });
 
-  const referenceCardSchema = z.object({
-    kind: z.enum(["TEMPLATE", "CONVENTION", "CONTEXT"]), title: z.string().trim().min(2).max(160),
-    body: z.string().max(32000).optional(), tags: z.array(z.string().max(40)).max(10).optional(),
+  const archiveRecordSchema = z.object({
+    kind: z.enum(["PROJECT", "REPOSITORY", "ARCHITECTURE", "CONVENTION", "ENVIRONMENT", "TEMPLATE"]),
+    title: z.string().trim().min(2).max(160), body: z.string().max(32000).optional(),
+    sourceUrl: z.string().url().max(2000).optional(), tags: z.array(z.string().max(40)).max(10).optional(),
     idempotencyKey: z.string().min(4).max(160),
   }).strict();
-  const referenceCardUpdateSchema = z.object({
-    title: z.string().trim().min(2).max(160).optional(), body: z.string().max(32000).optional(),
+  const archiveRecordUpdateSchema = z.object({
+    kind: z.enum(["PROJECT", "REPOSITORY", "ARCHITECTURE", "CONVENTION", "ENVIRONMENT", "TEMPLATE"]).optional(),
+    title: z.string().trim().min(2).max(160).optional(), body: z.string().max(32000).optional(), sourceUrl: z.string().url().max(2000).nullable().optional(),
     tags: z.array(z.string().max(40)).max(10).optional(), idempotencyKey: z.string().min(4).max(160),
   }).strict();
-  const referenceCardDeleteSchema = z.object({ confirmTitle: z.string().trim().min(1).max(160), idempotencyKey: z.string().min(4).max(160) }).strict();
+  const archiveRecordDeleteSchema = z.object({ confirmTitle: z.string().trim().min(1).max(160), idempotencyKey: z.string().min(4).max(160) }).strict();
 
-  app.get("/api/cities/:cityId/reference-cards", async (request, reply) => {
+  app.get("/api/archive", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
-    const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
-    return await service.listReferenceCards(user.countryId, cityId);
+    return await service.getArchive(user.countryId);
   });
 
-  app.get("/api/reference-cards/:cardId", async (request, reply) => {
+  app.get("/api/archive/records", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
-    const cardId = parse(z.string().uuid(), (request.params as { cardId: string }).cardId);
-    return await service.getReferenceCard(user.countryId, cardId);
+    return await service.listArchiveRecords(user.countryId);
   });
 
-  app.post("/api/cities/:cityId/reference-cards", async (request, reply) => {
+  app.get("/api/archive/records/:recordId", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
-    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять города");
-    const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
-    return service.createReferenceCard(user.countryId, { cityId, ...parse(referenceCardSchema, request.body) });
+    const recordId = parse(z.string().uuid(), (request.params as { recordId: string }).recordId);
+    return await service.getArchiveRecord(user.countryId, recordId);
   });
 
-  app.patch("/api/reference-cards/:cardId", async (request, reply) => {
+  app.post("/api/archive/records", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
-    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять карточки");
-    const cardId = parse(z.string().uuid(), (request.params as { cardId: string }).cardId);
-    return service.updateReferenceCard(user.countryId, { cardId, ...parse(referenceCardUpdateSchema, request.body) });
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять Государственный архив");
+    return service.createArchiveRecord(user.countryId, parse(archiveRecordSchema, request.body));
   });
 
-  app.delete("/api/reference-cards/:cardId", async (request, reply) => {
+  app.patch("/api/archive/records/:recordId", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
-    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может удалять карточки");
-    const cardId = parse(z.string().uuid(), (request.params as { cardId: string }).cardId);
-    return service.deleteReferenceCard(user.countryId, { cardId, ...parse(referenceCardDeleteSchema, request.body) });
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может изменять Государственный архив");
+    const recordId = parse(z.string().uuid(), (request.params as { recordId: string }).recordId);
+    return service.updateArchiveRecord(user.countryId, { recordId, ...parse(archiveRecordUpdateSchema, request.body) });
+  });
+
+  app.delete("/api/archive/records/:recordId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может удалять записи Государственного архива");
+    const recordId = parse(z.string().uuid(), (request.params as { recordId: string }).recordId);
+    return service.deleteArchiveRecord(user.countryId, { recordId, ...parse(archiveRecordDeleteSchema, request.body) });
   });
 
   app.get("/api/tasks/search", async (request, reply) => {

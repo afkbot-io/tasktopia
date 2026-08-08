@@ -57,6 +57,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "Every write requires a stable idempotencyKey. Reuse it only for an identical retry.",
       "District capacitySp is an advisory workload target and never blocks task creation.",
       "Keep project context on the country, epic outcomes on the city, sprint goal and deadline on the district, and executable analysis on the task.",
+      "The State Archive is a compact country-level reference, not a city or task backlog. Use archive records for durable project rules, repository/environment links, architecture summaries and reusable templates; keep active work in tasks.",
       "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
       "Task text fields (description, acceptance criteria, analysis, architecture, design system, plan, comments) render Markdown in the app — structure them with headings, lists and code blocks.",
       "Every task has a human-facing number and url; share the url when reporting to people. Attach merge request links with task.link_add and files of any format with task.attachment_add.",
@@ -80,7 +81,6 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     name: z.string().min(2).max(100), description: z.string().max(8000).optional(), goal: z.string().max(4000).optional(),
     acceptanceCriteria: z.string().max(8000).optional(), deadline: z.string().datetime().optional(),
     morphology: z.enum(["BALANCED", "DENSE_CORE", "GARDEN_CITY", "POLYCENTRIC"]).optional(),
-    kind: z.enum(["WORK", "TEMPLATE"]).optional().describe("WORK — обычный эпик-город; TEMPLATE — стартовый город справочников (только один на страну)"),
     idempotencyKey: z.string().min(4).max(160),
   });
   const districtCreateSchema = z.object({
@@ -94,7 +94,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   server.registerTool("country.get_current", { title: "Current country", description: "Получить текущую страну и состояние квадратного мира.", inputSchema: z.object({}), annotations: { readOnlyHint: true } }, async () => {
     try {
       requireScope(identity, "country:read");
-      return response({ country: await service.getCountry(identity.countryId), cities: await service.listCities(identity.countryId) });
+      return response({ country: await service.getCountry(identity.countryId), archive: await service.getArchive(identity.countryId), cities: await service.listCities(identity.countryId) });
     } catch (error) { return failure(error); }
   });
 
@@ -474,54 +474,64 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     } catch (error) { return failure(error); }
   });
 
-  server.registerTool("reference_card.list", {
-    description: "Получить список справочных карточек стартового города: шаблоны, конвенции и контекст.",
-    inputSchema: z.object({ cityId: z.string().uuid() }),
+  server.registerTool("archive.get", {
+    description: "Получить Государственный архив страны и текущую стадию его комплекса на карте.",
+    inputSchema: z.object({}),
     annotations: { readOnlyHint: true },
-  }, async ({ cityId }) => {
-    try { requireScope(identity, "tasks:read"); return response(await service.listReferenceCards(identity.countryId, cityId)); }
+  }, async () => {
+    try { requireScope(identity, "country:read"); return response(await service.getArchive(identity.countryId)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("reference_card.create", {
-    description: "Создать карточку в стартовом городе: TEMPLATE, CONVENTION или CONTEXT.",
+  server.registerTool("archive.record_list", {
+    description: "Получить компактные устойчивые справки проекта из Государственного архива.",
+    inputSchema: z.object({}), annotations: { readOnlyHint: true },
+  }, async () => {
+    try { requireScope(identity, "tasks:read"); return response(await service.listArchiveRecords(identity.countryId)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("archive.record_create", {
+    description: "Добавить в Государственный архив устойчивый контекст, правило, репозиторий, окружение или шаблон. Не используйте архив вместо задачи.",
     inputSchema: z.object({
-      cityId: z.string().uuid(), kind: z.enum(["TEMPLATE", "CONVENTION", "CONTEXT"]), title: z.string().min(2).max(160),
-      body: z.string().max(32000).optional(), tags: z.array(z.string().max(40)).max(10).optional(),
+      kind: z.enum(["PROJECT", "REPOSITORY", "ARCHITECTURE", "CONVENTION", "ENVIRONMENT", "TEMPLATE"]),
+      title: z.string().min(2).max(160), body: z.string().max(32000).optional(), sourceUrl: z.string().url().max(2000).optional(),
+      tags: z.array(z.string().max(40)).max(10).optional(),
       idempotencyKey: z.string().min(4).max(160),
     }),
     annotations: { idempotentHint: true },
   }, async (input) => {
-    try { requireScope(identity, "cities:write"); return response(await service.createReferenceCard(identity.countryId, input)); }
+    try { requireScope(identity, "cities:write"); return response(await service.createArchiveRecord(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("reference_card.update", {
-    description: "Обновить справочную карточку стартового города.",
+  server.registerTool("archive.record_update", {
+    description: "Обновить запись Государственного архива.",
     inputSchema: z.object({
-      cardId: z.string().uuid(), title: z.string().min(2).max(160).optional(),
-      body: z.string().max(32000).optional(), tags: z.array(z.string().max(40)).max(10).optional(),
+      recordId: z.string().uuid(), kind: z.enum(["PROJECT", "REPOSITORY", "ARCHITECTURE", "CONVENTION", "ENVIRONMENT", "TEMPLATE"]).optional(),
+      title: z.string().min(2).max(160).optional(), body: z.string().max(32000).optional(), sourceUrl: z.string().url().max(2000).nullable().optional(),
+      tags: z.array(z.string().max(40)).max(10).optional(),
       idempotencyKey: z.string().min(4).max(160),
     }),
     annotations: { idempotentHint: true },
   }, async (input) => {
-    try { requireScope(identity, "cities:write"); return response(await service.updateReferenceCard(identity.countryId, input)); }
+    try { requireScope(identity, "cities:write"); return response(await service.updateArchiveRecord(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("reference_card.delete", {
-    description: "Удалить карточку из стартового города. Для защиты передайте точное текущее название.",
-    inputSchema: z.object({ cardId: z.string().uuid(), confirmTitle: z.string().min(2).max(160), idempotencyKey: z.string().min(4).max(160) }),
+  server.registerTool("archive.record_delete", {
+    description: "Удалить запись Государственного архива. Для защиты передайте точное текущее название.",
+    inputSchema: z.object({ recordId: z.string().uuid(), confirmTitle: z.string().min(2).max(160), idempotencyKey: z.string().min(4).max(160) }),
     annotations: { destructiveHint: true, idempotentHint: true },
   }, async (input) => {
-    try { requireScope(identity, "cities:write"); return response(await service.deleteReferenceCard(identity.countryId, input)); }
+    try { requireScope(identity, "cities:write"); return response(await service.deleteArchiveRecord(identity.countryId, input)); }
     catch (error) { return failure(error); }
   });
 
   server.registerResource("current-country", "tasktopia://country/current", { mimeType: "application/json" }, async (uri) => {
     requireScope(identity, "country:read");
     return {
-      contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ country: await service.getCountry(identity.countryId), cities: await service.listCities(identity.countryId) }, null, 2) }],
+      contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ country: await service.getCountry(identity.countryId), archive: await service.getArchive(identity.countryId), cities: await service.listCities(identity.countryId) }, null, 2) }],
     };
   });
   server.registerResource("building-catalog", "tasktopia://catalog/buildings", { mimeType: "application/json" }, (uri) => {

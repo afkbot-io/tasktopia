@@ -20,6 +20,10 @@ GAS_STATION_KEYS = {
     "commercial-gas-station",
     "commercial-gas-station-compact",
     "commercial-highway-service-plaza",
+    "commercial-gas-station-electric",
+    "commercial-gas-station-truck",
+    "commercial-gas-station-cafe",
+    "commercial-gas-station-wash",
 }
 
 
@@ -95,7 +99,7 @@ def audit() -> dict[str, Any]:
             if palette > PALETTE_BUDGET:
                 violations.append(f"{key}/stage-{stage_index}: palette {palette} exceeds {PALETTE_BUDGET} colors")
             stage_bytes.append(image.tobytes())
-        if len(stage_bytes) == 5 and len(set(stage_bytes)) != 5:
+        if building.get("constructionStages", True) and len(stage_bytes) == 5 and len(set(stage_bytes)) != 5:
             violations.append(f"{key}: construction stages contain duplicate images")
         if key in GAS_STATION_KEYS and len(stage_bytes) == 5:
             gas_station_finished[key] = stage_bytes[-1]
@@ -108,7 +112,7 @@ def audit() -> dict[str, Any]:
                     violations.append(f"{key}: finished fuel-station silhouette is too small at native scale")
 
     if set(gas_station_finished) != GAS_STATION_KEYS:
-        violations.append("fuel stations: expected compact, standard and highway variants")
+        violations.append("fuel stations: expected seven registered roadside variants")
     elif len(set(gas_station_finished.values())) != len(GAS_STATION_KEYS):
         violations.append("fuel stations: finished variants must not share the same drawing")
 

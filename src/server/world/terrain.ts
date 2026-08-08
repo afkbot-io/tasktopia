@@ -56,17 +56,54 @@ function lakeDistance(seed: number, x: number, y: number): number {
   const second = macroFractal(seed, x - warpY - 430, y + warpX + 360, 953);
   const firstDistance = first > 0.69 ? Math.max(0, (0.77 - first) * 96) : 100;
   const secondDistance = second > 0.715 ? Math.max(0, (0.79 - second) * 102) : 100;
-  return Math.min(firstDistance, secondDistance);
+  const lakeCenterX = Math.round((hashCoordinate(seed, 3, 7, 961) - 0.5) * 360);
+  const lakeCenterY = Math.round((hashCoordinate(seed, 11, 5, 967) - 0.5) * 300);
+  const lakeRadiusX = 18 + hashCoordinate(seed, 2, 13, 971) * 28;
+  const lakeRadiusY = 12 + hashCoordinate(seed, 17, 3, 977) * 22;
+  const radial = Math.hypot((x - lakeCenterX) / lakeRadiusX, (y - lakeCenterY) / lakeRadiusY);
+  const irregular = (valueNoise(seed, x, y, 27, 983) - 0.5) * 0.42;
+  const basinDistance = Math.max(0, radial + irregular - 0.72) * 22;
+  return Math.min(firstDistance, secondDistance, basinDistance);
 }
 
 function waterDistance(seed: number, x: number, y: number): number {
+  // One of eight stable hydrology archetypes is selected per world. All
+  // equations operate in global coordinates, so neighboring chunks always
+  // agree on banks and no river terminates at a streaming boundary.
+  const archetype = Math.floor(hashCoordinate(seed, 19, 23, 899) * 8);
   const phase = hashCoordinate(seed, 0, 0, 901) * Math.PI * 2;
-  const riverY = 42 + Math.sin(x / 31 + phase) * 10 + Math.sin(x / 83 + phase * 0.4) * 7;
-  const primary = Math.abs(y - riverY);
   const verticalPhase = hashCoordinate(seed, 0, 0, 907) * Math.PI * 2;
-  const riverX = -118 + Math.sin(y / 43 + verticalPhase) * 13;
-  const secondary = Math.abs(x - riverX);
-  return Math.min(primary, secondary, lakeDistance(seed, x, y));
+  const baseY = -28 + hashCoordinate(seed, 5, 3, 911) * 120;
+  const baseX = -160 + hashCoordinate(seed, 7, 13, 919) * 180;
+  const riverY = baseY + Math.sin(x / (27 + archetype * 2) + phase) * (7 + archetype % 4 * 3)
+    + Math.sin(x / 89 + phase * 0.4) * 6;
+  const riverX = baseX + Math.sin(y / (39 + archetype) + verticalPhase) * (9 + archetype % 3 * 3);
+  const horizontal = Math.abs(y - riverY);
+  const vertical = Math.abs(x - riverX);
+  const lakes = lakeDistance(seed, x, y);
+  if (archetype === 0) return Math.min(horizontal * 0.88, lakes); // meander
+  if (archetype === 1) { // braided parallel channels
+    const braid = Math.abs(y - riverY - 9 - Math.sin(x / 17 + phase) * 4);
+    return Math.min(horizontal, braid * 1.08, lakes);
+  }
+  if (archetype === 2) return Math.min(horizontal, vertical, lakes); // confluence
+  if (archetype === 3) { // delta branches widen toward positive X
+    const spread = Math.max(0, Math.min(28, (x - baseX) / 9));
+    const upper = Math.abs(y - riverY - spread);
+    const lower = Math.abs(y - riverY + spread);
+    return Math.min(horizontal * 0.82, upper, lower, lakes);
+  }
+  if (archetype === 4) return Math.min(lakes * 0.82, horizontal * 1.42); // lakeland
+  if (archetype === 5) { // long loch with a narrow outlet
+    const loch = Math.hypot((x - baseX - 70) / 82, (y - baseY + 35) / 21);
+    return Math.min(Math.max(0, loch - 0.72) * 18, horizontal * 1.3, lakes);
+  }
+  if (archetype === 6) { // lagoon separated by a variable sand tongue
+    const lagoon = Math.abs(y - riverY - 18 - Math.sin(x / 51 + phase) * 4);
+    return Math.min(horizontal * 1.08, lagoon * 1.2, lakes);
+  }
+  const tributary = Math.abs(y - (baseY + 70 + Math.sin(x / 19 + phase * 1.7) * 6));
+  return Math.min(horizontal * 1.28, vertical * 1.35, tributary * 1.5, lakes); // stream network
 }
 
 export function terrainAt(seed: number, x: number, y: number): Omit<TerrainCellDto, "x" | "y"> {

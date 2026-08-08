@@ -4,7 +4,6 @@ import type {
   DistrictArchetype,
   PlannedLotDto,
   PlannedLotPosition,
-  PlannedLotRole,
   Rect,
 } from "../../shared/contracts";
 import { cellKey, rectangleFootprint } from "./grid";

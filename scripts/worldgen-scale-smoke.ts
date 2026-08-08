@@ -18,6 +18,7 @@ const service = new AppService(db);
 const startedAt = performance.now();
 
 const cities = [];
+const committedTaskFootprints = new Map<string, string>();
 for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
   const city = await service.createCity(registered.user.countryId, {
             name: `Scale City ${cityIndex + 1}`,
@@ -37,12 +38,14 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
                             });
   }
   for (let taskIndex = 0; taskIndex < tasksPerCity; taskIndex += 1) {
-    await service.createTask(registered.user.countryId, {
+    const task = await service.createTask(registered.user.countryId, {
                               cityId: city.id,
                               title: `Home task ${taskIndex + 1}`,
+                              buildingHint: taskIndex === 0 ? "house-cottage" : undefined,
                               estimate: 1,
                               idempotencyKey: `scale-task-${cityIndex}-${taskIndex}`,
                             });
+    if (taskIndex === 0) committedTaskFootprints.set(task.id, JSON.stringify(task.footprint));
   }
 }
 const generationMs = performance.now() - startedAt;
@@ -53,6 +56,11 @@ const districts = await service.listDistricts(registered.user.countryId);
 const tasks = await service.listTasks(registered.user.countryId);
 assert.equal(districts.length, cityCount * districtsPerCity);
 assert.equal(tasks.length, cityCount * tasksPerCity);
+for (const [taskId, footprint] of committedTaskFootprints) {
+  const task = tasks.find((candidate) => candidate.id === taskId);
+  assert.ok(task, `committed task ${taskId} must still exist`);
+  assert.equal(JSON.stringify(task.footprint), footprint, `committed task ${taskId} must not move during growth`);
+}
 const districtCells = new Set<string>();
 for (const district of districts) {
   assert.equal(connected(district.cells), true, `${district.name} must be connected`);

@@ -11,8 +11,22 @@ describe("PostgreSQL migrations", () => {
 
   it("records immutable migration checksums", async () => {
     const rows = await db.prepare("SELECT name, checksum FROM schema_migrations ORDER BY name").all<{ name: string; checksum: string }>();
-    expect(rows.map((row) => row.name)).toEqual(["0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql", "0005_incident_response.sql", "0006_task_extras.sql"]);
+    expect(rows.map((row) => row.name)).toEqual([
+      "0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql",
+      "0005_incident_response.sql", "0006_task_extras.sql", "0007_ai_fields.sql", "0008_starter_city.sql",
+      "0009_country_archive.sql",
+    ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("creates a singleton country archive and stores tags as jsonb", async () => {
+    const registered = await registerUser(db, { email: "archive-migration@tasktopia.local", name: "Archive", password: "migration-password" });
+    const archive = await db.prepare("SELECT id FROM country_archives_v1 WHERE country_id = ?").get<{ id: string }>(registered.user.countryId);
+    expect(archive?.id).toBeTruthy();
+    const column = await db.prepare(`SELECT data_type FROM information_schema.columns
+      WHERE table_name = 'country_archive_records_v1' AND column_name = 'tags_json'`).get<{ data_type: string }>();
+    expect(column?.data_type).toBe("jsonb");
+    expect(await db.prepare("SELECT to_regclass('city_reference_cards_v1') AS table_name").get()).toMatchObject({ table_name: null });
   });
 
   it("adds AI planning fields and cascading task defects with safe defaults", async () => {

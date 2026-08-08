@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tasktopia Pixel City Art"
+  short_description: "Рисование и проверка пиксельных ассетов"
+  default_prompt: "Используй $tasktopia-pixel-city-art, чтобы создать или проверить ассеты Tasktopia Pixel City V4."

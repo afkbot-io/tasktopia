@@ -1,7 +1,7 @@
 # Tasktopia AI integration guide
 
-Version: 1.9.1
-Last updated: 2026-08-06
+Version: 1.10.0
+Last updated: 2026-08-08
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
@@ -19,6 +19,7 @@ AI must preserve:
 | Entity | Project-management meaning | Use it for |
 | --- | --- | --- |
 | Country | An independent project, product, or workspace | The top-level goal, access boundary, and portfolio context |
+| State Archive | A compact country-level reference | Durable rules, repository/environment links, architecture summaries and reusable templates |
 | City | A long-lived project association, product direction, epic, or subproject | Grouping work that shares one stable domain and outcome |
 | District | A sprint, iteration, milestone, phase, or bounded work package | A goal and advisory workload target for the current delivery cycle |
 | Task/building | One concrete, verifiable unit of work | An outcome with acceptance criteria, estimate, owner, and progress |
@@ -28,6 +29,7 @@ AI must preserve:
 | Level | Fields | Purpose |
 | --- | --- | --- |
 | Country/project | `description`, `goal`, `productContext`, `successCriteria`, `constraints` | Stable product brief; read before planning any epic |
+| State Archive | record `kind`, `title`, `body`, `sourceUrl`, `tags` | Short durable context shared by humans and AI; active work remains in tasks |
 | City/epic | `description`, `goal`, `acceptanceCriteria`, `deadline` | Scope, expected epic outcome, exit conditions and target date |
 | District/sprint | `goal`, `description`, `deadline`, `capacitySp` | Sprint goal, operating notes, timebox and advisory team workload |
 | Task/work item | `workItemType`, `description`, `acceptanceCriteria`, `systemAnalysis`, `architecture`, `designSystem`, `implementationPlan`, `estimate`, `priority`, `dueAt` | Executable brief for an implementation agent |
@@ -43,6 +45,12 @@ an arbitrary entity because its ID is convenient. When the country, city, or
 district is ambiguous, read the available hierarchy and ask the user before a
 write. A city is the association between a task stream and its project
 direction; it is normally longer-lived than a sprint.
+
+The State Archive is part of the country map but not part of the work hierarchy.
+Use it for concise facts that should remain true across many tasks. Add a task
+when work has an owner, status, dependency or completion criterion. The archive
+complex grows from one to four unique buildings as its record count reaches
+3, 6 and 10; this visual growth never changes workload or city statistics.
 
 ## Install the progress-management skill
 
@@ -125,7 +133,7 @@ A key can contain any combination of these scopes:
 | Scope | Allows |
 | --- | --- |
 | `country:read` | Read the selected country and list available countries |
-| `cities:write` | Update the country profile and create, update, rename, or delete cities |
+| `cities:write` | Update the country profile and State Archive; create, update, rename, or delete cities |
 | `districts:write` | Create, update, rename, activate, complete, and delete districts |
 | `tasks:read` | Read tasks and task details |
 | `tasks:write` | Create/update tasks and linked defects, report progress, assign, and delete tasks |
@@ -141,11 +149,12 @@ Follow this sequence unless the user explicitly asks for something else:
 
 1. Call `country.get_current`.
 2. If needed, call `country.list` and then `country.select`.
-3. Call `city.list`; do not invent city IDs.
-4. Call `district.list` for the relevant city.
-5. Call `task.list` and `task.get` before updating an existing task.
-6. Make the smallest requested change.
-7. Re-read the changed entity and report the result to the user.
+3. Call `archive.record_list` when project rules, repository links or architecture context affect the work.
+4. Call `city.list`; do not invent city IDs.
+5. Call `district.list` for the relevant city.
+6. Call `task.list` and `task.get` before updating an existing task.
+7. Make the smallest requested change.
+8. Re-read the changed entity and report the result to the user.
 
 Before creating work, ask only for information that remains genuinely
 ambiguous. A compact confirmation should cover: country/project,
@@ -173,7 +182,7 @@ text, comments, logs, or tool arguments.
 
 ## Tools
 
-The server exposes 29 tools.
+The server exposes 41 tools.
 
 ### Countries
 
@@ -216,6 +225,48 @@ clears a text field.
   "idempotencyKey": "country-profile-onboarding-v2"
 }
 ```
+
+### State Archive
+
+#### `archive.get`
+
+Returns the country archive identity, record count, and visual stage. No arguments.
+Required scope: `country:read`.
+
+#### `archive.record_list`
+
+Lists every compact archive record for the selected country. Read this before
+adding overlapping context. Required scope: `tasks:read`.
+
+#### `archive.record_create`
+
+Creates durable project reference material. Allowed kinds are `PROJECT`,
+`REPOSITORY`, `ARCHITECTURE`, `CONVENTION`, `ENVIRONMENT`, and `TEMPLATE`.
+
+```json
+{
+  "kind": "REPOSITORY",
+  "title": "Main repository",
+  "body": "Production monorepo; default branch is main",
+  "sourceUrl": "https://github.com/example/product",
+  "tags": ["git", "production"],
+  "idempotencyKey": "archive-main-repository-v1"
+}
+```
+
+Required scope: `cities:write`. Use a task instead when the information has a
+workflow status, assignee, dependency, deadline or acceptance criteria.
+
+#### `archive.record_update`
+
+Updates a record by `recordId`; omitted fields remain unchanged and
+`sourceUrl: null` removes the link. Required scope: `cities:write`.
+
+#### `archive.record_delete`
+
+Deletes a record after the exact `confirmTitle` is supplied. This may reduce
+the visible archive stage. Required scope: `cities:write`; explicit user intent
+is required because deletion is permanent.
 
 ### Cities
 
@@ -569,6 +620,16 @@ Assigns a task by account email. Set `assigneeEmail` to `null` to unassign.
 ```
 
 Required scope: `tasks:write`.
+
+#### Additional task context tools
+
+- `task.activity` reads events, comments, defects, attachments and dependencies.
+- `task.dependency_add` and `task.dependency_remove` maintain ordering links between tasks in one city.
+- `task.link_add` and `task.link_remove` maintain commit, MR/PR and other HTTP(S) links.
+- `task.attachment_add` stores a Base64-encoded file; `task.attachment_list` reads attachment metadata.
+
+Read before mutation, use a stable `idempotencyKey` for every write, and keep
+repository artifacts linked to the task that produced or verified them.
 
 ## Resources
 

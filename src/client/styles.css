@@ -142,6 +142,10 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .plan-columns > section:last-child { border-right: 0; }
 .plan-columns h3 { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; margin: 0; padding: 13px 15px; background: #122127f5; color: #93a7aa; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
 .plan-columns h3 span { color: #5f9fbf; }
+.plan-columns .plan-subheading { border-top: 1px solid #294047; }
+.plan-archive-records { grid-column: span 2; }
+.plan-section-note { margin: 0; padding: 12px 15px; border-bottom: 1px solid #21363c; color: #81979b; font-size: 11px; line-height: 1.5; }
+.archive-row > button:first-child { background: #12262b; }
 .plan-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; border-bottom: 1px solid #21363c; }
 .plan-row > button:first-child { width: 100%; min-width: 0; display: grid; grid-template-columns: 28px 1fr; gap: 9px; align-items: center; padding: 12px 14px; border: 0; background: transparent; color: #e0e8e2; text-align: left; cursor: pointer; }
 .plan-row > button:first-child:hover, .plan-row > button:first-child.selected { background: #173038; }
@@ -365,6 +369,15 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .task-search-results small { grid-column: 2; overflow: hidden; color: #7f969a; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .task-search-empty { padding: 12px; color: #7f969a; font-size: 12px; text-align: center; }
 
+/* ── Realtime city feedback ───────────────────────────────── */
+.realtime-notices { position: fixed; z-index: 80; right: 18px; top: 88px; display: grid; gap: 8px; width: min(340px, calc(100vw - 28px)); pointer-events: none; }
+.realtime-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 46px; padding: 11px 13px; border: 1px solid #3a5961; border-radius: 10px; background: #102328f2; box-shadow: 0 12px 34px #0008; color: #e9f0ec; font: 750 12px/1.35 inherit; text-align: left; cursor: pointer; pointer-events: auto; animation: realtime-notice-in .22s ease-out both; }
+.realtime-notice span { color: #7f969a; font-size: 18px; line-height: 1; }
+.realtime-notice-success { border-color: #6bab63; background: #173025f2; }
+.realtime-notice-success::before { content: "✦"; color: #f2c84b; }
+.realtime-notice-info::before { content: "▦"; color: #73bddc; }
+@keyframes realtime-notice-in { from { opacity: 0; transform: translate3d(18px, 0, 0); } to { opacity: 1; transform: none; } }
+
 /* ── Task modal extras: share, MR links, attachments ───────── */
 .task-share { flex: 0 0 auto; align-self: flex-start; min-height: 34px; padding: 5px 11px; border: 1px solid #3b535a; border-radius: 8px; background: #17292e; color: #9fc6d5; font-size: 11px; font-weight: 800; cursor: pointer; }
 .task-share:hover { background: #1d343b; color: #e8f2f0; }
@@ -404,18 +417,27 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .task-ai-fields .markdown { margin-top: 6px; font-size: 12px; }
 .task-defects .markdown { font-size: 12px; }
 
-/* ── Reference cards / starter city ─────────────────────────── */
+/* ── State archive records ──────────────────────────────────── */
 .reference-kind { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .kind-template { background: #2a3a52; color: #8fc8e2; }
 .kind-convention { background: #3a4a2a; color: #a8d878; }
 .kind-context { background: #4a3a2a; color: #f2c84b; }
+.kind-project { background: #4a3a2a; color: #f2c84b; }
+.kind-repository { background: #253f4a; color: #8fc8e2; }
+.kind-architecture { background: #3d3150; color: #c9a9ed; }
+.kind-environment { background: #2b473e; color: #91d2ae; }
 .reference-kind-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .plan-row .reference-kind-dot { margin-right: 6px; }
-.reference-card-modal .task-header { align-items: flex-start; gap: 12px; }
-.reference-card-modal .task-description { margin-top: 18px; }
+.archive-record-modal .task-header { align-items: flex-start; gap: 12px; }
+.archive-record-modal .task-description { margin-top: 18px; }
+.archive-source { margin: 18px 0 0; }
+.archive-source a { color: #8fc8e2; font-weight: 800; }
+.archive-record-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 /* ── Small-screen polish ───────────────────────────────────── */
 @media (max-width: 600px) {
+  .realtime-notices { top: 126px; right: 14px; }
+  .plan-archive-records { grid-column: auto; }
   .task-modal { width: 100%; height: 100dvh; max-height: none; padding: 20px 16px 28px; border: 0; border-radius: 0; }
   .task-header { flex-wrap: wrap; gap: 12px; padding-right: 40px; }
   .task-header h2 { font-size: 22px; }
