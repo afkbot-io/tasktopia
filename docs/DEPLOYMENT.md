@@ -28,6 +28,11 @@ certbot --nginx -d tasktopia.online --redirect
 curl -fsS https://tasktopia.online/health
 ```
 
+Конфигурация выделяет `POST /api/countries/:countryId/regenerate` в отдельный
+proxy-маршрут с таймаутом 15 минут. Полный детерминированный replay большой
+страны может занимать несколько минут; не заменяйте этот маршрут общим
+75-секундным лимитом API.
+
 Certbot добавляет HTTPS-блок и системный timer продления сертификата. После выпуска сертификата HTTP перенаправляется на HTTPS.
 
 ## Production environment
