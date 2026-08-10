@@ -646,6 +646,6 @@
 ### 16.1. Статус перехода на authored-источники
 
 - Всего в каталоге: 193 семейства зданий.
-- Принятый AI-authored источник с проверенным SHA-256: 97 семейств.
-- Очередь миграции без допустимого fallback для релиза нового изображения: 96 семейств.
-- Последний принятый пакет: `house-cottage`, `house-townhouse`, `house-gabled`, `house-duplex`, `house-small-apartments`.
+- Принятый AI-authored источник с проверенным SHA-256: 102 семейства.
+- Очередь миграции без допустимого fallback для релиза нового изображения: 91 семейство.
+- Последний принятый пакет: `house-bungalow`, `house-suburban-narrow`, `house-garden-villa`, `house-modern-compact`, `house-rustic-cottage`.

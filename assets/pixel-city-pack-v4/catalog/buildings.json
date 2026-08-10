@@ -1143,9 +1143,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-bungalow/stages.png",
+      "sheetSha256": "126c67a3eb23ab22830d7cd198e754ff84d7284413ec2eab7e739b8c0566c4f5",
+      "reviewed": true
     },
     {
       "key": "house-suburban-narrow",
@@ -1186,9 +1186,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-suburban-narrow/stages.png",
+      "sheetSha256": "a3be5d1242d662e08de2925a0065d22487d4478e8eb54bcbb9b5c3e7bce31b32",
+      "reviewed": true
     },
     {
       "key": "house-garden-villa",
@@ -1228,9 +1228,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-garden-villa/stages.png",
+      "sheetSha256": "db9877e61d966b2cd3ad95ce29f15dca3b9d57562afb3b0c90d2f0a43eaafd3d",
+      "reviewed": true
     },
     {
       "key": "house-modern-compact",
@@ -1269,9 +1269,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-modern-compact/stages.png",
+      "sheetSha256": "eeb8559776237851a1e4dc56f45b4ad4b2536d37ffa3bff44596470fd0381440",
+      "reviewed": true
     },
     {
       "key": "house-rustic-cottage",
@@ -1312,9 +1312,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-rustic-cottage/stages.png",
+      "sheetSha256": "72a6b84380e52e15e84ee19185e506c50b1426480da771a7838d6365f9af8c62",
+      "reviewed": true
     },
     {
       "key": "civic-post-office",
