@@ -124,6 +124,11 @@ PNG. Игровой пак публикует content revision отдельны�
 `/game-assets/v4/revisions/<assetRevision>/...`, поэтому корректность
 immutable-кэша не зависит от политики CDN по query string.
 
+Если CDN сохраняет исходный Host `store.tasktopia.online`, используйте
+одноимённый HTTP origin-vhost из `deploy/nginx-tasktopia.conf`: он проксирует
+только `/assets/` и `/game-assets/` в приложение, а для остальных путей
+возвращает 404. Это не позволяет CDN случайно открыть API или MCP.
+
 До включения CDN проверьте сертификат и доставку одного хешированного bundle и
 одного игрового PNG:
 
