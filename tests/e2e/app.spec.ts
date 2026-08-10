@@ -21,6 +21,10 @@ test("public AI integration guide is directly accessible", async ({ request }) =
   const favicon = await request.get("/favicon.svg");
   expect(favicon.ok()).toBe(true);
   expect(favicon.headers()["content-type"]).toContain("image/svg+xml");
+  const staticManifest = await request.get("/game-assets/v4/manifest.json");
+  expect(staticManifest.ok()).toBe(true);
+  expect(staticManifest.headers()["access-control-allow-origin"]).toBe("http://127.0.0.1:5173");
+  expect(staticManifest.headers()["cross-origin-resource-policy"]).toBe("cross-origin");
   const manifest = await request.get("/site.webmanifest");
   expect(manifest.ok()).toBe(true);
   expect((await manifest.json()).name).toBe("Tasktopia — цифровая страна");

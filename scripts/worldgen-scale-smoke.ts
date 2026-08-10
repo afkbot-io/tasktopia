@@ -38,13 +38,32 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
                             });
   }
   for (let taskIndex = 0; taskIndex < tasksPerCity; taskIndex += 1) {
-    const task = await service.createTask(registered.user.countryId, {
+    let task;
+    try {
+      task = await service.createTask(registered.user.countryId, {
                               cityId: city.id,
                               title: `Home task ${taskIndex + 1}`,
                               buildingHint: taskIndex === 0 ? "house-cottage" : undefined,
                               estimate: 1,
                               idempotencyKey: `scale-task-${cityIndex}-${taskIndex}`,
                             });
+    } catch (error) {
+      const activeDistrict = (await service.listDistricts(registered.user.countryId, city.id))
+        .find((district) => district.status === "ACTIVE");
+      console.error(JSON.stringify({
+        failedTaskIndex: taskIndex,
+        activeDistrict: activeDistrict ? {
+          id: activeDistrict.id,
+          archetype: activeDistrict.archetype,
+          cells: activeDistrict.cells.length,
+          lots: activeDistrict.lots.map((lot) => ({
+            id: lot.id, groupId: lot.groupId, role: lot.role, taskId: lot.taskId,
+            origin: lot.origin, width: lot.width, height: lot.height,
+          })),
+        } : null,
+      }, null, 2));
+      throw error;
+    }
     if (taskIndex === 0) committedTaskFootprints.set(task.id, JSON.stringify(task.footprint));
   }
 }

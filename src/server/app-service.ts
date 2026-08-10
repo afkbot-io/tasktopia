@@ -65,13 +65,14 @@ import {
 import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "./world/terrain";
 import { roadCorridorBlockers, stampRoadCorridor } from "./world/road-geometry";
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
-import { organicComplexLotTarget, planComplex } from "./world/complex-planner";
+import { compactLotsAfterPlacement, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import {
   ROAD_WIDTH,
   archetypeAffinity,
   buildingCompatibleWithArchetype,
   buildingZoningRole,
   buildSurfaceMap,
+  buildingGapPaths,
   chooseDistrictArchetype,
   cityMorphology,
   entranceOutside,
@@ -2423,7 +2424,13 @@ export class AppService {
     const nearDistrictRoads = districtRoads.filter((road) => contains(expandRect(searchBounds, 16), road));
     const anchors = nearDistrictRoads.length > 0 ? nearDistrictRoads : safeRoads;
     const proximityAnchors = nearDistrictRoads.length > 0 ? nearDistrictRoads : proximityRoads;
-    const maxAdjacency = nearDistrictRoads.length > 0 ? 8 : 24;
+    // A later compact block may legitimately sit across the unbuilt half of a
+    // large district territory. Limiting infill to eight cells from the first
+    // street made a 10-district city box its active district after one block,
+    // even though hundreds of buildable cells remained inside its boundary.
+    // The connector is still demand-driven and validated below, so a wider
+    // search fills reserved urban land before annexing another territory.
+    const maxAdjacency = 24;
     if (anchors.length === 0) return null;
     const expectedRole = this.lotRoleForEntry(district.archetype, entry);
     const strictRoles = district.archetype === "NEW_BUILD" || district.archetype === "PRIVATE";
@@ -3323,11 +3330,14 @@ export class AppService {
                           return {
                             entry: candidate,
                             selected: options.sort((a, b) => {
-                              if (a.order !== b.order) return a.order - b.order;
                               const buildingArea = candidate.footprint.width * candidate.footprint.height;
                               const wasteA = a.lot.width * a.lot.height - buildingArea;
                               const wasteB = b.lot.width * b.lot.height - buildingArea;
-                              return wasteA - wasteB || a.lot.origin.y - b.lot.origin.y || a.lot.origin.x - b.lot.origin.x;
+                              // Best-fit first: consume exact/compact frontage
+                              // before a wide bay. Group order is only the
+                              // tie-break, otherwise a small building can waste
+                              // the one lot that a later tower needs.
+                              return wasteA - wasteB || a.order - b.order || a.lot.origin.y - b.lot.origin.y || a.lot.origin.x - b.lot.origin.x;
                             })[0]!,
                           };
                         }
@@ -3361,7 +3371,16 @@ export class AppService {
                       // on one country serialize and never collide.
                       const taskNumber = Number((await this.db.prepare(`SELECT COALESCE(MAX(t.task_number), 0) + 1 AS next
                         FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id WHERE c.country_id = ?`).get(countryId) as Row).next);
-                      const lots = district.lots.map((lot) => lot.id === selected.lot.id ? { ...lot, taskId: id, vacant: false } : lot);
+                      const lots = compactLotsAfterPlacement(
+                        district.lots,
+                        selected.lot.id,
+                        {
+                          origin: selected.placement.origin,
+                          width: entry.footprint.width,
+                          height: entry.footprint.height,
+                        },
+                        id,
+                      );
                       await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?").run(JSON.stringify(lots), district.id);
                       // A new building redevelops any ruin plot it overlaps.
                       await this.clearRuins(countryId, selected.placement.footprint);
@@ -3930,6 +3949,7 @@ export class AppService {
         if (!lot.taskId) continue;
         for (const cell of lot.sharedAccess ?? []) publish(cell);
       }
+      for (const cell of buildingGapPaths(nearbyDistricts, nearbyTasks)) publish(cell);
       for (const task of nearbyTasks) if (task.accessKind === "PATH") for (const cell of task.accessPath) publish(cell);
       return [...paths.values()];
     })() : [...buildSurfaceMap({

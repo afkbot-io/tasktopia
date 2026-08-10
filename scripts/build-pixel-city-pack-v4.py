@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import hashlib
 import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -1916,6 +1916,15 @@ def load_ai_authored_ambient_catalog(name: str) -> list[dict]:
             raise ValueError(f"{key}: size must use positive {CELL}px units")
         if not isinstance(footprint, list) or len(footprint) != 2 or min(footprint) <= 0:
             raise ValueError(f"{key}: invalid footprintCells")
+        occupied_size = entry.get("occupiedSize")
+        if occupied_size is not None and (
+            not isinstance(occupied_size, list)
+            or len(occupied_size) != 2
+            or any(not isinstance(value, int) or value <= 0 for value in occupied_size)
+            or occupied_size[0] > size[0] - 2
+            or occupied_size[1] > size[1] - 1
+        ):
+            raise ValueError(f"{key}: occupiedSize must fit inside the runtime canvas")
         source = AI_AUTHORED_ART / entry["sheet"]
         if not source.resolve().is_relative_to(AI_AUTHORED_ART.resolve()):
             raise ValueError(f"{key}: AI-authored path leaves reference directory")
@@ -1997,6 +2006,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     if len({spec.key for spec in specs}) != len(specs):
         raise ValueError("generated-buildings.json contains duplicate keys")
     ai_sources: dict[str, Path] = {}
+    ai_contracts: dict[str, dict] = {}
     building_catalog = json.loads((CATALOG / "buildings.json").read_text())
     for authored in building_catalog["buildings"]:
         if not authored.get("reviewed"):
@@ -2012,6 +2022,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         if authored["key"] in ai_sources:
             raise ValueError(f"{authored['key']}: duplicate reviewed source")
         ai_sources[authored["key"]] = source
+        ai_contracts[authored["key"]] = authored
     generated_keys = {spec.key for spec in specs}
     base_keys = set(buildings)
     unknown_ai_keys = sorted(set(ai_sources) - generated_keys - base_keys)
@@ -2020,6 +2031,13 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     for spec in specs:
         if spec.key in buildings:
             raise ValueError(f"{spec.key}: key already exists in base pack")
+        authored_contract = ai_contracts.get(spec.key)
+        if authored_contract:
+            spec = replace(
+                spec,
+                size=tuple(authored_contract["spriteSize"]),
+                footprint=tuple(authored_contract["footprintCells"]),
+            )
         destination = RUNTIME / "buildings" / "house" / spec.key
         destination.mkdir(parents=True, exist_ok=True)
         stages = []
@@ -2044,8 +2062,9 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     # only the five visual stages and their reviewed source digest change.
     for key in sorted(set(ai_sources) & base_keys):
         raw = buildings[key]
-        size = tuple(raw["spriteSize"])
-        footprint = tuple(raw["footprintCells"])
+        authored_contract = ai_contracts[key]
+        size = tuple(authored_contract["spriteSize"])
+        footprint = tuple(authored_contract["footprintCells"])
         spec = HouseSpec(
             key=key,
             label=raw["label"],
@@ -2069,6 +2088,10 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             stages.append(str(target.relative_to(RUNTIME)))
         buildings[key] = {
             **raw,
+            "spriteSize": list(size),
+            "footprintCells": list(footprint),
+            "anchorPx": [size[0] // 2, size[1]],
+            "entrances": authored_contract["entrances"],
             "stages": stages,
         }
 
@@ -2181,6 +2204,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         generated_props[authored["key"]] = normalize_ai_authored_ambient(
             ai_sheet_segment(source, segment_index, segment_count),
             tuple(authored["size"]),
+            occupied_size=tuple(authored["occupiedSize"]) if authored.get("occupiedSize") else None,
         )
         ai_prop_metadata[authored["key"]] = {
             "artSource": "AI_AUTHORED",

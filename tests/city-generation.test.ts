@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { getBuilding } from "../src/shared/catalog";
-import type { CityDto, DistrictDto, RoadCellDto } from "../src/shared/contracts";
+import type { CityDto, DistrictDto, RoadCellDto, TaskDto } from "../src/shared/contracts";
 import {
   archetypeAffinity,
   buildingCompatibleWithArchetype,
   buildingZoningRole,
   buildSurfaceMap,
+  buildingGapPaths,
   chooseDistrictArchetype,
   findAreaAccessPath,
   findAccessPlan,
@@ -24,6 +25,18 @@ function district(id: string, archetype: DistrictDto["archetype"], status: Distr
   return {
     id, cityId: "city", name: id, goal: "", description: "", deadline: null, status, capacitySp: 26,
     cells: rectangleFootprint({ x: -10, y: -10 }, 20, 20), lots: [], growthDirection: "E", archetype, color: "#fff", createdAt: "now",
+  };
+}
+
+function placedTask(id: string, origin: { x: number; y: number }, width: number, height: number): TaskDto {
+  const footprint = rectangleFootprint(origin, width, height);
+  return {
+    id, taskNumber: 1, cityId: "city", districtId: "dense", title: id, description: "", workItemType: "TASK",
+    acceptanceCriteria: "", systemAnalysis: "", architecture: "", designSystem: "", implementationPlan: "",
+    estimate: 1, priority: "NORMAL", status: "PLANNING", progress: 0, dueAt: null,
+    buildingType: "house-cottage", platformType: "YARD", origin, footprint,
+    entrance: { x: origin.x, y: origin.y + height }, accessPath: [], accessKind: "PATH", stage: 1,
+    createdAt: "now", updatedAt: "now", mergeRequests: [],
   };
 }
 
@@ -92,6 +105,23 @@ describe("V6 city morphology and access planning", () => {
     const crossingX = crossings[0]!.x;
     expect(surfaces.get(`${crossingX},-2`)?.kind).toBe("SIDEWALK");
     expect(surfaces.get(`${crossingX},2`)?.kind).toBe("SIDEWALK");
+  });
+
+  it("turns a one-cell seam between occupied facades into a paved alley", () => {
+    const dense = district("dense", "NEW_BUILD");
+    dense.lots = [
+      { id: "a", origin: { x: 0, y: 0 }, width: 3, height: 4, taskId: "task-a", groupId: "block" },
+      { id: "b", origin: { x: 4, y: 0 }, width: 3, height: 4, taskId: "task-b", groupId: "block" },
+    ];
+    const tasks = [placedTask("task-a", { x: 0, y: 0 }, 3, 4), placedTask("task-b", { x: 4, y: 0 }, 3, 4)];
+    expect(buildingGapPaths([dense], tasks)).toEqual(rectangleFootprint({ x: 3, y: 0 }, 1, 4));
+    const surfaces = buildSurfaceMap({
+      roads: new Map(), cities: [city()], districts: [dense], tasks,
+      features: [], isSurfaceTerrain: () => true,
+    });
+    expect(rectangleFootprint({ x: 3, y: 0 }, 1, 4).every((cell) =>
+      surfaces.get(cellKey(cell))?.kind === "PATH" && surfaces.get(cellKey(cell))?.finish === "PAVERS"),
+    ).toBe(true);
   });
 
   it("finds a short entrance-to-sidewalk path inside the lot", () => {

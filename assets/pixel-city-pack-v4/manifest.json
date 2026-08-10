@@ -201,16 +201,16 @@
       "category": "HIGHRISE",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        64
+        40,
+        80
       ],
       "footprintCells": [
-        4,
-        3
+        5,
+        4
       ],
       "anchorPx": [
-        16,
-        64
+        20,
+        80
       ],
       "stages": [
         "buildings/highrise/highrise-glass/stage-1.png",
@@ -248,16 +248,16 @@
       "category": "HIGHRISE",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        72
+        40,
+        96
       ],
       "footprintCells": [
-        4,
-        3
+        5,
+        4
       ],
       "anchorPx": [
-        16,
-        72
+        20,
+        96
       ],
       "stages": [
         "buildings/highrise/highrise-brick/stage-1.png",
@@ -295,16 +295,16 @@
       "category": "HIGHRISE",
       "rarity": "RARE",
       "spriteSize": [
-        40,
-        64
+        48,
+        80
       ],
       "footprintCells": [
-        5,
-        3
+        6,
+        4
       ],
       "anchorPx": [
-        20,
-        64
+        24,
+        80
       ],
       "stages": [
         "buildings/highrise/highrise-stepped/stage-1.png",
@@ -330,7 +330,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -342,16 +342,16 @@
       "category": "HIGHRISE",
       "rarity": "RARE",
       "spriteSize": [
-        40,
-        72
+        48,
+        96
       ],
       "footprintCells": [
-        5,
-        3
+        6,
+        4
       ],
       "anchorPx": [
-        20,
-        72
+        24,
+        96
       ],
       "stages": [
         "buildings/highrise/highrise-corporate/stage-1.png",
@@ -377,7 +377,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -10263,7 +10263,7 @@
       ]
     },
     "traffic-light-red": {
-      "label": "Traffic Light Red",
+      "label": "Компактный светофор — красный",
       "path": "props/traffic-light-red.png",
       "size": [
         8,
@@ -10276,10 +10276,13 @@
       "anchorPx": [
         4,
         16
-      ]
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/traffic-light-compact-v1.png",
+      "visualProfile": "TASKTOPIA_V4_COMPACT_TRAFFIC_LIGHT"
     },
     "traffic-light-green": {
-      "label": "Traffic Light Green",
+      "label": "Компактный светофор — зелёный",
       "path": "props/traffic-light-green.png",
       "size": [
         8,
@@ -10292,7 +10295,10 @@
       "anchorPx": [
         4,
         16
-      ]
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/traffic-light-compact-v1.png",
+      "visualProfile": "TASKTOPIA_V4_COMPACT_TRAFFIC_LIGHT"
     },
     "fountain-large": {
       "label": "Большой городской фонтан",
@@ -11975,5 +11981,5 @@
       "visualProfile": "TASKTOPIA_V4_PARK_OBJECT"
     }
   },
-  "assetRevision": "500cdf59ceaa894c"
+  "assetRevision": "f9f4e7f1dfcf20d4"
 }

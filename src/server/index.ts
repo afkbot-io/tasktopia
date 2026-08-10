@@ -170,6 +170,12 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
       // Versioned game assets and Vite-hashed bundles are immutable; cache for one year.
       if (path.includes("/game-assets/") || /\/assets\/[^/]+-[a-f0-9]{8,}\.js\.map?$/.test(path) || /\/assets\/[^/]+-[a-f0-9]{8,}\.(js|css|woff2?)$/.test(path)) {
         reply.header("Cache-Control", "public, max-age=31536000, immutable");
+        // The production pull CDN serves these files from store.tasktopia.online.
+        // Keep credentials disabled and expose them only to the configured app
+        // origin; CORP must agree or browsers reject an otherwise valid CORS
+        // response before the module/sprite reaches Vite or Pixi.
+        reply.header("Access-Control-Allow-Origin", config.APP_ORIGIN);
+        reply.header("Cross-Origin-Resource-Policy", "cross-origin");
         return;
       }
       // HTML and unhashed entry files must never be cached by the browser.

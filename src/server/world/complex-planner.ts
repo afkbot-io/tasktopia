@@ -53,6 +53,63 @@ export type ComplexPlanInput = {
   reserveSupport?: boolean;
 };
 
+const MIN_REUSABLE_LOT_WIDTH = 3;
+
+/**
+ * Consume only the cells actually occupied by a building. Wide planned bays
+ * used to be marked as a whole, so a four-cell facade could waste half of an
+ * eight-cell frontage and force the next task to build another road. Keeping
+ * reusable side strips as real lots lets a block densify along its existing
+ * sidewalk before the district grows again.
+ */
+export function compactLotsAfterPlacement(
+  lots: PlannedLotDto[],
+  selectedLotId: string,
+  placement: { origin: Cell; width: number; height: number },
+  taskId: string,
+): PlannedLotDto[] {
+  const next: PlannedLotDto[] = [];
+  for (const lot of lots) {
+    if (lot.id !== selectedLotId) {
+      next.push(lot);
+      continue;
+    }
+    const leftWidth = placement.origin.x - lot.origin.x;
+    const rightX = placement.origin.x + placement.width;
+    const rightWidth = lot.origin.x + lot.width - rightX;
+    if (leftWidth >= MIN_REUSABLE_LOT_WIDTH) {
+      next.push({ ...lot, id: `${lot.id}:west`, width: leftWidth, taskId: null, vacant: false });
+    }
+    next.push({
+      ...lot,
+      origin: placement.origin,
+      width: placement.width,
+      height: placement.height,
+      taskId,
+      vacant: false,
+    });
+    if (rightWidth >= MIN_REUSABLE_LOT_WIDTH) {
+      next.push({
+        ...lot,
+        id: `${lot.id}:east`,
+        origin: { x: rightX, y: lot.origin.y },
+        width: rightWidth,
+        taskId: null,
+        vacant: false,
+      });
+    }
+  }
+  const groupSizes = new Map<string, number>();
+  for (const lot of next) if (lot.groupId) groupSizes.set(lot.groupId, (groupSizes.get(lot.groupId) ?? 0) + 1);
+  const groupIndexes = new Map<string, number>();
+  return next.map((lot) => {
+    if (!lot.groupId) return lot;
+    const slotIndex = groupIndexes.get(lot.groupId) ?? 0;
+    groupIndexes.set(lot.groupId, slotIndex + 1);
+    return { ...lot, slotIndex, slotCount: groupSizes.get(lot.groupId) };
+  });
+}
+
 type ArchetypeProfile = { baseW: number; minW: number; maxW: number; depth: number };
 
 const PROFILE: Record<DistrictArchetype, ArchetypeProfile> = {

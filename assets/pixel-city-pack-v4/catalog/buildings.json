@@ -9,16 +9,16 @@
       "category": "HIGHRISE",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        64
+        40,
+        80
       ],
       "footprintCells": [
-        4,
-        3
+        5,
+        4
       ],
       "anchorPx": [
-        16,
-        64
+        20,
+        80
       ],
       "platform": "STONE",
       "estimates": [
@@ -53,16 +53,16 @@
       "category": "HIGHRISE",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        72
+        40,
+        96
       ],
       "footprintCells": [
-        4,
-        3
+        5,
+        4
       ],
       "anchorPx": [
-        16,
-        72
+        20,
+        96
       ],
       "platform": "STONE",
       "estimates": [
@@ -97,16 +97,16 @@
       "category": "HIGHRISE",
       "rarity": "RARE",
       "spriteSize": [
-        40,
-        64
+        48,
+        80
       ],
       "footprintCells": [
-        5,
-        3
+        6,
+        4
       ],
       "anchorPx": [
-        20,
-        64
+        24,
+        80
       ],
       "platform": "STONE",
       "estimates": [
@@ -125,7 +125,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -141,16 +141,16 @@
       "category": "HIGHRISE",
       "rarity": "RARE",
       "spriteSize": [
-        40,
-        72
+        48,
+        96
       ],
       "footprintCells": [
-        5,
-        3
+        6,
+        4
       ],
       "anchorPx": [
-        20,
-        72
+        24,
+        96
       ],
       "platform": "STONE",
       "estimates": [
@@ -169,7 +169,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -893,9 +893,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fuel-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-gas-station/stages.png",
+      "sheetSha256": "573a6a2203e057253c15fc08dd668837b29245bee1efbcf00a8090bb6bacc725",
+      "reviewed": true
     },
     {
       "key": "commercial-parking-lot",

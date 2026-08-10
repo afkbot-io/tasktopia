@@ -161,6 +161,50 @@ function pathFinish(id: string): NonNullable<SurfaceCellDto["finish"]> {
   return (["EARTH", "PAVERS", "ASPHALT"] as const)[hash % 3]!;
 }
 
+/** One-cell seams between adjacent occupied facades become narrow alleys. */
+export function buildingGapPaths(districts: DistrictDto[], tasks: Array<Pick<TaskDto, "id" | "footprint">>): Cell[] {
+  const taskById = new Map(tasks.map((task) => [task.id, task]));
+  const cells = new Map<string, Cell>();
+  for (const district of districts) {
+    const grouped = new Map<string, Array<Pick<TaskDto, "id" | "footprint">>>();
+    for (const lot of district.lots) {
+      if (!lot.taskId || !lot.groupId) continue;
+      const task = taskById.get(lot.taskId);
+      if (!task) continue;
+      const group = grouped.get(lot.groupId) ?? [];
+      group.push(task);
+      grouped.set(lot.groupId, group);
+    }
+    for (const group of grouped.values()) {
+      for (let leftIndex = 0; leftIndex < group.length; leftIndex += 1) {
+        const left = group[leftIndex]!;
+        const leftBounds = {
+          minX: Math.min(...left.footprint.map((cell) => cell.x)), maxX: Math.max(...left.footprint.map((cell) => cell.x)),
+          minY: Math.min(...left.footprint.map((cell) => cell.y)), maxY: Math.max(...left.footprint.map((cell) => cell.y)),
+        };
+        for (let rightIndex = leftIndex + 1; rightIndex < group.length; rightIndex += 1) {
+          const right = group[rightIndex]!;
+          const rightBounds = {
+            minX: Math.min(...right.footprint.map((cell) => cell.x)), maxX: Math.max(...right.footprint.map((cell) => cell.x)),
+            minY: Math.min(...right.footprint.map((cell) => cell.y)), maxY: Math.max(...right.footprint.map((cell) => cell.y)),
+          };
+          const west = leftBounds.maxX < rightBounds.minX ? leftBounds : rightBounds;
+          const east = west === leftBounds ? rightBounds : leftBounds;
+          if (west.maxX + 2 !== east.minX) continue;
+          const minY = Math.max(west.minY, east.minY);
+          const maxY = Math.min(west.maxY, east.maxY);
+          if (minY > maxY) continue;
+          for (let y = minY; y <= maxY; y += 1) {
+            const cell = { x: west.maxX + 1, y };
+            cells.set(cellKey(cell), cell);
+          }
+        }
+      }
+    }
+  }
+  return [...cells.values()];
+}
+
 export function buildSurfaceMap(input: {
   roads: Map<string, RoadCellDto>;
   cities: CityDto[];
@@ -220,6 +264,17 @@ export function buildSurfaceMap(input: {
           surfaces.set(key, { ...cell, kind: "PATH", finish });
         }
       }
+    }
+  }
+
+
+  // A deliberately narrow paved seam makes dense rows legible without
+  // replacing them with another road. Sidewalks keep priority where the seam
+  // reaches the street edge.
+  for (const cell of buildingGapPaths(input.districts, input.tasks)) {
+    const key = cellKey(cell);
+    if (!input.roads.has(key) && !blocked.has(key) && input.isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
+      surfaces.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
     }
   }
 

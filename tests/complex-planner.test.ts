@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { organicComplexLotTarget, planComplex } from "../src/server/world/complex-planner";
+import { compactLotsAfterPlacement, organicComplexLotTarget, planComplex } from "../src/server/world/complex-planner";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
 import { cellKey, connected, rectangleFootprint } from "../src/server/world/grid";
 import { stampRoadCorridor } from "../src/server/world/road-geometry";
@@ -18,6 +18,30 @@ function corridors(streets: { x: number; y: number }[][]): Set<string> {
 }
 
 describe("V10 complex planner", () => {
+  it("reuses the remaining street frontage after placing a smaller building", () => {
+    const lot = {
+      id: "district:complex:000:lot:00", origin: { x: 10, y: 10 }, width: 8, height: 5,
+      taskId: null, layoutVersion: "block-v3" as const, groupId: "district:complex:000",
+      slotIndex: 0, slotCount: 1, role: "PRIMARY" as const, position: "FRONTAGE" as const,
+      frontageSide: "S" as const, sharedAccess: [],
+    };
+    const compacted = compactLotsAfterPlacement([lot], lot.id, { origin: { x: 10, y: 11 }, width: 5, height: 4 }, "task-1");
+    expect(compacted).toHaveLength(2);
+    expect(compacted[0]).toMatchObject({ id: lot.id, origin: { x: 10, y: 11 }, width: 5, height: 4, taskId: "task-1" });
+    expect(compacted[1]).toMatchObject({ origin: { x: 15, y: 10 }, width: 3, height: 5, taskId: null });
+    expect(compacted.map((item) => item.slotIndex)).toEqual([0, 1]);
+    expect(compacted.every((item) => item.slotCount === 2)).toBe(true);
+  });
+
+  it("does not publish unusable one-cell residual lots", () => {
+    const lot = {
+      id: "lot", origin: { x: 0, y: 0 }, width: 6, height: 4, taskId: null,
+      layoutVersion: "block-v3" as const, groupId: "group", role: "PRIMARY" as const,
+    };
+    expect(compactLotsAfterPlacement([lot], lot.id, { origin: { x: 0, y: 0 }, width: 5, height: 4 }, "task"))
+      .toEqual([expect.objectContaining({ id: "lot", width: 5, taskId: "task", slotIndex: 0, slotCount: 1 })]);
+  });
+
   it("reserves a lot large enough for the building that triggered growth", () => {
     const rect = { minX: 0, minY: 0, maxX: 35, maxY: 23 };
     const plan = planComplex({
