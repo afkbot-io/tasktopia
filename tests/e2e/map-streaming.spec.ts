@@ -164,7 +164,7 @@ test("shows a recoverable error after retries and keeps rendered ground", async 
   await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
 });
 
-test("progressively replaces LOD and recovers a rapid zoom reversal", async ({ page }) => {
+test("keeps the rendered LOD coherent and recovers a rapid zoom reversal", async ({ page }) => {
   test.setTimeout(120_000);
   let slowLod: "overview" | "detail" = "detail";
   let armed = false;
@@ -200,6 +200,50 @@ test("progressively replaces LOD and recovers a rapid zoom reversal", async ({ p
   for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, slowLod === "overview" ? -800 : 800);
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", initialLod);
+});
+
+test("never presents adjacent chunks from different LODs", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 640, height: 480 });
+  let armed = false;
+  let delayedBuildingStarted = false;
+  let delayedBuildingResolved = false;
+  await page.route("**/game-assets/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (armed && !delayedBuildingStarted && pathname.includes("/buildings/")) {
+      delayedBuildingStarted = true;
+      await new Promise((resolve) => setTimeout(resolve, 2_500));
+      delayedBuildingResolved = true;
+    }
+    await route.continue();
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("demo@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+
+  const host = page.locator(".world-canvas");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "overview"; step += 1) {
+    await canvas.hover();
+    await page.mouse.wheel(0, 800);
+  }
+  await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
+  await expect(host).toHaveAttribute("data-mixed-ground-lods", "false");
+
+  armed = true;
+  await canvas.hover();
+  for (let step = 0; step < 8 && !delayedBuildingStarted; step += 1) await page.mouse.wheel(0, -800);
+  await expect.poll(async () => delayedBuildingStarted).toBe(true);
+  const observedGroundLods: Array<string | null> = [];
+  const sampleUntil = Date.now() + 1_800;
+  while (Date.now() < sampleUntil && !delayedBuildingResolved) {
+    observedGroundLods.push(await host.getAttribute("data-mixed-ground-lods"));
+    await page.waitForTimeout(50);
+  }
+  expect(observedGroundLods).not.toContain("true");
+  expect(delayedBuildingResolved).toBe(false);
 });
 
 test("realtime task invalidation refetches and rebuilds the affected ground", async ({ page }) => {

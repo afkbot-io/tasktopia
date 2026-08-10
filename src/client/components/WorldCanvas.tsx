@@ -1037,6 +1037,16 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         groundContainers.delete(cacheKey);
       }
 
+      const updateGroundLodDiagnostics = (): void => {
+        const activeLods = new Set<MapLod>();
+        for (const cacheKey of desiredKeys) {
+          const ground = groundContainers.get(cacheKey);
+          if (ground) activeLods.add(ground.lod);
+        }
+        host!.dataset.activeGroundLods = [...activeLods].sort().map((lod) => lod.toLowerCase()).join(",");
+        host!.dataset.mixedGroundLods = String(activeLods.size > 1);
+      };
+
       function buildGround(cacheKey: string, chunk: ChunkDto, lod: MapLod, animate = false): void {
         removeGround(cacheKey);
         const terrain = new Container();
@@ -1078,6 +1088,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           groundFades.push({ containers: [terrain, surfaces, roads], elapsed: 0, duration: 360 });
         }
         groundContainers.set(cacheKey, { terrain, surfaces, roads, lod, usedAt: performance.now() });
+        updateGroundLodDiagnostics();
       }
 
       function renderEntities(rebuildMovement: boolean): void {
@@ -1489,7 +1500,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           if (!disposed) host!.dataset.ambientAssets = "retry";
         });
       };
-      const commitChunk = (cacheKey: string, chunk: ChunkDto, lod: MapLod, rebuildMovement: boolean) => {
+      const commitChunk = (cacheKey: string, chunk: ChunkDto, lod: MapLod, rebuildMovement: boolean, deferStaticRender = false) => {
         chunks.set(cacheKey, chunk);
         chunkLods.set(cacheKey, lod);
         const ground = groundContainers.get(cacheKey);
@@ -1501,7 +1512,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         host!.dataset.groundRebuilds = String(Number(host!.dataset.groundRebuilds ?? 0) + (rebuildGround ? 1 : 0));
         host!.dataset.residentChunks = String(chunks.size);
         host!.dataset.mapLod = lod.toLowerCase();
-        if (reducedMotion) {
+        if (reducedMotion && !deferStaticRender) {
           app.render();
           host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
         }
@@ -1555,12 +1566,25 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
                 if (!chunk) return;
                 await Assets.load(requiredAssets([chunk], lod));
                 if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) return;
-                // Replace each ready chunk immediately. Existing ground remains
-                // underneath the rest of the viewport, so a slow sprite can no
-                // longer expose a blank LOD transition.
-                if (lodTransition && currentLod !== lod) currentLod = lod;
-                commitChunk(cacheKey, chunk, lod, rebuildMovement);
+                // Panning within one LOD stays progressive. During an LOD
+                // transition the old coherent frame remains visible until every
+                // target chunk is asset-ready; the synchronous swap below then
+                // prevents overview/detail rectangles from sharing a frame.
+                if (!lodTransition) commitChunk(cacheKey, chunk, lod, rebuildMovement);
               });
+              if (disposed || generation !== loadGeneration || desiredLod !== lod) continue;
+              if (lodTransition) {
+                currentLod = lod;
+                for (const [chunkX, chunkY] of wanted) {
+                  const cacheKey = chunkKey(chunkX, chunkY);
+                  const chunk = fetched.get(cacheKey);
+                  if (chunk && desiredKeys.has(cacheKey)) commitChunk(cacheKey, chunk, lod, rebuildMovement, true);
+                }
+                if (reducedMotion) {
+                  app.render();
+                  host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
+                }
+              }
             } catch (error) {
               if (!disposed && generation === loadGeneration && !(error instanceof DOMException && error.name === "AbortError")) {
                 host!.dataset.loadError = "true";
