@@ -151,7 +151,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             return { status: "ok", version: APP_VERSION, uptime: Math.round(process.uptime()) };
           });
 
-  app.post("/api/auth/register", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request, reply) => {
+  app.post("/api/auth/register", { config: { rateLimit: { max: config.authRateLimitMax, timeWindow: "1 minute" } } }, async (request, reply) => {
     const body = parse(registerSchema, request.body);
     let result;
     try {
@@ -166,7 +166,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     return { user: result.user };
   });
 
-  app.post("/api/auth/login", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request, reply) => {
+  app.post("/api/auth/login", { config: { rateLimit: { max: config.authRateLimitMax, timeWindow: "1 minute" } } }, async (request, reply) => {
     const body = parse(loginSchema, request.body);
     let result;
     try {
@@ -351,7 +351,10 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             }
             const lod = parse(z.enum(["detail", "overview"]).default("detail"), (request.query as { lod?: string }).lod);
             const chunk = await service.getChunk(user.countryId, chunkX, chunkY, lod === "overview" ? "OVERVIEW" : "DETAIL");
-            const etag = `"${chunk.worldVersion}-${chunkX}-${chunkY}-${lod}"`;
+            // Active country is implicit in this route. It must still be part
+            // of the validator or two countries at the same world version can
+            // incorrectly share a browser's credentialed 304 response.
+            const etag = `"${user.countryId}-${chunk.worldVersion}-${chunkX}-${chunkY}-${lod}"`;
             if (request.headers["if-none-match"] === etag) {
               return reply.code(304).send();
             }

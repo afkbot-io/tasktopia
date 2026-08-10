@@ -8,6 +8,7 @@ npm run typecheck
 npm run lint
 npm test
 DATABASE_URL=postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test npx playwright test tests/e2e/map-streaming.spec.ts
+DATABASE_URL=postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test npx playwright test tests/e2e/chunk-pipeline.spec.ts
 npm run test:scale
 ```
 
@@ -18,6 +19,8 @@ Scale-тест `1 город / 10 районов / 25 задач` запуска
 1. На чистой загрузке до первого готового чанка показан полноэкранный статус «Готовим карту…».
 2. Искусственно задержать `/api/chunks/*`, приблизить или отдалить карту через границу LOD. Старый кадр остаётся видимым; через 160 ms появляется «Подгружаем карту…» и исчезает после полного покрытия viewport.
 3. Быстро изменить направление zoom. Индикатор не зависает, `data-loading` возвращается в `false`, чёрных областей и повторных запросов одного chunk/LOD нет.
+4. Задержать все `/game-assets/**` на четыре секунды. Не менее шести `/api/chunks/**` должны стартовать за первые 1,5 секунды: PNG не занимают JSON-слоты.
+5. После detail отдалить карту до overview. Уже резидентные чанки преобразуются локально и не создают повторные overview-запросы.
 
 ## Районы
 

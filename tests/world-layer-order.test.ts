@@ -10,4 +10,11 @@ describe("world layer order", () => {
     expect(WORLD_LAYER_ORDER.indexOf("district"), "interactive district boundary must stay below buildings")
       .toBeLessThan(WORLD_LAYER_ORDER.indexOf("building"));
   });
+
+  it("keeps building hover cards above every world-space visual", () => {
+    const buildingTooltip = WORLD_LAYER_ORDER.indexOf("buildingTooltip");
+    for (const occluder of ["decoration", "agent", "building", "incident", "feature", "flight", "districtTooltip"] as const) {
+      expect(buildingTooltip, `building tooltip must be above ${occluder}`).toBeGreaterThan(WORLD_LAYER_ORDER.indexOf(occluder));
+    }
+  });
 });

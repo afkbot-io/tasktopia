@@ -357,7 +357,13 @@ export class AppService {
   private readonly roadCache = new Map<string, Map<string, RoadCellDto>>();
   private readonly surfaceCache = new Map<string, Map<string, SurfaceCellDto>>();
   private readonly chunkCache = new Map<string, ChunkDto>();
-  private static readonly CHUNK_CACHE_LIMIT = 64;
+  private readonly pendingChunkBuilds = new Map<string, Promise<ChunkDto>>();
+  private readonly knownWorldVersions = new Map<string, number>();
+  // A desktop viewport can hold a few dozen chunks in two LODs. Keeping only
+  // 64 entries caused one user's zoom to evict the previous level and denied
+  // concurrent viewers any cache reuse. 512 remains a small bounded footprint
+  // while covering several active viewports.
+  private static readonly CHUNK_CACHE_LIMIT = 512;
 
   constructor(
     private readonly db: Db,
@@ -488,6 +494,7 @@ export class AppService {
     if (emitted) {
       const committedEvent = emitted;
       onTransactionCommit(() => {
+        this.knownWorldVersions.set(countryId, Math.max(committedEvent.worldVersion, this.knownWorldVersions.get(countryId) ?? 0));
         this.invalidateChunkCache(countryId, committedEvent);
         this.onEvent?.(committedEvent);
       });
@@ -3872,11 +3879,34 @@ export class AppService {
 
   async getChunk(countryId: string, chunkX: number, chunkY: number, lod: "DETAIL" | "OVERVIEW" = "DETAIL"): Promise<ChunkDto> {
     const country = await this.countryRow(countryId);
-    const seed = Number(country.seed);
     const worldVersion = Number(country.world_version);
+    this.knownWorldVersions.set(countryId, Math.max(worldVersion, this.knownWorldVersions.get(countryId) ?? 0));
     const cacheKey = `${countryId}:${chunkX}:${chunkY}:${lod}`;
     const cached = this.cachedChunk(cacheKey, worldVersion);
     if (cached) return cached;
+    const pendingKey = `${cacheKey}:${worldVersion}`;
+    let pending = this.pendingChunkBuilds.get(pendingKey);
+    if (!pending) {
+      pending = this.buildChunk(countryId, chunkX, chunkY, lod, country, cacheKey, worldVersion);
+      this.pendingChunkBuilds.set(pendingKey, pending);
+    }
+    try {
+      return { ...await pending, worldVersion };
+    } finally {
+      if (this.pendingChunkBuilds.get(pendingKey) === pending) this.pendingChunkBuilds.delete(pendingKey);
+    }
+  }
+
+  private async buildChunk(
+    countryId: string,
+    chunkX: number,
+    chunkY: number,
+    lod: "DETAIL" | "OVERVIEW",
+    country: Row,
+    cacheKey: string,
+    worldVersion: number,
+  ): Promise<ChunkDto> {
+    const seed = Number(country.seed);
     const minX = chunkX * CHUNK_SIZE;
     const minY = chunkY * CHUNK_SIZE;
     const chunkBounds = { minX, minY, maxX: minX + CHUNK_SIZE - 1, maxY: minY + CHUNK_SIZE - 1 };
@@ -3889,12 +3919,15 @@ export class AppService {
                       .all(countryId, bounds.minX, bounds.maxX, bounds.minY, bounds.maxY) as Row[]).map((row) => ({
       x: Number(row.x), y: Number(row.y), mask: Number(row.mask), structure: String(row.structure) as RoadCellDto["structure"], roadClass: String(row.road_class) as RoadCellDto["roadClass"],
     }));
-    const roads = await roadRows(chunkBounds);
     const surfaceScope = lod === "DETAIL" ? expandRect(chunkBounds, 2) : chunkBounds;
-    const nearbyDistricts = await this.districtsInBounds(countryId, surfaceScope);
-    const nearbyCities = lod === "DETAIL" ? await this.citiesInBounds(countryId, expandRect(chunkBounds, 96)) : [];
-    const nearbyTasks = await this.tasksInBounds(countryId, surfaceScope, lod === "DETAIL");
-    const nearbyFeatures = await this.featuresInBounds(countryId, surfaceScope);
+    const [surfaceRoads, nearbyDistricts, nearbyCities, nearbyTasks, nearbyFeatures] = await Promise.all([
+      roadRows(surfaceScope),
+      this.districtsInBounds(countryId, surfaceScope),
+      lod === "DETAIL" ? this.citiesInBounds(countryId, expandRect(chunkBounds, 96)) : Promise.resolve([]),
+      this.tasksInBounds(countryId, surfaceScope, lod === "DETAIL"),
+      this.featuresInBounds(countryId, surfaceScope),
+    ]);
+    const roads = surfaceRoads.filter((road) => contains(chunkBounds, road));
     const districts = nearbyDistricts.flatMap((district) => {
       const cells = district.cells.filter((cell) => contains(chunkBounds, cell));
       return cells.length === 0 ? [] : [{
@@ -3953,7 +3986,7 @@ export class AppService {
       for (const task of nearbyTasks) if (task.accessKind === "PATH") for (const cell of task.accessPath) publish(cell);
       return [...paths.values()];
     })() : [...buildSurfaceMap({
-                      roads: new Map((await roadRows(surfaceScope)).map((road) => [cellKey(road), road])),
+                      roads: new Map(surfaceRoads.map((road) => [cellKey(road), road])),
                       cities: nearbyCities,
                       districts: nearbyDistricts,
                       tasks: nearbyTasks,
@@ -3966,7 +3999,7 @@ export class AppService {
       ...chunkTasks.flatMap((task) => task.footprint).map(cellKey),
       ...worldFeatures.flatMap((feature) => feature.footprint).map(cellKey),
     ]);
-    return this.storeChunk(cacheKey, {
+    const chunk: ChunkDto = {
       chunkX, chunkY, size: CHUNK_SIZE, terrain, roads, surfaces, districts,
       tasks: chunkTasks.map((task) => ({
         id: task.id, taskNumber: task.taskNumber, cityId: task.cityId, districtId: task.districtId, title: task.title,
@@ -3978,7 +4011,12 @@ export class AppService {
       worldFeatures,
       decorations: lod === "DETAIL" ? this.decorations(seed, terrain, blocked, surfaces, nearbyDistricts, nearbyCities) : [],
       worldVersion,
-    });
+    };
+    // A mutation can commit while a cold chunk is being assembled. Its newer
+    // request has a different single-flight key; do not let this older result
+    // repopulate the invalidated cache afterwards.
+    if ((this.knownWorldVersions.get(countryId) ?? worldVersion) !== worldVersion) return chunk;
+    return this.storeChunk(cacheKey, chunk);
   }
 
   chunkForCell(cell: Cell): { chunkX: number; chunkY: number } {

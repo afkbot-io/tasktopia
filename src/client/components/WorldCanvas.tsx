@@ -33,12 +33,18 @@ import {
   minimumCameraScale,
 } from "../world-camera";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
+import { buildingBadgePresentation } from "../world-building-presentation";
+import { overviewFromDetailChunk } from "../world-chunk-cache";
 
 const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1.12;
 const DETAIL_LOD_ENTER_SCALE = 1.2;
 const DETAIL_LOD_EXIT_SCALE = 1.04;
-const CHUNK_FETCH_CONCURRENCY = 3;
+// JSON and PNG decoding are deliberately separate pipelines. Holding a chunk
+// request slot while Pixi downloads sprites made every slow image stall all
+// following chunks in waves of three.
+const CHUNK_FETCH_CONCURRENCY = 8;
+const CHUNK_ASSET_CONCURRENCY = 6;
 const CHUNK_DATA_CACHE_LIMIT = 160;
 const GROUND_CACHE_LIMIT = 96;
 type MapLod = "DETAIL" | "OVERVIEW";
@@ -229,7 +235,7 @@ function drawPlatform(task: ChunkTaskDto): Container {
   return group;
 }
 
-function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): Container {
+function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, tooltipLayer: Container): Container {
   const entry = getBuilding(task.buildingType);
   const group = new Container();
   group.eventMode = "static";
@@ -242,11 +248,14 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): C
   group.hitArea = new Rectangle(-entry.spriteSize.width / 2, -entry.spriteSize.height, entry.spriteSize.width, entry.spriteSize.height);
   group.addChild(building);
   {
-    const badgeColor = [0x9b72d2, 0xd6a13d, 0xf2c84b, 0x4fa5d7, 0x69ad67][task.stage - 1]!;
-    const badgeX = entry.spriteSize.width / 2 - 5;
-    const badgeY = -5;
-    group.addChild(new Graphics().rect(badgeX - 5, badgeY - 5, 10, 10).fill(0x0b171a).stroke({ color: badgeColor, width: 2 }));
-    const label = new Text({ text: String(task.stage), resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 7, fontWeight: "900", fill: 0xffffff }) });
+    const badge = buildingBadgePresentation(task.taskNumber, task.stage);
+    const badgeX = entry.spriteSize.width / 2 - badge.width / 2;
+    const badgeY = -badge.height / 2;
+    group.addChild(new Graphics()
+      .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
+      .fill(0x0b171a)
+      .stroke({ color: badge.borderColor, width: 1 }));
+    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: badge.fontSize, fontWeight: "900", fill: 0xffffff }) });
     label.anchor.set(0.5); label.position.set(badgeX, badgeY); group.addChild(label);
   }
   let tooltip: Container | undefined;
@@ -266,12 +275,21 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void): C
       const panel = new Graphics().roundRect(-padding, -padding, tooltipText.width + padding * 2, tooltipText.height + padding * 2, 3)
         .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x4b6870, width: 1 });
       tooltip.addChild(panel, tooltipText);
-      tooltip.position.set(-tooltipText.width / 2, -entry.spriteSize.height - tooltipText.height - 8);
-      group.addChild(tooltip);
+      tooltip.position.set(
+        group.position.x - tooltipText.width / 2,
+        group.position.y - entry.spriteSize.height - tooltipText.height - 8,
+      );
+      tooltipLayer.addChild(tooltip);
     }
     tooltip.visible = true;
   });
   group.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
+  group.once("destroyed", () => {
+    if (!tooltip?.destroyed) {
+      tooltip?.removeFromParent();
+      tooltip?.destroy({ children: true });
+    }
+  });
   group.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onSelect(task.id); });
   return group;
 }
@@ -470,7 +488,6 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
 function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   const urls = new Set<string>();
   urls.add(PROP_SPRITES["active-district-flag"]!);
-  for (const plane of ["airplane-small", "airplane-courier", "airplane-twin"] as const) urls.add(PROP_SPRITES[plane]!);
   for (const chunk of chunks) {
     for (const task of chunk.tasks) {
       const entry = getBuilding(task.buildingType);
@@ -505,17 +522,21 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   if (lod === "DETAIL") {
     urls.add(assetUrl(TERRAIN_SPRITES.DIRT![1]!));
     for (const path of Object.values(TILE_SPRITES)) urls.add(path);
-    for (const path of Object.values(VEHICLE_SPRITES).flatMap((views) => [views.horizontal, views.north, views.south])) urls.add(path);
-    urls.add(PROP_SPRITES["city-bus-horizontal"]!);
-    urls.add(PROP_SPRITES["city-bus-north"]!);
-    urls.add(PROP_SPRITES["city-bus-south"]!);
     urls.add(PROP_SPRITES["traffic-light-red"]!);
     urls.add(PROP_SPRITES["traffic-light-green"]!);
-    for (const key of ["walker-east", "walker-west", "walker-south", "walker-north"] as const) urls.add(PROP_SPRITES[key]!);
-    for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
-      urls.add(PROP_SPRITES[`animal-${species}-${direction}`]!);
-    }
   }
+  return [...urls];
+}
+
+function ambientDetailAssets(): string[] {
+  const urls = new Set<string>();
+  for (const path of Object.values(VEHICLE_SPRITES).flatMap((views) => [views.horizontal, views.north, views.south])) urls.add(path);
+  for (const key of ["city-bus-horizontal", "city-bus-north", "city-bus-south"] as const) urls.add(PROP_SPRITES[key]!);
+  for (const key of ["walker-east", "walker-west", "walker-south", "walker-north"] as const) urls.add(PROP_SPRITES[key]!);
+  for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
+    urls.add(PROP_SPRITES[`animal-${species}-${direction}`]!);
+  }
+  for (const plane of ["airplane-small", "airplane-courier", "airplane-twin"] as const) urls.add(PROP_SPRITES[plane]!);
   return [...urls];
 }
 
@@ -633,6 +654,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       districtLayerRef.current = districtLayer;
       const districtTooltipLayer = new Container();
       districtTooltipLayerRef.current = districtTooltipLayer;
+      const buildingTooltipLayer = new Container();
+      buildingTooltipLayer.eventMode = "none";
       const platformLayer = new Container();
       const featurePlatformLayer = new Container();
       const decorationLayer = new Container();
@@ -659,6 +682,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         flight: flightLayer,
         district: districtLayer,
         districtTooltip: districtTooltipLayer,
+        buildingTooltip: buildingTooltipLayer,
       };
       world.addChild(...WORLD_LAYER_ORDER.map((name) => worldLayers[name]));
       app.stage.addChild(world);
@@ -673,6 +697,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       let entityReplacementCount = 0;
       let currentViewBounds = initialViewBoundsRef.current;
       let currentLod: MapLod = world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
+      let ambientAssetsReady = false;
+      let ambientAssetsPromise: Promise<void> | undefined;
       const redrawBackdrop = () => {
         backdropLayer.clear().rect(
           currentViewBounds.minX * CELL_SIZE,
@@ -1107,7 +1133,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           drawPlatform,
           (task) => JSON.stringify([task.platformType, task.footprint]),
         );
-        reconcile(tasks, taskBuildingViews, buildingLayer, (task) => currentLod === "DETAIL" ? drawBuilding(task, onTaskSelect) : drawOverviewBuilding(task, onTaskSelect), (task) => `${currentLod}:${JSON.stringify(task)}`);
+        reconcile(tasks, taskBuildingViews, buildingLayer, (task) => currentLod === "DETAIL" ? drawBuilding(task, onTaskSelect, buildingTooltipLayer) : drawOverviewBuilding(task, onTaskSelect), (task) => `${currentLod}:${JSON.stringify(task)}`);
         const visibleIncidentIds = new Set<string>();
         if (currentLod === "DETAIL") {
           const candidates: Array<{
@@ -1339,8 +1365,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             }
           }
         }
-        agentLayer.visible = currentLod === "DETAIL";
-        if (currentLod === "DETAIL") {
+        agentLayer.visible = currentLod === "DETAIL" && ambientAssetsReady;
+        if (currentLod === "DETAIL" && ambientAssetsReady) {
           const graphs = { CAR: roadGraph, BUS: roadGraph, WALKER: walkGraph, ANIMAL: animalGraph } as const;
           const before = movingAgents.length;
           movingAgents = movingAgents.filter((agent) => {
@@ -1412,9 +1438,16 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         chunkDataCache.set(key, cached);
         return cached;
       };
-      const prepareChunk = async (chunkX: number, chunkY: number, lod: MapLod): Promise<ChunkDto> => {
+      const fetchChunkData = async (chunkX: number, chunkY: number, lod: MapLod): Promise<ChunkDto> => {
         const cacheKey = chunkKey(chunkX, chunkY);
         let chunk = cachedChunkData(cacheKey, lod);
+        if (!chunk && lod === "OVERVIEW") {
+          const detail = cachedChunkData(cacheKey, "DETAIL");
+          if (detail) {
+            chunk = overviewFromDetailChunk(detail);
+            storeChunkData(cacheKey, lod, chunk);
+          }
+        }
         if (!chunk) {
           const key = dataKey(cacheKey, lod);
           let pending = pendingChunks.get(key);
@@ -1431,7 +1464,6 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             if (pendingChunks.get(key) === pending) pendingChunks.delete(key);
           }
         }
-        await Assets.load(requiredAssets([chunk], lod));
         return chunk;
       };
       const scheduleEntityReconcile = (rebuildMovement: boolean) => {
@@ -1441,6 +1473,20 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           reconcileFrame = 0;
           renderEntities(reconcileMovement);
           reconcileMovement = false;
+        });
+      };
+      const preloadAmbientAssets = (): void => {
+        if (ambientAssetsReady || ambientAssetsPromise) return;
+        ambientAssetsPromise = Assets.load(ambientDetailAssets()).then(() => {
+          if (disposed) return;
+          ambientAssetsReady = true;
+          host!.dataset.ambientAssets = "ready";
+          scheduleEntityReconcile(true);
+        }).catch(() => {
+          // Ambient life is optional: a failed plane or animal must never hold
+          // terrain, roads and buildings hostage. Allow a later detail load to retry.
+          ambientAssetsPromise = undefined;
+          if (!disposed) host!.dataset.ambientAssets = "retry";
         });
       };
       const commitChunk = (cacheKey: string, chunk: ChunkDto, lod: MapLod, rebuildMovement: boolean) => {
@@ -1484,6 +1530,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             const rebuildMovement = pendingMovementRebuild;
             const lodTransition = lod !== currentLod;
             try {
+              const fetched = new Map<string, ChunkDto>();
               await inParallel(wanted, CHUNK_FETCH_CONCURRENCY, async ([chunkX, chunkY]) => {
                 if (disposed || generation !== loadGeneration) return;
                 const cacheKey = chunkKey(chunkX, chunkY);
@@ -1496,18 +1543,23 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
                   if (ground) ground.usedAt = performance.now();
                   return;
                 }
-                const chunk = await prepareChunk(chunkX, chunkY, lod);
+                const chunk = await fetchChunkData(chunkX, chunkY, lod);
+                fetched.set(cacheKey, chunk);
+              });
+              if (disposed || generation !== loadGeneration || desiredLod !== lod) continue;
+              if (lod === "DETAIL") preloadAmbientAssets();
+              await inParallel(wanted, CHUNK_ASSET_CONCURRENCY, async ([chunkX, chunkY]) => {
+                if (disposed || generation !== loadGeneration) return;
+                const cacheKey = chunkKey(chunkX, chunkY);
+                const chunk = fetched.get(cacheKey);
+                if (!chunk) return;
+                await Assets.load(requiredAssets([chunk], lod));
                 if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) return;
-                if (!lodTransition) commitChunk(cacheKey, chunk, lod, rebuildMovement);
-                else {
-                  invalidatedGroundKeys.delete(cacheKey);
-                  buildGround(cacheKey, chunk, lod);
-                  host!.dataset.groundRebuilds = String(Number(host!.dataset.groundRebuilds ?? 0) + 1);
-                  if (reducedMotion) {
-                    app.render();
-                    host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
-                  }
-                }
+                // Replace each ready chunk immediately. Existing ground remains
+                // underneath the rest of the viewport, so a slow sprite can no
+                // longer expose a blank LOD transition.
+                if (lodTransition && currentLod !== lod) currentLod = lod;
+                commitChunk(cacheKey, chunk, lod, rebuildMovement);
               });
             } catch (error) {
               if (!disposed && generation === loadGeneration && !(error instanceof DOMException && error.name === "AbortError")) {
@@ -1530,14 +1582,6 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               continue;
             }
             if (disposed || generation !== loadGeneration) continue;
-            if (lodTransition) {
-              currentLod = lod;
-              for (const [chunkX, chunkY] of wanted) {
-                const cacheKey = chunkKey(chunkX, chunkY);
-                const chunk = cachedChunkData(cacheKey, lod);
-                if (chunk) commitChunk(cacheKey, chunk, lod, rebuildMovement);
-              }
-            }
             const covered = wanted.every(([chunkX, chunkY]) => {
               const cacheKey = chunkKey(chunkX, chunkY);
               return chunks.has(cacheKey) && chunkLods.get(cacheKey) === lod && groundContainers.get(cacheKey)?.lod === lod;

@@ -17,7 +17,7 @@ export default defineConfig({
     url: baseURL,
     // `localhost` and `127.0.0.1` are distinct origins. Tie the API's CSRF
     // allow-list to the exact origin Playwright opens in every environment.
-    env: { APP_ORIGIN: baseURL },
+    env: { APP_ORIGIN: baseURL, AUTH_RATE_LIMIT_MAX: "100" },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

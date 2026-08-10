@@ -99,7 +99,9 @@ describe("authentication HTTP boundary", () => {
     expect((await app.inject({ method: "GET", url: "/api/plan/cities-page?cursor=tampered", headers: { cookie } })).statusCode).toBe(400);
 
     const taskChunk = await service.chunkForCell(task.origin);
-    const overviewChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie } })).json();
+    const overviewResponse = await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie } });
+    const overviewChunk = overviewResponse.json();
+    expect(overviewResponse.headers.etag).toContain(countryId);
     const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: { cookie } })).json();
     expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
     expect(overviewChunk.terrain).toHaveLength(256);

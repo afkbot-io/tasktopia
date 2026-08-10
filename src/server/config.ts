@@ -12,6 +12,7 @@ const schema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   UPLOAD_DIR: z.string().default("data/uploads"),
   MAX_ATTACHMENT_BYTES: z.coerce.number().int().min(1024).max(50 * 1024 * 1024).default(10 * 1024 * 1024),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(5).max(1000).default(10),
 });
 
 const raw = schema.parse(process.env);
@@ -23,4 +24,5 @@ export const config = {
   trustProxy: raw.TRUST_PROXY === "true",
   uploadDir: raw.UPLOAD_DIR,
   maxAttachmentBytes: raw.MAX_ATTACHMENT_BYTES,
+  authRateLimitMax: raw.AUTH_RATE_LIMIT_MAX,
 };

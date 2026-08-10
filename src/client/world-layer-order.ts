@@ -13,6 +13,7 @@ export const WORLD_LAYER_ORDER = [
   "feature",
   "flight",
   "districtTooltip",
+  "buildingTooltip",
 ] as const;
 
 export type WorldLayerName = typeof WORLD_LAYER_ORDER[number];
