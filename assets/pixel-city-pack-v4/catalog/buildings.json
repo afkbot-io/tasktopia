@@ -261,9 +261,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-cottage/stages.png",
+      "sheetSha256": "61ee71708b850b046c9091c2cda186d73a864ca45f3f2b52aef060813db665aa",
+      "reviewed": true
     },
     {
       "key": "house-townhouse",
@@ -304,9 +304,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-townhouse/stages.png",
+      "sheetSha256": "aece37f33b9e9fdc883f0805bc00f8e4ce7794ddb4bcea6bea1df989cdf23c26",
+      "reviewed": true
     },
     {
       "key": "house-gabled",
@@ -345,9 +345,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-gabled/stages.png",
+      "sheetSha256": "5a0827850c72d0a6a10d742629da776202c6962a200a839a9efa12a4d0cc7f9f",
+      "reviewed": true
     },
     {
       "key": "house-duplex",
@@ -388,9 +388,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-duplex/stages.png",
+      "sheetSha256": "63acc208ee4443cdd2e5f28bada635bbd671d00815d6251fbadcbc26867d7439",
+      "reviewed": true
     },
     {
       "key": "house-small-apartments",
@@ -432,9 +432,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-small-apartments/stages.png",
+      "sheetSha256": "961a7010a72ed47568e3eb10f8319739afcfe46b1361ab60adf37d9763e6b5ef",
+      "reviewed": true
     },
     {
       "key": "shop-supermarket",
