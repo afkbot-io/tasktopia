@@ -10,4 +10,23 @@ test-results/
 coverage/
 .playwright-cli/
 output/
+tmp/
 .DS_Store
+
+# Local AI-client skill mirrors. The canonical project skill lives in
+# .agents/skills; adapters generated for individual editors never ship.
+/.[!.]*/skills/
+!/.agents/skills/
+!/.agents/skills/**
+/.agents/skills/*
+!/.agents/skills/tasktopia-pixel-city-art/
+!/.agents/skills/tasktopia-pixel-city-art/**
+/.agent/
+/.tabnine/
+/agent/
+/skills/
+/skills-lock.json
+
+# Review rejects and one-off drawing studies are not runtime inputs.
+/assets/pixel-city-pack-v4/reference/rejected/
+/sprite-examples/

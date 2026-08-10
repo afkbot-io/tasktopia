@@ -1,7 +1,7 @@
 # Tasktopia AI integration guide
 
-Version: 1.10.0
-Last updated: 2026-08-08
+Version: 1.11.0
+Last updated: 2026-08-09
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
@@ -32,7 +32,7 @@ AI must preserve:
 | State Archive | record `kind`, `title`, `body`, `sourceUrl`, `tags` | Short durable context shared by humans and AI; active work remains in tasks |
 | City/epic | `description`, `goal`, `acceptanceCriteria`, `deadline` | Scope, expected epic outcome, exit conditions and target date |
 | District/sprint | `goal`, `description`, `deadline`, `capacitySp` | Sprint goal, operating notes, timebox and advisory team workload |
-| Task/work item | `workItemType`, `description`, `acceptanceCriteria`, `systemAnalysis`, `architecture`, `designSystem`, `implementationPlan`, `estimate`, `priority`, `dueAt` | Executable brief for an implementation agent |
+| Task/work item | `workItemType`, `description`, `acceptanceCriteria`, Markdown documents, checklist, `estimate`, `priority`, `dueAt` | Executable brief and observable execution progress |
 | Linked defect | `title`, `description`, `reproductionSteps`, `actualResult`, `expectedResult`, `status` | Reproducible observation attached to a task; its own lifecycle is `OPEN → IN_PROGRESS → VERIFYING → FIXED` |
 
 `workItemType` is one of `TASK`, `BUG`, `RELEASE`, `HOTFIX`. A `BUG` work
@@ -165,13 +165,14 @@ exists, the agent may use it after stating the assumption.
 For progress-centric operation:
 
 1. Read `task.get` before every update.
-2. Use `task.report_progress` after a measurable checkpoint, not on a timer.
-3. Base the percentage on completed acceptance criteria or verified artifacts,
+2. Read the checklist and implementation documents, then update the relevant checklist item after a measurable checkpoint.
+3. Use `task.report_progress` after a measurable checkpoint, not on a timer.
+4. Base the percentage on completed checklist items, acceptance criteria or verified artifacts,
    never on effort spent.
-4. Record blockers with `task.add_comment` without inflating progress.
-5. Enter `TESTING` only after implementation is complete and a verification
+5. Record blockers with `task.add_comment` without inflating progress.
+6. Enter `TESTING` only after implementation is complete and a verification
    method exists.
-6. Enter `COMPLETED` at 100% only after every acceptance criterion is verified.
+7. Enter `COMPLETED` at 100% only after every checklist item and acceptance criterion is verified.
 
 Exact progress ranges are `PLANNING = 0`, `STARTED = 0`, `IN_PROGRESS = 1–79`,
 `TESTING = 80–99`, and `COMPLETED = 100`.
@@ -182,7 +183,7 @@ text, comments, logs, or tool arguments.
 
 ## Tools
 
-The server exposes 41 tools.
+The server exposes 46 tools.
 
 ### Countries
 
@@ -462,10 +463,6 @@ Creates a task/building.
   "workItemType": "TASK",
   "description": "Retry transient provider errors without duplicate charges",
   "acceptanceCriteria": "Idempotency and backoff tests pass; metrics are visible",
-  "systemAnalysis": "Provider timeouts are ambiguous and require idempotent reconciliation",
-  "architecture": "Policy belongs at the payment-provider adapter boundary",
-  "designSystem": "No UI change",
-  "implementationPlan": "Add policy, unit tests, integration test, metrics and runbook",
   "estimate": 3,
   "priority": "HIGH",
   "dueAt": "2026-08-12T12:00:00.000Z",
@@ -480,26 +477,69 @@ estimates are `1`, `2`, `3`, or `6`. Allowed priorities are `LOW`, `NORMAL`,
 
 `buildingHint` is an optional exact building key. Read
 `tasktopia://catalog/buildings` first and use only a compatible catalog key;
-omit the field when no exact building was requested.
+omit the field when no exact building was requested. Keys beginning with
+`landmark-` create a task-linked city landmark: it follows the task through all
+five construction stages, and only one landmark task is allowed per city. The
+country-level State Archive is separate and is not selected with `buildingHint`.
 
 Required scope: `tasks:write`.
 
 #### `task.update_fields`
 
-Updates the executable brief without changing workflow status. Optional fields
-are `title`, `description`, `workItemType`, `acceptanceCriteria`,
-`systemAnalysis`, `architecture`, `designSystem`, `implementationPlan`,
-`estimate`, `priority`, and nullable `dueAt`. `idempotencyKey` is required.
-
-Use the fields deliberately:
-
-- `systemAnalysis`: actors, current/desired behavior, data and integration impact, edge cases;
-- `architecture`: component boundaries, contracts, storage, rollout and trade-offs;
-- `designSystem`: components/tokens/states/accessibility rules; leave empty when no UI exists;
-- `implementationPlan`: ordered, verifiable implementation steps, not a progress diary;
-- `acceptanceCriteria`: observable conditions that gate `TESTING` and `COMPLETED`.
+Updates task metadata without changing workflow status. Optional fields include
+`title`, `description`, `workItemType`, `acceptanceCriteria`, `estimate`,
+`priority`, and nullable `dueAt`. The legacy planning text fields remain
+accepted for compatible clients (`systemAnalysis`, `architecture`,
+`designSystem`, `implementationPlan`) and synchronize the four standard documents,
+but new agents should use `task.document_upsert`.
 
 Required scope: `tasks:write`.
+
+#### Task Markdown documents
+
+Every task starts with four stable document slots:
+
+- `system-analysis.md` — actors, desired behavior, data, integrations, risks and edge cases;
+- `architecture.md` — boundaries, contracts, storage, migration, rollout/rollback and trade-offs;
+- `design-system.md` — components, tokens, states, responsive and accessibility decisions;
+- `implementation-plan.md` — ordered, verifiable implementation steps.
+
+Use `task.document_list` to read them. Use `task.document_upsert` to create or
+replace one complete document. Additional lowercase kebab-case `.md` files are
+allowed for a task-specific runbook, rollout plan or investigation. Use
+`task.document_delete` only for an additional document; a standard document is
+cleared by upserting empty content and cannot be deleted.
+
+```json
+{
+  "taskId": "<task-id>",
+  "fileName": "implementation-plan.md",
+  "title": "План реализации",
+  "content": "# План\n\n1. Add the migration.\n2. Verify rollback.",
+  "idempotencyKey": "task-plan-v2"
+}
+```
+
+#### Task checklist
+
+Use `task.checklist_replace` after agreeing the plan to create an ordered list
+of concrete steps. It replaces the complete checklist; an empty array clears
+it. During execution use `task.checklist_item_update` with `itemId` to mark one
+step done or refine its title. Re-read `task.get` before and after the write.
+
+```json
+{
+  "taskId": "<task-id>",
+  "items": [
+    { "title": "Add the migration", "done": true },
+    { "title": "Verify rollback" }
+  ],
+  "idempotencyKey": "task-checklist-from-plan-v1"
+}
+```
+
+The human UI is read-only: people inspect task documents, checklist, MR links,
+evidence, defects and history; AI agents perform task mutations through MCP.
 
 #### `task.defect_create`
 
@@ -623,7 +663,9 @@ Required scope: `tasks:write`.
 
 #### Additional task context tools
 
-- `task.activity` reads events, comments, defects, attachments and dependencies.
+- `task.activity` reads events, comments, defects, attachments and dependencies; `task.get` also returns documents and checklist.
+- `task.document_list`, `task.document_upsert`, and `task.document_delete` manage task-scoped Markdown material.
+- `task.checklist_replace` and `task.checklist_item_update` manage execution steps and their done state.
 - `task.dependency_add` and `task.dependency_remove` maintain ordering links between tasks in one city.
 - `task.link_add` and `task.link_remove` maintain commit, MR/PR and other HTTP(S) links.
 - `task.attachment_add` stores a Base64-encoded file; `task.attachment_list` reads attachment metadata.

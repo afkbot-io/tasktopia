@@ -31,6 +31,8 @@ import {
   type RoadCellDto,
   type SurfaceCellDto,
   type TaskAttachmentDto,
+  type TaskChecklistItemDto,
+  type TaskDocumentDto,
   type TaskDto,
   type TaskDefectDto,
   type TaskEventDto,
@@ -83,6 +85,24 @@ const COUNTRY_VIEW_MARGIN = 54;
 const SPRINT_COLORS = ["#52a8d8", "#dfa94b", "#9877c7", "#69ad67", "#c86f67", "#4fb49f", "#d585b4"];
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
 const ARCHIVE_COMPOUND = { width: 18, height: 12 } as const;
+const ARCHIVE_CITY_CLEARANCE = 24;
+
+function roadReachable(roads: ReadonlyMap<string, Cell>, start: Cell, target: Cell): boolean {
+  const startKey = cellKey(start);
+  const targetKey = cellKey(target);
+  if (!roads.has(startKey) || !roads.has(targetKey)) return false;
+  const queue = [start];
+  const visited = new Set<string>();
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const current = queue[cursor]!;
+    const key = cellKey(current);
+    if (visited.has(key)) continue;
+    if (key === targetKey) return true;
+    visited.add(key);
+    for (const next of neighbors4(current)) if (roads.has(cellKey(next)) && !visited.has(cellKey(next))) queue.push(next);
+  }
+  return false;
+}
 const ARCHIVE_BUILDINGS = [
   { assetKey: "state-archive-core", offset: { x: 5, y: 6 }, width: 8, height: 5 },
   { assetKey: "state-archive-wing", offset: { x: 0, y: 1 }, width: 8, height: 4 },
@@ -233,6 +253,36 @@ function attachmentDto(row: Row): TaskAttachmentDto {
     mimeType: String(row.mime_type), sizeBytes: Number(row.size_bytes),
     actor: String(row.actor), createdAt: String(row.created_at),
   };
+}
+
+function taskDocumentDto(row: Row): TaskDocumentDto {
+  return {
+    id: String(row.id), taskId: String(row.task_id), fileName: String(row.file_name), title: String(row.title),
+    content: String(row.content ?? ""), isDefault: Boolean(row.is_default), position: Number(row.position),
+    actor: String(row.actor), updatedAt: String(row.updated_at),
+  };
+}
+
+function taskChecklistItemDto(row: Row): TaskChecklistItemDto {
+  return {
+    id: String(row.id), taskId: String(row.task_id), title: String(row.title), done: Boolean(row.done),
+    position: Number(row.position), createdAt: String(row.created_at), updatedAt: String(row.updated_at),
+  };
+}
+
+const DEFAULT_TASK_DOCUMENTS = [
+  { fileName: "system-analysis.md", title: "Системный анализ", position: 0, legacyField: "system_analysis" },
+  { fileName: "architecture.md", title: "Архитектура", position: 1, legacyField: "architecture" },
+  { fileName: "design-system.md", title: "Дизайн-система", position: 2, legacyField: "design_system" },
+  { fileName: "implementation-plan.md", title: "План реализации", position: 3, legacyField: "implementation_plan" },
+] as const;
+
+function markdownFileName(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (value.length > 82 || !/^[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(value)) {
+    throw new DomainError("INVALID_INPUT", "Имя документа должно быть в kebab-case и заканчиваться на .md");
+  }
+  return value;
 }
 
 function normalizeLinkUrl(raw: string): string {
@@ -619,6 +669,11 @@ export class AppService {
       }
       await this.db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(seed, countryId);
       await this.db.prepare("DELETE FROM countries WHERE id = ?").run(temporaryCountryId);
+      // Bulk SQL replacement bypasses the in-memory road index. Archive sync
+      // must see the freshly copied graph, otherwise it recalculates masks
+      // against the previous world's roads and leaves one-way visual gaps.
+      this.roadCache.delete(countryId);
+      this.surfaceCache.delete(countryId);
       await this.syncCountryArchiveComplex(countryId);
       this.roadCache.delete(countryId);
       this.surfaceCache.delete(countryId);
@@ -840,6 +895,8 @@ export class AppService {
       createdAt: String(defect.created_at), updatedAt: String(defect.updated_at),
     }));
     task.attachments = (await this.db.prepare("SELECT * FROM task_attachments_v1 WHERE task_id = ? ORDER BY created_at, id").all(taskId) as Row[]).map(attachmentDto);
+    task.documents = (await this.db.prepare("SELECT * FROM task_documents_v1 WHERE task_id = ? ORDER BY position, file_name").all(taskId) as Row[]).map(taskDocumentDto);
+    task.checklist = (await this.db.prepare("SELECT * FROM task_checklist_items_v1 WHERE task_id = ? ORDER BY position, id").all(taskId) as Row[]).map(taskChecklistItemDto);
     return task;
   }
 
@@ -950,6 +1007,109 @@ export class AppService {
       await this.db.prepare("DELETE FROM task_attachments_v1 WHERE id = ?").run(input.attachmentId);
       await unlink(join(this.uploadDir, String(row.storage_path))).catch(() => undefined);
       return { data: { ok: true as const }, eventType: "task.fields_updated", eventPayload: { taskId: String(row.task_id), changedFields: ["attachments"] } };
+    });
+  }
+
+  async upsertTaskDocument(countryId: string, input: {
+    taskId: string; fileName: string; title?: string; content: string; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskDocumentDto> {
+    const fileName = markdownFileName(input.fileName);
+    const standard = DEFAULT_TASK_DOCUMENTS.find((document) => document.fileName === fileName);
+    const title = (input.title ?? standard?.title ?? "").trim();
+    if (title.length < 2 || title.length > 100) throw new DomainError("INVALID_INPUT", "Название документа должно содержать от 2 до 100 символов");
+    if (input.content.length > 64_000) throw new DomainError("INVALID_INPUT", "Markdown-документ не должен превышать 64 000 символов");
+    return this.mutate(countryId, "task.document.upsert.v1", input.idempotencyKey, { ...input, fileName }, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const current = task.documents?.find((document) => document.fileName === fileName);
+      const timestamp = now();
+      const id = current?.id ?? randomUUID();
+      const position = standard?.position ?? Math.max(4, ...(task.documents ?? []).map((document) => document.position + 1));
+      await this.db.prepare(`INSERT INTO task_documents_v1
+        (id, task_id, file_name, title, content, is_default, position, actor, actor_user_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (task_id, file_name) DO UPDATE SET title = EXCLUDED.title, content = EXCLUDED.content,
+          actor = EXCLUDED.actor, actor_user_id = EXCLUDED.actor_user_id, updated_at = EXCLUDED.updated_at`).run(
+        id, task.id, fileName, standard?.title ?? title, input.content, Boolean(standard), position,
+        input.actor ?? "MCP", input.actorUserId ?? null, timestamp, timestamp,
+      );
+      if (standard) {
+        await this.db.prepare(`UPDATE tasks_v3 SET ${standard.legacyField} = ?, updated_at = ? WHERE id = ?`).run(input.content, timestamp, task.id);
+      }
+      await this.recordTaskEvent(task.id, "DOCUMENT_UPDATED", input.actor ?? "MCP", input.actorUserId, { documentId: id, fileName }, timestamp);
+      const row = await this.db.prepare("SELECT * FROM task_documents_v1 WHERE id = ?").get(id) as Row;
+      return { data: taskDocumentDto(row), eventType: "task.fields_updated", eventPayload: { taskId: task.id, districtId: task.districtId, changedFields: ["documents"], affectedBounds: boundsOf(task.footprint) } };
+    });
+  }
+
+  async deleteTaskDocument(countryId: string, input: {
+    taskId: string; documentId: string; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<{ ok: true }> {
+    return this.mutate(countryId, "task.document.delete.v1", input.idempotencyKey, input, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const document = task.documents?.find((candidate) => candidate.id === input.documentId);
+      if (!document) throw new DomainError("NOT_FOUND", "Документ задачи не найден");
+      if (document.isDefault) throw new DomainError("DEFAULT_DOCUMENT", "Стандартный документ нельзя удалить; очистите его содержимое");
+      await this.db.prepare("DELETE FROM task_documents_v1 WHERE id = ?").run(document.id);
+      const timestamp = now();
+      await this.recordTaskEvent(task.id, "DOCUMENT_DELETED", input.actor ?? "MCP", input.actorUserId, { documentId: document.id, fileName: document.fileName }, timestamp);
+      return { data: { ok: true as const }, eventType: "task.fields_updated", eventPayload: { taskId: task.id, districtId: task.districtId, changedFields: ["documents"], affectedBounds: boundsOf(task.footprint) } };
+    });
+  }
+
+  async replaceTaskChecklist(countryId: string, input: {
+    taskId: string; items: Array<{ title: string; done?: boolean }>; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskChecklistItemDto[]> {
+    if (input.items.length > 50) throw new DomainError("INVALID_INPUT", "В чек-листе может быть не более 50 пунктов");
+    const items = input.items.map((item) => ({ title: item.title.trim(), done: item.done ?? false }));
+    if (items.some((item) => item.title.length < 1 || item.title.length > 240)) {
+      throw new DomainError("INVALID_INPUT", "Пункт чек-листа должен содержать от 1 до 240 символов");
+    }
+    const normalized = items.map((item) => item.title.toLocaleLowerCase("ru-RU"));
+    if (new Set(normalized).size !== normalized.length) throw new DomainError("INVALID_INPUT", "Пункты чек-листа не должны повторяться");
+    return this.mutate(countryId, "task.checklist.replace.v1", input.idempotencyKey, { ...input, items }, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const before = (task.checklist ?? []).map(({ id, title, done, position }) => ({ id, title, done, position }));
+      await this.db.prepare("DELETE FROM task_checklist_items_v1 WHERE task_id = ?").run(task.id);
+      const timestamp = now();
+      const result: TaskChecklistItemDto[] = [];
+      for (const [position, item] of items.entries()) {
+        const id = randomUUID();
+        await this.db.prepare(`INSERT INTO task_checklist_items_v1
+          (id, task_id, title, done, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+          .run(id, task.id, item.title, item.done, position, timestamp, timestamp);
+        result.push({ id, taskId: task.id, title: item.title, done: item.done, position, createdAt: timestamp, updatedAt: timestamp });
+      }
+      await this.recordTaskEvent(task.id, "CHECKLIST_REPLACED", input.actor ?? "MCP", input.actorUserId, {
+        before,
+        after: result.map(({ id, title, done, position }) => ({ id, title, done, position })),
+      }, timestamp);
+      return { data: result, eventType: "task.fields_updated", eventPayload: { taskId: task.id, districtId: task.districtId, changedFields: ["checklist"], affectedBounds: boundsOf(task.footprint) } };
+    });
+  }
+
+  async updateTaskChecklistItem(countryId: string, input: {
+    taskId: string; itemId: string; title?: string; done?: boolean; actor?: string; actorUserId?: string; idempotencyKey: string;
+  }): Promise<TaskChecklistItemDto> {
+    if (input.title === undefined && input.done === undefined) throw new DomainError("INVALID_INPUT", "Передайте новое название или состояние пункта");
+    const title = input.title?.trim();
+    if (title !== undefined && (title.length < 1 || title.length > 240)) throw new DomainError("INVALID_INPUT", "Пункт чек-листа должен содержать от 1 до 240 символов");
+    return this.mutate(countryId, "task.checklist.item.update.v1", input.idempotencyKey, input, async () => {
+      const task = await this.getTask(countryId, input.taskId);
+      const current = task.checklist?.find((item) => item.id === input.itemId);
+      if (!current) throw new DomainError("NOT_FOUND", "Пункт чек-листа не найден");
+      if (title !== undefined && task.checklist?.some((item) => item.id !== current.id && item.title.toLocaleLowerCase("ru-RU") === title.toLocaleLowerCase("ru-RU"))) {
+        throw new DomainError("INVALID_INPUT", "Пункты чек-листа не должны повторяться");
+      }
+      const timestamp = now();
+      await this.db.prepare("UPDATE task_checklist_items_v1 SET title = ?, done = ?, updated_at = ? WHERE id = ?")
+        .run(title ?? current.title, input.done ?? current.done, timestamp, current.id);
+      await this.recordTaskEvent(task.id, "CHECKLIST_ITEM_UPDATED", input.actor ?? "MCP", input.actorUserId, {
+        itemId: current.id,
+        before: { title: current.title, done: current.done },
+        after: { title: title ?? current.title, done: input.done ?? current.done },
+      }, timestamp);
+      const row = await this.db.prepare("SELECT * FROM task_checklist_items_v1 WHERE id = ?").get(current.id) as Row;
+      return { data: taskChecklistItemDto(row), eventType: "task.fields_updated", eventPayload: { taskId: task.id, districtId: task.districtId, changedFields: ["checklist"], affectedBounds: boundsOf(task.footprint) } };
     });
   }
 
@@ -1232,6 +1392,7 @@ export class AppService {
       });
     }
     const upsert = this.db.prepare("INSERT INTO roads_v3 (country_id, x, y, mask, structure, road_class) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(country_id, x, y) DO UPDATE SET structure = excluded.structure, road_class = excluded.road_class");
+    const writes: Array<Promise<unknown>> = [];
     for (const cell of corridor) {
       const terrain = terrainAt(seed, cell.x, cell.y).terrain;
       const structure: RoadCellDto["structure"] = isWater(terrain) ? "BRIDGE" : "ROAD";
@@ -1242,8 +1403,9 @@ export class AppService {
         : existing && ROAD_CLASS_RANK[existing.roadClass] > ROAD_CLASS_RANK[roadClass] ? existing.roadClass : roadClass;
       const updated: RoadCellDto = { ...cell, mask: existing?.mask ?? 0, structure, roadClass: selectedClass };
       roads.set(cellKey(cell), updated);
-      upsert.run(countryId, cell.x, cell.y, updated.mask, structure, selectedClass);
+      writes.push(upsert.run(countryId, cell.x, cell.y, updated.mask, structure, selectedClass));
     }
+    await Promise.all(writes);
     await this.recalculateRoadMasks(countryId, corridor);
     // A road corridor redevelops any ruin plot it crosses.
     await this.clearRuins(countryId, corridor);
@@ -1256,6 +1418,7 @@ export class AppService {
     const targets = affected
       ? new Map([...affected].flatMap((cell) => [cell, ...neighbors4(cell)]).map((cell) => [cellKey(cell), cell])).values()
       : roads.values();
+    const writes: Array<Promise<unknown>> = [];
     for (const target of targets) {
       const road = roads.get(cellKey(target));
       if (!road) continue;
@@ -1264,8 +1427,9 @@ export class AppService {
         if (roads.has(cellKey({ x: road.x + direction.x, y: road.y + direction.y }))) mask |= direction.bit;
       }
       road.mask = mask;
-      update.run(mask, countryId, road.x, road.y);
+      writes.push(update.run(mask, countryId, road.x, road.y));
     }
+    await Promise.all(writes);
   }
 
   private cityGateway(bounds: Rect, center: Cell, source: Cell): { cell: Cell; horizontalApproach: boolean } {
@@ -1312,6 +1476,20 @@ export class AppService {
     const candidates = rural.length > 0 ? rural : outsideDistricts.length > 0 ? outsideDistricts : highways;
     return candidates
       .reduce<Cell | undefined>((best, road) => !best || manhattan(road, target) < manhattan(best, target) ? road : best, undefined);
+  }
+
+  private async roadNetworkAnchor(countryId: string, target: Cell, cities: CityDto[]): Promise<Cell | undefined> {
+    const roads = [...(await this.roadCells(countryId)).values()];
+    const urban = cities.map((city) => rectForCenter(city.center));
+    const featureEnvelopes = (await this.listWorldFeatures(countryId))
+      .filter((feature) => feature.assetKind === "AREA" || feature.kind === "COUNTRY_ARCHIVE")
+      .map((feature) => expandRect(boundsOf([...feature.footprint, ...feature.accessPath]), 4));
+    const rural = roads.filter((road) => !urban.some((bounds) => contains(bounds, road))
+      && !featureEnvelopes.some((bounds) => contains(bounds, road)));
+    const safe = roads.filter((road) => !featureEnvelopes.some((bounds) => contains(bounds, road)));
+    const candidates = rural.length > 0 ? rural : safe.length > 0 ? safe : roads;
+    return candidates.reduce<Cell | undefined>((best, road) =>
+      !best || manhattan(road, target) < manhattan(best, target) ? road : best, undefined);
   }
 
   private async featurePlacementOpen(countryId: string, seed: number, footprint: Cell[], avoidBounds: Rect[] = []): Promise<boolean> {
@@ -1470,35 +1648,39 @@ export class AppService {
       PRIVATE: "streetlamp-vintage", NEW_BUILD: "streetlamp-modern", MIXED_URBAN: "streetlamp-double",
       CIVIC: "streetlamp-solar", COMMERCIAL: "streetlamp-industrial",
     };
-    const treeVariants = ["tree-birch", "tree-pine", "tree-willow", "tree-oak", "tree-apple", "tree-cherry", "tree-maple", "tree-cedar", "tree-cypress", "tree-aspen", "tree-magnolia", "tree-redwood"] as const;
+    const treeVariants = ["tree-birch", "tree-pine", "tree-willow", "tree-oak", "tree-apple", "tree-cherry", "tree-maple", "tree-cedar", "tree-cypress", "tree-aspen", "tree-magnolia", "tree-redwood", "tree-round", "tree-conifer"] as const;
     const primaryTree = treeVariants[(cityIndex + districtIndex) % treeVariants.length]!;
     const secondaryTree = treeVariants[(cityIndex + districtIndex + 3) % treeVariants.length]!;
     type DecorPlacement = readonly [assetKey: string, offsetX: number, offsetY: number, width: number, height: number];
-    const decorByArea: Record<string, readonly DecorPlacement[]> = {
+    const decorByArea: Record<string, readonly (readonly DecorPlacement[])[]> = {
       "urban-central": [
-        ["fountain-large", 2, 1, 4, 4], ["park-bench-double", 0, 5, 3, 1],
-        ["statue-abstract", 5, 4, 2, 2], [lampByArchetype[archetype], 7, 5, 1, 1], [primaryTree, 0, 0, 1, 1],
+        [["fountain-large", 2, 1, 4, 4], ["park-bench-double", 0, 5, 3, 1], ["park-sculpture", 6, 3, 2, 3], [lampByArchetype[archetype], 7, 6, 1, 1], [primaryTree, 0, 0, 1, 1]],
+        [["park-bandstand", 2, 1, 4, 3], ["park-flower-clock", 0, 4, 3, 2], ["park-sculpture", 6, 3, 2, 3], ["park-bench-double", 3, 5, 3, 1], [secondaryTree, 7, 0, 1, 1]],
+        [["fountain-large", 0, 1, 4, 4], ["park-bandstand", 4, 0, 4, 3], ["park-flower-clock", 4, 4, 3, 2], [lampByArchetype[archetype], 7, 6, 1, 1], [primaryTree, 0, 0, 1, 1]],
       ],
       "urban-botanical": [
-        ["pond-small", 0, 0, 3, 3], ["gazebo", 3, 2, 4, 3],
-        ["topiary-spiral", 1, 4, 1, 1], ["flower-bed-vertical", 2, 3, 1, 3],
-        [secondaryTree, 6, 0, 1, 1], [lampByArchetype[archetype], 0, 4, 1, 1],
+        [["park-pond", 0, 0, 4, 3], ["gazebo", 3, 3, 4, 3], ["topiary-spiral", 1, 4, 1, 1], [secondaryTree, 6, 0, 1, 1], [lampByArchetype[archetype], 0, 4, 1, 1]],
+        [["park-pond", 3, 0, 4, 3], ["park-bandstand", 0, 3, 4, 3], ["park-flower-clock", 4, 4, 3, 2], [primaryTree, 0, 0, 1, 1]],
+        [["gazebo", 0, 0, 4, 3], ["park-flower-clock", 4, 0, 3, 2], ["park-sculpture", 5, 2, 2, 3], ["park-pond", 0, 3, 4, 3], [secondaryTree, 4, 5, 1, 1]],
       ],
       "urban-amusement": [
-        ["playground-carousel", 0, 1, 3, 3], ["playground-slide", 4, 1, 3, 2],
-        ["topiary-animal", 4, 3, 2, 1], [lampByArchetype[archetype], 3, 3, 1, 1], ["trash-bin", 6, 4, 1, 1],
+        [["playground-carousel", 0, 0, 3, 3], ["playground-slide", 4, 0, 3, 2], ["playground-climbing", 4, 2, 3, 3], [lampByArchetype[archetype], 3, 3, 1, 1]],
+        [["playground-small", 0, 0, 3, 2], ["playground-swing", 4, 0, 3, 3], ["playground-carousel", 0, 2, 3, 3], ["trash-bin", 6, 4, 1, 1]],
+        [["playground-slide", 0, 0, 3, 2], ["playground-climbing", 0, 2, 3, 3], ["playground-small", 4, 0, 3, 2], ["playground-swing", 4, 2, 3, 3], [lampByArchetype[archetype], 3, 3, 1, 1]],
       ],
       "urban-park": [
-        ["playground-small", 0, 0, 3, 2], ["park-bench-double", 1, 3, 3, 1],
-        [primaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1],
+        [["playground-small", 0, 0, 3, 2], ["park-bench-double", 1, 3, 3, 1], [primaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1]],
+        [["playground-carousel", 0, 0, 3, 3], ["park-bench-double", 2, 3, 3, 1], [secondaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1]],
+        [["playground-swing", 0, 0, 3, 3], ["park-bench-double", 2, 3, 3, 1], [primaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1]],
       ],
       "urban-grove": [
-        ["gazebo", 1, 1, 4, 3], [primaryTree, 0, 0, 1, 1], ["tree-pine", 5, 0, 1, 1],
-        [secondaryTree, 5, 3, 1, 1], ["picnic-table", 0, 3, 2, 2],
-        [lampByArchetype[archetype], 4, 4, 1, 1], ["trash-bin", 2, 4, 1, 1],
+        [["gazebo", 1, 1, 4, 3], [primaryTree, 0, 0, 1, 1], ["tree-pine", 5, 0, 1, 1], [secondaryTree, 5, 3, 1, 1], ["park-bench-double", 0, 4, 3, 1], [lampByArchetype[archetype], 4, 4, 1, 1]],
+        [["park-pond", 0, 0, 4, 3], ["picnic-table", 4, 0, 2, 2], [primaryTree, 0, 4, 1, 1], [secondaryTree, 5, 4, 1, 1], [lampByArchetype[archetype], 4, 3, 1, 1], ["trash-bin", 5, 3, 1, 1]],
+        [["park-bandstand", 2, 0, 4, 3], ["park-flower-clock", 0, 3, 3, 2], [primaryTree, 0, 0, 1, 1], [secondaryTree, 5, 3, 1, 1], [lampByArchetype[archetype], 4, 4, 1, 1]],
       ],
     };
-    const decor = decorByArea[assetKey] ?? decorByArea["urban-park"]!;
+    const variants = decorByArea[assetKey] ?? decorByArea["urban-park"]!;
+    const decor = variants[Math.floor(hashCoordinate(seed, selected.origin.x, selected.origin.y, 829) * variants.length)] ?? variants[0]!;
     for (const [assetKey, offsetX, offsetY, width, height] of decor) {
       const origin = { x: selected.origin.x + offsetX, y: selected.origin.y + offsetY };
       const footprint = rectangleFootprint(origin, width, height);
@@ -1507,76 +1689,6 @@ export class AppService {
                                         cityId: city.id, districtId, parentFeatureId: area.id, kind: "PARK_DECOR", assetKind: "PROP", assetKey,
                                         origin, footprint, orientation: "S", accessPath: [],
                                       });
-    }
-  }
-
-  private async publishCityLandmark(
-    countryId: string,
-    city: CityDto,
-    districtId: string,
-    seed: number,
-    districtCells: Cell[],
-    reservedLots: PlannedLotDto[] = [],
-  ): Promise<void> {
-    const existingFeatures = await this.listWorldFeatures(countryId);
-    if (existingFeatures.some((feature) => feature.cityId === city.id && feature.kind === "LANDMARK")) return;
-
-    const landmarkKeys = BUILDING_CATALOG.filter((entry) => entry.key.startsWith("landmark-")).map((entry) => entry.key);
-    const preferred = Math.floor(hashCoordinate(seed, city.center.x, city.center.y, 887) * landmarkKeys.length);
-    const orderedKeys = landmarkKeys.map((_, index) => landmarkKeys[(preferred + index) % landmarkKeys.length]!);
-    const allowed = new Set(districtCells.map(cellKey));
-    const roads = await this.roadCells(countryId);
-    const bounds = boundsOf(districtCells);
-    const surfaces = await this.localSurfaceCells(countryId, bounds, roads);
-    const occupied = new Set([
-      ...(await this.listTasks(countryId)).flatMap((task) => task.footprint),
-      ...existingFeatures.filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint),
-      ...reservedLots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)),
-      ...reservedLots.flatMap((lot) => lot.sharedAccess ?? []),
-    ].map(cellKey));
-
-    for (const assetKey of orderedKeys) {
-      const catalog = getBuilding(assetKey);
-      const candidates: Array<{ origin: Cell; footprint: Cell[]; accessPath: Cell[]; score: number }> = [];
-      for (let y = bounds.minY; y <= bounds.maxY - catalog.footprint.height + 1; y += 1) {
-        for (let x = bounds.minX; x <= bounds.maxX - catalog.footprint.width + 1; x += 1) {
-          const origin = { x, y };
-          const footprint = rectangleFootprint(origin, catalog.footprint.width, catalog.footprint.height);
-          if (!footprint.every((cell) => {
-            const key = cellKey(cell);
-            return allowed.has(key) && !roads.has(key) && !occupied.has(key)
-              && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain);
-          })) continue;
-          const accessPath = this.areaAccessPath(seed, allowed, footprint, roads, surfaces, occupied);
-          if (accessPath === null) continue;
-          const center = {
-            x: x + Math.floor(catalog.footprint.width / 2),
-            y: y + Math.floor(catalog.footprint.height / 2),
-          };
-          candidates.push({
-            origin,
-            footprint,
-            accessPath,
-            score: accessPath.length * 100 + manhattan(center, city.center) * 0.12 + hashCoordinate(seed, x, y, 907),
-          });
-        }
-      }
-      const selected = candidates.sort((left, right) => left.score - right.score || left.origin.y - right.origin.y || left.origin.x - right.origin.x)[0];
-      if (!selected) continue;
-      await this.insertWorldFeature(countryId, {
-        cityId: city.id,
-        districtId,
-        parentFeatureId: null,
-        kind: "LANDMARK",
-        assetKind: "BUILDING",
-        assetKey,
-        origin: selected.origin,
-        footprint: selected.footprint,
-        orientation: "S",
-        accessPath: selected.accessPath,
-      });
-      await this.clearRuins(countryId, [...selected.footprint, ...selected.accessPath]);
-      return;
     }
   }
 
@@ -1613,7 +1725,9 @@ export class AppService {
     };
 
     await placeProp("CITY_SIGN", `city-sign-${roadAxisKey}`, portal, [1, 1]);
-    await placeProp("BUS_STOP", `bus-stop-${roadAxisKey}`, gateway, horizontalApproach ? [2, 1] : [1, 2]);
+    const stopFamilies = ["bus-stop", "bus-stop-modern", "bus-stop-green"] as const;
+    const stopFamily = stopFamilies[Math.floor(hashCoordinate(seed, gateway.x, gateway.y, 887) * stopFamilies.length)] ?? stopFamilies[0];
+    await placeProp("BUS_STOP", `${stopFamily}-${roadAxisKey}`, gateway, horizontalApproach ? [3, 1] : [1, 3]);
 
     // A long approach receives one shared service area. It is intentionally a
     // world feature rather than a fabricated user task.
@@ -1689,24 +1803,60 @@ export class AppService {
 
   private async syncCountryArchiveComplex(countryId: string, preferredAnchor?: Cell): Promise<Rect | undefined> {
     const archive = await this.getArchive(countryId);
-    const features = (await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "COUNTRY_ARCHIVE");
+    let features = (await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "COUNTRY_ARCHIVE");
     let compound = features.find((feature) => feature.assetKind === "AREA");
+    const cities = await this.listCities(countryId);
+    const cityExclusions = cities.map((city) => expandRect(city.bounds, ARCHIVE_CITY_CLEARANCE));
+    let relocatedBounds: Rect | undefined;
+    if (compound && cityExclusions.some((bounds) => intersects(bounds, boundsOf(compound!.footprint)))) {
+      relocatedBounds = boundsOf([...compound.footprint, ...compound.accessPath]);
+      const oldCorridor = new Map(this.roadCorridor(compound.accessPath, "LOCAL").map((cell) => [cellKey(cell), cell]));
+      const protectedCells = new Set([
+        ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, ...task.accessPath]),
+        ...(await this.listWorldFeatures(countryId))
+          .filter((feature) => feature.id !== compound!.id && feature.parentFeatureId !== compound!.id && feature.kind !== "COUNTRY_ARCHIVE")
+          .flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
+      ].map(cellKey));
+      await this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?").run(compound.id);
+      const roads = await this.roadCells(countryId);
+      const remove = this.db.prepare("DELETE FROM roads_v3 WHERE country_id = ? AND x = ? AND y = ?");
+      const removed: Cell[] = [];
+      // A city may grow around the once-rural archive driveway and reuse it as
+      // the only connection between later blocks. It is then shared urban
+      // infrastructure, not archive-owned geometry, so preserve the route.
+      const absorbedByCity = [...oldCorridor.values()].some((cell) => cities.some((city) => contains(city.bounds, cell)));
+      if (!absorbedByCity) {
+        for (const cell of oldCorridor.values()) {
+          const road = roads.get(cellKey(cell));
+          if (!road || road.roadClass !== "LOCAL" || protectedCells.has(cellKey(cell))) continue;
+          // Preserve the junction where the former driveway met an unrelated
+          // road component; only the archive-owned leaf corridor is removed.
+          if (neighbors4(cell).some((next) => roads.has(cellKey(next)) && !oldCorridor.has(cellKey(next)))) continue;
+          await remove.run(countryId, cell.x, cell.y);
+          roads.delete(cellKey(cell));
+          removed.push(cell);
+        }
+      }
+      if (removed.length > 0) await this.recalculateRoadMasks(countryId, removed);
+      this.surfaceCache.delete(countryId);
+      features = (await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "COUNTRY_ARCHIVE");
+      compound = undefined;
+    }
     if (!compound) {
       const city = preferredAnchor ? undefined : (await this.listCities(countryId))[0];
       const anchor = preferredAnchor ?? city?.center;
       if (!anchor) return undefined;
       const seed = Number((await this.countryRow(countryId)).seed);
-      // Keep the archive close enough to the capital to read as a national
-      // institution, but outside its hub roads. The full final footprint is
-      // reserved from day one so later wings cannot collide with work lots.
+      // The archive is a separate secured national site, not another city
+      // block. Keep a visible green belt between its perimeter and every city.
       const preferredCandidates = [
-        { x: -76, y: 18 }, { x: -76, y: -28 }, { x: 58, y: 18 }, { x: 58, y: -28 },
-        { x: -30, y: -66 }, { x: 14, y: -66 }, { x: -30, y: 56 }, { x: 14, y: 56 },
+        { x: -112, y: 12 }, { x: 94, y: 12 }, { x: -12, y: -106 }, { x: -12, y: 94 },
+        { x: -120, y: -34 }, { x: 102, y: -34 }, { x: -42, y: -114 }, { x: 28, y: 102 },
       ];
       const fallbackCandidates: Cell[] = [];
-      for (let y = -44; y <= 38; y += 4) for (const x of [-92, -84, -76, -68, -60, 56, 64, 72, 80, 88]) fallbackCandidates.push({ x, y });
-      for (let x = -44; x <= 34; x += 4) for (const y of [-82, -74, -66, -58, 56, 64, 72, 80]) fallbackCandidates.push({ x, y });
-      fallbackCandidates.sort((left, right) => manhattan(left, { x: -58, y: 0 }) - manhattan(right, { x: -58, y: 0 }));
+      for (let y = -52; y <= 48; y += 4) for (const x of [-136, -128, -120, -112, -104, -96, 88, 96, 104, 112, 120, 128]) fallbackCandidates.push({ x, y });
+      for (let x = -52; x <= 48; x += 4) for (const y of [-126, -118, -110, -102, -94, 88, 96, 104, 112, 120]) fallbackCandidates.push({ x, y });
+      fallbackCandidates.sort((left, right) => manhattan(left, { x: -104, y: 0 }) - manhattan(right, { x: -104, y: 0 }));
       const candidates = [...preferredCandidates, ...fallbackCandidates];
       const roads = await this.roadCells(countryId);
       const occupied = new Set([
@@ -1721,7 +1871,10 @@ export class AppService {
         // forced onto water, an existing road or somebody else's building.
         const securedSite = rectangleFootprint({ x: origin.x - 1, y: origin.y - 1 }, ARCHIVE_COMPOUND.width + 2, ARCHIVE_COMPOUND.height + 2);
         const approach = rectangleFootprint({ x: origin.x + 9, y: origin.y + ARCHIVE_COMPOUND.height }, 2, 4);
-        if (![...securedSite, ...approach].every((cell) => !roads.has(cellKey(cell)) && !occupied.has(cellKey(cell)) && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain))) continue;
+        if (![...securedSite, ...approach].every((cell) => !roads.has(cellKey(cell))
+          && !occupied.has(cellKey(cell))
+          && !cityExclusions.some((bounds) => contains(bounds, cell))
+          && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain))) continue;
         compound = await this.insertWorldFeature(countryId, {
           cityId: null, districtId: null, parentFeatureId: null,
           kind: "COUNTRY_ARCHIVE", assetKind: "AREA", assetKey: "state-archive-complex",
@@ -1737,8 +1890,13 @@ export class AppService {
       const gateCenter = { x: compound.origin.x + 10, y: compound.origin.y + ARCHIVE_COMPOUND.height };
       const apron = Array.from({ length: 4 }, (_, index) => ({ x: gateCenter.x, y: gateCenter.y + index }));
       const exclusion = expandRect(boundsOf(compound.footprint), 4);
-      const roads = [...(await this.roadCells(countryId)).values()]
-        .filter((road) => !contains(exclusion, road))
+      const cityAvoid = (await this.listCities(countryId)).map((city) => expandRect(city.bounds, 3));
+      const allRoads = [...(await this.roadCells(countryId)).values()].filter((road) => !contains(exclusion, road));
+      // Join the archive driveway to the rural/national network. Routing to a
+      // tempting local street can otherwise cut a new road straight through
+      // the city's reserved building envelope.
+      const ruralRoads = allRoads.filter((road) => !cityAvoid.some((bounds) => contains(bounds, road)));
+      const roads = (ruralRoads.length > 0 ? ruralRoads : allRoads)
         .sort((left, right) => {
           const classPenalty = (road: RoadCellDto) => road.roadClass === "HIGHWAY" ? 10_000 : 0;
           return manhattan(left, apron[apron.length - 1]!) + classPenalty(left)
@@ -1747,7 +1905,9 @@ export class AppService {
       let connector: Cell[] | undefined;
       for (const target of roads.slice(0, 24)) {
         try {
-          const routed = await this.route(countryId, seed, apron[apron.length - 1]!, target, [], [], 1, true);
+          // Two-cell clearance protects the fence from the lateral lane of the
+          // stamped two-lane driveway, not just from its A* centreline.
+          const routed = await this.route(countryId, seed, apron[apron.length - 1]!, target, cityAvoid, [], 2, true);
           connector = [...apron, ...routed.slice(1)];
           break;
         } catch (error) {
@@ -1815,7 +1975,8 @@ export class AppService {
     }
     await this.db.prepare("UPDATE country_archives_v1 SET updated_at = ? WHERE id = ?").run(now(), archive.id);
     this.surfaceCache.delete(countryId);
-    return boundsOf([...compound.footprint, ...compound.accessPath, ...infrastructure.flatMap((item) => item.footprint)]);
+    const currentBounds = boundsOf([...compound.footprint, ...compound.accessPath, ...infrastructure.flatMap((item) => item.footprint)]);
+    return relocatedBounds ? unionRect(relocatedBounds, currentBounds) : currentBounds;
   }
 
   async upgradeCountryArchiveInfrastructure(): Promise<number> {
@@ -1859,7 +2020,10 @@ export class AppService {
                       const approach = nearest?.center ?? { x: bounds.minX - COUNTRY_VIEW_MARGIN, y: center.y + 9 };
                       const gateway = this.cityGateway(bounds, center, approach);
                       const portal = this.cityPortal(bounds, gateway.cell, gateway.horizontalApproach);
-                      const source = nearest ? await this.highwayAnchor(countryId, portal, cities) ?? nearest.center : approach;
+                      const source = nearest
+                        ? await this.highwayAnchor(countryId, portal, cities) ?? await this.roadNetworkAnchor(countryId, portal, cities)
+                        : approach;
+                      if (!source) throw new DomainError("ROUTE_BLOCKED", "В существующем мире не найдена дорожная сеть для подключения нового города");
                       const hub = this.cityHub(seed, center);
                       const protectedUrbanEnvelopes = [
                         ...cities.map((city) => rectForCenter(city.center)),
@@ -1904,14 +2068,26 @@ export class AppService {
                       for (const existingCity of cities) await this.normalizeUrbanHighways(countryId, existingCity.bounds);
                       await this.normalizeUrbanHighways(countryId, bounds);
                       await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, dryConnector, gateway.horizontalApproach);
-                      await this.syncCountryArchiveComplex(countryId, hub);
+                      const archiveBounds = await this.syncCountryArchiveComplex(countryId, hub);
+
+                      const publishedRoads = await this.roadCells(countryId);
+                      const centerRoad = [...publishedRoads.values()].reduce<Cell | undefined>((best, road) =>
+                        !best || manhattan(road, center) < manhattan(best, center) ? road : best, undefined);
+                      const networkStart = nearest ? source : dryConnector[0];
+                      if (!centerRoad || !networkStart || manhattan(centerRoad, center) > 2 || !roadReachable(publishedRoads, networkStart, centerRoad)) {
+                        throw new DomainError("ROUTE_BLOCKED", "Новый город не удалось присоединить к единой дорожной сети");
+                      }
 
                       const data: CityDto = {
                         id, name, description: input.description?.trim() ?? "", goal: input.goal?.trim() ?? "",
                         acceptanceCriteria: input.acceptanceCriteria?.trim() ?? "", deadline: input.deadline ?? null,
                         status: "ACTIVE", center, bounds, styleId, morphology, createdAt,
                       };
-                      return { data, eventType: "city.created", eventPayload: { cityId: id, center, affectedBounds: bounds } };
+                      return {
+                        data,
+                        eventType: "city.created",
+                        eventPayload: { cityId: id, center, affectedBounds: archiveBounds ? unionRect(bounds, archiveBounds) : bounds },
+                      };
                     });
   }
 
@@ -2179,8 +2355,9 @@ export class AppService {
     const allowed = new Set(district.cells.map(cellKey));
     const roads = await this.roadCells(countryId);
     const occupied = new Set([
-      ...(await this.listTasks(countryId)).flatMap((task) => task.footprint),
-      ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint),
+      ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, task.entrance, ...task.accessPath]),
+      ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN")
+        .flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
     ].map(cellKey));
     const blockedByDistrict = new Set(
       (await this.listDistricts(countryId))
@@ -2357,7 +2534,6 @@ export class AppService {
       const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
       const districtIndex = (await this.listDistricts(countryId, district.cityId)).findIndex((item) => item.id === district.id);
       const city = cityDto(cityRow);
-      await this.publishCityLandmark(countryId, city, district.id, seed, district.cells, lots);
       await this.publishDistrictGreenFeature(countryId, city, district.id, seed, district.cells, district.archetype, Math.max(0, districtIndex), lots);
       return { ...district, lots };
     }
@@ -2698,6 +2874,12 @@ export class AppService {
 
   private async entryAllowed(entry: BuildingCatalogEntry, cityId: string, districtId: string): Promise<boolean> {
     if (!await this.buildingRulesAllow(entry, cityId, districtId)) return false;
+    if (entry.tags.includes("landmark")) {
+      const cityLandmark = await this.db.prepare(
+        "SELECT 1 FROM tasks_v3 WHERE city_id = ? AND building_type LIKE 'landmark-%' LIMIT 1",
+      ).get(cityId);
+      if (cityLandmark) return false;
+    }
     const cityCount = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE city_id = ? AND building_type = ?").get(cityId, entry.key) as Row).count);
     const districtCount = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE district_id = ? AND building_type = ?").get(districtId, entry.key) as Row).count);
     return (!entry.maxPerCity || cityCount < entry.maxPerCity) && (!entry.maxPerDistrict || districtCount < entry.maxPerDistrict);
@@ -3062,6 +3244,18 @@ export class AppService {
                       const creator = input.creatorUserId
                         ? await this.db.prepare("SELECT name FROM users WHERE id = ?").get(input.creatorUserId) as { name: string } | undefined
                         : undefined;
+                      for (const document of DEFAULT_TASK_DOCUMENTS) {
+                        const content = document.fileName === "system-analysis.md" ? input.systemAnalysis
+                          : document.fileName === "architecture.md" ? input.architecture
+                            : document.fileName === "design-system.md" ? input.designSystem
+                              : input.implementationPlan;
+                        await this.db.prepare(`INSERT INTO task_documents_v1
+                          (id, task_id, file_name, title, content, is_default, position, actor, actor_user_id, created_at, updated_at)
+                          VALUES (?, ?, ?, ?, ?, true, ?, ?, ?, ?, ?)`).run(
+                          randomUUID(), id, document.fileName, document.title, content?.trim().slice(0, 64_000) ?? "", document.position,
+                          creator?.name ?? "Система страны", input.creatorUserId ?? null, createdAt, createdAt,
+                        );
+                      }
                       await this.recordTaskEvent(id, "CREATED", creator?.name ?? "Система страны", input.creatorUserId, {
                                                         status: "PLANNING", estimate: input.estimate, assigneeUserId: input.assigneeUserId ?? null, assigneeRole: input.assigneeRole?.trim() ?? null, forUserId: input.forUserId ?? null,
                                                       }, createdAt);
@@ -3115,6 +3309,14 @@ export class AppService {
         input.forUserId === undefined ? current.forUser?.id ?? null : (input.forUserId ?? null),
         updatedAt, input.taskId,
       );
+      for (const [fileName, content] of [
+        ["system-analysis.md", input.systemAnalysis], ["architecture.md", input.architecture],
+        ["design-system.md", input.designSystem], ["implementation-plan.md", input.implementationPlan],
+      ] as const) {
+        if (content === undefined) continue;
+        await this.db.prepare("UPDATE task_documents_v1 SET content = ?, actor = ?, actor_user_id = ?, updated_at = ? WHERE task_id = ? AND file_name = ?")
+          .run(content.trim().slice(0, 64_000), input.actor ?? "MCP", input.actorUserId ?? null, updatedAt, input.taskId, fileName);
+      }
       const changedFields = Object.keys(input).filter((field) => !["taskId", "idempotencyKey", "actor", "actorUserId"].includes(field));
       await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { changedFields }, updatedAt);
       const data = await this.getTask(countryId, input.taskId);
@@ -3218,6 +3420,10 @@ export class AppService {
                       }
                       if (to > from + 1) throw new DomainError("INVALID_TRANSITION", "Нельзя пропускать стадии строительства");
                       if (input.status === "COMPLETED") {
+                        const incompleteChecklist = task.checklist?.filter((item) => !item.done) ?? [];
+                        if (incompleteChecklist.length > 0) {
+                          throw new DomainError("CHECKLIST_INCOMPLETE", "Нельзя завершить задачу, пока в чек-листе есть невыполненные пункты");
+                        }
                         const activeDefects = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM task_defects_v18 WHERE task_id = ? AND status <> 'FIXED'").get(task.id) as Row).count);
                         if (activeDefects > 0) throw new DomainError("OPEN_DEFECTS", `Задачу нельзя завершить: осталось неисправленных дефектов — ${activeDefects}`);
                       }

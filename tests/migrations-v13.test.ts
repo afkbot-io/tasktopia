@@ -14,7 +14,7 @@ describe("PostgreSQL migrations", () => {
     expect(rows.map((row) => row.name)).toEqual([
       "0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql",
       "0005_incident_response.sql", "0006_task_extras.sql", "0007_ai_fields.sql", "0008_starter_city.sql",
-      "0009_country_archive.sql",
+      "0009_country_archive.sql", "0010_task_linked_landmarks.sql", "0011_task_documents_checklist.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
   });
@@ -40,6 +40,8 @@ describe("PostgreSQL migrations", () => {
     const statuses = await db.prepare(`SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
       WHERE conrelid = 'task_defects_v18'::regclass AND contype = 'c'`).all<{ definition: string }>();
     expect(statuses.some((constraint) => constraint.definition.includes("IN_PROGRESS") && constraint.definition.includes("VERIFYING"))).toBe(true);
+    expect(await db.prepare("SELECT to_regclass('task_documents_v1') AS table_name").get()).toMatchObject({ table_name: "task_documents_v1" });
+    expect(await db.prepare("SELECT to_regclass('task_checklist_items_v1') AS table_name").get()).toMatchObject({ table_name: "task_checklist_items_v1" });
   });
 
   it("maintains chunk membership through JSONB triggers", async () => {

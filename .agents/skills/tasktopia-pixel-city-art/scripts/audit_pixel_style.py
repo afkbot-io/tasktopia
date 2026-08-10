@@ -36,6 +36,33 @@ def silhouette_signature(image: Image.Image) -> bytes:
     return image.getchannel("A").point(lambda value: 255 if value else 0).tobytes()
 
 
+def rgba(hex_color: str) -> tuple[int, int, int, int]:
+    return tuple(bytes.fromhex(hex_color.removeprefix("#")))  # type: ignore[return-value]
+
+
+def largest_component_in_right_half(image: Image.Image, color: tuple[int, int, int, int]) -> int:
+    pixels = image.load()
+    pending = {
+        (x, y)
+        for y in range(image.height)
+        for x in range(image.width // 2, image.width)
+        if pixels[x, y] == color
+    }
+    largest = 0
+    while pending:
+        stack = [pending.pop()]
+        size = 0
+        while stack:
+            x, y = stack.pop()
+            size += 1
+            for neighbour in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if neighbour in pending:
+                    pending.remove(neighbour)
+                    stack.append(neighbour)
+        largest = max(largest, size)
+    return largest
+
+
 def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     errors: list[str] = []
@@ -118,6 +145,28 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
             warnings.append(f"{label}: structural frame does not reach half of final height")
         if stage_coverage[-1] < 0.08:
             warnings.append(f"{label}: finished opaque coverage is unusually sparse")
+        projection = building.get("visualProjection")
+        if projection and projection.get("profile") == "FRONTAL_TOP":
+            roof_color = rgba(str(projection["roofColor"]))
+            side_color = rgba(str(projection["sideColor"]))
+            roof_pixels = [
+                (x, y)
+                for y in range(images[-1].height)
+                for x in range(images[-1].width)
+                if images[-1].getpixel((x, y)) == roof_color
+            ]
+            roof_rows = {y for _, y in roof_pixels}
+            side_component = largest_component_in_right_half(images[-1], side_color)
+            if len(roof_pixels) < int(projection["minimumRoofPixels"]) or len(roof_rows) < int(projection["minimumRoofRows"]):
+                errors.append(
+                    f"{label}: frontal-top projection has no readable roof/top plane "
+                    f"({len(roof_pixels)} px across {len(roof_rows)} rows)"
+                )
+            if side_component < int(projection["minimumSidePixels"]):
+                errors.append(
+                    f"{label}: frontal-top projection has no continuous shaded right plane "
+                    f"({side_component} px)"
+                )
         category_signatures[str(building.get("category", "UNKNOWN"))][silhouette_signature(images[-1])].append(key)
         metrics[key] = {
             "coverage": [round(value, 4) for value in stage_coverage],
@@ -141,6 +190,21 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         if len(footprint) != 2 or min(footprint, default=0) <= 0:
             errors.append(f"{label}: invalid footprint")
 
+    ai_prop_catalog = manifest_path.parent / "catalog" / "ai-authored-props.json"
+    if ai_prop_catalog.exists():
+        for authored in json.loads(ai_prop_catalog.read_text(encoding="utf-8")):
+            key = authored["key"]
+            prop = manifest.get("props", {}).get(key)
+            if prop is None:
+                errors.append(f"props/{key}: reviewed AI-authored asset is absent from manifest")
+                continue
+            if prop.get("artSource") != "AI_AUTHORED" or prop.get("sourceSheet") != authored.get("sheet"):
+                errors.append(f"props/{key}: approved source provenance was lost")
+            if prop.get("visualProfile") != authored.get("visualProfile"):
+                errors.append(f"props/{key}: wrong or missing strict visual profile")
+            if prop.get("size") != authored.get("size") or prop.get("footprintCells") != authored.get("footprintCells"):
+                errors.append(f"props/{key}: runtime geometry diverges from reviewed catalog")
+
     for family, paths in sorted(manifest.get("terrain", {}).items()):
         images = [audit_image(relative, f"terrain/{family}/{index}", expected_size=(CELL, CELL)) for index, relative in enumerate(paths)]
         complete = [image for image in images if image is not None]
@@ -154,10 +218,39 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         for direction, relative in sorted(directions.items()):
             audit_image(relative, f"transitions/{material}/{direction}", expected_size=(CELL, CELL))
 
-    for color, orientations in sorted(manifest.get("vehicles", {}).items()):
+    vehicle_signatures: dict[str, list[bytes]] = {"horizontal": [], "vertical": []}
+    vehicle_drawings: dict[str, list[bytes]] = {"horizontal": [], "vertical": []}
+    vehicles = manifest.get("vehicles", {})
+    if len(vehicles) < 6:
+        errors.append("vehicles: expected at least six distinct models")
+    for variant, orientations in sorted(vehicles.items()):
         for orientation, vehicle in sorted(orientations.items()):
             expected = (8, 16) if orientation == "vertical" else (16, 8)
-            audit_image(str(vehicle.get("path", "")), f"vehicles/{color}/{orientation}", expected_size=expected)
+            image = audit_image(str(vehicle.get("path", "")), f"vehicles/{variant}/{orientation}", expected_size=expected)
+            if image is None:
+                continue
+            vehicle_signatures[orientation].append(silhouette_signature(image))
+            vehicle_drawings[orientation].append(image.tobytes())
+            bounds = opaque_bounds(image)
+            if bounds is not None:
+                width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
+                if orientation == "horizontal" and (width < 13 or height < 6):
+                    errors.append(f"vehicles/{variant}/horizontal: model is too small at native scale")
+                if orientation == "vertical" and (width < 6 or height < 13):
+                    errors.append(f"vehicles/{variant}/vertical: model is too small at native scale")
+            if vehicle.get("artSource") != "AI_AUTHORED" or not vehicle.get("sourceSheet"):
+                errors.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
+        horizontal = orientations.get("horizontal")
+        vertical = orientations.get("vertical")
+        if horizontal and vertical:
+            horizontal_image = Image.open(runtime / horizontal["path"]).convert("RGBA")
+            vertical_image = Image.open(runtime / vertical["path"]).convert("RGBA")
+            if horizontal_image.tobytes() == vertical_image.transpose(Image.Transpose.ROTATE_270).tobytes():
+                errors.append(f"vehicles/{variant}: directional counterpart is a mechanical rotation")
+    for orientation, signatures in vehicle_signatures.items():
+        drawings = vehicle_drawings[orientation]
+        if drawings and len(set(drawings)) != len(drawings):
+            errors.append(f"vehicles/{orientation}: model drawings must be visually unique")
 
     runtime_paths = {str(path.relative_to(runtime)) for path in runtime.rglob("*.png")}
     missing_from_manifest = sorted(runtime_paths - audited_paths)

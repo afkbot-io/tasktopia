@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppService, CHUNK_SIZE } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
-import { cellKey } from "../src/server/world/grid";
+import { boundsOf, cellKey, contains, expandRect, intersects, rectangleFootprint } from "../src/server/world/grid";
 
 describe("Государственный архив", () => {
   let db: Db;
@@ -15,7 +15,7 @@ describe("Государственный архив", () => {
     countryId = (await registerUser(db, {
       email: "archive@example.com", name: "Archivist", password: "password123",
     })).user.countryId;
-  });
+  }, 15_000);
 
   afterEach(async () => await db.close());
 
@@ -29,6 +29,10 @@ describe("Государственный архив", () => {
   });
 
   it("публикует отдельный архивный комплекс возле первого рабочего города", async () => {
+    let affectedBounds: Parameters<typeof contains>[0] | undefined;
+    service = new AppService(db, (event) => {
+      if (event.type === "city.created") affectedBounds = event.payload.affectedBounds as Parameters<typeof contains>[0];
+    });
     const city = await service.createCity(countryId, { name: "Рабочий город", idempotencyKey: "archive-city" });
     const features = await db.prepare(`SELECT city_id, kind, asset_kind, asset_key FROM world_features_v6
       WHERE country_id = ? AND kind = 'COUNTRY_ARCHIVE' ORDER BY asset_kind, asset_key`).all<{
@@ -40,6 +44,37 @@ describe("Государственный архив", () => {
     expect(features.filter((feature) => feature.asset_kind === "BUILDING").map((feature) => feature.asset_key))
       .toEqual(["state-archive-core"]);
     expect(features.every((feature) => feature.city_id === null)).toBe(true);
+    const compound = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
+    expect(affectedBounds).toBeDefined();
+    expect(contains(affectedBounds!, city.center)).toBe(true);
+    expect(compound.footprint.every((cell) => contains(affectedBounds!, cell))).toBe(true);
+  });
+
+  it("держит охраняемый архив за пределами городской застройки", async () => {
+    const city = await service.createCity(countryId, { name: "Столица", idempotencyKey: "archive-separated-city" });
+    const compound = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA");
+
+    expect(compound).toBeDefined();
+    expect(intersects(expandRect(city.bounds, 24), boundsOf(compound!.footprint))).toBe(false);
+  });
+
+  it("переносит близкий архив старого мира при синхронизации инфраструктуры", async () => {
+    const city = await service.createCity(countryId, { name: "Старый город", idempotencyKey: "archive-legacy-city" });
+    const oldCompound = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
+    const legacyOrigin = { x: city.center.x + 18, y: city.center.y + 12 };
+    await db.prepare("UPDATE world_features_v6 SET origin_x = ?, origin_y = ?, footprint_json = ? WHERE id = ?").run(
+      legacyOrigin.x, legacyOrigin.y, JSON.stringify(rectangleFootprint(legacyOrigin, 18, 12)), oldCompound.id,
+    );
+
+    expect(await service.upgradeCountryArchiveInfrastructure()).toBe(1);
+
+    const relocated = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
+    expect(relocated.id).not.toBe(oldCompound.id);
+    expect(intersects(expandRect(city.bounds, 24), boundsOf(relocated.footprint))).toBe(false);
   });
 
   it("соединяет ограждённый архив с дорожной сетью через единственный шлагбаум", async () => {

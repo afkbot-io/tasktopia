@@ -39,6 +39,11 @@ const documentedTools = [
   "task.activity",
   "task.dependency_add",
   "task.dependency_remove",
+  "task.document_list",
+  "task.document_upsert",
+  "task.document_delete",
+  "task.checklist_replace",
+  "task.checklist_item_update",
   "task.link_add",
   "task.link_remove",
   "task.attachment_add",
@@ -56,6 +61,8 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("never blocks task");
     expect(guide).toContain("isError: true");
     expect(guide).toContain("systemAnalysis");
+    expect(guide).toContain("implementation-plan.md");
+    expect(guide).toContain("human UI is read-only");
     expect(guide).toContain("reproductionSteps");
     expect(guide).toContain("OPEN → IN_PROGRESS → VERIFYING → FIXED");
     expect(guide).toContain("completion is rejected while any\nlinked defect is not `FIXED`");
@@ -78,6 +85,8 @@ describe("public AI integration guide", () => {
     expect(skill).toContain("`task.report_progress`");
     expect(skill).toContain("`TESTING → IN_PROGRESS`");
     expect(skill).toContain("`OPEN → IN_PROGRESS → VERIFYING → FIXED`");
+    expect(skill).toContain("`task.checklist_item_update`");
+    expect(skill).toContain("`implementation-plan.md`");
     expect(skill).toContain("родительскую задачу сохранять в\n`TESTING`");
     expect(skill).toContain("Готово: <конкретный результат");
     expect(skill).not.toContain("TODO");

@@ -37,15 +37,28 @@ for (let index = 0; index < 10; index += 1) {
             capacitySp: 40,
             activate: index === 0,
             idempotencyKey: `test-district-${index}`,
-          });
+  });
   for (let taskIndex = 0; taskIndex < 2; taskIndex += 1) {
-    await service.createTask(user.countryId, {
+    const firstTask = index === 0 && taskIndex === 0;
+    const task = await service.createTask(user.countryId, {
                               cityId: city.id,
                               districtId: district.id,
                               title: `Задача района ${index + 1}.${taskIndex + 1}`,
+                              description: firstTask ? "Проверить новый агентский workflow материалов задачи и прогресса." : undefined,
+                              acceptanceCriteria: firstTask ? "- Документы читаются без горизонтального скролла\n- Чек-лист показывает фактический прогресс" : undefined,
+                              systemAnalysis: firstTask ? "# Контекст\n\nМатериалы задачи обновляет AI-агент через MCP; человек использует карточку только для чтения." : undefined,
+                              architecture: firstTask ? "# Контракт\n\nMarkdown-документы и пункты чек-листа принадлежат задаче и удаляются каскадно вместе с ней." : undefined,
+                              designSystem: firstTask ? "# Представление\n\nЧетыре компактные полоски открывают один читаемый Markdown-просмотр." : undefined,
+                              implementationPlan: firstTask ? "# План\n\n1. Подготовить миграцию.\n2. Обновить MCP.\n3. Проверить карточку в браузере." : undefined,
                               estimate: archetype === "PRIVATE" ? 1 : 2,
                               idempotencyKey: `test-task-${index}-${taskIndex}`,
                             });
+    if (firstTask) await service.replaceTaskChecklist(user.countryId, {
+      taskId: task.id,
+      items: [{ title: "Подготовить миграцию", done: true }, { title: "Обновить MCP", done: true }, { title: "Проверить карточку в браузере" }],
+      actor: "Тестовый AI-агент",
+      idempotencyKey: "test-task-checklist-0-0",
+    });
   }
 }
 

@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / "assets" / "pixel-city-pack-v4"
 RUNTIME = PACK / "runtime"
 MANIFEST_PATH = PACK / "manifest.json"
+AI_PROP_CATALOG_PATH = PACK / "catalog" / "ai-authored-props.json"
 CELL = 8
 PALETTE_BUDGET = 32
 GAS_STATION_KEYS = {
@@ -156,32 +157,56 @@ def audit() -> dict[str, Any]:
         if prop.get("anchorPx") != [image.width // 2, image.height]:
             violations.append(f"props/{key}: anchor must be bottom-center")
 
+    ai_prop_entries = json.loads(AI_PROP_CATALOG_PATH.read_text()) if AI_PROP_CATALOG_PATH.exists() else []
+    for authored in ai_prop_entries:
+        key = authored["key"]
+        prop = manifest.get("props", {}).get(key)
+        if prop is None:
+            violations.append(f"props/{key}: reviewed AI-authored asset is absent from manifest")
+            continue
+        if prop.get("artSource") != "AI_AUTHORED" or prop.get("sourceSheet") != authored.get("sheet"):
+            violations.append(f"props/{key}: approved source provenance was lost")
+        if prop.get("visualProfile") != authored.get("visualProfile"):
+            violations.append(f"props/{key}: wrong or missing strict visual profile")
+        if prop.get("size") != authored.get("size") or prop.get("footprintCells") != authored.get("footprintCells"):
+            violations.append(f"props/{key}: runtime geometry diverges from reviewed catalog")
+        if not (PACK / "reference" / authored.get("sheet", "")).is_file():
+            violations.append(f"props/{key}: reviewed source sheet is missing")
+
     vehicle_masks: dict[str, list[bytes]] = {"vertical": [], "horizontal": []}
-    for color, orientations in manifest.get("vehicles", {}).items():
+    vehicle_drawings: dict[str, list[bytes]] = {"vertical": [], "horizontal": []}
+    vehicles = manifest.get("vehicles", {})
+    if len(vehicles) < 6:
+        violations.append("vehicles: expected at least six distinct models")
+    for variant, orientations in vehicles.items():
         for orientation, expected_size in (("vertical", (8, 16)), ("horizontal", (16, 8))):
             item = orientations.get(orientation)
             if not item:
-                violations.append(f"vehicles/{color}: missing {orientation}")
+                violations.append(f"vehicles/{variant}: missing {orientation}")
                 continue
-            image = audit_grid_asset(item["path"], f"vehicles/{color}/{orientation}", expected_size)
+            image = audit_grid_asset(item["path"], f"vehicles/{variant}/{orientation}", expected_size)
             if image is None:
                 continue
             vehicle_masks[orientation].append(image.getchannel("A").tobytes())
+            vehicle_drawings[orientation].append(image.tobytes())
             bounds = image.getchannel("A").getbbox()
-            if orientation == "vertical" and bounds and (bounds[0], bounds[2]) != (0, 8):
-                violations.append(f"vehicles/{color}/vertical: car does not use full readable lane width")
-            if orientation == "horizontal" and bounds and (bounds[1], bounds[3]) != (0, 8):
-                violations.append(f"vehicles/{color}/horizontal: car does not use full readable lane height")
+            if orientation == "vertical" and bounds and (bounds[2] - bounds[0] < 6 or bounds[3] - bounds[1] < 13):
+                violations.append(f"vehicles/{variant}/vertical: car is too small to read in its lane")
+            if orientation == "horizontal" and bounds and (bounds[2] - bounds[0] < 13 or bounds[3] - bounds[1] < 6):
+                violations.append(f"vehicles/{variant}/horizontal: car is too small to read in its lane")
+            if item.get("artSource") != "AI_AUTHORED" or not item.get("sourceSheet"):
+                violations.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
         vertical = orientations.get("vertical")
         horizontal = orientations.get("horizontal")
         if vertical and horizontal:
-            vertical_image = load_image(vertical["path"], f"vehicles/{color}/vertical", violations)
-            horizontal_image = load_image(horizontal["path"], f"vehicles/{color}/horizontal", violations)
+            vertical_image = load_image(vertical["path"], f"vehicles/{variant}/vertical", violations)
+            horizontal_image = load_image(horizontal["path"], f"vehicles/{variant}/horizontal", violations)
             if vertical_image and horizontal_image and horizontal_image.tobytes() == vertical_image.transpose(Image.Transpose.ROTATE_270).tobytes():
-                violations.append(f"vehicles/{color}: horizontal view is a mechanical rotation")
+                violations.append(f"vehicles/{variant}: horizontal view is a mechanical rotation")
     for orientation, masks in vehicle_masks.items():
-        if masks and len(set(masks)) != 1:
-            violations.append(f"vehicles/{orientation}: color variants changed geometry")
+        drawings = vehicle_drawings[orientation]
+        if drawings and len(set(drawings)) != len(drawings):
+            violations.append(f"vehicles/{orientation}: model drawings must be visually unique")
 
     runtime_pngs = {str(path.relative_to(RUNTIME)) for path in RUNTIME.rglob("*.png")}
     orphan_pngs = sorted(runtime_pngs - referenced)
@@ -199,7 +224,7 @@ def audit() -> dict[str, Any]:
         "categories": dict(sorted(category_counts.items())),
         "terrainFamilies": len(manifest.get("terrain", {})),
         "props": len(manifest.get("props", {})),
-        "vehicleColors": len(manifest.get("vehicles", {})),
+        "vehicleModels": len(manifest.get("vehicles", {})),
         "referencedPngs": len(referenced),
         "runtimePngs": len(runtime_pngs),
         "maximumBuildingPalette": max(palette_counts.values(), default=0),

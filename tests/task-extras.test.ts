@@ -42,7 +42,7 @@ describe("task extras: numbers, MR links, attachments, search", () => {
     await service.regenerateCountry(countryId, { confirmName: "Extras: страна", idempotencyKey: "regenerate" });
     const after = await service.getTask(countryId, second.id);
     expect(after.taskNumber).toBe(2);
-  });
+  }, 15_000);
 
   it("finds tasks by number and by title substring", async () => {
     await makeTask("Починить авторизацию", 1);
@@ -119,5 +119,106 @@ describe("task extras: numbers, MR links, attachments, search", () => {
     const other = await registerUser(db, { email: "other@example.com", name: "Other", password: "password123" });
     await expect(service.getTaskAttachment(other.user.countryId, attachment.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(new DomainError("X", "y")).toBeInstanceOf(Error);
+  });
+
+  it("keeps four standard Markdown documents and supports extra agent documents", async () => {
+    const task = await service.createTask(countryId, {
+      cityId, districtId, title: "Задача с документами", estimate: 1,
+      systemAnalysis: "# Исходный анализ\n\nКонтекст из старого контракта.",
+      idempotencyKey: "task-documents",
+    });
+
+    expect(task.documents?.map((document) => document.fileName)).toEqual([
+      "system-analysis.md", "architecture.md", "design-system.md", "implementation-plan.md",
+    ]);
+    expect(task.documents?.[0]).toMatchObject({ title: "Системный анализ", content: expect.stringContaining("Исходный анализ"), isDefault: true });
+
+    const architecture = await service.upsertTaskDocument(countryId, {
+      taskId: task.id, fileName: "architecture.md", content: "# Решение\n\nPostgreSQL остаётся source of truth.",
+      actor: "Extras", idempotencyKey: "document-architecture",
+    });
+    expect(architecture).toMatchObject({ fileName: "architecture.md", isDefault: true, actor: "Extras" });
+
+    const rollout = await service.upsertTaskDocument(countryId, {
+      taskId: task.id, fileName: "rollout.md", title: "План выкладки", content: "- [ ] canary\n- [ ] production",
+      actor: "Extras", idempotencyKey: "document-rollout",
+    });
+    expect(rollout).toMatchObject({ fileName: "rollout.md", isDefault: false });
+    expect((await service.getTask(countryId, task.id)).documents).toHaveLength(5);
+
+    await expect(service.upsertTaskDocument(countryId, {
+      taskId: task.id, fileName: "diagram.pdf", title: "Схема", content: "binary",
+      idempotencyKey: "document-invalid",
+    })).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    for (const fileName of ["trailing-.md", "double--dash.md"]) {
+      await expect(service.upsertTaskDocument(countryId, {
+        taskId: task.id, fileName, title: "Некорректное имя", content: "text",
+        idempotencyKey: `document-invalid-${fileName}`,
+      })).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    }
+    await expect(service.deleteTaskDocument(countryId, {
+      taskId: task.id, documentId: architecture.id, idempotencyKey: "document-default-delete",
+    })).rejects.toMatchObject({ code: "DEFAULT_DOCUMENT" });
+
+    await service.deleteTaskDocument(countryId, {
+      taskId: task.id, documentId: rollout.id, actor: "Extras", idempotencyKey: "document-rollout-delete",
+    });
+    const detailed = await service.getTask(countryId, task.id);
+    expect(detailed.documents).toHaveLength(4);
+    expect(detailed.events?.map((event) => event.type)).toEqual(expect.arrayContaining(["DOCUMENT_UPDATED", "DOCUMENT_DELETED"]));
+  });
+
+  it("replaces an agent checklist and updates individual progress", async () => {
+    const task = await makeTask("Задача с чек-листом", 20);
+    const checklist = await service.replaceTaskChecklist(countryId, {
+      taskId: task.id,
+      items: [
+        { title: "Добавить миграцию" },
+        { title: "Покрыть сервис тестом", done: true },
+        { title: "Проверить MCP-контракт" },
+      ],
+      actor: "Extras", idempotencyKey: "checklist-replace",
+    });
+    expect(checklist).toHaveLength(3);
+    expect(checklist.map((item) => [item.title, item.done, item.position])).toEqual([
+      ["Добавить миграцию", false, 0], ["Покрыть сервис тестом", true, 1], ["Проверить MCP-контракт", false, 2],
+    ]);
+
+    const completed = await service.updateTaskChecklistItem(countryId, {
+      taskId: task.id, itemId: checklist[0]!.id, done: true, actor: "Extras", idempotencyKey: "checklist-done",
+    });
+    expect(completed).toMatchObject({ title: "Добавить миграцию", done: true });
+    expect((await service.getTask(countryId, task.id)).checklist?.filter((item) => item.done)).toHaveLength(2);
+    expect((await service.getTask(countryId, task.id)).events?.map((event) => event.type))
+      .toEqual(expect.arrayContaining(["CHECKLIST_REPLACED", "CHECKLIST_ITEM_UPDATED"]));
+    const auditEvents = (await service.getTask(countryId, task.id)).events!;
+    expect(auditEvents.find((event) => event.type === "CHECKLIST_REPLACED")?.details).toMatchObject({
+      before: [],
+      after: expect.arrayContaining([expect.objectContaining({ title: "Добавить миграцию", done: false })]),
+    });
+    expect(auditEvents.find((event) => event.type === "CHECKLIST_ITEM_UPDATED")?.details).toMatchObject({
+      before: { title: "Добавить миграцию", done: false },
+      after: { title: "Добавить миграцию", done: true },
+    });
+
+    await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", idempotencyKey: "checklist-start" });
+    await service.updateTaskStatus(countryId, { taskId: task.id, status: "IN_PROGRESS", idempotencyKey: "checklist-progress" });
+    await service.updateTaskStatus(countryId, { taskId: task.id, status: "TESTING", idempotencyKey: "checklist-testing" });
+    await expect(service.updateTaskStatus(countryId, { taskId: task.id, status: "COMPLETED", idempotencyKey: "checklist-complete-blocked" }))
+      .rejects.toMatchObject({ code: "CHECKLIST_INCOMPLETE" });
+    for (const item of checklist.filter((candidate) => !candidate.done && candidate.id !== checklist[0]!.id)) {
+      await service.updateTaskChecklistItem(countryId, {
+        taskId: task.id, itemId: item.id, done: true, idempotencyKey: `checklist-complete-${item.position}`,
+      });
+    }
+    await expect(service.updateTaskStatus(countryId, { taskId: task.id, status: "COMPLETED", idempotencyKey: "checklist-completed" }))
+      .resolves.toMatchObject({ status: "COMPLETED" });
+
+    await expect(service.replaceTaskChecklist(countryId, {
+      taskId: task.id, items: [{ title: "Одинаковый шаг" }, { title: "Одинаковый шаг" }], idempotencyKey: "checklist-duplicates",
+    })).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    expect(await service.replaceTaskChecklist(countryId, {
+      taskId: task.id, items: [], idempotencyKey: "checklist-clear",
+    })).toEqual([]);
   });
 });

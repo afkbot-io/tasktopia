@@ -24,19 +24,23 @@ const client = new Client({ name: "tasktopia-smoke", version: "1.0.0" }, { versi
 const transport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
   requestInit: { headers: { authorization: `Bearer ${token}` } },
 });
+const expectedTools = [
+  "country.get_current", "country.list", "country.select", "country.update_profile",
+  "archive.get", "archive.record_list", "archive.record_create", "archive.record_update", "archive.record_delete",
+  "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
+  "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
+  "task.list", "task.get", "task.create", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
+  "task.activity", "task.dependency_add", "task.dependency_remove",
+  "task.document_list", "task.document_upsert", "task.document_delete", "task.checklist_replace", "task.checklist_item_update",
+  "task.link_add", "task.link_remove", "task.attachment_add", "task.attachment_list",
+] as const;
 
 try {
   await client.connect(transport);
   if (client.getProtocolEra() !== "modern") throw new Error(`Expected modern MCP era, got ${client.getProtocolEra()}`);
   const tools = await client.listTools();
-  const expected = [
-    "country.get_current", "country.list", "country.select", "country.update_profile",
-    "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
-    "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
-    "task.list", "task.get", "task.create", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
-  ];
-  if (tools.tools.length !== expected.length) throw new Error(`Expected ${expected.length} MCP tools, got ${tools.tools.length}`);
-  for (const name of expected) {
+  if (tools.tools.length !== expectedTools.length) throw new Error(`Expected ${expectedTools.length} MCP tools, got ${tools.tools.length}`);
+  for (const name of expectedTools) {
     if (!tools.tools.some((tool) => tool.name === name)) throw new Error(`Missing MCP tool: ${name}`);
   }
   const missingId = "00000000-0000-4000-8000-000000000001";
@@ -44,6 +48,10 @@ try {
     ["city.rename", { cityId: missingId, name: "Renamed city", idempotencyKey: "smoke-rename-city" }],
     ["district.rename", { districtId: missingId, name: "Renamed district", idempotencyKey: "smoke-rename-district" }],
     ["task.rename", { taskId: missingId, title: "Renamed task", idempotencyKey: "smoke-rename-task" }],
+    ["task.document_upsert", { taskId: missingId, fileName: "architecture.md", content: "# Missing", idempotencyKey: "smoke-document-upsert" }],
+    ["task.document_delete", { taskId: missingId, documentId: missingId, idempotencyKey: "smoke-document-delete" }],
+    ["task.checklist_replace", { taskId: missingId, items: [{ title: "Missing task" }], idempotencyKey: "smoke-checklist-replace" }],
+    ["task.checklist_item_update", { taskId: missingId, itemId: missingId, done: true, idempotencyKey: "smoke-checklist-update" }],
     ["city.delete", { cityId: missingId, confirmName: "Missing city", idempotencyKey: "smoke-delete-city" }],
     ["district.delete", { districtId: missingId, confirmName: "Missing district", idempotencyKey: "smoke-delete-district" }],
     ["task.delete", { taskId: missingId, confirmTitle: "Missing task", idempotencyKey: "smoke-delete-task" }],
@@ -70,7 +78,7 @@ const legacyTransport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mc
 try {
   await legacyClient.connect(legacyTransport);
   if (legacyClient.getProtocolEra() !== "legacy") throw new Error(`Expected legacy MCP era, got ${legacyClient.getProtocolEra()}`);
-  if ((await legacyClient.listTools()).tools.length !== 29) throw new Error("Legacy MCP client did not receive all tools");
+  if ((await legacyClient.listTools()).tools.length !== expectedTools.length) throw new Error("Legacy MCP client did not receive all tools");
   console.log("Legacy 2025 MCP fallback passed.");
 } finally {
   await legacyClient.close();

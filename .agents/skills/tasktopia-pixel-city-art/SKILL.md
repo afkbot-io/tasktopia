@@ -15,15 +15,18 @@ Before drawing or reviewing, read:
 2. `assets/pixel-city-pack-v4/docs/ASSET-EXPANSION-PLAN.md` — requested catalog and quotas.
 3. `references/visual-grammar.md` — measurable proportions and stage rules.
 4. `references/prompt-template.md` only when generating concept/reference art.
+5. `references/production-acceptance.md` when generating, migrating, or approving AI-authored runtime buildings.
+6. `references/ambient-asset-acceptance.md` when working on vehicles, stops, playgrounds, park furniture, trees, shrubs, animals, boats, or other ambient props.
 
 Inspect `screenshots/pixel-city-v4-expanded-assets.png` at original resolution and at nearest-neighbour `4x`. Treat it as the style reference, not as a source to copy pixel-for-pixel.
 
 ## Choose the production path
 
-- Prefer deterministic Pillow/source drawing for runtime PNGs. Runtime assets must not depend on an image model.
-- Use image generation only for reference exploration. Generate one coherent subject or family per request, pause briefly between requests, then redraw or normalize it into the exact runtime grid.
+- For migrated buildings, use an approved AI-authored five-stage source sheet as the visual authority. The deterministic build may slice, chroma-key, resize, harden alpha and quantize it, but must not repaint approved geometry with procedural primitives.
+- Generate one coherent subject per request, pause `2–5 s` after each completed request, then normalize it into the exact runtime grid. Reject and regenerate any sheet that violates strict frontal projection or category-specific occupied bounds before adding it to the catalog.
 - Import hand-authored PNGs only when source, provenance, dimensions, alpha, anchor, stages, and catalog metadata are explicit.
 - Never ship a concept sheet, scaled preview, antialiased output, or unregistered PNG as a runtime asset.
+- Treat the verbal style fingerprint in `references/ambient-asset-acceptance.md` as a blocking contract. Reject attractive pixel art from another camera, palette, outline weight, detail scale, or lighting model; "pixel art" alone is not a style match.
 
 ## Build an asset family
 
@@ -41,6 +44,7 @@ Inspect `screenshots/pixel-city-v4-expanded-assets.png` at original resolution a
 7. Give ordinary small props artistic variants instead of fake construction stages. Terrain families need at least three seamless variants; water may use five.
 8. Register every runtime file in the manifest/catalog and connect the semantic key to world generation. An unused PNG is unfinished work.
 9. Generate native and `4x` nearest-neighbour contact sheets. Review stages in a row and category variants side by side.
+10. For directional ambient assets, draw each required orientation independently while preserving identity. Runtime rotation is not an authored orientation.
 
 ## Enforce variety without noise
 
@@ -48,21 +52,21 @@ Inspect `screenshots/pixel-city-v4-expanded-assets.png` at original resolution a
 - Cap unique civic/service/landmark assets with `maxPerCity` or `maxPerDistrict`; do not make every rare asset unique.
 - Prefer materially different massing: narrow/wide, courtyard, corner, row, tower, pavilion, campus, or roadside composition. Palette swaps alone do not count as variety.
 - Avoid repeating the same finished silhouette more than twice in one district when alternatives fit the same estimate/category.
-- Add one city landmark at most per city unless the canonical plan explicitly defines a country-level complex such as the State Archive.
+- Add one task-linked city landmark at most per city. It must occupy a task lot and follow the task's five stages; never publish a ready decorative `LANDMARK` world feature. Country-level complexes such as the State Archive are separate.
 - Keep decorative density subordinate to task readability and runtime budgets.
 
 ## Generate reference art
 
-Use one request per asset family or one large landmark. Include the current contact sheet as a style reference. Ask for a clean sheet containing the five construction stages in order, but treat the result as reference-only.
+Use one request per building or one large landmark. Include two original V3 authored buildings from the same category as projection references. State the exact runtime canvas and occupied-bounds target from `references/production-acceptance.md`. Ask for a clean sheet containing the five construction stages in order. The approved sheet becomes the source; unapproved generations stay reference-only.
 
-Between external image requests, wait a short bounded interval (normally `2–5 s`). Do not use long sleeps. Do not request several unrelated buildings in one image: it weakens proportions and stage identity.
+Between external image requests, wait `2–5 s` after completion. Do not use long sleeps. Do not request several unrelated buildings in one image: it weakens proportions and stage identity. Review in groups of at most five accepted sources before continuing the queue.
 
 After generation:
 
 1. Save the reference under `assets/pixel-city-pack-v4/reference/` with a descriptive name.
 2. Record it in manifest provenance only if it influenced a shipped asset.
-3. Rebuild the runtime asset deterministically at its exact target size.
-4. Do not directly resize a large generated illustration into the runtime sprite.
+3. Record human/visual approval in the AI-authored catalog.
+4. Normalize the approved source deterministically at its exact target size; never replace it with code-drawn geometry.
 
 ## Audit before integration
 
@@ -87,6 +91,7 @@ The audit must cover the complete pack, not only newly created files:
 - stable centre/ground line and plausible footprint coverage;
 - distinct completed silhouettes within a category;
 - props, terrain, transitions, tiles, and vehicles for grid size, palette, alpha, anchors, and visually distinct variants;
+- authored ambient provenance, paired directional consistency, semantic readability at `1x`, and silhouette diversity inside each vehicle/prop family;
 - no orphan or missing runtime PNGs.
 
 ## Review in the game

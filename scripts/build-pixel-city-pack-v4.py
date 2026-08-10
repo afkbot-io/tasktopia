@@ -1,7 +1,8 @@
 """Build the deterministic square-grid runtime asset pack used by Tasktopia V3.
 
-AI output is reference-only. Every runtime image produced here has exact dimensions,
-hard alpha and a stable manifest contract suitable for automated validation.
+Approved AI-authored sheets are the visual authority for migrated buildings. This
+builder only removes their chroma key, slices the five authored stages and performs
+deterministic pixel-art normalization. It must not redraw approved geometry.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ PUBLIC = ROOT / "public" / "game-assets" / "v4"
 SCREENSHOTS = ROOT / "screenshots"
 CATALOG = PACK / "catalog"
 SOURCE_ART = PACK / "sources"
+AI_AUTHORED_ART = PACK / "reference"
 CELL = 8
 REGISTERED_RULES = {"STANDARD", "UNIQUE_SERVICE", "REQUIRES_COLLECTOR"}
 
@@ -100,6 +102,141 @@ TERRAIN_PALETTES: dict[str, tuple[str, tuple[str, ...]]] = {
 
 def rgba(hex_color: str) -> tuple[int, int, int, int]:
     return tuple(bytes.fromhex(hex_color.removeprefix("#")))  # type: ignore[return-value]
+
+
+def color_components(image: Image.Image, color: str, minimum_size: int = 8) -> list[list[tuple[int, int]]]:
+    """Return solid source-color masses used as projection volumes.
+
+    Windows and doors are drawn on top of the wall color, but the surrounding
+    facade remains connected. Treating every connected wall mass separately
+    keeps twin towers, wings and courtyards independent instead of placing one
+    synthetic roof across the entire canvas.
+    """
+    target = rgba(color)
+    pixels = image.load()
+    pending = {
+        (x, y)
+        for y in range(image.height)
+        for x in range(image.width)
+        if pixels[x, y] == target
+    }
+    components: list[list[tuple[int, int]]] = []
+    while pending:
+        stack = [pending.pop()]
+        component: list[tuple[int, int]] = []
+        while stack:
+            x, y = stack.pop()
+            component.append((x, y))
+            for neighbour in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if neighbour in pending:
+                    pending.remove(neighbour)
+                    stack.append(neighbour)
+        if len(component) >= minimum_size:
+            components.append(component)
+    return components
+
+
+def apply_frontal_top_projection(image: Image.Image, spec: HouseSpec) -> None:
+    """Give generated enclosed volumes the original pack's shallow 3D read.
+
+    V3 uses a frontal-top camera rather than a flat elevation: a light roof or
+    top plane is visible, the right wall is darker, and both planes converge by
+    a few hard pixels. The operation works on source wall-color components, so
+    it can be shared by all catalog families without erasing their silhouettes.
+    """
+    draw = ImageDraw.Draw(image)
+    components = color_components(image, spec.wall)
+    if spec.key == "landmark-aquarium":
+        components = color_components(image, GLASS)
+    elif spec.key == "landmark-botanical-dome":
+        components.extend(color_components(image, "#78b6a7ff", minimum_size=12))
+    # Back/high volumes first; lower foreground volumes retain their edge.
+    for component in sorted(components, key=lambda points: (max(y for _, y in points), min(x for x, _ in points))):
+        left = min(x for x, _ in component)
+        top = min(y for _, y in component)
+        right = max(x for x, _ in component)
+        bottom = max(y for _, y in component)
+        volume_width = right - left + 1
+        volume_height = bottom - top + 1
+        if volume_width < 5 or volume_height < 5:
+            continue
+        depth = max(3, min(5, volume_width // 6, volume_height // 5))
+        roof_left = max(0, left - 1)
+        roof_right = min(image.width - 1, right + 1)
+        roof_top = max(0, top - depth)
+        # Highlighted top plane, shifted down-right towards the facade.
+        draw.polygon(
+            [
+                (roof_left + depth, roof_top),
+                (roof_right, roof_top),
+                (max(roof_left + depth, roof_right - depth), top + 1),
+                (roof_left, top + 1),
+            ],
+            fill=rgba(spec.roof),
+            outline=rgba(OUTLINE),
+        )
+        # Continuous right wall: the diagonal lower edge prevents the facade
+        # from reading as a pasted rectangle at native scale.
+        side_left = max(left + 2, right - depth)
+        draw.polygon(
+            [
+                (side_left, top + 2),
+                (right + 1 if right + 1 < image.width else right, top),
+                (right + 1 if right + 1 < image.width else right, max(top + 3, bottom - depth)),
+                (side_left, bottom),
+            ],
+            fill=rgba(spec.dark),
+            outline=rgba(OUTLINE),
+        )
+        # Side windows follow the same plane. They are deliberately sparse so
+        # the shaded mass remains readable and the palette stays restrained.
+        if volume_height >= 20 and volume_width >= 10:
+            side_x = min(image.width - 2, side_left + 1)
+            for y in range(top + 7, bottom - 4, 8):
+                draw.line((side_x, y, min(image.width - 2, side_x + 1), y + 1), fill=rgba(GLASS))
+        draw.line((roof_left, top + 1, side_left, top + 2), fill=rgba(OUTLINE))
+
+
+def draw_projection_scaffold(image: Image.Image, top: int) -> None:
+    """Keep stage four visibly unfinished after the projection pass."""
+    draw = ImageDraw.Draw(image)
+    width, height = image.size
+    bottom = height - 2
+    left, right = 0, width - 1
+    draw.line((left, top, left, bottom), fill=rgba(SCAFFOLD))
+    draw.line((right, top, right, bottom), fill=rgba(SCAFFOLD))
+    for y in range(top + 2, bottom, 7):
+        draw.line((left, y, right, y), fill=rgba(SCAFFOLD))
+        draw.line((left, y, min(right, left + 6), min(bottom, y + 5)), fill=rgba(FRAME))
+        draw.line((right, y, max(left, right - 6), min(bottom, y + 5)), fill=rgba(FRAME))
+
+
+def apply_construction_projection(image: Image.Image, stage: int) -> None:
+    """Project foundations and structural frames into the same camera."""
+    bounds = image.getchannel("A").getbbox()
+    if bounds is None or stage not in {2, 3}:
+        return
+    left, top, right_exclusive, bottom_exclusive = bounds
+    right = right_exclusive - 1
+    bottom = bottom_exclusive - 1
+    depth = max(2, min(4, (right - left + 1) // 8))
+    draw = ImageDraw.Draw(image)
+    if stage == 2:
+        roof_top = max(0, top - depth)
+        draw.polygon(
+            [(left + depth, roof_top), (right, roof_top), (right - depth, top + 1), (left, top + 1)],
+            fill=rgba("#bec5c0ff"), outline=rgba(OUTLINE),
+        )
+        draw.polygon(
+            [(right - depth, top + 1), (right, roof_top), (right, max(top + 2, bottom - depth)), (right - depth, bottom)],
+            fill=rgba(SHADOW), outline=rgba(OUTLINE),
+        )
+        return
+    roof_top = max(0, top - depth)
+    draw.line((left + depth, roof_top, right, roof_top, right - depth, top + 1, left, top + 1, left + depth, roof_top), fill=rgba(FRAME), width=2)
+    draw.line((right - depth, top + 1, right, roof_top, right, max(top + 3, bottom - depth), right - depth, bottom), fill=rgba(FRAME), width=2)
+    for y in range(top + 5, bottom, 8):
+        draw.line((right - depth, y, right, max(roof_top, y - depth)), fill=rgba(FRAME))
 
 
 def terrain_tile(kind: str, variant: int) -> Image.Image:
@@ -1423,7 +1560,15 @@ def draw_finished_house(image: Image.Image, spec: HouseSpec, scaffold: bool) -> 
 
 def building_stage(spec: HouseSpec, stage: int) -> Image.Image:
     image = Image.new("RGBA", spec.size, (0, 0, 0, 0))
-    if draw_landmark_stage(image, spec, stage):
+    is_landmark = draw_landmark_stage(image, spec, stage)
+    open_structure = spec.style in {"landmark-ferris-wheel", "landmark-monument"}
+    if is_landmark:
+        if stage in {2, 3} and not open_structure:
+            apply_construction_projection(image, stage)
+        if stage in {4, 5} and not open_structure:
+            apply_frontal_top_projection(image, spec)
+        if stage == 4 and not open_structure:
+            draw_projection_scaffold(image, max(1, spec.size[1] // 5))
         return image
     draw = ImageDraw.Draw(image)
     width, height = spec.size
@@ -1432,10 +1577,15 @@ def building_stage(spec: HouseSpec, stage: int) -> Image.Image:
     elif stage == 2:
         draw.rectangle((2, height - 10, width - 3, height - 2), fill=rgba(CONCRETE), outline=rgba(OUTLINE))
         draw.rectangle((5, height - 7, width - 6, height - 3), fill=rgba("#76634dff"))
+        apply_construction_projection(image, stage)
     elif stage == 3:
         draw_frame(draw, width, max(6, height // 3), height - 2)
+        apply_construction_projection(image, stage)
     else:
-        draw_finished_house(image, spec, scaffold=stage == 4)
+        draw_finished_house(image, spec, scaffold=False)
+        apply_frontal_top_projection(image, spec)
+        if stage == 4:
+            draw_projection_scaffold(image, max(1, height // 5))
     return image
 
 
@@ -1558,6 +1708,207 @@ def normalize_imported_sprite(source: Path, *, align_bottom: bool) -> Image.Imag
     return quantized
 
 
+def ai_stage_heights(height: int) -> list[int]:
+    """Keep authored construction stages readable without inflating early work."""
+    if height <= 24:
+        return [
+            max(7, round(height * 0.50)),
+            max(9, round(height * 0.62)),
+            max(11, round(height * 0.82)),
+            height - 1,
+            height - 1,
+        ]
+    return [
+        min(16, max(10, height // 4)),
+        min(20, max(14, height // 3)),
+        round(height * 0.72),
+        height - 1,
+        height - 1,
+    ]
+
+
+def remove_ai_chroma_key(source: Image.Image) -> Image.Image:
+    """Remove the connected magenta studio backdrop from an authored segment."""
+    image = source.convert("RGBA")
+    pixels = image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            red, green, blue, alpha = pixels[x, y]
+            # Image generation may return a slightly compressed/graded chroma
+            # backdrop rather than literal #ff00ff.  Remove the whole magenta
+            # hue family, including darker edge pixels, without erasing red,
+            # blue or burgundy subjects whose opposite channel stays low.
+            is_magenta = (
+                red >= 140 and blue >= 120
+                and red - green >= 55 and blue - green >= 45
+            )
+            if is_magenta or alpha < 80:
+                pixels[x, y] = (0, 0, 0, 0)
+    return image
+
+
+def normalize_ai_authored_stage(
+    source: Image.Image,
+    canvas_size: tuple[int, int],
+    target_height: int,
+) -> Image.Image:
+    """Fit an AI-authored stage at native game scale without repainting it."""
+    source = remove_ai_chroma_key(source)
+    bounds = source.getchannel("A").getbbox()
+    if bounds is None:
+        raise RuntimeError("Empty AI-authored sprite segment after chroma removal")
+    cropped = source.crop(bounds)
+    max_width = max(1, canvas_size[0] - 2)
+    max_height = max(1, min(target_height, canvas_size[1] - 1))
+    scale = min(max_width / cropped.width, max_height / cropped.height)
+    content_size = (
+        max(1, round(cropped.width * scale)),
+        max(1, round(cropped.height * scale)),
+    )
+    reduced = cropped.resize(content_size, Image.Resampling.BOX)
+    alpha = reduced.getchannel("A").point(lambda value: 255 if value >= 80 else 0)
+    reduced = reduced.quantize(
+        colors=28,
+        method=Image.Quantize.FASTOCTREE,
+        dither=Image.Dither.NONE,
+    ).convert("RGBA")
+    reduced.putalpha(alpha)
+    canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
+    canvas.alpha_composite(
+        reduced,
+        ((canvas_size[0] - content_size[0]) // 2, canvas_size[1] - content_size[1]),
+    )
+    return canvas
+
+
+def ai_sheet_segment(source: Path, index: int, count: int) -> Image.Image:
+    """Read one visual cell from an approved ambient source sheet.
+
+    Image models do not always respect mathematical cell boundaries.  Detect
+    separated subject runs after chroma removal so a mirror or wide canopy
+    crossing the nominal midpoint cannot shrink the neighbouring sprite.
+    """
+    if count < 1 or index < 0 or index >= count:
+        raise ValueError(f"{source}: invalid source segment {index}/{count}")
+    sheet = Image.open(source).convert("RGBA")
+    if count == 1:
+        return sheet
+    clean = remove_ai_chroma_key(sheet)
+    alpha = clean.getchannel("A")
+    minimum_column_ink = max(1, clean.height // 500)
+    occupied_columns = [
+        sum(1 for y in range(clean.height) if alpha.getpixel((x, y)) > 0) >= minimum_column_ink
+        for x in range(clean.width)
+    ]
+    runs: list[list[int]] = []
+    for x, occupied in enumerate(occupied_columns):
+        if not occupied:
+            continue
+        if not runs or x - runs[-1][1] > max(6, clean.width // 40):
+            runs.append([x, x])
+        else:
+            runs[-1][1] = x
+    if len(runs) >= count:
+        ranked = sorted(
+            runs,
+            key=lambda run: sum(1 for x in range(run[0], run[1] + 1) for y in range(clean.height) if alpha.getpixel((x, y)) > 0),
+            reverse=True,
+        )[:count]
+        selected = sorted(ranked)[index]
+        return clean.crop((selected[0], 0, selected[1] + 1, clean.height))
+    left = round(index * sheet.width / count)
+    right = round((index + 1) * sheet.width / count)
+    if right <= left:
+        raise ValueError(f"{source}: empty source segment {index}/{count}")
+    return sheet.crop((left, 0, right, sheet.height))
+
+
+def normalize_ai_authored_ambient(
+    source: Image.Image,
+    canvas_size: tuple[int, int],
+    *,
+    occupied_size: tuple[int, int] | None = None,
+) -> Image.Image:
+    """Normalize approved ambient art without repainting its authored geometry."""
+    source = remove_ai_chroma_key(source)
+    bounds = source.getchannel("A").getbbox()
+    if bounds is None:
+        raise RuntimeError("Empty AI-authored ambient sprite after chroma removal")
+    cropped = source.crop(bounds)
+    max_width = max(1, canvas_size[0] - 2)
+    max_height = max(1, canvas_size[1] - 1)
+    if occupied_size is None:
+        scale = min(max_width / cropped.width, max_height / cropped.height)
+        content_size = (
+            max(1, round(cropped.width * scale)),
+            max(1, round(cropped.height * scale)),
+        )
+    else:
+        if occupied_size[0] > max_width or occupied_size[1] > max_height:
+            raise ValueError(f"occupied size {occupied_size} does not fit canvas {canvas_size}")
+        content_size = occupied_size
+    reduced = cropped.resize(content_size, Image.Resampling.BOX)
+    alpha = reduced.getchannel("A").point(lambda value: 255 if value >= 72 else 0)
+    reduced = reduced.quantize(
+        colors=28,
+        method=Image.Quantize.FASTOCTREE,
+        dither=Image.Dither.NONE,
+    ).convert("RGBA")
+    reduced.putalpha(alpha)
+    canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
+    canvas.alpha_composite(
+        reduced,
+        ((canvas_size[0] - content_size[0]) // 2, canvas_size[1] - content_size[1]),
+    )
+    return canvas
+
+
+def load_ai_authored_ambient_catalog(name: str) -> list[dict]:
+    path = CATALOG / name
+    if not path.exists():
+        return []
+    entries = json.loads(path.read_text())
+    if not isinstance(entries, list):
+        raise ValueError(f"{name}: catalog root must be a list")
+    seen: set[str] = set()
+    for entry in entries:
+        key = entry.get("key")
+        if not isinstance(key, str) or not key:
+            raise ValueError(f"{name}: every entry needs a key")
+        if key in seen:
+            raise ValueError(f"{name}: duplicate key {key}")
+        seen.add(key)
+        if not entry.get("reviewed"):
+            raise ValueError(f"{key}: AI-authored ambient source is not reviewed")
+        size = entry.get("size")
+        footprint = entry.get("footprintCells")
+        if not isinstance(size, list) or len(size) != 2 or any(not isinstance(value, int) or value <= 0 or value % CELL for value in size):
+            raise ValueError(f"{key}: size must use positive {CELL}px units")
+        if not isinstance(footprint, list) or len(footprint) != 2 or min(footprint) <= 0:
+            raise ValueError(f"{key}: invalid footprintCells")
+        source = AI_AUTHORED_ART / entry["sheet"]
+        if not source.resolve().is_relative_to(AI_AUTHORED_ART.resolve()):
+            raise ValueError(f"{key}: AI-authored path leaves reference directory")
+        if not source.exists():
+            raise FileNotFoundError(source)
+    return entries
+
+
+def load_ai_authored_stages(spec: HouseSpec, source: Path) -> list[Image.Image]:
+    sheet = Image.open(source).convert("RGBA")
+    heights = ai_stage_heights(spec.size[1])
+    stages: list[Image.Image] = []
+    for index, target_height in enumerate(heights):
+        left = round(index * sheet.width / 5)
+        right = round((index + 1) * sheet.width / 5)
+        stages.append(normalize_ai_authored_stage(
+            sheet.crop((left, 0, right, sheet.height)),
+            spec.size,
+            target_height,
+        ))
+    return stages
+
+
 def imported_building_stage(finished: Image.Image, stage: int) -> Image.Image:
     """Derive honest construction stages for a hand-authored finished sprite.
 
@@ -1615,15 +1966,33 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     classic_station["anchorPx"] = [24, 32]
     if len({spec.key for spec in specs}) != len(specs):
         raise ValueError("generated-buildings.json contains duplicate keys")
+    ai_sources: dict[str, Path] = {}
+    for authored in json.loads((CATALOG / "ai-authored-buildings.json").read_text()):
+        if not authored.get("reviewed"):
+            raise ValueError(f"{authored['key']}: AI-authored sheet is not reviewed")
+        source = AI_AUTHORED_ART / authored["sheet"]
+        if not source.resolve().is_relative_to(AI_AUTHORED_ART.resolve()):
+            raise ValueError(f"{authored['key']}: AI-authored path leaves reference directory")
+        if not source.exists():
+            raise FileNotFoundError(source)
+        if authored["key"] in ai_sources:
+            raise ValueError(f"{authored['key']}: duplicate AI-authored source")
+        ai_sources[authored["key"]] = source
+    generated_keys = {spec.key for spec in specs}
+    base_keys = set(buildings)
+    unknown_ai_keys = sorted(set(ai_sources) - generated_keys - base_keys)
+    if unknown_ai_keys:
+        raise ValueError(f"AI-authored catalog contains unknown keys: {unknown_ai_keys}")
     for spec in specs:
         if spec.key in buildings:
             raise ValueError(f"{spec.key}: key already exists in base pack")
         destination = RUNTIME / "buildings" / "house" / spec.key
         destination.mkdir(parents=True, exist_ok=True)
         stages = []
+        authored_stages = load_ai_authored_stages(spec, ai_sources[spec.key]) if spec.key in ai_sources else None
         for stage in range(1, 6):
             target = destination / f"stage-{stage}.png"
-            building_stage(spec, stage).save(target, optimize=True)
+            (authored_stages[stage - 1] if authored_stages else building_stage(spec, stage)).save(target, optimize=True)
             stages.append(str(target.relative_to(RUNTIME)))
         raw = {
             "label": spec.label,
@@ -1633,8 +2002,68 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "footprintCells": list(spec.footprint),
             "anchorPx": [spec.size[0] // 2, spec.size[1]],
             "stages": stages,
+            "artSource": "AI_AUTHORED" if authored_stages else "PROCEDURAL",
+            **({
+                "sourceSheet": str(ai_sources[spec.key].relative_to(AI_AUTHORED_ART)),
+            } if authored_stages else {}),
+            # Machine-readable visual contract for the deterministic source.
+            # Open structures (the wheel and monument) intentionally do not
+            # pretend to be enclosed three-quarter buildings; every other
+            # generated building must expose both a roof/top plane and the
+            # shaded right plane used by the original V3 sprites.
+            "visualProjection": {
+                "profile": "AI_AUTHORED_FRONTAL_TOP" if authored_stages else (
+                    "OPEN_STRUCTURE" if spec.style in {
+                    "landmark-ferris-wheel", "landmark-monument",
+                    } else "FRONTAL_TOP"
+                ),
+                "roofColor": spec.roof,
+                "sideColor": spec.dark,
+                "minimumRoofPixels": max(6, spec.size[0] // 2),
+                "minimumRoofRows": 3,
+                # Low, wide workshops have a deliberately shallow side plane.
+                # Scale the invariant with the canvas, while keeping eight
+                # connected pixels as the minimum readable native-size facet.
+                "minimumSidePixels": max(8, int(spec.size[1] * 0.25)),
+            },
         }
         buildings[spec.key] = building_metadata(spec.key, raw)
+
+    # AI-authored migration may also replace a registered V3 building, such as
+    # the municipal parking lot. Preserve its public key and semantic contract;
+    # only the five visual stages and their provenance change.
+    for key in sorted(set(ai_sources) & base_keys):
+        raw = buildings[key]
+        size = tuple(raw["spriteSize"])
+        footprint = tuple(raw["footprintCells"])
+        spec = HouseSpec(
+            key=key,
+            label=raw["label"],
+            size=size,
+            footprint=footprint,
+            wall="#000000ff",
+            dark="#000000ff",
+            roof="#000000ff",
+            accent="#000000ff",
+            style=key,
+            rarity=raw.get("rarity", "COMMON"),
+            category=raw["category"],
+        )
+        authored_stages = load_ai_authored_stages(spec, ai_sources[key])
+        destination = RUNTIME / Path(raw["stages"][0]).parent
+        destination.mkdir(parents=True, exist_ok=True)
+        stages = []
+        for stage, authored_stage in enumerate(authored_stages, 1):
+            target = destination / f"stage-{stage}.png"
+            authored_stage.save(target, optimize=True)
+            stages.append(str(target.relative_to(RUNTIME)))
+        buildings[key] = {
+            **raw,
+            "stages": stages,
+            "artSource": "AI_AUTHORED",
+            "sourceSheet": str(ai_sources[key].relative_to(AI_AUTHORED_ART)),
+            "visualProjection": {"profile": "AI_AUTHORED_FRONTAL_TOP"},
+        }
 
     for imported in json.loads((CATALOG / "imported-buildings.json").read_text()):
         key = imported["key"]
@@ -1735,6 +2164,21 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     for species in ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"):
         for direction in ("north", "east", "south", "west"):
             generated_props[f"animal-{species}-{direction}"] = prop_animal(species, direction[0].upper())
+    ai_prop_entries = load_ai_authored_ambient_catalog("ai-authored-props.json")
+    ai_prop_metadata: dict[str, dict] = {}
+    for authored in ai_prop_entries:
+        source = AI_AUTHORED_ART / authored["sheet"]
+        segment_count = int(authored.get("segments", 1))
+        segment_index = int(authored.get("segment", 0))
+        generated_props[authored["key"]] = normalize_ai_authored_ambient(
+            ai_sheet_segment(source, segment_index, segment_count),
+            tuple(authored["size"]),
+        )
+        ai_prop_metadata[authored["key"]] = {
+            "artSource": "AI_AUTHORED",
+            "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
+            "visualProfile": authored.get("visualProfile", "TASKTOPIA_V4_AMBIENT"),
+        }
     prop_dir = RUNTIME / "props"
     prop_manifest = dict(source_manifest["props"])
     for key, image in generated_props.items():
@@ -1748,10 +2192,47 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         elif key in {"bus-stop-vertical", "guardrail-vertical", "fence-vertical", "archive-fence-vertical"}: footprint = [1, 2]
         elif key.startswith(("hill-", "mountain-")): footprint = [max(1, image.width // CELL), max(1, image.height // CELL)]
         else: footprint = [1, 1]
+        authored_entry = next((entry for entry in ai_prop_entries if entry["key"] == key), None)
         prop_manifest[key] = {
-            "label": key.replace("-", " ").title(), "path": str(target.relative_to(RUNTIME)),
-            "size": list(image.size), "footprintCells": footprint, "anchorPx": [image.width // 2, image.height],
+            "label": authored_entry.get("label", key.replace("-", " ").title()) if authored_entry else key.replace("-", " ").title(),
+            "path": str(target.relative_to(RUNTIME)),
+            "size": list(image.size),
+            "footprintCells": list(authored_entry["footprintCells"]) if authored_entry else footprint,
+            "anchorPx": [image.width // 2, image.height],
+            **ai_prop_metadata.get(key, {}),
         }
+
+    ai_vehicle_entries = load_ai_authored_ambient_catalog("ai-authored-vehicles.json")
+    vehicle_manifest = dict(source_manifest["vehicles"])
+    if ai_vehicle_entries:
+        vehicle_manifest = {}
+        vehicle_dir = RUNTIME / "vehicles"
+        vehicle_dir.mkdir(parents=True, exist_ok=True)
+        for legacy_vehicle in vehicle_dir.glob("*.png"):
+            legacy_vehicle.unlink()
+        for authored in ai_vehicle_entries:
+            source = AI_AUTHORED_ART / authored["sheet"]
+            orientation_segments = authored.get("orientationSegments", {"horizontal": 0, "vertical": 1})
+            segment_count = int(authored.get("segments", 2))
+            axes: dict[str, dict] = {}
+            for orientation, canvas_size in (("horizontal", (16, 8)), ("vertical", (8, 16))):
+                segment_index = int(orientation_segments[orientation])
+                image = normalize_ai_authored_ambient(
+                    ai_sheet_segment(source, segment_index, segment_count),
+                    canvas_size,
+                    occupied_size=(14, 6) if orientation == "horizontal" else (6, 14),
+                )
+                target = vehicle_dir / f"{authored['key']}-{orientation}.png"
+                image.save(target, optimize=True)
+                axes[orientation] = {
+                    "path": str(target.relative_to(RUNTIME)),
+                    "size": list(canvas_size),
+                    "footprintCells": [2, 1] if orientation == "horizontal" else [1, 2],
+                    "artSource": "AI_AUTHORED",
+                    "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
+                    "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE",
+                }
+            vehicle_manifest[authored["key"]] = axes
 
     tile_manifest = {key: value for key, value in source_manifest["tiles"].items() if key != "curb"}
     tile_dir = RUNTIME / "tiles"
@@ -1768,11 +2249,11 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "transitions": transitions,
         "tiles": tile_manifest,
         "buildings": buildings,
-        "vehicles": source_manifest["vehicles"],
+        "vehicles": vehicle_manifest,
         "props": prop_manifest,
         "provenance": {
             "basePack": "pixel-city-pack-v3",
-            "newRuntimeAssets": "deterministic procedural pixel drawing",
+            "newRuntimeAssets": "approved AI-authored geometry plus deterministic normalization; procedural fallback remains for legacy ambient assets",
             "referenceOnly": "reference/expanded-city-assets-reference.png, reference/fishing-life-reference.png, reference/resident-actions-reference.png, reference/fish-water-reference.png, reference/landmark-ferris-wheel-five-stages-reference.png, reference/landmark-megatall-tower-five-stages-reference.png, reference/landmark-monument-five-stages-reference.png, reference/house-courtyard-block-five-stages-reference.png, reference/civic-hospital-five-stages-reference.png and reference/commercial-gas-station-electric-five-stages-reference.png generated with OpenAI image model",
         },
     }
@@ -1806,11 +2287,15 @@ def validate(manifest: dict) -> None:
         assert image.width % CELL == 0 and image.height % CELL == 0, (key, image.size)
         alpha_values = image.getchannel("A").getcolors(maxcolors=256)
         assert alpha_values is not None and all(alpha in (0, 255) for _, alpha in alpha_values), (key, "soft alpha")
-    for color in CAR_PALETTES:
-        vertical = Image.open(RUNTIME / manifest["vehicles"][color]["vertical"]["path"]).convert("RGBA")
-        assert vertical.size == (8, 16), (color, vertical.size)
+    for variant, orientations in manifest["vehicles"].items():
+        vertical = Image.open(RUNTIME / orientations["vertical"]["path"]).convert("RGBA")
+        horizontal = Image.open(RUNTIME / orientations["horizontal"]["path"]).convert("RGBA")
+        assert vertical.size == (8, 16), (variant, vertical.size)
+        assert horizontal.size == (16, 8), (variant, horizontal.size)
         bounds = vertical.getchannel("A").getbbox()
-        assert bounds is not None and bounds[0] == 0 and bounds[2] == 8, (color, bounds, "vertical car must use its full lane-readable width")
+        assert bounds is not None and bounds[2] - bounds[0] >= 6 and bounds[3] - bounds[1] >= 13, (variant, bounds, "vertical car must remain readable")
+        horizontal_bounds = horizontal.getchannel("A").getbbox()
+        assert horizontal_bounds is not None and horizontal_bounds[2] - horizontal_bounds[0] >= 13 and horizontal_bounds[3] - horizontal_bounds[1] >= 6, (variant, horizontal_bounds, "horizontal car must remain readable")
 
 
 def contact_sheet(manifest: dict, specs: list[HouseSpec]) -> None:
@@ -1900,6 +2385,35 @@ def gas_station_style_sheet(manifest: dict) -> None:
     image.save(SCREENSHOTS / "gas-station-style-study.png", optimize=True)
 
 
+def projection_style_sheet(manifest: dict) -> None:
+    """Focused native-pixel review of V3 benchmarks and regenerated families."""
+    keys = (
+        "house-cottage", "commercial-corner-cafe", "highrise-glass",
+        "house-worker-tenements", "house-coastal-cottage", "commercial-cinema",
+        "civic-hospital", "highrise-office", "highrise-twin-towers",
+        "landmark-observatory", "landmark-aquarium", "landmark-sky-tower",
+    )
+    columns = 3
+    card_width, card_height = 300, 240
+    image = Image.new("RGB", (card_width * columns, card_height * 4), rgba("#132126ff")[:3])
+    draw = ImageDraw.Draw(image)
+    for index, key in enumerate(keys):
+        building = manifest["buildings"][key]
+        sprite = Image.open(RUNTIME / building["stages"][-1]).convert("RGBA")
+        scale = max(1, min(6, 154 // sprite.height, 240 // sprite.width))
+        sprite = sprite.resize((sprite.width * scale, sprite.height * scale), Image.Resampling.NEAREST)
+        column, row = index % columns, index // columns
+        left, top = column * card_width, row * card_height
+        ground_y = top + card_height - 28
+        draw.rectangle((left + 8, top + 8, left + card_width - 8, top + card_height - 8), fill=rgba("#1b2c30ff")[:3], outline=rgba("#3a5359ff")[:3], width=2)
+        draw.rectangle((left + 10, ground_y, left + card_width - 10, top + card_height - 10), fill=rgba("#526d35ff")[:3])
+        image.paste(sprite, (left + (card_width - sprite.width) // 2, ground_y - sprite.height), sprite)
+        prefix = "V3 benchmark" if index < 3 else "regenerated"
+        draw.text((left + 18, top + 18), f"{prefix} · {key}", fill=rgba("#d9e2ddff")[:3])
+    SCREENSHOTS.mkdir(parents=True, exist_ok=True)
+    image.save(SCREENSHOTS / "pixel-city-projection-review.png", optimize=True)
+
+
 def main() -> None:
     if RUNTIME.exists(): shutil.rmtree(RUNTIME)
     RUNTIME.mkdir(parents=True, exist_ok=True)
@@ -1910,6 +2424,7 @@ def main() -> None:
     validate(manifest)
     contact_sheet(manifest, specs)
     gas_station_style_sheet(manifest)
+    projection_style_sheet(manifest)
     if PUBLIC.exists(): shutil.rmtree(PUBLIC)
     shutil.copytree(RUNTIME, PUBLIC)
     shutil.copy2(PACK / "manifest.json", PUBLIC / "manifest.json")

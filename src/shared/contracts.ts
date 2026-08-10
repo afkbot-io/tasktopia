@@ -134,6 +134,28 @@ export type TaskAttachmentDto = {
   createdAt: string;
 };
 
+export type TaskDocumentDto = {
+  id: string;
+  taskId: string;
+  fileName: string;
+  title: string;
+  content: string;
+  isDefault: boolean;
+  position: number;
+  actor: string;
+  updatedAt: string;
+};
+
+export type TaskChecklistItemDto = {
+  id: string;
+  taskId: string;
+  title: string;
+  done: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ArchiveRecordKind = "PROJECT" | "REPOSITORY" | "ARCHITECTURE" | "CONVENTION" | "ENVIRONMENT" | "TEMPLATE";
 
 export type CountryArchiveDto = {
@@ -177,7 +199,7 @@ export type TaskSearchResultDto = {
 export type TaskEventDto = {
   id: number;
   taskId: string;
-  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED" | "FIELDS_UPDATED" | "DEFECT_CREATED" | "DEFECT_UPDATED" | "LINK_ADDED" | "LINK_REMOVED" | "ATTACHMENT_ADDED";
+  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED" | "FIELDS_UPDATED" | "DEFECT_CREATED" | "DEFECT_UPDATED" | "LINK_ADDED" | "LINK_REMOVED" | "ATTACHMENT_ADDED" | "DOCUMENT_UPDATED" | "DOCUMENT_DELETED" | "CHECKLIST_REPLACED" | "CHECKLIST_ITEM_UPDATED";
   actor: string;
   actorUserId: string | null;
   details: Record<string, unknown>;
@@ -228,6 +250,8 @@ export type TaskDto = {
   updatedAt: string;
   mergeRequests: TaskLinkDto[];
   attachments?: TaskAttachmentDto[];
+  documents?: TaskDocumentDto[];
+  checklist?: TaskChecklistItemDto[];
   comments?: TaskCommentDto[];
   creator?: AccountRefDto | null;
   assignee?: AccountRefDto | null;

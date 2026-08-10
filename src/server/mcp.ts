@@ -59,8 +59,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "Keep project context on the country, epic outcomes on the city, sprint goal and deadline on the district, and executable analysis on the task.",
       "The State Archive is a compact country-level reference, not a city or task backlog. Use archive records for durable project rules, repository/environment links, architecture summaries and reusable templates; keep active work in tasks.",
       "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
-      "Task text fields (description, acceptance criteria, analysis, architecture, design system, plan, comments) render Markdown in the app — structure them with headings, lists and code blocks.",
-      "Every task has a human-facing number and url; share the url when reporting to people. Attach merge request links with task.link_add and files of any format with task.attachment_add.",
+      "Task implementation materials are Markdown documents. Use task.document_upsert for the four standard files and any extra .md files; use task.checklist_replace and task.checklist_item_update to keep execution progress current.",
+      "Every task has a human-facing number and url; share the url when reporting to people. Attach merge request links with task.link_add and binary evidence with task.attachment_add. The human UI is read-only; agents own task mutations.",
       "Use task.dependency_add to express task order (must be in the same city); task.activity returns the full audit trail of events, comments, defects, attachments and dependencies.",
       "Linked defects use OPEN -> IN_PROGRESS -> VERIFYING -> FIXED. Keep the parent task in TESTING while an ordinary linked defect is repaired; completion is blocked until every linked defect is FIXED.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
@@ -227,7 +227,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("task.get", { description: "Получить задачу, здание, комментарии, ссылки на MR, файлы и веб-ссылку для людей.", inputSchema: z.object({ taskId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ taskId }) => {
+  server.registerTool("task.get", { description: "Получить задачу, Markdown-документы, чек-лист, дефекты, комментарии, MR, файлы и веб-ссылку для людей.", inputSchema: z.object({ taskId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ taskId }) => {
     try {
       requireScope(identity, "tasks:read");
       const task = await service.getTask(identity.countryId, taskId);
@@ -413,6 +413,72 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     try {
       requireScope(identity, "tasks:write");
       return response(await service.removeTaskDependency(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId }));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.document_list", {
+    description: "Получить четыре стандартных Markdown-документа задачи и дополнительные .md-файлы в порядке показа.",
+    inputSchema: z.object({ taskId: z.string().uuid() }),
+    annotations: { readOnlyHint: true },
+  }, async ({ taskId }) => {
+    try {
+      requireScope(identity, "tasks:read");
+      const task = await service.getTask(identity.countryId, taskId);
+      return response({ taskNumber: task.taskNumber, documents: task.documents ?? [] });
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.document_upsert", {
+    description: "Создать или полностью обновить Markdown-документ задачи. Стандартные имена: system-analysis.md, architecture.md, design-system.md, implementation-plan.md; разрешены дополнительные kebab-case .md-файлы.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), fileName: z.string().regex(/^[a-z0-9][a-z0-9-]{0,78}\.md$/),
+      title: z.string().min(2).max(100).optional().describe("Обязательно только для дополнительного документа"),
+      content: z.string().max(64_000), idempotencyKey: z.string().min(4).max(160),
+    }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      return response(await service.upsertTaskDocument(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId }));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.document_delete", {
+    description: "Удалить дополнительный Markdown-документ задачи. Четыре стандартных документа не удаляются: при необходимости очистите их через task.document_upsert.",
+    inputSchema: z.object({ taskId: z.string().uuid(), documentId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }),
+    annotations: { idempotentHint: true, destructiveHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      return response(await service.deleteTaskDocument(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId }));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.checklist_replace", {
+    description: "Заменить чек-лист задачи целиком, например пунктами из implementation-plan.md. Порядок массива становится порядком выполнения; пустой массив очищает чек-лист.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), items: z.array(z.object({ title: z.string().min(1).max(240), done: z.boolean().optional() })).max(50),
+      idempotencyKey: z.string().min(4).max(160),
+    }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      return response(await service.replaceTaskChecklist(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId }));
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.checklist_item_update", {
+    description: "Отметить отдельный пункт чек-листа выполненным/невыполненным или уточнить его название без замены остальных пунктов.",
+    inputSchema: z.object({
+      taskId: z.string().uuid(), itemId: z.string().uuid(), title: z.string().min(1).max(240).optional(), done: z.boolean().optional(),
+      idempotencyKey: z.string().min(4).max(160),
+    }).refine((value) => value.title !== undefined || value.done !== undefined, { message: "Передайте title или done" }),
+    annotations: { idempotentHint: true },
+  }, async (input) => {
+    try {
+      requireScope(identity, "tasks:write");
+      return response(await service.updateTaskChecklistItem(identity.countryId, { ...input, actor: actorName, actorUserId: identity.userId }));
     } catch (error) { return failure(error); }
   });
 

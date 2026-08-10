@@ -5,7 +5,6 @@ import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
 import { isWater, terrainAt } from "../src/server/world/terrain";
-import { BUILDING_CATALOG } from "../src/shared/catalog";
 
 describe("Tasktopia square-world application service", () => {
   let db: Db;
@@ -21,6 +20,7 @@ describe("Tasktopia square-world application service", () => {
   afterEach(async () => await db.close());
 
   it("creates an idempotent city with reciprocal square-road masks", async () => {
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
     const input = { name: "Northpoint", idempotencyKey: "city-key" };
     const first = await service.createCity(countryId, input);
     const second = await service.createCity(countryId, input);
@@ -77,9 +77,7 @@ describe("Tasktopia square-world application service", () => {
     const greenFeatures = await service.listWorldFeatures(countryId);
     expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
     expect(greenFeatures.some((feature) => feature.kind === "PARK_DECOR")).toBe(true);
-    const cityLandmarks = greenFeatures.filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK");
-    expect(cityLandmarks).toHaveLength(1);
-    expect(BUILDING_CATALOG.filter((entry) => entry.key.startsWith("landmark-")).map((entry) => entry.key)).toContain(cityLandmarks[0]!.assetKey);
+    expect(greenFeatures.filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK")).toEqual([]);
     const defect = await service.createTaskDefect(countryId, {
       taskId: task.id, title: "Broken path", reproductionSteps: "Open the map", actualResult: "Path breaks", expectedResult: "Path stays whole",
       idempotencyKey: "regen-defect",
@@ -149,6 +147,39 @@ describe("Tasktopia square-world application service", () => {
     await expect(service.activateDistrict(countryId, district.id, "reactivate-core")).rejects.toThrowError(/нельзя снова активировать/);
     await expect(service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Late task", estimate: 1, idempotencyKey: "late-task" }))
       .rejects.toThrowError(/завершённый район/);
+  });
+
+  it("constructs a city-unique landmark only as a task-linked five-stage building", async () => {
+    const city = await service.createCity(countryId, { name: "Landmark City", idempotencyKey: "landmark-city" });
+    const district = await service.createDistrict(countryId, {
+      cityId: city.id, name: "Civic Sprint", archetype: "CIVIC", activate: true, idempotencyKey: "landmark-district",
+    });
+
+    expect((await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK"))
+      .toEqual([]);
+
+    let task = await service.createTask(countryId, {
+      cityId: city.id, districtId: district.id, title: "Build the city observatory", estimate: 6,
+      buildingHint: "landmark-observatory", idempotencyKey: "landmark-task",
+    });
+    expect(task).toMatchObject({ buildingType: "landmark-observatory", stage: 1, status: "PLANNING" });
+    const chunk = await service.chunkForCell(task.origin);
+    expect((await service.getChunk(countryId, chunk.chunkX, chunk.chunkY)).tasks.find((item) => item.id === task.id))
+      .toMatchObject({ buildingType: "landmark-observatory", stage: 1 });
+    expect((await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK"))
+      .toEqual([]);
+
+    for (const [index, status] of ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"].entries()) {
+      task = await service.updateTaskStatus(countryId, {
+        taskId: task.id, status: status as typeof task.status, comment: `landmark stage ${index + 2}`,
+        idempotencyKey: `landmark-status-${index}`,
+      });
+    }
+    expect(task).toMatchObject({ buildingType: "landmark-observatory", stage: 5, status: "COMPLETED", progress: 100 });
+    await expect(service.createTask(countryId, {
+      cityId: city.id, districtId: district.id, title: "Build a second city landmark", estimate: 6,
+      buildingHint: "landmark-monument", idempotencyKey: "second-landmark-task",
+    })).rejects.toThrowError(/Лимит этого типа здания уже достигнут/);
   });
 
   it("enforces service-role uniqueness from the data catalog", async () => {
@@ -334,7 +365,10 @@ describe("Tasktopia square-world application service", () => {
   }, 15_000);
 
   it("connects a second city to the existing national road component", async () => {
-    const cities = await Promise.all(Array.from({ length: 2 }, (_, index) => service.createCity(countryId, { name: `City ${index}`, idempotencyKey: `city-${index}` })));
+    const cities = [];
+    for (let index = 0; index < 2; index += 1) {
+      cities.push(await service.createCity(countryId, { name: `City ${index}`, idempotencyKey: `city-${index}` }));
+    }
     expect(cities).toHaveLength(2);
     expect(new Set(cities.map((city) => `${city.center.x},${city.center.y}`)).size).toBe(2);
     const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(countryId) as Array<{ x: number; y: number }>;
@@ -354,6 +388,20 @@ describe("Tasktopia square-world application service", () => {
         expect(roads.some((road) => cellKey(road) === cellKey(cell)), `${feature.assetKey} overlaps road at ${cellKey(cell)}`).toBe(false);
       }
     }
+  }, 15_000);
+
+  it("anchors a new city to a real road in a legacy world without highway classes", async () => {
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
+    const first = await service.createCity(countryId, { name: "Legacy city", idempotencyKey: "legacy-anchor-first" });
+    await db.prepare("UPDATE roads_v3 SET road_class = 'LOCAL' WHERE country_id = ?").run(countryId);
+    await db.prepare("DELETE FROM roads_v3 WHERE country_id = ? AND x = ? AND y = ?").run(countryId, first.center.x, first.center.y);
+    service = new AppService(db);
+
+    const second = await service.createCity(countryId, { name: "Connected city", idempotencyKey: "legacy-anchor-second" });
+
+    const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(countryId) as Array<{ x: number; y: number }>;
+    expect(connected(roads)).toBe(true);
+    expect(Math.min(...roads.map((road) => manhattan(road, second.center)))).toBeLessThanOrEqual(2);
   }, 15_000);
 
   it("expands a city envelope to fit eight non-overlapping districts", async () => {

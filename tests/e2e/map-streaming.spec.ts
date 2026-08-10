@@ -13,6 +13,7 @@ async function openDemoMap(page: import("@playwright/test").Page) {
   for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "detail"; step += 1) await page.mouse.wheel(0, -800);
   await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
   await expect.poll(async () => Number(await host.getAttribute("data-cars")), { timeout: 90_000 }).toBeGreaterThan(0);
+  await expect(host).toHaveAttribute("data-wrong-way-cars", "0");
   await expect(host).toHaveAttribute("data-airplane-space", "world");
   return { host, canvas };
 }
@@ -289,6 +290,15 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
     await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_VERIFYING");
     await updateDefect("FIXED");
     await expect.poll(async () => Number(await host.getAttribute("data-incidents")), { timeout: 30_000 }).toBe(0);
+    const checklistResult = await client.callTool({
+      name: "task.checklist_replace",
+      arguments: {
+        taskId: integration.taskId,
+        items: [{ title: "Проверить realtime-перестроение здания", done: true }],
+        idempotencyKey: `e2e-map-checklist-${Date.now()}`,
+      },
+    });
+    expect(checklistResult.isError).not.toBe(true);
     for (const [status, progress] of [["IN_PROGRESS", 55], ["TESTING", 90], ["COMPLETED", 100]] as const) {
       const result = await client.callTool({
         name: "task.set_status",

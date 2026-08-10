@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.10.1",
+  "version": "1.11.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "concurrently -k -n web,server -c cyan,yellow \"vite --host 0.0.0.0\" \"tsx watch src/server/index.ts\"",
-    "build": "npm run typecheck && vite build && esbuild src/server/index.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/server.mjs",
+    "build": "npm run typecheck && vite build && esbuild src/server/index.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/server.mjs && esbuild src/server/regenerate-worlds.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/regenerate-worlds.mjs",
     "start": "node dist/server.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -23,6 +23,8 @@
     "test:db:start": "docker compose -f docker-compose.test.yml up -d --wait",
     "test:db:stop": "docker compose -f docker-compose.test.yml down",
     "test:scale": "tsx scripts/worldgen-scale-smoke.ts",
+    "test:worldgen": "RUN_ORGANIC_GROWTH_TESTS=1 vitest run tests/organic-growth.test.ts --no-file-parallelism",
+    "worlds:regenerate": "node dist/regenerate-worlds.mjs",
     "study:worldgen": "tsx scripts/worldgen-algorithm-study.ts",
     "assets:setup": "python3 -m venv .venv-assets && .venv-assets/bin/python -m pip install -r requirements-assets.txt",
     "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack-v4.py",

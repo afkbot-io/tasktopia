@@ -39,6 +39,16 @@ describe("building catalog V4", () => {
     }
     expect(PROP_CATALOG["playground-small"]?.size).toEqual({ width: 24, height: 16 });
     expect(PROP_CATALOG["playground-small"]?.footprint).toEqual({ width: 3, height: 2 });
+    for (const key of ["playground-slide", "playground-carousel", "playground-climbing", "playground-swing", "park-pond", "park-sculpture", "park-flower-clock", "park-bandstand"]) {
+      expect(PROP_CATALOG[key], key).toBeDefined();
+    }
+  });
+
+  it("registers three directional bus-stop families", () => {
+    for (const family of ["bus-stop", "bus-stop-modern", "bus-stop-green"]) {
+      expect(PROP_CATALOG[`${family}-horizontal`], family).toMatchObject({ footprint: { width: 3, height: 1 } });
+      expect(PROP_CATALOG[`${family}-vertical`], family).toMatchObject({ footprint: { width: 1, height: 3 } });
+    }
   });
 
   it("registers three crisp world-space flyby variants", () => {

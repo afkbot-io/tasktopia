@@ -48,6 +48,8 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 - `task.list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.delete`
 - `task.defect_create`, `task.defect_update`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
+- `task.document_list`, `task.document_upsert`, `task.document_delete`
+- `task.checklist_replace`, `task.checklist_item_update`
 - `task.activity`, `task.dependency_add`, `task.dependency_remove`, `task.link_add`, `task.link_remove`, `task.attachment_add`, `task.attachment_list`
 
 ## Минимальный сценарий
@@ -91,10 +93,6 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
   "description": "Каталог, поиск и карточка лекарства",
   "workItemType": "TASK",
   "acceptanceCriteria": "Основные сценарии и ошибки покрыты проверками",
-  "systemAnalysis": "Описаны роли, данные, интеграции и граничные случаи",
-  "architecture": "Определены контракты и границы компонентов",
-  "designSystem": "Использовать существующие компоненты формы и error state",
-  "implementationPlan": "Контракт → реализация → тесты → browser QA",
   "estimate": 3,
   "priority": "HIGH",
   "assigneeEmail": "member@example.com",
@@ -102,9 +100,17 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 }
 ```
 
-`districtId` у `task.create` необязателен: без него используется активный район города. `buildingHint` позволяет запросить конкретный ключ из `tasktopia://catalog/buildings`; если вариант не подходит оценке или нарушает квоту, сервер возвращает явную ошибку.
+`districtId` у `task.create` необязателен: без него используется активный район города. `buildingHint` позволяет запросить конкретный ключ из `tasktopia://catalog/buildings`; если вариант нарушает квоту или несовместим с архитектурой района, сервер возвращает явную ошибку. Ключи `landmark-*` — не готовый декор: это уникальные здания задач, которые проходят те же пять стадий вместе со статусом задачи. В одном городе может существовать только одна такая задача-ориентир; Государственный архив остаётся отдельным объектом страны.
 
 `assigneeEmail` необязателен, но указанный человек должен быть зарегистрирован и состоять в правительстве выбранной страны. Создателем задачи автоматически становится владелец персонального MCP-ключа. Назначение можно позже изменить через `task.assign`.
+
+Материалы реализации хранятся как документы задачи. После создания агент
+заполняет `system-analysis.md`, `architecture.md`, `design-system.md` и
+`implementation-plan.md` через `task.document_upsert`; при необходимости
+добавляет другие kebab-case `.md`. По согласованному плану агент вызывает
+`task.checklist_replace`, а по ходу работы отмечает пункты через
+`task.checklist_item_update`. Человек просматривает документы, чек-лист, MR и
+историю в карточке, но не редактирует задачу вручную в UI.
 
 `country.update_profile`, `city.update`, `district.update` и `task.update_fields`
 меняют только переданные поля и сохраняют ID. Пустая строка очищает текст,

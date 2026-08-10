@@ -12,7 +12,7 @@
 ## Canvas and projection
 
 - Base cell is `8×8 px`; every runtime dimension is a positive multiple of eight.
-- Camera is frontal-top: front facade dominates, a shallow roof plane is visible, and the right wall may be one shade darker. Do not use isometric diamonds or a flat elevation with no roof information.
+- Camera is strict frontal-top, not a three-quarter view: the facade plane is parallel to the screen, all vertical edges stay vertical, storeys stay horizontal, and the left/right facade edges have the same height. A shallow roof/top plane is visible. A darker right depth cue is optional and may occupy at most `max(2 px, 8% of sprite width)`; a receding side facade is forbidden. Do not use isometric diamonds or a flat elevation with no roof information.
 - `anchorPx = [width / 2, height]`. Opaque pixels must touch the bottom two rows unless the asset contract documents a deliberate floating effect.
 - Canvas width equals footprint width × 8 for buildings. Height may exceed footprint height to contain the facade.
 - Entrance position in the drawing and manifest must agree within one cell.

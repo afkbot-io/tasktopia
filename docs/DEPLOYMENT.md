@@ -18,13 +18,16 @@ chmod 0600 .env
 docker compose up -d --build app
 curl -fsS http://127.0.0.1:3000/health
 
-install -m 0644 deploy/nginx-tasktopia.conf /etc/nginx/sites-available/tasktopia
+install -m 0644 deploy/nginx-tasktopia-bootstrap.conf /etc/nginx/sites-available/tasktopia
 ln -sfn /etc/nginx/sites-available/tasktopia /etc/nginx/sites-enabled/tasktopia
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl reload nginx
 
-certbot --nginx -d tasktopia.online --redirect
+certbot certonly --nginx -d tasktopia.online
+install -m 0644 deploy/nginx-tasktopia.conf /etc/nginx/sites-available/tasktopia
+nginx -t
+systemctl reload nginx
 curl -fsS https://tasktopia.online/health
 ```
 
@@ -33,7 +36,9 @@ proxy-маршрут с таймаутом 15 минут. Полный дете�
 страны может занимать несколько минут; не заменяйте этот маршрут общим
 75-секундным лимитом API.
 
-Certbot добавляет HTTPS-блок и системный timer продления сертификата. После выпуска сертификата HTTP перенаправляется на HTTPS.
+Bootstrap-конфиг нужен только до первого выпуска сертификата. После него
+финальный конфиг использует сертификат из `/etc/letsencrypt/live/tasktopia.online`,
+перенаправляет HTTP на HTTPS, а системный timer Certbot продлевает сертификат.
 
 ## Production environment
 

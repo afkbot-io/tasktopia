@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import manifest from "../assets/pixel-city-pack-v4/manifest.json";
 import v5Buildings from "../assets/pixel-city-pack-v4/catalog/generated-buildings-v5.json";
+import authoredProps from "../assets/pixel-city-pack-v4/catalog/ai-authored-props.json";
 
 const runtime = resolve("assets/pixel-city-pack-v4/runtime");
 const buildings = manifest.buildings as Record<string, {
@@ -60,9 +61,35 @@ describe("Pixel City V4 expansion contract", () => {
       "topiary-spiral", "topiary-animal", "pond-small", "flower-bed-horizontal",
       "flower-bed-vertical", "park-bench-double", "park-bridge", "park-lamp",
       "park-path-circle", "playground-slide", "playground-carousel",
+      "playground-climbing", "playground-swing", "park-pond", "park-sculpture",
+      "park-flower-clock", "park-bandstand", "bus-stop-modern-horizontal",
+      "bus-stop-modern-vertical", "bus-stop-green-horizontal", "bus-stop-green-vertical",
     ]) expect(props[key], key).toBeDefined();
     expect(props["fountain-large"]?.footprintCells).toEqual([4, 4]);
     expect(props["gazebo"]?.footprintCells).toEqual([4, 3]);
+  });
+
+  it("keeps reviewed ambient art tied to its approved source and visual profile", () => {
+    const props = manifest.props as Record<string, { size: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string; visualProfile?: string }>;
+    for (const authored of authoredProps) {
+      expect(props[authored.key], authored.key).toMatchObject({
+        size: authored.size,
+        footprintCells: authored.footprintCells,
+        artSource: "AI_AUTHORED",
+        sourceSheet: authored.sheet,
+        visualProfile: authored.visualProfile,
+      });
+    }
+  });
+
+  it("publishes eight independently authored directional vehicle models", () => {
+    const vehicles = manifest.vehicles as Record<string, Record<"horizontal" | "vertical", { size: number[]; artSource?: string; sourceSheet?: string }>>;
+    expect(Object.keys(vehicles)).toHaveLength(8);
+    for (const [key, orientations] of Object.entries(vehicles)) {
+      expect(orientations.horizontal, key).toMatchObject({ size: [16, 8], artSource: "AI_AUTHORED" });
+      expect(orientations.vertical, key).toMatchObject({ size: [8, 16], artSource: "AI_AUTHORED" });
+      expect(orientations.horizontal.sourceSheet, key).toBe(orientations.vertical.sourceSheet);
+    }
   });
 
   it("publishes four incident animation frames, three engine silhouettes, and eight animal species", () => {

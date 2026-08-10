@@ -77,7 +77,16 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(cityDirectory.getByText("20 зданий")).toBeVisible();
   await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
   await cityDirectory.getByRole("button", { name: /^\d+ #1 · Задача района 1\.1/ }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  const taskDialog = page.getByRole("dialog");
+  await expect(taskDialog).toBeVisible();
+  await expect(taskDialog.getByRole("heading", { name: "Материалы для реализации" })).toBeVisible();
+  await expect(taskDialog.getByRole("tab")).toHaveCount(4);
+  await taskDialog.getByRole("tab", { name: /Архитектура/ }).click();
+  await expect(taskDialog.getByRole("tabpanel")).toContainText("Markdown-документы и пункты чек-листа");
+  await expect(taskDialog.locator(".task-checklist li")).toHaveCount(3);
+  await expect(taskDialog.locator(".task-checklist li.done")).toHaveCount(2);
+  await expect(taskDialog.locator('input[type="file"]')).toHaveCount(0);
+  await expect(taskDialog.getByRole("button", { name: /Удалить задачу|Добавить/ })).toHaveCount(0);
   await capture(page, "screenshots/release-task-modal.png");
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(cityDirectory).toBeHidden();

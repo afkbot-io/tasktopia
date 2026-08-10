@@ -6,11 +6,15 @@ import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkTaskDto, Plat
 import { api } from "../api";
 import {
   agentCellKey,
+  buildDirectedCarEdges,
+  isAgentEdgeAllowed,
   connectShortWalkGaps,
   nextSeededRandom,
   nextWithoutUTurn,
   planAgentRoute,
   mustYieldAtCrosswalk,
+  walkerInteractionPairs,
+  type AgentEdges,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
 import { incidentMode, planIncidentEngines, type IncidentMode } from "../task-incidents";
@@ -665,6 +669,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         id: string;
         view: Sprite;
         graph: Map<string, Cell>;
+        outgoing?: AgentEdges;
         current: Cell;
         next: Cell;
         previous?: Cell;
@@ -674,6 +679,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         variant: string;
         phase: number;
         pauseMs: number;
+        socialCooldownMs: number;
+        activity: "NONE" | "THINK" | "CHAT";
+        activityView?: Graphics;
         steps: number;
         randomState: number;
         route: Cell[];
@@ -685,6 +693,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       let spawnState = sessionSeed;
       let nextAgentId = 1;
       let simulationTimeMs = 0;
+      let nextSocialCheckMs = 700;
       let airplane: { view: Sprite; speed: number; startY: number; phase: number; endX: number; nextTrailX: number; trail: Graphics[] } | undefined;
       let nextFlybyMs = 20_000 + nextSeededRandom(sessionSeed).value * 35_000;
       const celebrations: Array<{ particles: Array<{ view: Graphics; vx: number; vy: number }>; elapsed: number }> = [];
@@ -706,6 +715,20 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       host.dataset.airplaneSpace = flightLayer.parent === world ? "world" : "screen";
       let activeCrosswalks = new Set<string>();
       let activityCells = new Set<string>();
+      const setWalkerActivity = (agent: MovingAgent, activity: MovingAgent["activity"]): void => {
+        if (agent.kind !== "WALKER") return;
+        agent.activity = activity;
+        const marker = agent.activityView;
+        if (!marker) return;
+        marker.clear();
+        if (activity === "THINK") {
+          marker.circle(3, -7, 1).fill(0xf4f1d7).circle(5, -10, 1.4).fill(0xf4f1d7).circle(8, -11, 2).fill(0xf4f1d7);
+        } else if (activity === "CHAT") {
+          marker.roundRect(-5, -14, 11, 7, 2).fill({ color: 0xf4f1d7, alpha: 0.94 });
+          marker.circle(-2, -11, 0.7).fill(0x183138).circle(1, -11, 0.7).fill(0x183138).circle(4, -11, 0.7).fill(0x183138);
+        }
+        marker.visible = activity !== "NONE";
+      };
       const orientVehicle = (agent: MovingAgent): void => {
         if (agent.kind !== "CAR") return;
         // Vehicle sprites no longer touch the tile edge, which reads as driving
@@ -742,8 +765,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           }
         }
         for (const agent of movingAgents) {
+          agent.socialCooldownMs = Math.max(0, agent.socialCooldownMs - elapsed);
           if (agent.pauseMs > 0) {
             agent.pauseMs = Math.max(0, agent.pauseMs - elapsed);
+            if (agent.pauseMs === 0) setWalkerActivity(agent, "NONE");
             continue;
           }
           if (agent.kind === "CAR" && mustYieldAtCrosswalk(
@@ -759,14 +784,14 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             agent.steps += 1;
             agent.routeIndex += 1;
             let routed = agent.route[agent.routeIndex];
-            if (!routed || !agent.graph.has(agentCellKey(routed))) {
-              const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" ? 14 : 9, agent.previous);
+            if (!routed || !agent.graph.has(agentCellKey(routed)) || !isAgentEdgeAllowed(agent.current, routed, agent.outgoing)) {
+              const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" ? 14 : 9, agent.previous, agent.outgoing);
               agent.randomState = planned.randomState;
               agent.route = planned.route;
               agent.routeIndex = 1;
               routed = agent.route[agent.routeIndex];
             }
-            agent.next = routed ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous);
+            agent.next = routed ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous, agent.outgoing);
             const horizontal = agent.next.x !== agent.current.x;
             const direction = horizontal ? agent.next.x > agent.current.x ? "east" : "west" : agent.next.y > agent.current.y ? "south" : "north";
             const url = agent.kind === "CAR"
@@ -778,6 +803,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             orientVehicle(agent);
             if (agent.kind === "WALKER" && activityCells.has(key(agent.current)) && (agent.steps + Math.floor(agent.phase * 13)) % 3 === 0) {
               agent.pauseMs = 450 + Math.floor(agent.phase * 900);
+              setWalkerActivity(agent, "THINK");
             }
           }
           const x = agent.current.x + (agent.next.x - agent.current.x) * agent.progress;
@@ -786,6 +812,20 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           const step = agent.kind === "WALKER" ? Math.abs(cycle) * 0.7 : agent.kind === "ANIMAL" ? Math.abs(cycle) * 0.35 : Math.abs(cycle) * 0.14;
           agent.view.position.set(x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2 - step);
           agent.view.rotation = agent.kind === "WALKER" ? cycle * 0.055 : agent.kind === "ANIMAL" ? cycle * 0.025 : cycle * 0.008;
+        }
+        nextSocialCheckMs -= elapsed;
+        if (nextSocialCheckMs <= 0) {
+          const byId = new Map(movingWalkers.map((walker) => [walker.id, walker]));
+          for (const [firstId, secondId] of walkerInteractionPairs(movingWalkers, 2)) {
+            const first = byId.get(firstId); const second = byId.get(secondId);
+            if (!first || !second) continue;
+            const duration = 1_400 + Math.floor((first.phase + second.phase) * 550);
+            first.pauseMs = second.pauseMs = duration;
+            first.socialCooldownMs = second.socialCooldownMs = 8_000 + duration;
+            setWalkerActivity(first, "CHAT"); setWalkerActivity(second, "CHAT");
+            host.dataset.walkerInteractions = String(Number(host.dataset.walkerInteractions ?? 0) + 1);
+          }
+          nextSocialCheckMs = 700;
         }
         for (const ambient of ambientDecorationViews.values()) {
           const cycle = Math.sin(simulationTimeMs * 0.0014 + ambient.phase * Math.PI * 2);
@@ -1111,8 +1151,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         host!.dataset.incidentModes = [...incidentViews.values()].map((view) => view.mode).sort().join(",");
         host!.dataset.entityReplacements = String(entityReplacementCount);
 
-        const addAgents = (graph: Map<string, Cell>, count: number, kind: MovingAgent["kind"]): void => {
-          const candidates = [...graph.values()].filter((cell) => GRID_DIRECTIONS.some((direction) => graph.has(key({ x: cell.x + direction.x, y: cell.y + direction.y }))));
+        const addAgents = (graph: Map<string, Cell>, count: number, kind: MovingAgent["kind"], outgoing?: AgentEdges): void => {
+          const candidates = [...graph.values()].filter((cell) => outgoing
+            ? (outgoing.get(key(cell))?.length ?? 0) > 0
+            : GRID_DIRECTIONS.some((direction) => graph.has(key({ x: cell.x + direction.x, y: cell.y + direction.y }))));
           if (candidates.length === 0) return;
           const colors = Object.keys(VEHICLE_SPRITES);
           const occupiedStarts = new Set(movingAgents.filter((agent) => agent.kind === kind).map((agent) => key(agent.current)));
@@ -1127,9 +1169,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             if (occupiedStarts.has(key(current))) continue;
             const routeSeed = nextSeededRandom(spawnState);
             spawnState = routeSeed.state;
-            const planned = planAgentRoute(graph, current, routeSeed.state, kind === "CAR" ? 14 : 9);
-            const next = planned.route[1] ?? nextWithoutUTurn(graph, current);
-            if (!next) continue;
+            const planned = planAgentRoute(graph, current, routeSeed.state, kind === "CAR" ? 14 : 9, undefined, outgoing);
+            const next = planned.route[1] ?? nextWithoutUTurn(graph, current, undefined, outgoing);
+            if (key(next) === key(current)) continue;
             const horizontal = next.x !== current.x;
             const variant = kind === "ANIMAL" ? ANIMAL_SPECIES[created % ANIMAL_SPECIES.length]! : colors[created % colors.length] ?? "blue";
             const direction = horizontal ? next.x > current.x ? "east" : "west" : next.y > current.y ? "south" : "north";
@@ -1140,11 +1182,14 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             const view = sprite(url, current.x * CELL_SIZE + CELL_SIZE / 2, current.y * CELL_SIZE + CELL_SIZE / 2);
             view.anchor.set(0.5);
             agentLayer.addChild(view);
+            const activityView = kind === "WALKER" ? new Graphics() : undefined;
+            if (activityView) { activityView.visible = false; view.addChild(activityView); }
             const agent: MovingAgent = {
               id: `${sessionSeed.toString(36)}-${nextAgentId++}`,
-              view, graph, current, next, progress: picked.value,
+              view, graph, outgoing, current, next, progress: picked.value,
               speed: kind === "CAR" ? 0.0022 + (index % 3) * 0.00016 : kind === "ANIMAL" ? 0.00065 + (index % 3) * 0.00008 : 0.00115 + (index % 5) * 0.00013,
-              kind, variant, phase: (index % 11) / 11, pauseMs: 0, steps: index % 17,
+              kind, variant, phase: (index % 11) / 11, pauseMs: 0, socialCooldownMs: index * 170 % 2_000,
+              activity: "NONE", activityView, steps: index % 17,
               randomState: planned.randomState, route: planned.route, routeIndex: 1,
             };
             orientVehicle(agent);
@@ -1155,6 +1200,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           }
         };
         const roadGraph = new Map([...roads].map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y }]));
+        const carEdges = buildDirectedCarEdges(roadGraph);
         const blockedWalkCells = new Set([
           ...[...tasks.values()].flatMap((task) => task.footprint),
           ...[...features.values()].filter((feature) => feature.assetKind !== "AREA").flatMap((feature) => feature.footprint),
@@ -1193,12 +1239,23 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           movingAgents = movingAgents.filter((agent) => {
             const graph = graphs[agent.kind];
             const retained = graph.has(key(agent.current)) && graph.has(key(agent.next));
-            if (retained) agent.graph = graph;
-            else { agent.view.removeFromParent(); agent.view.destroy(); }
+            if (retained) {
+              agent.graph = graph;
+              agent.outgoing = agent.kind === "CAR" ? carEdges : undefined;
+              if (!isAgentEdgeAllowed(agent.current, agent.next, agent.outgoing)) {
+                const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" ? 14 : 9, agent.previous, agent.outgoing);
+                agent.randomState = planned.randomState;
+                agent.route = planned.route;
+                agent.routeIndex = 1;
+                agent.next = planned.route[1] ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous, agent.outgoing);
+                agent.progress = 0;
+              }
+            }
+            else { agent.view.removeFromParent(); agent.view.destroy({ children: true }); }
             return retained;
           });
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
-          addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR");
+          addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR", carEdges);
           addAgents(walkGraph, Math.min(24, Math.max(4, Math.floor(walkGraph.size / 120))), "WALKER");
           addAgents(animalGraph, Math.min(6, Math.floor(animalGraph.size / 1400)), "ANIMAL");
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
@@ -1207,6 +1264,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         host!.dataset.cars = String(movingAgents.filter((agent) => agent.kind === "CAR").length);
         host!.dataset.walkers = String(movingWalkers.length);
         host!.dataset.animals = String(movingAgents.filter((agent) => agent.kind === "ANIMAL").length);
+        host!.dataset.wrongWayCars = String(movingAgents.filter((agent) => agent.kind === "CAR"
+          && key(agent.current) !== key(agent.next)
+          && !agent.outgoing?.get(key(agent.current))?.some((candidate) => key(candidate) === key(agent.next))).length);
         host!.dataset.agentSession = String(sessionSeed);
         host!.dataset.agentIds = movingAgents.map((agent) => agent.id).sort().join(",");
         if (rebuildMovement) host!.dataset.movementRebuilds = String(Number(host!.dataset.movementRebuilds ?? 0) + 1);

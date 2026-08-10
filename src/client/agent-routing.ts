@@ -3,6 +3,101 @@ import type { Cell } from "../shared/contracts";
 export function agentCellKey(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
 const DIRECTIONS = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }] as const;
+export type AgentEdges = ReadonlyMap<string, readonly Cell[]>;
+
+export function isAgentEdgeAllowed(current: Cell, next: Cell, outgoing?: AgentEdges): boolean {
+  return !outgoing || Boolean(outgoing.get(agentCellKey(current))?.some((candidate) => agentCellKey(candidate) === agentCellKey(next)));
+}
+
+function directedNeighbors(graph: ReadonlyMap<string, Cell>, cell: Cell, outgoing?: AgentEdges): Cell[] {
+  return outgoing ? [...outgoing.get(agentCellKey(cell)) ?? []] : adjacentGraphCells(graph, cell);
+}
+
+function axisRun(graph: ReadonlyMap<string, Cell>, cell: Cell, dx: number, dy: number): number {
+  let length = 0;
+  for (const sign of [-1, 1]) {
+    for (let step = 1; step <= 8; step += 1) {
+      if (!graph.has(agentCellKey({ x: cell.x + dx * step * sign, y: cell.y + dy * step * sign }))) break;
+      length += 1;
+    }
+  }
+  return length;
+}
+
+function contiguousBand(graph: ReadonlyMap<string, Cell>, cell: Cell, horizontal: boolean): { min: number; max: number } {
+  const coordinate = horizontal ? cell.y : cell.x;
+  let min = coordinate;
+  let max = coordinate;
+  for (const sign of [-1, 1]) {
+    for (let step = 1; step <= 6; step += 1) {
+      const candidate = horizontal
+        ? { x: cell.x, y: cell.y + step * sign }
+        : { x: cell.x + step * sign, y: cell.y };
+      if (!graph.has(agentCellKey(candidate))) break;
+      if (sign < 0) min = coordinate - step;
+      else max = coordinate + step;
+    }
+  }
+  return { min, max };
+}
+
+type Lane = { axis: "H" | "V" | "J"; dx: number; dy: number };
+
+function laneAt(graph: ReadonlyMap<string, Cell>, cell: Cell): Lane {
+  const horizontalRun = axisRun(graph, cell, 1, 0);
+  const verticalRun = axisRun(graph, cell, 0, 1);
+  if (horizontalRun >= 4 && verticalRun >= 4) return { axis: "J", dx: 0, dy: 0 };
+  if (horizontalRun >= verticalRun) {
+    const band = contiguousBand(graph, cell, true);
+    return { axis: "H", dx: cell.y > (band.min + band.max) / 2 ? 1 : -1, dy: 0 };
+  }
+  const band = contiguousBand(graph, cell, false);
+  return { axis: "V", dx: 0, dy: cell.x <= (band.min + band.max) / 2 ? 1 : -1 };
+}
+
+/**
+ * Build a directed road graph for right-hand traffic. Ordinary road bands are
+ * one-way per lane; intersections temporarily allow turns, but a car may only
+ * leave them through a lane whose direction matches the movement.
+ */
+export function buildDirectedCarEdges(graph: ReadonlyMap<string, Cell>): Map<string, Cell[]> {
+  const lanes = new Map([...graph].map(([key, cell]) => [key, laneAt(graph, cell)]));
+  const edges = new Map<string, Cell[]>();
+  for (const cell of graph.values()) {
+    const lane = lanes.get(agentCellKey(cell))!;
+    const candidates = adjacentGraphCells(graph, cell).filter((next) => {
+      const dx = next.x - cell.x;
+      const dy = next.y - cell.y;
+      const nextLane = lanes.get(agentCellKey(next))!;
+      if (lane.axis !== "J" && (dx !== lane.dx || dy !== lane.dy)) return false;
+      return nextLane.axis === "J" || dx === nextLane.dx && dy === nextLane.dy;
+    });
+    edges.set(agentCellKey(cell), candidates);
+  }
+  return edges;
+}
+
+export function walkerInteractionPairs(
+  walkers: ReadonlyArray<{ id: string; current: Cell; pauseMs: number; socialCooldownMs: number }>,
+  maximumPairs = 2,
+): Array<[string, string]> {
+  const available = walkers.filter((walker) => walker.pauseMs <= 0 && walker.socialCooldownMs <= 0);
+  const used = new Set<string>();
+  const pairs: Array<[string, string]> = [];
+  for (let left = 0; left < available.length && pairs.length < maximumPairs; left += 1) {
+    const first = available[left]!;
+    if (used.has(first.id)) continue;
+    for (let right = left + 1; right < available.length; right += 1) {
+      const second = available[right]!;
+      if (used.has(second.id)) continue;
+      const distance = Math.abs(first.current.x - second.current.x) + Math.abs(first.current.y - second.current.y);
+      if (distance > 1) continue;
+      used.add(first.id); used.add(second.id); pairs.push([first.id, second.id]);
+      break;
+    }
+  }
+  return pairs;
+}
 
 export function nextSeededRandom(state: number): { state: number; value: number } {
   let next = state | 0;
@@ -25,6 +120,7 @@ export function shortestAgentRoute(
   start: Cell,
   target: Cell,
   maximumVisited = 8_000,
+  outgoing?: AgentEdges,
 ): Cell[] {
   const startKey = agentCellKey(start);
   const targetKey = agentCellKey(target);
@@ -34,7 +130,7 @@ export function shortestAgentRoute(
   const previous = new Map<string, string | null>([[startKey, null]]);
   for (let cursor = 0; cursor < queue.length && cursor < maximumVisited; cursor += 1) {
     const current = queue[cursor]!;
-    for (const next of adjacentGraphCells(graph, current)) {
+    for (const next of directedNeighbors(graph, current, outgoing)) {
       const nextKey = agentCellKey(next);
       if (previous.has(nextKey)) continue;
       previous.set(nextKey, agentCellKey(current));
@@ -63,6 +159,7 @@ export function planAgentRoute(
   randomState: number,
   sampleCount = 12,
   avoidFirst?: Cell,
+  outgoing?: AgentEdges,
 ): { route: Cell[]; randomState: number } {
   const startKey = agentCellKey(start);
   if (graph.size < 2 || !graph.has(startKey)) return { route: [start], randomState };
@@ -70,7 +167,7 @@ export function planAgentRoute(
   const previous = new Map<string, string | null>([[startKey, null]]);
   for (let cursor = 0; cursor < queue.length && cursor < 8_000; cursor += 1) {
     const current = queue[cursor]!;
-    for (const next of adjacentGraphCells(graph, current)) {
+    for (const next of directedNeighbors(graph, current, outgoing)) {
       const nextKey = agentCellKey(next);
       if (cursor === 0 && avoidFirst && nextKey === agentCellKey(avoidFirst)) continue;
       if (previous.has(nextKey)) continue;
@@ -79,7 +176,7 @@ export function planAgentRoute(
     }
   }
   if (queue.length < 2) return avoidFirst
-    ? planAgentRoute(graph, start, randomState, sampleCount)
+    ? planAgentRoute(graph, start, randomState, sampleCount, undefined, outgoing)
     : { route: [start], randomState };
   let state = randomState;
   let target = queue[1]!;
@@ -103,10 +200,10 @@ export function planAgentRoute(
   return { route, randomState: state };
 }
 
-export function nextWithoutUTurn(graph: ReadonlyMap<string, Cell>, current: Cell, previous?: Cell): Cell {
-  const candidates = adjacentGraphCells(graph, current);
+export function nextWithoutUTurn(graph: ReadonlyMap<string, Cell>, current: Cell, previous?: Cell, outgoing?: AgentEdges): Cell {
+  const candidates = directedNeighbors(graph, current, outgoing);
   return candidates.find((candidate) => !previous || agentCellKey(candidate) !== agentCellKey(previous))
-    ?? previous
+    ?? (outgoing ? undefined : previous)
     ?? current;
 }
 
