@@ -6,6 +6,15 @@ async function capture(page: Page, path: string): Promise<void> {
 }
 
 test("public AI integration guide is directly accessible", async ({ request }) => {
+  const shell = await request.get("/");
+  expect(shell.ok()).toBe(true);
+  const bundlePath = (await shell.text()).match(/<script[^>]+src="([^"]*\/assets\/[^"]+\.js)"/)?.[1];
+  expect(bundlePath).toBeDefined();
+  const bundle = await request.get(bundlePath!);
+  expect(bundle.ok()).toBe(true);
+  expect(bundle.headers()["cache-control"]).toContain("immutable");
+  expect(bundle.headers()["access-control-allow-origin"]).toBe("http://127.0.0.1:5173");
+  expect(bundle.headers()["cross-origin-resource-policy"]).toBe("cross-origin");
   const response = await request.get("/ai.md");
   expect(response.ok()).toBe(true);
   expect(response.headers()["content-type"]).toContain("text/markdown");
