@@ -11,6 +11,7 @@ coverage/
 .playwright-cli/
 output/
 tmp/
+backups/
 .DS_Store
 
 # Local AI-client skill mirrors. The canonical project skill lives in

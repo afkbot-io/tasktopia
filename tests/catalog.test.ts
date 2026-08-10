@@ -14,6 +14,8 @@ describe("building catalog V4", () => {
   it("content-addresses every game asset URL for immutable CDN caching", () => {
     expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v4\/revisions\/[a-f0-9]{16}\/tiles\/road\.png$/);
     expect(gameAssetUrl("/game-assets/v4/props/gazebo.png")).toMatch(/^\/game-assets\/v4\/revisions\/[a-f0-9]{16}\/props\/gazebo\.png$/);
+    const versioned = gameAssetUrl("tiles/road.png");
+    expect(gameAssetUrl(versioned)).toBe(versioned);
   });
   it("contains a diverse, data-driven catalog with valid assets", () => {
     expect(BUILDING_CATALOG.length).toBeGreaterThanOrEqual(44);

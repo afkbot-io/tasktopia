@@ -8,9 +8,11 @@ export const ASSET_REVISION = (manifest as { assetRevision?: string }).assetRevi
 
 export function gameAssetUrl(path: string): string {
   if (/^https?:\/\//.test(path)) return path;
+  const versionedPrefix = `/game-assets/v4/revisions/${ASSET_REVISION}/`;
+  if (path.startsWith(versionedPrefix)) return `${clientStaticOrigin}${path}`;
   const normalized = path.startsWith("/game-assets/v4/") ? path : `/game-assets/v4/${path.replace(/^\//, "")}`;
   const assetPath = normalized.slice("/game-assets/v4/".length);
-  return `${clientStaticOrigin}/game-assets/v4/revisions/${ASSET_REVISION}/${assetPath}`;
+  return `${clientStaticOrigin}${versionedPrefix}${assetPath}`;
 }
 
 export type BuildingCategory = "HOUSE" | "HIGHRISE" | "COMMERCIAL" | "CIVIC";

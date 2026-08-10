@@ -2637,8 +2637,8 @@
   },
   "provenance": {
     "buildings": "built-in image generation per family; chroma removal; deterministic five-frame split and exact normalization",
-    "vehicles": "one built-in generated paired oblique source; deterministic palette variants",
+    "vehicles": "authored top-down vertical geometry plus generated horizontal reference; deterministic palette variants",
     "tiles": "deterministic authored 8x8 pixels",
-    "props": "five reused pixel-grid8-v2 essentials plus twelve built-in generated street props"
+    "props": "five self-contained base essentials plus twelve built-in generated street props"
   }
 }

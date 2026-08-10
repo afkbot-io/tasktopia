@@ -10,7 +10,7 @@ test-results
 playwright-report
 coverage
 archive
-screenshots
+backups
 assets/*
 !assets/pixel-city-pack-v4/
 !assets/pixel-city-pack-v4/**

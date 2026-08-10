@@ -20,7 +20,7 @@ PROPS = PACK / "props"
 ATLASES = PACK / "atlas"
 DOCS = PACK / "docs"
 SCREENSHOTS = ROOT / "screenshots"
-V2 = ROOT / "assets" / "pixel-grid8-v2"
+BASE = SOURCE / "base"
 
 CELL = 8
 STAGE_COUNT = 5
@@ -100,11 +100,11 @@ BUILDING_SPECS = [
 SPEC_BY_KEY = {spec.key: spec for spec in BUILDING_SPECS}
 
 PROP_SPECS = [
-    PropSpec("tree-round", "Круглое дерево", (8, 16), "tree-round", source_group="v2", footprint_cells=(1, 1)),
-    PropSpec("tree-conifer", "Хвойное дерево", (8, 16), "tree-conifer", source_group="v2", footprint_cells=(1, 1)),
-    PropSpec("tree-flowering", "Цветущее дерево", (8, 16), "tree-flowering", source_group="v2", footprint_cells=(1, 1)),
-    PropSpec("streetlamp", "Фонарь", (8, 16), "streetlamp", source_group="v2", footprint_cells=(1, 1)),
-    PropSpec("utility-pole", "Электрический столб", (8, 16), "utility-pole", source_group="v2", footprint_cells=(1, 1)),
+    PropSpec("tree-round", "Круглое дерево", (8, 16), "tree-round", source_group="base", footprint_cells=(1, 1)),
+    PropSpec("tree-conifer", "Хвойное дерево", (8, 16), "tree-conifer", source_group="base", footprint_cells=(1, 1)),
+    PropSpec("tree-flowering", "Цветущее дерево", (8, 16), "tree-flowering", source_group="base", footprint_cells=(1, 1)),
+    PropSpec("streetlamp", "Фонарь", (8, 16), "streetlamp", source_group="base", footprint_cells=(1, 1)),
+    PropSpec("utility-pole", "Электрический столб", (8, 16), "utility-pole", source_group="base", footprint_cells=(1, 1)),
     PropSpec("bench-vertical", "Скамейка вертикальная", (8, 16), "bench", 2, 0, footprint_cells=(1, 1)),
     PropSpec("bench-horizontal", "Скамейка горизонтальная", (16, 8), "bench", 2, 1),
     PropSpec("trash-bin", "Урна", (8, 8), "trash-bin"),
@@ -207,8 +207,8 @@ def build_props() -> dict[str, Image.Image]:
     assets: dict[str, Image.Image] = {}
     PROPS.mkdir(parents=True, exist_ok=True)
     for spec in PROP_SPECS:
-        if spec.source_group == "v2":
-            source = Image.open(V2 / "props" / f"{spec.source}.png").convert("RGBA")
+        if spec.source_group == "base":
+            source = Image.open(BASE / "props" / f"{spec.source}.png").convert("RGBA")
         else:
             source_path = SOURCE / "props" / f"{spec.source}.png"
             source = split_equal_columns(source_path, spec.segment_count)[spec.segment_index]
@@ -219,19 +219,19 @@ def build_props() -> dict[str, Image.Image]:
 
 
 def tile_grass() -> Image.Image:
-    return Image.open(V2 / "tiles" / "grass.png").convert("RGBA")
+    return Image.open(BASE / "tiles" / "grass.png").convert("RGBA")
 
 
 def tile_road() -> Image.Image:
-    return Image.open(V2 / "tiles" / "road.png").convert("RGBA")
+    return Image.open(BASE / "tiles" / "road.png").convert("RGBA")
 
 
 def tile_curb() -> Image.Image:
-    return Image.open(V2 / "tiles" / "curb.png").convert("RGBA")
+    return Image.open(BASE / "tiles" / "curb.png").convert("RGBA")
 
 
 def tile_pavement() -> Image.Image:
-    return Image.open(V2 / "tiles" / "pavement.png").convert("RGBA")
+    return Image.open(BASE / "tiles" / "pavement.png").convert("RGBA")
 
 
 def tile_path() -> Image.Image:
@@ -697,7 +697,7 @@ def validate(buildings: dict[str, Image.Image], tiles: dict[str, Image.Image], v
                 raise RuntimeError(f"{name}: expected {spec.size}, got {sprite.size}")
             if sprite.getchannel("A").getbbox() is None:
                 raise RuntimeError(f"{name}: empty alpha")
-            if set(sprite.getchannel("A").get_flattened_data()) - {0, 255}:
+            if set(sprite.getchannel("A").tobytes()) - {0, 255}:
                 raise RuntimeError(f"{name}: soft alpha found")
     for name, tile in tiles.items():
         if tile.size != (8, 8):
@@ -711,7 +711,7 @@ def validate(buildings: dict[str, Image.Image], tiles: dict[str, Image.Image], v
         alpha = sprite.getchannel("A")
         if alpha.getbbox() is None:
             raise RuntimeError(f"{spec.key}: empty alpha")
-        if set(alpha.get_flattened_data()) - {0, 255}:
+        if set(alpha.tobytes()) - {0, 255}:
             raise RuntimeError(f"{spec.key}: soft alpha found")
     for color in CAR_PALETTES:
         vertical = vehicles[f"car-{color}-vertical"]
@@ -722,7 +722,7 @@ def validate(buildings: dict[str, Image.Image], tiles: dict[str, Image.Image], v
             alpha = sprite.getchannel("A")
             if alpha.getbbox() is None:
                 raise RuntimeError(f"car-{color}-{orientation}: empty alpha")
-            if set(alpha.get_flattened_data()) - {0, 255}:
+            if set(alpha.tobytes()) - {0, 255}:
                 raise RuntimeError(f"car-{color}-{orientation}: soft alpha found")
         if horizontal.tobytes() == vertical.transpose(Image.Transpose.ROTATE_270).tobytes():
             raise RuntimeError(f"car-{color}: oblique views collapsed into a mechanical rotation")
@@ -809,7 +809,7 @@ def main() -> None:
             "buildings": "built-in image generation per family; chroma removal; deterministic five-frame split and exact normalization",
             "vehicles": "authored top-down vertical geometry plus generated horizontal reference; deterministic palette variants",
             "tiles": "deterministic authored 8x8 pixels",
-            "props": "five reused pixel-grid8-v2 essentials plus twelve built-in generated street props",
+            "props": "five self-contained base essentials plus twelve built-in generated street props",
         },
     }
     (PACK / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -10,7 +10,7 @@ Asset type: five-frame construction sprite sheet for an 8px-grid pixel city game
 Primary request: exactly five sequential stages of the SAME <building>:
 marked dirt lot, foundation, structural frame, nearly complete building with scaffolding, finished building.
 Final runtime intent: identical <W×H> pixel canvas per stage, bottom-center anchor.
-Reference: supplied pixel-grid8-v2 catalog strictly controls handcrafted 16-bit pixel art,
+Reference: the supplied Tasktopia V3 catalog strictly controls handcrafted 16-bit pixel art,
 frontal camera, hard pixel clusters, dark blue-grey outline, limited palette and no antialiasing.
 Scene: perfectly flat uniform #ff00ff chroma background.
 Composition: exactly five isolated sprites in one horizontal row, equal fifths,

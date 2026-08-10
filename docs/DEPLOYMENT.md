@@ -1,4 +1,63 @@
-# Production deployment: nginx + Docker
+# Self-hosting и production deployment
+
+Tasktopia поставляется как два контейнера: приложение и PostgreSQL 16. По
+умолчанию HTTP-порт приложения привязан к `127.0.0.1:3000`, поэтому наружу его
+следует публиковать только через nginx, Caddy, Traefik или другой TLS-proxy.
+
+## Быстрый запуск Docker Compose
+
+```bash
+git clone https://github.com/afkbot-io/tasktopia.git
+cd tasktopia
+cp deploy/.env.self-host.example .env
+openssl rand -hex 32
+```
+
+Запишите полученный секрет в `POSTGRES_PASSWORD`, затем запустите сервисы:
+
+```bash
+docker compose up -d --build
+docker compose ps
+curl -fsS http://127.0.0.1:3000/health
+```
+
+Обязательные параметры находятся в [`deploy/.env.self-host.example`](../deploy/.env.self-host.example).
+Named volumes `tasktopia_postgres` и `tasktopia_uploads` переживают замену
+контейнеров. Не используйте `docker compose down -v` на сервере с данными.
+
+## Автоматическая установка домена и HTTPS
+
+Для чистого Ubuntu/Debian-сервера сначала направьте A/AAAA-запись домена на
+сервер, затем выполните:
+
+```bash
+git clone --depth 1 https://github.com/afkbot-io/tasktopia.git /tmp/tasktopia-bootstrap
+sudo /tmp/tasktopia-bootstrap/deploy/install-server.sh \
+  --domain tasks.example.com \
+  --email admin@example.com
+```
+
+Установщик проверяет аргументы, ставит Docker/nginx/Certbot, генерирует пароль
+PostgreSQL, поднимает контейнеры, проверяет `/health` и только после HTTP-проверки
+выпускает сертификат. Для fork или приватного репозитория доступны
+`--repository`, `--branch` и `--app-dir`.
+
+Обновление делает резервную копию PostgreSQL, принимает только fast-forward и
+останавливается, если новый контейнер не проходит healthcheck:
+
+```bash
+sudo /srv/tasktopia/app/deploy/update-server.sh
+```
+
+## Конфигурация reverse proxy
+
+- [`nginx-self-host-bootstrap.conf.template`](../deploy/nginx-self-host-bootstrap.conf.template) — HTTP до выпуска сертификата;
+- [`nginx-self-host.conf.template`](../deploy/nginx-self-host.conf.template) — универсальный HTTPS-конфиг;
+- [`nginx-tasktopia.conf`](../deploy/nginx-tasktopia.conf) — конфигурация официального `tasktopia.online`.
+
+Ниже описана официальная production-схема Tasktopia и её CDN-настройки.
+
+## Официальный production: nginx + Docker
 
 Production-схема: системный nginx принимает `80/443`, приложение работает непривилегированным пользователем внутри Docker и доступно только на `127.0.0.1:3000`. PostgreSQL 16 хранит данные в named volume `tasktopia_postgres` и должен пройти healthcheck до запуска приложения.
 
