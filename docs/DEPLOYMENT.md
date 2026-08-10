@@ -59,10 +59,11 @@ POSTGRES_CPU_LIMIT=1.00
 `VITE_STATIC_ORIGIN` встраивается в клиент во время `docker compose build`, а
 `STATIC_ORIGIN` добавляет тот же origin в CSP приложения. Их нельзя включать по
 отдельности. CDN должен использовать `https://tasktopia.online` как origin,
-сохранять query string и возвращать CORS-заголовок
+возвращать CORS-заголовок
 `Access-Control-Allow-Origin: https://tasktopia.online` для JS, CSS, шрифтов и
-PNG. Игровой пак имеет content revision в query string, поэтому immutable-кэш
-не удерживает старые спрайты после пересборки.
+PNG. Игровой пак публикует content revision отдельным сегментом пути
+`/game-assets/v4/revisions/<assetRevision>/...`, поэтому корректность
+immutable-кэша не зависит от политики CDN по query string.
 
 До включения CDN проверьте сертификат и доставку одного хешированного bundle и
 одного игрового PNG:
@@ -73,7 +74,7 @@ openssl s_client -connect store.tasktopia.online:443 -servername store.tasktopia
   | openssl x509 -noout -ext subjectAltName
 # После сборки возьмите реальные URL из dist/public/index.html и manifest:
 curl -fsSIL 'https://store.tasktopia.online/assets/<vite-hash>.js'
-curl -fsSIL 'https://store.tasktopia.online/game-assets/v4/props/gazebo.png?v=<assetRevision>'
+curl -fsSIL 'https://store.tasktopia.online/game-assets/v4/revisions/<assetRevision>/props/gazebo.png'
 ```
 
 Если SAN не содержит `store.tasktopia.online`, обе CDN-переменные должны

@@ -3,12 +3,17 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BUILDING_CATALOG, PROP_CATALOG, REGISTERED_BUILDING_RULES, gameAssetUrl } from "../src/shared/catalog";
 
-const assetDiskPath = (url: string) => resolve("public", new URL(url, "http://tasktopia.local").pathname.slice(1));
+const assetDiskPath = (url: string) => resolve(
+  "public",
+  new URL(url, "http://tasktopia.local").pathname
+    .replace(/\/game-assets\/v4\/revisions\/[a-f0-9]{16}\//, "/game-assets/v4/")
+    .slice(1),
+);
 
 describe("building catalog V4", () => {
   it("content-addresses every game asset URL for immutable CDN caching", () => {
-    expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v4\/tiles\/road\.png\?v=[a-f0-9]{16}$/);
-    expect(gameAssetUrl("/game-assets/v4/props/gazebo.png")).toMatch(/^\/game-assets\/v4\/props\/gazebo\.png\?v=[a-f0-9]{16}$/);
+    expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v4\/revisions\/[a-f0-9]{16}\/tiles\/road\.png$/);
+    expect(gameAssetUrl("/game-assets/v4/props/gazebo.png")).toMatch(/^\/game-assets\/v4\/revisions\/[a-f0-9]{16}\/props\/gazebo\.png$/);
   });
   it("contains a diverse, data-driven catalog with valid assets", () => {
     expect(BUILDING_CATALOG.length).toBeGreaterThanOrEqual(44);

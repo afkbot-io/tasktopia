@@ -4,12 +4,13 @@ import type { Estimate, PlatformKind } from "./contracts";
 const clientStaticOrigin = typeof window === "undefined"
   ? ""
   : String(import.meta.env.VITE_STATIC_ORIGIN ?? "").replace(/\/$/, "");
-const assetRevision = (manifest as { assetRevision?: string }).assetRevision ?? String(manifest.version);
+export const ASSET_REVISION = (manifest as { assetRevision?: string }).assetRevision ?? String(manifest.version);
 
 export function gameAssetUrl(path: string): string {
   if (/^https?:\/\//.test(path)) return path;
   const normalized = path.startsWith("/game-assets/v4/") ? path : `/game-assets/v4/${path.replace(/^\//, "")}`;
-  return `${clientStaticOrigin}${normalized}?v=${assetRevision}`;
+  const assetPath = normalized.slice("/game-assets/v4/".length);
+  return `${clientStaticOrigin}/game-assets/v4/revisions/${ASSET_REVISION}/${assetPath}`;
 }
 
 export type BuildingCategory = "HOUSE" | "HIGHRISE" | "COMMERCIAL" | "CIVIC";

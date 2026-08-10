@@ -9,6 +9,7 @@ import fastifyRateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import { Server as SocketServer } from "socket.io";
+import { ASSET_REVISION } from "../shared/catalog";
 import { AppService } from "./app-service";
 import { getSessionUser, SESSION_COOKIE } from "./auth";
 import { config } from "./config";
@@ -190,6 +191,17 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
       }
     },
   });
+  app.get<{ Params: { revision: string; "*": string } }>(
+    "/game-assets/v4/revisions/:revision/*",
+    async (request, reply) => {
+      const assetPath = request.params["*"];
+      const unsafeSegment = assetPath.split("/").some((segment) => segment === ".." || segment === ".");
+      if (request.params.revision !== ASSET_REVISION || !assetPath || unsafeSegment || assetPath.includes("\0")) {
+        return reply.code(404).send({ error: "ASSET_NOT_FOUND" });
+      }
+      return reply.sendFile(`game-assets/v4/${assetPath}`);
+    },
+  );
   app.setNotFoundHandler((request, reply) => {
     if (request.url.startsWith("/api") || request.url.startsWith("/mcp")) return reply.code(404).send({ error: "NOT_FOUND" });
     return reply.sendFile("index.html");
