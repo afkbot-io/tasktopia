@@ -156,6 +156,20 @@ def audit() -> dict[str, Any]:
             violations.append(f"props/{key}: manifest size does not match PNG")
         if prop.get("anchorPx") != [image.width // 2, image.height]:
             violations.append(f"props/{key}: anchor must be bottom-center")
+        bounds = image.getchannel("A").getbbox()
+        minimum_opaque_bounds = {
+            "city-bus-horizontal": (20, 7),
+            "city-bus-north": (6, 18),
+            "city-bus-south": (6, 18),
+            "bus-stop-horizontal": (14, 12),
+            "bus-stop-vertical": (9, 15),
+            "fountain-large": (26, 31),
+            "gazebo": (27, 31),
+            "playground-carousel": (30, 13),
+        }
+        minimum = minimum_opaque_bounds.get(key)
+        if minimum and (bounds is None or bounds[2] - bounds[0] < minimum[0] or bounds[3] - bounds[1] < minimum[1]):
+            violations.append(f"props/{key}: authored subject is too small for its runtime footprint")
 
     ai_prop_entries = json.loads(AI_PROP_CATALOG_PATH.read_text()) if AI_PROP_CATALOG_PATH.exists() else []
     for authored in ai_prop_entries:
@@ -173,13 +187,15 @@ def audit() -> dict[str, Any]:
         if not (PACK / "reference" / authored.get("sheet", "")).is_file():
             violations.append(f"props/{key}: reviewed source sheet is missing")
 
-    vehicle_masks: dict[str, list[bytes]] = {"vertical": [], "horizontal": []}
-    vehicle_drawings: dict[str, list[bytes]] = {"vertical": [], "horizontal": []}
+    vehicle_masks: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
+    vehicle_drawings: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
     vehicles = manifest.get("vehicles", {})
     if len(vehicles) < 6:
         violations.append("vehicles: expected at least six distinct models")
     for variant, orientations in vehicles.items():
-        for orientation, expected_size in (("vertical", (8, 16)), ("horizontal", (16, 8))):
+        if set(orientations) != {"horizontal", "north", "south"}:
+            violations.append(f"vehicles/{variant}: expected exactly horizontal, north and south views")
+        for orientation, expected_size in (("horizontal", (16, 8)), ("north", (8, 16)), ("south", (8, 16))):
             item = orientations.get(orientation)
             if not item:
                 violations.append(f"vehicles/{variant}: missing {orientation}")
@@ -190,19 +206,28 @@ def audit() -> dict[str, Any]:
             vehicle_masks[orientation].append(image.getchannel("A").tobytes())
             vehicle_drawings[orientation].append(image.tobytes())
             bounds = image.getchannel("A").getbbox()
-            if orientation == "vertical" and bounds and (bounds[2] - bounds[0] < 6 or bounds[3] - bounds[1] < 13):
-                violations.append(f"vehicles/{variant}/vertical: car is too small to read in its lane")
+            if orientation in {"north", "south"} and bounds and (bounds[2] - bounds[0] < 6 or bounds[3] - bounds[1] < 13):
+                violations.append(f"vehicles/{variant}/{orientation}: car is too small to read in its lane")
             if orientation == "horizontal" and bounds and (bounds[2] - bounds[0] < 13 or bounds[3] - bounds[1] < 6):
                 violations.append(f"vehicles/{variant}/horizontal: car is too small to read in its lane")
             if item.get("artSource") != "AI_AUTHORED" or not item.get("sourceSheet"):
                 violations.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
-        vertical = orientations.get("vertical")
+            if item.get("visualProfile") != "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE":
+                violations.append(f"vehicles/{variant}/{orientation}: wrong frontal-top visual profile")
+            expected_facing = "EAST" if orientation == "horizontal" else orientation.upper()
+            if item.get("baseFacing") != expected_facing:
+                violations.append(f"vehicles/{variant}/{orientation}: base view must face {expected_facing}")
         horizontal = orientations.get("horizontal")
-        if vertical and horizontal:
-            vertical_image = load_image(vertical["path"], f"vehicles/{variant}/vertical", violations)
+        north = orientations.get("north")
+        south = orientations.get("south")
+        if horizontal and north and south:
             horizontal_image = load_image(horizontal["path"], f"vehicles/{variant}/horizontal", violations)
-            if vertical_image and horizontal_image and horizontal_image.tobytes() == vertical_image.transpose(Image.Transpose.ROTATE_270).tobytes():
-                violations.append(f"vehicles/{variant}: horizontal view is a mechanical rotation")
+            north_image = load_image(north["path"], f"vehicles/{variant}/north", violations)
+            south_image = load_image(south["path"], f"vehicles/{variant}/south", violations)
+            if horizontal_image and north_image and horizontal_image.tobytes() == north_image.transpose(Image.Transpose.ROTATE_270).tobytes():
+                violations.append(f"vehicles/{variant}: north view is a mechanical side rotation")
+            if north_image and south_image and north_image.tobytes() == south_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes():
+                violations.append(f"vehicles/{variant}: south view is a mechanical north flip")
     for orientation, masks in vehicle_masks.items():
         drawings = vehicle_drawings[orientation]
         if drawings and len(set(drawings)) != len(drawings):

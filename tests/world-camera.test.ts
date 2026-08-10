@@ -4,15 +4,16 @@ import {
   clampCameraPosition,
   fitCameraScale,
   minimumCameraScale,
+  progressiveChunkPlan,
 } from "../src/client/world-camera";
 
 describe("world camera geometry", () => {
-  it("loads a bounded quarter-viewport prefetch ring", () => {
+  it("requests only chunks intersecting the visible viewport", () => {
     const range = chunkRangeForViewport(
       { x: 720, y: 450 }, 0.8, { width: 1440, height: 900 },
       { minX: -500, minY: -500, maxX: 499, maxY: 499 }, 8, 64,
     );
-    expect(range.maxChunkX - range.minChunkX + 1).toBeLessThanOrEqual(6);
+    expect(range.maxChunkX - range.minChunkX + 1).toBeLessThanOrEqual(4);
     expect(range.maxChunkY - range.minChunkY + 1).toBeLessThanOrEqual(4);
   });
 
@@ -32,5 +33,19 @@ describe("world camera geometry", () => {
     const tallScale = fitCameraScale(screen, { minX: 0, minY: 0, maxX: 79, maxY: 109 }, 8);
     expect(tallScale).toBeLessThan(1);
     expect(110 * 8 * tallScale).toBeLessThanOrEqual(screen.height - 96);
+  });
+
+  it("loads a center-first critical window and leaves the prefetch ring in background", () => {
+    const plan = progressiveChunkPlan({ minChunkX: -2, minChunkY: -2, maxChunkX: 3, maxChunkY: 2 });
+    expect(plan.critical.length).toBeLessThanOrEqual(9);
+    expect(plan.critical).toContainEqual([0, 0]);
+    expect(new Set([...plan.critical, ...plan.background].map(([x, y]) => `${x},${y}`)).size).toBe(30);
+    expect(plan.background[0]).toEqual(expect.any(Array));
+  });
+
+  it("does not schedule resident chunks again while panning", () => {
+    const resident = new Set(["0,0", "0,1", "1,0", "1,1"]);
+    const plan = progressiveChunkPlan({ minChunkX: 0, minChunkY: 0, maxChunkX: 2, maxChunkY: 1 }, resident);
+    expect([...plan.critical, ...plan.background]).toEqual([[2, 0], [2, 1]]);
   });
 });

@@ -1,25 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
-import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, getBuilding } from "../../shared/catalog";
+import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto } from "../../shared/contracts";
 import { api } from "../api";
 import {
   agentCellKey,
   buildDirectedCarEdges,
+  detectTrafficJunctions,
+  directedTrafficCore,
   isAgentEdgeAllowed,
   connectShortWalkGaps,
   nextSeededRandom,
   nextWithoutUTurn,
   planAgentRoute,
+  vehiclePresentation,
+  vehicleLanePosition,
   mustYieldAtCrosswalk,
+  mustYieldAtTrafficSignal,
+  trafficSignalPhase,
   walkerInteractionPairs,
   type AgentEdges,
+  type TrafficJunction,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
-import { incidentMode, planIncidentEngines, type IncidentMode } from "../task-incidents";
+import { incidentMode, incidentVisualProfile, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
 import {
   chunkRangeForViewport,
+  progressiveChunkPlan,
   clampCameraPosition,
   fitCameraScale,
   minimumCameraScale,
@@ -30,7 +38,7 @@ const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1.12;
 const DETAIL_LOD_ENTER_SCALE = 1.2;
 const DETAIL_LOD_EXIT_SCALE = 1.04;
-const CHUNK_FETCH_CONCURRENCY = 6;
+const CHUNK_FETCH_CONCURRENCY = 3;
 const CHUNK_DATA_CACHE_LIMIT = 160;
 const GROUND_CACHE_LIMIT = 96;
 type MapLod = "DETAIL" | "OVERVIEW";
@@ -40,11 +48,11 @@ type IncidentView = {
   signature: string;
   container: Container;
   mode: IncidentMode;
+  profile: IncidentVisualProfile;
   fullResponse: boolean;
   flameA: Sprite;
   flameB: Sprite;
-  smokeA: Sprite;
-  smokeB: Sprite;
+  smokePlumes: Array<{ frameA: Sprite; frameB: Sprite; alpha: number }>;
   beacon: Graphics;
   water: Graphics;
   phaseMs: number;
@@ -104,7 +112,7 @@ function sprite(url: string, x: number, y: number): Sprite {
 function terrainSprite(cell: ChunkDto["terrain"][number]): Sprite {
   const variants = TERRAIN_SPRITES[cell.terrain] ?? TERRAIN_SPRITES.GRASS!;
   const p = position(cell);
-  return sprite(`/game-assets/v4/${variants[cell.variant % variants.length]!}`, p.x, p.y);
+  return sprite(gameAssetUrl(variants[cell.variant % variants.length]!), p.x, p.y);
 }
 
 function edgeSprite(url: string, cell: Cell, direction: number): Sprite {
@@ -123,7 +131,7 @@ function drawSurface(cell: SurfaceCellDto): Sprite {
     : cell.kind === "PATH" ? TILE_SPRITES[cell.finish === "PAVERS" ? "path-pavers" : cell.finish === "ASPHALT" ? "path-asphalt" : "path-brown"]!
       : cell.kind === "DRIVEWAY" ? TILE_SPRITES.road!
         : cell.kind === "CROSSWALK" ? TILE_SPRITES[cell.orientation === "V" ? "crosswalk-vertical" : "crosswalk-horizontal"]!
-          : `/game-assets/v4/${TERRAIN_SPRITES.DIRT![1]!}`;
+          : gameAssetUrl(TERRAIN_SPRITES.DIRT![1]!);
   return sprite(url, p.x, p.y);
 }
 
@@ -216,7 +224,7 @@ function drawPlatform(task: ChunkTaskDto): Container {
   const tile = PLATFORM_TILE[task.platformType];
   for (const cell of task.footprint) {
     const p = position(cell);
-    group.addChild(sprite(tile.startsWith("/") ? tile : `/game-assets/v4/${tile}`, p.x, p.y));
+    group.addChild(sprite(tile.startsWith("http") ? tile : gameAssetUrl(tile), p.x, p.y));
   }
   return group;
 }
@@ -305,7 +313,7 @@ function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean, on
     for (const cell of feature.footprint) {
       const p = position(cell);
       const boundary = GRID_DIRECTIONS.some((direction) => !occupied.has(key({ x: cell.x + direction.x, y: cell.y + direction.y })));
-      const tile = boundary ? TILE_SPRITES["path-brown"]! : `/game-assets/v4/${TERRAIN_SPRITES.MEADOW![1]!}`;
+      const tile = boundary ? TILE_SPRITES["path-brown"]! : gameAssetUrl(TERRAIN_SPRITES.MEADOW![1]!);
       platform.addChild(sprite(tile, p.x, p.y));
     }
     return { platform };
@@ -371,7 +379,7 @@ function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean, on
 }
 
 function assetUrl(path: string): string {
-  return path.startsWith("/") ? path : `/game-assets/v4/${path}`;
+  return gameAssetUrl(path);
 }
 
 const FIRE_ENGINE_KEYS = ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"] as const;
@@ -382,6 +390,7 @@ const ANIMAL_SPECIES = ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog",
 
 function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE">, signature: string, fullResponse: boolean): IncidentView {
   const entry = getBuilding(task.buildingType);
+  const profile = incidentVisualProfile(task);
   const container = new Container();
   container.eventMode = "none";
   container.position.set(
@@ -409,11 +418,22 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const flameB = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + 1) % FLAME_KEYS.length]!]!, flameX, flameY);
   flameA.anchor.set(0.5, 1); flameB.anchor.set(0.5, 1);
 
-  const smokeX = flameX - 1;
-  const smokeY = flameY - 5;
-  const smokeA = sprite(PROP_SPRITES[SMOKE_KEYS[visualSeed % SMOKE_KEYS.length]!]!, smokeX, smokeY);
-  const smokeB = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + 1) % SMOKE_KEYS.length]!]!, smokeX, smokeY);
-  smokeA.anchor.set(0.5, 1); smokeB.anchor.set(0.5, 1);
+  const smokeScale = [0, 0.5, 0.62, 0.74, 0.88, 1, 1.12][profile.smokeStrength] ?? 1.12;
+  const smokeAlpha = Math.min(0.84, 0.32 + profile.smokeStrength * 0.085);
+  const smokeSpread = Math.max(4, Math.min(10, Math.floor(entry.spriteSize.width * 0.18)));
+  const smokeOffsets = [0, -smokeSpread, smokeSpread];
+  const smokePlumes = smokeOffsets.slice(0, profile.plumeCount).map((offset, index) => {
+    const smokeX = flameX + offset - 1;
+    const smokeY = flameY - 5 - (index % 2) * 2;
+    const frameA = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index) % SMOKE_KEYS.length]!]!, smokeX, smokeY);
+    const frameB = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index + 1) % SMOKE_KEYS.length]!]!, smokeX, smokeY);
+    frameA.anchor.set(0.5, 1); frameB.anchor.set(0.5, 1);
+    const scale = smokeScale * (1 - index * 0.06);
+    frameA.scale.set(scale); frameB.scale.set(scale);
+    frameA.alpha = frameB.alpha = smokeAlpha;
+    frameA.visible = true; frameB.visible = false;
+    return { frameA, frameB, alpha: smokeAlpha };
+  });
 
   const water = new Graphics();
   const targetX = flameX + 3;
@@ -431,28 +451,20 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   }
   water.fill({ color: 0x8bd7e8, alpha: 0.88 });
 
-  const hasFlame = mode === "DEFECT_REPAIRING" || mode === "HOTFIX_ACTIVE";
-  const hasSmoke = mode === "DEFECT_VERIFYING" || mode === "HOTFIX_ACTIVE";
-  const hasWater = fullResponse && (mode === "DEFECT_REPAIRING" || mode === "HOTFIX_ACTIVE");
+  const hasFlame = profile.burning;
+  const hasWater = fullResponse && (profile.burning || mode === "DEFECT_REPAIRING");
   flameA.visible = hasFlame; flameB.visible = false;
-  smokeA.visible = hasSmoke; smokeB.visible = false;
   water.visible = hasWater;
   engine.visible = fullResponse;
-  // Verification smoke is a fading remnant, not a column over the rooftops.
-  if (mode === "DEFECT_VERIFYING") {
-    smokeA.scale.set(0.66); smokeB.scale.set(0.66);
-  }
-  if (mode === "DEFECT_REPAIRING") {
-    flameA.scale.set(0.78); flameB.scale.set(0.78);
-    smokeA.scale.set(0.6); smokeB.scale.set(0.6);
-  } else if (mode === "HOTFIX_ACTIVE") {
+  if (mode === "HOTFIX_ACTIVE") {
     flameA.scale.set(1.18); flameB.scale.set(1.18);
-    smokeA.scale.set(fullResponse ? 1.0 : 0.8); smokeB.scale.set(fullResponse ? 1.0 : 0.8);
+  } else if (profile.burning) {
+    flameA.scale.set(0.92); flameB.scale.set(0.92);
   }
   if (mode === "DEFECT_REPORTED") engine.alpha = 0.9;
-  container.addChild(water, smokeA, smokeB, flameA, flameB, engine, beacon);
+  container.addChild(water, ...smokePlumes.flatMap((plume) => [plume.frameA, plume.frameB]), flameA, flameB, engine, beacon);
   const phaseMs = visualSeed % 700;
-  return { signature, container, mode, fullResponse, flameA, flameB, smokeA, smokeB, beacon, water, phaseMs };
+  return { signature, container, mode, profile, fullResponse, flameA, flameB, smokePlumes, beacon, water, phaseMs };
 }
 
 function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
@@ -493,7 +505,12 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   if (lod === "DETAIL") {
     urls.add(assetUrl(TERRAIN_SPRITES.DIRT![1]!));
     for (const path of Object.values(TILE_SPRITES)) urls.add(path);
-    for (const path of Object.values(VEHICLE_SPRITES).flatMap((axes) => [axes.horizontal, axes.vertical])) urls.add(path);
+    for (const path of Object.values(VEHICLE_SPRITES).flatMap((views) => [views.horizontal, views.north, views.south])) urls.add(path);
+    urls.add(PROP_SPRITES["city-bus-horizontal"]!);
+    urls.add(PROP_SPRITES["city-bus-north"]!);
+    urls.add(PROP_SPRITES["city-bus-south"]!);
+    urls.add(PROP_SPRITES["traffic-light-red"]!);
+    urls.add(PROP_SPRITES["traffic-light-green"]!);
     for (const key of ["walker-east", "walker-west", "walker-south", "walker-north"] as const) urls.add(PROP_SPRITES[key]!);
     for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
       urls.add(PROP_SPRITES[`animal-${species}-${direction}`]!);
@@ -675,7 +692,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         previous?: Cell;
         progress: number;
         speed: number;
-        kind: "CAR" | "WALKER" | "ANIMAL";
+        kind: "CAR" | "BUS" | "WALKER" | "ANIMAL";
         variant: string;
         phase: number;
         pauseMs: number;
@@ -686,9 +703,12 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         randomState: number;
         route: Cell[];
         routeIndex: number;
+        lastStopKey?: string;
       };
       let movingAgents: MovingAgent[] = [];
       let movingWalkers: MovingAgent[] = [];
+      let trafficJunctions: TrafficJunction[] = [];
+      const trafficSignalViews = new Map<string, { view: Sprite; junction: TrafficJunction; axis: "H" | "V"; state: "RED" | "GREEN" }>();
       const sessionSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 0x6d2b79f5;
       let spawnState = sessionSeed;
       let nextAgentId = 1;
@@ -715,6 +735,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       host.dataset.airplaneSpace = flightLayer.parent === world ? "world" : "screen";
       let activeCrosswalks = new Set<string>();
       let activityCells = new Set<string>();
+      let busStopRoadCells = new Set<string>();
       const setWalkerActivity = (agent: MovingAgent, activity: MovingAgent["activity"]): void => {
         if (agent.kind !== "WALKER") return;
         agent.activity = activity;
@@ -730,12 +751,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         marker.visible = activity !== "NONE";
       };
       const orientVehicle = (agent: MovingAgent): void => {
-        if (agent.kind !== "CAR") return;
-        // Vehicle sprites no longer touch the tile edge, which reads as driving
-        // on the curb at gameplay zoom. Directional mirroring keeps that inset.
-        agent.view.scale.set(0.9);
-        if (agent.next.x < agent.current.x) agent.view.scale.x = -0.9;
-        if (agent.next.y < agent.current.y) agent.view.scale.y = -0.9;
+        if (agent.kind !== "CAR" && agent.kind !== "BUS") return;
+        const presentation = vehiclePresentation(agent.current, agent.next);
+        agent.view.scale.set(presentation.scaleX, presentation.scaleY);
       };
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
@@ -771,10 +789,16 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             if (agent.pauseMs === 0) setWalkerActivity(agent, "NONE");
             continue;
           }
-          if (agent.kind === "CAR" && mustYieldAtCrosswalk(
+          if ((agent.kind === "CAR" || agent.kind === "BUS") && mustYieldAtCrosswalk(
             agent.next,
             activeCrosswalks,
             movingWalkers,
+          )) continue;
+          if ((agent.kind === "CAR" || agent.kind === "BUS") && mustYieldAtTrafficSignal(
+            agent.current,
+            agent.next,
+            trafficJunctions,
+            simulationTimeMs,
           )) continue;
           agent.progress += elapsed * agent.speed;
           while (agent.progress >= 1) {
@@ -783,19 +807,28 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             agent.current = agent.next;
             agent.steps += 1;
             agent.routeIndex += 1;
+            if (agent.kind === "BUS") {
+              const stopKey = key(agent.current);
+              if (busStopRoadCells.has(stopKey) && agent.lastStopKey !== stopKey) {
+                agent.lastStopKey = stopKey;
+                agent.pauseMs = 850 + Math.floor(agent.phase * 650);
+              }
+            }
             let routed = agent.route[agent.routeIndex];
             if (!routed || !agent.graph.has(agentCellKey(routed)) || !isAgentEdgeAllowed(agent.current, routed, agent.outgoing)) {
-              const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" ? 14 : 9, agent.previous, agent.outgoing);
+              const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" || agent.kind === "BUS" ? 14 : 9, agent.previous, agent.outgoing);
               agent.randomState = planned.randomState;
               agent.route = planned.route;
               agent.routeIndex = 1;
               routed = agent.route[agent.routeIndex];
             }
             agent.next = routed ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous, agent.outgoing);
-            const horizontal = agent.next.x !== agent.current.x;
-            const direction = horizontal ? agent.next.x > agent.current.x ? "east" : "west" : agent.next.y > agent.current.y ? "south" : "north";
+            const presentation = vehiclePresentation(agent.current, agent.next);
+            const horizontal = presentation.view === "horizontal";
+            const direction = horizontal ? agent.next.x > agent.current.x ? "east" : "west" : presentation.view;
             const url = agent.kind === "CAR"
-              ? VEHICLE_SPRITES[agent.variant]![horizontal ? "horizontal" : "vertical"]
+              ? VEHICLE_SPRITES[agent.variant]![presentation.view]
+              : agent.kind === "BUS" ? PROP_SPRITES[`city-bus-${presentation.view}`]
               : agent.kind === "ANIMAL" ? PROP_SPRITES[`animal-${agent.variant}-${direction}`]
                 : PROP_SPRITES[`walker-${direction}`];
             const texture = url ? Assets.get<Texture>(url) : undefined;
@@ -806,12 +839,24 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               setWalkerActivity(agent, "THINK");
             }
           }
+          const vehiclePosition = agent.kind === "CAR" || agent.kind === "BUS"
+            ? vehicleLanePosition(agent.current, agent.next, agent.progress, agent.previous, CELL_SIZE)
+            : undefined;
           const x = agent.current.x + (agent.next.x - agent.current.x) * agent.progress;
           const y = agent.current.y + (agent.next.y - agent.current.y) * agent.progress;
           const cycle = Math.sin((agent.progress + agent.phase) * Math.PI * 4);
           const step = agent.kind === "WALKER" ? Math.abs(cycle) * 0.7 : agent.kind === "ANIMAL" ? Math.abs(cycle) * 0.35 : Math.abs(cycle) * 0.14;
-          agent.view.position.set(x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2 - step);
+          agent.view.position.set(vehiclePosition?.x ?? x * CELL_SIZE + CELL_SIZE / 2, (vehiclePosition?.y ?? y * CELL_SIZE + CELL_SIZE / 2) - step);
           agent.view.rotation = agent.kind === "WALKER" ? cycle * 0.055 : agent.kind === "ANIMAL" ? cycle * 0.025 : cycle * 0.008;
+        }
+        for (const signal of trafficSignalViews.values()) {
+          const phase = trafficSignalPhase(signal.junction, simulationTimeMs);
+          const state = signal.axis === "H" ? phase.horizontal : phase.vertical;
+          if (state === signal.state) continue;
+          signal.state = state;
+          const url = PROP_SPRITES[`traffic-light-${state.toLowerCase()}`]!;
+          const texture = Cache.has(url) ? Cache.get<Texture>(url) : undefined;
+          if (texture) signal.view.texture = texture;
         }
         nextSocialCheckMs -= elapsed;
         if (nextSocialCheckMs <= 0) {
@@ -840,15 +885,14 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         for (const incident of incidentViews.values()) {
           const time = simulationTimeMs + incident.phaseMs;
           const flameFrame = Math.floor(time / 210) % 2;
-          const smokeFrame = Math.floor(time / 360) % 2;
-          const hasFlame = incident.mode === "DEFECT_REPAIRING" || incident.mode === "HOTFIX_ACTIVE";
-          const hasSmoke = incident.mode === "DEFECT_VERIFYING" || incident.mode === "HOTFIX_ACTIVE";
-          incident.flameA.visible = hasFlame && flameFrame === 0;
-          incident.flameB.visible = hasFlame && flameFrame === 1;
-          incident.smokeA.visible = hasSmoke && smokeFrame === 0;
-          incident.smokeB.visible = hasSmoke && smokeFrame === 1;
-          const smokeBase = incident.mode === "DEFECT_VERIFYING" ? 0.42 : incident.fullResponse ? 0.72 : 0.55;
-          incident.smokeA.alpha = incident.smokeB.alpha = smokeBase + Math.sin(time * 0.004) * 0.12;
+          incident.flameA.visible = incident.profile.burning && flameFrame === 0;
+          incident.flameB.visible = incident.profile.burning && flameFrame === 1;
+          incident.smokePlumes.forEach((plume, index) => {
+            const smokeFrame = Math.floor((time + index * 130) / 360) % 2;
+            plume.frameA.visible = smokeFrame === 0;
+            plume.frameB.visible = smokeFrame === 1;
+            plume.frameA.alpha = plume.frameB.alpha = plume.alpha + Math.sin(time * 0.004 + index) * 0.08;
+          });
           incident.beacon.alpha = Math.floor(time / 160) % 2 ? 1 : 0.28;
           incident.water.alpha = 0.7 + Math.sin(time * 0.018) * 0.22;
         }
@@ -1066,10 +1110,19 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         reconcile(tasks, taskBuildingViews, buildingLayer, (task) => currentLod === "DETAIL" ? drawBuilding(task, onTaskSelect) : drawOverviewBuilding(task, onTaskSelect), (task) => `${currentLod}:${JSON.stringify(task)}`);
         const visibleIncidentIds = new Set<string>();
         if (currentLod === "DETAIL") {
-          const candidates: Array<{ id: string; task: ChunkTaskDto; mode: Exclude<IncidentMode, "NONE"> }> = [];
+          const candidates: Array<{
+            id: string;
+            task: ChunkTaskDto;
+            mode: Exclude<IncidentMode, "NONE">;
+            burning: boolean;
+            smokeStrength: number;
+          }> = [];
           for (const [id, task] of tasks) {
             const mode = incidentMode(task);
-            if (mode !== "NONE") candidates.push({ id, task, mode });
+            if (mode !== "NONE") {
+              const profile = incidentVisualProfile(task);
+              candidates.push({ id, task, mode, burning: profile.burning, smokeStrength: profile.smokeStrength });
+            }
           }
           const engineAllowance = planIncidentEngines(candidates);
           for (const { id, task, mode } of candidates) {
@@ -1148,6 +1201,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         host!.dataset.incidents = String(incidentViews.size);
         host!.dataset.incidentEngines = String([...incidentViews.values()].filter((view) => view.fullResponse).length);
         host!.dataset.hotfixIncidents = String([...incidentViews.values()].filter((view) => view.mode === "HOTFIX_ACTIVE").length);
+        host!.dataset.incidentFires = String([...incidentViews.values()].filter((view) => view.profile.burning).length);
+        host!.dataset.incidentActiveDefects = String([...incidentViews.values()].reduce((sum, view) => sum + view.profile.activeDefects, 0));
+        host!.dataset.incidentSmokeStrength = String(Math.max(0, ...[...incidentViews.values()].map((view) => view.profile.smokeStrength)));
+        host!.dataset.incidentWaterJets = String([...incidentViews.values()].filter((view) => view.water.visible).length);
         host!.dataset.incidentModes = [...incidentViews.values()].map((view) => view.mode).sort().join(",");
         host!.dataset.entityReplacements = String(entityReplacementCount);
 
@@ -1169,14 +1226,18 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             if (occupiedStarts.has(key(current))) continue;
             const routeSeed = nextSeededRandom(spawnState);
             spawnState = routeSeed.state;
-            const planned = planAgentRoute(graph, current, routeSeed.state, kind === "CAR" ? 14 : 9, undefined, outgoing);
+            const planned = planAgentRoute(graph, current, routeSeed.state, kind === "CAR" || kind === "BUS" ? 14 : 9, undefined, outgoing);
             const next = planned.route[1] ?? nextWithoutUTurn(graph, current, undefined, outgoing);
             if (key(next) === key(current)) continue;
-            const horizontal = next.x !== current.x;
-            const variant = kind === "ANIMAL" ? ANIMAL_SPECIES[created % ANIMAL_SPECIES.length]! : colors[created % colors.length] ?? "blue";
-            const direction = horizontal ? next.x > current.x ? "east" : "west" : next.y > current.y ? "south" : "north";
+            const variant = kind === "ANIMAL" ? ANIMAL_SPECIES[created % ANIMAL_SPECIES.length]!
+              : kind === "BUS" ? "city-bus"
+                : colors[created % colors.length] ?? "blue";
+            const presentation = vehiclePresentation(current, next);
+            const horizontal = presentation.view === "horizontal";
+            const direction = horizontal ? next.x > current.x ? "east" : "west" : presentation.view;
             const url = kind === "CAR"
-              ? VEHICLE_SPRITES[variant]![horizontal ? "horizontal" : "vertical"]
+              ? VEHICLE_SPRITES[variant]![presentation.view]
+              : kind === "BUS" ? PROP_SPRITES[`city-bus-${presentation.view}`]!
               : kind === "ANIMAL" ? PROP_SPRITES[`animal-${variant}-${direction}`]!
                 : PROP_SPRITES[`walker-${direction}`]!;
             const view = sprite(url, current.x * CELL_SIZE + CELL_SIZE / 2, current.y * CELL_SIZE + CELL_SIZE / 2);
@@ -1187,7 +1248,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             const agent: MovingAgent = {
               id: `${sessionSeed.toString(36)}-${nextAgentId++}`,
               view, graph, outgoing, current, next, progress: picked.value,
-              speed: kind === "CAR" ? 0.0022 + (index % 3) * 0.00016 : kind === "ANIMAL" ? 0.00065 + (index % 3) * 0.00008 : 0.00115 + (index % 5) * 0.00013,
+              speed: kind === "CAR" ? 0.0022 + (index % 3) * 0.00016
+                : kind === "BUS" ? 0.00175 + (index % 2) * 0.0001
+                  : kind === "ANIMAL" ? 0.00065 + (index % 3) * 0.00008
+                    : 0.00115 + (index % 5) * 0.00013,
               kind, variant, phase: (index % 11) / 11, pauseMs: 0, socialCooldownMs: index * 170 % 2_000,
               activity: "NONE", activityView, steps: index % 17,
               randomState: planned.randomState, route: planned.route, routeIndex: 1,
@@ -1199,8 +1263,41 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             created += 1;
           }
         };
-        const roadGraph = new Map([...roads].map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y }]));
-        const carEdges = buildDirectedCarEdges(roadGraph);
+        const residentRoadGraph = new Map<string, Cell>([...roads].map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y }] as const));
+        trafficJunctions = detectTrafficJunctions(residentRoadGraph);
+        const wantedSignals = new Map<string, { junction: TrafficJunction; origin: Cell; axis: "H" | "V"; approach: string }>(trafficJunctions.flatMap((junction) => junction.signalPosts.map((post) => [
+          `${junction.id}:${post.approach}`,
+          { junction, ...post },
+        ] as const)));
+        for (const [signalId, signal] of trafficSignalViews) {
+          if (wantedSignals.has(signalId)) continue;
+          signal.view.removeFromParent();
+          signal.view.destroy();
+          trafficSignalViews.delete(signalId);
+        }
+        for (const [signalId, signal] of wantedSignals) {
+          const existing = trafficSignalViews.get(signalId);
+          if (existing) { existing.junction = signal.junction; continue; }
+          const phase = trafficSignalPhase(signal.junction, simulationTimeMs);
+          const state = signal.axis === "H" ? phase.horizontal : phase.vertical;
+          const view = sprite(
+            PROP_SPRITES[`traffic-light-${state.toLowerCase()}`]!,
+            signal.origin.x * CELL_SIZE + CELL_SIZE / 2,
+            (signal.origin.y + 1) * CELL_SIZE,
+          );
+          view.anchor.set(0.5, 1);
+          featureLayer.addChild(view);
+          trafficSignalViews.set(signalId, { view, junction: signal.junction, axis: signal.axis, state });
+        }
+        host!.dataset.trafficJunctions = String(trafficJunctions.length);
+        host!.dataset.trafficSignals = String(trafficSignalViews.size);
+        const residentCarEdges = buildDirectedCarEdges(residentRoadGraph);
+        const trafficCore = directedTrafficCore(residentCarEdges);
+        const roadGraph = new Map<string, Cell>([...residentRoadGraph].filter(([cellKey]) => trafficCore.has(cellKey)));
+        const carEdges = new Map<string, Cell[]>([...residentCarEdges]
+          .filter(([cellKey]) => trafficCore.has(cellKey))
+          .map(([cellKey, candidates]) => [cellKey, candidates.filter((candidate) => trafficCore.has(key(candidate)))] as const)
+          .filter(([, candidates]) => candidates.length > 0));
         const blockedWalkCells = new Set([
           ...[...tasks.values()].flatMap((task) => task.footprint),
           ...[...features.values()].filter((feature) => feature.assetKind !== "AREA").flatMap((feature) => feature.footprint),
@@ -1232,18 +1329,28 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         for (const feature of features.values()) if (feature.kind === "BUS_STOP" || feature.kind === "PARK") {
           for (const cell of [...feature.footprint, ...feature.accessPath]) activityCells.add(key(cell));
         }
+        busStopRoadCells = new Set<string>();
+        for (const feature of features.values()) {
+          if (feature.kind !== "BUS_STOP") continue;
+          for (const platformCell of feature.footprint) {
+            for (const direction of GRID_DIRECTIONS) {
+              const roadCell = { x: platformCell.x + direction.x, y: platformCell.y + direction.y };
+              if (roadGraph.has(key(roadCell))) busStopRoadCells.add(key(roadCell));
+            }
+          }
+        }
         agentLayer.visible = currentLod === "DETAIL";
         if (currentLod === "DETAIL") {
-          const graphs = { CAR: roadGraph, WALKER: walkGraph, ANIMAL: animalGraph } as const;
+          const graphs = { CAR: roadGraph, BUS: roadGraph, WALKER: walkGraph, ANIMAL: animalGraph } as const;
           const before = movingAgents.length;
           movingAgents = movingAgents.filter((agent) => {
             const graph = graphs[agent.kind];
             const retained = graph.has(key(agent.current)) && graph.has(key(agent.next));
             if (retained) {
               agent.graph = graph;
-              agent.outgoing = agent.kind === "CAR" ? carEdges : undefined;
+              agent.outgoing = agent.kind === "CAR" || agent.kind === "BUS" ? carEdges : undefined;
               if (!isAgentEdgeAllowed(agent.current, agent.next, agent.outgoing)) {
-                const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" ? 14 : 9, agent.previous, agent.outgoing);
+                const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" || agent.kind === "BUS" ? 14 : 9, agent.previous, agent.outgoing);
                 agent.randomState = planned.randomState;
                 agent.route = planned.route;
                 agent.routeIndex = 1;
@@ -1256,15 +1363,20 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           });
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
           addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR", carEdges);
+          addAgents(roadGraph, busStopRoadCells.size > 0 ? Math.min(4, Math.max(1, Math.floor(busStopRoadCells.size / 2))) : 0, "BUS", carEdges);
           addAgents(walkGraph, Math.min(24, Math.max(4, Math.floor(walkGraph.size / 120))), "WALKER");
           addAgents(animalGraph, Math.min(6, Math.floor(animalGraph.size / 1400)), "ANIMAL");
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
           host!.dataset.agentChanges = String(Math.abs(before - movingAgents.length));
         }
         host!.dataset.cars = String(movingAgents.filter((agent) => agent.kind === "CAR").length);
+        host!.dataset.buses = String(movingAgents.filter((agent) => agent.kind === "BUS").length);
         host!.dataset.walkers = String(movingWalkers.length);
         host!.dataset.animals = String(movingAgents.filter((agent) => agent.kind === "ANIMAL").length);
         host!.dataset.wrongWayCars = String(movingAgents.filter((agent) => agent.kind === "CAR"
+          && key(agent.current) !== key(agent.next)
+          && !agent.outgoing?.get(key(agent.current))?.some((candidate) => key(candidate) === key(agent.next))).length);
+        host!.dataset.wrongWayBuses = String(movingAgents.filter((agent) => agent.kind === "BUS"
           && key(agent.current) !== key(agent.next)
           && !agent.outgoing?.get(key(agent.current))?.some((candidate) => key(candidate) === key(agent.next))).length);
         host!.dataset.agentSession = String(sessionSeed);
@@ -1476,20 +1588,19 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           host!.dataset.skippedReconciles = String(Number(host!.dataset.skippedReconciles ?? 0) + 1);
           return;
         }
-        const wanted: Array<[number, number]> = [];
+        const resident = new Set([...chunks.keys()].filter((cacheKey) => (
+          chunkLods.get(cacheKey) === nextLod && groundContainers.get(cacheKey)?.lod === nextLod && !invalidatedGroundKeys.has(cacheKey)
+        )));
+        const plan = progressiveChunkPlan(range, resident);
+        const wanted = [...plan.critical, ...plan.background] as Array<[number, number]>;
+        const activeKeys = new Set<string>();
         for (let chunkX = range.minChunkX; chunkX <= range.maxChunkX; chunkX += 1) {
-          for (let chunkY = range.minChunkY; chunkY <= range.maxChunkY; chunkY += 1) wanted.push([chunkX, chunkY]);
+          for (let chunkY = range.minChunkY; chunkY <= range.maxChunkY; chunkY += 1) activeKeys.add(chunkKey(chunkX, chunkY));
         }
-        const centerX = (range.minChunkX + range.maxChunkX) / 2;
-        const centerY = (range.minChunkY + range.maxChunkY) / 2;
-        wanted.sort((left, right) => (
-          Math.abs(left[0] - centerX) + Math.abs(left[1] - centerY)
-          - Math.abs(right[0] - centerX) - Math.abs(right[1] - centerY)
-        ));
         desiredLod = nextLod;
         desiredRange = rangeLabel;
         desiredWanted = wanted;
-        desiredKeys = new Set(wanted.map(([chunkX, chunkY]) => chunkKey(chunkX, chunkY)));
+        desiredKeys = activeKeys;
         if (options.forceKeys?.size) {
           for (const cacheKey of options.forceKeys) {
             for (const lod of ["DETAIL", "OVERVIEW"] as const) {

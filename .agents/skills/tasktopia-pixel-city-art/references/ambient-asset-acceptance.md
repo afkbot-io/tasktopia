@@ -27,19 +27,23 @@ Reject the source before catalog registration when any item applies:
 
 ## Vehicle gate
 
-- Passenger vehicles use exactly `16x8 px` horizontal and `8x16 px` vertical runtime canvases.
-- Draw both views independently as the same model: matching roof color, window rhythm, hood/trunk proportions, lights, and defining cue.
+- Passenger vehicles use exactly three authored runtime views: `16x8 px` horizontal/east, `8x16 px` north/rear, and `8x16 px` south/front. West is rendered only by mirroring the east view.
+- The horizontal source view faces `EAST` (front at the right): it exposes a shallow roof plane plus a distinct near-side body plane, with both wheels visible below the belt line. A roof-only bird's-eye silhouette is blocking.
+- The north source view is a separately authored rear elevation: rear glass, tail lamps and trunk/hatch plane remain readable. The south source view is a separately authored front elevation: windscreen, headlights and grille/bumper remain readable. A roof-only plan view is blocking.
+- Draw all three views independently as the same model: matching roof color, window rhythm, hood/trunk proportions, lights, and defining cue. North and south must visibly differ.
+- Runtime may mirror the accepted east view for westbound travel only. It must never mirror north into south, rotate a side view, or synthesize either vertical direction.
 - Keep one transparent pixel of visual breathing room where possible; do not make the car appear to scrape the curb.
-- The horizontal silhouette must occupy at least `13x6 px`; the vertical silhouette at least `6x13 px`.
+- The horizontal silhouette must occupy at least `13x6 px`; both north and south silhouettes at least `6x13 px`.
 - Distinct models must differ structurally: compact, sedan, estate, taxi, van, pickup, electric hatch, or classic car. A color swap is not a model.
 - Every model must have a unique full RGBA drawing and a visibly different source-level body/roof/cargo structure. The reviewed contact sheet is the silhouette gate: tiny runtime cars may share the same safe lane envelope, so an alpha-bounds hash alone is not proof of diversity.
+- City buses use the same three-view contract but occupy `24x8 px` horizontally and `8x24 px` vertically. Their opaque subject must occupy at least `20x7 px` horizontally and `6x18 px` north/south, so the bus remains visibly longer than a passenger car instead of hiding a short facade inside a three-cell canvas. North/south roof panels need contrasting divisions that survive native `1x` reduction.
 
 ## Transit-stop gate
 
-- Horizontal and vertical stops are separately authored and clearly depict the same system.
+- Horizontal and vertical road-axis stop placements are separately authored and clearly depict the same system.
 - A stop needs a roof/top plane, two or more supports, a readable waiting zone or bench, and a small color-coded stop marker without text.
 - The shelter must not contain baked asphalt, road, grass, or a full pavement slab.
-- Use a `24x16 px` horizontal canvas with `3x1` footprint and a `16x24 px` vertical canvas with `1x3` footprint for new shelters.
+- Use the canonical `16x16 px`, `2x2` boarding platform contract. Every stop pair sits outside opposite road edges and is offset along the road so shelters do not face each other in one cross-section.
 
 ## Playground and park-object gate
 

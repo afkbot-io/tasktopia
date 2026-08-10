@@ -4,8 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 
 const devPort = Number(process.env.VITE_DEV_PORT ?? 5173);
 const apiTarget = process.env.VITE_API_TARGET ?? "http://127.0.0.1:3000";
+const staticOrigin = (process.env.VITE_STATIC_ORIGIN ?? "").replace(/\/$/, "");
 
 export default defineConfig({
+  base: staticOrigin ? `${staticOrigin}/` : "/",
   plugins: [react(), tailwindcss()],
   server: {
     port: devPort,

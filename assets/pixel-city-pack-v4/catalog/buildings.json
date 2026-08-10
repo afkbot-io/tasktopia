@@ -1,0 +1,8117 @@
+{
+  "schemaVersion": 1,
+  "stageCount": 5,
+  "projectionProfile": "TASKTOPIA_V4_STRICT_FRONTAL_TOP",
+  "buildings": [
+    {
+      "key": "highrise-glass",
+      "label": "Стеклянная высотка",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        64
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-glass/stages.png",
+      "sheetSha256": "d9d788749f8a039bb0d85be2609e07df265664a2b54e6e7d9f9790fd18775194",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-brick",
+      "label": "Кирпичная башня",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        72
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-brick/stages.png",
+      "sheetSha256": "a7b249886ca4a2494929d1a8719c9f93b78d0ff4c8e08f76103d198a8098919a",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-stepped",
+      "label": "Ступенчатые апартаменты",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        64
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-stepped/stages.png",
+      "sheetSha256": "955bddc0191a9c7a62550d9c3a8174a147ab1b33d5759b4625d385e10dff1c4e",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-corporate",
+      "label": "Офисная высотка",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        72
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-corporate/stages.png",
+      "sheetSha256": "340c53a4ad7c66fecb410e7cc66514ffb0075d0c22fb9e2984e91f85c63ba952",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-landmark",
+      "label": "Городской небоскрёб",
+      "category": "HIGHRISE",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        80
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        80
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-landmark/stages.png",
+      "sheetSha256": "03de9bdc3df24b005a58b27003f1e12e22f4455b957d3dbbdd75b6acab4f6111",
+      "reviewed": true
+    },
+    {
+      "key": "house-cottage",
+      "label": "Коттедж",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        16,
+        24
+      ],
+      "footprintCells": [
+        2,
+        2
+      ],
+      "anchorPx": [
+        8,
+        24
+      ],
+      "platform": "YARD",
+      "estimates": [
+        1,
+        2
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-townhouse",
+      "label": "Узкий таунхаус",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        16,
+        32
+      ],
+      "footprintCells": [
+        2,
+        2
+      ],
+      "anchorPx": [
+        8,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        1,
+        2
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-gabled",
+      "label": "Дом с фронтоном",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        24,
+        24
+      ],
+      "footprintCells": [
+        3,
+        2
+      ],
+      "anchorPx": [
+        12,
+        24
+      ],
+      "platform": "YARD",
+      "estimates": [
+        1,
+        2
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-duplex",
+      "label": "Дуплекс",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        24,
+        32
+      ],
+      "footprintCells": [
+        3,
+        2
+      ],
+      "anchorPx": [
+        12,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        1,
+        2
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-small-apartments",
+      "label": "Малый жилой дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "shop-supermarket",
+      "label": "Супермаркет",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        16
+      ],
+      "footprintCells": [
+        5,
+        2
+      ],
+      "anchorPx": [
+        20,
+        16
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "shop-bakery-long",
+      "label": "Пекарня и кафе",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        16
+      ],
+      "footprintCells": [
+        6,
+        2
+      ],
+      "anchorPx": [
+        24,
+        16
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "shop-mall",
+      "label": "Торговый центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        24
+      ],
+      "footprintCells": [
+        7,
+        3
+      ],
+      "anchorPx": [
+        28,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "shop-warehouse",
+      "label": "Склад-магазин",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        24
+      ],
+      "footprintCells": [
+        6,
+        3
+      ],
+      "anchorPx": [
+        24,
+        24
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-clinic",
+      "label": "Клиника скорой помощи",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "health-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "health-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-fire-station",
+      "label": "Пожарная часть",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "fire-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fire-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-police",
+      "label": "Полицейский участок",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "police-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "police-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-bank",
+      "label": "Банк",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        4
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-school",
+      "label": "Школа",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "education-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "education-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-city-hall",
+      "label": "Мэрия",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "government-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "government-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-gas-station",
+      "label": "Заправка",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        3
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-parking-lot",
+      "label": "Городская парковка",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        24
+      ],
+      "footprintCells": [
+        6,
+        3
+      ],
+      "anchorPx": [
+        24,
+        24
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "commercial",
+        "parking"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "parking-service",
+      "sheet": "buildings/commercial-parking-lot/stages.png",
+      "sheetSha256": "038aa7efc1d155a1d58c2580feaa4ce50b212eaa493dc41e10c46836acbce5ef",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-shopping-plaza",
+      "label": "Торговая галерея",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        24
+      ],
+      "footprintCells": [
+        7,
+        3
+      ],
+      "anchorPx": [
+        28,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-corner-cafe",
+      "label": "Угловое кафе",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-pharmacy",
+      "label": "Аптека",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-auto-repair",
+      "label": "Автосервис",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        24
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        24
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-bungalow",
+      "label": "Пригородное бунгало",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        24,
+        24
+      ],
+      "footprintCells": [
+        3,
+        2
+      ],
+      "anchorPx": [
+        12,
+        24
+      ],
+      "platform": "YARD",
+      "estimates": [
+        1,
+        2
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-suburban-narrow",
+      "label": "Узкий частный дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        24,
+        32
+      ],
+      "footprintCells": [
+        3,
+        3
+      ],
+      "anchorPx": [
+        12,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-garden-villa",
+      "label": "Садовая вилла",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-modern-compact",
+      "label": "Современный частный дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        24,
+        32
+      ],
+      "footprintCells": [
+        3,
+        3
+      ],
+      "anchorPx": [
+        12,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-rustic-cottage",
+      "label": "Деревянный коттедж",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-post-office",
+      "label": "Городская почта",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "postal-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "postal-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-rowhomes",
+      "label": "Рядные дома",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/house-rowhomes/stages.png",
+      "sheetSha256": "c3377c6049651f3eab28d201d55942907c095ef56fc7d949021c5a914cfe3485",
+      "reviewed": true
+    },
+    {
+      "key": "house-brick-duplex",
+      "label": "Кирпичный дуплекс",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        24,
+        32
+      ],
+      "footprintCells": [
+        3,
+        3
+      ],
+      "anchorPx": [
+        12,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/house-brick-duplex/stages.png",
+      "sheetSha256": "cef9c7476e7e4f5270e708b3bfb32e94460c0efc8c1283a207b07f55b480d9c4",
+      "reviewed": true
+    },
+    {
+      "key": "house-courtyard-apartments",
+      "label": "Дом с внутренним двором",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-courtyard-apartments-stages-v1.png",
+      "sheetSha256": "06d9bf3a84f5e6323e8b3ed4e839422efc34778bc498849b50bf42a333a4d4bb",
+      "reviewed": true
+    },
+    {
+      "key": "house-modern-lowrise",
+      "label": "Современный малоэтажный дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-woodland-home",
+      "label": "Деревянный пригородный дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-corner-apartments",
+      "label": "Угловой жилой дом",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-corner-apartments-stages-v1.png",
+      "sheetSha256": "7be20952c6e2f60680b083202fcc4e303d70a85d302f90aec88e72ad5dbcd0f8",
+      "reviewed": true
+    },
+    {
+      "key": "civic-theatre",
+      "label": "Городской театр",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-library",
+      "label": "Районная библиотека",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-fire-station-compact",
+      "label": "Малая пожарная часть",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "fire-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fire-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-police-neighborhood",
+      "label": "Районный пункт полиции",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "civic",
+        "police-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "police-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-clinic-neighborhood",
+      "label": "Районная амбулатория",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "civic",
+        "health-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "health-service",
+      "sheet": "ai-authored/civic-clinic-neighborhood-stages-v1.png",
+      "sheetSha256": "9ff0849735655293eaf0ec1402a87e6c594fd7d14d0f280f473447a83097791f",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-gas-station-compact",
+      "label": "Компактная заправка",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "highrise-mixed-use-market",
+      "label": "Новостройка с магазинами",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        56
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        56
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial",
+        "dense",
+        "highrise",
+        "mixed-use",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-mixed-use-market/stages.png",
+      "sheetSha256": "c48dd8df4d5f7ece17e1a6ac51918356c8786cd07a3bb19e93d2ee828c77278d",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-highway-service-plaza",
+      "label": "Большая придорожная заправка",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        64,
+        40
+      ],
+      "footprintCells": [
+        8,
+        5
+      ],
+      "anchorPx": [
+        32,
+        40
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-colonial",
+      "label": "Колониальный дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-colonial-stages-v1.png",
+      "sheetSha256": "e90ca6689c73a4b2059e542695811e21922dd1c8fc91db85ad242a1b6c499032",
+      "reviewed": true
+    },
+    {
+      "key": "house-craftsman",
+      "label": "Крафтсман-коттедж",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-craftsman-stages-v1.png",
+      "sheetSha256": "092d25d52ef367ce13052dbaba1985581f645d1a91ca71226f7d4c461017b2cc",
+      "reviewed": true
+    },
+    {
+      "key": "house-ranch",
+      "label": "Ранчо",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        24
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        24
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/house-ranch/stages.png",
+      "sheetSha256": "c2740dd965917467d8eb5d03b26128aafba0e88032bdac299f22697b0989f2b5",
+      "reviewed": true
+    },
+    {
+      "key": "house-split-level",
+      "label": "Сплит-левел",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-split-level-stages-v1.png",
+      "sheetSha256": "70de3d843a7a5486b99964679bb1a12e7acbb2e1f872777bb0601c9ab99ebf93",
+      "reviewed": true
+    },
+    {
+      "key": "house-townhouse-brick",
+      "label": "Кирпичный таунхаус",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-townhouse-brick-stages-v1.png",
+      "sheetSha256": "480a760e50bd216c36871254c359d0d6ad0a5447eb2cb14f7e55383a584f618c",
+      "reviewed": true
+    },
+    {
+      "key": "house-townhouse-stone",
+      "label": "Каменный таунхаус",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-townhouse-stone-stages-v1.png",
+      "sheetSha256": "a27a88753944920ec3d4742259357acaec6cfcb6ac37673addd05748e3e58809",
+      "reviewed": true
+    },
+    {
+      "key": "house-garden-apartment",
+      "label": "Садовый жилой комплекс",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-garden-apartment-stages-v1.png",
+      "sheetSha256": "2683d078a6dc754085103fd144ba9d9f97077c39e9110a58c5f1f02b40dce1bc",
+      "reviewed": true
+    },
+    {
+      "key": "house-eco-cottage",
+      "label": "Эко-коттедж",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        24,
+        32
+      ],
+      "footprintCells": [
+        3,
+        3
+      ],
+      "anchorPx": [
+        12,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-eco-cottage-stages-v1.png",
+      "sheetSha256": "b10a000e558d530262039e9a0d7f3d4b4c402da79e48fe64978b172f2c5155de",
+      "reviewed": true
+    },
+    {
+      "key": "house-narrow-shotgun",
+      "label": "Узкий дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        16,
+        32
+      ],
+      "footprintCells": [
+        2,
+        3
+      ],
+      "anchorPx": [
+        8,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        1,
+        2
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-narrow-shotgun-stages-v1.png",
+      "sheetSha256": "a28ae5fbef5c4f7cc2b40bead23cfc60f728a2c7c7203437add41920c6a08792",
+      "reviewed": true
+    },
+    {
+      "key": "house-courtyard-block",
+      "label": "Дворовый жилой блок",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        48
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        48
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-courtyard-block-stages-v1.png",
+      "sheetSha256": "7d8253744fd25e3272f54fb11318c7724f40d9fc895f702d572ee64ba9dee21b",
+      "reviewed": true
+    },
+    {
+      "key": "house-modern-villa",
+      "label": "Современная вилла",
+      "category": "HOUSE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/house-modern-villa/stages.png",
+      "sheetSha256": "7497b6f8440e46bc724456d5ffafdcc60317a73f6f8a9a4fb86f6fba902e8651",
+      "reviewed": true
+    },
+    {
+      "key": "house-duplex-brick",
+      "label": "Кирпичный дуплекс",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        24,
+        32
+      ],
+      "footprintCells": [
+        3,
+        3
+      ],
+      "anchorPx": [
+        12,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 1
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-duplex-brick-stages-v1.png",
+      "sheetSha256": "5180983c864a7bd30b7b5729837d93e5dde2e7265e317e39c8d27eb1dc1bf25c",
+      "reviewed": true
+    },
+    {
+      "key": "house-studio-loft",
+      "label": "Жилой лофт",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-studio-loft-stages-v1.png",
+      "sheetSha256": "79ed1d221ee36cf85b92e56dff440a12f5c8927281a70200f8151f2c92c0c364",
+      "reviewed": true
+    },
+    {
+      "key": "house-rowhouse-corner",
+      "label": "Угловой рядный дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-rowhouse-corner-stages-v1.png",
+      "sheetSha256": "8adc6c1a47bed9aed42c634195c7a022f4c59555fd705440179627248ed3e706",
+      "reviewed": true
+    },
+    {
+      "key": "house-suburban-brick",
+      "label": "Пригородный кирпичный дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-suburban-brick-stages-v1.png",
+      "sheetSha256": "e27918a6b981ed7697d61571ed73b90825e4b26ef48bf424dd405943064943ff",
+      "reviewed": true
+    },
+    {
+      "key": "house-apartment-walkup",
+      "label": "Малоэтажный дом с лестницей",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        40
+      ],
+      "footprintCells": [
+        4,
+        4
+      ],
+      "anchorPx": [
+        16,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-apartment-walkup-stages-v1.png",
+      "sheetSha256": "28a470e13b033190a43ffddfee8850bb75d9b503636a498fd1b5615553970d50",
+      "reviewed": true
+    },
+    {
+      "key": "shop-cafe",
+      "label": "Кафе",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-cafe-stages-v1.png",
+      "sheetSha256": "acaac4f8916e1616d2a4d4409a39afcb944bc7a13014584456e86a99a634bd79",
+      "reviewed": true
+    },
+    {
+      "key": "shop-butcher",
+      "label": "Мясная лавка",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-butcher-stages-v1.png",
+      "sheetSha256": "8e2fc49026c15537f28b94993e7f9a11a8241c649458c15218dfa3aa58e4e7f5",
+      "reviewed": true
+    },
+    {
+      "key": "shop-electronics",
+      "label": "Магазин электроники",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-electronics-stages-v1.png",
+      "sheetSha256": "552af04ded48666e3e1b9ca3ce986397bfa64a9b32a44a4c4e5f3d0e9cc8fae3",
+      "reviewed": true
+    },
+    {
+      "key": "shop-furniture",
+      "label": "Мебельный магазин",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        24
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-furniture-stages-v1.png",
+      "sheetSha256": "7ae5b14aa0d42e91be9bca9d3b991ee36e3d7295b990992f72ed18c851146af7",
+      "reviewed": true
+    },
+    {
+      "key": "shop-bookstore",
+      "label": "Книжный магазин",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-bookstore-stages-v1.png",
+      "sheetSha256": "8df41bc2eb4dac620fa6e6e12c5ea83acdb9f330998545d23e7247b55fcecdf4",
+      "reviewed": true
+    },
+    {
+      "key": "shop-clothing",
+      "label": "Магазин одежды",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-clothing-stages-v1.png",
+      "sheetSha256": "be0f7ddc3f1a6ff02a9a2229173b199dced08e87a8c9389b4f9d3ad5b7d8b1d9",
+      "reviewed": true
+    },
+    {
+      "key": "shop-restaurant",
+      "label": "Ресторан",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        24
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-restaurant-stages-v1.png",
+      "sheetSha256": "8a1565629de5a567d9424d4e2325e1c8abe0e7f91a825e1491cd96707c4032a9",
+      "reviewed": true
+    },
+    {
+      "key": "shop-bar",
+      "label": "Бар",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/shop-bar-stages-v1.png",
+      "sheetSha256": "0f302b05ef1d5f05b1faaf2ae9ca568d86a340c92fc7d4626913d6c4338352b7",
+      "reviewed": true
+    },
+    {
+      "key": "office-small",
+      "label": "Малый офис",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/office-small-stages-v1.png",
+      "sheetSha256": "980c54ee282a9955f50bed10f09ce2d244058b92ae24b97eccfa2504e3e9d518",
+      "reviewed": true
+    },
+    {
+      "key": "hotel-small",
+      "label": "Малая гостиница",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/hotel-small-stages-v1.png",
+      "sheetSha256": "7bea0091719236429a7102ec35218448b00ce3f4ae05a7b7b375436f2e6034be",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-market-stalls",
+      "label": "Городской рынок",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/commercial-market-stalls-stages-v1.png",
+      "sheetSha256": "4a8471f9656414ec3cf1e497fde1ed613504baaad107c0f2111af293e2fe8269",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-storage",
+      "label": "Мини-склад",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        24
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/commercial-storage-stages-v1.png",
+      "sheetSha256": "0a31ad5e3ce5193501962a625f094b679e2604c96e6c7d58b94725fddf62cb9b",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-gas-station-electric",
+      "label": "Электрозаправка",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        3
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-gas-station-truck",
+      "label": "Грузовая заправка",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-gas-station-cafe",
+      "label": "Заправка с кафе",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        32
+      ],
+      "footprintCells": [
+        7,
+        3
+      ],
+      "anchorPx": [
+        28,
+        32
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-gas-station-wash",
+      "label": "Заправка с мойкой",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        32
+      ],
+      "footprintCells": [
+        7,
+        3
+      ],
+      "anchorPx": [
+        28,
+        32
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-museum",
+      "label": "Музей",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        56,
+        48
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        48
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-hospital",
+      "label": "Больница",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "buildings/civic-hospital/stages.png",
+      "sheetSha256": "c933fa079a3ccd785f8548d4089f6fd934e8aaa8974350b58ba0bff7e4204692",
+      "reviewed": true
+    },
+    {
+      "key": "civic-university",
+      "label": "Университет",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        48
+      ],
+      "footprintCells": [
+        8,
+        5
+      ],
+      "anchorPx": [
+        32,
+        48
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-courthouse",
+      "label": "Суд",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-courthouse-stages-v1.png",
+      "sheetSha256": "9abdf33b3ff4643824f9995ef58a66e146e5bb17580e3577bcef6b1e3aabbd0f",
+      "reviewed": true
+    },
+    {
+      "key": "civic-embassy",
+      "label": "Посольство",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-community-center",
+      "label": "Культурный центр",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-community-center-stages-v1.png",
+      "sheetSha256": "89a432ed9c3622ea25d17e27f7724d00d1aa3aec15d6db72c560e9e30f204d4f",
+      "reviewed": true
+    },
+    {
+      "key": "civic-aquatic-center",
+      "label": "Водный центр",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-aquatic-center-stages-v1.png",
+      "sheetSha256": "436f5d5d244966cffe4b644cc0927d857da03908e485157bd79ca995b3586424",
+      "reviewed": true
+    },
+    {
+      "key": "civic-transport-hub",
+      "label": "Транспортный узел",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-waste-station",
+      "label": "Мусоропереработка",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-power-substation",
+      "label": "Электроподстанция",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-memorial-hall",
+      "label": "Мемориальный зал",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-youth-center",
+      "label": "Молодёжный центр",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "highrise-residential-tower",
+      "label": "Жилая башня",
+      "category": "HIGHRISE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        72
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-residential-tower/stages.png",
+      "sheetSha256": "d05ee114311869b8f98a973461bff66f264560ff084d23391d4e358e4ca801a2",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-hotel",
+      "label": "Отель-высотка",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        80
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        80
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-hotel-stages-v1.png",
+      "sheetSha256": "d303685eb68eb01ef9f1951978a9409b1b396a1b1fcc9f51125cb41678463ad5",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-office",
+      "label": "Офисная башня",
+      "category": "HIGHRISE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        80
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        80
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-office-stages-v3.png",
+      "sheetSha256": "ae24df0163e2323a28c09954cde61c131ca8504a9fb174f1cd1d7c07793bc9f8",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-medical-tower",
+      "label": "Медицинская башня",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        72
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-medical-tower/stages.png",
+      "sheetSha256": "1e1c64bccdeceee7e0378b2cce0212513850227db6742f6c1f4fdee857c4b96e",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-luxury-tower",
+      "label": "Элитная башня",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        88
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-luxury-tower-stages-v1.png",
+      "sheetSha256": "4319adea3aa386e3ecfcdaa420f464e721561932c84bfc84c1945c9f4865e297",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-sustainable-tower",
+      "label": "Эко-башня",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        80
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        80
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-sustainable-tower/stages.png",
+      "sheetSha256": "9f1a6d571b109dd2112d17bf34047d3dd985ca1c855cce0266fe91dab431b966",
+      "reviewed": true
+    },
+    {
+      "key": "landmark-ferris-wheel",
+      "label": "Колесо обозрения",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        64,
+        88
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial",
+        "landmark",
+        "leisure",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "leisure-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-megatall-tower",
+      "label": "Мегавысотка",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        128
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        128
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "landmark",
+        "new-build",
+        "office",
+        "residential",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": "buildings/landmark-megatall-tower/stages.png",
+      "sheetSha256": "8df42df0b3fe54cf5d3c92d5690852fca74dd73615f9eaca911d662651ab1c0f",
+      "reviewed": true
+    },
+    {
+      "key": "landmark-monument",
+      "label": "Городской памятник",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        32,
+        72
+      ],
+      "footprintCells": [
+        4,
+        4
+      ],
+      "anchorPx": [
+        16,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "culture",
+        "landmark",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "culture-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-canalside-terrace",
+      "label": "Террасы у канала",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-alpine-chalet",
+      "label": "Альпийское шале",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-coastal-cottage",
+      "label": "Береговой коттедж",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        32
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "house",
+        "private-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/house-coastal-cottage/stages.png",
+      "sheetSha256": "6e195bbbb2575f4aa2a9f633b20db3d7538b196ff88b988fc2bc68f3c3dd2c25",
+      "reviewed": true
+    },
+    {
+      "key": "house-farmstead",
+      "label": "Фермерская усадьба",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-live-work",
+      "label": "Дом с мастерской",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-micro-apartments",
+      "label": "Микроапартаменты",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        40
+      ],
+      "footprintCells": [
+        4,
+        4
+      ],
+      "anchorPx": [
+        16,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-micro-apartments-stages-v1.png",
+      "sheetSha256": "8c2659cb14e2c1eb05251b36baac2c31e2fe7dc6809622f3185dac5228e636d2",
+      "reviewed": true
+    },
+    {
+      "key": "house-student-residence",
+      "label": "Студенческое общежитие",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        48
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        48
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-senior-living",
+      "label": "Дом старшего поколения",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-cohousing-cluster",
+      "label": "Кластер совместного жилья",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-cohousing-cluster-stages-v1.png",
+      "sheetSha256": "ee3b527f7d8b35c8c8c417dca6ebaa331ec5c97ef6e0112f854b33d3822c8b47",
+      "reviewed": true
+    },
+    {
+      "key": "house-prefab-modular",
+      "label": "Модульный жилой дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-art-deco-apartments",
+      "label": "Апартаменты ар-деко",
+      "category": "HOUSE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        48
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        48
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-art-deco-apartments-stages-v1.png",
+      "sheetSha256": "be9a0c1f8b5a48766744458fd692c7c21d0a124fd0066427dd8e5cd7ec22a9e5",
+      "reviewed": true
+    },
+    {
+      "key": "house-brutalist-block",
+      "label": "Бруталистский жилой блок",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        48
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        48
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-brutalist-block-stages-v1.png",
+      "sheetSha256": "f8bba344879e69929b3c57749f9cad05f3a785d64eb264fdcb73644fa4ecdc82",
+      "reviewed": true
+    },
+    {
+      "key": "house-brownstone-row",
+      "label": "Ряд браунстоунов",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/house-brownstone-row/stages.png",
+      "sheetSha256": "a41acbe9a58da8ef39da72309354e135e94e5a15c18dc1d4359c19bce3d5ba33",
+      "reviewed": true
+    },
+    {
+      "key": "house-mediterranean-courtyard",
+      "label": "Средиземноморский двор",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-warehouse-lofts",
+      "label": "Складские лофты",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-social-housing",
+      "label": "Социальный жилой корпус",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        56,
+        48
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        48
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-rooftop-garden",
+      "label": "Дом с садом на крыше",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-stilt-riverside",
+      "label": "Дом на прибрежных сваях",
+      "category": "HOUSE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "house"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "house-arcade-apartments",
+      "label": "Дом с жилой аркадой",
+      "category": "HOUSE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-arcade-apartments-stages-v1.png",
+      "sheetSha256": "5b372004d471d306d6afede2b7d50f6fd56ca979b6ea79e46a7ec91802161b8e",
+      "reviewed": true
+    },
+    {
+      "key": "house-worker-tenements",
+      "label": "Рабочие доходные дома",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        48
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        48
+      ],
+      "platform": "YARD",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "house",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/house-worker-tenements-stages-v2.png",
+      "sheetSha256": "fa1a01036af436ecec511890b85f66e9d015bc0c0cc19f162b3ca46e4657d808",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-grocery",
+      "label": "Продуктовый магазин",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/commercial-grocery-stages-v1.png",
+      "sheetSha256": "8bd88cbe7934188fc0a1ee879cc9c94aa42d43b4f13a33acc4431a9ba424c883",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-food-hall",
+      "label": "Городской фуд-холл",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-cinema",
+      "label": "Кинотеатр",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/commercial-cinema-stages-v2.png",
+      "sheetSha256": "280cd166573a8ade76442a75fab7a5d2f50313486152ac2e07af1289b502f410",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-bowling",
+      "label": "Боулинг-центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-gym",
+      "label": "Спортивный клуб",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/commercial-gym-stages-v1.png",
+      "sheetSha256": "5db0973e2a59dc8433e07e05c06650ecc3a500bf4bd748a8de9293fa4523c939",
+      "reviewed": true
+    },
+    {
+      "key": "commercial-bank-branch",
+      "label": "Банковское отделение",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-coworking",
+      "label": "Коворкинг",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-tech-workshop",
+      "label": "Технологическая мастерская",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-car-dealership",
+      "label": "Автосалон",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        32
+      ],
+      "footprintCells": [
+        7,
+        4
+      ],
+      "anchorPx": [
+        28,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-garden-center",
+      "label": "Садовый центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        32
+      ],
+      "footprintCells": [
+        7,
+        4
+      ],
+      "anchorPx": [
+        28,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-night-market",
+      "label": "Ночной рынок",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        32
+      ],
+      "footprintCells": [
+        7,
+        4
+      ],
+      "anchorPx": [
+        28,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-department-store",
+      "label": "Универмаг",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-office-courtyard",
+      "label": "Офисы с внутренним двором",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-logistics-hub",
+      "label": "Логистический терминал",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        64,
+        40
+      ],
+      "footprintCells": [
+        8,
+        5
+      ],
+      "anchorPx": [
+        32,
+        40
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-cold-storage",
+      "label": "Холодильный склад",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-maker-market",
+      "label": "Рынок ремесленников",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        32
+      ],
+      "footprintCells": [
+        7,
+        4
+      ],
+      "anchorPx": [
+        28,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-rooftop-restaurant",
+      "label": "Ресторан на крыше",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-marina-office",
+      "label": "Офис городской пристани",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-farmers-market",
+      "label": "Фермерский рынок",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "commercial-hotel-boutique",
+      "label": "Бутик-отель",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        40
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        40
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-kindergarten",
+      "label": "Детский сад",
+      "category": "CIVIC",
+      "rarity": "COMMON",
+      "spriteSize": [
+        40,
+        32
+      ],
+      "footprintCells": [
+        5,
+        4
+      ],
+      "anchorPx": [
+        20,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-secondary-school",
+      "label": "Средняя школа",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "education-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "education-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-vocational-college",
+      "label": "Профессиональный колледж",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        64,
+        48
+      ],
+      "footprintCells": [
+        8,
+        6
+      ],
+      "anchorPx": [
+        32,
+        48
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-research-lab",
+      "label": "Исследовательская лаборатория",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-public-library-modern",
+      "label": "Современная библиотека",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-health-center",
+      "label": "Центр здоровья",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-emergency-center",
+      "label": "Центр экстренной помощи",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-fire-station-large",
+      "label": "Большая пожарная часть",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "fire-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fire-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-police-headquarters",
+      "label": "Управление полиции",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        48
+      ],
+      "footprintCells": [
+        7,
+        6
+      ],
+      "anchorPx": [
+        28,
+        48
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "police-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "police-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-civil-defense",
+      "label": "Центр гражданской защиты",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-civil-defense-stages-v1.png",
+      "sheetSha256": "3e391fb8c314331fc59e5863b7e4807a0366c6115bbcb541effc84e119236123",
+      "reviewed": true
+    },
+    {
+      "key": "civic-train-station",
+      "label": "Железнодорожный вокзал",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        64,
+        48
+      ],
+      "footprintCells": [
+        8,
+        6
+      ],
+      "anchorPx": [
+        32,
+        48
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-bus-terminal",
+      "label": "Автовокзал",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        64,
+        40
+      ],
+      "footprintCells": [
+        8,
+        5
+      ],
+      "anchorPx": [
+        32,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-bus-terminal-stages-v1.png",
+      "sheetSha256": "0f13043daa4a760885cc49c56f8f3e55d6f253ecf1bba6748c55ff2e92cd976a",
+      "reviewed": true
+    },
+    {
+      "key": "civic-metro-entrance",
+      "label": "Вход в метро",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        32,
+        24
+      ],
+      "footprintCells": [
+        4,
+        3
+      ],
+      "anchorPx": [
+        16,
+        24
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        2,
+        3
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-waterworks",
+      "label": "Городской водоканал",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-recycling-center",
+      "label": "Центр переработки",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-court-annex",
+      "label": "Судебный корпус",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-court-annex-stages-v1.png",
+      "sheetSha256": "4895f369f5041f4344ae55d1302c794d530c95523d4689692df8f535a06b9ce5",
+      "reviewed": true
+    },
+    {
+      "key": "civic-administration-center",
+      "label": "Административный центр",
+      "category": "CIVIC",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        48
+      ],
+      "footprintCells": [
+        7,
+        6
+      ],
+      "anchorPx": [
+        28,
+        48
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-administration-center-stages-v1.png",
+      "sheetSha256": "988787f8d8f3e69bb3dd0880e9c974eac05f845de2141c334a67ca085ea45054",
+      "reviewed": true
+    },
+    {
+      "key": "civic-sports-center",
+      "label": "Муниципальный спортцентр",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        40
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "civic-arts-school",
+      "label": "Школа искусств",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        40
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        40
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "education-service",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "education-service",
+      "sheet": "ai-authored/civic-arts-school-stages-v1.png",
+      "sheetSha256": "92c5b4a45d92992c1c67a7b7bf08e7ce7183f84bf434c79da6226525e90916a6",
+      "reviewed": true
+    },
+    {
+      "key": "civic-animal-shelter",
+      "label": "Приют для животных",
+      "category": "CIVIC",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "SERVICE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "service"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": null,
+      "sheet": "ai-authored/civic-animal-shelter-stages-v1.png",
+      "sheetSha256": "dfd04476112201b59ede334330bf77f63766d178330ea3641795b93a609bc1c9",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-twin-towers",
+      "label": "Башни-близнецы",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        88
+      ],
+      "footprintCells": [
+        7,
+        6
+      ],
+      "anchorPx": [
+        28,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-twin-towers-stages-v2.png",
+      "sheetSha256": "fdbf44105e80df9d597b1a0cfe7dd294e20394852a735e14a601f2f08aca2f9e",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-terraced",
+      "label": "Террасная высотка",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        88
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-terraced/stages.png",
+      "sheetSha256": "33808b7ceb0b903ec9a0de25b4e1b174334f2875c8a446feb50f99821f7b7111",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-skybridge",
+      "label": "Башни с небесным мостом",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        96
+      ],
+      "footprintCells": [
+        7,
+        6
+      ],
+      "anchorPx": [
+        28,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-skybridge/stages.png",
+      "sheetSha256": "7890bebe9eec566abe8063f6de34930ee019e50a9dcc410cb84b494fd557f479",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-cylindrical",
+      "label": "Цилиндрическая башня",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        40,
+        88
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-cylindrical-stages-v1.png",
+      "sheetSha256": "ff7668b5a1758bcd9d8e8003e4e7fc744c811200325c733765b494ccc60479c0",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-crown",
+      "label": "Высотка с короной",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        96
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-crown-stages-v1.png",
+      "sheetSha256": "93744f70e8c339dd0c7c1a4606680dbeaa2acb015d43af05de4ec050efb16a29",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-podium-office",
+      "label": "Офисная башня на подиуме",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        88
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-podium-office/stages.png",
+      "sheetSha256": "a955394671fb1880816027aad2c1bec9c91ff849e8f2a91f32128efbcfa30760",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-podium-residential",
+      "label": "Жилая башня на подиуме",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        96
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-podium-residential/stages.png",
+      "sheetSha256": "912bc84f243c5adbc3b935224a9af02118312a6e9b02392464a43e66b5450450",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-green-terraces",
+      "label": "Башня зелёных террас",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        88
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-green-terraces-stages-v1.png",
+      "sheetSha256": "f8e5aa42ded542aeba1dc097038342c075d8f00bffc1b4b53f15df6a0d4d9ef2",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-art-deco",
+      "label": "Высотка ар-деко",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        96
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-art-deco-stages-v1.png",
+      "sheetSha256": "2464ccc9fe55aa0c30cc7828ecc004a86d6c8b55aaf5205b2e0a762a99f1b968",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-brutalist",
+      "label": "Бруталистская башня",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        88
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-brutalist-stages-v1.png",
+      "sheetSha256": "23e1ef1e6698bdf0c65cec5f8883c8827d270bd0085d3af485ced6e95a8ef623",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-mixed-use-hotel",
+      "label": "Отель смешанного назначения",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        96
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial",
+        "dense",
+        "highrise",
+        "mixed-use",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-mixed-use-hotel/stages.png",
+      "sheetSha256": "13816b2356c744339c0d3b93982e9c3263d596200a34e88864b2e4df4e6eb3ab",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-tech-campus-tower",
+      "label": "Башня технологического кампуса",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        88
+      ],
+      "footprintCells": [
+        7,
+        6
+      ],
+      "anchorPx": [
+        28,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-tech-campus-tower/stages.png",
+      "sheetSha256": "af51ae5d50f4f6a1ac89ee2cf56bb66751fac2f19ae1b92303ab4b4224bc895e",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-finance",
+      "label": "Финансовая башня",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        104
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        104
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-finance-stages-v1.png",
+      "sheetSha256": "f68afb9da57d880c61fb0d0da97de28e4c1ebbea85f5d662356199cfd482a766",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-observation",
+      "label": "Высотка с обзорной площадкой",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        104
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        104
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-observation/stages.png",
+      "sheetSha256": "d14d89b546bfd6f220ff77b40ddb974963c27b231a1d35b5aef0e83ea1fcfe12",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-slim-residential",
+      "label": "Тонкая жилая башня",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        32,
+        104
+      ],
+      "footprintCells": [
+        4,
+        5
+      ],
+      "anchorPx": [
+        16,
+        104
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-slim-residential/stages.png",
+      "sheetSha256": "286aa50c309e38ba33b2bbd7091a32edd18bfe76bee132444ba42add5299edd9",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-stacked-boxes",
+      "label": "Башня сложенных объёмов",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        96
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-stacked-boxes/stages.png",
+      "sheetSha256": "16f9631ba91caa4204e63d590be95b0a61abab218e4c14894fce32e48fdd6230",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-diagonal-crown",
+      "label": "Башня с диагональной короной",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        40,
+        104
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        104
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-diagonal-crown-stages-v1.png",
+      "sheetSha256": "4eeabd54e4cb34d3a8bce95d3a00d07b1cdf87199f948953b95bf3e6c91b25ad",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-courtyard-tower",
+      "label": "Башенный квартал с двором",
+      "category": "HIGHRISE",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        56,
+        88
+      ],
+      "footprintCells": [
+        7,
+        6
+      ],
+      "anchorPx": [
+        28,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "ai-authored/highrise-courtyard-tower-stages-v1.png",
+      "sheetSha256": "ae53c6599babdfc3094df2ac2795423e0c9cca811a114b563743d897a7ef0945",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-transit-oriented",
+      "label": "Высотка транспортного узла",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        56,
+        96
+      ],
+      "footprintCells": [
+        7,
+        6
+      ],
+      "anchorPx": [
+        28,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-transit-oriented/stages.png",
+      "sheetSha256": "c193f30859d7b72709e12d78ef72afedaced024356cb0f1c5bd34bcf05d33502",
+      "reviewed": true
+    },
+    {
+      "key": "highrise-waterfront",
+      "label": "Прибрежная высотка",
+      "category": "HIGHRISE",
+      "rarity": "RARE",
+      "spriteSize": [
+        48,
+        96
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "new-build",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": "buildings/highrise-waterfront/stages.png",
+      "sheetSha256": "309a2efbbf01eaeb2903cac37c60f7a849ce5edc3949b1c3cb6a7b908ec49138",
+      "reviewed": true
+    },
+    {
+      "key": "landmark-stadium",
+      "label": "Городской стадион",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        72,
+        48
+      ],
+      "footprintCells": [
+        9,
+        6
+      ],
+      "anchorPx": [
+        36,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial",
+        "landmark",
+        "office",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-observatory",
+      "label": "Обсерватория",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        48
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "landmark",
+        "office",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": "ai-authored/landmark-observatory-stages-v2.png",
+      "sheetSha256": "9202329df295e33d7551ab953131453b302c757fef03d595b5721e5b35ac070d",
+      "reviewed": true
+    },
+    {
+      "key": "landmark-concert-hall",
+      "label": "Большой концертный зал",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        48
+      ],
+      "footprintCells": [
+        8,
+        5
+      ],
+      "anchorPx": [
+        32,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "landmark",
+        "office",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-aquarium",
+      "label": "Городской океанариум",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        48
+      ],
+      "footprintCells": [
+        8,
+        5
+      ],
+      "anchorPx": [
+        32,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial",
+        "landmark",
+        "office",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": "ai-authored/landmark-aquarium-stages-v1.png",
+      "sheetSha256": "4300afd6451d2ebab015c74745f2b184ecb278e8c899500318e05c05966f2c38",
+      "reviewed": true
+    },
+    {
+      "key": "landmark-botanical-dome",
+      "label": "Ботанический купол",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        56,
+        48
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "landmark",
+        "office",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-space-center",
+      "label": "Космический центр",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        6
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "landmark",
+        "office",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-grand-station",
+      "label": "Главный вокзал",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        72,
+        48
+      ],
+      "footprintCells": [
+        9,
+        6
+      ],
+      "anchorPx": [
+        36,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "landmark",
+        "office",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-civic-arch",
+      "label": "Городская триумфальная арка",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        56
+      ],
+      "footprintCells": [
+        6,
+        5
+      ],
+      "anchorPx": [
+        24,
+        56
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "landmark",
+        "office",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-lighthouse",
+      "label": "Городской маяк",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        32,
+        72
+      ],
+      "footprintCells": [
+        4,
+        4
+      ],
+      "anchorPx": [
+        16,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "civic",
+        "landmark",
+        "office",
+        "service",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "landmark-sky-tower",
+      "label": "Городская телебашня",
+      "category": "HIGHRISE",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        40,
+        112
+      ],
+      "footprintCells": [
+        5,
+        5
+      ],
+      "anchorPx": [
+        20,
+        112
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "dense",
+        "highrise",
+        "landmark",
+        "new-build",
+        "office",
+        "residential",
+        "unique"
+      ],
+      "ruleIds": [
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 2
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "office-service",
+      "sheet": "ai-authored/landmark-sky-tower-stages-v1.png",
+      "sheetSha256": "ff0b6bc73631444b8b25bac00c2abacb59357110f695f3363ce72e44a06f5305",
+      "reviewed": true
+    },
+    {
+      "key": "state-archive-core",
+      "label": "Главный корпус Государственного архива",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        56
+      ],
+      "footprintCells": [
+        8,
+        5
+      ],
+      "anchorPx": [
+        32,
+        56
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "archive",
+        "civic",
+        "landmark"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "state-archive-wing",
+      "label": "Фондохранилище Государственного архива",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        48
+      ],
+      "footprintCells": [
+        8,
+        4
+      ],
+      "anchorPx": [
+        32,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "archive",
+        "civic",
+        "storage"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "state-archive-vault",
+      "label": "Депозитарий Государственного архива",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        56,
+        56
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        56
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "archive",
+        "civic",
+        "vault"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    },
+    {
+      "key": "state-archive-tower",
+      "label": "Башня чтения и оцифровки",
+      "category": "CIVIC",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        56,
+        72
+      ],
+      "footprintCells": [
+        7,
+        5
+      ],
+      "anchorPx": [
+        28,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "archive",
+        "civic",
+        "digital"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "sheet": null,
+      "sheetSha256": null,
+      "reviewed": false
+    }
+  ]
+}

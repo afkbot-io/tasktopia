@@ -189,6 +189,20 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         footprint = prop.get("footprintCells", [])
         if len(footprint) != 2 or min(footprint, default=0) <= 0:
             errors.append(f"{label}: invalid footprint")
+        bounds = opaque_bounds(image)
+        minimum_opaque_bounds = {
+            "city-bus-horizontal": (20, 7),
+            "city-bus-north": (6, 18),
+            "city-bus-south": (6, 18),
+            "bus-stop-horizontal": (14, 12),
+            "bus-stop-vertical": (9, 15),
+            "fountain-large": (26, 31),
+            "gazebo": (27, 31),
+            "playground-carousel": (30, 13),
+        }
+        minimum = minimum_opaque_bounds.get(key)
+        if minimum and (bounds is None or bounds[2] - bounds[0] < minimum[0] or bounds[3] - bounds[1] < minimum[1]):
+            errors.append(f"{label}: authored subject is too small for its runtime footprint")
 
     ai_prop_catalog = manifest_path.parent / "catalog" / "ai-authored-props.json"
     if ai_prop_catalog.exists():
@@ -218,14 +232,16 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         for direction, relative in sorted(directions.items()):
             audit_image(relative, f"transitions/{material}/{direction}", expected_size=(CELL, CELL))
 
-    vehicle_signatures: dict[str, list[bytes]] = {"horizontal": [], "vertical": []}
-    vehicle_drawings: dict[str, list[bytes]] = {"horizontal": [], "vertical": []}
+    vehicle_signatures: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
+    vehicle_drawings: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
     vehicles = manifest.get("vehicles", {})
     if len(vehicles) < 6:
         errors.append("vehicles: expected at least six distinct models")
     for variant, orientations in sorted(vehicles.items()):
+        if set(orientations) != {"horizontal", "north", "south"}:
+            errors.append(f"vehicles/{variant}: expected exactly horizontal, north and south views")
         for orientation, vehicle in sorted(orientations.items()):
-            expected = (8, 16) if orientation == "vertical" else (16, 8)
+            expected = (16, 8) if orientation == "horizontal" else (8, 16)
             image = audit_image(str(vehicle.get("path", "")), f"vehicles/{variant}/{orientation}", expected_size=expected)
             if image is None:
                 continue
@@ -236,17 +252,21 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                 width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
                 if orientation == "horizontal" and (width < 13 or height < 6):
                     errors.append(f"vehicles/{variant}/horizontal: model is too small at native scale")
-                if orientation == "vertical" and (width < 6 or height < 13):
-                    errors.append(f"vehicles/{variant}/vertical: model is too small at native scale")
+                if orientation in {"north", "south"} and (width < 6 or height < 13):
+                    errors.append(f"vehicles/{variant}/{orientation}: model is too small at native scale")
             if vehicle.get("artSource") != "AI_AUTHORED" or not vehicle.get("sourceSheet"):
                 errors.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
         horizontal = orientations.get("horizontal")
-        vertical = orientations.get("vertical")
-        if horizontal and vertical:
+        north = orientations.get("north")
+        south = orientations.get("south")
+        if horizontal and north and south:
             horizontal_image = Image.open(runtime / horizontal["path"]).convert("RGBA")
-            vertical_image = Image.open(runtime / vertical["path"]).convert("RGBA")
-            if horizontal_image.tobytes() == vertical_image.transpose(Image.Transpose.ROTATE_270).tobytes():
-                errors.append(f"vehicles/{variant}: directional counterpart is a mechanical rotation")
+            north_image = Image.open(runtime / north["path"]).convert("RGBA")
+            south_image = Image.open(runtime / south["path"]).convert("RGBA")
+            if horizontal_image.tobytes() == north_image.transpose(Image.Transpose.ROTATE_270).tobytes():
+                errors.append(f"vehicles/{variant}: north view is a mechanical side rotation")
+            if north_image.tobytes() == south_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes():
+                errors.append(f"vehicles/{variant}: south view is a mechanical north flip")
     for orientation, signatures in vehicle_signatures.items():
         drawings = vehicle_drawings[orientation]
         if drawings and len(set(drawings)) != len(drawings):

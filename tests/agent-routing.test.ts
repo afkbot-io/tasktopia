@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  agentCellKey,
   buildDirectedCarEdges,
   connectShortWalkGaps,
+  directedTrafficCore,
   isAgentEdgeAllowed,
   mustYieldAtCrosswalk,
+  detectTrafficJunctions,
+  mustYieldAtTrafficSignal,
+  trafficSignalPhase,
   nextSeededRandom,
   nextWithoutUTurn,
   planAgentRoute,
   shortestAgentRoute,
+  vehiclePresentation,
+  vehicleLanePosition,
   walkerInteractionPairs,
 } from "../src/client/agent-routing";
 
@@ -82,6 +89,90 @@ describe("living city agent routing", () => {
     const verticalOutgoing = buildDirectedCarEdges(vertical);
     expect(shortestAgentRoute(vertical, { x: 0, y: 1 }, { x: 0, y: 5 }, 8_000, verticalOutgoing)).toHaveLength(5);
     expect(shortestAgentRoute(vertical, { x: 1, y: 5 }, { x: 1, y: 1 }, 8_000, verticalOutgoing)).toHaveLength(5);
+  });
+
+  it("keeps a right-hand lane through a ninety-degree road bend", () => {
+    const cells = [
+      ...Array.from({ length: 7 }, (_, index) => [-1, 0].map((y) => ({ x: index - 6, y }))).flat(),
+      ...Array.from({ length: 7 }, (_, index) => [-1, 0].map((x) => ({ x, y: index - 6 }))).flat(),
+    ];
+    const graph = new Map(cells.map((cell) => [agentCellKey(cell), cell]));
+    const outgoing = buildDirectedCarEdges(graph);
+    const route = shortestAgentRoute(graph, { x: -5, y: 0 }, { x: 0, y: -5 }, 8_000, outgoing);
+    expect(route.length).toBeGreaterThan(8);
+    expect(route).toContainEqual({ x: 0, y: 0 });
+    expect(route.every((cell, index) => index === 0 || Math.abs(cell.x - route[index - 1]!.x) + Math.abs(cell.y - route[index - 1]!.y) === 1)).toBe(true);
+  });
+
+  it("stays on a directed dead end instead of returning an absent next cell", () => {
+    const current = { x: 4, y: 2 };
+    const graph = new Map([["4,2", current]]);
+    const outgoing = new Map([["4,2", []]]);
+    expect(nextWithoutUTurn(graph, current, { x: 3, y: 2 }, outgoing)).toEqual(current);
+  });
+
+  it("removes terminal road tails from the moving traffic graph", () => {
+    const outgoing = new Map([
+      ["0,0", [{ x: 1, y: 0 }]],
+      ["1,0", [{ x: 2, y: 0 }]],
+      ["2,0", [{ x: 1, y: 0 }]],
+      ["3,0", []],
+    ]);
+    expect(directedTrafficCore(outgoing)).toEqual(new Set(["1,0", "2,0"]));
+  });
+
+  it("prunes a long streamed tail without repeatedly scanning the road graph", () => {
+    const outgoing = new Map<string, Array<{ x: number; y: number }>>();
+    for (let x = 0; x < 5_000; x += 1) outgoing.set(`${x},0`, [{ x: x + 1, y: 0 }]);
+    outgoing.set("5000,0", [{ x: 5001, y: 0 }]);
+    outgoing.set("5001,0", [{ x: 5000, y: 0 }]);
+    expect(directedTrafficCore(outgoing)).toEqual(new Set(["5000,0", "5001,0"]));
+  });
+
+  it("maps every travel direction to the matching base sprite and mirror", () => {
+    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 2, y: 1 })).toEqual({ view: "horizontal", scaleX: 0.9, scaleY: 0.9 });
+    expect(vehiclePresentation({ x: 2, y: 1 }, { x: 1, y: 1 })).toEqual({ view: "horizontal", scaleX: -0.9, scaleY: 0.9 });
+    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 1, y: 2 })).toEqual({ view: "south", scaleX: 0.9, scaleY: 0.9 });
+    expect(vehiclePresentation({ x: 1, y: 2 }, { x: 1, y: 1 })).toEqual({ view: "north", scaleX: 0.9, scaleY: 0.9 });
+  });
+
+  it("insets vehicles from the curb and blends the lane offset through a turn", () => {
+    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 11 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 13 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 19, y: 8 });
+    const turnStart = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 0, { x: 0, y: 1 });
+    const turnEnd = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 1, { x: 0, y: 1 });
+    expect(turnStart).toEqual({ x: 12, y: 11 });
+    expect(turnEnd).toEqual({ x: 11, y: 4 });
+  });
+
+  it("detects real T/X junctions but not an ordinary ninety-degree bend", () => {
+    const horizontal = Array.from({ length: 13 }, (_, index) => [-1, 0].map((y) => ({ x: index - 6, y }))).flat();
+    const vertical = Array.from({ length: 13 }, (_, index) => [-1, 0].map((x) => ({ x, y: index - 6 }))).flat();
+    const crossing = new Map([...horizontal, ...vertical].map((cell) => [agentCellKey(cell), cell]));
+    const junctions = detectTrafficJunctions(crossing);
+    expect(junctions).toHaveLength(1);
+    expect(junctions[0]?.arms.sort()).toEqual(["E", "N", "S", "W"]);
+    expect(junctions[0]?.signalPosts).toHaveLength(4);
+
+    const bendCells = [
+      ...Array.from({ length: 7 }, (_, index) => [-1, 0].map((y) => ({ x: index - 6, y }))).flat(),
+      ...Array.from({ length: 7 }, (_, index) => [-1, 0].map((x) => ({ x, y: index - 6 }))).flat(),
+    ];
+    expect(detectTrafficJunctions(new Map(bendCells.map((cell) => [agentCellKey(cell), cell])))).toEqual([]);
+  });
+
+  it("holds an approaching car on red and releases it on its green phase", () => {
+    const horizontal = Array.from({ length: 13 }, (_, index) => [-1, 0].map((y) => ({ x: index - 6, y }))).flat();
+    const vertical = Array.from({ length: 13 }, (_, index) => [-1, 0].map((x) => ({ x, y: index - 6 }))).flat();
+    const graph = new Map([...horizontal, ...vertical].map((cell) => [agentCellKey(cell), cell]));
+    const junction = detectTrafficJunctions(graph)[0]!;
+    const horizontalGreenAt = Array.from({ length: 8_000 }, (_, time) => time).find((time) => trafficSignalPhase(junction, time).horizontal === "GREEN")!;
+    const horizontalRedAt = Array.from({ length: 8_000 }, (_, time) => time).find((time) => trafficSignalPhase(junction, time).horizontal === "RED")!;
+    const current = { x: -2, y: 0 };
+    const next = { x: -1, y: 0 };
+    expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalGreenAt)).toBe(false);
+    expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt)).toBe(true);
   });
 
   it("pairs nearby free walkers for bounded social interactions", () => {

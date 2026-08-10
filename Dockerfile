@@ -1,4 +1,6 @@
 FROM node:24-bookworm-slim AS build
+ARG VITE_STATIC_ORIGIN=""
+ENV VITE_STATIC_ORIGIN=${VITE_STATIC_ORIGIN}
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci

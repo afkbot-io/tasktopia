@@ -14,9 +14,20 @@ test("captures a deterministic city growth checkpoint", async ({ page }) => {
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByText("Centuria", { exact: true })).toBeVisible();
   const map = page.locator(".world-canvas");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
   await expect.poll(async () => Number(await map.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
-  await expect.poll(async () => Number(await map.getAttribute("data-cars"))).toBeGreaterThan(0);
-  await expect.poll(async () => Number(await map.getAttribute("data-walkers"))).toBeGreaterThan(0);
+  await canvas.hover();
+  for (let step = 0; step < 8 && await map.getAttribute("data-map-lod") !== "detail"; step += 1) {
+    await page.mouse.wheel(0, -800);
+  }
+  await expect(map).toHaveAttribute("data-map-lod", "detail", { timeout: 20_000 });
+  const simulationReady = { timeout: 20_000 };
+  await expect.poll(async () => Number(await map.getAttribute("data-cars")), simulationReady).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await map.getAttribute("data-walkers")), simulationReady).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await map.getAttribute("data-traffic-junctions")), simulationReady).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await map.getAttribute("data-traffic-signals")), simulationReady).toBeGreaterThanOrEqual(2);
+  await expect(map).toHaveAttribute("data-wrong-way-cars", "0");
+  await expect(map).toHaveAttribute("data-wrong-way-buses", "0");
   // Anonymous bootstrap/token requests before login are expected to return 401.
   consoleErrors.length = 0;
 

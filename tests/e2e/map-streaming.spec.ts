@@ -14,6 +14,7 @@ async function openDemoMap(page: import("@playwright/test").Page) {
   await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
   await expect.poll(async () => Number(await host.getAttribute("data-cars")), { timeout: 90_000 }).toBeGreaterThan(0);
   await expect(host).toHaveAttribute("data-wrong-way-cars", "0");
+  await expect(host).toHaveAttribute("data-wrong-way-buses", "0");
   await expect(host).toHaveAttribute("data-airplane-space", "world");
   return { host, canvas };
 }
@@ -94,6 +95,10 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
 
   const requestCounts = new Map<string, number>();
   for (const request of chunkRequests) requestCounts.set(request, (requestCounts.get(request) ?? 0) + 1);
+  // A 64-cell chunk is roughly half a desktop viewport. Pan plus one LOD
+  // transition must stay inside a bounded visible-only request budget instead
+  // of expanding to the former 30+ request prefetch ring.
+  expect(chunkRequests.length).toBeLessThanOrEqual(20);
   expect(Math.max(0, ...requestCounts.values())).toBeLessThanOrEqual(1);
   expect(Number(await host.getAttribute("data-ground-cache"))).toBeGreaterThanOrEqual(Number(await host.getAttribute("data-resident-chunks")));
   expect(Number(await host.getAttribute("data-ground-cache"))).toBeLessThanOrEqual(96);
@@ -220,8 +225,9 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
   const integration = await page.evaluate(async (visibleChunkKeys) => {
     const cities = await fetch("/api/plan/cities").then((response) => response.json()) as Array<{ id: string }>;
     for (const city of cities) {
-      const districts = await fetch(`/api/plan/cities/${city.id}/districts`).then((response) => response.json()) as Array<{ id: string }>;
+      const districts = await fetch(`/api/plan/cities/${city.id}/districts`).then((response) => response.json()) as Array<{ id: string; status: string }>;
       for (const district of districts) {
+        if (district.status !== "ACTIVE") continue;
         const tasks = await fetch(`/api/plan/districts/${district.id}/tasks`).then((response) => response.json()) as Array<{ id: string; status: string }>;
         for (const task of tasks) {
           if (task.status !== "PLANNING") continue;
@@ -253,28 +259,36 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
       name: "task.set_status",
       arguments: { taskId: integration.taskId, status: "STARTED", progress: 10, idempotencyKey: `e2e-map-${Date.now()}` },
     });
-    expect(result.isError).not.toBe(true);
+    expect(result.isError, JSON.stringify(result.content)).not.toBe(true);
     await expect.poll(async () => Number(await host.getAttribute("data-ground-rebuilds")), { timeout: 30_000 }).toBeGreaterThan(beforeRebuilds);
     expect(requestedChunks.has(integration.chunkKey)).toBe(true);
     expect(Number(await host.getAttribute("data-movement-rebuilds"))).toBe(beforeMovementRebuilds);
 
-    const defectId = await page.evaluate(async (taskId) => {
-      const response = await fetch(`/api/tasks/${taskId}/defects`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title: "E2E visual incident",
-          reproductionSteps: "Open the visible building",
-          actualResult: "Incident is present",
-          expectedResult: "Incident is resolved",
-          idempotencyKey: `e2e-incident-${Date.now()}`,
-        }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      return (await response.json() as { id: string }).id;
+    const defectIds = await page.evaluate(async (taskId) => {
+      const ids: string[] = [];
+      for (let index = 0; index < 6; index += 1) {
+        const response = await fetch(`/api/tasks/${taskId}/defects`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            title: `E2E visual incident ${index + 1}`,
+            reproductionSteps: "Open the visible building",
+            actualResult: "Incident is present",
+            expectedResult: "Incident is resolved",
+            idempotencyKey: `e2e-incident-${index}-${Date.now()}`,
+          }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        ids.push((await response.json() as { id: string }).id);
+      }
+      return ids;
     }, integration.taskId);
     await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_REPORTED");
-    const updateDefect = async (status: "IN_PROGRESS" | "VERIFYING" | "FIXED") => {
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-active-defects")), { timeout: 30_000 }).toBe(6);
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-smoke-strength")), { timeout: 30_000 }).toBe(6);
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-fires")), { timeout: 30_000 }).toBe(1);
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-water-jets")), { timeout: 30_000 }).toBe(1);
+    const updateDefect = async (defectId: string, status: "IN_PROGRESS" | "VERIFYING" | "FIXED") => {
       await page.evaluate(async ({ defectId: targetId, status: nextStatus }) => {
         const response = await fetch(`/api/defects/${targetId}`, {
           method: "PATCH",
@@ -284,11 +298,15 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
         if (!response.ok) throw new Error(await response.text());
       }, { defectId, status });
     };
-    await updateDefect("IN_PROGRESS");
+    await updateDefect(defectIds[0]!, "IN_PROGRESS");
     await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_REPAIRING");
-    await updateDefect("VERIFYING");
+    await updateDefect(defectIds[0]!, "VERIFYING");
     await expect.poll(async () => await host.getAttribute("data-incident-modes"), { timeout: 30_000 }).toContain("DEFECT_VERIFYING");
-    await updateDefect("FIXED");
+    await updateDefect(defectIds[0]!, "FIXED");
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-active-defects")), { timeout: 30_000 }).toBe(5);
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-smoke-strength")), { timeout: 30_000 }).toBe(5);
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-fires")), { timeout: 30_000 }).toBe(0);
+    for (const remainingDefectId of defectIds.slice(1)) await updateDefect(remainingDefectId, "FIXED");
     await expect.poll(async () => Number(await host.getAttribute("data-incidents")), { timeout: 30_000 }).toBe(0);
     const checklistResult = await client.callTool({
       name: "task.checklist_replace",

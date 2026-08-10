@@ -57,15 +57,15 @@ Inspect `screenshots/pixel-city-v4-expanded-assets.png` at original resolution a
 
 ## Generate reference art
 
-Use one request per building or one large landmark. Include two original V3 authored buildings from the same category as projection references. State the exact runtime canvas and occupied-bounds target from `references/production-acceptance.md`. Ask for a clean sheet containing the five construction stages in order. The approved sheet becomes the source; unapproved generations stay reference-only.
+Use one request per building or one large landmark. Include two approved benchmark sheets from the same category as projection references. State the exact runtime canvas and occupied-bounds target from `references/production-acceptance.md`. Ask for a clean sheet containing the five construction stages in order. The approved sheet becomes the source; rejected generations must not enter the repository or catalog.
 
 Between external image requests, wait `2–5 s` after completion. Do not use long sleeps. Do not request several unrelated buildings in one image: it weakens proportions and stage identity. Review in groups of at most five accepted sources before continuing the queue.
 
 After generation:
 
-1. Save the reference under `assets/pixel-city-pack-v4/reference/` with a descriptive name.
-2. Record it in manifest provenance only if it influenced a shipped asset.
-3. Record human/visual approval in the AI-authored catalog.
+1. Save the accepted sheet as `assets/pixel-city-pack-v4/reference/buildings/<key>/stages.png`.
+2. Register its relative path and SHA-256 in the matching `catalog/buildings.json` entry.
+3. Set `reviewed: true` only after projection, five-stage and native-scale review; runtime manifests never expose authoring provenance.
 4. Normalize the approved source deterministically at its exact target size; never replace it with code-drawn geometry.
 
 ## Audit before integration

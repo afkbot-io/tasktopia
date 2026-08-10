@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Cell } from "../src/shared/contracts";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
-import { centeredRoadOffsets, stampRoadCorridor } from "../src/server/world/road-geometry";
+import { centeredRoadOffsets, roadCorridorBlockers, stampRoadCorridor } from "../src/server/world/road-geometry";
 import { cellKey, orthogonalPath } from "../src/server/world/grid";
 
 function keys(cells: Cell[]): Set<string> {
@@ -36,5 +36,12 @@ describe("v9 canonical road geometry", () => {
     const vertical = stampRoadCorridor(orthogonalPath({ x: 0, y: -4 }, { x: 0, y: 4 }, false), "LOCAL", ROAD_WIDTH);
     for (const cell of vertical) horizontal.add(cellKey(cell));
     for (let y = -1; y <= 0; y += 1) for (let x = -1; x <= 0; x += 1) expect(horizontal.has(`${x},${y}`)).toBe(true);
+  });
+
+  it("rejects a clipped cross-section instead of publishing a narrow road", () => {
+    const path = orthogonalPath({ x: -2, y: 0 }, { x: 2, y: 0 }, true);
+    const blocked = new Set(["0,-1"]);
+    expect(roadCorridorBlockers(path, "LOCAL", ROAD_WIDTH, blocked)).toEqual([{ x: 0, y: -1 }]);
+    expect(roadCorridorBlockers(path, "LOCAL", ROAD_WIDTH, blocked, new Set(["0,-1"]))).toEqual([]);
   });
 });

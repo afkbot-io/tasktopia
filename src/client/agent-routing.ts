@@ -4,6 +4,57 @@ export function agentCellKey(cell: Cell): string { return `${cell.x},${cell.y}`;
 
 const DIRECTIONS = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }] as const;
 export type AgentEdges = ReadonlyMap<string, readonly Cell[]>;
+export type VehiclePresentation = {
+  view: "horizontal" | "north" | "south";
+  scaleX: number;
+  scaleY: number;
+};
+
+/**
+ * Vehicle source art has three authored directions: east, north and south.
+ * West is the only mirrored direction. North and south are never flipped
+ * because their front/rear silhouettes contain different information.
+ * Keeping this mapping pure prevents render code and asset metadata from
+ * silently disagreeing about which way a vehicle is facing.
+ */
+export function vehiclePresentation(current: Cell, next: Cell, scale = 0.9): VehiclePresentation {
+  const horizontal = next.x !== current.x;
+  return {
+    view: horizontal ? "horizontal" : next.y < current.y ? "north" : "south",
+    scaleX: horizontal && next.x < current.x ? -scale : scale,
+    scaleY: scale,
+  };
+}
+
+function rightHandLaneInset(from: Cell, to: Cell, inset: number): { x: number; y: number } {
+  const dx = Math.sign(to.x - from.x);
+  const dy = Math.sign(to.y - from.y);
+  if (dx > 0) return { x: 0, y: -inset };
+  if (dx < 0) return { x: 0, y: inset };
+  if (dy > 0) return { x: inset, y: 0 };
+  if (dy < 0) return { x: -inset, y: 0 };
+  return { x: 0, y: 0 };
+}
+
+/** Pixel position on the inner half of a right-hand lane, blended at turns. */
+export function vehicleLanePosition(
+  current: Cell,
+  next: Cell,
+  progress: number,
+  previous?: Cell,
+  cellSize = 8,
+  inset = 1,
+): { x: number; y: number } {
+  const clamped = Math.max(0, Math.min(1, progress));
+  const startInset = previous ? rightHandLaneInset(previous, current, inset) : rightHandLaneInset(current, next, inset);
+  const endInset = rightHandLaneInset(current, next, inset);
+  return {
+    x: (current.x + (next.x - current.x) * clamped) * cellSize + cellSize / 2
+      + startInset.x * (1 - clamped) + endInset.x * clamped,
+    y: (current.y + (next.y - current.y) * clamped) * cellSize + cellSize / 2
+      + startInset.y * (1 - clamped) + endInset.y * clamped,
+  };
+}
 
 export function isAgentEdgeAllowed(current: Cell, next: Cell, outgoing?: AgentEdges): boolean {
   return !outgoing || Boolean(outgoing.get(agentCellKey(current))?.some((candidate) => agentCellKey(candidate) === agentCellKey(next)));
@@ -43,6 +94,113 @@ function contiguousBand(graph: ReadonlyMap<string, Cell>, cell: Cell, horizontal
 
 type Lane = { axis: "H" | "V" | "J"; dx: number; dy: number };
 
+export type TrafficArm = "N" | "E" | "S" | "W";
+export type TrafficJunction = {
+  id: string;
+  bounds: { minX: number; minY: number; maxX: number; maxY: number };
+  cells: Cell[];
+  arms: TrafficArm[];
+  signalPosts: Array<{ origin: Cell; axis: "H" | "V"; approach: TrafficArm }>;
+};
+export type TrafficSignalPhase = { horizontal: "RED" | "GREEN"; vertical: "RED" | "GREEN" };
+
+function directionalRun(graph: ReadonlyMap<string, Cell>, cell: Cell, dx: number, dy: number): number {
+  let length = 0;
+  for (let step = 1; step <= 12; step += 1) {
+    if (!graph.has(agentCellKey({ x: cell.x + dx * step, y: cell.y + dy * step }))) break;
+    length += 1;
+  }
+  return length;
+}
+
+/**
+ * Collapse the asphalt overlap of every genuine T/X crossing into one logical
+ * junction. Requiring a four-cell arm beyond the overlap deliberately rejects
+ * both ordinary bends and the transverse thickness of a four-lane avenue.
+ */
+export function detectTrafficJunctions(graph: ReadonlyMap<string, Cell>): TrafficJunction[] {
+  const seeds = new Map<string, Cell>();
+  for (const cell of graph.values()) {
+    const north = directionalRun(graph, cell, 0, -1);
+    const east = directionalRun(graph, cell, 1, 0);
+    const south = directionalRun(graph, cell, 0, 1);
+    const west = directionalRun(graph, cell, -1, 0);
+    const horizontalThrough = east >= 4 && west >= 4;
+    const verticalThrough = north >= 4 && south >= 4;
+    if (horizontalThrough && (north >= 4 || south >= 4) || verticalThrough && (east >= 4 || west >= 4)) {
+      seeds.set(agentCellKey(cell), cell);
+    }
+  }
+
+  const junctions: TrafficJunction[] = [];
+  const visited = new Set<string>();
+  for (const seed of seeds.values()) {
+    if (visited.has(agentCellKey(seed))) continue;
+    const queue = [seed];
+    const cells: Cell[] = [];
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+      const current = queue[cursor]!;
+      const currentKey = agentCellKey(current);
+      if (visited.has(currentKey) || !seeds.has(currentKey)) continue;
+      visited.add(currentKey);
+      cells.push(current);
+      for (const direction of DIRECTIONS) {
+        const next = { x: current.x + direction.x, y: current.y + direction.y };
+        if (seeds.has(agentCellKey(next)) && !visited.has(agentCellKey(next))) queue.push(next);
+      }
+    }
+    if (cells.length === 0) continue;
+    const bounds = {
+      minX: Math.min(...cells.map((cell) => cell.x)), minY: Math.min(...cells.map((cell) => cell.y)),
+      maxX: Math.max(...cells.map((cell) => cell.x)), maxY: Math.max(...cells.map((cell) => cell.y)),
+    };
+    const hasRoad = (candidates: Cell[]) => candidates.some((cell) => graph.has(agentCellKey(cell)));
+    const arms: TrafficArm[] = [];
+    if (hasRoad(Array.from({ length: bounds.maxX - bounds.minX + 1 }, (_, index) => ({ x: bounds.minX + index, y: bounds.minY - 1 })))) arms.push("N");
+    if (hasRoad(Array.from({ length: bounds.maxY - bounds.minY + 1 }, (_, index) => ({ x: bounds.maxX + 1, y: bounds.minY + index })))) arms.push("E");
+    if (hasRoad(Array.from({ length: bounds.maxX - bounds.minX + 1 }, (_, index) => ({ x: bounds.minX + index, y: bounds.maxY + 1 })))) arms.push("S");
+    if (hasRoad(Array.from({ length: bounds.maxY - bounds.minY + 1 }, (_, index) => ({ x: bounds.minX - 1, y: bounds.minY + index })))) arms.push("W");
+    if (arms.length < 3) continue;
+    const postsByArm: Record<TrafficArm, { origin: Cell; axis: "H" | "V"; approach: TrafficArm }> = {
+      N: { origin: { x: bounds.minX - 1, y: bounds.minY - 1 }, axis: "V", approach: "N" },
+      E: { origin: { x: bounds.maxX + 1, y: bounds.minY - 1 }, axis: "H", approach: "E" },
+      S: { origin: { x: bounds.maxX + 1, y: bounds.maxY + 1 }, axis: "V", approach: "S" },
+      W: { origin: { x: bounds.minX - 1, y: bounds.maxY + 1 }, axis: "H", approach: "W" },
+    };
+    const signalPosts = arms.map((arm) => postsByArm[arm]).filter((post) => !graph.has(agentCellKey(post.origin)));
+    junctions.push({ id: `${bounds.minX},${bounds.minY}:${bounds.maxX},${bounds.maxY}`, bounds, cells, arms, signalPosts });
+  }
+  return junctions;
+}
+
+export function trafficSignalPhase(junction: TrafficJunction, elapsedMs: number): TrafficSignalPhase {
+  const cycleMs = 8_000;
+  const offset = Math.abs((junction.bounds.minX * 73_856_093) ^ (junction.bounds.minY * 19_349_663)) % cycleMs;
+  const phase = (elapsedMs + offset) % cycleMs;
+  if (phase < 3_400) return { horizontal: "GREEN", vertical: "RED" };
+  if (phase < 4_000) return { horizontal: "RED", vertical: "RED" };
+  if (phase < 7_400) return { horizontal: "RED", vertical: "GREEN" };
+  return { horizontal: "RED", vertical: "RED" };
+}
+
+export function mustYieldAtTrafficSignal(
+  current: Cell,
+  next: Cell,
+  junctions: readonly TrafficJunction[],
+  elapsedMs: number,
+): boolean {
+  const junction = junctions.find((candidate) => {
+    const insideCurrent = current.x >= candidate.bounds.minX && current.x <= candidate.bounds.maxX
+      && current.y >= candidate.bounds.minY && current.y <= candidate.bounds.maxY;
+    const insideNext = next.x >= candidate.bounds.minX && next.x <= candidate.bounds.maxX
+      && next.y >= candidate.bounds.minY && next.y <= candidate.bounds.maxY;
+    return !insideCurrent && insideNext;
+  });
+  if (!junction) return false;
+  const axis = next.x !== current.x ? "horizontal" : "vertical";
+  return trafficSignalPhase(junction, elapsedMs)[axis] === "RED";
+}
+
 function laneAt(graph: ReadonlyMap<string, Cell>, cell: Cell): Lane {
   const horizontalRun = axisRun(graph, cell, 1, 0);
   const verticalRun = axisRun(graph, cell, 0, 1);
@@ -75,6 +233,39 @@ export function buildDirectedCarEdges(graph: ReadonlyMap<string, Cell>): Map<str
     edges.set(agentCellKey(cell), candidates);
   }
   return edges;
+}
+
+/**
+ * Retain only the directed core that has both an entrance and an exit. Re-run
+ * until stable so streamed road tails and dead ends cannot host an agent that
+ * will inevitably stop at the edge of the resident graph.
+ */
+export function directedTrafficCore(outgoing: AgentEdges): Set<string> {
+  const active = new Set(outgoing.keys());
+  const successors = new Map<string, Set<string>>([...active].map((key) => [key, new Set()]));
+  const predecessors = new Map<string, Set<string>>([...active].map((key) => [key, new Set()]));
+  for (const key of active) {
+    for (const candidate of outgoing.get(key) ?? []) {
+      const candidateKey = agentCellKey(candidate);
+      if (!active.has(candidateKey)) continue;
+      successors.get(key)!.add(candidateKey);
+      predecessors.get(candidateKey)!.add(key);
+    }
+  }
+  const queue = [...active].filter((key) => successors.get(key)!.size === 0 || predecessors.get(key)!.size === 0);
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const key = queue[cursor]!;
+    if (!active.delete(key)) continue;
+    for (const successor of successors.get(key)!) {
+      predecessors.get(successor)!.delete(key);
+      if (active.has(successor) && (predecessors.get(successor)!.size === 0 || successors.get(successor)!.size === 0)) queue.push(successor);
+    }
+    for (const predecessor of predecessors.get(key)!) {
+      successors.get(predecessor)!.delete(key);
+      if (active.has(predecessor) && (predecessors.get(predecessor)!.size === 0 || successors.get(predecessor)!.size === 0)) queue.push(predecessor);
+    }
+  }
+  return active;
 }
 
 export function walkerInteractionPairs(
@@ -121,32 +312,51 @@ export function shortestAgentRoute(
   target: Cell,
   maximumVisited = 8_000,
   outgoing?: AgentEdges,
+  avoidFirst?: Cell,
 ): Cell[] {
   const startKey = agentCellKey(start);
   const targetKey = agentCellKey(target);
   if (!graph.has(startKey) || !graph.has(targetKey)) return [];
   if (startKey === targetKey) return [start];
-  const queue = [start];
-  const previous = new Map<string, string | null>([[startKey, null]]);
+  type RouteState = { cell: Cell; direction: number; steps: number; turns: number; stateKey: string };
+  type BestState = { steps: number; turns: number; previous: string | null };
+  const stateKey = (cell: Cell, direction: number) => `${agentCellKey(cell)}:${direction}`;
+  const queue: RouteState[] = [{ cell: start, direction: -1, steps: 0, turns: 0, stateKey: stateKey(start, -1) }];
+  const best = new Map<string, BestState>([[stateKey(start, -1), { steps: 0, turns: 0, previous: null }]]);
+  let targetSteps = Number.POSITIVE_INFINITY;
+  let targetState: RouteState | undefined;
   for (let cursor = 0; cursor < queue.length && cursor < maximumVisited; cursor += 1) {
     const current = queue[cursor]!;
-    for (const next of directedNeighbors(graph, current, outgoing)) {
-      const nextKey = agentCellKey(next);
-      if (previous.has(nextKey)) continue;
-      previous.set(nextKey, agentCellKey(current));
-      if (nextKey === targetKey) {
-        const route: Cell[] = [next];
-        let trace: string | null = agentCellKey(current);
-        while (trace) {
-          route.push(graph.get(trace) ?? start);
-          trace = previous.get(trace) ?? null;
-        }
-        return route.reverse();
-      }
-      queue.push(next);
+    if (current.steps > targetSteps) break;
+    if (agentCellKey(current.cell) === targetKey) {
+      if (!targetState || current.turns < targetState.turns) targetState = current;
+      targetSteps = current.steps;
+      continue;
+    }
+    for (const next of directedNeighbors(graph, current.cell, outgoing)) {
+      if (current.steps === 0 && avoidFirst && agentCellKey(next) === agentCellKey(avoidFirst)) continue;
+      const dx = next.x - current.cell.x;
+      const dy = next.y - current.cell.y;
+      const direction = dx > 0 ? 1 : dx < 0 ? 3 : dy > 0 ? 2 : 0;
+      const steps = current.steps + 1;
+      const turns = current.turns + (current.direction < 0 || current.direction === direction ? 0 : 1);
+      const nextStateKey = stateKey(next, direction);
+      const known = best.get(nextStateKey);
+      if (known && (known.steps < steps || known.steps === steps && known.turns <= turns)) continue;
+      best.set(nextStateKey, { steps, turns, previous: current.stateKey });
+      queue.push({ cell: next, direction, steps, turns, stateKey: nextStateKey });
     }
   }
-  return [];
+  if (!targetState) return [];
+  const route: Cell[] = [];
+  let trace: string | null = targetState.stateKey;
+  while (trace) {
+    const separator = trace.lastIndexOf(":");
+    const cell = graph.get(trace.slice(0, separator));
+    if (cell) route.push(cell);
+    trace = best.get(trace)?.previous ?? null;
+  }
+  return route.reverse();
 }
 
 /**
@@ -190,13 +400,7 @@ export function planAgentRoute(
       bestDistance = candidateIndex;
     }
   }
-  const route: Cell[] = [target];
-  let trace = previous.get(agentCellKey(target)) ?? null;
-  while (trace) {
-    route.push(graph.get(trace) ?? start);
-    trace = previous.get(trace) ?? null;
-  }
-  route.reverse();
+  const route = shortestAgentRoute(graph, start, target, 8_000, outgoing, avoidFirst);
   return { route, randomState: state };
 }
 

@@ -25,6 +25,7 @@ const app = Fastify({
   trustProxy: config.trustProxy,
 });
 const db = await createDb(config.databaseUrl);
+const staticOrigin = config.STATIC_ORIGIN ?? config.APP_ORIGIN;
 
 await app.register(fastifyCookie);
 await app.register(fastifyCompress, { global: true, threshold: 1024 });
@@ -33,9 +34,11 @@ await app.register(fastifyHelmet, {
     directives: {
       defaultSrc: ["'self'"],
       connectSrc: ["'self'", "data:", "ws:", "wss:"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      imgSrc: ["'self'", staticOrigin, "data:", "blob:"],
       workerSrc: ["'self'", "blob:"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", staticOrigin],
+      styleSrc: ["'self'", staticOrigin, "'unsafe-inline'"],
+      fontSrc: ["'self'", staticOrigin, "data:"],
     },
   },
 });

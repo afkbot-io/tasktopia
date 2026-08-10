@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planComplex } from "../src/server/world/complex-planner";
+import { organicComplexLotTarget, planComplex } from "../src/server/world/complex-planner";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
 import { cellKey, connected, rectangleFootprint } from "../src/server/world/grid";
 import { stampRoadCorridor } from "../src/server/world/road-geometry";
@@ -18,6 +18,26 @@ function corridors(streets: { x: number; y: number }[][]): Set<string> {
 }
 
 describe("V10 complex planner", () => {
+  it("reserves a lot large enough for the building that triggered growth", () => {
+    const rect = { minX: 0, minY: 0, maxX: 35, maxY: 23 };
+    const plan = planComplex({
+      ...BASE,
+      archetype: "MIXED_URBAN",
+      rect,
+      cells: rectangleFootprint({ x: 0, y: 0 }, 36, 24),
+      targetLots: 6,
+      minimumLot: { width: 6, height: 6 },
+    });
+
+    expect(plan.lots.some((lot) => lot.width >= 6 && lot.height >= 6)).toBe(true);
+  });
+
+  it("does not turn sprint capacity into a prebuilt empty superblock", () => {
+    expect(organicComplexLotTarget(1)).toBe(3);
+    expect(organicComplexLotTarget(14)).toBe(6);
+    expect(organicComplexLotTarget(26)).toBe(8);
+    expect(organicComplexLotTarget(100)).toBe(8);
+  });
   it("plans a single-street ROW with lots flush to the sidewalk", () => {
     const rect = { minX: 10, minY: 10, maxX: 41, maxY: 23 };
     const cells = rectangleFootprint({ x: rect.minX, y: rect.minY }, 32, 14);

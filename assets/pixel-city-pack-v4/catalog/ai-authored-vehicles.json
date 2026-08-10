@@ -2,9 +2,9 @@
   {
     "key": "compact-blue",
     "label": "Синий компакт",
-    "sheet": "ai-authored/ambient/vehicle-compact-blue-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-compact-blue-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true
@@ -12,9 +12,9 @@
   {
     "key": "sedan-red",
     "label": "Красный седан",
-    "sheet": "ai-authored/ambient/vehicle-sedan-red-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-sedan-red-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true
@@ -22,9 +22,9 @@
   {
     "key": "taxi-yellow",
     "label": "Городское такси",
-    "sheet": "ai-authored/ambient/vehicle-taxi-yellow-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-taxi-yellow-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true
@@ -32,9 +32,9 @@
   {
     "key": "estate-green",
     "label": "Зелёный универсал",
-    "sheet": "ai-authored/ambient/vehicle-estate-green-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-estate-green-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true
@@ -42,9 +42,9 @@
   {
     "key": "electric-teal",
     "label": "Бирюзовый электромобиль",
-    "sheet": "ai-authored/ambient/vehicle-electric-teal-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-electric-teal-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true
@@ -52,9 +52,9 @@
   {
     "key": "delivery-cream",
     "label": "Светлый фургон",
-    "sheet": "ai-authored/ambient/vehicle-delivery-cream-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-delivery-cream-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true
@@ -62,9 +62,9 @@
   {
     "key": "pickup-orange",
     "label": "Оранжевый пикап",
-    "sheet": "ai-authored/ambient/vehicle-pickup-orange-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-pickup-orange-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true
@@ -72,9 +72,9 @@
   {
     "key": "classic-burgundy",
     "label": "Бордовый ретро-автомобиль",
-    "sheet": "ai-authored/ambient/vehicle-classic-burgundy-v1.png",
-    "segments": 2,
-    "orientationSegments": { "horizontal": 0, "vertical": 1 },
+    "sheet": "ai-authored/ambient/vehicle-classic-burgundy-v2.png",
+    "segments": 3,
+    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
     "size": [16, 8],
     "footprintCells": [2, 1],
     "reviewed": true

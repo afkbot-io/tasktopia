@@ -1183,7 +1183,8 @@
         3
       ],
       "tags": [
-        "commercial"
+        "commercial",
+        "parking"
       ],
       "ruleIds": [
         "STANDARD",
@@ -1198,12 +1199,7 @@
       ],
       "maxPerCity": 1,
       "maxPerDistrict": 1,
-      "serviceRole": "parking-service",
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/commercial-parking-lot-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP"
-      }
+      "serviceRole": "parking-service"
     },
     "commercial-shopping-plaza": {
       "label": "Торговая галерея",
@@ -1675,15 +1671,6 @@
         "buildings/house/house-rowhomes/stage-4.png",
         "buildings/house/house-rowhomes/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#3f5268ff",
-        "sideColor": "#8c5b4fff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -1731,15 +1718,6 @@
         "buildings/house/house-brick-duplex/stage-4.png",
         "buildings/house/house-brick-duplex/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#344b61ff",
-        "sideColor": "#79493fff",
-        "minimumRoofPixels": 12,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -1786,15 +1764,6 @@
         "buildings/house/house-courtyard-apartments/stage-4.png",
         "buildings/house/house-courtyard-apartments/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#46576aff",
-        "sideColor": "#8c6b4fff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         6
@@ -1840,15 +1809,6 @@
         "buildings/house/house-modern-lowrise/stage-4.png",
         "buildings/house/house-modern-lowrise/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#414c55ff",
-        "sideColor": "#777f83ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -1893,15 +1853,6 @@
         "buildings/house/house-woodland-home/stage-4.png",
         "buildings/house/house-woodland-home/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#35465aff",
-        "sideColor": "#744f38ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -1948,15 +1899,6 @@
         "buildings/house/house-corner-apartments/stage-4.png",
         "buildings/house/house-corner-apartments/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#46505cff",
-        "sideColor": "#78483fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -2003,15 +1945,6 @@
         "buildings/house/civic-theatre/stage-4.png",
         "buildings/house/civic-theatre/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#584b67ff",
-        "sideColor": "#80624fff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -2056,15 +1989,6 @@
         "buildings/house/civic-library/stage-4.png",
         "buildings/house/civic-library/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#395a6bff",
-        "sideColor": "#6d756fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -2110,15 +2034,6 @@
         "buildings/house/civic-fire-station-compact/stage-4.png",
         "buildings/house/civic-fire-station-compact/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#a34338ff",
-        "sideColor": "#8a5548ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -2165,15 +2080,6 @@
         "buildings/house/civic-police-neighborhood/stage-4.png",
         "buildings/house/civic-police-neighborhood/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#345a76ff",
-        "sideColor": "#66747aff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         2,
@@ -2220,16 +2126,6 @@
         "buildings/house/civic-clinic-neighborhood/stage-4.png",
         "buildings/house/civic-clinic-neighborhood/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-clinic-neighborhood-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#408177ff",
-        "sideColor": "#6d7774ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         2,
@@ -2276,15 +2172,6 @@
         "buildings/house/commercial-gas-station-compact/stage-4.png",
         "buildings/house/commercial-gas-station-compact/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#b94f42ff",
-        "sideColor": "#737b78ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "ASPHALT",
       "estimates": [
         3,
@@ -2331,15 +2218,6 @@
         "buildings/house/highrise-mixed-use-market/stage-4.png",
         "buildings/house/highrise-mixed-use-market/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#3f5967ff",
-        "sideColor": "#59666bff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 14
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -2388,15 +2266,6 @@
         "buildings/house/commercial-highway-service-plaza/stage-4.png",
         "buildings/house/commercial-highway-service-plaza/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#b94f42ff",
-        "sideColor": "#657277ff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "ASPHALT",
       "estimates": [
         6
@@ -2442,16 +2311,6 @@
         "buildings/house/house-colonial/stage-4.png",
         "buildings/house/house-colonial/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-colonial-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#485a6cff",
-        "sideColor": "#78685aff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -2496,16 +2355,6 @@
         "buildings/house/house-craftsman/stage-4.png",
         "buildings/house/house-craftsman/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-craftsman-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#40596aff",
-        "sideColor": "#73513dff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -2550,16 +2399,6 @@
         "buildings/house/house-ranch/stage-4.png",
         "buildings/house/house-ranch/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-ranch-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#526270ff",
-        "sideColor": "#80644fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -2604,16 +2443,6 @@
         "buildings/house/house-split-level/stage-4.png",
         "buildings/house/house-split-level/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-split-level-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#455b6cff",
-        "sideColor": "#776554ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -2658,16 +2487,6 @@
         "buildings/house/house-townhouse-brick/stage-4.png",
         "buildings/house/house-townhouse-brick/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-townhouse-brick-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3f5061ff",
-        "sideColor": "#71463dff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -2714,16 +2533,6 @@
         "buildings/house/house-townhouse-stone/stage-4.png",
         "buildings/house/house-townhouse-stone/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-townhouse-stone-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#46586aff",
-        "sideColor": "#6c716fff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -2770,16 +2579,6 @@
         "buildings/house/house-garden-apartment/stage-4.png",
         "buildings/house/house-garden-apartment/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-garden-apartment-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#465a68ff",
-        "sideColor": "#80624fff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         6
@@ -2825,16 +2624,6 @@
         "buildings/house/house-eco-cottage/stage-4.png",
         "buildings/house/house-eco-cottage/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-eco-cottage-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#4d7258ff",
-        "sideColor": "#647064ff",
-        "minimumRoofPixels": 12,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -2881,16 +2670,6 @@
         "buildings/house/house-narrow-shotgun/stage-4.png",
         "buildings/house/house-narrow-shotgun/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-narrow-shotgun-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3f5265ff",
-        "sideColor": "#795746ff",
-        "minimumRoofPixels": 8,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         1,
@@ -2935,16 +2714,6 @@
         "buildings/house/house-courtyard-block/stage-4.png",
         "buildings/house/house-courtyard-block/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-courtyard-block-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#495a68ff",
-        "sideColor": "#756453ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "YARD",
       "estimates": [
         6
@@ -2988,16 +2757,6 @@
         "buildings/house/house-modern-villa/stage-4.png",
         "buildings/house/house-modern-villa/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-modern-villa-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3e5661ff",
-        "sideColor": "#687579ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -3042,16 +2801,6 @@
         "buildings/house/house-duplex-brick/stage-4.png",
         "buildings/house/house-duplex-brick/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-duplex-brick-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3d5366ff",
-        "sideColor": "#74473cff",
-        "minimumRoofPixels": 12,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -3098,16 +2847,6 @@
         "buildings/house/house-studio-loft/stage-4.png",
         "buildings/house/house-studio-loft/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-studio-loft-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#4f5960ff",
-        "sideColor": "#654c43ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -3152,16 +2891,6 @@
         "buildings/house/house-rowhouse-corner/stage-4.png",
         "buildings/house/house-rowhouse-corner/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-rowhouse-corner-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#42576aff",
-        "sideColor": "#754a40ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -3206,16 +2935,6 @@
         "buildings/house/house-suburban-brick/stage-4.png",
         "buildings/house/house-suburban-brick/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-suburban-brick-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#41566aff",
-        "sideColor": "#70463bff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -3262,16 +2981,6 @@
         "buildings/house/house-apartment-walkup/stage-4.png",
         "buildings/house/house-apartment-walkup/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-apartment-walkup-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#475968ff",
-        "sideColor": "#726453ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -3318,16 +3027,6 @@
         "buildings/house/shop-cafe/stage-4.png",
         "buildings/house/shop-cafe/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-cafe-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#44706cff",
-        "sideColor": "#785647ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -3372,16 +3071,6 @@
         "buildings/house/shop-butcher/stage-4.png",
         "buildings/house/shop-butcher/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-butcher-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#9c4e49ff",
-        "sideColor": "#7a5c4dff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -3426,16 +3115,6 @@
         "buildings/house/shop-electronics/stage-4.png",
         "buildings/house/shop-electronics/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-electronics-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3d6072ff",
-        "sideColor": "#627074ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -3480,16 +3159,6 @@
         "buildings/house/shop-furniture/stage-4.png",
         "buildings/house/shop-furniture/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-furniture-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#52606aff",
-        "sideColor": "#765b4bff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -3534,16 +3203,6 @@
         "buildings/house/shop-bookstore/stage-4.png",
         "buildings/house/shop-bookstore/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-bookstore-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#514f68ff",
-        "sideColor": "#665a4cff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -3588,16 +3247,6 @@
         "buildings/house/shop-clothing/stage-4.png",
         "buildings/house/shop-clothing/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-clothing-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#74536eff",
-        "sideColor": "#77605aff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -3642,16 +3291,6 @@
         "buildings/house/shop-restaurant/stage-4.png",
         "buildings/house/shop-restaurant/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-restaurant-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#7e493fff",
-        "sideColor": "#765244ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -3696,16 +3335,6 @@
         "buildings/house/shop-bar/stage-4.png",
         "buildings/house/shop-bar/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/shop-bar-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3f4d5cff",
-        "sideColor": "#5f4742ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -3750,16 +3379,6 @@
         "buildings/house/office-small/stage-4.png",
         "buildings/house/office-small/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/office-small-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3e5967ff",
-        "sideColor": "#647277ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -3804,16 +3423,6 @@
         "buildings/house/hotel-small/stage-4.png",
         "buildings/house/hotel-small/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/hotel-small-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#4b5969ff",
-        "sideColor": "#786454ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -3858,16 +3467,6 @@
         "buildings/house/commercial-market-stalls/stage-4.png",
         "buildings/house/commercial-market-stalls/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/commercial-market-stalls-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#47766aff",
-        "sideColor": "#78604bff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -3911,16 +3510,6 @@
         "buildings/house/commercial-storage/stage-4.png",
         "buildings/house/commercial-storage/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/commercial-storage-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#48555eff",
-        "sideColor": "#5f696bff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -3965,15 +3554,6 @@
         "buildings/house/commercial-gas-station-electric/stage-4.png",
         "buildings/house/commercial-gas-station-electric/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#3f7f72ff",
-        "sideColor": "#637477ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "ASPHALT",
       "estimates": [
         3,
@@ -4020,15 +3600,6 @@
         "buildings/house/commercial-gas-station-truck/stage-4.png",
         "buildings/house/commercial-gas-station-truck/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#a64e43ff",
-        "sideColor": "#657176ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "ASPHALT",
       "estimates": [
         6
@@ -4074,15 +3645,6 @@
         "buildings/house/commercial-gas-station-cafe/stage-4.png",
         "buildings/house/commercial-gas-station-cafe/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#44796eff",
-        "sideColor": "#687276ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "ASPHALT",
       "estimates": [
         6
@@ -4128,15 +3690,6 @@
         "buildings/house/commercial-gas-station-wash/stage-4.png",
         "buildings/house/commercial-gas-station-wash/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#446e7cff",
-        "sideColor": "#637176ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "ASPHALT",
       "estimates": [
         6
@@ -4182,15 +3735,6 @@
         "buildings/house/civic-museum/stage-4.png",
         "buildings/house/civic-museum/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#53606cff",
-        "sideColor": "#756d60ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4235,16 +3779,6 @@
         "buildings/house/civic-hospital/stage-4.png",
         "buildings/house/civic-hospital/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-hospital-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#467882ff",
-        "sideColor": "#687578ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4289,15 +3823,6 @@
         "buildings/house/civic-university/stage-4.png",
         "buildings/house/civic-university/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4e5968ff",
-        "sideColor": "#746354ff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4342,16 +3867,6 @@
         "buildings/house/civic-courthouse/stage-4.png",
         "buildings/house/civic-courthouse/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-courthouse-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#515d69ff",
-        "sideColor": "#756d61ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4396,15 +3911,6 @@
         "buildings/house/civic-embassy/stage-4.png",
         "buildings/house/civic-embassy/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#405b6aff",
-        "sideColor": "#657276ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -4450,16 +3956,6 @@
         "buildings/house/civic-community-center/stage-4.png",
         "buildings/house/civic-community-center/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-community-center-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#596071ff",
-        "sideColor": "#766252ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4504,16 +4000,6 @@
         "buildings/house/civic-aquatic-center/stage-4.png",
         "buildings/house/civic-aquatic-center/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-aquatic-center-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3e6f7aff",
-        "sideColor": "#617277ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4558,15 +4044,6 @@
         "buildings/house/civic-transport-hub/stage-4.png",
         "buildings/house/civic-transport-hub/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#40596aff",
-        "sideColor": "#626e72ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4611,15 +4088,6 @@
         "buildings/house/civic-waste-station/stage-4.png",
         "buildings/house/civic-waste-station/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4b565cff",
-        "sideColor": "#59645dff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4664,15 +4132,6 @@
         "buildings/house/civic-power-substation/stage-4.png",
         "buildings/house/civic-power-substation/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4d575cff",
-        "sideColor": "#606864ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -4718,15 +4177,6 @@
         "buildings/house/civic-memorial-hall/stage-4.png",
         "buildings/house/civic-memorial-hall/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#545b67ff",
-        "sideColor": "#706c65ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4771,15 +4221,6 @@
         "buildings/house/civic-youth-center/stage-4.png",
         "buildings/house/civic-youth-center/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4b6370ff",
-        "sideColor": "#637068ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -4825,15 +4266,6 @@
         "buildings/house/highrise-residential-tower/stage-4.png",
         "buildings/house/highrise-residential-tower/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#455b69ff",
-        "sideColor": "#667076ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 18
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -4881,16 +4313,6 @@
         "buildings/house/highrise-hotel/stage-4.png",
         "buildings/house/highrise-hotel/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-hotel-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#495968ff",
-        "sideColor": "#657176ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 20
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -4938,16 +4360,6 @@
         "buildings/house/highrise-office/stage-4.png",
         "buildings/house/highrise-office/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-office-stages-v3.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3d5663ff",
-        "sideColor": "#445b64ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 20
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -4995,15 +4407,6 @@
         "buildings/house/highrise-medical-tower/stage-4.png",
         "buildings/house/highrise-medical-tower/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477581ff",
-        "sideColor": "#647276ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 18
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -5051,16 +4454,6 @@
         "buildings/house/highrise-luxury-tower/stage-4.png",
         "buildings/house/highrise-luxury-tower/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-luxury-tower-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#425a67ff",
-        "sideColor": "#56696eff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -5107,15 +4500,6 @@
         "buildings/house/highrise-sustainable-tower/stage-4.png",
         "buildings/house/highrise-sustainable-tower/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#415e5cff",
-        "sideColor": "#566b5fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 20
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -5163,15 +4547,6 @@
         "buildings/house/landmark-ferris-wheel/stage-4.png",
         "buildings/house/landmark-ferris-wheel/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "OPEN_STRUCTURE",
-        "roofColor": "#3e7f78ff",
-        "sideColor": "#4d5d62ff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -5218,15 +4593,6 @@
         "buildings/house/landmark-megatall-tower/stage-4.png",
         "buildings/house/landmark-megatall-tower/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#526b75ff",
-        "sideColor": "#415963ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 32
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -5276,15 +4642,6 @@
         "buildings/house/landmark-monument/stage-4.png",
         "buildings/house/landmark-monument/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "OPEN_STRUCTURE",
-        "roofColor": "#7e8c8dff",
-        "sideColor": "#687476ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 18
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -5332,15 +4689,6 @@
         "buildings/house/house-canalside-terrace/stage-4.png",
         "buildings/house/house-canalside-terrace/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4c6f5fff",
-        "sideColor": "#718277ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -5385,15 +4733,6 @@
         "buildings/house/house-alpine-chalet/stage-4.png",
         "buildings/house/house-alpine-chalet/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#594b6fff",
-        "sideColor": "#91624fff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -5438,16 +4777,6 @@
         "buildings/house/house-coastal-cottage/stage-4.png",
         "buildings/house/house-coastal-cottage/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-coastal-cottage-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#35576bff",
-        "sideColor": "#8d745fff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         2,
@@ -5494,15 +4823,6 @@
         "buildings/house/house-farmstead/stage-4.png",
         "buildings/house/house-farmstead/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4c6f5fff",
-        "sideColor": "#718277ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         6
@@ -5546,15 +4866,6 @@
         "buildings/house/house-live-work/stage-4.png",
         "buildings/house/house-live-work/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#594b6fff",
-        "sideColor": "#91624fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -5599,15 +4910,6 @@
         "buildings/house/house-micro-apartments/stage-4.png",
         "buildings/house/house-micro-apartments/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#35576bff",
-        "sideColor": "#8d745fff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -5654,21 +4956,14 @@
         "buildings/house/house-student-residence/stage-4.png",
         "buildings/house/house-student-residence/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4c6f5fff",
-        "sideColor": "#718277ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "YARD",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -5706,21 +5001,14 @@
         "buildings/house/house-senior-living/stage-4.png",
         "buildings/house/house-senior-living/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#594b6fff",
-        "sideColor": "#91624fff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -5758,21 +5046,14 @@
         "buildings/house/house-cohousing-cluster/stage-4.png",
         "buildings/house/house-cohousing-cluster/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#35576bff",
-        "sideColor": "#8d745fff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -5810,15 +5091,6 @@
         "buildings/house/house-prefab-modular/stage-4.png",
         "buildings/house/house-prefab-modular/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4c6f5fff",
-        "sideColor": "#718277ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -5863,16 +5135,6 @@
         "buildings/house/house-art-deco-apartments/stage-4.png",
         "buildings/house/house-art-deco-apartments/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-art-deco-apartments-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#594b6fff",
-        "sideColor": "#91624fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "YARD",
       "estimates": [
         6
@@ -5918,21 +5180,14 @@
         "buildings/house/house-brutalist-block/stage-4.png",
         "buildings/house/house-brutalist-block/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#35576bff",
-        "sideColor": "#8d745fff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "YARD",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -5970,15 +5225,6 @@
         "buildings/house/house-brownstone-row/stage-4.png",
         "buildings/house/house-brownstone-row/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4c6f5fff",
-        "sideColor": "#718277ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         6
@@ -6022,21 +5268,14 @@
         "buildings/house/house-mediterranean-courtyard/stage-4.png",
         "buildings/house/house-mediterranean-courtyard/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#594b6fff",
-        "sideColor": "#91624fff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -6074,21 +5313,14 @@
         "buildings/house/house-warehouse-lofts/stage-4.png",
         "buildings/house/house-warehouse-lofts/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#35576bff",
-        "sideColor": "#8d745fff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "ASPHALT",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD",
@@ -6127,21 +5359,14 @@
         "buildings/house/house-social-housing/stage-4.png",
         "buildings/house/house-social-housing/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4c6f5fff",
-        "sideColor": "#718277ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "YARD",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -6179,15 +5404,6 @@
         "buildings/house/house-rooftop-garden/stage-4.png",
         "buildings/house/house-rooftop-garden/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#594b6fff",
-        "sideColor": "#91624fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -6232,15 +5448,6 @@
         "buildings/house/house-stilt-riverside/stage-4.png",
         "buildings/house/house-stilt-riverside/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#35576bff",
-        "sideColor": "#8d745fff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         3,
@@ -6285,16 +5492,6 @@
         "buildings/house/house-arcade-apartments/stage-4.png",
         "buildings/house/house-arcade-apartments/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-arcade-apartments-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#4c6f5fff",
-        "sideColor": "#718277ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "YARD",
       "estimates": [
         6
@@ -6340,22 +5537,14 @@
         "buildings/house/house-worker-tenements/stage-4.png",
         "buildings/house/house-worker-tenements/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/house-worker-tenements-stages-v2.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#594b6fff",
-        "sideColor": "#91624fff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "YARD",
       "estimates": [
         6
       ],
       "tags": [
-        "house"
+        "house",
+        "new-build",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -6393,16 +5582,6 @@
         "buildings/house/commercial-grocery/stage-4.png",
         "buildings/house/commercial-grocery/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/commercial-grocery-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         2,
@@ -6447,15 +5626,6 @@
         "buildings/house/commercial-food-hall/stage-4.png",
         "buildings/house/commercial-food-hall/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#9b554cff",
-        "sideColor": "#596c73ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -6499,16 +5669,6 @@
         "buildings/house/commercial-cinema/stage-4.png",
         "buildings/house/commercial-cinema/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/commercial-cinema-stages-v2.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#4d647fff",
-        "sideColor": "#765c58ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -6552,15 +5712,6 @@
         "buildings/house/commercial-bowling/stage-4.png",
         "buildings/house/commercial-bowling/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -6604,16 +5755,6 @@
         "buildings/house/commercial-gym/stage-4.png",
         "buildings/house/commercial-gym/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/commercial-gym-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#9b554cff",
-        "sideColor": "#596c73ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -6658,15 +5799,6 @@
         "buildings/house/commercial-bank-branch/stage-4.png",
         "buildings/house/commercial-bank-branch/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4d647fff",
-        "sideColor": "#765c58ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -6711,15 +5843,6 @@
         "buildings/house/commercial-coworking/stage-4.png",
         "buildings/house/commercial-coworking/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -6764,15 +5887,6 @@
         "buildings/house/commercial-tech-workshop/stage-4.png",
         "buildings/house/commercial-tech-workshop/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#9b554cff",
-        "sideColor": "#596c73ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -6816,15 +5930,6 @@
         "buildings/house/commercial-car-dealership/stage-4.png",
         "buildings/house/commercial-car-dealership/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4d647fff",
-        "sideColor": "#765c58ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -6868,15 +5973,6 @@
         "buildings/house/commercial-garden-center/stage-4.png",
         "buildings/house/commercial-garden-center/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -6920,15 +6016,6 @@
         "buildings/house/commercial-night-market/stage-4.png",
         "buildings/house/commercial-night-market/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#9b554cff",
-        "sideColor": "#596c73ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -6972,15 +6059,6 @@
         "buildings/house/commercial-department-store/stage-4.png",
         "buildings/house/commercial-department-store/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4d647fff",
-        "sideColor": "#765c58ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -7024,15 +6102,6 @@
         "buildings/house/commercial-office-courtyard/stage-4.png",
         "buildings/house/commercial-office-courtyard/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -7076,15 +6145,6 @@
         "buildings/house/commercial-logistics-hub/stage-4.png",
         "buildings/house/commercial-logistics-hub/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#9b554cff",
-        "sideColor": "#596c73ff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -7128,15 +6188,6 @@
         "buildings/house/commercial-cold-storage/stage-4.png",
         "buildings/house/commercial-cold-storage/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4d647fff",
-        "sideColor": "#765c58ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -7180,15 +6231,6 @@
         "buildings/house/commercial-maker-market/stage-4.png",
         "buildings/house/commercial-maker-market/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -7232,15 +6274,6 @@
         "buildings/house/commercial-rooftop-restaurant/stage-4.png",
         "buildings/house/commercial-rooftop-restaurant/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#9b554cff",
-        "sideColor": "#596c73ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -7285,15 +6318,6 @@
         "buildings/house/commercial-marina-office/stage-4.png",
         "buildings/house/commercial-marina-office/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#4d647fff",
-        "sideColor": "#765c58ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -7338,15 +6362,6 @@
         "buildings/house/commercial-farmers-market/stage-4.png",
         "buildings/house/commercial-farmers-market/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -7390,15 +6405,6 @@
         "buildings/house/commercial-hotel-boutique/stage-4.png",
         "buildings/house/commercial-hotel-boutique/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#9b554cff",
-        "sideColor": "#596c73ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -7443,15 +6449,6 @@
         "buildings/house/civic-kindergarten/stage-4.png",
         "buildings/house/civic-kindergarten/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -7497,15 +6494,6 @@
         "buildings/house/civic-secondary-school/stage-4.png",
         "buildings/house/civic-secondary-school/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7551,15 +6539,6 @@
         "buildings/house/civic-vocational-college/stage-4.png",
         "buildings/house/civic-vocational-college/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7604,15 +6583,6 @@
         "buildings/house/civic-research-lab/stage-4.png",
         "buildings/house/civic-research-lab/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7657,15 +6627,6 @@
         "buildings/house/civic-public-library-modern/stage-4.png",
         "buildings/house/civic-public-library-modern/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7710,15 +6671,6 @@
         "buildings/house/civic-health-center/stage-4.png",
         "buildings/house/civic-health-center/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7763,15 +6715,6 @@
         "buildings/house/civic-emergency-center/stage-4.png",
         "buildings/house/civic-emergency-center/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7816,15 +6759,6 @@
         "buildings/house/civic-fire-station-large/stage-4.png",
         "buildings/house/civic-fire-station-large/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7870,15 +6804,6 @@
         "buildings/house/civic-police-headquarters/stage-4.png",
         "buildings/house/civic-police-headquarters/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7924,16 +6849,6 @@
         "buildings/house/civic-civil-defense/stage-4.png",
         "buildings/house/civic-civil-defense/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-civil-defense-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7978,15 +6893,6 @@
         "buildings/house/civic-train-station/stage-4.png",
         "buildings/house/civic-train-station/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8031,16 +6937,6 @@
         "buildings/house/civic-bus-terminal/stage-4.png",
         "buildings/house/civic-bus-terminal/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-bus-terminal-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8085,15 +6981,6 @@
         "buildings/house/civic-metro-entrance/stage-4.png",
         "buildings/house/civic-metro-entrance/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         2,
@@ -8139,15 +7026,6 @@
         "buildings/house/civic-waterworks/stage-4.png",
         "buildings/house/civic-waterworks/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8192,15 +7070,6 @@
         "buildings/house/civic-recycling-center/stage-4.png",
         "buildings/house/civic-recycling-center/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8245,16 +7114,6 @@
         "buildings/house/civic-court-annex/stage-4.png",
         "buildings/house/civic-court-annex/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-court-annex-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8299,16 +7158,6 @@
         "buildings/house/civic-administration-center/stage-4.png",
         "buildings/house/civic-administration-center/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-administration-center-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8353,15 +7202,6 @@
         "buildings/house/civic-sports-center/stage-4.png",
         "buildings/house/civic-sports-center/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8406,16 +7246,6 @@
         "buildings/house/civic-arts-school/stage-4.png",
         "buildings/house/civic-arts-school/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-arts-school-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 10
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8461,16 +7291,6 @@
         "buildings/house/civic-animal-shelter/stage-4.png",
         "buildings/house/civic-animal-shelter/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/civic-animal-shelter-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 8
-      },
       "platform": "SERVICE",
       "estimates": [
         6
@@ -8515,16 +7335,6 @@
         "buildings/house/highrise-twin-towers/stage-4.png",
         "buildings/house/highrise-twin-towers/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-twin-towers-stages-v2.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#6a526fff",
-        "sideColor": "#616b70ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8571,15 +7381,6 @@
         "buildings/house/highrise-terraced/stage-4.png",
         "buildings/house/highrise-terraced/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#415f7cff",
-        "sideColor": "#75665dff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8626,15 +7427,6 @@
         "buildings/house/highrise-skybridge/stage-4.png",
         "buildings/house/highrise-skybridge/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#3d6274ff",
-        "sideColor": "#55727bff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8681,16 +7473,6 @@
         "buildings/house/highrise-cylindrical/stage-4.png",
         "buildings/house/highrise-cylindrical/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-cylindrical-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#6a526fff",
-        "sideColor": "#616b70ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8737,16 +7519,6 @@
         "buildings/house/highrise-crown/stage-4.png",
         "buildings/house/highrise-crown/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-crown-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#415f7cff",
-        "sideColor": "#75665dff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8793,15 +7565,6 @@
         "buildings/house/highrise-podium-office/stage-4.png",
         "buildings/house/highrise-podium-office/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#3d6274ff",
-        "sideColor": "#55727bff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8848,15 +7611,6 @@
         "buildings/house/highrise-podium-residential/stage-4.png",
         "buildings/house/highrise-podium-residential/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#6a526fff",
-        "sideColor": "#616b70ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8903,16 +7657,6 @@
         "buildings/house/highrise-green-terraces/stage-4.png",
         "buildings/house/highrise-green-terraces/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-green-terraces-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#415f7cff",
-        "sideColor": "#75665dff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -8959,16 +7703,6 @@
         "buildings/house/highrise-art-deco/stage-4.png",
         "buildings/house/highrise-art-deco/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-art-deco-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3d6274ff",
-        "sideColor": "#55727bff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9015,16 +7749,6 @@
         "buildings/house/highrise-brutalist/stage-4.png",
         "buildings/house/highrise-brutalist/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-brutalist-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#6a526fff",
-        "sideColor": "#616b70ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9071,15 +7795,6 @@
         "buildings/house/highrise-mixed-use-hotel/stage-4.png",
         "buildings/house/highrise-mixed-use-hotel/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#415f7cff",
-        "sideColor": "#75665dff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9128,15 +7843,6 @@
         "buildings/house/highrise-tech-campus-tower/stage-4.png",
         "buildings/house/highrise-tech-campus-tower/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#3d6274ff",
-        "sideColor": "#55727bff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9183,16 +7889,6 @@
         "buildings/house/highrise-finance/stage-4.png",
         "buildings/house/highrise-finance/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-finance-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#6a526fff",
-        "sideColor": "#616b70ff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 26
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9239,15 +7935,6 @@
         "buildings/house/highrise-observation/stage-4.png",
         "buildings/house/highrise-observation/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#415f7cff",
-        "sideColor": "#75665dff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 26
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9294,15 +7981,6 @@
         "buildings/house/highrise-slim-residential/stage-4.png",
         "buildings/house/highrise-slim-residential/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#3d6274ff",
-        "sideColor": "#55727bff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 26
-      },
       "platform": "STONE",
       "estimates": [
         3,
@@ -9350,15 +8028,6 @@
         "buildings/house/highrise-stacked-boxes/stage-4.png",
         "buildings/house/highrise-stacked-boxes/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#6a526fff",
-        "sideColor": "#616b70ff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9405,16 +8074,6 @@
         "buildings/house/highrise-diagonal-crown/stage-4.png",
         "buildings/house/highrise-diagonal-crown/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-diagonal-crown-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#415f7cff",
-        "sideColor": "#75665dff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 26
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9461,16 +8120,6 @@
         "buildings/house/highrise-courtyard-tower/stage-4.png",
         "buildings/house/highrise-courtyard-tower/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/highrise-courtyard-tower-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3d6274ff",
-        "sideColor": "#55727bff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 22
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9517,15 +8166,6 @@
         "buildings/house/highrise-transit-oriented/stage-4.png",
         "buildings/house/highrise-transit-oriented/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#6a526fff",
-        "sideColor": "#616b70ff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9572,15 +8212,6 @@
         "buildings/house/highrise-waterfront/stage-4.png",
         "buildings/house/highrise-waterfront/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#415f7cff",
-        "sideColor": "#75665dff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 24
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9627,15 +8258,6 @@
         "buildings/house/landmark-stadium/stage-4.png",
         "buildings/house/landmark-stadium/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 36,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9682,16 +8304,6 @@
         "buildings/house/landmark-observatory/stage-4.png",
         "buildings/house/landmark-observatory/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/landmark-observatory-stages-v2.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9739,15 +8351,6 @@
         "buildings/house/landmark-concert-hall/stage-4.png",
         "buildings/house/landmark-concert-hall/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9795,16 +8398,6 @@
         "buildings/house/landmark-aquarium/stage-4.png",
         "buildings/house/landmark-aquarium/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/landmark-aquarium-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#357c78ff",
-        "sideColor": "#647178ff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9851,15 +8444,6 @@
         "buildings/house/landmark-botanical-dome/stage-4.png",
         "buildings/house/landmark-botanical-dome/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 28,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9907,15 +8491,6 @@
         "buildings/house/landmark-space-center/stage-4.png",
         "buildings/house/landmark-space-center/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 32,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 16
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -9963,15 +8538,6 @@
         "buildings/house/landmark-grand-station/stage-4.png",
         "buildings/house/landmark-grand-station/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#426e78ff",
-        "sideColor": "#747b7aff",
-        "minimumRoofPixels": 36,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 12
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -10019,15 +8585,6 @@
         "buildings/house/landmark-civic-arch/stage-4.png",
         "buildings/house/landmark-civic-arch/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#54688cff",
-        "sideColor": "#66757aff",
-        "minimumRoofPixels": 24,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 14
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -10075,15 +8632,6 @@
         "buildings/house/landmark-lighthouse/stage-4.png",
         "buildings/house/landmark-lighthouse/stage-5.png"
       ],
-      "artSource": "PROCEDURAL",
-      "visualProjection": {
-        "profile": "FRONTAL_TOP",
-        "roofColor": "#477166ff",
-        "sideColor": "#80695cff",
-        "minimumRoofPixels": 16,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 18
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -10131,16 +8679,6 @@
         "buildings/house/landmark-sky-tower/stage-4.png",
         "buildings/house/landmark-sky-tower/stage-5.png"
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/landmark-sky-tower-stages-v1.png",
-      "visualProjection": {
-        "profile": "AI_AUTHORED_FRONTAL_TOP",
-        "roofColor": "#3d6274ff",
-        "sideColor": "#55727bff",
-        "minimumRoofPixels": 20,
-        "minimumRoofRows": 3,
-        "minimumSidePixels": 28
-      },
       "platform": "STONE",
       "estimates": [
         6
@@ -10369,11 +8907,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/compact-blue-vertical.png",
+      "north": {
+        "path": "vehicles/compact-blue-north.png",
         "size": [
           8,
           16
@@ -10383,8 +8922,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/compact-blue-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     },
     "sedan-red": {
@@ -10399,11 +8954,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/sedan-red-vertical.png",
+      "north": {
+        "path": "vehicles/sedan-red-north.png",
         "size": [
           8,
           16
@@ -10413,8 +8969,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/sedan-red-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     },
     "taxi-yellow": {
@@ -10429,11 +9001,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/taxi-yellow-vertical.png",
+      "north": {
+        "path": "vehicles/taxi-yellow-north.png",
         "size": [
           8,
           16
@@ -10443,8 +9016,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/taxi-yellow-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     },
     "estate-green": {
@@ -10459,11 +9048,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/estate-green-vertical.png",
+      "north": {
+        "path": "vehicles/estate-green-north.png",
         "size": [
           8,
           16
@@ -10473,8 +9063,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/estate-green-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     },
     "electric-teal": {
@@ -10489,11 +9095,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/electric-teal-vertical.png",
+      "north": {
+        "path": "vehicles/electric-teal-north.png",
         "size": [
           8,
           16
@@ -10503,8 +9110,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/electric-teal-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     },
     "delivery-cream": {
@@ -10519,11 +9142,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/delivery-cream-vertical.png",
+      "north": {
+        "path": "vehicles/delivery-cream-north.png",
         "size": [
           8,
           16
@@ -10533,8 +9157,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/delivery-cream-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     },
     "pickup-orange": {
@@ -10549,11 +9189,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/pickup-orange-vertical.png",
+      "north": {
+        "path": "vehicles/pickup-orange-north.png",
         "size": [
           8,
           16
@@ -10563,8 +9204,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/pickup-orange-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     },
     "classic-burgundy": {
@@ -10579,11 +9236,12 @@
           1
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "EAST"
       },
-      "vertical": {
-        "path": "vehicles/classic-burgundy-vertical.png",
+      "north": {
+        "path": "vehicles/classic-burgundy-north.png",
         "size": [
           8,
           16
@@ -10593,8 +9251,24 @@
           2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v1.png",
-        "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE"
+        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "NORTH"
+      },
+      "south": {
+        "path": "vehicles/classic-burgundy-south.png",
+        "size": [
+          8,
+          16
+        ],
+        "footprintCells": [
+          1,
+          2
+        ],
+        "artSource": "AI_AUTHORED",
+        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v2.png",
+        "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+        "baseFacing": "SOUTH"
       }
     }
   },
@@ -10839,22 +9513,6 @@
       "footprintCells": [
         2,
         2
-      ],
-      "anchorPx": [
-        8,
-        16
-      ]
-    },
-    "bus-stop": {
-      "label": "Остановка",
-      "path": "props/bus-stop.png",
-      "size": [
-        16,
-        16
-      ],
-      "footprintCells": [
-        2,
-        1
       ],
       "anchorPx": [
         8,
@@ -11604,6 +10262,38 @@
         16
       ]
     },
+    "traffic-light-red": {
+      "label": "Traffic Light Red",
+      "path": "props/traffic-light-red.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
+    "traffic-light-green": {
+      "label": "Traffic Light Green",
+      "path": "props/traffic-light-green.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ]
+    },
     "fountain-large": {
       "label": "Большой городской фонтан",
       "path": "props/fountain-large.png",
@@ -11620,8 +10310,8 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/park-fountain-large-v1.png",
-      "visualProfile": "TASKTOPIA_V4_PARK_OBJECT"
+      "sourceSheet": "ai-authored/ambient/park-frontal-core-v2.png",
+      "visualProfile": "TASKTOPIA_V4_PARK_OBJECT_FRONTAL_TOP"
     },
     "gazebo": {
       "label": "Парковая беседка",
@@ -11639,8 +10329,8 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/park-gazebo-v1.png",
-      "visualProfile": "TASKTOPIA_V4_PARK_OBJECT"
+      "sourceSheet": "ai-authored/ambient/park-frontal-core-v2.png",
+      "visualProfile": "TASKTOPIA_V4_PARK_OBJECT_FRONTAL_TOP"
     },
     "bandstand": {
       "label": "Bandstand",
@@ -11857,7 +10547,7 @@
       "label": "Детская карусель",
       "path": "props/playground-carousel.png",
       "size": [
-        24,
+        32,
         24
       ],
       "footprintCells": [
@@ -11865,50 +10555,50 @@
         3
       ],
       "anchorPx": [
-        12,
-        24
-      ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/playground-carousel-v1.png",
-      "visualProfile": "TASKTOPIA_V4_PLAYGROUND"
-    },
-    "bus-stop-horizontal": {
-      "label": "Классическая остановка",
-      "path": "props/bus-stop-horizontal.png",
-      "size": [
-        24,
-        16
-      ],
-      "footprintCells": [
-        3,
-        1
-      ],
-      "anchorPx": [
-        12,
-        16
-      ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/bus-stop-classic-v1.png",
-      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP"
-    },
-    "bus-stop-vertical": {
-      "label": "Классическая остановка",
-      "path": "props/bus-stop-vertical.png",
-      "size": [
         16,
         24
       ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/park-frontal-core-v2.png",
+      "visualProfile": "TASKTOPIA_V4_PARK_OBJECT_FRONTAL_TOP"
+    },
+    "bus-stop-horizontal": {
+      "label": "Городская остановка",
+      "path": "props/bus-stop-horizontal.png",
+      "size": [
+        16,
+        16
+      ],
       "footprintCells": [
-        1,
-        3
+        2,
+        2
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/bus-stop-classic-v1.png",
-      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP"
+      "sourceSheet": "ai-authored/ambient/bus-stop-canonical-v2.png",
+      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP_FRONTAL_TOP"
+    },
+    "bus-stop-vertical": {
+      "label": "Городская остановка",
+      "path": "props/bus-stop-vertical.png",
+      "size": [
+        16,
+        16
+      ],
+      "footprintCells": [
+        2,
+        2
+      ],
+      "anchorPx": [
+        8,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/bus-stop-canonical-v2.png",
+      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP_FRONTAL_TOP"
     },
     "city-sign-horizontal": {
       "label": "City Sign Horizontal",
@@ -13113,12 +11803,12 @@
         8
       ]
     },
-    "bus-stop-modern-horizontal": {
-      "label": "Современная остановка",
-      "path": "props/bus-stop-modern-horizontal.png",
+    "city-bus-horizontal": {
+      "label": "Городской автобус",
+      "path": "props/city-bus-horizontal.png",
       "size": [
         24,
-        16
+        8
       ],
       "footprintCells": [
         3,
@@ -13126,17 +11816,17 @@
       ],
       "anchorPx": [
         12,
-        16
+        8
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/bus-stop-modern-v1.png",
-      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP"
+      "sourceSheet": "ai-authored/ambient/city-bus-east-v3.png",
+      "visualProfile": "TASKTOPIA_V4_VEHICLE_EAST"
     },
-    "bus-stop-modern-vertical": {
-      "label": "Современная остановка",
-      "path": "props/bus-stop-modern-vertical.png",
+    "city-bus-north": {
+      "label": "Городской автобус",
+      "path": "props/city-bus-north.png",
       "size": [
-        16,
+        8,
         24
       ],
       "footprintCells": [
@@ -13144,37 +11834,18 @@
         3
       ],
       "anchorPx": [
-        8,
+        4,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/bus-stop-modern-v1.png",
-      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP"
+      "sourceSheet": "ai-authored/ambient/city-bus-north-v7.png",
+      "visualProfile": "TASKTOPIA_V4_VEHICLE_NORTH"
     },
-    "bus-stop-green-horizontal": {
-      "label": "Озеленённая остановка",
-      "path": "props/bus-stop-green-horizontal.png",
+    "city-bus-south": {
+      "label": "Городской автобус",
+      "path": "props/city-bus-south.png",
       "size": [
-        24,
-        16
-      ],
-      "footprintCells": [
-        3,
-        1
-      ],
-      "anchorPx": [
-        12,
-        16
-      ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/bus-stop-green-v1.png",
-      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP"
-    },
-    "bus-stop-green-vertical": {
-      "label": "Озеленённая остановка",
-      "path": "props/bus-stop-green-vertical.png",
-      "size": [
-        16,
+        8,
         24
       ],
       "footprintCells": [
@@ -13182,12 +11853,12 @@
         3
       ],
       "anchorPx": [
-        8,
+        4,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/bus-stop-green-v1.png",
-      "visualProfile": "TASKTOPIA_V4_TRANSIT_STOP"
+      "sourceSheet": "ai-authored/ambient/city-bus-south-v7.png",
+      "visualProfile": "TASKTOPIA_V4_VEHICLE_SOUTH"
     },
     "playground-climbing": {
       "label": "Лазательный комплекс",
@@ -13304,9 +11975,5 @@
       "visualProfile": "TASKTOPIA_V4_PARK_OBJECT"
     }
   },
-  "provenance": {
-    "basePack": "pixel-city-pack-v3",
-    "newRuntimeAssets": "approved AI-authored geometry plus deterministic normalization; procedural fallback remains for legacy ambient assets",
-    "referenceOnly": "reference/expanded-city-assets-reference.png, reference/fishing-life-reference.png, reference/resident-actions-reference.png, reference/fish-water-reference.png, reference/landmark-ferris-wheel-five-stages-reference.png, reference/landmark-megatall-tower-five-stages-reference.png, reference/landmark-monument-five-stages-reference.png, reference/house-courtyard-block-five-stages-reference.png, reference/civic-hospital-five-stages-reference.png and reference/commercial-gas-station-electric-five-stages-reference.png generated with OpenAI image model"
-  }
+  "assetRevision": "500cdf59ceaa894c"
 }

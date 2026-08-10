@@ -23,6 +23,8 @@ services:
   app:
     build:
       context: .
+      args:
+        VITE_STATIC_ORIGIN: ${VITE_STATIC_ORIGIN:-}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -30,6 +32,7 @@ services:
       PORT: 3000
       DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost}
+      STATIC_ORIGIN: ${STATIC_ORIGIN:-}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       TRUST_PROXY: "true"
       LOG_LEVEL: ${LOG_LEVEL:-info}

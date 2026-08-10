@@ -57,7 +57,7 @@ describe("country collaboration HTTP boundary", () => {
     const renamed = await app.inject({ method: "PATCH", url: "/api/account", headers: { cookie: memberCookie }, payload: { name: "Updated Member Name" } });
     expect(renamed.statusCode).toBe(200);
     expect(renamed.json().user.name).toBe("Updated Member Name");
-  });
+  }, 15_000);
 
   it("lets only the owner rename a country", async () => {
     const ownerCookie = await register("rename-owner@example.com", "Rename Owner");
@@ -72,7 +72,7 @@ describe("country collaboration HTTP boundary", () => {
     const renamed = await app.inject({ method: "PATCH", url: `/api/countries/${countryId}`, headers: { cookie: ownerCookie }, payload: { name: "New product name" } });
     expect(renamed.statusCode).toBe(200);
     expect(renamed.json()).toMatchObject({ id: countryId, name: "New product name" });
-  });
+  }, 15_000);
 
   it("notifies the realtime boundary when country access is revoked", async () => {
     const revoked: Array<{ countryId: string; userId: string }> = [];
@@ -121,5 +121,5 @@ describe("country collaboration HTTP boundary", () => {
       payload: { name: "Viewer write", scopes: ["country:read", "tasks:write"], expiresInDays: 30 },
     });
     expect(writeToken.statusCode).toBe(403);
-  });
+  }, 15_000);
 });

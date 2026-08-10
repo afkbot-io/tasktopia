@@ -45,3 +45,15 @@ export function stampRoadCorridor(
   }
   return [...corridor.values()];
 }
+
+/** Cells that would make a newly stamped road lose part of its full profile. */
+export function roadCorridorBlockers(
+  path: Cell[],
+  roadClass: RoadCellDto["roadClass"],
+  widths: RoadWidthPolicy,
+  blocked: ReadonlySet<string>,
+  existing: ReadonlySet<string> = new Set(),
+): Cell[] {
+  return stampRoadCorridor(path, roadClass, widths)
+    .filter((cell) => blocked.has(cellKey(cell)) && !existing.has(cellKey(cell)));
+}

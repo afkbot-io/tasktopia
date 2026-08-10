@@ -39,6 +39,8 @@ export type ComplexPlanInput = {
   archetype: DistrictArchetype;
   /** Demand hint: the complex is sized to host roughly this many buildings. */
   targetLots: number;
+  /** The demand that caused growth must fit at least one generated lot. */
+  minimumLot?: { width: number; height: number };
   seed: number;
   /** Force a shape (tests, special sites); otherwise chosen from the palette. */
   shape?: BlockPattern;
@@ -56,12 +58,26 @@ type ArchetypeProfile = { baseW: number; minW: number; maxW: number; depth: numb
 const PROFILE: Record<DistrictArchetype, ArchetypeProfile> = {
   NEW_BUILD: { baseW: 6, minW: 5, maxW: 8, depth: 5 },
   PRIVATE: { baseW: 4, minW: 3, maxW: 5, depth: 4 },
-  MIXED_URBAN: { baseW: 5, minW: 4, maxW: 7, depth: 4 },
+  // Mixed-use catalog entries include 5-cell-deep podiums and towers. A
+  // four-cell lot made those valid buildings impossible to place and forced
+  // speculative district growth before falling back to an unrelated model.
+  MIXED_URBAN: { baseW: 5, minW: 4, maxW: 7, depth: 5 },
   COMMERCIAL: { baseW: 7, minW: 6, maxW: 9, depth: 5 },
   CIVIC: { baseW: 6, minW: 5, maxW: 8, depth: 5 },
 };
 
 const POINT_PROFILE: ArchetypeProfile = { baseW: 5, minW: 4, maxW: 6, depth: 5 };
+
+/**
+ * Organic districts reserve only the next small construction cluster.
+ * Capacity is planning metadata, not a request to pave the whole sprint on
+ * the first task. A square-root cap keeps enough alternate lots for mixed
+ * building sizes without recreating the sparse 16+ lot superblocks that
+ * dominated small districts with empty roads.
+ */
+export function organicComplexLotTarget(capacitySp: number): number {
+  return Math.max(3, Math.min(8, Math.ceil(Math.sqrt(Math.max(1, capacitySp)) * 1.4)));
+}
 
 function horizontalLine(fromX: number, toX: number, y: number): Cell[] {
   return Array.from({ length: Math.max(0, toX - fromX + 1) }, (_, index) => ({ x: fromX + index, y }));
@@ -113,7 +129,15 @@ function chooseShape(input: ComplexPlanInput, fit: number): BlockPattern {
 }
 
 export function planComplex(input: ComplexPlanInput): ComplexPlan {
-  const profile = input.shape === "COMPLEX_POINT" ? POINT_PROFILE : PROFILE[input.archetype];
+  const baseProfile = input.shape === "COMPLEX_POINT" ? POINT_PROFILE : PROFILE[input.archetype];
+  const requiredWidth = Math.max(baseProfile.minW, input.minimumLot?.width ?? 0);
+  const profile: ArchetypeProfile = {
+    ...baseProfile,
+    baseW: Math.max(baseProfile.baseW, requiredWidth),
+    minW: requiredWidth,
+    maxW: Math.max(baseProfile.maxW, requiredWidth),
+    depth: Math.max(baseProfile.depth, input.minimumLot?.height ?? 0),
+  };
   const fit = tiersThatFit(input.rect, profile.depth);
   const shape = input.shape ?? chooseShape(input, fit);
   const groupId = `${input.districtId}:complex:${String(input.complexIndex).padStart(3, "0")}`;

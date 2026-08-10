@@ -8,6 +8,7 @@ deterministic pixel-art normalization. It must not redraw approved geometry.
 from __future__ import annotations
 
 import json
+import hashlib
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -463,6 +464,26 @@ def prop_streetlamp(kind: str) -> Image.Image:
         draw.line((3, 5, 1, 2, 6, 2), fill=rgba(metal))
         draw.rectangle((1, 1, 5, 3), fill=rgba(light), outline=rgba(OUTLINE))
         draw.point((0, 5), fill=rgba("#c85f58ff")); draw.point((7, 5), fill=rgba("#6ba0c4ff"))
+    return image
+
+
+def prop_traffic_light(active: str) -> Image.Image:
+    """Roadside signal on one 8 px cell, authored for the shared front view."""
+    image = Image.new("RGBA", (8, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    metal = "#42545cff"
+    housing = "#20343aff"
+    inactive_red = "#6e3b3aff"
+    inactive_green = "#345c4aff"
+    red = "#e65e55ff"
+    green = "#70cf78ff"
+    amber = "#e1b84fff"
+    draw.rectangle((3, 6, 4, 15), fill=rgba(metal), outline=rgba(OUTLINE))
+    draw.rectangle((1, 0, 6, 8), fill=rgba(housing), outline=rgba(OUTLINE))
+    draw.rectangle((2, 1, 5, 3), fill=rgba(red if active == "red" else inactive_red))
+    draw.rectangle((2, 4, 5, 5), fill=rgba(amber if active == "amber" else "#675d36ff"))
+    draw.rectangle((2, 6, 5, 7), fill=rgba(green if active == "green" else inactive_green))
+    draw.rectangle((2, 14, 5, 15), fill=rgba(metal), outline=rgba(OUTLINE))
     return image
 
 
@@ -1627,6 +1648,7 @@ def building_metadata(key: str, raw: dict) -> dict:
     if any(token in key for token in ("gas-station", "service-plaza", "parking", "auto-repair", "warehouse")):
         platform = "ASPHALT"; rule_ids.append("REQUIRES_COLLECTOR")
     if "parking" in key:
+        tags += ["parking"]
         max_per_city = 1; max_per_district = 1; service_role = "parking-service"; rule_ids.append("UNIQUE_SERVICE")
     if "gas-station" in key or "service-plaza" in key:
         max_per_city = 1; max_per_district = 1; service_role = "fuel-service"; rule_ids.append("UNIQUE_SERVICE")
@@ -1651,7 +1673,15 @@ def building_metadata(key: str, raw: dict) -> dict:
     if key in {"house-rowhomes", "house-garden-villa"}: estimates = [2, 3, 6]
     if any(token in key for token in ("cottage", "duplex", "rowhome", "townhouse", "woodland", "private", "suburban")):
         tags += ["residential", "private-residential"]
-    if any(token in key for token in ("apartment", "highrise", "tower")):
+    # These are urban multi-unit forms even when their product name does not
+    # literally contain "apartment". Classifying them as private housing puts
+    # 6x5/7x5 sprites into the compact private-lot family, where they cannot be
+    # placed and silently disappear from generated cities.
+    if any(token in key for token in (
+        "apartment", "highrise", "tower", "brutalist", "cohousing",
+        "residence", "senior-living", "social-housing", "tenement",
+        "mediterranean-courtyard", "warehouse-lofts",
+    )):
         tags += ["residential", "new-build"]
     if "mixed-use" in key:
         tags += ["residential", "commercial", "new-build", "mixed-use"]
@@ -1967,22 +1997,26 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     if len({spec.key for spec in specs}) != len(specs):
         raise ValueError("generated-buildings.json contains duplicate keys")
     ai_sources: dict[str, Path] = {}
-    for authored in json.loads((CATALOG / "ai-authored-buildings.json").read_text()):
+    building_catalog = json.loads((CATALOG / "buildings.json").read_text())
+    for authored in building_catalog["buildings"]:
         if not authored.get("reviewed"):
-            raise ValueError(f"{authored['key']}: AI-authored sheet is not reviewed")
+            continue
         source = AI_AUTHORED_ART / authored["sheet"]
         if not source.resolve().is_relative_to(AI_AUTHORED_ART.resolve()):
-            raise ValueError(f"{authored['key']}: AI-authored path leaves reference directory")
+            raise ValueError(f"{authored['key']}: reviewed sheet leaves reference directory")
         if not source.exists():
             raise FileNotFoundError(source)
+        source_digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        if source_digest != authored.get("sheetSha256"):
+            raise ValueError(f"{authored['key']}: reviewed sheet digest does not match catalog")
         if authored["key"] in ai_sources:
-            raise ValueError(f"{authored['key']}: duplicate AI-authored source")
+            raise ValueError(f"{authored['key']}: duplicate reviewed source")
         ai_sources[authored["key"]] = source
     generated_keys = {spec.key for spec in specs}
     base_keys = set(buildings)
     unknown_ai_keys = sorted(set(ai_sources) - generated_keys - base_keys)
     if unknown_ai_keys:
-        raise ValueError(f"AI-authored catalog contains unknown keys: {unknown_ai_keys}")
+        raise ValueError(f"building catalog contains unknown keys: {unknown_ai_keys}")
     for spec in specs:
         if spec.key in buildings:
             raise ValueError(f"{spec.key}: key already exists in base pack")
@@ -2002,36 +2036,12 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "footprintCells": list(spec.footprint),
             "anchorPx": [spec.size[0] // 2, spec.size[1]],
             "stages": stages,
-            "artSource": "AI_AUTHORED" if authored_stages else "PROCEDURAL",
-            **({
-                "sourceSheet": str(ai_sources[spec.key].relative_to(AI_AUTHORED_ART)),
-            } if authored_stages else {}),
-            # Machine-readable visual contract for the deterministic source.
-            # Open structures (the wheel and monument) intentionally do not
-            # pretend to be enclosed three-quarter buildings; every other
-            # generated building must expose both a roof/top plane and the
-            # shaded right plane used by the original V3 sprites.
-            "visualProjection": {
-                "profile": "AI_AUTHORED_FRONTAL_TOP" if authored_stages else (
-                    "OPEN_STRUCTURE" if spec.style in {
-                    "landmark-ferris-wheel", "landmark-monument",
-                    } else "FRONTAL_TOP"
-                ),
-                "roofColor": spec.roof,
-                "sideColor": spec.dark,
-                "minimumRoofPixels": max(6, spec.size[0] // 2),
-                "minimumRoofRows": 3,
-                # Low, wide workshops have a deliberately shallow side plane.
-                # Scale the invariant with the canvas, while keeping eight
-                # connected pixels as the minimum readable native-size facet.
-                "minimumSidePixels": max(8, int(spec.size[1] * 0.25)),
-            },
         }
         buildings[spec.key] = building_metadata(spec.key, raw)
 
     # AI-authored migration may also replace a registered V3 building, such as
     # the municipal parking lot. Preserve its public key and semantic contract;
-    # only the five visual stages and their provenance change.
+    # only the five visual stages and their reviewed source digest change.
     for key in sorted(set(ai_sources) & base_keys):
         raw = buildings[key]
         size = tuple(raw["spriteSize"])
@@ -2060,9 +2070,6 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         buildings[key] = {
             **raw,
             "stages": stages,
-            "artSource": "AI_AUTHORED",
-            "sourceSheet": str(ai_sources[key].relative_to(AI_AUTHORED_ART)),
-            "visualProjection": {"profile": "AI_AUTHORED_FRONTAL_TOP"},
         }
 
     for imported in json.loads((CATALOG / "imported-buildings.json").read_text()):
@@ -2135,6 +2142,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "streetlamp-vintage": prop_streetlamp("vintage"), "streetlamp-modern": prop_streetlamp("modern"),
         "streetlamp-solar": prop_streetlamp("solar"), "streetlamp-industrial": prop_streetlamp("industrial"),
         "streetlamp-double": prop_streetlamp("double"), "streetlamp-festive": prop_streetlamp("festive"),
+        "traffic-light-red": prop_traffic_light("red"), "traffic-light-green": prop_traffic_light("green"),
         **{key: prop_park_feature(key) for key in PARK_FEATURE_SIZES},
         "bus-stop-horizontal": prop_bus_stop(False), "bus-stop-vertical": prop_bus_stop(True),
         "city-sign-horizontal": prop_city_sign(False), "city-sign-vertical": prop_city_sign(True),
@@ -2181,6 +2189,19 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         }
     prop_dir = RUNTIME / "props"
     prop_manifest = dict(source_manifest["props"])
+    # V4 has one paired-stop contract. Do not carry the old single sprite or
+    # the later size-incompatible visual families into the generated pack.
+    obsolete_transit_props = {
+        "bus-stop",
+        "bus-stop-modern-horizontal", "bus-stop-modern-vertical",
+        "bus-stop-green-horizontal", "bus-stop-green-vertical",
+        "city-bus-vertical",
+    }
+    for obsolete in obsolete_transit_props:
+        prop_manifest.pop(obsolete, None)
+        obsolete_path = prop_dir / f"{obsolete}.png"
+        if obsolete_path.exists():
+            obsolete_path.unlink()
     for key, image in generated_props.items():
         target = prop_dir / f"{key}.png"
         image.save(target, optimize=True)
@@ -2212,10 +2233,10 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             legacy_vehicle.unlink()
         for authored in ai_vehicle_entries:
             source = AI_AUTHORED_ART / authored["sheet"]
-            orientation_segments = authored.get("orientationSegments", {"horizontal": 0, "vertical": 1})
-            segment_count = int(authored.get("segments", 2))
+            orientation_segments = authored["orientationSegments"]
+            segment_count = int(authored["segments"])
             axes: dict[str, dict] = {}
-            for orientation, canvas_size in (("horizontal", (16, 8)), ("vertical", (8, 16))):
+            for orientation, canvas_size in (("horizontal", (16, 8)), ("north", (8, 16)), ("south", (8, 16))):
                 segment_index = int(orientation_segments[orientation])
                 image = normalize_ai_authored_ambient(
                     ai_sheet_segment(source, segment_index, segment_count),
@@ -2230,7 +2251,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                     "footprintCells": [2, 1] if orientation == "horizontal" else [1, 2],
                     "artSource": "AI_AUTHORED",
                     "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
-                    "visualProfile": "TASKTOPIA_V4_ROAD_VEHICLE",
+                    "visualProfile": "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE",
+                    "baseFacing": "EAST" if orientation == "horizontal" else orientation.upper(),
                 }
             vehicle_manifest[authored["key"]] = axes
 
@@ -2251,12 +2273,16 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "buildings": buildings,
         "vehicles": vehicle_manifest,
         "props": prop_manifest,
-        "provenance": {
-            "basePack": "pixel-city-pack-v3",
-            "newRuntimeAssets": "approved AI-authored geometry plus deterministic normalization; procedural fallback remains for legacy ambient assets",
-            "referenceOnly": "reference/expanded-city-assets-reference.png, reference/fishing-life-reference.png, reference/resident-actions-reference.png, reference/fish-water-reference.png, reference/landmark-ferris-wheel-five-stages-reference.png, reference/landmark-megatall-tower-five-stages-reference.png, reference/landmark-monument-five-stages-reference.png, reference/house-courtyard-block-five-stages-reference.png, reference/civic-hospital-five-stages-reference.png and reference/commercial-gas-station-electric-five-stages-reference.png generated with OpenAI image model",
-        },
     }
+
+
+def runtime_revision() -> str:
+    """Content address the whole published pack so immutable CDN URLs stay honest."""
+    digest = hashlib.sha256()
+    for path in sorted(RUNTIME.rglob("*.png")):
+        digest.update(str(path.relative_to(RUNTIME)).encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:16]
 
 
 def validate(manifest: dict) -> None:
@@ -2288,12 +2314,15 @@ def validate(manifest: dict) -> None:
         alpha_values = image.getchannel("A").getcolors(maxcolors=256)
         assert alpha_values is not None and all(alpha in (0, 255) for _, alpha in alpha_values), (key, "soft alpha")
     for variant, orientations in manifest["vehicles"].items():
-        vertical = Image.open(RUNTIME / orientations["vertical"]["path"]).convert("RGBA")
         horizontal = Image.open(RUNTIME / orientations["horizontal"]["path"]).convert("RGBA")
-        assert vertical.size == (8, 16), (variant, vertical.size)
+        north = Image.open(RUNTIME / orientations["north"]["path"]).convert("RGBA")
+        south = Image.open(RUNTIME / orientations["south"]["path"]).convert("RGBA")
         assert horizontal.size == (16, 8), (variant, horizontal.size)
-        bounds = vertical.getchannel("A").getbbox()
-        assert bounds is not None and bounds[2] - bounds[0] >= 6 and bounds[3] - bounds[1] >= 13, (variant, bounds, "vertical car must remain readable")
+        assert north.size == (8, 16), (variant, north.size)
+        assert south.size == (8, 16), (variant, south.size)
+        for orientation, image in (("north", north), ("south", south)):
+            bounds = image.getchannel("A").getbbox()
+            assert bounds is not None and bounds[2] - bounds[0] >= 6 and bounds[3] - bounds[1] >= 13, (variant, bounds, f"{orientation} car must remain readable")
         horizontal_bounds = horizontal.getchannel("A").getbbox()
         assert horizontal_bounds is not None and horizontal_bounds[2] - horizontal_bounds[0] >= 13 and horizontal_bounds[3] - horizontal_bounds[1] >= 6, (variant, horizontal_bounds, "horizontal car must remain readable")
 
@@ -2414,17 +2443,56 @@ def projection_style_sheet(manifest: dict) -> None:
     image.save(SCREENSHOTS / "pixel-city-projection-review.png", optimize=True)
 
 
+def transport_style_sheet(manifest: dict) -> None:
+    """Render every accepted vehicle view and transit/park prop at nearest-neighbour 8x."""
+    scale = 8
+    card_width, card_height, columns = 310, 230, 4
+    vehicle_items = sorted(manifest["vehicles"].items())
+    review_props = (
+        "city-bus-horizontal", "city-bus-north", "city-bus-south",
+        "bus-stop-horizontal", "bus-stop-vertical", "fountain-large", "gazebo", "playground-carousel",
+    )
+    prop_row_height = 190
+    image = Image.new("RGB", (card_width * columns, card_height * 2 + prop_row_height * 2), rgba("#132126ff")[:3])
+    draw = ImageDraw.Draw(image)
+    for index, (key, views) in enumerate(vehicle_items):
+        left, top = (index % columns) * card_width, (index // columns) * card_height
+        draw.rectangle((left + 6, top + 6, left + card_width - 6, top + card_height - 6), fill=rgba("#1b2c30ff")[:3], outline=rgba("#3a5359ff")[:3])
+        draw.text((left + 14, top + 14), f"car · {key}", fill=rgba("#d9e2ddff")[:3])
+        x = left + 14
+        for orientation in ("horizontal", "north", "south"):
+            sprite = Image.open(RUNTIME / views[orientation]["path"]).convert("RGBA")
+            sprite = sprite.resize((sprite.width * scale, sprite.height * scale), Image.Resampling.NEAREST)
+            image.paste(sprite, (x, top + 62), sprite)
+            draw.text((x, top + 195), orientation, fill=rgba("#9eb0aeff")[:3])
+            x += sprite.width + 12
+    base_top = card_height * 2
+    for index, key in enumerate(review_props):
+        left = (index % columns) * card_width
+        top = base_top + (index // columns) * prop_row_height
+        prop = manifest["props"][key]
+        sprite = Image.open(RUNTIME / prop["path"]).convert("RGBA")
+        prop_scale = min(8, max(2, 144 // max(sprite.width, sprite.height)))
+        sprite = sprite.resize((sprite.width * prop_scale, sprite.height * prop_scale), Image.Resampling.NEAREST)
+        draw.text((left + 14, top + 10), f"prop · {key}", fill=rgba("#d9e2ddff")[:3])
+        image.paste(sprite, (left + 14, top + 34), sprite)
+    SCREENSHOTS.mkdir(parents=True, exist_ok=True)
+    image.save(SCREENSHOTS / "transport-native-views-review.png", optimize=True)
+
+
 def main() -> None:
     if RUNTIME.exists(): shutil.rmtree(RUNTIME)
     RUNTIME.mkdir(parents=True, exist_ok=True)
     copy_v3_runtime()
     specs = load_generated_specs()
     manifest = build_manifest(specs)
+    manifest["assetRevision"] = runtime_revision()
     (PACK / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     validate(manifest)
     contact_sheet(manifest, specs)
     gas_station_style_sheet(manifest)
     projection_style_sheet(manifest)
+    transport_style_sheet(manifest)
     if PUBLIC.exists(): shutil.rmtree(PUBLIC)
     shutil.copytree(RUNTIME, PUBLIC)
     shutil.copy2(PACK / "manifest.json", PUBLIC / "manifest.json")

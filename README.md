@@ -119,7 +119,7 @@ npm run assets:setup
 npm run assets:build
 ```
 
-Процедурные варианты описываются в `assets/pixel-city-pack-v4/catalog/generated-buildings.json`. Нарисованные вручную пять стадий подключаются через `catalog/imported-buildings.json` и каталог `sources/`. TypeScript-код при добавлении обычного варианта менять не нужно.
+Все 193 семейства описаны в едином `assets/pixel-city-pack-v4/catalog/buildings.json`. Для принятого семейства там указан проверенный пятистадийный sheet из `reference/buildings/<key>/stages.png`, его SHA-256 и `reviewed: true`. Сборка отклоняет отсутствующий или изменённый после проверки sheet; TypeScript-код при замене графики существующего ключа менять не нужно.
 
 ## Структура
 

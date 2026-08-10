@@ -51,9 +51,15 @@ describe("V6 city morphology and access planning", () => {
 
   it("uses hard residential massing boundaries between district archetypes", () => {
     const highrise = getBuilding("highrise-glass");
+    const brutalistBlock = getBuilding("house-brutalist-block");
+    const cohousingCluster = getBuilding("house-cohousing-cluster");
     const privateHome = getBuilding("house-brick-duplex");
     const longShop = getBuilding("shop-bakery-long");
     expect(buildingZoningRole(highrise)).toBe("DENSE_RESIDENTIAL");
+    expect(buildingZoningRole(brutalistBlock)).toBe("DENSE_RESIDENTIAL");
+    expect(buildingZoningRole(cohousingCluster)).toBe("DENSE_RESIDENTIAL");
+    expect(buildingCompatibleWithArchetype(brutalistBlock, "NEW_BUILD")).toBe(true);
+    expect(buildingCompatibleWithArchetype(cohousingCluster, "NEW_BUILD")).toBe(true);
     expect(buildingZoningRole(privateHome)).toBe("PRIVATE_RESIDENTIAL");
     expect(buildingCompatibleWithArchetype(highrise, "PRIVATE")).toBe(false);
     expect(buildingCompatibleWithArchetype(privateHome, "NEW_BUILD")).toBe(false);

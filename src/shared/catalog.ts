@@ -1,6 +1,17 @@
 import manifest from "../../assets/pixel-city-pack-v4/manifest.json";
 import type { Estimate, PlatformKind } from "./contracts";
 
+const clientStaticOrigin = typeof window === "undefined"
+  ? ""
+  : String(import.meta.env.VITE_STATIC_ORIGIN ?? "").replace(/\/$/, "");
+const assetRevision = (manifest as { assetRevision?: string }).assetRevision ?? String(manifest.version);
+
+export function gameAssetUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
+  const normalized = path.startsWith("/game-assets/v4/") ? path : `/game-assets/v4/${path.replace(/^\//, "")}`;
+  return `${clientStaticOrigin}${normalized}?v=${assetRevision}`;
+}
+
 export type BuildingCategory = "HOUSE" | "HIGHRISE" | "COMMERCIAL" | "CIVIC";
 export type BuildingRuleId = "STANDARD" | "UNIQUE_SERVICE" | "REQUIRES_COLLECTOR";
 export type EntranceSide = "N" | "E" | "S" | "W";
@@ -55,7 +66,7 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
     footprint: { width: building.footprintCells[0], height: building.footprintCells[1] },
     spriteSize: { width: building.spriteSize[0], height: building.spriteSize[1] },
     anchor: { x: building.anchorPx[0], y: building.anchorPx[1] },
-    stages: building.stages.map((stage) => `/game-assets/v4/${stage}`),
+    stages: building.stages.map(gameAssetUrl),
     estimates: building.estimates,
     tags: building.tags,
     ruleIds: building.ruleIds,
@@ -69,7 +80,8 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
 
 const TASK_TAG_DICTIONARY: Array<{ tag: string; words: string[] }> = [
   { tag: "house", words: ["дом", "жиль", "квартир", "жилой", "коттедж", "таунхаус"] },
-  { tag: "commercial", words: ["магазин", "торгов", "кафе", "аптек", "пекар", "заправ", "сервис"] },
+  { tag: "commercial", words: ["магазин", "торгов", "кафе", "аптек", "пекар", "заправ", "сервис", "парков", "стоянк"] },
+  { tag: "parking", words: ["парков", "стоянк"] },
   { tag: "civic", words: ["полици", "пожар", "школ", "клиник", "больниц", "банк", "почт", "мэр"] },
   { tag: "dense", words: ["офис", "высот", "башн", "комплекс", "многоэтаж"] },
 ];
@@ -95,7 +107,7 @@ export type PropCatalogEntry = {
 type RawProp = { path: string; size: [number, number]; footprintCells: [number, number]; anchorPx: [number, number] };
 export const PROP_CATALOG = Object.fromEntries(
   Object.entries(manifest.props as unknown as Record<string, RawProp>).map(([key, value]) => [key, {
-    path: `/game-assets/v4/${value.path}`,
+    path: gameAssetUrl(value.path),
     size: { width: value.size[0], height: value.size[1] },
     footprint: { width: value.footprintCells[0], height: value.footprintCells[1] },
     anchor: { x: value.anchorPx[0], y: value.anchorPx[1] },
@@ -105,11 +117,11 @@ export const PROP_SPRITES = Object.fromEntries(
   Object.entries(PROP_CATALOG).map(([key, value]) => [key, value.path]),
 ) as Record<string, string>;
 export const TILE_SPRITES = Object.fromEntries(
-  Object.entries(manifest.tiles).map(([key, value]) => [key, `/game-assets/v4/${(value as { path: string }).path}`]),
+  Object.entries(manifest.tiles).map(([key, value]) => [key, gameAssetUrl((value as { path: string }).path)]),
 ) as Record<string, string>;
 
 export const VEHICLE_SPRITES = Object.fromEntries(
   Object.entries(manifest.vehicles).map(([color, axes]) => [color, Object.fromEntries(
-    Object.entries(axes as Record<string, { path: string }>).map(([axis, value]) => [axis, `/game-assets/v4/${value.path}?vehicle=2`]),
+    Object.entries(axes as Record<string, { path: string }>).map(([axis, value]) => [axis, gameAssetUrl(value.path)]),
   )]),
-) as Record<string, { vertical: string; horizontal: string }>;
+) as Record<string, { horizontal: string; north: string; south: string }>;

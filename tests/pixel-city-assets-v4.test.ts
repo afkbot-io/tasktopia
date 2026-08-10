@@ -49,6 +49,14 @@ describe("Pixel City V4 expansion contract", () => {
     }
   });
 
+  it("does not expose obsolete building-art provenance to the runtime", () => {
+    for (const [key, building] of Object.entries(manifest.buildings)) {
+      expect(building, key).not.toHaveProperty("artSource");
+      expect(building, key).not.toHaveProperty("sourceSheet");
+      expect(building, key).not.toHaveProperty("visualProjection");
+    }
+  });
+
   it("publishes the new tree, streetlight, and large park-prop families", () => {
     const props = manifest.props as Record<string, { footprintCells: number[] }>;
     for (const key of [
@@ -62,8 +70,8 @@ describe("Pixel City V4 expansion contract", () => {
       "flower-bed-vertical", "park-bench-double", "park-bridge", "park-lamp",
       "park-path-circle", "playground-slide", "playground-carousel",
       "playground-climbing", "playground-swing", "park-pond", "park-sculpture",
-      "park-flower-clock", "park-bandstand", "bus-stop-modern-horizontal",
-      "bus-stop-modern-vertical", "bus-stop-green-horizontal", "bus-stop-green-vertical",
+      "park-flower-clock", "park-bandstand", "bus-stop-horizontal", "bus-stop-vertical",
+      "city-bus-horizontal", "city-bus-north", "city-bus-south",
     ]) expect(props[key], key).toBeDefined();
     expect(props["fountain-large"]?.footprintCells).toEqual([4, 4]);
     expect(props["gazebo"]?.footprintCells).toEqual([4, 3]);
@@ -83,12 +91,17 @@ describe("Pixel City V4 expansion contract", () => {
   });
 
   it("publishes eight independently authored directional vehicle models", () => {
-    const vehicles = manifest.vehicles as Record<string, Record<"horizontal" | "vertical", { size: number[]; artSource?: string; sourceSheet?: string }>>;
+    const vehicles = manifest.vehicles as Record<string, Record<"horizontal" | "north" | "south", { size: number[]; artSource?: string; sourceSheet?: string; visualProfile?: string; baseFacing?: string }>>;
     expect(Object.keys(vehicles)).toHaveLength(8);
     for (const [key, orientations] of Object.entries(vehicles)) {
       expect(orientations.horizontal, key).toMatchObject({ size: [16, 8], artSource: "AI_AUTHORED" });
-      expect(orientations.vertical, key).toMatchObject({ size: [8, 16], artSource: "AI_AUTHORED" });
-      expect(orientations.horizontal.sourceSheet, key).toBe(orientations.vertical.sourceSheet);
+      expect(orientations.north, key).toMatchObject({ size: [8, 16], artSource: "AI_AUTHORED" });
+      expect(orientations.south, key).toMatchObject({ size: [8, 16], artSource: "AI_AUTHORED" });
+      expect(orientations.horizontal.sourceSheet, key).toBe(orientations.north.sourceSheet);
+      expect(orientations.horizontal.sourceSheet, key).toBe(orientations.south.sourceSheet);
+      expect(orientations.horizontal, key).toMatchObject({ visualProfile: "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE", baseFacing: "EAST" });
+      expect(orientations.north, key).toMatchObject({ visualProfile: "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE", baseFacing: "NORTH" });
+      expect(orientations.south, key).toMatchObject({ visualProfile: "TASKTOPIA_V4_FRONTAL_TOP_ROAD_VEHICLE", baseFacing: "SOUTH" });
     }
   });
 

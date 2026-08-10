@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
-import { AppService, DomainError } from "../src/server/app-service";
+import { AppService, connectorCorridorBlocked, DomainError } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
@@ -18,6 +18,15 @@ describe("Tasktopia square-world application service", () => {
   });
 
   afterEach(async () => await db.close());
+
+  it("reuses a completed district boundary road without opening its sealed land", () => {
+    const occupied = new Set<string>();
+    const existingRoads = new Set(["10,5"]);
+    const blockedByDistrict = new Set(["10,5", "11,5"]);
+    const foreignSoft = new Set<string>();
+    expect(connectorCorridorBlocked("10,5", occupied, existingRoads, blockedByDistrict, foreignSoft, false)).toBe(false);
+    expect(connectorCorridorBlocked("11,5", occupied, existingRoads, blockedByDistrict, foreignSoft, false)).toBe(true);
+  });
 
   it("creates an idempotent city with reciprocal square-road masks", async () => {
     await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
@@ -42,6 +51,20 @@ describe("Tasktopia square-world application service", () => {
       }
     }
   });
+
+  it("keeps the full highway corridor clear of existing city signs when adding a third city", async () => {
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1, countryId);
+    await service.createCity(countryId, { name: "First", idempotencyKey: "corridor-city-1" });
+    await service.createCity(countryId, { name: "Second", idempotencyKey: "corridor-city-2" });
+    await expect(service.createCity(countryId, { name: "Third", idempotencyKey: "corridor-city-3" })).resolves.toMatchObject({ name: "Third" });
+
+    const signCells = new Set((await service.listWorldFeatures(countryId))
+      .filter((feature) => feature.kind === "CITY_SIGN")
+      .flatMap((feature) => [...feature.footprint, ...feature.accessPath])
+      .map(cellKey));
+    const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all<{ x: number; y: number }>(countryId);
+    expect(roads.filter((road) => signCells.has(cellKey(road)))).toEqual([]);
+  }, 15_000);
 
   it("renames a city, district, and task with idempotent realtime events", async () => {
     const emitted: string[] = [];
@@ -379,7 +402,11 @@ describe("Tasktopia square-world application service", () => {
     for (const bridge of bridges) expect(isWater(terrainAt(seed, bridge.x, bridge.y).terrain)).toBe(true);
     const features = await service.listWorldFeatures(countryId);
     expect(features.filter((feature) => feature.kind === "CITY_SIGN").length).toBeGreaterThan(0);
-    expect(features.filter((feature) => feature.kind === "BUS_STOP").length).toBeGreaterThan(0);
+    const stops = features.filter((feature) => feature.kind === "BUS_STOP");
+    expect(stops.length).toBeGreaterThanOrEqual(4);
+    expect(stops.length % 2).toBe(0);
+    expect(stops.every((feature) => ["bus-stop-horizontal", "bus-stop-vertical"].includes(feature.assetKey))).toBe(true);
+    for (const stop of stops) expect(stop.footprint).toHaveLength(4);
     for (const feature of features) {
       // A boom barrier intentionally spans the archive driveway at the fence
       // line. All other world features must remain outside drivable cells.

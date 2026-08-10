@@ -44,6 +44,9 @@ Bootstrap-конфиг нужен только до первого выпуск�
 
 ```dotenv
 APP_ORIGIN=https://tasktopia.online
+# После успешной CDN-проверки обе переменные получают одно значение:
+# STATIC_ORIGIN=https://store.tasktopia.online
+# VITE_STATIC_ORIGIN=https://store.tasktopia.online
 POSTGRES_PASSWORD=<длинный-случайный-пароль>
 SESSION_COOKIE_SECURE=true
 LOG_LEVEL=info
@@ -52,6 +55,30 @@ APP_CPU_LIMIT=2.00
 POSTGRES_MEMORY_LIMIT=1g
 POSTGRES_CPU_LIMIT=1.00
 ```
+
+`VITE_STATIC_ORIGIN` встраивается в клиент во время `docker compose build`, а
+`STATIC_ORIGIN` добавляет тот же origin в CSP приложения. Их нельзя включать по
+отдельности. CDN должен использовать `https://tasktopia.online` как origin,
+сохранять query string и возвращать CORS-заголовок
+`Access-Control-Allow-Origin: https://tasktopia.online` для JS, CSS, шрифтов и
+PNG. Игровой пак имеет content revision в query string, поэтому immutable-кэш
+не удерживает старые спрайты после пересборки.
+
+До включения CDN проверьте сертификат и доставку одного хешированного bundle и
+одного игрового PNG:
+
+```bash
+curl -fsSIL https://store.tasktopia.online/
+openssl s_client -connect store.tasktopia.online:443 -servername store.tasktopia.online </dev/null 2>/dev/null \
+  | openssl x509 -noout -ext subjectAltName
+# После сборки возьмите реальные URL из dist/public/index.html и manifest:
+curl -fsSIL 'https://store.tasktopia.online/assets/<vite-hash>.js'
+curl -fsSIL 'https://store.tasktopia.online/game-assets/v4/props/gazebo.png?v=<assetRevision>'
+```
+
+Если SAN не содержит `store.tasktopia.online`, обе CDN-переменные должны
+оставаться пустыми: приложение продолжит безопасно раздавать статику с основного
+домена. После изменения `VITE_STATIC_ORIGIN` обязательна новая сборка образа.
 
 Публичный MCP endpoint: `https://tasktopia.online/mcp`. Публичная инструкция для интеграций: `https://tasktopia.online/ai.md`. Обе ссылки отображаются в настройках из `location.origin`, поэтому отдельный клиентский env не требуется.
 

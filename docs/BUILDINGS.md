@@ -1,8 +1,10 @@
 # Каталог зданий V4
 
-Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`. `src/shared/catalog.ts` только типизирует manifest и предоставляет его одинаково серверу и PixiJS-клиенту.
+Authoring source of truth — `assets/pixel-city-pack-v4/catalog/buildings.json`.
+Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`.
+`src/shared/catalog.ts` только типизирует manifest и предоставляет его одинаково серверу и PixiJS-клиенту.
 
-Сейчас каталог содержит 46 семейств и пять стадий каждого. Вариант описывает:
+Сейчас каталог содержит 193 семейства и пять стадий каждого. Вариант описывает:
 
 - стабильный `key`, русское название и category;
 - `spriteSize` в пикселях, кратный 8;
@@ -23,37 +25,32 @@ Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`. `src/shar
 
 Платформа не запекается в terrain. Footprint задаёт occupancy, а прозрачный PNG может выходить вверх за его границы. Вход и подход к тротуару хранятся отдельно; будущие дороги не могут пересекать ни footprint, ни опубликованный подход. Здания сортируются по нижней координате.
 
-## Добавить процедурный вариант без изменения приложения
+## Добавить или заменить визуальное семейство
 
-Добавьте объект в `assets/pixel-city-pack-v4/catalog/generated-buildings.json`:
+1. Сохраните принятый горизонтальный лист из пяти стадий в
+   `assets/pixel-city-pack-v4/reference/buildings/<key>/stages.png`.
+2. Найдите стабильный ключ в `catalog/buildings.json`. Не меняйте геометрию,
+   вход, лимиты и игровые теги при простой замене графики.
+3. Запишите относительный `sheet`, SHA-256 файла и только после визуальной
+   проверки установите `reviewed: true`:
 
 ```json
 {
   "key": "house-yellow-duplex",
-  "label": "Жёлтый дуплекс",
-  "spriteSize": [32, 32],
-  "footprintCells": [4, 3],
-  "wall": "#d3b46fff",
-  "dark": "#80634aff",
-  "roof": "#405268ff",
-  "accent": "#62a2a6ff",
-  "style": "duplex",
-  "rarity": "COMMON",
-  "category": "HOUSE"
+  "sheet": "buildings/house-yellow-duplex/stages.png",
+  "sheetSha256": "<64 lowercase hex characters>",
+  "reviewed": true
 }
 ```
 
-Затем выполните `npm run assets:build && npm run assets:verify`. Builder создаст пять стадий, обновит manifest/public pack и перерисует contact sheet. Read-only audit отдельно проверит все runtime PNG: пять уникальных непустых стадий, сетку и footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, одинаковую геометрию цветовых машин, отсутствие механического поворота ракурса, потерянных ссылок и лишних файлов. Для семейства АЗС дополнительно проверяются три разные композиции, высота и читаемая площадь силуэта; визуальное сравнение с домами сохраняется в `screenshots/gas-station-style-study.png`.
+4. Выполните `npm run assets:build && npm run assets:verify`.
 
-## Подключить нарисованные вручную спрайты
-
-1. Положите пять PNG в `assets/pixel-city-pack-v4/sources/<key>/`.
-2. Добавьте запись в `catalog/imported-buildings.json` с `key`, metadata и массивом `stages` относительно каталога `sources`.
-3. Запустите builder и тесты.
-
-`assets:verify` ничего не перегенерирует, поэтому его следует запускать и после ручной правки PNG. Сейчас он покрывает 46 зданий / 230 стадий, 12 terrain families, 70 props и 4 цветовых семейства машин. Рыбацкие лодки, береговые рыбаки, разные действия жителей, редкие лисы/олени, ограждения, активный флаг и water-варианты с рыбами сначала сформированы AI-reference листами, а runtime-версии перерисованы детерминированным pixel builder; provenance хранится в manifest.
-
-Imported entry может явно переопределить `platform`, `estimates`, `tags`, `ruleIds`, `entrances`, quotas и `serviceRole`. Новый обычный вариант не требует изменений TypeScript, базы или MCP.
+Builder проверяет digest, режет именно утверждённые пять стадий, нормализует их
+без дорисовки геометрии, обновляет runtime/public pack и contact sheets.
+Read-only audit проверяет 193 здания / 965 стадий: уникальность стадий, сетку и
+footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, потерянные
+ссылки и лишние файлы. Runtime manifest не содержит сведений о происхождении
+building art.
 
 ## Добавить новое поведение
 

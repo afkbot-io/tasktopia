@@ -1,11 +1,12 @@
-# AI-authored building acceptance
+# Building source-sheet acceptance
 
-Use this gate before adding a generated sheet to `catalog/ai-authored-buildings.json`.
+Use this gate before marking a building `reviewed` in the unified
+`catalog/buildings.json`.
 
 ## Preflight
 
 1. Read the target `spriteSize`, `footprintCells`, category, platform, entrance and semantic key from the catalog/manifest.
-2. Select two original V3 source sheets from the same category as projection and pixel-cluster references.
+2. Select two approved benchmark sheets from the same category as projection and pixel-cluster references.
 3. Describe one defining silhouette and at most two supporting details. Do not ask the model to invent the semantic role.
 4. State the intended runtime occupied bounds in pixels. Preserve aspect ratio during normalization; never repair a bad source by stretching it.
 5. Generate one building per request and exactly five horizontal cells. Wait `2–5 s` after each completed request before starting the next one.
@@ -52,8 +53,8 @@ Coverage alone is insufficient. Reject a subject that technically fills the canv
 Work in review groups of at most five accepted sources:
 
 1. Generate each source separately.
-2. Save accepted sources under `reference/ai-authored/`; move rejected drafts to `reference/rejected/`.
-3. Register only accepted sources.
+2. Save an accepted source as `reference/buildings/<key>/stages.png`; do not add rejected drafts to the repository.
+3. Register only the accepted source in `catalog/buildings.json`, pin its SHA-256 digest and set `reviewed: true`.
 4. Run `npm run assets:build` and `npm run assets:verify`.
 5. Render native/nearest-neighbour contact sheets and inspect every stage-5 sprite.
 6. Record accepted count, rejected count, occupied bounds and remaining queue before continuing.

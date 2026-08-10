@@ -3,8 +3,14 @@ import type { Rect } from "../shared/contracts";
 export type ScreenSize = { width: number; height: number };
 export type CameraPosition = { x: number; y: number };
 export type ChunkRange = { minChunkX: number; minChunkY: number; maxChunkX: number; maxChunkY: number };
+export type ChunkCoordinate = readonly [chunkX: number, chunkY: number];
+export type ProgressiveChunkPlan = { critical: ChunkCoordinate[]; background: ChunkCoordinate[] };
 
-export const PREFETCH_VIEWPORT_RATIO = 0.25;
+// A chunk is already 512px at the native 8px grid. Loading another fractional
+// viewport therefore expands to a full chunk ring and can double the first
+// request burst. Keep the network window strictly visible; the resident LRU
+// retains recently crossed chunks for smooth reverse pans.
+export const PREFETCH_VIEWPORT_RATIO = 0;
 
 export function minimumCameraScale(screen: ScreenSize, bounds: Rect, cellSize: number, configuredMinimum = 0.8): number {
   const width = (bounds.maxX - bounds.minX + 1) * cellSize;
@@ -68,5 +74,31 @@ export function chunkRangeForViewport(
     minChunkY: Math.floor(minWorldY / chunkPixels),
     maxChunkX: Math.floor((Math.max(minWorldX + 1, maxWorldX) - 1) / chunkPixels),
     maxChunkY: Math.floor((Math.max(minWorldY + 1, maxWorldY) - 1) / chunkPixels),
+  };
+}
+
+/**
+ * Split a visible range into a small center-first paint and a background ring.
+ * Resident keys are excluded so panning only requests newly exposed chunks.
+ */
+export function progressiveChunkPlan(range: ChunkRange, resident = new Set<string>()): ProgressiveChunkPlan {
+  const centerX = (range.minChunkX + range.maxChunkX) / 2;
+  const centerY = (range.minChunkY + range.maxChunkY) / 2;
+  const pending: Array<{ coordinate: ChunkCoordinate; distance: number }> = [];
+  for (let chunkX = range.minChunkX; chunkX <= range.maxChunkX; chunkX += 1) {
+    for (let chunkY = range.minChunkY; chunkY <= range.maxChunkY; chunkY += 1) {
+      if (resident.has(`${chunkX},${chunkY}`)) continue;
+      pending.push({
+        coordinate: [chunkX, chunkY],
+        distance: Math.abs(chunkX - centerX) + Math.abs(chunkY - centerY),
+      });
+    }
+  }
+  pending.sort((left, right) => left.distance - right.distance
+    || left.coordinate[1] - right.coordinate[1]
+    || left.coordinate[0] - right.coordinate[0]);
+  return {
+    critical: pending.slice(0, 9).map((entry) => entry.coordinate),
+    background: pending.slice(9).map((entry) => entry.coordinate),
   };
 }
