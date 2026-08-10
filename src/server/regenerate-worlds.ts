@@ -26,7 +26,11 @@ async function main(): Promise<void> {
             confirmName: country.name,
             idempotencyKey: `release:${runId}:${country.id}`,
           });
-          const audit = await auditWorld(db, service, country.id);
+          // The publishing service intentionally keeps chunk caches until the
+          // outer transaction commits. Audit through a fresh reader so the
+          // pre-commit validation observes the replacement geometry instead
+          // of the previous world's cached chunks.
+          const audit = await auditWorld(db, new AppService(db), country.id);
           if (audit.violations.length > 0) {
             throw new Error(`world audit failed: ${audit.violations.map((violation) => violation.code).join(", ")}`);
           }

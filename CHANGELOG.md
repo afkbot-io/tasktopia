@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- World regeneration now persists a park's sidewalk access anchor and keeps each country replacement inside the audit transaction, preventing completed districts from publishing unreachable green areas or retaining a failed rebuild.
+- World regeneration now persists a park's sidewalk access anchor and validates each country replacement through a fresh read model inside the same transaction, preventing completed districts from publishing unreachable green areas or retaining a failed rebuild.
 
 ### Added
 
