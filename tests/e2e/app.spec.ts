@@ -5,6 +5,15 @@ async function capture(page: Page, path: string): Promise<void> {
   if (captureReleaseScreenshots) await page.screenshot({ path, fullPage: true });
 }
 
+test("CSP permits CDN asset fetches and the web manifest", async ({ request }) => {
+  const shell = await request.get("/");
+  expect(shell.ok()).toBe(true);
+  const staticOrigin = (process.env.STATIC_ORIGIN ?? process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173").replace(/\/$/, "");
+  const contentSecurityPolicy = shell.headers()["content-security-policy"];
+  expect(contentSecurityPolicy).toContain(`connect-src 'self' ${staticOrigin}`);
+  expect(contentSecurityPolicy).toContain(`manifest-src 'self' ${staticOrigin}`);
+});
+
 test("public AI integration guide is directly accessible", async ({ request }) => {
   const shell = await request.get("/");
   expect(shell.ok()).toBe(true);

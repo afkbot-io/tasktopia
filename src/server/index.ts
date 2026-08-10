@@ -33,8 +33,9 @@ await app.register(fastifyHelmet, {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "data:", "ws:", "wss:"],
+      connectSrc: ["'self'", staticOrigin, "data:", "ws:", "wss:"],
       imgSrc: ["'self'", staticOrigin, "data:", "blob:"],
+      manifestSrc: ["'self'", staticOrigin],
       workerSrc: ["'self'", "blob:"],
       scriptSrc: ["'self'", staticOrigin],
       styleSrc: ["'self'", staticOrigin, "'unsafe-inline'"],
