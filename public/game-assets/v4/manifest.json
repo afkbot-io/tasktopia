@@ -1,6 +1,7 @@
 {
   "version": 4,
   "gridPx": 8,
+  "materialProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026",
   "generator": "scripts/build-pixel-city-pack-v4.py",
   "runtimeAI": false,
   "terrain": {
@@ -96,31 +97,9 @@
         8,
         8
       ],
-      "overlay": false
-    },
-    "road": {
-      "path": "tiles/road.png",
-      "size": [
-        8,
-        8
-      ],
-      "overlay": false
-    },
-    "pavement": {
-      "path": "tiles/pavement.png",
-      "size": [
-        8,
-        8
-      ],
-      "overlay": false
-    },
-    "path-brown": {
-      "path": "tiles/path-brown.png",
-      "size": [
-        8,
-        8
-      ],
-      "overlay": false
+      "overlay": false,
+      "materialRole": "GROUND",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
     },
     "water": {
       "path": "tiles/water.png",
@@ -128,55 +107,39 @@
         8,
         8
       ],
-      "overlay": false
+      "overlay": false,
+      "materialRole": "GROUND",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
     },
-    "crosswalk-horizontal": {
-      "path": "tiles/crosswalk-horizontal.png",
+    "road": {
+      "path": "tiles/road.png",
       "size": [
         8,
         8
       ],
-      "overlay": true
+      "overlay": false,
+      "materialRole": "ROAD",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
     },
-    "crosswalk-vertical": {
-      "path": "tiles/crosswalk-vertical.png",
+    "pavement": {
+      "path": "tiles/pavement.png",
       "size": [
         8,
         8
       ],
-      "overlay": true
+      "overlay": false,
+      "materialRole": "FOOTWAY",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
     },
-    "road-marking-horizontal": {
-      "path": "tiles/road-marking-horizontal.png",
+    "path-brown": {
+      "path": "tiles/path-brown.png",
       "size": [
         8,
         8
       ],
-      "overlay": true
-    },
-    "road-marking-vertical": {
-      "path": "tiles/road-marking-vertical.png",
-      "size": [
-        8,
-        8
-      ],
-      "overlay": true
-    },
-    "bridge-side-horizontal": {
-      "path": "tiles/bridge-side-horizontal.png",
-      "size": [
-        8,
-        8
-      ],
-      "overlay": true
-    },
-    "bridge-side-vertical": {
-      "path": "tiles/bridge-side-vertical.png",
-      "size": [
-        8,
-        8
-      ],
-      "overlay": true
+      "overlay": false,
+      "materialRole": "FOOTWAY",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
     },
     "path-pavers": {
       "path": "tiles/path-pavers.png",
@@ -184,7 +147,9 @@
         8,
         8
       ],
-      "overlay": false
+      "overlay": false,
+      "materialRole": "FOOTWAY",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
     },
     "path-asphalt": {
       "path": "tiles/path-asphalt.png",
@@ -192,7 +157,69 @@
         8,
         8
       ],
-      "overlay": false
+      "overlay": false,
+      "materialRole": "FOOTWAY",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
+    },
+    "crosswalk-horizontal": {
+      "path": "tiles/crosswalk-horizontal.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "MARKING",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
+    },
+    "crosswalk-vertical": {
+      "path": "tiles/crosswalk-vertical.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "MARKING",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
+    },
+    "road-marking-horizontal": {
+      "path": "tiles/road-marking-horizontal.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "MARKING",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
+    },
+    "road-marking-vertical": {
+      "path": "tiles/road-marking-vertical.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "MARKING",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
+    },
+    "bridge-side-horizontal": {
+      "path": "tiles/bridge-side-horizontal.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "BRIDGE",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
+    },
+    "bridge-side-vertical": {
+      "path": "tiles/bridge-side-vertical.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "BRIDGE",
+      "visualProfile": "TASKTOPIA_V4_CITY_MATERIALS_2026"
     }
   },
   "buildings": {
@@ -11981,5 +12008,5 @@
       "visualProfile": "TASKTOPIA_V4_PARK_OBJECT"
     }
   },
-  "assetRevision": "769ec79ece37ff70"
+  "assetRevision": "1eeb8429c6b1a94d"
 }

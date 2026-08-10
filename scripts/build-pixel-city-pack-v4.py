@@ -1,8 +1,10 @@
-"""Build the deterministic square-grid runtime asset pack used by Tasktopia V3.
+"""Build the deterministic square-grid runtime asset pack used by Tasktopia V4.
 
 Approved AI-authored sheets are the visual authority for migrated buildings. This
 builder only removes their chroma key, slices the five authored stages and performs
 deterministic pixel-art normalization. It must not redraw approved geometry.
+Terrain and infrastructure are authored pixel matrices under one versioned
+material profile, never copied from an older runtime generation.
 """
 
 from __future__ import annotations
@@ -85,20 +87,39 @@ def load_generated_specs() -> list[HouseSpec]:
     return result
 
 
+MATERIAL_PROFILE = "TASKTOPIA_V4_CITY_MATERIALS_2026"
+
+# The city materials share the buildings' muted blue-green shadows and warm
+# highlights.  Tiny authored clusters replace the old high-contrast diagonal
+# speckle, so a repeated 8 px tile reads as a surface instead of wallpaper.
 TERRAIN_PALETTES: dict[str, tuple[str, tuple[str, ...]]] = {
-    "GRASS": ("#667f3dff", ("#789348ff", "#526d35ff", "#8ca554ff")),
-    "MEADOW": ("#78914aff", ("#8faa58ff", "#627e40ff", "#d4c65aff")),
-    "FOREST": ("#3e663bff", ("#527a43ff", "#2f5233ff", "#719252ff")),
-    "HILL": ("#647145ff", ("#7f8954ff", "#4f5e3bff", "#9a9360ff")),
-    "MOUNTAIN": ("#59615fff", ("#78807dff", "#3e4749ff", "#a4aaa4ff")),
-    "SAND": ("#c8a663ff", ("#ddbd76ff", "#a98750ff", "#edd092ff")),
-    "WET_SAND": ("#9b8258ff", ("#b59a6aff", "#77684eff", "#c4aa78ff")),
-    "CLAY": ("#a86245ff", ("#c17854ff", "#814934ff", "#d18a62ff")),
-    "STONE": ("#737b78ff", ("#919895ff", "#565e5dff", "#a8aba3ff")),
-    "SHALLOW_WATER": ("#287da4ff", ("#3d94b7ff", "#1e668fff", "#72b6c8ff")),
-    "DEEP_WATER": ("#1c5d86ff", ("#27729bff", "#16496fff", "#4d91adff")),
-    "DIRT": ("#876742ff", ("#a17b4eff", "#684e35ff", "#b18a59ff")),
+    "GRASS": ("#647e48ff", ("#708b50ff", "#567140ff", "#82965aff")),
+    "MEADOW": ("#71894fff", ("#80985aff", "#627b47ff", "#a6a765ff")),
+    "FOREST": ("#416346ff", ("#50734dff", "#34543dff", "#668158ff")),
+    "HILL": ("#65744dff", ("#78845aff", "#536342ff", "#8c8964ff")),
+    "MOUNTAIN": ("#5a6564ff", ("#74807dff", "#424d4fff", "#929b96ff")),
+    "SAND": ("#c0a46fff", ("#d0b780ff", "#a98c5eff", "#dcc591ff")),
+    "WET_SAND": ("#95805fff", ("#aa9470ff", "#786952ff", "#b9a47cff")),
+    "CLAY": ("#9d624aff", ("#b27358ff", "#7d4d3dff", "#c18466ff")),
+    "STONE": ("#717b79ff", ("#87918eff", "#596360ff", "#9ba29dff")),
+    "SHALLOW_WATER": ("#2d7f9fff", ("#3d91aeff", "#236d8fff", "#62a7baff")),
+    "DEEP_WATER": ("#245e7dff", ("#2f718fff", "#1c4e6dff", "#4b89a1ff")),
+    "DIRT": ("#84694bff", ("#987b57ff", "#6c563fff", "#aa8c62ff")),
 }
+
+LAND_CLUSTER_PATTERNS = (
+    ((1, 1, 0), (2, 1, 0), (5, 5, 1), (6, 5, 1), (6, 6, 2)),
+    ((5, 1, 1), (5, 2, 1), (1, 5, 0), (2, 5, 0), (3, 6, 2)),
+    ((2, 2, 1), (3, 2, 1), (6, 3, 0), (1, 6, 2), (2, 6, 2)),
+)
+
+WATER_RIPPLE_PATTERNS = (
+    ((0, 1, 2, 0), (4, 4, 3, 1), (1, 7, 2, 2)),
+    ((3, 0, 3, 1), (0, 3, 2, 0), (5, 6, 2, 2)),
+    ((1, 2, 3, 2), (5, 4, 2, 0), (0, 6, 3, 1)),
+    ((4, 1, 3, 0), (1, 4, 2, 1), (5, 7, 2, 2)),
+    ((0, 0, 2, 1), (3, 3, 3, 0), (1, 6, 3, 2)),
+)
 
 
 def rgba(hex_color: str) -> tuple[int, int, int, int]:
@@ -244,20 +265,21 @@ def terrain_tile(kind: str, variant: int) -> Image.Image:
     base, details = TERRAIN_PALETTES[kind]
     image = Image.new("RGBA", (CELL, CELL), rgba(base))
     draw = ImageDraw.Draw(image)
-    seed = sum(ord(char) for char in kind) * 17 + variant * 31
-    for index in range(5):
-        x = (seed + index * 5 + variant * 3) % CELL
-        y = (seed // 3 + index * 3 + variant) % CELL
-        color = details[(index + variant) % len(details)]
-        if "WATER" in kind:
-            length = 2 + (index % 3)
-            draw.line((x, y, min(CELL - 1, x + length), y), fill=rgba(color))
-        elif kind in {"STONE", "MOUNTAIN"}:
-            draw.rectangle((x, y, min(CELL - 1, x + 1), min(CELL - 1, y + 1)), fill=rgba(color))
-        elif kind == "HILL":
-            draw.line((max(0, x - 1), y, min(CELL - 1, x + 2), y), fill=rgba(color))
-        else:
-            draw.point((x, y), fill=rgba(color))
+    if "WATER" in kind:
+        for x, y, length, color_index in WATER_RIPPLE_PATTERNS[variant % len(WATER_RIPPLE_PATTERNS)]:
+            draw.line((x, y, min(CELL - 1, x + length - 1), y), fill=rgba(details[color_index]))
+    else:
+        pattern = LAND_CLUSTER_PATTERNS[variant % len(LAND_CLUSTER_PATTERNS)]
+        for index, (x, y, color_index) in enumerate(pattern):
+            color = details[color_index]
+            if kind in {"STONE", "MOUNTAIN"} and index < 2:
+                draw.rectangle((x, y, min(7, x + 1), min(7, y + 1)), fill=rgba(color))
+            elif kind == "HILL" and index < 2:
+                draw.line((x, y, min(7, x + 2), y), fill=rgba(color))
+            elif kind in {"SAND", "WET_SAND", "DIRT", "CLAY"} and index == 0:
+                draw.line((x, y, min(7, x + 1), y), fill=rgba(color))
+            else:
+                draw.point((x, y), fill=rgba(color))
     if "WATER" in kind and variant >= 3:
         fish = "#174c68ff" if kind == "SHALLOW_WATER" else "#123d5bff"
         # Tiny fish shadows follow the generated reference without turning a
@@ -274,18 +296,80 @@ def transparent_tile() -> Image.Image:
     return Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
 
 
-def path_tile(kind: str) -> Image.Image:
-    base = "#7e8681ff" if kind == "pavers" else "#596166ff"
-    image = Image.new("RGBA", (CELL, CELL), rgba(base))
+def infrastructure_tile(key: str) -> Image.Image:
+    """Author the complete road/footway material family in one palette."""
+    if key == "grass":
+        return terrain_tile("GRASS", 0)
+    if key == "water":
+        return terrain_tile("SHALLOW_WATER", 0)
+
+    overlay = key in {
+        "crosswalk-horizontal", "crosswalk-vertical",
+        "road-marking-horizontal", "road-marking-vertical",
+        "bridge-side-horizontal", "bridge-side-vertical",
+    }
+    image = transparent_tile() if overlay else Image.new("RGBA", (CELL, CELL), rgba({
+        "road": "#3c4856ff",
+        "pavement": "#879493ff",
+        "path-brown": "#8a6d4cff",
+        "path-pavers": "#7d8985ff",
+        "path-asphalt": "#59646aff",
+    }[key]))
     draw = ImageDraw.Draw(image)
-    if kind == "pavers":
-        for y in range(0, CELL, 3):
-            draw.line((0, y, CELL - 1, y), fill=rgba("#a6ada7ff"))
-            offset = 2 if (y // 3) % 2 else 0
-            for x in range(offset, CELL, 4): draw.point((x, min(CELL - 1, y + 1)), fill=rgba("#59625fff"))
-    else:
-        draw.line((0, 1, CELL - 1, 1), fill=rgba("#70787aff"))
-        draw.point((2, 5), fill=rgba("#454d51ff")); draw.point((6, 3), fill=rgba("#454d51ff"))
+
+    if key == "road":
+        for x, y, color in ((1, 1, "#465361ff"), (6, 2, "#303b48ff"), (3, 6, "#45515eff"), (7, 7, "#313c49ff")):
+            draw.point((x, y), fill=rgba(color))
+    elif key == "pavement":
+        grout, light, shadow = "#6f7d7cff", "#98a4a1ff", "#778583ff"
+        draw.line((0, 3, 7, 3), fill=rgba(grout))
+        draw.line((0, 7, 7, 7), fill=rgba(grout))
+        for x in (1, 5): draw.point((x, 0), fill=rgba(light))
+        for x in (3, 7): draw.point((x, 4), fill=rgba(light))
+        draw.point((6, 6), fill=rgba(shadow))
+    elif key == "path-brown":
+        draw.line((0, 7, 7, 7), fill=rgba("#71573fff"))
+        draw.line((1, 1, 2, 1), fill=rgba("#9b7c57ff"))
+        draw.point((6, 4), fill=rgba("#6f5841ff"))
+        draw.point((3, 6), fill=rgba("#a1845fff"))
+    elif key == "path-pavers":
+        draw.line((0, 2, 7, 2), fill=rgba("#687572ff"))
+        draw.line((0, 6, 7, 6), fill=rgba("#687572ff"))
+        draw.line((3, 0, 3, 2), fill=rgba("#687572ff"))
+        draw.line((1, 3, 1, 6), fill=rgba("#687572ff"))
+        draw.line((6, 3, 6, 6), fill=rgba("#687572ff"))
+        draw.point((5, 1), fill=rgba("#939e99ff"))
+        draw.point((3, 4), fill=rgba("#919c97ff"))
+    elif key == "path-asphalt":
+        draw.line((0, 0, 7, 0), fill=rgba("#6a7578ff"))
+        draw.line((0, 7, 7, 7), fill=rgba("#465157ff"))
+        for x, y in ((2, 3), (6, 5), (4, 1)): draw.point((x, y), fill=rgba("#4b565cff"))
+    elif key.startswith("crosswalk-"):
+        paint, shade = "#d6d7cfff", "#aeb5b1ff"
+        if key.endswith("horizontal"):
+            for x in (0, 3, 6):
+                draw.rectangle((x, 0, min(7, x + 1), 7), fill=rgba(paint))
+                draw.point((x, 7), fill=rgba(shade))
+        else:
+            for y in (0, 3, 6):
+                draw.rectangle((0, y, 7, min(7, y + 1)), fill=rgba(paint))
+                draw.point((7, y), fill=rgba(shade))
+    elif key.startswith("road-marking-"):
+        paint = rgba("#d6bd6cff")
+        if key.endswith("horizontal"):
+            draw.line((1, 3, 6, 3), fill=paint)
+        else:
+            draw.line((3, 1, 3, 6), fill=paint)
+    elif key.startswith("bridge-side-"):
+        rail, highlight, post = rgba("#526a71ff"), rgba("#a8b8b4ff"), rgba("#263945ff")
+        if key.endswith("horizontal"):
+            draw.line((0, 4, 7, 4), fill=rail)
+            draw.line((0, 3, 7, 3), fill=highlight)
+            for x in (0, 4, 7): draw.line((x, 2, x, 6), fill=post)
+        else:
+            draw.line((4, 0, 4, 7), fill=rail)
+            draw.line((3, 0, 3, 7), fill=highlight)
+            for y in (0, 4, 7): draw.line((2, y, 6, y), fill=post)
     return image
 
 
@@ -311,15 +395,20 @@ def topdown_vertical_car(palette: tuple[str, str, str, str]) -> Image.Image:
 def edge_overlay(material: str, direction: str) -> Image.Image:
     image = transparent_tile()
     draw = ImageDraw.Draw(image)
-    color = {
-        "shore": "#d2b06dff",
-        "wet-shore": "#a58a5fff",
-        "stone": "#858d88ff",
+    outer, inner = {
+        "shore": ("#c0a46fff", "#aa8e60ff"),
+        "wet-shore": ("#95805fff", "#74664fff"),
+        "stone": ("#78827fff", "#596461ff"),
     }[material]
-    lines = {
-        "N": (0, 0, 7, 1), "E": (6, 0, 7, 7), "S": (0, 6, 7, 7), "W": (0, 0, 1, 7),
-    }
-    draw.rectangle(lines[direction], fill=rgba(color))
+    outer_line = {"N": (0, 0, 7, 0), "E": (7, 0, 7, 7), "S": (0, 7, 7, 7), "W": (0, 0, 0, 7)}
+    inner_line = {"N": (1, 1, 6, 1), "E": (6, 1, 6, 6), "S": (1, 6, 6, 6), "W": (1, 1, 1, 6)}
+    draw.line(outer_line[direction], fill=rgba(outer))
+    draw.line(inner_line[direction], fill=rgba(inner))
+    # Small breaks keep long coastlines organic while all edges remain tile-safe.
+    if direction in "NS":
+        draw.point((3, 1 if direction == "N" else 6), fill=(0, 0, 0, 0))
+    else:
+        draw.point((1 if direction == "W" else 6, 3), fill=(0, 0, 0, 0))
     return image
 
 
@@ -2280,15 +2369,32 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                 }
             vehicle_manifest[authored["key"]] = axes
 
-    tile_manifest = {key: value for key, value in source_manifest["tiles"].items() if key != "curb"}
     tile_dir = RUNTIME / "tiles"
-    for key, kind in (("path-pavers", "pavers"), ("path-asphalt", "asphalt")):
+    tile_dir.mkdir(parents=True, exist_ok=True)
+    material_roles = {
+        "grass": "GROUND", "water": "GROUND",
+        "road": "ROAD",
+        "pavement": "FOOTWAY", "path-brown": "FOOTWAY",
+        "path-pavers": "FOOTWAY", "path-asphalt": "FOOTWAY",
+        "crosswalk-horizontal": "MARKING", "crosswalk-vertical": "MARKING",
+        "road-marking-horizontal": "MARKING", "road-marking-vertical": "MARKING",
+        "bridge-side-horizontal": "BRIDGE", "bridge-side-vertical": "BRIDGE",
+    }
+    tile_manifest = {}
+    for key, role in material_roles.items():
         target = tile_dir / f"{key}.png"
-        path_tile(kind).save(target, optimize=True)
-        tile_manifest[key] = {"path": str(target.relative_to(RUNTIME)), "size": [CELL, CELL], "overlay": False}
+        infrastructure_tile(key).save(target, optimize=True)
+        tile_manifest[key] = {
+            "path": str(target.relative_to(RUNTIME)),
+            "size": [CELL, CELL],
+            "overlay": role in {"MARKING", "BRIDGE"},
+            "materialRole": role,
+            "visualProfile": MATERIAL_PROFILE,
+        }
     return {
         "version": 4,
         "gridPx": CELL,
+        "materialProfile": MATERIAL_PROFILE,
         "generator": "scripts/build-pixel-city-pack-v4.py",
         "runtimeAI": False,
         "terrain": terrain,
@@ -2311,6 +2417,11 @@ def runtime_revision() -> str:
 
 def validate(manifest: dict) -> None:
     assert manifest["runtimeAI"] is False
+    assert manifest["materialProfile"] == MATERIAL_PROFILE
+    assert "curb" not in manifest["tiles"]
+    for key, tile in manifest["tiles"].items():
+        assert tile["visualProfile"] == MATERIAL_PROFILE, key
+        assert tile["materialRole"] in {"GROUND", "ROAD", "FOOTWAY", "MARKING", "BRIDGE"}, key
     assert len(manifest["buildings"]) >= 44
     for key, building in manifest["buildings"].items():
         assert len(building["stages"]) == 5, key
@@ -2438,6 +2549,32 @@ def gas_station_style_sheet(manifest: dict) -> None:
     image.save(SCREENSHOTS / "gas-station-style-study.png", optimize=True)
 
 
+def material_style_sheet(manifest: dict) -> None:
+    """Render the complete city material system at a nearest-neighbour scale."""
+    scale, swatch_cells = 10, 5
+    card_width, card_height, columns = 330, 118, 3
+    entries = [("terrain", key, paths) for key, paths in manifest["terrain"].items()]
+    entries += [("tile", key, [entry["path"]]) for key, entry in manifest["tiles"].items()]
+    rows = (len(entries) + columns - 1) // columns
+    image = Image.new("RGB", (card_width * columns, card_height * rows), rgba("#132126ff")[:3])
+    draw = ImageDraw.Draw(image)
+    for index, (group, key, paths) in enumerate(entries):
+        left, top = (index % columns) * card_width, (index // columns) * card_height
+        draw.rectangle(
+            (left + 6, top + 6, left + card_width - 6, top + card_height - 6),
+            fill=rgba("#1b2c30ff")[:3], outline=rgba("#3a5359ff")[:3], width=2,
+        )
+        draw.text((left + 14, top + 14), f"{group} · {key}", fill=rgba("#d9e2ddff")[:3])
+        cursor = left + 14
+        for path in paths[:swatch_cells]:
+            sprite = Image.open(RUNTIME / path).convert("RGBA")
+            sprite = sprite.resize((CELL * scale, CELL * scale), Image.Resampling.NEAREST)
+            image.paste(sprite, (cursor, top + 34), sprite)
+            cursor += CELL * scale + 6
+    SCREENSHOTS.mkdir(parents=True, exist_ok=True)
+    image.save(SCREENSHOTS / "pixel-city-v4-materials.png", optimize=True)
+
+
 def projection_style_sheet(manifest: dict) -> None:
     """Focused native-pixel review of V3 benchmarks and regenerated families."""
     keys = (
@@ -2514,6 +2651,7 @@ def main() -> None:
     (PACK / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     validate(manifest)
     contact_sheet(manifest, specs)
+    material_style_sheet(manifest)
     gas_station_style_sheet(manifest)
     projection_style_sheet(manifest)
     transport_style_sheet(manifest)

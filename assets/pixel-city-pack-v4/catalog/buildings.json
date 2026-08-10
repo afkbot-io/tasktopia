@@ -473,9 +473,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/shop-supermarket/stages.png",
+      "sheetSha256": "dd74e55a88233789be55344d37c17ca2b252a5f106729dcf1f00f622482b8fbd",
+      "reviewed": true
     },
     {
       "key": "shop-bakery-long",
@@ -554,9 +554,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/shop-mall/stages.png",
+      "sheetSha256": "ea114ca9b7af6ce6db7cf0e7f5c38629e1917168676e92db45889f56f7eb1fd5",
+      "reviewed": true
     },
     {
       "key": "shop-warehouse",
@@ -681,9 +681,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fire-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-fire-station/stages.png",
+      "sheetSha256": "409f19402a5eb5a1443ac990707e5a55fc0ecded58a8bfa1149c9010013c963d",
+      "reviewed": true
     },
     {
       "key": "civic-police",
@@ -808,9 +808,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "education-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-school/stages.png",
+      "sheetSha256": "7764664b2dfd3cc72109dc0827ef281819a6b6aa196d4b4642ca745e6d63c2bf",
+      "reviewed": true
     },
     {
       "key": "civic-city-hall",
@@ -850,9 +850,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "government-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-city-hall/stages.png",
+      "sheetSha256": "2582f640e8861af547d50d133cc9887daa6d5780aaf117fb14b04a431198b3bd",
+      "reviewed": true
     },
     {
       "key": "commercial-gas-station",

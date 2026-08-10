@@ -32,6 +32,19 @@ const expansionKeys = [
 ] as const;
 
 describe("Pixel City V4 expansion contract", () => {
+  it("publishes one coherent V4 material profile for terrain and infrastructure", () => {
+    const materialManifest = manifest as typeof manifest & {
+      materialProfile?: string;
+      tiles: Record<string, { visualProfile?: string; materialRole?: string }>;
+    };
+    expect(materialManifest.materialProfile).toBe("TASKTOPIA_V4_CITY_MATERIALS_2026");
+    for (const [key, tile] of Object.entries(materialManifest.tiles)) {
+      expect(tile.visualProfile, key).toBe("TASKTOPIA_V4_CITY_MATERIALS_2026");
+      expect(tile.materialRole, key).toMatch(/^(GROUND|ROAD|FOOTWAY|MARKING|BRIDGE)$/);
+    }
+    expect(materialManifest.tiles).not.toHaveProperty("curb");
+  });
+
   it("publishes every planned building as five distinct runtime stages", () => {
     for (const key of [...expansionKeys, ...v5Buildings.map((entry) => entry.key)]) {
       const building = buildings[key];

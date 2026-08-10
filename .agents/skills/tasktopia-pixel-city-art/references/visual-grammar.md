@@ -25,6 +25,15 @@
 - Use crisp pixel clusters. Ban blur, soft shadows, gradients, subpixel strokes, antialiasing, text, logos, and baked UI.
 - Preserve a coherent light direction from upper-left: highlights on roof/top planes, darker right/bottom planes.
 
+## Terrain and infrastructure materials
+
+- Every terrain, road, pavement, path, marking, transition, and bridge overlay uses `TASKTOPIA_V4_CITY_MATERIALS_2026`; importing an older tile into the active manifest is a release failure.
+- A base material is an opaque seamless `8×8` matrix. Use sparse 1–3 px clusters with at least three variants per land family and five for water; never distribute equal high-contrast diagonal dots across every tile.
+- Grass stays muted blue-green and must not contain a repeated yellow dash pattern. Meadow may use a rare warm accent, but it must remain subordinate to buildings and props at native scale.
+- Road asphalt is a deep blue-grey with sparse aggregate. Pavement is a warmer mid-grey with quiet paver joints. Their value separation must remain readable without a bright curb layer.
+- Earth, pavers, and footway asphalt are independent coherent path materials. Crosswalks, road markings, bridge rails, and terrain transitions are hard-alpha overlays and must not contain baked road/ground pixels.
+- Review a minimum `40×40`-cell repeated swatch at native scale. Reject seams, wallpaper diagonals, moiré, and any material that visually competes with completed building facades.
+
 ## Building proportions
 
 - The finished visible silhouette should occupy roughly 45–95% of canvas width and 45–95% of height. Roadside compositions may use wider negative space, but their canopy/sign/shop must remain readable at `1x`.
