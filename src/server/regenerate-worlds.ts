@@ -1,6 +1,6 @@
 import { AppService } from "./app-service";
 import { config } from "./config";
-import { createDb } from "./db";
+import { createDb, transaction } from "./db";
 import { auditWorld } from "./world/world-audit";
 
 type CountryRow = { id: string; name: string; seed: number };
@@ -21,14 +21,17 @@ async function main(): Promise<void> {
     for (const [index, country] of countries.entries()) {
       try {
         const before = await auditWorld(db, service, country.id);
-        const result = await service.regenerateCountry(country.id, {
-          confirmName: country.name,
-          idempotencyKey: `release:${runId}:${country.id}`,
+        const { result, after } = await transaction(db, async () => {
+          const regenerated = await service.regenerateCountry(country.id, {
+            confirmName: country.name,
+            idempotencyKey: `release:${runId}:${country.id}`,
+          });
+          const audit = await auditWorld(db, service, country.id);
+          if (audit.violations.length > 0) {
+            throw new Error(`world audit failed: ${audit.violations.map((violation) => violation.code).join(", ")}`);
+          }
+          return { result: regenerated, after: audit };
         });
-        const after = await auditWorld(db, service, country.id);
-        if (after.violations.length > 0) {
-          throw new Error(`world audit failed: ${after.violations.map((violation) => violation.code).join(", ")}`);
-        }
         console.log(JSON.stringify({
           event: "world-regeneration.completed",
           index: index + 1,

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- World regeneration now persists a park's sidewalk access anchor and keeps each country replacement inside the audit transaction, preventing completed districts from publishing unreachable green areas or retaining a failed rebuild.
+
 ### Added
 
 - У задачи появились четыре стандартных Markdown-документа (`system-analysis.md`, `architecture.md`, `design-system.md`, `implementation-plan.md`), дополнительные `.md`-материалы и упорядоченный чек-лист выполнения.

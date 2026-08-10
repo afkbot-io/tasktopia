@@ -75,6 +75,7 @@ import {
   chooseDistrictArchetype,
   cityMorphology,
   entranceOutside,
+  findAreaAccessPath,
   findAccessPlan,
   primaryZoningRole,
 } from "./world/city-generation";
@@ -1573,47 +1574,6 @@ export class AppService {
     return { id, ...input };
   }
 
-  private areaAccessPath(
-    seed: number,
-    allowed: Set<string>,
-    footprint: Cell[],
-    roads: Map<string, RoadCellDto>,
-    surfaces: Map<string, SurfaceCellDto>,
-    occupied: Set<string>,
-  ): Cell[] | null {
-    const footprintKeys = new Set(footprint.map(cellKey));
-    const starts = new Map<string, Cell>();
-    for (const cell of footprint) {
-      for (const next of neighbors4(cell)) {
-        const nextKey = cellKey(next);
-        if (!footprintKeys.has(nextKey) && allowed.has(nextKey)) starts.set(nextKey, next);
-      }
-    }
-    // Persist the actual sidewalk anchor even for a direct connection. An
-    // empty path loses ownership of that cell and a later task can otherwise
-    // consume the only pedestrian exit from an already published park.
-    for (const start of starts.values()) if (surfaces.get(cellKey(start))?.kind === "SIDEWALK") return [start];
-    const queue = [...starts.values()].map((cell) => ({ cell, path: [cell] }));
-    const visited = new Set<string>();
-    // A park alley may run up to eight cells: green areas legitimately sit a
-    // short walk behind the frontage rows, unlike building entrances.
-    const maxAlley = 8;
-    while (queue.length > 0) {
-      const state = queue.shift()!;
-      const stateKey = cellKey(state.cell);
-      if (visited.has(stateKey) || state.path.length > maxAlley) continue;
-      visited.add(stateKey);
-      if (roads.has(stateKey) || occupied.has(stateKey) || footprintKeys.has(stateKey) || !isBuildableTerrain(terrainAt(seed, state.cell.x, state.cell.y).terrain)) continue;
-      for (const next of neighbors4(state.cell)) {
-        const nextKey = cellKey(next);
-        if (surfaces.get(nextKey)?.kind === "SIDEWALK") return state.path;
-        if (state.path.length >= maxAlley || !allowed.has(nextKey) || surfaces.has(nextKey) || roads.has(nextKey) || footprintKeys.has(nextKey) || occupied.has(nextKey)) continue;
-        queue.push({ cell: next, path: [...state.path, next] });
-      }
-    }
-    return null;
-  }
-
   private async publishDistrictGreenFeature(
     countryId: string,
     city: CityDto,
@@ -1671,7 +1631,10 @@ export class AppService {
           const key = cellKey(cell);
           return allowed.has(key) && !roads.has(key) && !occupied.has(key) && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain);
         })) continue;
-        const accessPath = this.areaAccessPath(seed, allowed, footprint, roads, surfaces, occupied);
+        const accessPath = findAreaAccessPath({
+          allowed, footprint, roads, surfaces, occupied,
+          isWalkableTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
+        });
         if (accessPath === null) continue;
         const center = { x: x + Math.floor(size[0] / 2), y: y + Math.floor(size[1] / 2) };
         const centerDistance = manhattan(center, city.center);

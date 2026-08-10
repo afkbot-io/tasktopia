@@ -21,6 +21,47 @@ export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
   HIGHWAY: 4,
 };
 
+export function findAreaAccessPath(input: {
+  allowed: ReadonlySet<string>;
+  footprint: Cell[];
+  roads: ReadonlyMap<string, RoadCellDto>;
+  surfaces: ReadonlyMap<string, SurfaceCellDto>;
+  occupied: ReadonlySet<string>;
+  isWalkableTerrain: (cell: Cell) => boolean;
+  maxLength?: number;
+}): Cell[] | null {
+  const footprintKeys = new Set(input.footprint.map(cellKey));
+  const starts = new Map<string, Cell>();
+  for (const cell of input.footprint) {
+    for (const next of neighbors4(cell)) {
+      const nextKey = cellKey(next);
+      if (!footprintKeys.has(nextKey) && input.allowed.has(nextKey)) starts.set(nextKey, next);
+    }
+  }
+  const maxLength = input.maxLength ?? 8;
+  // Include the sidewalk endpoint in the persisted path. Completed districts
+  // suppress newly inferred sidewalks at their boundary, so omitting this
+  // anchor can make a valid park unreachable after regeneration.
+  for (const start of starts.values()) if (input.surfaces.get(cellKey(start))?.kind === "SIDEWALK") return [start];
+  const queue = [...starts.values()].map((cell) => ({ cell, path: [cell] }));
+  const visited = new Set<string>();
+  while (queue.length > 0) {
+    const state = queue.shift()!;
+    const stateKey = cellKey(state.cell);
+    if (visited.has(stateKey) || state.path.length >= maxLength) continue;
+    visited.add(stateKey);
+    if (input.roads.has(stateKey) || input.occupied.has(stateKey) || footprintKeys.has(stateKey) || !input.isWalkableTerrain(state.cell)) continue;
+    for (const next of neighbors4(state.cell)) {
+      const nextKey = cellKey(next);
+      if (input.surfaces.get(nextKey)?.kind === "SIDEWALK") return [...state.path, next];
+      if (!input.allowed.has(nextKey) || input.surfaces.has(nextKey) || input.roads.has(nextKey)
+        || footprintKeys.has(nextKey) || input.occupied.has(nextKey)) continue;
+      queue.push({ cell: next, path: [...state.path, next] });
+    }
+  }
+  return null;
+}
+
 const MORPHOLOGIES: CityMorphology[] = ["BALANCED", "DENSE_CORE", "GARDEN_CITY", "POLYCENTRIC"];
 const ARCHETYPES: DistrictArchetype[] = ["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"];
 

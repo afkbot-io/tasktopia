@@ -7,6 +7,7 @@ import {
   buildingZoningRole,
   buildSurfaceMap,
   chooseDistrictArchetype,
+  findAreaAccessPath,
   findAccessPlan,
 } from "../src/server/world/city-generation";
 import { cellKey, rectangleFootprint } from "../src/server/world/grid";
@@ -111,5 +112,19 @@ describe("V6 city morphology and access planning", () => {
     expect(plan).not.toBeNull();
     expect(plan!.path.length).toBeLessThanOrEqual(6);
     expect(cellKey(plan!.entrance)).toBe("2,4");
+  });
+
+  it("persists the sidewalk endpoint of a green-area access path", () => {
+    const sidewalk = { x: 2, y: 0, kind: "SIDEWALK" as const };
+    const path = findAreaAccessPath({
+      allowed: new Set(["1,0", "2,0"]),
+      footprint: [{ x: 0, y: 0 }],
+      roads: new Map(),
+      surfaces: new Map([["2,0", sidewalk]]),
+      occupied: new Set(),
+      isWalkableTerrain: () => true,
+    });
+    expect(path).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }]);
+    expect(path?.at(-1)).toEqual({ x: sidewalk.x, y: sidewalk.y });
   });
 });
