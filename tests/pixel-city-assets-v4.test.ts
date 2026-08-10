@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import manifest from "../assets/pixel-city-pack-v4/manifest.json";
 import v5Buildings from "../assets/pixel-city-pack-v4/catalog/generated-buildings-v5.json";
 import authoredProps from "../assets/pixel-city-pack-v4/catalog/ai-authored-props.json";
+import buildingCatalog from "../assets/pixel-city-pack-v4/catalog/buildings.json";
 
 const runtime = resolve("assets/pixel-city-pack-v4/runtime");
 const buildings = manifest.buildings as Record<string, {
@@ -31,7 +32,35 @@ const expansionKeys = [
   "highrise-medical-tower", "highrise-luxury-tower", "highrise-sustainable-tower",
 ] as const;
 
+const authoredBatch50 = [
+  "shop-bakery-long", "shop-warehouse", "commercial-shopping-plaza", "commercial-corner-cafe",
+  "commercial-pharmacy", "commercial-auto-repair", "house-modern-lowrise", "house-woodland-home",
+  "commercial-gas-station-compact", "commercial-highway-service-plaza", "commercial-gas-station-electric",
+  "commercial-gas-station-truck", "commercial-gas-station-cafe", "commercial-gas-station-wash",
+  "landmark-ferris-wheel", "house-canalside-terrace", "house-alpine-chalet", "house-farmstead",
+  "house-live-work", "house-student-residence", "house-senior-living", "house-prefab-modular",
+  "house-mediterranean-courtyard", "house-warehouse-lofts", "house-social-housing",
+  "house-rooftop-garden", "house-stilt-riverside", "commercial-food-hall", "commercial-bowling",
+  "commercial-bank-branch", "commercial-coworking", "commercial-tech-workshop",
+  "commercial-car-dealership", "commercial-garden-center", "commercial-night-market",
+  "commercial-department-store", "commercial-office-courtyard", "commercial-logistics-hub",
+  "commercial-cold-storage", "commercial-maker-market", "commercial-rooftop-restaurant",
+  "commercial-marina-office", "commercial-farmers-market", "commercial-hotel-boutique",
+  "landmark-stadium", "civic-clinic", "civic-police", "civic-bank", "civic-post-office", "civic-theatre",
+] as const;
+
 describe("Pixel City V4 expansion contract", () => {
+  it("ships the 50-family authored migration batch as pinned five-stage sources", () => {
+    expect(authoredBatch50).toHaveLength(50);
+    const catalog = new Map(buildingCatalog.buildings.map((building) => [building.key, building]));
+    for (const key of authoredBatch50) {
+      const building = catalog.get(key);
+      expect(building, key).toMatchObject({ reviewed: true });
+      expect(building?.sheet, key).toBe(`buildings/${key}/stages.png`);
+      expect(building?.sheetSha256, key).toMatch(/^[a-f0-9]{64}$/);
+    }
+  });
+
   it("publishes one coherent V4 material profile for terrain and infrastructure", () => {
     const materialManifest = manifest as typeof manifest & {
       materialProfile?: string;

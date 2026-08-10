@@ -514,9 +514,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/shop-bakery-long/stages.png",
+      "sheetSha256": "456f9699ca50dcbffbe4dcb364b4f6f7635575fb8935930dc164752a9d55d380",
+      "reviewed": true
     },
     {
       "key": "shop-mall",
@@ -596,9 +596,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/shop-warehouse/stages.png",
+      "sheetSha256": "c46b25255ad875f8d1ba5a536b8aa362a655cef170408fd39b5aec51abc14646",
+      "reviewed": true
     },
     {
       "key": "civic-clinic",
@@ -639,9 +639,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "health-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-clinic/stages.png",
+      "sheetSha256": "a4865cfb425b62cd70f3e7c35113c383e21c1c92904586ab4492d962c21d84bc",
+      "reviewed": true
     },
     {
       "key": "civic-fire-station",
@@ -724,9 +724,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "police-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-police/stages.png",
+      "sheetSha256": "65da87a8a6b8fcb83efad89d59c565120ea727ff4b94b50c0c5ce149096a3878",
+      "reviewed": true
     },
     {
       "key": "civic-bank",
@@ -766,9 +766,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-bank/stages.png",
+      "sheetSha256": "ea061b9c08fd44687929bfd84a914e85cb99a093d3a4c51cf2fe6e9a92450aa6",
+      "reviewed": true
     },
     {
       "key": "civic-school",
@@ -978,9 +978,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-shopping-plaza/stages.png",
+      "sheetSha256": "b49ca8696d6ec687e8d1337411fcb255118205e1b80716f302c783dd1651b6b4",
+      "reviewed": true
     },
     {
       "key": "commercial-corner-cafe",
@@ -1019,9 +1019,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-corner-cafe/stages.png",
+      "sheetSha256": "36af1bc411b863ee020c1c813c5aae279d6b15104269bb8fc12c5418ed71aa30",
+      "reviewed": true
     },
     {
       "key": "commercial-pharmacy",
@@ -1060,9 +1060,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-pharmacy/stages.png",
+      "sheetSha256": "cadd12923c39b183b0adb167363b92e9f2fb53e5201f4e99b3db6cc6d45135d5",
+      "reviewed": true
     },
     {
       "key": "commercial-auto-repair",
@@ -1102,9 +1102,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-auto-repair/stages.png",
+      "sheetSha256": "b75710d85e63f39bee6c5ab579db0f2119c3011214f9269bb3760c9edb0d6fad",
+      "reviewed": true
     },
     {
       "key": "house-bungalow",
@@ -1355,9 +1355,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "postal-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-post-office/stages.png",
+      "sheetSha256": "1c5e1d95696913d9b6d3eb3261e2f92c9fafef314af4898a9df3bcd7d56be32a",
+      "reviewed": true
     },
     {
       "key": "house-rowhomes",
@@ -1525,9 +1525,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-modern-lowrise/stages.png",
+      "sheetSha256": "d88b77476fff487ec55ca8222c7f48c175d73fc7c14fdb3d824815a9fb31fb0e",
+      "reviewed": true
     },
     {
       "key": "house-woodland-home",
@@ -1568,9 +1568,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-woodland-home/stages.png",
+      "sheetSha256": "622e4674de21e0d554fa7c09b99cb36bc769d2c1ab0083c38dfafa0c03bf6437",
+      "reviewed": true
     },
     {
       "key": "house-corner-apartments",
@@ -1652,9 +1652,9 @@
       "maxPerCity": null,
       "maxPerDistrict": 1,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/civic-theatre/stages.png",
+      "sheetSha256": "7c80a51dc4f39b15b078f2b4fbca43dad9c11c0b50334fd9c5ae07283059cd94",
+      "reviewed": true
     },
     {
       "key": "civic-library",
@@ -1866,9 +1866,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fuel-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-gas-station-compact/stages.png",
+      "sheetSha256": "79ccb4acf40829e606383e617d49b9b8054ce1ce5b0ba75f2a2ad984a53caef9",
+      "reviewed": true
     },
     {
       "key": "highrise-mixed-use-market",
@@ -1953,9 +1953,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fuel-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-highway-service-plaza/stages.png",
+      "sheetSha256": "dad7dcbe606f3833af3fbb4ec662bdcd9a5b1bdf2a7624292b6d928815b3f9db",
+      "reviewed": true
     },
     {
       "key": "house-colonial",
@@ -3155,9 +3155,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fuel-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-gas-station-electric/stages.png",
+      "sheetSha256": "cdf14cea832e7c492c8f0f9a894e138e8ed42fe171f43640043dc56969ddb046",
+      "reviewed": true
     },
     {
       "key": "commercial-gas-station-truck",
@@ -3197,9 +3197,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fuel-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-gas-station-truck/stages.png",
+      "sheetSha256": "687008af9ef7c76834d528b5d4835dc6883aeac17a85ef94e33daf8b9be714a7",
+      "reviewed": true
     },
     {
       "key": "commercial-gas-station-cafe",
@@ -3239,9 +3239,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fuel-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-gas-station-cafe/stages.png",
+      "sheetSha256": "2d490266cda889c404af042e2d266c1fe3a44901c76accbc6a6149f06fc6ed91",
+      "reviewed": true
     },
     {
       "key": "commercial-gas-station-wash",
@@ -3281,9 +3281,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "fuel-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-gas-station-wash/stages.png",
+      "sheetSha256": "a04fe7f2d31bd44b865ed28d9aaa1b333d7795330624a3543f0ce6f7aae7e65b",
+      "reviewed": true
     },
     {
       "key": "civic-museum",
@@ -4082,9 +4082,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "leisure-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/landmark-ferris-wheel/stages.png",
+      "sheetSha256": "d7f766ed5060949937dad33a695b0cd82a5dc84c34aefd3318adbcd99b32058f",
+      "reviewed": true
     },
     {
       "key": "landmark-megatall-tower",
@@ -4213,9 +4213,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-canalside-terrace/stages.png",
+      "sheetSha256": "ec7a5f91f0e60a7262c3bf0ef771d3bb7f9ad1a79ef0c4e4a8e161e860528aab",
+      "reviewed": true
     },
     {
       "key": "house-alpine-chalet",
@@ -4254,9 +4254,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-alpine-chalet/stages.png",
+      "sheetSha256": "74af95f2766400abc31edd4c627476ba5c3da70b1c003dc90576178c720811e5",
+      "reviewed": true
     },
     {
       "key": "house-coastal-cottage",
@@ -4337,9 +4337,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-farmstead/stages.png",
+      "sheetSha256": "45863aba1a027f49ba2103c8e2062d98707a8bb1990629cfe3a1fc527802c501",
+      "reviewed": true
     },
     {
       "key": "house-live-work",
@@ -4378,9 +4378,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-live-work/stages.png",
+      "sheetSha256": "3cd0101df670cd25f6cdb27496e80fd27d7822d524bd2cedb085d4232f6be006",
+      "reviewed": true
     },
     {
       "key": "house-micro-apartments",
@@ -4463,9 +4463,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-student-residence/stages.png",
+      "sheetSha256": "4ef9e931ebb42ad14f46d0c51d542b2ee12620016c85e2cececc7d7ed592442a",
+      "reviewed": true
     },
     {
       "key": "house-senior-living",
@@ -4505,9 +4505,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-senior-living/stages.png",
+      "sheetSha256": "9b0e8394568d5c3c88c2c520547d919629ddd8b876e93a686a5a6321cd613cfd",
+      "reviewed": true
     },
     {
       "key": "house-cohousing-cluster",
@@ -4588,9 +4588,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-prefab-modular/stages.png",
+      "sheetSha256": "08915fc4dc147d9bd2d4acf27247c833c737819cf31d7cc46920f75a0f3e974f",
+      "reviewed": true
     },
     {
       "key": "house-art-deco-apartments",
@@ -4754,9 +4754,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-mediterranean-courtyard/stages.png",
+      "sheetSha256": "f8586a575c8bc7284b29eb332ff6c373decc83fd3ff32c18a519cff9a1a2ef90",
+      "reviewed": true
     },
     {
       "key": "house-warehouse-lofts",
@@ -4797,9 +4797,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-warehouse-lofts/stages.png",
+      "sheetSha256": "439ae298d875fb6cf80e1f3568a92f172d94bf8aaa7b5868d2a02601dd7277f0",
+      "reviewed": true
     },
     {
       "key": "house-social-housing",
@@ -4839,9 +4839,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-social-housing/stages.png",
+      "sheetSha256": "66429df8b530d1d8fc0971c8829453ad022d4592f7a442983d714e91d476505c",
+      "reviewed": true
     },
     {
       "key": "house-rooftop-garden",
@@ -4880,9 +4880,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-rooftop-garden/stages.png",
+      "sheetSha256": "92cb7a93ed7aadcec4a6b502b0bde6050ce8bf63c07eb23e9eb4cb7d177eed79",
+      "reviewed": true
     },
     {
       "key": "house-stilt-riverside",
@@ -4921,9 +4921,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/house-stilt-riverside/stages.png",
+      "sheetSha256": "682531aef97f2cc416c02f8921244b121260be49270d6d1962563e8fc68e4eaf",
+      "reviewed": true
     },
     {
       "key": "house-arcade-apartments",
@@ -5086,9 +5086,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-food-hall/stages.png",
+      "sheetSha256": "4493ef08398244d8255c2b40b68606c09f04cb0d90714c36b19d58c5aa48ec60",
+      "reviewed": true
     },
     {
       "key": "commercial-cinema",
@@ -5166,9 +5166,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-bowling/stages.png",
+      "sheetSha256": "ce8f86546b6a76668eec824c31c7a09b2f3117de02d9a05e5a612285f8c03cf5",
+      "reviewed": true
     },
     {
       "key": "commercial-gym",
@@ -5248,9 +5248,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-bank-branch/stages.png",
+      "sheetSha256": "f07aecd9cb888a012a5f5a8fc1c3aece6c5311345e03489e07e3e8e134edad6c",
+      "reviewed": true
     },
     {
       "key": "commercial-coworking",
@@ -5289,9 +5289,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-coworking/stages.png",
+      "sheetSha256": "282f1b68c8f01801624465b712200dc6cc24a40ce9a3f3521ad249995c46dc78",
+      "reviewed": true
     },
     {
       "key": "commercial-tech-workshop",
@@ -5329,9 +5329,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-tech-workshop/stages.png",
+      "sheetSha256": "0040547009a78baf4539786fe38c81232c30bbc1f3584d39e93c486e8b4e0078",
+      "reviewed": true
     },
     {
       "key": "commercial-car-dealership",
@@ -5369,9 +5369,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-car-dealership/stages.png",
+      "sheetSha256": "118b31a968a7c7944f8e12c93adc69e8cccd3d809e890f41f2735a127c69f923",
+      "reviewed": true
     },
     {
       "key": "commercial-garden-center",
@@ -5409,9 +5409,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-garden-center/stages.png",
+      "sheetSha256": "ba96a7ff5548f16807e0e33bdfffe67ae8f11c4c433e8e3b1ffa2879f747a18d",
+      "reviewed": true
     },
     {
       "key": "commercial-night-market",
@@ -5449,9 +5449,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-night-market/stages.png",
+      "sheetSha256": "13e7a8657b3ec39e396811d1547fd2cab5e919ff26de5d96a90b9ac207bd49d6",
+      "reviewed": true
     },
     {
       "key": "commercial-department-store",
@@ -5489,9 +5489,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-department-store/stages.png",
+      "sheetSha256": "f06c7a945022b708607c68c35169d371e57c2915a282a19e3abc486515ee0d31",
+      "reviewed": true
     },
     {
       "key": "commercial-office-courtyard",
@@ -5529,9 +5529,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-office-courtyard/stages.png",
+      "sheetSha256": "c825caee23ea11064542b08cb932755280159b84c46f87510ed8445bc874ba6b",
+      "reviewed": true
     },
     {
       "key": "commercial-logistics-hub",
@@ -5569,9 +5569,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-logistics-hub/stages.png",
+      "sheetSha256": "756ad573f15b0f7646cbab561750daeb13b06acc09c71419dff6ba5596f86560",
+      "reviewed": true
     },
     {
       "key": "commercial-cold-storage",
@@ -5609,9 +5609,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-cold-storage/stages.png",
+      "sheetSha256": "9bf0c4305cc7af2b16fca4c35cccbf041a8bbf60cefe31b63a880cc7bda53317",
+      "reviewed": true
     },
     {
       "key": "commercial-maker-market",
@@ -5649,9 +5649,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-maker-market/stages.png",
+      "sheetSha256": "aa345e252769f0c955e6da6bcf63d8b1787fef1754142df81087624899eb57f1",
+      "reviewed": true
     },
     {
       "key": "commercial-rooftop-restaurant",
@@ -5690,9 +5690,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-rooftop-restaurant/stages.png",
+      "sheetSha256": "144fe204bcc30ef48a6a5a3a6b4ddbd4cc8bcba4e3db2d8aecc6b03b69521a17",
+      "reviewed": true
     },
     {
       "key": "commercial-marina-office",
@@ -5731,9 +5731,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-marina-office/stages.png",
+      "sheetSha256": "5eb592c2bc5eae214af91bf597fbebc69946d21236934ee9a73ed2d465cc1883",
+      "reviewed": true
     },
     {
       "key": "commercial-farmers-market",
@@ -5771,9 +5771,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-farmers-market/stages.png",
+      "sheetSha256": "3d7de5773450e800c95bca805bbf3c2e6c481f2775f9be81c005ed547c2ec883",
+      "reviewed": true
     },
     {
       "key": "commercial-hotel-boutique",
@@ -5812,9 +5812,9 @@
       "maxPerCity": null,
       "maxPerDistrict": null,
       "serviceRole": null,
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/commercial-hotel-boutique/stages.png",
+      "sheetSha256": "1b3c6730156248a0a36b67b43a211b40143e73d2204bf5e971c3e0471567a86c",
+      "reviewed": true
     },
     {
       "key": "civic-kindergarten",
@@ -7544,9 +7544,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "office-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/landmark-stadium/stages.png",
+      "sheetSha256": "79b7e8f00c363e2de44d1e58cfd9af7c560a84f55e891e754094b3180e29c587",
+      "reviewed": true
     },
     {
       "key": "landmark-observatory",

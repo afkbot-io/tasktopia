@@ -2029,8 +2029,26 @@ def load_ai_authored_stages(spec: HouseSpec, source: Path) -> list[Image.Image]:
     for index, target_height in enumerate(heights):
         left = round(index * sheet.width / 5)
         right = round((index + 1) * sheet.width / 5)
+        segment = sheet.crop((left, 0, right, sheet.height))
+        # Some image models add a narrow panel guide exactly on a nominal fifth
+        # boundary.  Trim only edge columns that span nearly the full sheet;
+        # ordinary roofs and wide canopies occupy only part of the height and
+        # therefore retain their complete authored silhouette.
+        alpha = remove_ai_chroma_key(segment).getchannel("A")
+        column_coverage = alpha.resize((segment.width, 1), Image.Resampling.BOX)
+        edge_window = max(2, segment.width // 32)
+        left_inset = 0
+        right_inset = 0
+        for x in range(edge_window):
+            if column_coverage.getpixel((x, 0)) >= 217:
+                left_inset = x + 1
+        for x in range(segment.width - 1, max(-1, segment.width - edge_window - 1), -1):
+            if column_coverage.getpixel((x, 0)) >= 217:
+                right_inset = segment.width - x
+        if left_inset + right_inset < segment.width:
+            segment = segment.crop((left_inset, 0, segment.width - right_inset, segment.height))
         stages.append(normalize_ai_authored_stage(
-            sheet.crop((left, 0, right, sheet.height)),
+            segment,
             spec.size,
             target_height,
         ))
