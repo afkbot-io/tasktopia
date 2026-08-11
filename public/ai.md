@@ -32,7 +32,7 @@ AI must preserve:
 | State Archive | record `kind`, `title`, `body`, `sourceUrl`, `tags` | Short durable context shared by humans and AI; active work remains in tasks |
 | City/epic | `description`, `goal`, `acceptanceCriteria`, `deadline` | Scope, expected epic outcome, exit conditions and target date |
 | District/sprint | `goal`, `description`, `deadline`, `capacitySp` | Sprint goal, operating notes, timebox and advisory team workload |
-| Task/work item | `workItemType`, `description`, `acceptanceCriteria`, Markdown documents, checklist, `estimate`, `priority`, `dueAt` | Executable brief and observable execution progress |
+| Task/work item | `workItemType`, `description`, `acceptanceCriteria`, Markdown documents, checklist, `estimate`, `priority`, `dueAt`, `assigneeEmail`, `assigneeRole`, `forUserEmail` | Executable brief, accountable executor, result owner and observable progress |
 | Linked defect | `title`, `description`, `reproductionSteps`, `actualResult`, `expectedResult`, `status` | Reproducible observation attached to a task; its own lifecycle is `OPEN → IN_PROGRESS → VERIFYING → FIXED` |
 
 `workItemType` is one of `TASK`, `BUG`, `RELEASE`, `HOTFIX`. A `BUG` work
@@ -443,7 +443,8 @@ Required scope: `tasks:read`.
 
 #### `task.get`
 
-Reads one task with its current state.
+Reads one task with its current state, documents, checklist, defects, linked
+artifacts, human-facing task number, and browser URL.
 
 ```json
 { "taskId": "<task-id>" }
@@ -467,6 +468,8 @@ Creates a task/building.
   "priority": "HIGH",
   "dueAt": "2026-08-12T12:00:00.000Z",
   "assigneeEmail": "person@example.com",
+  "assigneeRole": "backend-lead",
+  "forUserEmail": "product-owner@example.com",
   "idempotencyKey": "create-task-retry-policy-v1"
 }
 ```
@@ -474,6 +477,12 @@ Creates a task/building.
 Required fields: `cityId`, `title`, `estimate`, and `idempotencyKey`. Allowed
 estimates are `1`, `2`, `3`, or `6`. Allowed priorities are `LOW`, `NORMAL`,
 `HIGH`, and `CRITICAL`.
+
+`assigneeEmail` is the registered country member accountable for execution.
+`assigneeRole` records the capacity in which that person or agent works, for
+example `backend-lead`, `qa`, or `ai-agent:codex`. `forUserEmail` identifies the
+registered customer/result owner for whom the work is performed. The MCP key
+owner remains the task creator; creator, assignee, and result owner may differ.
 
 `buildingHint` is an optional exact building key. Read
 `tasktopia://catalog/buildings` first and use only a compatible catalog key;
@@ -488,7 +497,7 @@ Required scope: `tasks:write`.
 
 Updates task metadata without changing workflow status. Optional fields include
 `title`, `description`, `workItemType`, `acceptanceCriteria`, `estimate`,
-`priority`, and nullable `dueAt`. The legacy planning text fields remain
+`priority`, nullable `dueAt`, `assigneeRole`, and `forUserEmail`. The legacy planning text fields remain
 accepted for compatible clients (`systemAnalysis`, `architecture`,
 `designSystem`, `implementationPlan`) and synchronize the four standard documents,
 but new agents should use `task.document_upsert`.
@@ -524,7 +533,8 @@ cleared by upserting empty content and cannot be deleted.
 
 Use `task.checklist_replace` after agreeing the plan to create an ordered list
 of concrete steps. It replaces the complete checklist; an empty array clears
-it. During execution use `task.checklist_item_update` with `itemId` to mark one
+it, and at most 50 items are accepted. During execution use
+`task.checklist_item_update` with `itemId` to mark one
 step done or refine its title. Re-read `task.get` before and after the write.
 
 ```json
@@ -649,12 +659,15 @@ Required scope: `comments:write`.
 
 #### `task.assign`
 
-Assigns a task by account email. Set `assigneeEmail` to `null` to unassign.
+Assigns a task by account email and optionally records the executor's role. Set
+`assigneeEmail` to `null` to unassign. Changing the assignee does not silently
+change `forUserEmail`.
 
 ```json
 {
   "taskId": "<task-id>",
   "assigneeEmail": "person@example.com",
+  "assigneeRole": "qa",
   "idempotencyKey": "assign-task-person-v1"
 }
 ```
@@ -663,12 +676,23 @@ Required scope: `tasks:write`.
 
 #### Additional task context tools
 
-- `task.activity` reads events, comments, defects, attachments and dependencies; `task.get` also returns documents and checklist.
-- `task.document_list`, `task.document_upsert`, and `task.document_delete` manage task-scoped Markdown material.
-- `task.checklist_replace` and `task.checklist_item_update` manage execution steps and their done state.
-- `task.dependency_add` and `task.dependency_remove` maintain ordering links between tasks in one city.
-- `task.link_add` and `task.link_remove` maintain commit, MR/PR and other HTTP(S) links.
-- `task.attachment_add` stores a Base64-encoded file; `task.attachment_list` reads attachment metadata.
+- `task.activity` accepts `taskId` and reads the audit trail: events, comments,
+  defects, attachments and dependencies. `task.get` also returns documents and
+  the checklist.
+- `task.document_list`, `task.document_upsert`, and `task.document_delete`
+  manage task-scoped Markdown material as described above.
+- `task.checklist_replace` and `task.checklist_item_update` manage ordered
+  execution steps and their done state.
+- `task.dependency_add` and `task.dependency_remove` accept `taskId`,
+  `dependsOnTaskId`, and (for writes) `idempotencyKey`. Both tasks must belong
+  to one city; use the dependency only when the second task must finish first.
+- `task.link_add` accepts `taskId`, an HTTP(S) `url`, optional `title`, and
+  `idempotencyKey`. Use it for commits, MR/PRs, CI runs, designs, or other
+  repository evidence. `task.link_remove` removes the exact URL.
+- `task.attachment_add` accepts `taskId`, `fileName`, optional `mimeType`,
+  Base64 `contentBase64`, and `idempotencyKey`. Use it for evidence that cannot
+  be represented by a stable URL. `task.attachment_list` reads attachment
+  metadata; the human UI remains view-only.
 
 Read before mutation, use a stable `idempotencyKey` for every write, and keep
 repository artifacts linked to the task that produced or verified them.

@@ -1,58 +1,15 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
-const documentedTools = [
-  "country.get_current",
-  "country.list",
-  "country.select",
-  "country.update_profile",
-  "archive.get",
-  "archive.record_list",
-  "archive.record_create",
-  "archive.record_update",
-  "archive.record_delete",
-  "city.list",
-  "city.get",
-  "city.create",
-  "city.update",
-  "city.rename",
-  "city.delete",
-  "district.list",
-  "district.create",
-  "district.update",
-  "district.rename",
-  "district.activate",
-  "district.complete",
-  "district.delete",
-  "task.list",
-  "task.get",
-  "task.create",
-  "task.update_fields",
-  "task.defect_create",
-  "task.defect_update",
-  "task.rename",
-  "task.delete",
-  "task.set_status",
-  "task.report_progress",
-  "task.add_comment",
-  "task.assign",
-  "task.activity",
-  "task.dependency_add",
-  "task.dependency_remove",
-  "task.document_list",
-  "task.document_upsert",
-  "task.document_delete",
-  "task.checklist_replace",
-  "task.checklist_item_update",
-  "task.link_add",
-  "task.link_remove",
-  "task.attachment_add",
-  "task.attachment_list",
-] as const;
+async function registeredTools(): Promise<string[]> {
+  const source = await readFile(new URL("../src/server/mcp.ts", import.meta.url), "utf8");
+  return [...source.matchAll(/server\.registerTool\(\s*"([^"]+)"/g)].map((match) => match[1]);
+}
 
 describe("public AI integration guide", () => {
   it("documents the public endpoint, strict authentication, every tool, and every resource", async () => {
     const guide = await readFile(new URL("../public/ai.md", import.meta.url), "utf8");
+    const documentedTools = await registeredTools();
 
     expect(guide).toContain("https://tasktopia.online/ai.md");
     expect(guide).toContain("https://tasktopia.online/mcp");
@@ -63,6 +20,10 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("systemAnalysis");
     expect(guide).toContain("implementation-plan.md");
     expect(guide).toContain("human UI is read-only");
+    expect(guide).toContain('"assigneeRole": "backend-lead"');
+    expect(guide).toContain('"forUserEmail": "product-owner@example.com"');
+    expect(guide).toContain("Base64 `contentBase64`");
+    expect(guide).toContain("at most 50 items");
     expect(guide).toContain("reproductionSteps");
     expect(guide).toContain("OPEN → IN_PROGRESS → VERIFYING → FIXED");
     expect(guide).toContain("completion is rejected while any\nlinked defect is not `FIXED`");
@@ -75,6 +36,7 @@ describe("public AI integration guide", () => {
   it("publishes an installable progress skill with hierarchy and completion safeguards", async () => {
     const guide = await readFile(new URL("../public/ai.md", import.meta.url), "utf8");
     const skill = await readFile(new URL("../public/skills/tasktopia-progress/SKILL.md", import.meta.url), "utf8");
+    const documentedTools = await registeredTools();
 
     expect(guide).toContain("https://tasktopia.online/skills/tasktopia-progress/SKILL.md");
     expect(guide).toContain("$tasktopia-progress");
@@ -87,9 +49,26 @@ describe("public AI integration guide", () => {
     expect(skill).toContain("`OPEN → IN_PROGRESS → VERIFYING → FIXED`");
     expect(skill).toContain("`task.checklist_item_update`");
     expect(skill).toContain("`implementation-plan.md`");
+    expect(skill).toContain("`assigneeRole`");
+    expect(skill).toContain("`forUserEmail`");
+    expect(skill).toContain("Прочитать устойчивый контекст");
+    expect(skill).toContain("Связать commit или MR/PR");
     expect(skill).toContain("родительскую задачу сохранять в\n`TESTING`");
     expect(skill).toContain("Готово: <конкретный результат");
     expect(skill).not.toContain("TODO");
     for (const tool of documentedTools) expect(skill).toContain(`\`${tool}\``);
+  });
+
+  it("keeps the repository MCP guide aligned with the registered server tools", async () => {
+    const guide = await readFile(new URL("../docs/MCP.md", import.meta.url), "utf8");
+    const documentedTools = await registeredTools();
+
+    expect(guide).toContain("`archive.record_create`");
+    expect(guide).toContain("`task.checklist_replace`");
+    expect(guide).toContain("`task.checklist_item_update`");
+    expect(guide).toContain("`assigneeRole`");
+    expect(guide).toContain("`forUserEmail`");
+    expect(guide).toContain("Base64");
+    for (const tool of documentedTools) expect(guide).toContain(`\`${tool}\``);
   });
 });
