@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const captureReleaseScreenshots = process.env.E2E_CAPTURE_SCREENSHOTS === "true";
+const expectedAppOrigin = (process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173").replace(/\/$/, "");
 async function capture(page: Page, path: string): Promise<void> {
   if (captureReleaseScreenshots) await page.screenshot({ path, fullPage: true });
 }
@@ -22,7 +23,7 @@ test("public AI integration guide is directly accessible", async ({ request }) =
   const bundle = await request.get(bundlePath!);
   expect(bundle.ok()).toBe(true);
   expect(bundle.headers()["cache-control"]).toContain("immutable");
-  expect(bundle.headers()["access-control-allow-origin"]).toBe("http://127.0.0.1:5173");
+  expect(bundle.headers()["access-control-allow-origin"]).toBe(expectedAppOrigin);
   expect(bundle.headers()["cross-origin-resource-policy"]).toBe("cross-origin");
   const response = await request.get("/ai.md");
   expect(response.ok()).toBe(true);
@@ -41,7 +42,7 @@ test("public AI integration guide is directly accessible", async ({ request }) =
   expect(favicon.headers()["content-type"]).toContain("image/svg+xml");
   const staticManifest = await request.get("/game-assets/v4/manifest.json");
   expect(staticManifest.ok()).toBe(true);
-  expect(staticManifest.headers()["access-control-allow-origin"]).toBe("http://127.0.0.1:5173");
+  expect(staticManifest.headers()["access-control-allow-origin"]).toBe(expectedAppOrigin);
   expect(staticManifest.headers()["cross-origin-resource-policy"]).toBe("cross-origin");
   const manifest = await request.get("/site.webmanifest");
   expect(manifest.ok()).toBe(true);

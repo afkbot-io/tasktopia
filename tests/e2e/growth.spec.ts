@@ -26,6 +26,8 @@ test("captures a deterministic city growth checkpoint", async ({ page }) => {
   await expect.poll(async () => Number(await map.getAttribute("data-walkers")), simulationReady).toBeGreaterThan(0);
   await expect.poll(async () => Number(await map.getAttribute("data-traffic-junctions")), simulationReady).toBeGreaterThan(0);
   await expect.poll(async () => Number(await map.getAttribute("data-traffic-signals")), simulationReady).toBeGreaterThanOrEqual(2);
+  await expect(map).toHaveAttribute("data-traffic-blocked-vehicles", /\d+/);
+  await expect(map).toHaveAttribute("data-traffic-unsafe-pairs", "0");
   await expect(map).toHaveAttribute("data-wrong-way-cars", "0");
   await expect(map).toHaveAttribute("data-wrong-way-buses", "0");
   // Anonymous bootstrap/token requests before login are expected to return 401.

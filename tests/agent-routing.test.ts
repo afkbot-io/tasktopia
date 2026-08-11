@@ -15,8 +15,54 @@ import {
   shortestAgentRoute,
   vehiclePresentation,
   vehicleLanePosition,
+  planVehicleFrame,
+  vehicleCruiseSpeed,
+  vehicleUnsafePairCount,
   walkerInteractionPairs,
+  type TrafficVehicleSnapshot,
 } from "../src/client/agent-routing";
+
+const TEST_VEHICLE_BODY = {
+  CAR: { length: 1.575, width: 0.675 },
+  BUS: { length: 2.25, width: 0.675 },
+} as const;
+
+function independentlyOverlaps(left: TrafficVehicleSnapshot, right: TrafficVehicleSnapshot): boolean {
+  const inset = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+    const dx = Math.sign(to.x - from.x);
+    const dy = Math.sign(to.y - from.y);
+    if (dx > 0) return { x: 0, y: -0.125 };
+    if (dx < 0) return { x: 0, y: 0.125 };
+    if (dy > 0) return { x: 0.125, y: 0 };
+    if (dy < 0) return { x: -0.125, y: 0 };
+    return { x: 0, y: 0 };
+  };
+  const center = (vehicle: TrafficVehicleSnapshot) => {
+    const start = vehicle.trail?.[0]
+      ? inset(vehicle.trail[0], vehicle.current)
+      : inset(vehicle.current, vehicle.next);
+    const end = inset(vehicle.current, vehicle.next);
+    return {
+      x: vehicle.current.x + (vehicle.next.x - vehicle.current.x) * vehicle.progress
+        + start.x * (1 - vehicle.progress) + end.x * vehicle.progress,
+      y: vehicle.current.y + (vehicle.next.y - vehicle.current.y) * vehicle.progress
+        + start.y * (1 - vehicle.progress) + end.y * vehicle.progress,
+    };
+  };
+  const extents = (vehicle: TrafficVehicleSnapshot) => {
+    const body = TEST_VEHICLE_BODY[vehicle.kind];
+    const horizontal = vehicle.current.x !== vehicle.next.x;
+    return horizontal
+      ? { x: body.length / 2, y: body.width / 2 }
+      : { x: body.width / 2, y: body.length / 2 };
+  };
+  const leftCenter = center(left);
+  const rightCenter = center(right);
+  const leftExtents = extents(left);
+  const rightExtents = extents(right);
+  return Math.abs(leftCenter.x - rightCenter.x) < leftExtents.x + rightExtents.x
+    && Math.abs(leftCenter.y - rightCenter.y) < leftExtents.y + rightExtents.y;
+}
 
 describe("living city agent routing", () => {
   it("invalidates a retained car edge when a refreshed directed graph forbids it", () => {
@@ -184,5 +230,239 @@ describe("living city agent routing", () => {
     ], 1);
 
     expect(pairs).toEqual([["a", "b"]]);
+  });
+
+  it("gives each car a reproducible but visibly different cruise speed", () => {
+    expect(vehicleCruiseSpeed("CAR", 0)).toBeCloseTo(0.0019);
+    expect(vehicleCruiseSpeed("CAR", 1)).toBeCloseTo(0.0029);
+    expect(vehicleCruiseSpeed("BUS", 0)).toBeCloseTo(0.00155);
+    expect(vehicleCruiseSpeed("BUS", 1)).toBeCloseTo(0.0019);
+    expect(vehicleCruiseSpeed("CAR", 0.42)).toBe(vehicleCruiseSpeed("CAR", 0.42));
+  });
+
+  it("slows a following car before it reaches the vehicle ahead", () => {
+    const decisions = planVehicleFrame([
+      {
+        id: "leader", kind: "CAR", current: { x: 1, y: 0 }, next: { x: 2, y: 0 },
+        progress: 0.72, cruiseSpeed: 0.0021, path: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }],
+      },
+      {
+        id: "follower", kind: "CAR", current: { x: 0, y: 0 }, next: { x: 1, y: 0 },
+        progress: 0.8, cruiseSpeed: 0.0029, path: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }],
+      },
+    ], 50);
+
+    expect(decisions.get("leader")?.advance).toBeCloseTo(0.105);
+    expect(decisions.get("follower")?.advance).toBeGreaterThanOrEqual(0);
+    expect(decisions.get("follower")?.advance).toBeLessThan(0.145);
+    expect(decisions.get("follower")?.blockedBy).toBe("leader");
+  });
+
+  it("reserves a merging road cell so vehicles cannot pass through each other", () => {
+    const vehicles = [
+      {
+        id: "first", kind: "CAR", current: { x: -2, y: 0 }, next: { x: -1, y: 0 },
+        progress: 0.65, cruiseSpeed: 0.0024,
+        path: [{ x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }],
+      },
+      {
+        id: "second", kind: "CAR", current: { x: 0, y: -2 }, next: { x: 0, y: -1 },
+        progress: 0.65, cruiseSpeed: 0.0024,
+        path: [{ x: 0, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }],
+      },
+    ] as const;
+    const decisions = planVehicleFrame(vehicles, 50);
+
+    expect(decisions.get("first")?.advance).toBeCloseTo(0.12);
+    expect(decisions.get("second")?.advance).toBe(0);
+    expect(decisions.get("second")?.blockedBy).toBe("first");
+    expect(vehicleUnsafePairCount(vehicles)).toBe(0);
+  });
+
+  it("keeps a merge cell reserved until a vehicle has cleared it on a diverging route", () => {
+    const vehicles = [
+      {
+        id: "leader", kind: "CAR" as const, current: { x: 0, y: 0 }, next: { x: 1, y: 0 },
+        progress: 0.05, cruiseSpeed: 0.0024,
+        path: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }], trail: [{ x: -1, y: 0 }],
+      },
+      {
+        id: "waiting", kind: "CAR" as const, current: { x: 0, y: -2 }, next: { x: 0, y: -1 },
+        progress: 0.4, cruiseSpeed: 0.0024,
+        path: [{ x: 0, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }],
+      },
+    ];
+    const decisions = planVehicleFrame(vehicles, 50);
+
+    expect(decisions.get("leader")?.advance).toBeCloseTo(0.12);
+    expect(decisions.get("waiting")?.advance).toBeCloseTo(0.065);
+    expect(decisions.get("waiting")?.blockedBy).toBe("leader");
+    expect(vehicleUnsafePairCount(vehicles)).toBe(0);
+  });
+
+  it("preserves physical separation across multiple merge and exit frames", () => {
+    const vehicles = [
+      {
+        id: "a", kind: "CAR" as const, current: { x: -3, y: 0 }, next: { x: -2, y: 0 },
+        progress: 0, cruiseSpeed: 0.0024,
+        path: Array.from({ length: 8 }, (_, index) => ({ x: index - 3, y: 0 })), trail: [] as { x: number; y: number }[],
+      },
+      {
+        id: "b", kind: "CAR" as const, current: { x: 0, y: -3 }, next: { x: 0, y: -2 },
+        progress: 0, cruiseSpeed: 0.0024,
+        path: Array.from({ length: 8 }, (_, index) => ({ x: 0, y: index - 3 })), trail: [] as { x: number; y: number }[],
+      },
+    ];
+
+    for (let frame = 0; frame < 32; frame += 1) {
+      const decisions = planVehicleFrame(vehicles, 50);
+      for (const vehicle of vehicles) {
+        vehicle.progress += decisions.get(vehicle.id)!.advance;
+        if (vehicle.progress < 1) continue;
+        vehicle.progress -= 1;
+        vehicle.trail.unshift(vehicle.current);
+        vehicle.trail.length = Math.min(vehicle.trail.length, 4);
+        vehicle.current = vehicle.next;
+        vehicle.next = vehicle.path[2]!;
+        vehicle.path = vehicle.path.slice(1);
+      }
+      expect(independentlyOverlaps(vehicles[0]!, vehicles[1]!), `frame ${frame}`).toBe(false);
+      expect(vehicleUnsafePairCount(vehicles), `telemetry frame ${frame}`).toBe(0);
+    }
+  });
+
+  it("keeps turn-to-same-lane merges separated through the orientation change", () => {
+    const vehicles = [
+      {
+        id: "straight", kind: "CAR" as const, current: { x: 0, y: -3 }, next: { x: 0, y: -2 },
+        progress: 0, cruiseSpeed: 0.0024,
+        path: Array.from({ length: 10 }, (_, index) => ({ x: 0, y: index - 3 })), trail: [] as { x: number; y: number }[],
+      },
+      {
+        id: "turning", kind: "CAR" as const, current: { x: -2, y: 0 }, next: { x: -1, y: 0 },
+        progress: 0, cruiseSpeed: 0.0024,
+        path: [{ x: -2, y: 0 }, { x: -1, y: 0 }, ...Array.from({ length: 8 }, (_, index) => ({ x: 0, y: index }))],
+        trail: [] as { x: number; y: number }[],
+      },
+    ];
+
+    for (let frame = 0; frame < 45; frame += 1) {
+      const decisions = planVehicleFrame(vehicles, 50);
+      for (const vehicle of vehicles) {
+        vehicle.progress += decisions.get(vehicle.id)!.advance;
+        if (vehicle.progress < 1) continue;
+        vehicle.progress -= 1;
+        vehicle.trail.unshift(vehicle.current);
+        vehicle.trail.length = Math.min(vehicle.trail.length, 4);
+        vehicle.current = vehicle.next;
+        vehicle.next = vehicle.path[2]!;
+        vehicle.path = vehicle.path.slice(1);
+      }
+      expect(independentlyOverlaps(vehicles[0]!, vehicles[1]!), `frame ${frame}`).toBe(false);
+      expect(vehicleUnsafePairCount(vehicles), `telemetry frame ${frame}`).toBe(0);
+    }
+  });
+
+  it("measures collision geometry at the rendered right-hand lane positions", () => {
+    const vehicles = [
+      {
+        id: "east", kind: "CAR" as const, current: { x: -2, y: 0 }, next: { x: -1, y: 0 },
+        progress: 0.8, cruiseSpeed: 0, path: [{ x: -2, y: 0 }, { x: -1, y: 0 }],
+      },
+      {
+        id: "north", kind: "CAR" as const, current: { x: 0, y: -1 }, next: { x: 0, y: -2 },
+        progress: 0.2, cruiseSpeed: 0, path: [{ x: 0, y: -1 }, { x: 0, y: -2 }], trail: [{ x: 0, y: 0 }],
+      },
+    ];
+
+    expect(independentlyOverlaps(vehicles[0]!, vehicles[1]!)).toBe(true);
+    expect(vehicleUnsafePairCount(vehicles)).toBe(1);
+  });
+
+  it("prevents an adjacent turning bus body from sweeping through a car", () => {
+    const car = {
+      id: "car", kind: "CAR" as const, current: { x: 0, y: 9 }, next: { x: 0, y: 8 },
+      progress: 0.36, cruiseSpeed: 0.0024,
+      path: [{ x: 0, y: 9 }, { x: 0, y: 8 }, { x: 0, y: 7 }], trail: [{ x: 0, y: 10 }],
+    };
+    const bus = {
+      id: "bus", kind: "BUS" as const, current: { x: -1, y: 8 }, next: { x: -1, y: 9 },
+      progress: 0.94, cruiseSpeed: 0.0019,
+      path: [{ x: -1, y: 8 }, { x: -1, y: 9 }, { x: -2, y: 9 }, { x: -3, y: 9 }], trail: [{ x: -1, y: 7 }],
+    };
+    const decisions = planVehicleFrame([car, bus], 50);
+    const project = (vehicle: TrafficVehicleSnapshot, advance: number): TrafficVehicleSnapshot => {
+      const progress = vehicle.progress + advance;
+      if (progress < 1) return { ...vehicle, progress };
+      return {
+        ...vehicle,
+        current: vehicle.next,
+        next: vehicle.path[2]!,
+        progress: progress - 1,
+        path: vehicle.path.slice(1),
+        trail: [vehicle.current, ...(vehicle.trail ?? [])],
+      };
+    };
+
+    expect(independentlyOverlaps(car, bus)).toBe(false);
+    expect(independentlyOverlaps(
+      project(car, decisions.get("car")!.advance),
+      project(bus, decisions.get("bus")!.advance),
+    )).toBe(false);
+    expect(decisions.get("bus")!.advance).toBeLessThan(0.095);
+  });
+
+  it("checks continuously immediately before a bus changes orientation", () => {
+    const bus = {
+      id: "bus", kind: "BUS" as const, current: { x: 0, y: 1 }, next: { x: 0, y: 0 },
+      progress: 0.962146, cruiseSpeed: 0.0019,
+      path: [{ x: 0, y: 1 }, { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }], trail: [{ x: 0, y: 2 }],
+    };
+    const car = {
+      id: "car", kind: "CAR" as const, current: { x: 0, y: -2 }, next: { x: 0, y: -1 },
+      progress: 0.082806, cruiseSpeed: 0.0029,
+      path: [{ x: 0, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 0 }, { x: 1, y: 0 }], trail: [{ x: 0, y: -3 }],
+    };
+    const decisions = planVehicleFrame([bus, car], 50);
+    const project = (vehicle: TrafficVehicleSnapshot, advance: number): TrafficVehicleSnapshot => {
+      const progress = vehicle.progress + advance;
+      if (progress < 1) return { ...vehicle, progress };
+      return {
+        ...vehicle,
+        current: vehicle.next,
+        next: vehicle.path[2]!,
+        progress: progress - 1,
+        path: vehicle.path.slice(1),
+        trail: [vehicle.current, ...(vehicle.trail ?? [])],
+      };
+    };
+
+    expect(independentlyOverlaps(bus, car)).toBe(false);
+    for (let step = 1; step <= 1_000; step += 1) {
+      const fraction = step / 1_000;
+      expect(independentlyOverlaps(
+        project(bus, decisions.get("bus")!.advance * fraction),
+        project(car, decisions.get("car")!.advance * fraction),
+      ), `fraction ${fraction}`).toBe(false);
+    }
+  });
+
+  it("resolves an exact car and bus overlap deterministically instead of advancing both", () => {
+    const vehicles = [
+      {
+        id: "car", kind: "CAR" as const, current: { x: 0, y: 0 }, next: { x: 1, y: 0 },
+        progress: 0.5, cruiseSpeed: 0.0024, path: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
+      },
+      {
+        id: "bus", kind: "BUS" as const, current: { x: 0, y: 0 }, next: { x: 1, y: 0 },
+        progress: 0.5, cruiseSpeed: 0.0017, path: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
+      },
+    ];
+    const decisions = planVehicleFrame(vehicles, 50);
+
+    expect(vehicleUnsafePairCount(vehicles)).toBe(1);
+    expect(decisions.get("bus")?.advance).toBeCloseTo(0.085);
+    expect(decisions.get("car")?.advance).toBe(0);
+    expect(decisions.get("car")?.blockedBy).toBe("bus");
   });
 });

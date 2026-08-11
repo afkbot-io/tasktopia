@@ -7,7 +7,7 @@
 - `npm run assets:verify` — manifest, размеры, прозрачность и наличие всех runtime PNG.
 - `npx playwright test tests/e2e/app.spec.ts tests/e2e/accessibility.spec.ts` — основные формы и клавиатурная доступность.
 - `npx playwright test tests/e2e/map-streaming.spec.ts` — loader, bounded cache, частичная перерисовка, восстановление запросов, стабильность агентов и world-space самолёта.
-- `npm run smoke:mcp` — Bearer-аутентификация, 29 инструментов, scopes, modern/legacy transport и ресурсы MCP.
+- `npm run smoke:mcp` — Bearer-аутентификация, 46 инструментов, scopes, основной Streamable HTTP transport, stateless fallback и ресурсы MCP.
 
 Большая генерация вынесена в `npm run test:scale` и не запускается вместе с повседневным набором. Основной автоматический мир ограничен одним городом и небольшим числом районов.
 

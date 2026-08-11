@@ -14,6 +14,9 @@ import {
   nextSeededRandom,
   nextWithoutUTurn,
   planAgentRoute,
+  planVehicleFrame,
+  vehicleUnsafePairCount,
+  vehicleCruiseSpeed,
   vehiclePresentation,
   vehicleLanePosition,
   mustYieldAtCrosswalk,
@@ -21,6 +24,7 @@ import {
   trafficSignalPhase,
   walkerInteractionPairs,
   type AgentEdges,
+  type TrafficVehicleSnapshot,
   type TrafficJunction,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
@@ -716,6 +720,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         current: Cell;
         next: Cell;
         previous?: Cell;
+        trail: Cell[];
         progress: number;
         speed: number;
         kind: "CAR" | "BUS" | "WALKER" | "ANIMAL";
@@ -739,6 +744,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       let spawnState = sessionSeed;
       let nextAgentId = 1;
       let simulationTimeMs = 0;
+      let nextTrafficTelemetryMs = 0;
       let nextSocialCheckMs = 700;
       let airplane: { view: Sprite; speed: number; startY: number; phase: number; endX: number; nextTrailX: number; trail: Graphics[] } | undefined;
       let nextFlybyMs = 20_000 + nextSeededRandom(sessionSeed).value * 35_000;
@@ -781,6 +787,26 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         const presentation = vehiclePresentation(agent.current, agent.next);
         agent.view.scale.set(presentation.scaleX, presentation.scaleY);
       };
+      const plannedVehiclePath = (agent: MovingAgent): Cell[] => {
+        const path = [agent.current, agent.next];
+        for (const cell of agent.route.slice(agent.routeIndex + 1, agent.routeIndex + 4)) {
+          if (key(cell) !== key(path[path.length - 1]!)) path.push(cell);
+        }
+        return path;
+      };
+      const vehicleSnapshot = (
+        agent: MovingAgent & { kind: "CAR" | "BUS" },
+        cruiseSpeed = agent.speed,
+      ): TrafficVehicleSnapshot => ({
+        id: agent.id,
+        kind: agent.kind,
+        current: agent.current,
+        next: agent.next,
+        progress: agent.progress,
+        cruiseSpeed,
+        path: plannedVehiclePath(agent),
+        trail: agent.trail,
+      });
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
       app.ticker.add(() => {
@@ -808,6 +834,19 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             celebrations.splice(index, 1);
           }
         }
+        const trafficSnapshot = movingAgents
+          .filter((agent): agent is MovingAgent & { kind: "CAR" | "BUS" } => agent.kind === "CAR" || agent.kind === "BUS")
+          .map((agent) => vehicleSnapshot(agent, agent.pauseMs > 0
+              || mustYieldAtCrosswalk(agent.next, activeCrosswalks, movingWalkers)
+              || mustYieldAtTrafficSignal(agent.current, agent.next, trafficJunctions, simulationTimeMs)
+              ? 0 : agent.speed));
+        const vehicleFrame = planVehicleFrame(trafficSnapshot, elapsed);
+        nextTrafficTelemetryMs -= elapsed;
+        if (nextTrafficTelemetryMs <= 0) {
+          host.dataset.trafficBlockedVehicles = String([...vehicleFrame.values()].filter((decision) => decision.blockedBy).length);
+          host.dataset.trafficUnsafePairs = String(vehicleUnsafePairCount(trafficSnapshot));
+          nextTrafficTelemetryMs = 250;
+        }
         for (const agent of movingAgents) {
           agent.socialCooldownMs = Math.max(0, agent.socialCooldownMs - elapsed);
           if (agent.pauseMs > 0) {
@@ -826,10 +865,13 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             trafficJunctions,
             simulationTimeMs,
           )) continue;
-          agent.progress += elapsed * agent.speed;
+          const vehicleDecision = agent.kind === "CAR" || agent.kind === "BUS" ? vehicleFrame.get(agent.id) : undefined;
+          agent.progress += vehicleDecision?.advance ?? elapsed * agent.speed;
           while (agent.progress >= 1) {
             agent.progress -= 1;
             agent.previous = agent.current;
+            agent.trail.unshift(agent.current);
+            agent.trail.length = Math.min(agent.trail.length, 4);
             agent.current = agent.next;
             agent.steps += 1;
             agent.routeIndex += 1;
@@ -1251,7 +1293,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             : GRID_DIRECTIONS.some((direction) => graph.has(key({ x: cell.x + direction.x, y: cell.y + direction.y }))));
           if (candidates.length === 0) return;
           const colors = Object.keys(VEHICLE_SPRITES);
-          const occupiedStarts = new Set(movingAgents.filter((agent) => agent.kind === kind).map((agent) => key(agent.current)));
+          const motorAgent = kind === "CAR" || kind === "BUS";
+          const occupiedStarts = new Set(movingAgents
+            .filter((agent) => motorAgent ? agent.kind === "CAR" || agent.kind === "BUS" : agent.kind === kind)
+            .map((agent) => key(agent.current)));
           let created = movingAgents.filter((agent) => agent.kind === kind).length;
           let attempts = 0;
           while (created < count && attempts < candidates.length * 2) {
@@ -1266,6 +1311,27 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             const planned = planAgentRoute(graph, current, routeSeed.state, kind === "CAR" || kind === "BUS" ? 14 : 9, undefined, outgoing);
             const next = planned.route[1] ?? nextWithoutUTurn(graph, current, undefined, outgoing);
             if (key(next) === key(current)) continue;
+            const speedPick = nextSeededRandom(spawnState);
+            spawnState = speedPick.state;
+            const progress = motorAgent ? 0 : picked.value;
+            const speed = kind === "CAR" || kind === "BUS" ? vehicleCruiseSpeed(kind, speedPick.value)
+              : kind === "ANIMAL" ? 0.00065 + (index % 3) * 0.00008
+                : 0.00115 + (index % 5) * 0.00013;
+            if (kind === "CAR" || kind === "BUS") {
+              const candidate: TrafficVehicleSnapshot = {
+                id: `candidate-${nextAgentId}`,
+                kind,
+                current,
+                next,
+                progress,
+                cruiseSpeed: speed,
+                path: [current, next, ...planned.route.slice(2, 4)],
+              };
+              const residentVehicles = movingAgents
+                .filter((agent): agent is MovingAgent & { kind: "CAR" | "BUS" } => agent.kind === "CAR" || agent.kind === "BUS")
+                .map((agent) => vehicleSnapshot(agent));
+              if (vehicleUnsafePairCount([...residentVehicles, candidate]) > vehicleUnsafePairCount(residentVehicles)) continue;
+            }
             const variant = kind === "ANIMAL" ? ANIMAL_SPECIES[created % ANIMAL_SPECIES.length]!
               : kind === "BUS" ? "city-bus"
                 : colors[created % colors.length] ?? "blue";
@@ -1284,14 +1350,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             if (activityView) { activityView.visible = false; view.addChild(activityView); }
             const agent: MovingAgent = {
               id: `${sessionSeed.toString(36)}-${nextAgentId++}`,
-              view, graph, outgoing, current, next, progress: picked.value,
-              speed: kind === "CAR" ? 0.0022 + (index % 3) * 0.00016
-                : kind === "BUS" ? 0.00175 + (index % 2) * 0.0001
-                  : kind === "ANIMAL" ? 0.00065 + (index % 3) * 0.00008
-                    : 0.00115 + (index % 5) * 0.00013,
+              view, graph, outgoing, current, next, progress, speed,
               kind, variant, phase: (index % 11) / 11, pauseMs: 0, socialCooldownMs: index * 170 % 2_000,
               activity: "NONE", activityView, steps: index % 17,
-              randomState: planned.randomState, route: planned.route, routeIndex: 1,
+              randomState: planned.randomState, route: planned.route, routeIndex: 1, trail: [],
             };
             orientVehicle(agent);
             movingAgents.push(agent);
@@ -1387,7 +1449,12 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               agent.graph = graph;
               agent.outgoing = agent.kind === "CAR" || agent.kind === "BUS" ? carEdges : undefined;
               if (!isAgentEdgeAllowed(agent.current, agent.next, agent.outgoing)) {
-                const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" || agent.kind === "BUS" ? 14 : 9, agent.previous, agent.outgoing);
+                if (agent.kind === "CAR" || agent.kind === "BUS") {
+                  agent.view.removeFromParent();
+                  agent.view.destroy({ children: true });
+                  return false;
+                }
+                const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, 9, agent.previous, agent.outgoing);
                 agent.randomState = planned.randomState;
                 agent.route = planned.route;
                 agent.routeIndex = 1;

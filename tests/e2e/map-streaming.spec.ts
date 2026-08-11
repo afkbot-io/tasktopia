@@ -13,6 +13,15 @@ async function openDemoMap(page: import("@playwright/test").Page) {
   for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "detail"; step += 1) await page.mouse.wheel(0, -800);
   await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
   await expect.poll(async () => Number(await host.getAttribute("data-cars")), { timeout: 90_000 }).toBeGreaterThan(0);
+  await expect(host).toHaveAttribute("data-traffic-blocked-vehicles", /\d+/);
+  const unsafeSamples = await page.evaluate(async () => await new Promise<number[]>((resolve) => {
+    const samples: number[] = [];
+    const timer = window.setInterval(() => {
+      samples.push(Number(document.querySelector<HTMLElement>(".world-canvas")?.dataset.trafficUnsafePairs ?? -1));
+      if (samples.length >= 8) { window.clearInterval(timer); resolve(samples); }
+    }, 100);
+  }));
+  expect(unsafeSamples).toEqual(Array(8).fill(0));
   await expect(host).toHaveAttribute("data-wrong-way-cars", "0");
   await expect(host).toHaveAttribute("data-wrong-way-buses", "0");
   await expect(host).toHaveAttribute("data-airplane-space", "world");

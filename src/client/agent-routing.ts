@@ -10,6 +10,427 @@ export type VehiclePresentation = {
   scaleY: number;
 };
 
+export type TrafficVehicleSnapshot = {
+  id: string;
+  kind: "CAR" | "BUS";
+  current: Cell;
+  next: Cell;
+  progress: number;
+  cruiseSpeed: number;
+  /** Ordered cells from current through the next planned road segments. */
+  path: readonly Cell[];
+  /** Recently traversed cells, newest first, used while the vehicle tail clears a junction. */
+  trail?: readonly Cell[];
+};
+
+export type VehicleFrameDecision = {
+  /** Maximum distance, in road cells, that the vehicle may advance this frame. */
+  advance: number;
+  /** Nearest vehicle that imposed the limit, useful for runtime diagnostics. */
+  blockedBy?: string;
+};
+
+// Collision dimensions mirror the non-transparent authored pixels at the
+// runtime 0.9 render scale: cars are 14 px long, buses are 20 px long, and
+// both bodies are about 6 px wide on an 8 px road cell.
+const VEHICLE_BODY_CELLS = {
+  CAR: { length: 1.575, width: 0.675 },
+  BUS: { length: 2.25, width: 0.675 },
+} as const;
+const VEHICLE_SAFETY_GAP_CELLS = 0.16;
+const VEHICLE_LANE_INSET_CELLS = 1 / 8;
+const EPSILON = 1e-9;
+
+/**
+ * Map a seeded value to a calm but visibly varied city speed. Cars differ by
+ * roughly one road cell per second; buses remain slower and more consistent.
+ */
+export function vehicleCruiseSpeed(kind: "CAR" | "BUS", variation: number): number {
+  const normalized = Math.max(0, Math.min(1, variation));
+  return kind === "CAR" ? 0.0019 + normalized * 0.001 : 0.00155 + normalized * 0.00035;
+}
+
+function minimumVehicleDistance(left: TrafficVehicleSnapshot, right: TrafficVehicleSnapshot): number {
+  return (VEHICLE_BODY_CELLS[left.kind].length + VEHICLE_BODY_CELLS[right.kind].length) / 2
+    + VEHICLE_SAFETY_GAP_CELLS;
+}
+
+function sameCell(left: Cell, right: Cell): boolean {
+  return left.x === right.x && left.y === right.y;
+}
+
+function matchingSegmentDistance(follower: TrafficVehicleSnapshot, leader: TrafficVehicleSnapshot): number | undefined {
+  for (let segment = 0; segment < follower.path.length - 1; segment += 1) {
+    const from = follower.path[segment]!;
+    const to = follower.path[segment + 1]!;
+    if (from.x !== leader.current.x || from.y !== leader.current.y
+      || to.x !== leader.next.x || to.y !== leader.next.y) continue;
+    const distance = segment - follower.progress + leader.progress;
+    if (distance > 0 || Math.abs(distance) < EPSILON && leader.id.localeCompare(follower.id) < 0) return Math.max(0, distance);
+  }
+  if (follower.next.x === leader.current.x && follower.next.y === leader.current.y) {
+    return 1 - follower.progress + leader.progress;
+  }
+  if (follower.current.x === leader.current.x && follower.current.y === leader.current.y
+    && (follower.next.x !== leader.next.x || follower.next.y !== leader.next.y)
+    && leader.id.localeCompare(follower.id) < 0) return follower.progress + leader.progress;
+  return undefined;
+}
+
+function rightHandLaneInset(from: Cell, to: Cell, inset: number): { x: number; y: number } {
+  const dx = Math.sign(to.x - from.x);
+  const dy = Math.sign(to.y - from.y);
+  if (dx > 0) return { x: 0, y: -inset };
+  if (dx < 0) return { x: 0, y: inset };
+  if (dy > 0) return { x: inset, y: 0 };
+  if (dy < 0) return { x: -inset, y: 0 };
+  return { x: 0, y: 0 };
+}
+
+function vehicleCenter(vehicle: TrafficVehicleSnapshot): { x: number; y: number } {
+  const previous = vehicle.trail?.[0];
+  const startInset = previous
+    ? rightHandLaneInset(previous, vehicle.current, VEHICLE_LANE_INSET_CELLS)
+    : rightHandLaneInset(vehicle.current, vehicle.next, VEHICLE_LANE_INSET_CELLS);
+  const endInset = rightHandLaneInset(vehicle.current, vehicle.next, VEHICLE_LANE_INSET_CELLS);
+  return {
+    x: vehicle.current.x + (vehicle.next.x - vehicle.current.x) * vehicle.progress
+      + startInset.x * (1 - vehicle.progress) + endInset.x * vehicle.progress,
+    y: vehicle.current.y + (vehicle.next.y - vehicle.current.y) * vehicle.progress
+      + startInset.y * (1 - vehicle.progress) + endInset.y * vehicle.progress,
+  };
+}
+
+function vehicleHalfExtents(vehicle: TrafficVehicleSnapshot): { x: number; y: number } {
+  const body = VEHICLE_BODY_CELLS[vehicle.kind];
+  const horizontal = vehicle.current.x !== vehicle.next.x;
+  return horizontal
+    ? { x: body.length / 2, y: body.width / 2 }
+    : { x: body.width / 2, y: body.length / 2 };
+}
+
+function vehicleBodiesOverlap(left: TrafficVehicleSnapshot, right: TrafficVehicleSnapshot): boolean {
+  const leftCenter = vehicleCenter(left);
+  const rightCenter = vehicleCenter(right);
+  const leftExtent = vehicleHalfExtents(left);
+  const rightExtent = vehicleHalfExtents(right);
+  return Math.abs(leftCenter.x - rightCenter.x) + EPSILON < leftExtent.x + rightExtent.x
+    && Math.abs(leftCenter.y - rightCenter.y) + EPSILON < leftExtent.y + rightExtent.y;
+}
+
+/** Number of physically overlapping motor-agent bodies in world coordinates. */
+export function vehicleUnsafePairCount(vehicles: readonly TrafficVehicleSnapshot[]): number {
+  let unsafePairs = 0;
+  for (let leftIndex = 0; leftIndex < vehicles.length; leftIndex += 1) {
+    const left = vehicles[leftIndex]!;
+    for (let rightIndex = leftIndex + 1; rightIndex < vehicles.length; rightIndex += 1) {
+      const right = vehicles[rightIndex]!;
+      if (vehicleBodiesOverlap(left, right)) unsafePairs += 1;
+    }
+  }
+  return unsafePairs;
+}
+
+function conflictClearance(waiting: TrafficVehicleSnapshot, crossing: TrafficVehicleSnapshot): number {
+  return VEHICLE_BODY_CELLS[waiting.kind].length / 2
+    + VEHICLE_BODY_CELLS[crossing.kind].width / 2
+    + VEHICLE_SAFETY_GAP_CELLS
+    + VEHICLE_LANE_INSET_CELLS * 2;
+}
+
+function mergeClearance(
+  left: TrafficVehicleSnapshot,
+  right: TrafficVehicleSnapshot,
+  conflict: { leftIndex: number; rightIndex: number },
+): number {
+  const leftExit = left.path[conflict.leftIndex + 1];
+  const rightExit = right.path[conflict.rightIndex + 1];
+  return leftExit && rightExit && sameCell(leftExit, rightExit)
+    ? minimumVehicleDistance(left, right) + VEHICLE_LANE_INSET_CELLS * 2
+    : conflictClearance(left, right);
+}
+
+function capDecision(
+  decisions: Map<string, VehicleFrameDecision>,
+  waiting: TrafficVehicleSnapshot,
+  blocker: TrafficVehicleSnapshot,
+  allowed: number,
+): void {
+  const decision = decisions.get(waiting.id)!;
+  const bounded = Math.max(0, allowed);
+  if (bounded >= decision.advance) return;
+  decision.advance = bounded;
+  decision.blockedBy = blocker.id;
+}
+
+function firstRouteConflict(
+  left: TrafficVehicleSnapshot,
+  right: TrafficVehicleSnapshot,
+): { leftIndex: number; rightIndex: number } | undefined {
+  for (let leftIndex = 1; leftIndex < left.path.length; leftIndex += 1) {
+    for (let rightIndex = 1; rightIndex < right.path.length; rightIndex += 1) {
+      if (!sameCell(left.path[leftIndex]!, right.path[rightIndex]!)) continue;
+      const leftFrom = left.path[leftIndex - 1]!;
+      const rightFrom = right.path[rightIndex - 1]!;
+      if (sameCell(leftFrom, rightFrom)) continue;
+      return { leftIndex, rightIndex };
+    }
+  }
+  return undefined;
+}
+
+function winnerAtConflict(
+  left: TrafficVehicleSnapshot,
+  right: TrafficVehicleSnapshot,
+  conflict: { leftIndex: number; rightIndex: number },
+): TrafficVehicleSnapshot {
+  if (left.cruiseSpeed <= 0 && right.cruiseSpeed > 0) return right;
+  if (right.cruiseSpeed <= 0 && left.cruiseSpeed > 0) return left;
+  const leftDistance = conflict.leftIndex - left.progress;
+  const rightDistance = conflict.rightIndex - right.progress;
+  if (Math.abs(leftDistance - rightDistance) > EPSILON) return leftDistance < rightDistance ? left : right;
+  return left.id.localeCompare(right.id) <= 0 ? left : right;
+}
+
+function holdForOccupiedConflict(
+  decisions: Map<string, VehicleFrameDecision>,
+  waiting: TrafficVehicleSnapshot,
+  crossing: TrafficVehicleSnapshot,
+): void {
+  const occupied = [crossing.current, ...(crossing.trail ?? [])];
+  for (let routeIndex = 1; routeIndex < waiting.path.length; routeIndex += 1) {
+    const occupiedIndex = occupied.findIndex((cell) => sameCell(cell, waiting.path[routeIndex]!));
+    if (occupiedIndex < 0) continue;
+    const waitingFrom = waiting.path[routeIndex - 1]!;
+    const crossingFrom = occupiedIndex === 0 ? crossing.trail?.[0] : crossing.trail?.[occupiedIndex];
+    if (crossingFrom && sameCell(waitingFrom, crossingFrom)) continue;
+    const distancePastConflict = occupiedIndex + crossing.progress;
+    if (distancePastConflict + EPSILON >= conflictClearance(crossing, waiting)) continue;
+    capDecision(
+      decisions,
+      waiting,
+      crossing,
+      routeIndex - conflictClearance(waiting, crossing) - waiting.progress,
+    );
+    return;
+  }
+}
+
+function projectVehicle(vehicle: TrafficVehicleSnapshot, advance: number): TrafficVehicleSnapshot {
+  let current = vehicle.current;
+  let next = vehicle.next;
+  let progress = vehicle.progress + Math.max(0, advance);
+  let path = [...vehicle.path];
+  const trail = [...(vehicle.trail ?? [])];
+  while (progress >= 1 && path[2]) {
+    progress -= 1;
+    trail.unshift(current);
+    trail.length = Math.min(trail.length, 4);
+    current = next;
+    next = path[2];
+    path = path.slice(1);
+  }
+  return { ...vehicle, current, next, progress: Math.min(progress, 0.999_999), path, trail };
+}
+
+function motionsOverlap(
+  left: TrafficVehicleSnapshot,
+  right: TrafficVehicleSnapshot,
+  leftAdvance: number,
+  rightAdvance: number,
+): boolean {
+  const transitionFraction = (vehicle: TrafficVehicleSnapshot, advance: number): number | undefined => {
+    if (advance <= EPSILON) return undefined;
+    const fraction = (1 - vehicle.progress) / advance;
+    return fraction > EPSILON && fraction < 1 - EPSILON ? fraction : undefined;
+  };
+  const breakpoints = [0, 1, transitionFraction(left, leftAdvance), transitionFraction(right, rightAdvance)]
+    .filter((value): value is number => value !== undefined)
+    .sort((a, b) => a - b)
+    .filter((value, index, values) => index === 0 || Math.abs(value - values[index - 1]!) > EPSILON);
+  const pointSnapshot = (vehicle: TrafficVehicleSnapshot, advance: number, fraction: number) => (
+    projectVehicle(vehicle, advance * Math.max(0, Math.min(1, fraction)))
+  );
+  const timeEpsilon = 1e-7;
+  for (const breakpoint of breakpoints) {
+    for (const fraction of [breakpoint - timeEpsilon, breakpoint, breakpoint + timeEpsilon]) {
+      if (fraction < 0 || fraction > 1) continue;
+      if (vehicleBodiesOverlap(
+        pointSnapshot(left, leftAdvance, fraction),
+        pointSnapshot(right, rightAdvance, fraction),
+      )) return true;
+    }
+  }
+
+  const axisInterval = (start: number, end: number, limit: number): [number, number] | undefined => {
+    const velocity = end - start;
+    if (Math.abs(velocity) < EPSILON) return Math.abs(start) + EPSILON < limit ? [0, 1] : undefined;
+    const first = (-limit - start) / velocity;
+    const second = (limit - start) / velocity;
+    const lower = Math.max(0, Math.min(first, second));
+    const upper = Math.min(1, Math.max(first, second));
+    return lower + EPSILON < upper ? [lower, upper] : undefined;
+  };
+  for (let index = 0; index < breakpoints.length - 1; index += 1) {
+    const from = breakpoints[index]! + timeEpsilon;
+    const to = breakpoints[index + 1]! - timeEpsilon;
+    if (from >= to) continue;
+    const leftFrom = pointSnapshot(left, leftAdvance, from);
+    const leftTo = pointSnapshot(left, leftAdvance, to);
+    const rightFrom = pointSnapshot(right, rightAdvance, from);
+    const rightTo = pointSnapshot(right, rightAdvance, to);
+    const leftFromCenter = vehicleCenter(leftFrom);
+    const leftToCenter = vehicleCenter(leftTo);
+    const rightFromCenter = vehicleCenter(rightFrom);
+    const rightToCenter = vehicleCenter(rightTo);
+    const leftExtent = vehicleHalfExtents(leftFrom);
+    const rightExtent = vehicleHalfExtents(rightFrom);
+    const xInterval = axisInterval(
+      leftFromCenter.x - rightFromCenter.x,
+      leftToCenter.x - rightToCenter.x,
+      leftExtent.x + rightExtent.x,
+    );
+    const yInterval = axisInterval(
+      leftFromCenter.y - rightFromCenter.y,
+      leftToCenter.y - rightToCenter.y,
+      leftExtent.y + rightExtent.y,
+    );
+    if (xInterval && yInterval && Math.max(xInterval[0], yInterval[0]) + EPSILON < Math.min(xInterval[1], yInterval[1])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function safeMotionAdvance(
+  waiting: TrafficVehicleSnapshot,
+  crossing: TrafficVehicleSnapshot,
+  maximum: number,
+  crossingAdvance: number,
+): number | undefined {
+  for (let step = 15; step >= 0; step -= 1) {
+    const candidate = maximum * step / 16;
+    if (!motionsOverlap(waiting, crossing, candidate, crossingAdvance)) return candidate;
+  }
+  return undefined;
+}
+
+function preferredCollisionLoser(
+  left: TrafficVehicleSnapshot,
+  right: TrafficVehicleSnapshot,
+  decisions: ReadonlyMap<string, VehicleFrameDecision>,
+): TrafficVehicleSnapshot {
+  const leftAdvance = decisions.get(left.id)!.advance;
+  const rightAdvance = decisions.get(right.id)!.advance;
+  if (leftAdvance <= EPSILON && rightAdvance > EPSILON) return right;
+  if (rightAdvance <= EPSILON && leftAdvance > EPSILON) return left;
+  if (left.cruiseSpeed <= 0 && right.cruiseSpeed > 0) return right;
+  if (right.cruiseSpeed <= 0 && left.cruiseSpeed > 0) return left;
+  const leftTransitions = left.progress + leftAdvance >= 1;
+  const rightTransitions = right.progress + rightAdvance >= 1;
+  if (leftTransitions !== rightTransitions) return leftTransitions ? left : right;
+  return left.id.localeCompare(right.id) > 0 ? left : right;
+}
+
+function resolveProjectedCollisions(
+  vehicles: readonly TrafficVehicleSnapshot[],
+  decisions: Map<string, VehicleFrameDecision>,
+): void {
+  const maximumPasses = vehicles.length * 2;
+  for (let pass = 0; pass < maximumPasses; pass += 1) {
+    let resolved = false;
+    for (let leftIndex = 0; leftIndex < vehicles.length && !resolved; leftIndex += 1) {
+      const left = vehicles[leftIndex]!;
+      for (let rightIndex = leftIndex + 1; rightIndex < vehicles.length; rightIndex += 1) {
+        const right = vehicles[rightIndex]!;
+        const leftAdvance = decisions.get(left.id)!.advance;
+        const rightAdvance = decisions.get(right.id)!.advance;
+        if (!motionsOverlap(left, right, leftAdvance, rightAdvance)) continue;
+        const preferred = preferredCollisionLoser(left, right, decisions);
+        const other = preferred === left ? right : left;
+        const safe = safeMotionAdvance(
+          preferred,
+          other,
+          decisions.get(preferred.id)!.advance,
+          decisions.get(other.id)!.advance,
+        );
+        if (safe !== undefined) capDecision(decisions, preferred, other, safe);
+        else {
+          const alternateSafe = safeMotionAdvance(
+            other,
+            preferred,
+            decisions.get(other.id)!.advance,
+            decisions.get(preferred.id)!.advance,
+          );
+          if (alternateSafe !== undefined) capDecision(decisions, other, preferred, alternateSafe);
+          else if (!vehicleBodiesOverlap(preferred, other)) {
+            capDecision(decisions, preferred, other, 0);
+            capDecision(decisions, other, preferred, 0);
+          } else continue;
+        }
+        resolved = true;
+        break;
+      }
+    }
+    if (!resolved) return;
+  }
+}
+
+/**
+ * Resolve one traffic frame without mutating render state. A follower is
+ * limited by the nearest vehicle on its planned lane, including the next road
+ * segment. Competing approaches reserve a merge cell deterministically, so two
+ * vehicles cannot cross through each other when they enter an intersection.
+ */
+export function planVehicleFrame(
+  vehicles: readonly TrafficVehicleSnapshot[],
+  elapsedMs: number,
+): Map<string, VehicleFrameDecision> {
+  const decisions = new Map<string, VehicleFrameDecision>();
+  for (const vehicle of vehicles) {
+    decisions.set(vehicle.id, { advance: Math.max(0, elapsedMs * vehicle.cruiseSpeed) });
+  }
+
+  for (const follower of vehicles) {
+    for (const leader of vehicles) {
+      if (leader.id === follower.id) continue;
+      const distance = matchingSegmentDistance(follower, leader);
+      if (distance === undefined) continue;
+      const minimumDistance = minimumVehicleDistance(follower, leader);
+      capDecision(decisions, follower, leader, distance - minimumDistance);
+    }
+  }
+
+  for (let leftIndex = 0; leftIndex < vehicles.length; leftIndex += 1) {
+    const left = vehicles[leftIndex]!;
+    for (let rightIndex = leftIndex + 1; rightIndex < vehicles.length; rightIndex += 1) {
+      const right = vehicles[rightIndex]!;
+      const conflict = firstRouteConflict(left, right);
+      if (!conflict) continue;
+      const winner = winnerAtConflict(left, right, conflict);
+      const waiting = winner === left ? right : left;
+      const waitingIndex = winner === left ? conflict.rightIndex : conflict.leftIndex;
+      const clearance = mergeClearance(waiting, winner, winner === left
+        ? { leftIndex: conflict.rightIndex, rightIndex: conflict.leftIndex }
+        : conflict);
+      capDecision(
+        decisions,
+        waiting,
+        winner,
+        waitingIndex - clearance - waiting.progress,
+      );
+    }
+  }
+
+  for (const waiting of vehicles) {
+    for (const crossing of vehicles) {
+      if (waiting.id !== crossing.id) holdForOccupiedConflict(decisions, waiting, crossing);
+    }
+  }
+  resolveProjectedCollisions(vehicles, decisions);
+  return decisions;
+}
+
 /**
  * Vehicle source art has three authored directions: east, north and south.
  * West is the only mirrored direction. North and south are never flipped
@@ -24,16 +445,6 @@ export function vehiclePresentation(current: Cell, next: Cell, scale = 0.9): Veh
     scaleX: horizontal && next.x < current.x ? -scale : scale,
     scaleY: scale,
   };
-}
-
-function rightHandLaneInset(from: Cell, to: Cell, inset: number): { x: number; y: number } {
-  const dx = Math.sign(to.x - from.x);
-  const dy = Math.sign(to.y - from.y);
-  if (dx > 0) return { x: 0, y: -inset };
-  if (dx < 0) return { x: 0, y: inset };
-  if (dy > 0) return { x: inset, y: 0 };
-  if (dy < 0) return { x: -inset, y: 0 };
-  return { x: 0, y: 0 };
 }
 
 /** Pixel position on the inner half of a right-hand lane, blended at turns. */
