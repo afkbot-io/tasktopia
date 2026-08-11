@@ -96,8 +96,13 @@ describe("building catalog V4", () => {
   });
 
   it("keeps every human on the enlarged authored walker scale and gives crewed boats a slender footprint", () => {
-    const walkerSize = PROP_CATALOG["walker-south"]?.size;
+    const walkerSize = PROP_CATALOG["walker-south-a"]?.size;
     expect(walkerSize).toEqual({ width: 8, height: 16 });
+    for (const direction of ["north", "east", "south", "west"]) {
+      for (const frame of ["a", "b"]) {
+        expect(PROP_CATALOG[`walker-${direction}-${frame}`]?.size).toEqual(walkerSize);
+      }
+    }
     for (const key of ["fisher-north", "fisher-east", "fisher-south", "fisher-west", "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"]) {
       expect(PROP_CATALOG[key]?.size, key).toEqual(walkerSize);
       expect(PROP_CATALOG[key]?.footprint, key).toEqual({ width: 1, height: 1 });

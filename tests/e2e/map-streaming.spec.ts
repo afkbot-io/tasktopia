@@ -25,6 +25,7 @@ async function openDemoMap(page: import("@playwright/test").Page) {
   await expect(host).toHaveAttribute("data-wrong-way-cars", "0");
   await expect(host).toHaveAttribute("data-wrong-way-buses", "0");
   await expect(host).toHaveAttribute("data-airplane-space", "world");
+  await expect(host).toHaveAttribute("data-world-object-depth-errors", "0");
   return { host, canvas };
 }
 
@@ -34,6 +35,10 @@ test("keeps visible agent state across detail zoom and randomizes a new page ses
   const idsBefore = new Set((await host.getAttribute("data-agent-ids"))!.split(",").filter(Boolean));
   const sessionBefore = await host.getAttribute("data-agent-session");
   const rebuildsBefore = Number(await host.getAttribute("data-movement-rebuilds") ?? 0);
+  const walkStateBefore = await host.getAttribute("data-resident-walk-state");
+  const trafficStepsBefore = Number(await host.getAttribute("data-traffic-steps") ?? 0);
+  await expect.poll(async () => await host.getAttribute("data-resident-walk-state"), { timeout: 8_000 }).not.toBe(walkStateBefore);
+  await expect.poll(async () => Number(await host.getAttribute("data-traffic-steps") ?? 0), { timeout: 8_000 }).toBeGreaterThan(trafficStepsBefore);
   await canvas.hover();
   await page.mouse.wheel(0, -200);
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
@@ -137,6 +142,8 @@ test("recovers a failed chunk and paints a static map with reduced motion", asyn
   await expect(page.getByText("Готовим карту…", { exact: true })).toBeHidden({ timeout: 90_000 });
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
   await expect.poll(async () => Number(await host.getAttribute("data-static-renders"))).toBeGreaterThan(0);
+  await expect(host).toHaveAttribute("data-world-object-depth-errors", "0");
+  await expect.poll(async () => Number(await host.getAttribute("data-world-objects"))).toBeGreaterThan(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
   expect(failedOnce).toBe(true);
 });

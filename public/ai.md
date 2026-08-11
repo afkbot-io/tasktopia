@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.12.1
+Version: 1.12.2
 Last updated: 2026-08-11
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp

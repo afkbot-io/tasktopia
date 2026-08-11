@@ -8,6 +8,7 @@ import {
   mustYieldAtCrosswalk,
   detectTrafficJunctions,
   mustYieldAtTrafficSignal,
+  mustYieldForBlockedJunctionExit,
   trafficSignalPhase,
   nextSeededRandom,
   nextWithoutUTurn,
@@ -19,6 +20,7 @@ import {
   vehicleCruiseSpeed,
   vehicleUnsafePairCount,
   walkerInteractionPairs,
+  type TrafficJunction,
   type TrafficVehicleSnapshot,
 } from "../src/client/agent-routing";
 
@@ -219,6 +221,55 @@ describe("living city agent routing", () => {
     const next = { x: -1, y: 0 };
     expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalGreenAt)).toBe(false);
     expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt)).toBe(true);
+  });
+
+  it("does not enter an intersection when the exit lane cannot fit the vehicle", () => {
+    const junction: TrafficJunction = {
+      id: "junction",
+      bounds: { minX: -1, minY: -1, maxX: 0, maxY: 0 },
+      cells: [{ x: -1, y: 0 }, { x: 0, y: 0 }],
+      arms: ["E", "N", "S", "W"],
+      signalPosts: [],
+    };
+    const approaching: TrafficVehicleSnapshot = {
+      id: "approaching", kind: "CAR", current: { x: -2, y: 0 }, next: { x: -1, y: 0 },
+      progress: 0.4, cruiseSpeed: 0.0024,
+      path: [{ x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }],
+    };
+    const blocking: TrafficVehicleSnapshot = {
+      id: "blocking", kind: "CAR", current: { x: 1, y: 0 }, next: { x: 2, y: 0 },
+      progress: 0.1, cruiseSpeed: 0,
+      path: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }],
+    };
+
+    expect(mustYieldForBlockedJunctionExit(approaching, [junction], [approaching, blocking])).toBe(true);
+    expect(mustYieldForBlockedJunctionExit(approaching, [junction], [approaching])).toBe(false);
+  });
+
+  it("looks through a wide junction and accounts for a vehicle on the final lookahead cell", () => {
+    const junction: TrafficJunction = {
+      id: "wide-junction",
+      bounds: { minX: 0, minY: 0, maxX: 3, maxY: 3 },
+      cells: Array.from({ length: 16 }, (_, index) => ({ x: index % 4, y: Math.floor(index / 4) })),
+      arms: ["E", "N", "S", "W"],
+      signalPosts: [],
+    };
+    const approaching: TrafficVehicleSnapshot = {
+      id: "approaching", kind: "CAR", current: { x: -1, y: 1 }, next: { x: 0, y: 1 },
+      progress: 0.25, cruiseSpeed: 0.0024,
+      path: [
+        { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 },
+        { x: 3, y: 1 }, { x: 4, y: 1 }, { x: 5, y: 1 },
+      ],
+    };
+    const blocker: TrafficVehicleSnapshot = {
+      id: "blocker", kind: "BUS", current: { x: 5, y: 1 }, next: { x: 6, y: 1 },
+      progress: 0.05, cruiseSpeed: 0,
+      path: [{ x: 5, y: 1 }, { x: 6, y: 1 }],
+    };
+
+    expect(mustYieldForBlockedJunctionExit(approaching, [junction], [approaching])).toBe(false);
+    expect(mustYieldForBlockedJunctionExit(approaching, [junction], [approaching, blocker])).toBe(true);
   });
 
   it("pairs nearby free walkers for bounded social interactions", () => {

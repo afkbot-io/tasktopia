@@ -101,10 +101,10 @@ Socket.IO-событие несёт `affectedBounds`. Клиент сбрасы�
 |---|---:|
 | Семейства зданий | 193 |
 | Строительные стадии зданий | 965 |
-| Props и городской декор | 169 |
+| Props и городской декор | 173 |
 | Модели транспорта | 8 |
 | Terrain families | 12 |
-| Все runtime PNG | 1 223 |
+| Все runtime PNG | 1 227 |
 | Зарегистрированные MCP tools | 46 |
 
 Полный визуальный контракт и текущий статус authored-миграции находятся в [ТЗ пака](assets/pixel-city-pack-v4/docs/GENERATION-SPEC.md), [плане расширения](assets/pixel-city-pack-v4/docs/ASSET-EXPANSION-PLAN.md) и [актуальном аудите старых фасадов](docs/qa/pixel-city-old-building-audit-2026-08-11.md).

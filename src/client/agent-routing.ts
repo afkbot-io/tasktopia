@@ -612,6 +612,43 @@ export function mustYieldAtTrafficSignal(
   return trafficSignalPhase(junction, elapsedMs)[axis] === "RED";
 }
 
+function containsCell(bounds: TrafficJunction["bounds"], cell: Cell): boolean {
+  return cell.x >= bounds.minX && cell.x <= bounds.maxX
+    && cell.y >= bounds.minY && cell.y <= bounds.maxY;
+}
+
+/**
+ * Keep an approaching vehicle behind the stop line when its lane beyond the
+ * junction has no room for the body and safety gap. This is the classic
+ * "do not block the box" rule: collision avoidance alone is insufficient,
+ * because a safe car may otherwise stop inside the crossing and deadlock the
+ * next signal phase.
+ */
+export function mustYieldForBlockedJunctionExit(
+  vehicle: TrafficVehicleSnapshot,
+  junctions: readonly TrafficJunction[],
+  vehicles: readonly TrafficVehicleSnapshot[],
+): boolean {
+  const junction = junctions.find((candidate) => !containsCell(candidate.bounds, vehicle.current)
+    && containsCell(candidate.bounds, vehicle.next));
+  if (!junction) return false;
+  const exitIndex = vehicle.path.findIndex((cell, index) => index > 1 && !containsCell(junction.bounds, cell));
+  // An incomplete streamed/planned lookahead must not turn a free junction
+  // into a permanent red light. The caller supplies the full remaining route;
+  // if it still has no exit, defer the decision until that route is extended.
+  if (exitIndex < 0) return false;
+  const required = VEHICLE_BODY_CELLS[vehicle.kind].length / 2 + VEHICLE_SAFETY_GAP_CELLS;
+  for (const other of vehicles) {
+    if (other.id === vehicle.id) continue;
+    for (let segment = exitIndex; segment < vehicle.path.length; segment += 1) {
+      if (!sameCell(vehicle.path[segment]!, other.current)) continue;
+      const available = segment - exitIndex + other.progress;
+      if (available + EPSILON < required + VEHICLE_BODY_CELLS[other.kind].length / 2) return true;
+    }
+  }
+  return false;
+}
+
 function laneAt(graph: ReadonlyMap<string, Cell>, cell: Cell): Lane {
   const horizontalRun = axisRun(graph, cell, 1, 0);
   const verticalRun = axisRun(graph, cell, 0, 1);

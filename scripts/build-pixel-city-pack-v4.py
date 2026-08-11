@@ -2614,7 +2614,8 @@ def transport_style_sheet(manifest: dict) -> None:
 def resident_mobility_style_sheet(manifest: dict) -> None:
     """Render every authored resident and micromobility view at nearest-neighbour 8x."""
     keys = (
-        "walker-north", "walker-east", "walker-south", "walker-west",
+        "walker-north-a", "walker-north-b", "walker-east-a", "walker-east-b",
+        "walker-south-a", "walker-south-b", "walker-west-a", "walker-west-b",
         "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave",
         "fisher-north", "fisher-east", "fisher-south", "fisher-west",
         "cyclist-horizontal", "cyclist-north", "cyclist-south",

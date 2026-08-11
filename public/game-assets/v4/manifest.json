@@ -11783,9 +11783,9 @@
       "sourceSheet": "ai-authored/ambient/park-bandstand-v1.png",
       "visualProfile": "TASKTOPIA_V4_PARK_OBJECT"
     },
-    "walker-north": {
-      "label": "Пешеход — север",
-      "path": "props/walker-north.png",
+    "walker-north-a": {
+      "label": "Пешеход — север, шаг A",
+      "path": "props/walker-north-a.png",
       "size": [
         8,
         16
@@ -11799,13 +11799,13 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
-      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
       "baseFacing": "NORTH"
     },
-    "walker-east": {
-      "label": "Пешеход — восток",
-      "path": "props/walker-east.png",
+    "walker-north-b": {
+      "label": "Пешеход — север, шаг B",
+      "path": "props/walker-north-b.png",
       "size": [
         8,
         16
@@ -11819,13 +11819,33 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
-      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
+      "baseFacing": "NORTH"
+    },
+    "walker-east-a": {
+      "label": "Пешеход — восток, шаг A",
+      "path": "props/walker-east-a.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
       "baseFacing": "EAST"
     },
-    "walker-south": {
-      "label": "Пешеход — юг",
-      "path": "props/walker-south.png",
+    "walker-east-b": {
+      "label": "Пешеход — восток, шаг B",
+      "path": "props/walker-east-b.png",
       "size": [
         8,
         16
@@ -11839,13 +11859,33 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
-      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
+      "baseFacing": "EAST"
+    },
+    "walker-south-a": {
+      "label": "Пешеход — юг, шаг A",
+      "path": "props/walker-south-a.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
       "baseFacing": "SOUTH"
     },
-    "walker-west": {
-      "label": "Пешеход — запад",
-      "path": "props/walker-west.png",
+    "walker-south-b": {
+      "label": "Пешеход — юг, шаг B",
+      "path": "props/walker-south-b.png",
       "size": [
         8,
         16
@@ -11859,8 +11899,48 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
-      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
+      "baseFacing": "SOUTH"
+    },
+    "walker-west-a": {
+      "label": "Пешеход — запад, шаг A",
+      "path": "props/walker-west-a.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
+      "baseFacing": "WEST"
+    },
+    "walker-west-b": {
+      "label": "Пешеход — запад, шаг B",
+      "path": "props/walker-west-b.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v2.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_WALK_CYCLE",
       "baseFacing": "WEST"
     },
     "resident-reader": {
@@ -12178,5 +12258,5 @@
       "baseFacing": "SOUTH"
     }
   },
-  "assetRevision": "b4104dedba2a6040"
+  "assetRevision": "c553ab87c38772ee"
 }
