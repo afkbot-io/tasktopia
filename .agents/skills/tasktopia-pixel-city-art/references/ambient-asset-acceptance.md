@@ -1,6 +1,6 @@
 # Ambient asset style and acceptance
 
-Use this contract for vehicles, transit stops, playgrounds, park objects, trees, shrubs, animals, boats, and similar finished props.
+Use this contract for vehicles, transit stops, residents, micromobility, playgrounds, park objects, trees, shrubs, animals, boats, and similar finished props.
 
 ## Verbal style fingerprint
 
@@ -45,6 +45,15 @@ Reject the source before catalog registration when any item applies:
 - The shelter must not contain baked asphalt, road, grass, or a full pavement slab.
 - Use the canonical `16x16 px`, `2x2` boarding platform contract. Every stop pair sits outside opposite road edges and is offset along the road so shelters do not face each other in one cross-section.
 
+## Resident and micromobility gate
+
+- Moving residents use four independently authored `8x16 px` views: north/rear, east, south/front, and west. Their feet use a bottom-centre anchor on the destination path cell; a centred `8x8` icon is obsolete.
+- Activity residents use the same body scale and frontal-top projection. A book, parcel, broom, phone, tool, or wave must remain readable at native `1x`; the prop must not create a fake second person or baked ground.
+- Cyclists and scooter riders use three authored views like road vehicles: `16x16 px` horizontal/east, `8x16 px` north/rear, and `8x16 px` south/front. West mirrors only the accepted east view. North and south are never rotations.
+- The rider, helmet, handlebar/deck or bicycle frame must form one compact silhouette. Reject detached wheels, side-view riders paired with top-view equipment, or a vehicle without a visible rider.
+- Runtime must swap the texture whenever direction changes, and apply a negative horizontal scale only for west. A sprite travelling feet-first, handlebar-first in reverse, or showing its rear while moving south is blocking.
+- Micromobility uses pedestrian/path graphs at a low population cap; it must not be added to motor-traffic collision dimensions or spawned on road lanes.
+
 ## Playground and park-object gate
 
 - Playground compositions use transparent `24x16`, `24x24`, or `32x24 px` canvases and show at least two connected play functions.
@@ -70,3 +79,4 @@ Reject the source before catalog registration when any item applies:
 6. Register `artSource: AI_AUTHORED`, `sourceSheet`, and a style profile in the manifest.
 7. Render native and nearest-neighbour `8x` family contact sheets. Check silhouettes, paired directions, footprint isolation, and semantic readability.
 8. Run both asset audits. Any style-contract error blocks shipping; do not whitelist an incompatible visual.
+9. For directional residents or micromobility, assert `baseFacing` in catalog metadata and test the runtime north/south/east/west mapping before visual QA.

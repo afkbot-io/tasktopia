@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildingBadgePresentation } from "../src/client/world-building-presentation";
+import { buildingBadgePresentation, buildingPlatformPresentation } from "../src/client/world-building-presentation";
 
 describe("building badge presentation", () => {
   it("uses the task number as the compact house number", () => {
@@ -17,5 +17,15 @@ describe("building badge presentation", () => {
       fontSize: 6,
       borderColor: 0x4fa5d7,
     });
+  });
+});
+
+describe("building platform presentation", () => {
+  it("keeps world buildings on the platform declared by their catalog entry", () => {
+    expect(buildingPlatformPresentation("YARD")).toEqual({ family: "terrain", key: "GRASS", variant: 1 });
+    expect(buildingPlatformPresentation("STONE")).toEqual({ family: "tile", key: "pavement" });
+    expect(buildingPlatformPresentation("ASPHALT")).toEqual({ family: "tile", key: "road" });
+    expect(buildingPlatformPresentation("SERVICE")).toEqual({ family: "tile", key: "pavement" });
+    expect(buildingPlatformPresentation("PARK")).toEqual({ family: "terrain", key: "MEADOW", variant: 1 });
   });
 });

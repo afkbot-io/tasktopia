@@ -120,7 +120,7 @@ describe("Pixel City V4 expansion contract", () => {
   });
 
   it("keeps reviewed ambient art tied to its approved source and visual profile", () => {
-    const props = manifest.props as Record<string, { size: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string; visualProfile?: string }>;
+    const props = manifest.props as Record<string, { size: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string; visualProfile?: string; baseFacing?: string }>;
     for (const authored of authoredProps) {
       expect(props[authored.key], authored.key).toMatchObject({
         size: authored.size,
@@ -128,6 +128,7 @@ describe("Pixel City V4 expansion contract", () => {
         artSource: "AI_AUTHORED",
         sourceSheet: authored.sheet,
         visualProfile: authored.visualProfile,
+        ...("baseFacing" in authored ? { baseFacing: authored.baseFacing } : {}),
       });
     }
   });

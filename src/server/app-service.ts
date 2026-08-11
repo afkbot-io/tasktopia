@@ -65,6 +65,7 @@ import {
 import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "./world/terrain";
 import { roadCorridorBlockers, stampRoadCorridor } from "./world/road-geometry";
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
+import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates } from "./green-area-planner";
 import { compactLotsAfterPlacement, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import {
   ROAD_WIDTH,
@@ -1616,10 +1617,6 @@ export class AppService {
       : archetype === "COMMERCIAL" ? "urban-amusement"
         : archetype === "PRIVATE" ? "urban-botanical" : "urban-park";
     const assetKey = kind === "GROVE" ? "urban-grove" : parkVariant;
-    const size: readonly [number, number] = assetKey === "urban-central" ? [8, 7]
-      : assetKey === "urban-botanical" ? [7, 6]
-        : assetKey === "urban-amusement" ? [7, 5]
-          : kind === "GROVE" ? [6, 5] : [5, 4];
     const allowed = new Set(districtCells.map(cellKey));
     const roads = await this.roadCells(countryId);
     const bounds = boundsOf(districtCells);
@@ -1630,32 +1627,35 @@ export class AppService {
       ...reservedLots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)),
       ...reservedLots.flatMap((lot) => lot.sharedAccess ?? []),
     ].map(cellKey));
-    const candidates: Array<{ origin: Cell; footprint: Cell[]; accessPath: Cell[]; score: number }> = [];
-    for (let y = bounds.minY; y <= bounds.maxY - size[1] + 1; y += 1) {
-      for (let x = bounds.minX; x <= bounds.maxX - size[0] + 1; x += 1) {
-        const origin = { x, y };
-        const footprint = rectangleFootprint(origin, size[0], size[1]);
-        if (!footprint.every((cell) => {
-          const key = cellKey(cell);
-          return allowed.has(key) && !roads.has(key) && !occupied.has(key) && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain);
-        })) continue;
-        const accessPath = findAreaAccessPath({
-          allowed, footprint, roads, surfaces, occupied,
-          isWalkableTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
-        });
-        if (accessPath === null) continue;
-        const center = { x: x + Math.floor(size[0] / 2), y: y + Math.floor(size[1] / 2) };
-        const centerDistance = manhattan(center, city.center);
-        // Parks spread across the territory instead of stacking next to the
-        // previous one: a spot near an existing green is heavily penalised.
-        const nearExistingGreen = existingGreen.some((feature) => {
-          const gb = boundsOf(feature.footprint);
-          return manhattan(center, { x: Math.floor((gb.minX + gb.maxX) / 2), y: Math.floor((gb.minY + gb.maxY) / 2) }) < 14;
-        });
-        candidates.push({ origin, footprint, accessPath, score: accessPath.length * 100 + (nearExistingGreen ? 250 : 0) + centerDistance * 0.08 + hashCoordinate(seed, x, y, 823) });
+    type GreenCandidate = { origin: Cell; footprint: Cell[]; accessPath: Cell[]; score: number; size: readonly [number, number] };
+    let selected: GreenCandidate | undefined;
+    for (const size of greenAreaSizeCandidates(assetKey)) {
+      const candidates: GreenCandidate[] = [];
+      for (let y = bounds.minY; y <= bounds.maxY - size[1] + 1; y += 1) {
+        for (let x = bounds.minX; x <= bounds.maxX - size[0] + 1; x += 1) {
+          const origin = { x, y };
+          const footprint = rectangleFootprint(origin, size[0], size[1]);
+          if (!footprint.every((cell) => {
+            const key = cellKey(cell);
+            return allowed.has(key) && !roads.has(key) && !occupied.has(key) && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain);
+          })) continue;
+          const accessPath = findAreaAccessPath({
+            allowed, footprint, roads, surfaces, occupied,
+            isWalkableTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
+          });
+          if (accessPath === null) continue;
+          const center = { x: x + Math.floor(size[0] / 2), y: y + Math.floor(size[1] / 2) };
+          const centerDistance = manhattan(center, city.center);
+          const nearExistingGreen = existingGreen.some((feature) => {
+            const gb = boundsOf(feature.footprint);
+            return manhattan(center, { x: Math.floor((gb.minX + gb.maxX) / 2), y: Math.floor((gb.minY + gb.maxY) / 2) }) < 14;
+          });
+          candidates.push({ origin, footprint, accessPath, size, score: accessPath.length * 100 + (nearExistingGreen ? 250 : 0) + centerDistance * 0.08 + hashCoordinate(seed, x, y, 823) });
+        }
       }
+      selected = candidates.sort((left, right) => left.score - right.score || left.origin.y - right.origin.y || left.origin.x - right.origin.x)[0];
+      if (selected) break;
     }
-    const selected = candidates.sort((left, right) => left.score - right.score || left.origin.y - right.origin.y || left.origin.x - right.origin.x)[0];
     if (!selected) return;
     const area = await this.insertWorldFeature(countryId, {
                               cityId: city.id,
@@ -1708,14 +1708,39 @@ export class AppService {
     };
     const variants = decorByArea[assetKey] ?? decorByArea["urban-park"]!;
     const decor = variants[Math.floor(hashCoordinate(seed, selected.origin.x, selected.origin.y, 829) * variants.length)] ?? variants[0]!;
+    const legacyLayoutSize: Readonly<Record<string, readonly [number, number]>> = {
+      "urban-central": [8, 7], "urban-botanical": [7, 6], "urban-amusement": [7, 5], "urban-grove": [6, 5], "urban-park": [5, 4],
+    };
+    const [layoutWidth, layoutHeight] = legacyLayoutSize[assetKey] ?? legacyLayoutSize["urban-park"]!;
+    const shiftX = Math.floor((selected.size[0] - layoutWidth) / 2);
+    const shiftY = Math.floor((selected.size[1] - layoutHeight) / 2);
+    const occupiedDecor = new Set<string>();
     for (const [assetKey, offsetX, offsetY, width, height] of decor) {
-      const origin = { x: selected.origin.x + offsetX, y: selected.origin.y + offsetY };
+      const origin = { x: selected.origin.x + shiftX + offsetX, y: selected.origin.y + shiftY + offsetY };
       const footprint = rectangleFootprint(origin, width, height);
       if (!footprint.every((cell) => selected.footprint.some((areaCell) => cellKey(areaCell) === cellKey(cell)))) continue;
+      for (const cell of footprint) occupiedDecor.add(cellKey(cell));
       await this.insertWorldFeature(countryId, {
                                         cityId: city.id, districtId, parentFeatureId: area.id, kind: "PARK_DECOR", assetKind: "PROP", assetKey,
                                         origin, footprint, orientation: "S", accessPath: [],
                                       });
+    }
+    const edgeAccents = greenAreaAccentCandidates(selected.size[0], selected.size[1])
+      .sort((left, right) => hashCoordinate(seed, selected.origin.x + left.x, selected.origin.y + left.y, 839)
+        - hashCoordinate(seed, selected.origin.x + right.x, selected.origin.y + right.y, 839));
+    const accentTarget = greenAreaAccentTarget(selected.size[0], selected.size[1]);
+    let accentIndex = 0;
+    for (const offset of edgeAccents) {
+      if (accentIndex >= accentTarget) break;
+      const origin = { x: selected.origin.x + offset.x, y: selected.origin.y + offset.y };
+      if (occupiedDecor.has(cellKey(origin))) continue;
+      const accentKey = accentIndex % 3 === 2 ? lampByArchetype[archetype] : accentIndex % 2 === 0 ? primaryTree : secondaryTree;
+      await this.insertWorldFeature(countryId, {
+        cityId: city.id, districtId, parentFeatureId: area.id, kind: "PARK_DECOR", assetKind: "PROP", assetKey: accentKey,
+        origin, footprint: [origin], orientation: "S", accessPath: [],
+      });
+      occupiedDecor.add(cellKey(origin));
+      accentIndex += 1;
     }
   }
 

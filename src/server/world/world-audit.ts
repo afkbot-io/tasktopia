@@ -1,4 +1,5 @@
 import { BUILDING_CATALOG } from "../../shared/catalog";
+import { greenAreaPathCells } from "../../shared/green-area";
 import type { Cell, CityDto, RoadCellDto, SurfaceCellDto, TaskDto } from "../../shared/contracts";
 import { CHUNK_SIZE, type AppService } from "../app-service";
 import type { Db } from "../db";
@@ -233,13 +234,19 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
     const owningDistricts = districts.filter((district) => district.cityId === city.id
       && area.footprint.every((cell) => districtCells.get(district.id)?.has(cellKey(cell))));
     if (owningDistricts.length !== 1) addViolation(violations, "GREEN_AREA_OUTSIDE_DISTRICT", `${area.assetKey}: площадь не принадлежит одному району`);
+    const expectedPathCells = new Set(greenAreaPathCells(area.footprint).map(cellKey));
     for (const cell of area.footprint) {
       const key = cellKey(cell);
       if (!contains(city.bounds, cell)) addViolation(violations, "GREEN_AREA_OUTSIDE_CITY", `${area.assetKey}: клетка ${key} вне города`);
       if (roadKeys.has(key)) addViolation(violations, "GREEN_AREA_ROAD_OVERLAP", `${area.assetKey}: дорога проходит через ${key}`);
       if (occupiedTaskCells.has(key)) addViolation(violations, "GREEN_AREA_TASK_OVERLAP", `${area.assetKey}: задача занимает ${key}`);
       if (isWater(terrainAt(seed, cell.x, cell.y).terrain)) addViolation(violations, "GREEN_AREA_ON_WATER", `${area.assetKey}: клетка ${key} находится в воде`);
-      if (surfaceMap.get(key)?.kind !== "PATH") addViolation(violations, "GREEN_AREA_SURFACE_MISSING", `${area.assetKey}: клетка ${key} не размечена как парковая поверхность`);
+      if (expectedPathCells.has(key) && surfaceMap.get(key)?.kind !== "PATH") {
+        addViolation(violations, "GREEN_AREA_SURFACE_MISSING", `${area.assetKey}: дорожка ${key} не размечена как парковая поверхность`);
+      }
+      if (!expectedPathCells.has(key) && surfaceMap.get(key)?.kind === "PATH") {
+        addViolation(violations, "GREEN_AREA_SURFACE_SPILL", `${area.assetKey}: лужайка ${key} ошибочно размечена как дорожка`);
+      }
     }
     const accessCells = area.accessPath;
     if (accessCells.length > 8) addViolation(violations, "GREEN_AREA_ACCESS_TOO_LONG", `${area.assetKey}: подход длиннее восьми клеток`);
@@ -252,7 +259,7 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
       if (occupiedTaskCells.has(key)) addViolation(violations, "GREEN_AREA_ACCESS_CROSSES_TASK", `${area.assetKey}: подход проходит через задачу`);
       if (isWater(terrainAt(seed, cell.x, cell.y).terrain)) addViolation(violations, "GREEN_AREA_ACCESS_CROSSES_WATER", `${area.assetKey}: подход проходит по воде`);
     }
-    const sidewalkTouchPoints = accessCells.length > 0 ? [accessCells.at(-1)!] : area.footprint;
+    const sidewalkTouchPoints = accessCells.length > 0 ? [accessCells.at(-1)!] : greenAreaPathCells(area.footprint);
     const pedestrianQueue = [...sidewalkTouchPoints];
     const pedestrianVisited = new Set<string>();
     let reachesSidewalk = false;

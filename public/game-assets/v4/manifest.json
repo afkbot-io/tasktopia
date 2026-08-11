@@ -10940,70 +10940,6 @@
         16
       ]
     },
-    "walker-north": {
-      "label": "Walker North",
-      "path": "props/walker-north.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "walker-east": {
-      "label": "Walker East",
-      "path": "props/walker-east.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "walker-south": {
-      "label": "Walker South",
-      "path": "props/walker-south.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "walker-west": {
-      "label": "Walker West",
-      "path": "props/walker-west.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
     "boat-horizontal-a": {
       "label": "Boat Horizontal A",
       "path": "props/boat-horizontal-a.png",
@@ -11066,166 +11002,6 @@
       "anchorPx": [
         4,
         24
-      ]
-    },
-    "fisher-north": {
-      "label": "Fisher North",
-      "path": "props/fisher-north.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "fisher-east": {
-      "label": "Fisher East",
-      "path": "props/fisher-east.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "fisher-south": {
-      "label": "Fisher South",
-      "path": "props/fisher-south.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "fisher-west": {
-      "label": "Fisher West",
-      "path": "props/fisher-west.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "resident-reader": {
-      "label": "Resident Reader",
-      "path": "props/resident-reader.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "resident-box": {
-      "label": "Resident Box",
-      "path": "props/resident-box.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "resident-sweeper": {
-      "label": "Resident Sweeper",
-      "path": "props/resident-sweeper.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "resident-phone": {
-      "label": "Resident Phone",
-      "path": "props/resident-phone.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "resident-worker": {
-      "label": "Resident Worker",
-      "path": "props/resident-worker.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
-      ]
-    },
-    "resident-wave": {
-      "label": "Resident Wave",
-      "path": "props/resident-wave.png",
-      "size": [
-        8,
-        8
-      ],
-      "footprintCells": [
-        1,
-        1
-      ],
-      "anchorPx": [
-        4,
-        8
       ]
     },
     "fence-horizontal": {
@@ -12006,7 +11782,401 @@
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-bandstand-v1.png",
       "visualProfile": "TASKTOPIA_V4_PARK_OBJECT"
+    },
+    "walker-north": {
+      "label": "Пешеход — север",
+      "path": "props/walker-north.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "baseFacing": "NORTH"
+    },
+    "walker-east": {
+      "label": "Пешеход — восток",
+      "path": "props/walker-east.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "baseFacing": "EAST"
+    },
+    "walker-south": {
+      "label": "Пешеход — юг",
+      "path": "props/walker-south.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "baseFacing": "SOUTH"
+    },
+    "walker-west": {
+      "label": "Пешеход — запад",
+      "path": "props/walker-west.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_FRONTAL_TOP",
+      "baseFacing": "WEST"
+    },
+    "resident-reader": {
+      "label": "Житель с книгой",
+      "path": "props/resident-reader.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY"
+    },
+    "resident-box": {
+      "label": "Курьер с посылкой",
+      "path": "props/resident-box.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY"
+    },
+    "resident-sweeper": {
+      "label": "Дворник",
+      "path": "props/resident-sweeper.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY"
+    },
+    "resident-phone": {
+      "label": "Житель с телефоном",
+      "path": "props/resident-phone.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY"
+    },
+    "resident-worker": {
+      "label": "Рабочий",
+      "path": "props/resident-worker.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY"
+    },
+    "resident-wave": {
+      "label": "Житель приветствует",
+      "path": "props/resident-wave.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY"
+    },
+    "fisher-north": {
+      "label": "Рыбак — север",
+      "path": "props/fisher-north.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY",
+      "baseFacing": "NORTH"
+    },
+    "fisher-east": {
+      "label": "Рыбак — восток",
+      "path": "props/fisher-east.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY",
+      "baseFacing": "EAST"
+    },
+    "fisher-south": {
+      "label": "Рыбак — юг",
+      "path": "props/fisher-south.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY",
+      "baseFacing": "SOUTH"
+    },
+    "fisher-west": {
+      "label": "Рыбак — запад",
+      "path": "props/fisher-west.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_RESIDENT_ACTIVITY",
+      "baseFacing": "WEST"
+    },
+    "cyclist-horizontal": {
+      "label": "Велосипедист — горизонтально",
+      "path": "props/cyclist-horizontal.png",
+      "size": [
+        16,
+        16
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_MICROMOBILITY_FRONTAL_TOP",
+      "baseFacing": "EAST"
+    },
+    "cyclist-north": {
+      "label": "Велосипедист — север",
+      "path": "props/cyclist-north.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_MICROMOBILITY_FRONTAL_TOP",
+      "baseFacing": "NORTH"
+    },
+    "cyclist-south": {
+      "label": "Велосипедист — юг",
+      "path": "props/cyclist-south.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_MICROMOBILITY_FRONTAL_TOP",
+      "baseFacing": "SOUTH"
+    },
+    "scooter-horizontal": {
+      "label": "Самокатчик — горизонтально",
+      "path": "props/scooter-horizontal.png",
+      "size": [
+        16,
+        16
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_MICROMOBILITY_FRONTAL_TOP",
+      "baseFacing": "EAST"
+    },
+    "scooter-north": {
+      "label": "Самокатчик — север",
+      "path": "props/scooter-north.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_MICROMOBILITY_FRONTAL_TOP",
+      "baseFacing": "NORTH"
+    },
+    "scooter-south": {
+      "label": "Самокатчик — юг",
+      "path": "props/scooter-south.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v1.png",
+      "visualProfile": "TASKTOPIA_V4_MICROMOBILITY_FRONTAL_TOP",
+      "baseFacing": "SOUTH"
     }
   },
-  "assetRevision": "076ae76f68b44575"
+  "assetRevision": "b4104dedba2a6040"
 }

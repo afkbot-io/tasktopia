@@ -4172,9 +4172,9 @@
       "maxPerCity": 1,
       "maxPerDistrict": 1,
       "serviceRole": "culture-service",
-      "sheet": null,
-      "sheetSha256": null,
-      "reviewed": false
+      "sheet": "buildings/landmark-monument/stages.png",
+      "sheetSha256": "ce9ac89dfb42f23930766360cd901a49782ef4eb75e29c1e523b9c89a4a2a542",
+      "reviewed": true
     },
     {
       "key": "house-canalside-terrace",

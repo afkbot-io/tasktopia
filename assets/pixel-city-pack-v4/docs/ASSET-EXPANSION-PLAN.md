@@ -8,10 +8,13 @@
 
 ## 1. Краткое состояние пака (V4)
 
-Текущий runtime `assets/pixel-city-pack-v4/runtime` собирается из двух источников:
-
-- **V3 base** — скопированные каталоги `buildings`, `props`, `tiles`, `vehicles`.
-- **V4 procedural** — детерминированный Python-скрипт `scripts/build-pixel-city-pack-v4.py`, который генерирует terrain, transitions, часть props, транспорт и новые здания из `assets/pixel-city-pack-v4/catalog/generated-buildings.json`.
+Текущий runtime `assets/pixel-city-pack-v4/runtime` собирается детерминированно из
+канонического каталога, принятых AI-authored source sheets и четырёх отдельных
+импортов Государственного архива. Скрипт может нарезать стадии, убрать chroma,
+изменить размер с сохранением пропорций, сделать hard alpha и сократить палитру,
+но не имеет права перерисовывать принятую геометрию здания или жителя примитивами.
+31 старое civic/landmark-семейство временно остаётся в явно опубликованной
+очереди миграции и не считается завершённым authored-ассетом.
 
 | Категория | Итог (V4) | Цель | Статус |
 |---|---|---|---|
@@ -19,7 +22,7 @@
 | COMMERCIAL | 51 | ≥49 | выполнено |
 | CIVIC | 56 | ≥49 | выполнено |
 | HIGHRISE | 34 | ≥33 | выполнено |
-| Props | 153 | ≥150 | выполнено |
+| Props | 169 | ≥150 | выполнено |
 | AREA (parks/groves) | 5 логических типов | 5 | выполнено |
 | Unique landmarks | 13 | 13 | выполнено |
 
@@ -57,9 +60,9 @@
 
 Краткая инструкция для исполнителя:
 
-1. Для **генерируемых зданий** добавить JSON-строку в `assets/pixel-city-pack-v4/catalog/generated-buildings.json`.
-2. Добавить/расширить функцию отрисовки стиля в `scripts/build-pixel-city-pack-v4.py` (например, `draw_finished_house`, `draw_gas_station`, `draw_tower`).
-3. Для **пропов** добавить функцию в `build_manifest → generated_props` и прописать `footprintCells`/`anchorPx`.
+1. Для здания подготовить один принятый AI-authored лист из пяти стадий по контракту `GENERATION-SPEC.md` и положить его в `reference/buildings/<assetKey>/stages.png`.
+2. Зарегистрировать лист, SHA-256, `spriteSize`, footprint, anchor, entrances и platform в `catalog/buildings.json`; геометрия из листа остаётся визуальным источником истины.
+3. Для жителя, транспорта или другого сложного prop подготовить directional/source sheet в `reference/ai-authored/ambient`, затем зарегистрировать его в authored-каталоге с `visualProfile`, `baseFacing`, `footprintCells` и `anchorPx`.
 4. Для **area/парков** изменить код генерации в `AppService.publishDistrictGreenFeature` (размеры, assetKey, набор декораций), но сами area-спрайты не нужны — area рисуется тайлами `path-brown` + `MEADOW`.
 5. Запустить:
    ```bash
@@ -646,6 +649,6 @@
 ### 16.1. Статус перехода на authored-источники
 
 - Всего в каталоге: 193 семейства зданий.
-- Принятый AI-authored источник с проверенным SHA-256: 157 семейств.
-- Очередь миграции без допустимого fallback для релиза нового изображения: 36 семейств.
+- Принятый AI-authored источник с проверенным SHA-256: 158 семейств.
+- Очередь AI-перерисовки: 31 старое civic/landmark-семейство; четыре импортированных здания Государственного архива проверяются отдельным контрактом.
 - Последний принятый пакет: 50 семейств — 14 жилых, 31 коммерческое и 5 civic/landmark; полный перечень закреплён контрактом `authoredBatch50` в `tests/pixel-city-assets-v4.test.ts`.

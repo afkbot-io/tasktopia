@@ -10,6 +10,7 @@ import type {
   TaskDto,
   WorldFeatureDto,
 } from "../../shared/contracts";
+import { greenAreaPathCells } from "../../shared/green-area";
 import { cellKey, contains, neighbors4 } from "./grid";
 
 export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
@@ -290,7 +291,7 @@ export function buildSurfaceMap(input: {
   for (const feature of activeFeatures) {
     const finish = pathFinish(feature.districtId ?? feature.cityId ?? feature.id);
     if (feature.assetKind === "AREA") {
-      for (const cell of feature.footprint) {
+      for (const cell of greenAreaPathCells(feature.footprint)) {
         const key = cellKey(cell);
         if (!input.roads.has(key)) surfaces.set(key, { ...cell, kind: "PATH", finish });
       }

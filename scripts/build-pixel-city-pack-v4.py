@@ -44,7 +44,6 @@ CAR_PALETTES = {
 }
 WALKER_SKIN = "#d2a074ff"
 WALKER_HAIR = "#3f342fff"
-WALKER_LEGS = "#263945ff"
 WALKER_SHIRTS = ("#4f8ca5ff", "#c07a55ff", "#6f9a59ff", "#9a6aa5ff")
 
 
@@ -731,20 +730,6 @@ def prop_city_sign(vertical: bool) -> Image.Image:
     return image
 
 
-def prop_walker(direction: str, color: str) -> Image.Image:
-    image = transparent_tile()
-    draw = ImageDraw.Draw(image)
-    draw.rectangle((3, 1, 4, 2), fill=rgba(WALKER_SKIN))
-    draw.rectangle((2, 3, 5, 5), fill=rgba(color), outline=rgba(OUTLINE))
-    if direction in "NS":
-        draw.point((2, 6), fill=rgba(WALKER_LEGS)); draw.point((5, 6), fill=rgba(WALKER_LEGS))
-        draw.point((3, 0 if direction == "N" else 2), fill=rgba(WALKER_HAIR))
-    else:
-        draw.point((2, 6), fill=rgba(WALKER_LEGS)); draw.point((5, 6), fill=rgba(WALKER_LEGS))
-        draw.point((2 if direction == "W" else 5, 2), fill=rgba(WALKER_HAIR))
-    return image
-
-
 def prop_animal(species: str, direction: str) -> Image.Image:
     image = transparent_tile()
     draw = ImageDraw.Draw(image)
@@ -896,33 +881,6 @@ def prop_incident_smoke(variant: int) -> Image.Image:
         draw.rectangle((1, 11, 3, 15), fill=rgba(light))
         draw.rectangle((0, 7, 5, 12), fill=rgba(light), outline=rgba(OUTLINE))
         draw.rectangle((3, 3, 7, 8), fill=rgba(dark), outline=rgba(OUTLINE))
-    return image
-
-
-def prop_fisher(direction: str, variant: int) -> Image.Image:
-    image = prop_walker(direction, WALKER_SHIRTS[variant % len(WALKER_SHIRTS)])
-    draw = ImageDraw.Draw(image)
-    if direction in "EW":
-        side = 7 if direction == "E" else 0
-        draw.line((4 if direction == "E" else 3, 4, side, 1), fill=rgba("#b78d55ff"))
-        draw.line((side, 1, side, 6), fill=rgba("#c7d4d1ff"))
-        draw.point((side, 7), fill=rgba("#d8b64fff"))
-    else:
-        rod_x = 6 if direction == "N" else 1
-        draw.line((4, 4, rod_x, 0 if direction == "N" else 7), fill=rgba("#b78d55ff"))
-        draw.point((rod_x, 0 if direction == "N" else 7), fill=rgba("#d8b64fff"))
-    return image
-
-
-def prop_resident(action: str, variant: int) -> Image.Image:
-    image = prop_walker("S", WALKER_SHIRTS[variant % len(WALKER_SHIRTS)])
-    draw = ImageDraw.Draw(image)
-    if action == "reader": draw.rectangle((1, 3, 6, 5), fill=rgba("#d7c993ff"), outline=rgba(OUTLINE))
-    elif action == "box": draw.rectangle((4, 3, 7, 6), fill=rgba("#a97846ff"), outline=rgba(OUTLINE))
-    elif action == "sweeper": draw.line((5, 3, 7, 7), fill=rgba("#b78d55ff"))
-    elif action == "phone": draw.point((5, 2), fill=rgba("#d9e2ddff"))
-    elif action == "worker": draw.point((1, 0), fill=rgba("#e0b84fff")); draw.point((6, 4), fill=rgba("#aeb9b8ff"))
-    elif action == "wave": draw.line((5, 3, 7, 0), fill=rgba(WALKER_SKIN))
     return image
 
 
@@ -2285,15 +2243,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "incident-flame-c": prop_incident_flame(2), "incident-flame-d": prop_incident_flame(3),
         "incident-smoke-a": prop_incident_smoke(0), "incident-smoke-b": prop_incident_smoke(1),
         "incident-smoke-c": prop_incident_smoke(2), "incident-smoke-d": prop_incident_smoke(3),
-        "walker-north": prop_walker("N", WALKER_SHIRTS[0]), "walker-east": prop_walker("E", WALKER_SHIRTS[1]),
-        "walker-south": prop_walker("S", WALKER_SHIRTS[2]), "walker-west": prop_walker("W", WALKER_SHIRTS[3]),
         "boat-horizontal-a": prop_boat(True, 0), "boat-horizontal-b": prop_boat(True, 1),
         "boat-vertical-a": prop_boat(False, 0), "boat-vertical-b": prop_boat(False, 1),
-        "fisher-north": prop_fisher("N", 0), "fisher-east": prop_fisher("E", 1),
-        "fisher-south": prop_fisher("S", 2), "fisher-west": prop_fisher("W", 3),
-        "resident-reader": prop_resident("reader", 0), "resident-box": prop_resident("box", 1),
-        "resident-sweeper": prop_resident("sweeper", 2), "resident-phone": prop_resident("phone", 3),
-        "resident-worker": prop_resident("worker", 0), "resident-wave": prop_resident("wave", 1),
         "fence-horizontal": prop_fence(False), "fence-vertical": prop_fence(True),
         "archive-fence-horizontal": prop_archive_fence(False), "archive-fence-vertical": prop_archive_fence(True),
         "archive-security-barrier": prop_archive_barrier(),
@@ -2317,6 +2268,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "artSource": "AI_AUTHORED",
             "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
             "visualProfile": authored.get("visualProfile", "TASKTOPIA_V4_AMBIENT"),
+            **({"baseFacing": authored["baseFacing"]} if authored.get("baseFacing") else {}),
         }
     prop_dir = RUNTIME / "props"
     prop_manifest = dict(source_manifest["props"])
@@ -2659,6 +2611,59 @@ def transport_style_sheet(manifest: dict) -> None:
     image.save(SCREENSHOTS / "transport-native-views-review.png", optimize=True)
 
 
+def resident_mobility_style_sheet(manifest: dict) -> None:
+    """Render every authored resident and micromobility view at nearest-neighbour 8x."""
+    keys = (
+        "walker-north", "walker-east", "walker-south", "walker-west",
+        "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave",
+        "fisher-north", "fisher-east", "fisher-south", "fisher-west",
+        "cyclist-horizontal", "cyclist-north", "cyclist-south",
+        "scooter-horizontal", "scooter-north", "scooter-south",
+    )
+    scale, columns = 8, 5
+    card_width, card_height = 210, 190
+    rows = (len(keys) + columns - 1) // columns
+    image = Image.new("RGB", (card_width * columns, card_height * rows), rgba("#132126ff")[:3])
+    draw = ImageDraw.Draw(image)
+    for index, key in enumerate(keys):
+        left, top = (index % columns) * card_width, (index // columns) * card_height
+        prop = manifest["props"][key]
+        sprite = Image.open(RUNTIME / prop["path"]).convert("RGBA")
+        sprite = sprite.resize((sprite.width * scale, sprite.height * scale), Image.Resampling.NEAREST)
+        draw.rectangle((left + 5, top + 5, left + card_width - 5, top + card_height - 5), fill=rgba("#1b2c30ff")[:3], outline=rgba("#3a5359ff")[:3])
+        draw.text((left + 12, top + 12), key, fill=rgba("#d9e2ddff")[:3])
+        ground_y = top + card_height - 24
+        draw.rectangle((left + 8, ground_y, left + card_width - 8, top + card_height - 8), fill=rgba("#526d35ff")[:3])
+        image.paste(sprite, (left + (card_width - sprite.width) // 2, ground_y - sprite.height), sprite)
+    SCREENSHOTS.mkdir(parents=True, exist_ok=True)
+    image.save(SCREENSHOTS / "resident-micromobility-review.png", optimize=True)
+
+
+def pending_building_style_sheet(manifest: dict) -> None:
+    """Expose every building that still lacks a reviewed authored source."""
+    catalog = json.loads((CATALOG / "buildings.json").read_text())
+    keys = [entry["key"] for entry in catalog["buildings"] if not entry.get("reviewed")]
+    columns, card_width, card_height = 6, 240, 210
+    rows = (len(keys) + columns - 1) // columns
+    image = Image.new("RGB", (card_width * columns, card_height * rows), rgba("#132126ff")[:3])
+    draw = ImageDraw.Draw(image)
+    platform_colors = {"YARD": "#668548ff", "STONE": "#899a9cff", "ASPHALT": "#445064ff", "SERVICE": "#899a9cff", "PARK": "#789451ff"}
+    for index, key in enumerate(keys):
+        building = manifest["buildings"][key]
+        sprite = Image.open(RUNTIME / building["stages"][-1]).convert("RGBA")
+        scale = max(1, min(4, 132 // sprite.height, 200 // sprite.width))
+        sprite = sprite.resize((sprite.width * scale, sprite.height * scale), Image.Resampling.NEAREST)
+        left, top = (index % columns) * card_width, (index // columns) * card_height
+        ground_y = top + card_height - 32
+        draw.rectangle((left + 5, top + 5, left + card_width - 5, top + card_height - 5), fill=rgba("#1b2c30ff")[:3], outline=rgba("#3a5359ff")[:3])
+        draw.rectangle((left + 8, ground_y, left + card_width - 8, top + card_height - 8), fill=rgba(platform_colors[building["platform"]])[:3])
+        image.paste(sprite, (left + (card_width - sprite.width) // 2, ground_y - sprite.height), sprite)
+        draw.text((left + 12, top + 12), key, fill=rgba("#d9e2ddff")[:3])
+        draw.text((left + 12, top + 29), f'{building["platform"]} · {building["spriteSize"][0]}x{building["spriteSize"][1]}', fill=rgba("#9eb0aeff")[:3])
+    SCREENSHOTS.mkdir(parents=True, exist_ok=True)
+    image.save(SCREENSHOTS / "pending-building-style-review.png", optimize=True)
+
+
 def main() -> None:
     if RUNTIME.exists(): shutil.rmtree(RUNTIME)
     RUNTIME.mkdir(parents=True, exist_ok=True)
@@ -2673,6 +2678,8 @@ def main() -> None:
     gas_station_style_sheet(manifest)
     projection_style_sheet(manifest)
     transport_style_sheet(manifest)
+    resident_mobility_style_sheet(manifest)
+    pending_building_style_sheet(manifest)
     if PUBLIC.exists(): shutil.rmtree(PUBLIC)
     shutil.copytree(RUNTIME, PUBLIC)
     shutil.copy2(PACK / "manifest.json", PUBLIC / "manifest.json")

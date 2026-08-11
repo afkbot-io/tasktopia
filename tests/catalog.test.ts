@@ -95,14 +95,22 @@ describe("building catalog V4", () => {
     }
   });
 
-  it("keeps every human on the walker scale and gives crewed boats a slender footprint", () => {
+  it("keeps every human on the enlarged authored walker scale and gives crewed boats a slender footprint", () => {
     const walkerSize = PROP_CATALOG["walker-south"]?.size;
-    expect(walkerSize).toEqual({ width: 8, height: 8 });
+    expect(walkerSize).toEqual({ width: 8, height: 16 });
     for (const key of ["fisher-north", "fisher-east", "fisher-south", "fisher-west", "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"]) {
       expect(PROP_CATALOG[key]?.size, key).toEqual(walkerSize);
       expect(PROP_CATALOG[key]?.footprint, key).toEqual({ width: 1, height: 1 });
     }
     expect(PROP_CATALOG["boat-horizontal-a"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
     expect(PROP_CATALOG["boat-vertical-a"]).toMatchObject({ size: { width: 8, height: 24 }, footprint: { width: 1, height: 3 } });
+  });
+
+  it("registers three authored views for bicycles and scooters", () => {
+    for (const family of ["cyclist", "scooter"] as const) {
+      expect(PROP_CATALOG[`${family}-horizontal`]).toMatchObject({ size: { width: 16, height: 16 }, footprint: { width: 2, height: 1 } });
+      expect(PROP_CATALOG[`${family}-north`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
+      expect(PROP_CATALOG[`${family}-south`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
+    }
   });
 });
