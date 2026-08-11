@@ -161,3 +161,6 @@ npm run seed
 npm run dev
 npm run smoke:mcp
 ```
+
+Локальный `npm run seed` ограничен одним городом, 10 районами и 30 задачами,
+чтобы проверка MCP не зависела от тяжёлой showcase-генерации.

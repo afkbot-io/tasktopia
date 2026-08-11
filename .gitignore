@@ -31,3 +31,4 @@ backups/
 # Review rejects and one-off drawing studies are not runtime inputs.
 /assets/pixel-city-pack-v4/reference/rejected/
 /sprite-examples/
+/assets/generated-v2/

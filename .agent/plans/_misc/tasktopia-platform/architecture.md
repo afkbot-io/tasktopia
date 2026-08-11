@@ -4,7 +4,7 @@
 
 ## Current boundary
 
-Рабочий MVP — один TypeScript-проект: React/Vite UI, PixiJS renderer, Fastify API/MCP/Socket.IO gateway и SQLite application state. Все мутации проходят через `AppService`, внешний интерфейс проектов/спринтов/задач остаётся read-only. Старый статический proof-of-concept сохранён в `archive/static-prototype` и не входит в сборку.
+Рабочий MVP — один TypeScript-проект: React/Vite UI, PixiJS renderer, Fastify API/MCP/Socket.IO gateway и SQLite application state. Все мутации проходят через `AppService`, внешний интерфейс проектов/спринтов/задач остаётся read-only. Ранний статический proof-of-concept был удалён после перехода на production-приложение и не является поддерживаемым install surface.
 
 ## Target boundary после подтверждения MVP
 

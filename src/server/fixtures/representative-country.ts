@@ -123,6 +123,16 @@ export const REPRESENTATIVE_CITIES: CityTemplate[] = [
   },
 ];
 
+const DEVELOPMENT_CITIES: CityTemplate[] = [
+  {
+    ...REPRESENTATIVE_CITIES[0]!,
+    key: "local-riverside",
+    name: "Riverside Local",
+    description: "Локальный проверочный город: один город, десять районов и компактный набор задач.",
+    districts: REPRESENTATIVE_CITIES[0]!.districts.slice(0, 10),
+  },
+];
+
 const STATUS_ORDER: TaskStatus[] = ["PLANNING", "STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"];
 const PRIORITIES: TaskPriority[] = ["LOW", "NORMAL", "HIGH", "CRITICAL"];
 
@@ -134,9 +144,14 @@ function targetStatus(role: "COMPLETED" | "ACTIVE" | "PLANNED", taskIndex: numbe
 
 export type RepresentativeCountryResult = { cities: CityDto[]; districts: DistrictDto[]; tasks: TaskDto[] };
 
-export async function seedRepresentativeCountry(service: AppService, countryId: string): Promise<RepresentativeCountryResult> {
-  for (let cityIndex = 0; cityIndex < REPRESENTATIVE_CITIES.length; cityIndex += 1) {
-    const citySpec = REPRESENTATIVE_CITIES[cityIndex]!;
+async function seedCountryFixture(
+  service: AppService,
+  countryId: string,
+  cities: CityTemplate[],
+  tasksPerDistrict: number,
+): Promise<RepresentativeCountryResult> {
+  for (let cityIndex = 0; cityIndex < cities.length; cityIndex += 1) {
+    const citySpec = cities[cityIndex]!;
     const city = (await service.listCities(countryId)).find((candidate) => candidate.name === citySpec.name) ?? await service.createCity(countryId, {
                       name: citySpec.name,
                       description: citySpec.description,
@@ -158,7 +173,7 @@ export async function seedRepresentativeCountry(service: AppService, countryId: 
                                 idempotencyKey: `representative-district-${citySpec.key}-${districtIndex}`,
                               });
       const templates = TASKS_BY_ARCHETYPE[districtSpec.archetype];
-      for (let taskIndex = 0; taskIndex < TASKS_PER_DISTRICT; taskIndex += 1) {
+      for (let taskIndex = 0; taskIndex < tasksPerDistrict; taskIndex += 1) {
         const template = templates[taskIndex]!;
         const title = `${template.title} — ${district.name}`;
         let task = (await service.listTasks(countryId, district.id)).find((candidate) => candidate.title === title) ?? await service.createTask(countryId, {
@@ -189,4 +204,12 @@ export async function seedRepresentativeCountry(service: AppService, countryId: 
   }
 
   return { cities: await service.listCities(countryId), districts: await service.listDistricts(countryId), tasks: await service.listTasks(countryId) };
+}
+
+export function seedDevelopmentCountry(service: AppService, countryId: string): Promise<RepresentativeCountryResult> {
+  return seedCountryFixture(service, countryId, DEVELOPMENT_CITIES, 3);
+}
+
+export function seedRepresentativeCountry(service: AppService, countryId: string): Promise<RepresentativeCountryResult> {
+  return seedCountryFixture(service, countryId, REPRESENTATIVE_CITIES, TASKS_PER_DISTRICT);
 }

@@ -24,7 +24,7 @@ services:
     build:
       context: .
       args:
-        VITE_STATIC_ORIGIN: ${VITE_STATIC_ORIGIN:-}
+        STATIC_ORIGIN: ${STATIC_ORIGIN:-}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -39,6 +39,7 @@ services:
       UPLOAD_DIR: /data/uploads
     volumes:
       - tasktopia_uploads:/data/uploads
+      - tasktopia_asset_revisions:/app/dist/public/game-assets/v4/revisions
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,3 +69,4 @@ services:
 volumes:
   tasktopia_postgres:
   tasktopia_uploads:
+  tasktopia_asset_revisions:

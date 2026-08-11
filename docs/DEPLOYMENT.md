@@ -25,6 +25,29 @@ curl -fsS http://127.0.0.1:3000/health
 Named volumes `tasktopia_postgres` и `tasktopia_uploads` переживают замену
 контейнеров. Не используйте `docker compose down -v` на сервере с данными.
 
+Для разработки на хосте используйте явный override, который публикует
+PostgreSQL только на loopback. Основной production compose порт базы не
+публикует:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
+npm run seed
+npm run dev
+```
+
+Команда `npm run seed` создаёт компактный development fixture: один город,
+10 районов и 30 задач. Полный демонстрационный мир запускается отдельно через
+`npm run seed:showcase` и не входит в обычную установочную проверку.
+
+Интеграционные и browser-тесты используют отдельную временную БД:
+
+```bash
+npm run test:db:start
+npm test
+npm run test:e2e
+npm run test:db:stop
+```
+
 ## Автоматическая установка домена и HTTPS
 
 Для чистого Ubuntu/Debian-сервера сначала направьте A/AAAA-запись домена на
@@ -103,9 +126,8 @@ Bootstrap-конфиг нужен только до первого выпуск�
 
 ```dotenv
 APP_ORIGIN=https://tasktopia.online
-# После успешной CDN-проверки обе переменные получают одно значение:
+# После успешной CDN-проверки задайте единый origin:
 # STATIC_ORIGIN=https://store.tasktopia.online
-# VITE_STATIC_ORIGIN=https://store.tasktopia.online
 POSTGRES_PASSWORD=<длинный-случайный-пароль>
 SESSION_COOKIE_SECURE=true
 LOG_LEVEL=info
@@ -113,11 +135,13 @@ APP_MEMORY_LIMIT=1536m
 APP_CPU_LIMIT=2.00
 POSTGRES_MEMORY_LIMIT=1g
 POSTGRES_CPU_LIMIT=1.00
+BACKUP_RETENTION_COUNT=14
+MIN_FREE_SPACE_MB=1024
 ```
 
-`VITE_STATIC_ORIGIN` встраивается в клиент во время `docker compose build`, а
-`STATIC_ORIGIN` добавляет тот же origin в CSP приложения. Их нельзя включать по
-отдельности. CDN должен использовать `https://tasktopia.online` как origin,
+`STATIC_ORIGIN` одновременно встраивается в клиент во время
+`docker compose build` и добавляется в CSP приложения, поэтому client/runtime
+origin не могут разойтись. CDN должен использовать `https://tasktopia.online` как origin,
 возвращать CORS-заголовок
 `Access-Control-Allow-Origin: https://tasktopia.online` для JS, CSS, шрифтов и
 PNG. Игровой пак публикует content revision отдельным сегментом пути
@@ -141,9 +165,14 @@ curl -fsSIL 'https://store.tasktopia.online/assets/<vite-hash>.js'
 curl -fsSIL 'https://store.tasktopia.online/game-assets/v4/revisions/<assetRevision>/props/gazebo.png'
 ```
 
-Если SAN не содержит `store.tasktopia.online`, обе CDN-переменные должны
-оставаться пустыми: приложение продолжит безопасно раздавать статику с основного
-домена. После изменения `VITE_STATIC_ORIGIN` обязательна новая сборка образа.
+Если SAN не содержит `store.tasktopia.online`, `STATIC_ORIGIN` должен оставаться
+пустым: приложение продолжит безопасно раздавать статику с основного домена.
+После изменения `STATIC_ORIGIN` обязательна новая сборка образа.
+
+Контейнер хранит три последние физические ревизии игрового пака в volume
+`tasktopia_asset_revisions`. Поэтому уже открытая вкладка продолжает получать
+свою immutable-ревизию после следующего обновления, пока пользователь не
+перезагрузит страницу.
 
 Публичный MCP endpoint: `https://tasktopia.online/mcp`. Публичная инструкция для интеграций: `https://tasktopia.online/ai.md`. Обе ссылки отображаются в настройках из `location.origin`, поэтому отдельный клиентский env не требуется.
 
@@ -153,7 +182,9 @@ curl -fsSIL 'https://store.tasktopia.online/game-assets/v4/revisions/<assetRevis
 /srv/tasktopia/app/deploy/update-server.sh
 ```
 
-Скрипт использует только fast-forward `git pull`, пересобирает один сервис, ждёт health check и не публикует порт 3000 наружу.
+Скрипт использует только fast-forward `git pull`, проверяет свободное место,
+создаёт dump, сохраняет последние `BACKUP_RETENTION_COUNT` копий, пересобирает
+один сервис, ждёт health check и не публикует порт 3000 наружу.
 
 Compose ограничивает Tasktopia отдельно от соседних проектов: приложение — 2 CPU, 1,5 GiB RAM и 160 процессов; PostgreSQL — 1 CPU, 1 GiB RAM и 100 процессов. Это верхние границы, а не резервирование: неиспользованные CPU остаются доступны другим контейнерам. После изменения бюджетов проверяйте `docker inspect`, `docker stats --no-stream` и флаг `OOMKilled`; не снимайте лимиты соседнего проекта для ускорения Tasktopia.
 

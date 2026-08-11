@@ -3,7 +3,7 @@ import { AppService } from "../src/server/app-service";
 import { createMcpToken, loginUser, registerUser } from "../src/server/auth";
 import { config } from "../src/server/config";
 import { createDb, transaction } from "../src/server/db";
-import { REPRESENTATIVE_SEED, seedRepresentativeCountry } from "../src/server/fixtures/representative-country";
+import { REPRESENTATIVE_SEED, seedDevelopmentCountry } from "../src/server/fixtures/representative-country";
 
 const db = await createDb(config.databaseUrl);
 const service = new AppService(db);
@@ -16,7 +16,7 @@ try {
 } catch {
   user = (await loginUser(db, email, password)).user;
 }
-// `npm run seed` owns the local showcase country. Rebuild only its generated
+// `npm run seed` owns the compact local development country. Rebuild only its generated
 // world so fixture revisions cannot collide with old idempotency payloads;
 // account, sessions, memberships and personal MCP credentials remain intact.
 await transaction(db, async () => {
@@ -30,7 +30,7 @@ await transaction(db, async () => {
   await db.prepare("UPDATE countries SET seed = ?, world_version = 1 WHERE id = ?").run(REPRESENTATIVE_SEED, user.countryId);
 });
 
-const fixture = await seedRepresentativeCountry(service, user.countryId);
+const fixture = await seedDevelopmentCountry(service, user.countryId);
 const token = await createMcpToken(db, user.countryId, `Local token ${randomUUID().slice(0, 6)}`);
 if (process.env.SEED_PRINT_TOKEN !== "false") {
   console.log(JSON.stringify({

@@ -8,7 +8,7 @@
 ```bash
 npm ci
 cp .env.example .env
-docker compose up -d postgres
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
 npm run seed
 npm run dev
 ```
@@ -20,15 +20,18 @@ npm run dev
 ## Перед PR
 
 ```bash
+npm run test:db:start
 npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run test:e2e
+npm run test:db:stop
 ```
 
 Для UI добавьте или обновите Playwright-проверку. Для изменений генерации мира
-запустите `npm run test:worldgen`. Не запускайте тяжёлый worldgen одновременно
-с обычным набором и E2E.
+запустите `npm run test:worldgen` отдельным этапом после обычного набора и E2E.
+Не запускайте тяжёлый worldgen одновременно с ними.
 
 ## Графический пак
 

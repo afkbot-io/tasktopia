@@ -2643,14 +2643,14 @@ export class AppService {
     return { minX: bounds.minX - shoulder, maxX: bounds.maxX + shoulder, minY: bounds.minY - depth, maxY: bounds.minY - 1 };
   }
 
-  private async selectDistrictSite(
+  private async selectDistrictSites(
     countryId: string,
     city: CityDto,
     seed: number,
     width: number,
     height: number,
     candidateValid?: (origin: Cell, cells: Cell[]) => boolean,
-  ): Promise<{ origin: Cell; cells: Cell[] }> {
+  ): Promise<Array<{ origin: Cell; cells: Cell[] }>> {
     const roads = await this.roadCells(countryId);
     const institutionalRoads = await this.institutionalAccessRoads(countryId);
     const districts = await this.listDistricts(countryId);
@@ -2716,10 +2716,87 @@ export class AppService {
           candidates.push({ origin, cells, score });
         }
       }
-      const selected = candidates.sort((a, b) => a.score - b.score)[0];
-      if (selected) return selected;
+      const selected = candidates.sort((a, b) => a.score - b.score).slice(0, 16);
+      if (selected.length > 0) return selected;
     }
     throw new DomainError("PLACEMENT_UNAVAILABLE", "В городе и безопасных секторах расширения не осталось площадки для района");
+  }
+
+  private async connectDistrictSite(
+    countryId: string,
+    seed: number,
+    site: { origin: Cell; cells: Cell[] },
+    occupied: ReadonlySet<string>,
+    existingRoads: Map<string, RoadCellDto>,
+    sealedCells: ReadonlySet<string>,
+    anchorRoads: RoadCellDto[],
+    allowObstacleRouting: boolean,
+  ): Promise<boolean> {
+    if (anchorRoads.length === 0) return true;
+
+    const siteBounds = boundsOf(site.cells);
+    const gapTo = (road: Cell) =>
+      Math.max(0, siteBounds.minX - road.x, road.x - siteBounds.maxX)
+      + Math.max(0, siteBounds.minY - road.y, road.y - siteBounds.maxY);
+    const rankedAnchors = [...anchorRoads]
+      .sort((left, right) => gapTo(left) - gapTo(right) || left.y - right.y || left.x - right.x);
+    if (gapTo(rankedAnchors[0]!) <= 2) return true;
+
+    const profileBlocked = new Set(occupied);
+    const existingRoadKeys = new Set(existingRoads.keys());
+    const exitCandidates = rankedAnchors.slice(0, 96).flatMap((anchor) =>
+      neighbors4(anchor)
+        .filter((exit) => !sealedCells.has(cellKey(exit)))
+        .filter((exit) => roadCorridorBlockers(
+          [anchor, exit], "COLLECTOR", ROAD_WIDTH, profileBlocked, existingRoadKeys,
+        ).length === 0)
+        .map((exit) => {
+          const target = site.cells.reduce((best, cell) => manhattan(cell, exit) < manhattan(best, exit) ? cell : best);
+          return { anchor, exit, target, distance: manhattan(exit, target) };
+        }),
+    ).sort((left, right) => left.distance - right.distance).slice(0, 12);
+
+    const publish = async (stub: Cell[]) => {
+      try {
+        await this.addRoadPath(countryId, seed, stub, "COLLECTOR");
+        return true;
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+        return false;
+      }
+    };
+
+    // Prefer a cheap, full-profile square bend. Preflight sealed cells here so
+    // an unsuitable territory is rejected without repeatedly rebuilding the
+    // same database-backed obstacle sets inside addRoadPath.
+    const blocked = new Set([...profileBlocked, ...sealedCells]);
+    for (const candidate of exitCandidates) {
+      const candidateBlocked = new Set(blocked);
+      for (let dy = -1; dy <= 1; dy += 1) for (let dx = -1; dx <= 1; dx += 1) {
+        candidateBlocked.delete(cellKey({ x: candidate.anchor.x + dx, y: candidate.anchor.y + dy }));
+      }
+      for (const horizontalFirst of [true, false]) {
+        const direct = [candidate.anchor, ...orthogonalPath(candidate.exit, candidate.target, horizontalFirst)];
+        if (roadCorridorBlockers(direct, "COLLECTOR", ROAD_WIDTH, candidateBlocked, existingRoadKeys).length > 0) continue;
+        if (await publish(direct)) return true;
+      }
+    }
+    if (!allowObstacleRouting) return false;
+
+    for (const candidate of exitCandidates.slice(0, 6)) {
+      try {
+        const tail = await this.route(countryId, seed, candidate.exit, candidate.target, [], [], 1, true);
+        let finalExistingIndex = -1;
+        for (let index = 0; index < tail.length; index += 1) {
+          if (existingRoadKeys.has(cellKey(tail[index]!))) finalExistingIndex = index;
+        }
+        const branch = finalExistingIndex >= 0 ? tail.slice(finalExistingIndex) : [candidate.anchor, ...tail];
+        if (await publish(branch)) return true;
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+      }
+    }
+    return false;
   }
 
   private outwardDirection(city: CityDto, center: Cell): GrowthDirection {
@@ -2769,101 +2846,37 @@ export class AppService {
                         ...(await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey),
                         ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint).map(cellKey),
                       ]);
-                      const site = await this.selectDistrictSite(countryId, city, seed, width, height, (_origin, cells) =>
+                      const siteCandidates = await this.selectDistrictSites(countryId, city, seed, width, height, (_origin, cells) =>
                                                                                 cells.every((cell) => !occupied.has(cellKey(cell))));
+                      let site = siteCandidates[0]!;
                       // A remote site receives its access road together with the
                       // territory: a collector stub runs from the nearest street
                       // to the site edge, so the first complex can anchor later.
                       // Sites already near the network skip it — their complexes
                       // connect on their own when they grow.
                       if (existingDistricts.length > 0) {
+                        let connectedSite: typeof site | undefined;
                         const sealedCells = await this.completedDistrictCells(countryId);
                         const institutionalRoads = await this.institutionalAccessRoads(countryId);
                         const anchorRoads = [...existingRoads.values()].filter((road) =>
                           road.roadClass !== "HIGHWAY" && !institutionalRoads.has(cellKey(road))
                           && (!sealedCells.has(cellKey(road)) || neighbors4(road).some((cell) => !sealedCells.has(cellKey(cell)))));
-                        if (anchorRoads.length > 0) {
-                          const siteBounds = boundsOf(site.cells);
-                          const gapTo = (road: Cell) =>
-                            Math.max(0, siteBounds.minX - road.x, road.x - siteBounds.maxX)
-                            + Math.max(0, siteBounds.minY - road.y, road.y - siteBounds.maxY);
-                          const rankedAnchors = [...anchorRoads]
-                            .sort((left, right) => gapTo(left) - gapTo(right) || left.y - right.y || left.x - right.x);
-                          // Every later district receives a real public-road
-                          // frontage. Previously gaps up to 24 cells were left
-                          // for the first task to solve; beside a completed
-                          // district the visually nearest road could be sealed
-                          // behind its land, causing long retries and a zero-lot
-                          // ACTIVE district. Only already-adjacent sites skip the
-                          // collector stub.
-                          if (gapTo(rankedAnchors[0]!) > 2) {
-                            let connected = false;
-                            // The geometrically nearest centreline can still be
-                            // invalid when its lateral lane clips a sealed block
-                            // or a roadside feature. Try boundary anchors in
-                            // distance order and commit only a full-width stub.
-                            // A junction may consume the old curb immediately
-                            // beside its anchor; addRoadPath enforces that the
-                            // exception does not extend beyond the 3×3 apron.
-                            const profileBlocked = new Set(occupied);
-                            const existingRoadKeys = new Set(existingRoads.keys());
-                            const exitCandidates = rankedAnchors.slice(0, 96).flatMap((anchor) =>
-                              neighbors4(anchor)
-                                .filter((exit) => !sealedCells.has(cellKey(exit)))
-                                .filter((exit) => roadCorridorBlockers(
-                                  [anchor, exit], "COLLECTOR", ROAD_WIDTH, profileBlocked, existingRoadKeys,
-                                ).length === 0)
-                                .map((exit) => {
-                                  const target = site.cells.reduce((best, cell) => manhattan(cell, exit) < manhattan(best, exit) ? cell : best);
-                                  return { anchor, exit, target, distance: manhattan(exit, target) };
-                                }),
-                            ).sort((left, right) => left.distance - right.distance).slice(0, 12);
-
-                            const publish = async (stub: Cell[]) => {
-                              try {
-                                await this.addRoadPath(countryId, seed, stub, "COLLECTOR");
-                                connected = true;
-                              } catch (error) {
-                                if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
-                              }
-                            };
-                            // Clear orthogonal corridors are both cheaper and
-                            // visually straighter than A*. Try both square-bend
-                            // orders before invoking the obstacle router.
-                            for (const candidate of exitCandidates) {
-                              for (const horizontalFirst of [true, false]) {
-                                const direct = orthogonalPath(candidate.exit, candidate.target, horizontalFirst);
-                                await publish([candidate.anchor, ...direct]);
-                                if (connected) break;
-                              }
-                              if (connected) break;
+                        // Try every compact candidate with straight square
+                        // bends first. Only when none works do we pay for A*.
+                        for (const allowObstacleRouting of [false, true]) {
+                          for (const candidate of siteCandidates) {
+                            if (await this.connectDistrictSite(
+                              countryId, seed, candidate, occupied, existingRoads, sealedCells, anchorRoads,
+                              allowObstacleRouting,
+                            )) {
+                              connectedSite = candidate;
+                              break;
                             }
-                            // Only genuinely obstructed sites reach A*, and the
-                            // prevalidated shortlist bounds CPU work.
-                            for (const candidate of connected ? [] : exitCandidates.slice(0, 6)) {
-                              try {
-                                const tail = await this.route(countryId, seed, candidate.exit, candidate.target, [], [], 1, true);
-                                // A* may deliberately return to the established
-                                // network and follow it to a safer boundary. Do
-                                // not re-stamp that old trip as new asphalt: keep
-                                // only the branch from the final existing road
-                                // cell to the district site.
-                                let finalExistingIndex = -1;
-                                for (let index = 0; index < tail.length; index += 1) {
-                                  if (existingRoadKeys.has(cellKey(tail[index]!))) finalExistingIndex = index;
-                                }
-                                const branch = finalExistingIndex >= 0
-                                  ? tail.slice(finalExistingIndex)
-                                  : [candidate.anchor, ...tail];
-                                await publish(branch);
-                              } catch (error) {
-                                if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
-                              }
-                              if (connected) break;
-                            }
-                            if (!connected) throw new DomainError("ROUTE_BLOCKED", "Не удалось проложить полноширинный подъезд к району");
                           }
+                          if (connectedSite) break;
                         }
+                        if (!connectedSite) throw new DomainError("ROUTE_BLOCKED", "Не удалось проложить полноширинный подъезд к району");
+                        site = connectedSite;
                       }
                       const expandedCity = unionRect(city.bounds, expandRect(boundsOf(site.cells), 8));
                       if (JSON.stringify(expandedCity) !== JSON.stringify(city.bounds)) {

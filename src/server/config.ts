@@ -1,4 +1,10 @@
+import { existsSync } from "node:fs";
 import { z } from "zod";
+
+// Node services do not read Vite's env files automatically. Load the optional
+// local file before validation; variables exported by the shell/container keep
+// precedence, as required by production and CI.
+if (existsSync(".env")) process.loadEnvFile(".env");
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),

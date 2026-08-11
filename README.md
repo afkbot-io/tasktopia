@@ -209,10 +209,13 @@ flowchart LR
 ```bash
 npm ci
 cp .env.example .env
-docker compose up -d postgres
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
 npm run seed
 npm run dev
 ```
+
+Обычный seed намеренно небольшой: один город, 10 районов и 30 задач. Он
+проверяет реальную генерацию, но не расходует ресурсы как showcase-набор.
 
 Локальный showcase из обложки:
 
@@ -224,15 +227,21 @@ DATABASE_URL=postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test npm r
 Основные проверки:
 
 ```bash
+npm run test:db:start
 npm run typecheck
 npm run lint
 npm test
 npm run build
 npm run test:e2e
 npm run assets:verify
+npm run test:db:stop
 ```
 
-Тяжёлые world-generation сценарии вынесены из обычного набора и запускаются отдельно. Правила contribution и обязательные quality gates: [CONTRIBUTING.md](CONTRIBUTING.md).
+`test:db:start` поднимает изолированную PostgreSQL на `127.0.0.1:55432`;
+Playwright seed и тестовый сервер используют именно её. Тяжёлые
+world-generation сценарии запускаются отдельно командой
+`npm run test:worldgen` и в CI начинают работу только после обычного gate.
+Правила contribution и обязательные quality gates: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Структура репозитория
 

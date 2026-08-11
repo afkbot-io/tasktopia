@@ -11,6 +11,7 @@ import Fastify from "fastify";
 import { Server as SocketServer } from "socket.io";
 import { ASSET_REVISION } from "../shared/catalog";
 import { AppService } from "./app-service";
+import { isAssetRevision, synchronizeAssetRevision } from "./asset-revisions";
 import { getSessionUser, SESSION_COOKIE } from "./auth";
 import { config } from "./config";
 import { createDb } from "./db";
@@ -165,6 +166,9 @@ app.route({
 
 const publicRoot = join(process.cwd(), "dist/public");
 if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
+  const gameAssetRoot = join(publicRoot, "game-assets/v4");
+  const revisionRoot = join(gameAssetRoot, "revisions");
+  await synchronizeAssetRevision(gameAssetRoot, revisionRoot, ASSET_REVISION);
   await app.register(fastifyStatic, {
     root: publicRoot,
     prefix: "/",
@@ -196,10 +200,10 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
     async (request, reply) => {
       const assetPath = request.params["*"];
       const unsafeSegment = assetPath.split("/").some((segment) => segment === ".." || segment === ".");
-      if (request.params.revision !== ASSET_REVISION || !assetPath || unsafeSegment || assetPath.includes("\0")) {
+      if (!isAssetRevision(request.params.revision) || !assetPath || unsafeSegment || assetPath.includes("\0")) {
         return reply.code(404).send({ error: "ASSET_NOT_FOUND" });
       }
-      return reply.sendFile(`game-assets/v4/${assetPath}`);
+      return reply.sendFile(assetPath, join(revisionRoot, request.params.revision));
     },
   );
   app.setNotFoundHandler((request, reply) => {

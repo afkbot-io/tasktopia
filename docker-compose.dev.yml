@@ -1,0 +1,13 @@
+services:
+  postgres:
+    # Development-only loopback port for host-side npm scripts. Production
+    # continues to use docker-compose.yml without publishing PostgreSQL.
+    environment:
+      # Keep the host-side AppConfig default and the development database in
+      # sync. Production still requires POSTGRES_PASSWORD in its env file.
+      POSTGRES_PASSWORD: tasktopia
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+  app:
+    environment:
+      DATABASE_URL: postgres://tasktopia:tasktopia@postgres:5432/tasktopia

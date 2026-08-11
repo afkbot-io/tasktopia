@@ -1,6 +1,6 @@
 FROM node:24-bookworm-slim AS build
-ARG VITE_STATIC_ORIGIN=""
-ENV VITE_STATIC_ORIGIN=${VITE_STATIC_ORIGIN}
+ARG STATIC_ORIGIN=""
+ENV VITE_STATIC_ORIGIN=${STATIC_ORIGIN}
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -19,7 +19,8 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
-RUN chown -R node:node /app && mkdir -p /data/uploads && chown -R node:node /data
+RUN mkdir -p /app/dist/public/game-assets/v4/revisions /data/uploads \
+    && chown -R node:node /app /data
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
