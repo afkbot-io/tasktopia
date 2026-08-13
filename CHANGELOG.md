@@ -4,6 +4,9 @@
 
 ## 1.13.2 — 2026-08-13
 
+- Production regeneration now keeps the reviewed clinic, fire and police V5 facades in the task scheduler, so 10/20/30-task city service coverage is rebuilt instead of failing the post-generation audit.
+- Mature compact districts may annex a larger bounded frontage after the former 24–32-cell bands are exhausted, allowing established worlds to migrate without sparse speculative roads or placement deadlocks.
+
 - Перегенерация крупных стран больше не упирается в единственную занятую точку подключения: межгородская трасса перебирает безопасные узлы, при необходимости расширяет поиск и сохраняет полный профиль дороги.
 - Крупные V5-фасады получают более плотный поиск площадок, а десятигородовой validation-сценарий использует только здания, совместимые с архитектурой района.
 - Карта страны кэшируется по `worldVersion`; повторное открытие неизменившейся карты не пересчитывает проекцию, дороги и поверхности.

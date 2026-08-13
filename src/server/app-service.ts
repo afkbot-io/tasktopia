@@ -165,7 +165,11 @@ export function connectorCorridorBlocked(
  * east/west even though the surrounding terrain was free.
  */
 export function districtGrowthThicknesses(entry: BuildingCatalogEntry): number[] {
-  if (!entry.tags.includes("new-build")) return [24, 28, 32];
+  // Mature compact neighbourhoods can contain dozens of tasks. Their first
+  // 24–32-cell annex may be clipped by terrain or another city; retain larger
+  // bounded fallbacks so replay can grow a second coherent frontage instead
+  // of failing after the old territory is full.
+  if (!entry.tags.includes("new-build")) return [24, 28, 32, 36, 40, 48];
   const minimumComplexWidth = Math.max(64, Math.min(72, entry.footprint.width * 4 + 8));
   const required = Math.ceil((minimumComplexWidth + 2) / 4) * 4;
   return [...new Set([64, 68, 72, required, required + 4])].sort((left, right) => left - right);

@@ -28,6 +28,12 @@ describe("active building catalog", () => {
     expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.key === "house-cottage")!)).toBe("YARD");
     expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.tags.includes("new-build"))!)).toBe("STONE");
   });
+
+  it("keeps the reviewed emergency-service facades available to the task scheduler", () => {
+    for (const role of ["health-service", "fire-service", "police-service"]) {
+      expect(TASK_BUILDING_CATALOG.some((entry) => entry.serviceRole === role), role).toBe(true);
+    }
+  });
   it("content-addresses every game asset URL for immutable CDN caching", () => {
     expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/tiles\/road\.png$/);
     expect(gameAssetUrl("/game-assets/v5/props/gazebo.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/props\/gazebo\.png$/);

@@ -130,11 +130,8 @@ describe.runIf(process.env.RUN_ORGANIC_GROWTH_TESTS === "1")("organic growth inc
     }
   });
 
-  it("keeps unmigrated service buildings render-only", () => {
-    // The city crosses all former automatic service thresholds. Until those
-    // facades are migrated to V5, the scheduler must skip unavailable roles
-    // instead of silently restoring a legacy clinic/fire/police sprite.
-    expect(serviceRolesAfter).toEqual([]);
+  it("places the reviewed emergency-service facades on schedule", () => {
+    expect(serviceRolesAfter.sort()).toEqual(["fire-service", "health-service"]);
     expect([...typesAfter.values()].every((key) =>
       TASK_BUILDING_CATALOG.some((entry) => entry.key === key))).toBe(true);
   });

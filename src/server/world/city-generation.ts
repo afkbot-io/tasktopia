@@ -130,6 +130,10 @@ export function buildingCompatibleWithArchetype(entry: BuildingCatalogEntry, arc
 
 /** Task buildings obey the same zoning contract as the generated city. */
 export function taskBuildingCompatibleWithArchetype(entry: BuildingCatalogEntry, archetype: DistrictArchetype): boolean {
+  // Reviewed emergency services are city infrastructure, not residential
+  // zoning. Their own catalog rules and placement platform decide the site;
+  // every district archetype may host the scheduled 10/20/30-task service.
+  if (entry.serviceRole) return buildingCompatibleWithArchetype(entry, archetype);
   if (archetype === "PRIVATE" || archetype === "NEW_BUILD") return buildingCompatibleWithArchetype(entry, archetype);
   // The current task catalog intentionally focuses on residential growth.
   // Dense task buildings remain the neutral fallback for older commercial or

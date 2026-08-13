@@ -41,6 +41,11 @@ describe("Tasktopia square-world application service", () => {
     expect(complexMinimumRect(wide, 3)).toEqual({ width: 32, height: 17 });
   });
 
+  it("lets an established compact district annex a full new frontage instead of stopping at 32 cells", () => {
+    const compactHouse = getBuilding("house-cottage");
+    expect(districtGrowthThicknesses(compactHouse)).toEqual([24, 28, 32, 36, 40, 48]);
+  });
+
   it("creates an idempotent city with reciprocal square-road masks", async () => {
     await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
     const input = { name: "Northpoint", idempotencyKey: "city-key" };
@@ -290,12 +295,11 @@ describe("Tasktopia square-world application service", () => {
     expect(await service.listTasks(countryId)).toEqual([]);
   });
 
-  it("keeps unmigrated service buildings out of the task-building profile", async () => {
+  it("allows a reviewed service facade in a compatible civic district", async () => {
     const city = await service.createCity(countryId, { name: "Services", idempotencyKey: "services-city" });
-    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Safety", capacitySp: 14, activate: true, idempotencyKey: "services-district" });
-    await expect(service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Compact fire station", estimate: 3, buildingHint: "civic-fire-station-compact", idempotencyKey: "fire-one" }))
-      .rejects.toThrowError(/не существует/);
-    expect(await service.listTasks(countryId)).toEqual([]);
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Safety", archetype: "CIVIC", capacitySp: 14, activate: true, idempotencyKey: "services-district" });
+    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Compact fire station", estimate: 3, buildingHint: "civic-fire-station-compact", idempotencyKey: "fire-one" });
+    expect(task).toMatchObject({ buildingType: "civic-fire-station-compact" });
   });
 
   it("rejects reused idempotency keys and invalid building hints", async () => {
