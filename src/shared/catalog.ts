@@ -34,6 +34,7 @@ export type BuildingCatalogEntry = {
   footprint: { width: number; height: number };
   spriteSize: { width: number; height: number };
   anchor: { x: number; y: number };
+  stageOpaqueBounds: Array<{ left: number; top: number; right: number; bottom: number }>;
   stages: string[];
   estimates: Estimate[];
   tags: string[];
@@ -53,6 +54,7 @@ type RawBuilding = {
   footprintCells: [number, number];
   spriteSize: [number, number];
   anchorPx: [number, number];
+  stageOpaqueBounds: Array<[number, number, number, number]>;
   stages: string[];
   estimates: Estimate[];
   tags: string[];
@@ -75,6 +77,7 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
     footprint: { width: building.footprintCells[0], height: building.footprintCells[1] },
     spriteSize: { width: building.spriteSize[0], height: building.spriteSize[1] },
     anchor: { x: building.anchorPx[0], y: building.anchorPx[1] },
+    stageOpaqueBounds: building.stageOpaqueBounds.map(([left, top, right, bottom]) => ({ left, top, right, bottom })),
     stages: building.stages.map(gameAssetUrl),
     estimates: building.estimates,
     tags: building.tags,
@@ -115,6 +118,7 @@ const TASK_TAG_DICTIONARY: Array<{ tag: string; words: string[] }> = [
   { tag: "house", words: ["дом", "жиль", "квартир", "жилой", "коттедж", "таунхаус"] },
   { tag: "commercial", words: ["магазин", "торгов", "кафе", "аптек", "пекар", "заправ", "сервис", "парков", "стоянк"] },
   { tag: "parking", words: ["парков", "стоянк"] },
+  { tag: "park", words: ["парк", "сквер", "зелён", "сад отдыха", "бульвар"] },
   { tag: "civic", words: ["полици", "пожар", "школ", "клиник", "больниц", "банк", "почт", "мэр"] },
   { tag: "dense", words: ["офис", "высот", "башн", "комплекс", "многоэтаж"] },
 ];

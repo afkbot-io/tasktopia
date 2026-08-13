@@ -41,6 +41,7 @@ import {
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
 import {
   buildingBadgePresentation,
+  buildingInteractiveBounds,
   buildingPlatformPresentation,
   taskPlatformCellPresentation,
 } from "../world-building-presentation";
@@ -376,9 +377,9 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
   const x = task.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2;
   const y = task.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE;
   group.position.set(x, y);
-  const visualWidth = Math.max(entry.spriteSize.width, (entry.footprint.width + 2) * CELL_SIZE);
-  const visualHeight = task.stage <= 2 ? (construction.padDepth + 2) * CELL_SIZE : entry.spriteSize.height;
-  group.hitArea = new Rectangle(-visualWidth / 2, -visualHeight, visualWidth, visualHeight + CELL_SIZE);
+  const interactive = buildingInteractiveBounds(entry, task.stage, construction.padDepth, CELL_SIZE);
+  const visualHeight = -interactive.y;
+  group.hitArea = new Rectangle(interactive.x, interactive.y, interactive.width, interactive.height);
   group.addChild(drawConstructionTiles(construction.rearFence, entry.footprint.width));
   if (task.stage <= 2) {
     group.addChild(drawConstructionTiles(construction.site, entry.footprint.width));
@@ -724,8 +725,9 @@ function ambientDetailAssets(): string[] {
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
+export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
   countryId: string;
+  worldVersion: number;
   chunkSize: number;
   viewBounds: Rect;
   focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
@@ -742,6 +744,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
   const districtLayerRef = useRef<Container | null>(null);
   const districtTooltipLayerRef = useRef<Container | null>(null);
   const runtimeRef = useRef<WorldRuntime | null>(null);
+  const worldVersionRef = useRef(worldVersion);
   const showDistrictsRef = useRef(showDistricts);
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
@@ -756,6 +759,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
   const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
   const initialFocusRef = useRef(focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
+
+  useEffect(() => {
+    worldVersionRef.current = worldVersion;
+  }, [worldVersion]);
 
   useEffect(() => {
     showDistrictsRef.current = showDistricts;
@@ -988,7 +995,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       };
       const orientRoadUser = (agent: MovingAgent): void => {
         if (agent.kind === "CAR" || agent.kind === "BUS") {
-          const presentation = vehiclePresentation(agent.current, agent.next);
+          const presentation = vehiclePresentation(agent.current, agent.next, agent.kind === "BUS" ? 1 : 1.2);
           agent.view.scale.set(presentation.scaleX, presentation.scaleY);
         } else if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
           const presentation = micromobilityPresentation(agent.kind === "CYCLIST" ? "cyclist" : "scooter", agent.current, agent.next);
@@ -1843,7 +1850,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           let pending = pendingChunks.get(key);
           if (!pending) {
             const controller = new AbortController();
-            const promise = api<ChunkDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${lod.toLowerCase()}`, { signal: controller.signal });
+            const promise = api<ChunkDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${lod.toLowerCase()}&worldVersion=${worldVersionRef.current}`, { signal: controller.signal });
             pending = { controller, promise };
             pendingChunks.set(key, pending);
           }

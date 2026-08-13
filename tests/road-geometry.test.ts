@@ -40,6 +40,25 @@ describe("canonical road geometry", () => {
     expect(roadBandRole(graph, { x: 0, y: 1 })).toEqual({ kind: "TRAVEL", axis: "H", dx: 1, dy: 0 });
   });
 
+  it("does not multiply lane markings where a narrower road class joins a main road", () => {
+    const graph = new Map<string, Cell & { roadClass: "LOCAL" | "COLLECTOR" }>();
+    for (let x = -6; x <= 6; x += 1) {
+      for (let y = -1; y <= 1; y += 1) graph.set(`${x},${y}`, { x, y, roadClass: "COLLECTOR" });
+    }
+    for (let y = 2; y <= 7; y += 1) {
+      for (let x = 0; x <= 1; x += 1) graph.set(`${x},${y}`, { x, y, roadClass: "LOCAL" });
+    }
+
+    expect([-1, 0, 1].map((y) => roadBandRole(graph, { x: 0, y, roadClass: "COLLECTOR" }))).toEqual([
+      { kind: "TRAVEL", axis: "H", dx: -1, dy: 0 },
+      { kind: "MEDIAN", axis: "H" },
+      { kind: "TRAVEL", axis: "H", dx: 1, dy: 0 },
+    ]);
+    expect(roadBandRole(graph, { x: 0, y: 4, roadClass: "LOCAL" })).toEqual({
+      kind: "TRAVEL", axis: "V", dx: 0, dy: 1,
+    });
+  });
+
   it("stamps every cross-section of a straight local street", () => {
     const road = keys(stampRoadCorridor(orthogonalPath({ x: -3, y: 0 }, { x: 3, y: 0 }, true), "LOCAL", ROAD_WIDTH));
     for (let x = -3; x <= 3; x += 1) for (let y = -1; y <= 0; y += 1) expect(road.has(`${x},${y}`)).toBe(true);

@@ -268,7 +268,7 @@ export function App() {
                 }}
                 onCityHover={hoverAtlasCity}
               />
-            : <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />}
+            : <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} worldVersion={bootstrap.country.worldVersion} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />}
         </Suspense>
         <div className="map-help">{effectiveMapMode === "ATLAS"
           ? <><span>Район — навести для сводки</span><span>Район — открыть по центру</span><span>Название — открыть весь город</span></>

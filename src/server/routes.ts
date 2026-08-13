@@ -367,7 +367,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (request.headers["if-none-match"] === etag) {
               return reply.code(304).send();
             }
-            return reply.header("ETag", etag).header("Cache-Control", "private, no-cache, must-revalidate").send(chunk);
+            return reply.header("ETag", etag).header("Cache-Control", "private, max-age=60, stale-while-revalidate=300").send(chunk);
           });
 
   const archiveRecordSchema = z.object({

@@ -279,6 +279,18 @@ describe("Tasktopia square-world application service", () => {
     expect((await service.listWorldFeatures(countryId)).some((feature) => feature.kind === "PARK")).toBe(false);
   }, 20_000);
 
+  it("infers a task-backed park when an agent names a park but omits visualKind", async () => {
+    const city = await service.createCity(countryId, { name: "Inferred Park City", idempotencyKey: "inferred-park-city" });
+    const district = await service.createDistrict(countryId, {
+      cityId: city.id, name: "Green Sprint", archetype: "NEW_BUILD", activate: true, idempotencyKey: "inferred-park-district",
+    });
+    const park = await service.createTask(countryId, {
+      cityId: city.id, districtId: district.id, title: "Разбить городской сквер", estimate: 3,
+      idempotencyKey: "inferred-park-task",
+    });
+    expect(park).toMatchObject({ visualKind: "PARK", visualAssetKey: "urban-formal", stage: 1 });
+  }, 20_000);
+
   it("keeps unmigrated landmarks out of the task-building profile", async () => {
     const city = await service.createCity(countryId, { name: "Landmark City", idempotencyKey: "landmark-city" });
     const district = await service.createDistrict(countryId, {

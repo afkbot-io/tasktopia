@@ -366,6 +366,38 @@
         "buildings/highrise/highrise-glass/stage-4.png",
         "buildings/highrise/highrise-glass/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          94,
+          224
+        ],
+        [
+          2,
+          210,
+          94,
+          223
+        ],
+        [
+          10,
+          56,
+          86,
+          224
+        ],
+        [
+          8,
+          0,
+          87,
+          224
+        ],
+        [
+          8,
+          0,
+          88,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         3,
@@ -412,6 +444,38 @@
         "buildings/highrise/highrise-brick/stage-3.png",
         "buildings/highrise/highrise-brick/stage-4.png",
         "buildings/highrise/highrise-brick/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          8,
+          54,
+          104,
+          256
+        ],
+        [
+          12,
+          4,
+          100,
+          256
+        ],
+        [
+          12,
+          0,
+          100,
+          256
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -460,6 +524,38 @@
         "buildings/highrise/highrise-stepped/stage-4.png",
         "buildings/highrise/highrise-stepped/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          126,
+          256
+        ],
+        [
+          2,
+          242,
+          126,
+          255
+        ],
+        [
+          15,
+          85,
+          113,
+          256
+        ],
+        [
+          15,
+          5,
+          112,
+          256
+        ],
+        [
+          15,
+          0,
+          113,
+          256
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         3,
@@ -506,6 +602,38 @@
         "buildings/highrise/highrise-corporate/stage-3.png",
         "buildings/highrise/highrise-corporate/stage-4.png",
         "buildings/highrise/highrise-corporate/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          11,
+          105,
+          101,
+          256
+        ],
+        [
+          11,
+          0,
+          100,
+          256
+        ],
+        [
+          11,
+          0,
+          100,
+          256
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -554,6 +682,38 @@
         "buildings/highrise/highrise-landmark/stage-4.png",
         "buildings/highrise/highrise-landmark/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          264,
+          142,
+          272
+        ],
+        [
+          2,
+          258,
+          142,
+          271
+        ],
+        [
+          6,
+          68,
+          137,
+          272
+        ],
+        [
+          4,
+          0,
+          139,
+          272
+        ],
+        [
+          4,
+          0,
+          139,
+          272
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -599,6 +759,38 @@
         "buildings/house/house-cottage/stage-3.png",
         "buildings/house/house-cottage/stage-4.png",
         "buildings/house/house-cottage/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          46,
+          64
+        ],
+        [
+          2,
+          50,
+          46,
+          63
+        ],
+        [
+          0,
+          27,
+          48,
+          64
+        ],
+        [
+          0,
+          12,
+          48,
+          64
+        ],
+        [
+          0,
+          15,
+          48,
+          64
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -646,6 +838,38 @@
         "buildings/house/house-townhouse/stage-4.png",
         "buildings/house/house-townhouse/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          30,
+          72
+        ],
+        [
+          2,
+          59,
+          30,
+          71
+        ],
+        [
+          3,
+          24,
+          28,
+          72
+        ],
+        [
+          3,
+          0,
+          28,
+          72
+        ],
+        [
+          3,
+          0,
+          28,
+          72
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         1,
@@ -692,6 +916,38 @@
         "buildings/house/house-gabled/stage-4.png",
         "buildings/house/house-gabled/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          54,
+          64
+        ],
+        [
+          2,
+          50,
+          54,
+          63
+        ],
+        [
+          0,
+          6,
+          56,
+          64
+        ],
+        [
+          0,
+          4,
+          56,
+          64
+        ],
+        [
+          0,
+          4,
+          56,
+          64
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         1,
@@ -735,6 +991,38 @@
         "buildings/house/house-duplex/stage-3.png",
         "buildings/house/house-duplex/stage-4.png",
         "buildings/house/house-duplex/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          70,
+          72
+        ],
+        [
+          2,
+          58,
+          70,
+          71
+        ],
+        [
+          0,
+          15,
+          72,
+          72
+        ],
+        [
+          0,
+          15,
+          72,
+          72
+        ],
+        [
+          0,
+          15,
+          72,
+          72
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -781,6 +1069,38 @@
         "buildings/house/house-small-apartments/stage-3.png",
         "buildings/house/house-small-apartments/stage-4.png",
         "buildings/house/house-small-apartments/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          136,
+          94,
+          144
+        ],
+        [
+          2,
+          130,
+          94,
+          143
+        ],
+        [
+          2,
+          40,
+          93,
+          144
+        ],
+        [
+          2,
+          0,
+          93,
+          144
+        ],
+        [
+          2,
+          0,
+          93,
+          144
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -829,6 +1149,38 @@
         "buildings/commercial/shop-supermarket/stage-4.png",
         "buildings/commercial/shop-supermarket/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          8,
+          38,
+          16
+        ],
+        [
+          2,
+          2,
+          38,
+          15
+        ],
+        [
+          1,
+          4,
+          39,
+          16
+        ],
+        [
+          1,
+          3,
+          39,
+          16
+        ],
+        [
+          1,
+          4,
+          39,
+          16
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         2,
@@ -872,6 +1224,38 @@
         "buildings/commercial/shop-bakery-long/stage-3.png",
         "buildings/commercial/shop-bakery-long/stage-4.png",
         "buildings/commercial/shop-bakery-long/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          8,
+          46,
+          16
+        ],
+        [
+          2,
+          2,
+          46,
+          15
+        ],
+        [
+          9,
+          3,
+          39,
+          16
+        ],
+        [
+          7,
+          1,
+          40,
+          16
+        ],
+        [
+          8,
+          1,
+          39,
+          16
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -917,6 +1301,38 @@
         "buildings/commercial/shop-mall/stage-4.png",
         "buildings/commercial/shop-mall/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          54,
+          24
+        ],
+        [
+          2,
+          10,
+          54,
+          23
+        ],
+        [
+          10,
+          4,
+          42,
+          24
+        ],
+        [
+          10,
+          1,
+          45,
+          24
+        ],
+        [
+          7,
+          1,
+          48,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -959,6 +1375,38 @@
         "buildings/commercial/shop-warehouse/stage-3.png",
         "buildings/commercial/shop-warehouse/stage-4.png",
         "buildings/commercial/shop-warehouse/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          46,
+          24
+        ],
+        [
+          2,
+          10,
+          46,
+          23
+        ],
+        [
+          3,
+          4,
+          44,
+          24
+        ],
+        [
+          4,
+          1,
+          44,
+          24
+        ],
+        [
+          2,
+          1,
+          45,
+          24
+        ]
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1004,6 +1452,38 @@
         "buildings/civic/civic-clinic/stage-3.png",
         "buildings/civic/civic-clinic/stage-4.png",
         "buildings/civic/civic-clinic/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          104,
+          94,
+          112
+        ],
+        [
+          2,
+          98,
+          94,
+          111
+        ],
+        [
+          5,
+          54,
+          91,
+          112
+        ],
+        [
+          0,
+          54,
+          96,
+          112
+        ],
+        [
+          0,
+          46,
+          96,
+          112
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -1051,6 +1531,38 @@
         "buildings/civic/civic-fire-station/stage-4.png",
         "buildings/civic/civic-fire-station/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          9,
+          9,
+          39,
+          32
+        ],
+        [
+          6,
+          1,
+          42,
+          32
+        ],
+        [
+          6,
+          1,
+          42,
+          32
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -1095,6 +1607,38 @@
         "buildings/civic/civic-police/stage-3.png",
         "buildings/civic/civic-police/stage-4.png",
         "buildings/civic/civic-police/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          94,
+          88
+        ],
+        [
+          2,
+          74,
+          94,
+          87
+        ],
+        [
+          10,
+          29,
+          86,
+          88
+        ],
+        [
+          5,
+          13,
+          91,
+          88
+        ],
+        [
+          0,
+          8,
+          96,
+          88
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -1142,6 +1686,38 @@
         "buildings/civic/civic-bank/stage-4.png",
         "buildings/civic/civic-bank/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          30,
+          32
+        ],
+        [
+          2,
+          19,
+          30,
+          31
+        ],
+        [
+          3,
+          9,
+          28,
+          32
+        ],
+        [
+          1,
+          4,
+          31,
+          32
+        ],
+        [
+          1,
+          3,
+          31,
+          32
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -1186,6 +1762,38 @@
         "buildings/civic/civic-school/stage-3.png",
         "buildings/civic/civic-school/stage-4.png",
         "buildings/civic/civic-school/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          110,
+          88
+        ],
+        [
+          2,
+          74,
+          110,
+          87
+        ],
+        [
+          17,
+          23,
+          94,
+          88
+        ],
+        [
+          15,
+          0,
+          96,
+          88
+        ],
+        [
+          15,
+          0,
+          96,
+          88
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -1232,6 +1840,38 @@
         "buildings/civic/civic-city-hall/stage-4.png",
         "buildings/civic/civic-city-hall/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          3,
+          11,
+          45,
+          40
+        ],
+        [
+          1,
+          2,
+          47,
+          40
+        ],
+        [
+          1,
+          1,
+          47,
+          40
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -1276,6 +1916,38 @@
         "buildings/commercial/commercial-gas-station/stage-3.png",
         "buildings/commercial/commercial-gas-station/stage-4.png",
         "buildings/commercial/commercial-gas-station/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          3,
+          9,
+          45,
+          32
+        ],
+        [
+          1,
+          7,
+          47,
+          32
+        ],
+        [
+          1,
+          4,
+          47,
+          32
+        ]
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1322,6 +1994,38 @@
         "buildings/commercial/commercial-parking-lot/stage-3.png",
         "buildings/commercial/commercial-parking-lot/stage-4.png",
         "buildings/commercial/commercial-parking-lot/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          46,
+          24
+        ],
+        [
+          2,
+          10,
+          46,
+          23
+        ],
+        [
+          5,
+          4,
+          43,
+          24
+        ],
+        [
+          1,
+          3,
+          47,
+          24
+        ],
+        [
+          1,
+          2,
+          47,
+          24
+        ]
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1371,6 +2075,38 @@
         "buildings/commercial/commercial-shopping-plaza/stage-4.png",
         "buildings/commercial/commercial-shopping-plaza/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          54,
+          24
+        ],
+        [
+          2,
+          10,
+          54,
+          23
+        ],
+        [
+          4,
+          4,
+          51,
+          24
+        ],
+        [
+          1,
+          1,
+          54,
+          24
+        ],
+        [
+          3,
+          1,
+          52,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -1413,6 +2149,38 @@
         "buildings/commercial/commercial-corner-cafe/stage-3.png",
         "buildings/commercial/commercial-corner-cafe/stage-4.png",
         "buildings/commercial/commercial-corner-cafe/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          1,
+          5,
+          28,
+          24
+        ],
+        [
+          1,
+          2,
+          31,
+          24
+        ],
+        [
+          1,
+          3,
+          31,
+          24
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -1458,6 +2226,38 @@
         "buildings/commercial/commercial-pharmacy/stage-4.png",
         "buildings/commercial/commercial-pharmacy/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          1,
+          4,
+          30,
+          24
+        ],
+        [
+          1,
+          3,
+          31,
+          24
+        ],
+        [
+          1,
+          3,
+          31,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         2,
@@ -1501,6 +2301,38 @@
         "buildings/commercial/commercial-auto-repair/stage-3.png",
         "buildings/commercial/commercial-auto-repair/stage-4.png",
         "buildings/commercial/commercial-auto-repair/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          38,
+          24
+        ],
+        [
+          2,
+          10,
+          38,
+          23
+        ],
+        [
+          4,
+          4,
+          36,
+          24
+        ],
+        [
+          1,
+          1,
+          38,
+          24
+        ],
+        [
+          2,
+          1,
+          38,
+          24
+        ]
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1547,6 +2379,38 @@
         "buildings/house/house-bungalow/stage-4.png",
         "buildings/house/house-bungalow/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          112,
+          126,
+          120
+        ],
+        [
+          2,
+          106,
+          126,
+          119
+        ],
+        [
+          0,
+          54,
+          128,
+          120
+        ],
+        [
+          0,
+          55,
+          128,
+          120
+        ],
+        [
+          0,
+          52,
+          128,
+          120
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         1,
@@ -1590,6 +2454,38 @@
         "buildings/house/house-suburban-narrow/stage-3.png",
         "buildings/house/house-suburban-narrow/stage-4.png",
         "buildings/house/house-suburban-narrow/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          46,
+          96
+        ],
+        [
+          2,
+          82,
+          46,
+          95
+        ],
+        [
+          6,
+          25,
+          41,
+          96
+        ],
+        [
+          6,
+          0,
+          41,
+          96
+        ],
+        [
+          6,
+          0,
+          41,
+          96
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -1637,6 +2533,38 @@
         "buildings/house/house-garden-villa/stage-4.png",
         "buildings/house/house-garden-villa/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          54,
+          64
+        ],
+        [
+          2,
+          50,
+          54,
+          63
+        ],
+        [
+          0,
+          7,
+          56,
+          64
+        ],
+        [
+          0,
+          3,
+          56,
+          64
+        ],
+        [
+          0,
+          3,
+          56,
+          64
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -1682,6 +2610,38 @@
         "buildings/house/house-modern-compact/stage-4.png",
         "buildings/house/house-modern-compact/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          46,
+          56
+        ],
+        [
+          2,
+          42,
+          46,
+          55
+        ],
+        [
+          0,
+          7,
+          48,
+          56
+        ],
+        [
+          0,
+          1,
+          48,
+          56
+        ],
+        [
+          0,
+          1,
+          48,
+          56
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -1725,6 +2685,38 @@
         "buildings/house/house-rustic-cottage/stage-3.png",
         "buildings/house/house-rustic-cottage/stage-4.png",
         "buildings/house/house-rustic-cottage/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          54,
+          56
+        ],
+        [
+          2,
+          42,
+          54,
+          55
+        ],
+        [
+          2,
+          8,
+          55,
+          56
+        ],
+        [
+          0,
+          7,
+          55,
+          56
+        ],
+        [
+          0,
+          7,
+          56,
+          56
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -1772,6 +2764,38 @@
         "buildings/civic/civic-post-office/stage-4.png",
         "buildings/civic/civic-post-office/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          104,
+          94,
+          112
+        ],
+        [
+          2,
+          98,
+          94,
+          111
+        ],
+        [
+          7,
+          54,
+          90,
+          112
+        ],
+        [
+          0,
+          44,
+          96,
+          112
+        ],
+        [
+          0,
+          44,
+          96,
+          112
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         3,
@@ -1817,6 +2841,38 @@
         "buildings/house/house-rowhomes/stage-3.png",
         "buildings/house/house-rowhomes/stage-4.png",
         "buildings/house/house-rowhomes/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          54,
+          56
+        ],
+        [
+          2,
+          42,
+          54,
+          55
+        ],
+        [
+          1,
+          2,
+          56,
+          56
+        ],
+        [
+          0,
+          0,
+          56,
+          56
+        ],
+        [
+          0,
+          0,
+          56,
+          56
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -1865,6 +2921,38 @@
         "buildings/house/house-brick-duplex/stage-4.png",
         "buildings/house/house-brick-duplex/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          46,
+          64
+        ],
+        [
+          2,
+          50,
+          46,
+          63
+        ],
+        [
+          2,
+          8,
+          46,
+          64
+        ],
+        [
+          0,
+          4,
+          48,
+          64
+        ],
+        [
+          0,
+          3,
+          48,
+          64
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -1911,6 +2999,38 @@
         "buildings/house/house-courtyard-apartments/stage-4.png",
         "buildings/house/house-courtyard-apartments/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          136,
+          126,
+          144
+        ],
+        [
+          2,
+          130,
+          126,
+          143
+        ],
+        [
+          13,
+          49,
+          114,
+          144
+        ],
+        [
+          13,
+          0,
+          114,
+          144
+        ],
+        [
+          13,
+          0,
+          114,
+          144
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -1956,6 +3076,38 @@
         "buildings/house/house-modern-lowrise/stage-4.png",
         "buildings/house/house-modern-lowrise/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          54,
+          56
+        ],
+        [
+          2,
+          42,
+          54,
+          55
+        ],
+        [
+          0,
+          7,
+          56,
+          56
+        ],
+        [
+          0,
+          3,
+          56,
+          56
+        ],
+        [
+          0,
+          3,
+          56,
+          56
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -1999,6 +3151,38 @@
         "buildings/house/house-woodland-home/stage-3.png",
         "buildings/house/house-woodland-home/stage-4.png",
         "buildings/house/house-woodland-home/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          110,
+          96
+        ],
+        [
+          2,
+          82,
+          110,
+          95
+        ],
+        [
+          0,
+          6,
+          111,
+          96
+        ],
+        [
+          1,
+          1,
+          112,
+          96
+        ],
+        [
+          0,
+          1,
+          112,
+          96
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -2046,6 +3230,38 @@
         "buildings/house/house-corner-apartments/stage-4.png",
         "buildings/house/house-corner-apartments/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          136,
+          110,
+          144
+        ],
+        [
+          2,
+          130,
+          110,
+          143
+        ],
+        [
+          9,
+          45,
+          103,
+          144
+        ],
+        [
+          9,
+          0,
+          103,
+          144
+        ],
+        [
+          9,
+          0,
+          103,
+          144
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -2092,6 +3308,38 @@
         "buildings/civic/civic-theatre/stage-4.png",
         "buildings/civic/civic-theatre/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          3,
+          11,
+          45,
+          40
+        ],
+        [
+          1,
+          8,
+          47,
+          40
+        ],
+        [
+          1,
+          8,
+          47,
+          40
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -2135,6 +3383,38 @@
         "buildings/civic/civic-library/stage-3.png",
         "buildings/civic/civic-library/stage-4.png",
         "buildings/civic/civic-library/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          104,
+          94,
+          112
+        ],
+        [
+          2,
+          98,
+          94,
+          111
+        ],
+        [
+          2,
+          47,
+          94,
+          112
+        ],
+        [
+          0,
+          15,
+          96,
+          112
+        ],
+        [
+          0,
+          15,
+          96,
+          112
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -2180,6 +3460,38 @@
         "buildings/civic/civic-fire-station-compact/stage-3.png",
         "buildings/civic/civic-fire-station-compact/stage-4.png",
         "buildings/civic/civic-fire-station-compact/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          94,
+          96
+        ],
+        [
+          2,
+          82,
+          94,
+          95
+        ],
+        [
+          0,
+          49,
+          96,
+          96
+        ],
+        [
+          0,
+          19,
+          96,
+          96
+        ],
+        [
+          0,
+          19,
+          96,
+          96
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -2227,6 +3539,38 @@
         "buildings/civic/civic-police-neighborhood/stage-4.png",
         "buildings/civic/civic-police-neighborhood/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          72,
+          78,
+          80
+        ],
+        [
+          2,
+          66,
+          78,
+          79
+        ],
+        [
+          0,
+          32,
+          80,
+          80
+        ],
+        [
+          0,
+          1,
+          80,
+          80
+        ],
+        [
+          0,
+          1,
+          80,
+          80
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         2,
@@ -2272,6 +3616,38 @@
         "buildings/civic/civic-clinic-neighborhood/stage-3.png",
         "buildings/civic/civic-clinic-neighborhood/stage-4.png",
         "buildings/civic/civic-clinic-neighborhood/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          1,
+          4,
+          30,
+          24
+        ],
+        [
+          1,
+          1,
+          31,
+          24
+        ],
+        [
+          2,
+          1,
+          30,
+          24
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -2319,6 +3695,38 @@
         "buildings/commercial/commercial-gas-station-compact/stage-4.png",
         "buildings/commercial/commercial-gas-station-compact/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          38,
+          32
+        ],
+        [
+          2,
+          18,
+          38,
+          31
+        ],
+        [
+          1,
+          12,
+          39,
+          32
+        ],
+        [
+          1,
+          11,
+          39,
+          32
+        ],
+        [
+          1,
+          8,
+          39,
+          32
+        ]
+      ],
       "platform": "ASPHALT",
       "estimates": [
         3,
@@ -2364,6 +3772,38 @@
         "buildings/highrise/highrise-mixed-use-market/stage-3.png",
         "buildings/highrise/highrise-mixed-use-market/stage-4.png",
         "buildings/highrise/highrise-mixed-use-market/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          110,
+          224
+        ],
+        [
+          2,
+          210,
+          110,
+          223
+        ],
+        [
+          10,
+          68,
+          101,
+          224
+        ],
+        [
+          9,
+          0,
+          102,
+          224
+        ],
+        [
+          9,
+          0,
+          102,
+          224
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -2413,6 +3853,38 @@
         "buildings/commercial/commercial-highway-service-plaza/stage-4.png",
         "buildings/commercial/commercial-highway-service-plaza/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          62,
+          40
+        ],
+        [
+          2,
+          26,
+          62,
+          39
+        ],
+        [
+          1,
+          11,
+          62,
+          40
+        ],
+        [
+          1,
+          11,
+          63,
+          40
+        ],
+        [
+          1,
+          11,
+          63,
+          40
+        ]
+      ],
       "platform": "ASPHALT",
       "estimates": [
         6
@@ -2458,6 +3930,38 @@
         "buildings/house/house-colonial/stage-4.png",
         "buildings/house/house-colonial/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          72,
+          54,
+          80
+        ],
+        [
+          2,
+          66,
+          54,
+          79
+        ],
+        [
+          0,
+          10,
+          56,
+          80
+        ],
+        [
+          0,
+          1,
+          56,
+          80
+        ],
+        [
+          0,
+          1,
+          56,
+          80
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -2501,6 +4005,38 @@
         "buildings/house/house-craftsman/stage-3.png",
         "buildings/house/house-craftsman/stage-4.png",
         "buildings/house/house-craftsman/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          54,
+          56
+        ],
+        [
+          2,
+          42,
+          54,
+          55
+        ],
+        [
+          1,
+          3,
+          55,
+          56
+        ],
+        [
+          0,
+          3,
+          56,
+          56
+        ],
+        [
+          0,
+          3,
+          56,
+          56
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -2546,6 +4082,38 @@
         "buildings/house/house-ranch/stage-4.png",
         "buildings/house/house-ranch/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          40,
+          62,
+          48
+        ],
+        [
+          2,
+          34,
+          62,
+          47
+        ],
+        [
+          1,
+          18,
+          62,
+          48
+        ],
+        [
+          0,
+          12,
+          63,
+          48
+        ],
+        [
+          0,
+          12,
+          64,
+          48
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -2590,6 +4158,38 @@
         "buildings/house/house-split-level/stage-4.png",
         "buildings/house/house-split-level/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          40,
+          54,
+          48
+        ],
+        [
+          2,
+          34,
+          54,
+          47
+        ],
+        [
+          2,
+          5,
+          54,
+          48
+        ],
+        [
+          1,
+          5,
+          55,
+          48
+        ],
+        [
+          0,
+          3,
+          56,
+          48
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -2633,6 +4233,38 @@
         "buildings/house/house-townhouse-brick/stage-3.png",
         "buildings/house/house-townhouse-brick/stage-4.png",
         "buildings/house/house-townhouse-brick/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          72,
+          54,
+          80
+        ],
+        [
+          2,
+          66,
+          54,
+          79
+        ],
+        [
+          0,
+          19,
+          56,
+          80
+        ],
+        [
+          0,
+          3,
+          56,
+          80
+        ],
+        [
+          0,
+          3,
+          56,
+          80
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -2680,6 +4312,38 @@
         "buildings/house/house-townhouse-stone/stage-4.png",
         "buildings/house/house-townhouse-stone/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          54,
+          72
+        ],
+        [
+          2,
+          58,
+          54,
+          71
+        ],
+        [
+          0,
+          17,
+          56,
+          72
+        ],
+        [
+          0,
+          2,
+          56,
+          72
+        ],
+        [
+          0,
+          2,
+          56,
+          72
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -2726,6 +4390,38 @@
         "buildings/house/house-garden-apartment/stage-4.png",
         "buildings/house/house-garden-apartment/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          136,
+          126,
+          144
+        ],
+        [
+          2,
+          130,
+          126,
+          143
+        ],
+        [
+          8,
+          46,
+          119,
+          144
+        ],
+        [
+          8,
+          0,
+          119,
+          144
+        ],
+        [
+          8,
+          0,
+          119,
+          144
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -2770,6 +4466,38 @@
         "buildings/house/house-eco-cottage/stage-3.png",
         "buildings/house/house-eco-cottage/stage-4.png",
         "buildings/house/house-eco-cottage/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          46,
+          56
+        ],
+        [
+          2,
+          42,
+          46,
+          55
+        ],
+        [
+          1,
+          0,
+          48,
+          56
+        ],
+        [
+          0,
+          1,
+          48,
+          56
+        ],
+        [
+          0,
+          0,
+          48,
+          56
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -2817,6 +4545,38 @@
         "buildings/house/house-narrow-shotgun/stage-4.png",
         "buildings/house/house-narrow-shotgun/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          30,
+          56
+        ],
+        [
+          2,
+          43,
+          30,
+          55
+        ],
+        [
+          0,
+          14,
+          32,
+          56
+        ],
+        [
+          0,
+          4,
+          32,
+          56
+        ],
+        [
+          0,
+          4,
+          32,
+          56
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         1,
@@ -2861,6 +4621,38 @@
         "buildings/house/house-courtyard-block/stage-4.png",
         "buildings/house/house-courtyard-block/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          78,
+          96
+        ],
+        [
+          2,
+          82,
+          78,
+          95
+        ],
+        [
+          1,
+          9,
+          80,
+          96
+        ],
+        [
+          0,
+          8,
+          80,
+          96
+        ],
+        [
+          0,
+          8,
+          80,
+          96
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -2903,6 +4695,38 @@
         "buildings/house/house-modern-villa/stage-3.png",
         "buildings/house/house-modern-villa/stage-4.png",
         "buildings/house/house-modern-villa/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          48,
+          62,
+          56
+        ],
+        [
+          2,
+          42,
+          62,
+          55
+        ],
+        [
+          1,
+          3,
+          63,
+          56
+        ],
+        [
+          0,
+          0,
+          64,
+          56
+        ],
+        [
+          0,
+          0,
+          64,
+          56
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -2947,6 +4771,38 @@
         "buildings/house/house-duplex-brick/stage-3.png",
         "buildings/house/house-duplex-brick/stage-4.png",
         "buildings/house/house-duplex-brick/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          46,
+          72
+        ],
+        [
+          2,
+          58,
+          46,
+          71
+        ],
+        [
+          0,
+          17,
+          48,
+          72
+        ],
+        [
+          0,
+          6,
+          48,
+          72
+        ],
+        [
+          0,
+          7,
+          48,
+          72
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -2994,6 +4850,38 @@
         "buildings/house/house-studio-loft/stage-4.png",
         "buildings/house/house-studio-loft/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          54,
+          96
+        ],
+        [
+          2,
+          82,
+          54,
+          95
+        ],
+        [
+          2,
+          1,
+          54,
+          96
+        ],
+        [
+          0,
+          1,
+          56,
+          96
+        ],
+        [
+          0,
+          1,
+          56,
+          96
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -3038,6 +4926,38 @@
         "buildings/house/house-rowhouse-corner/stage-4.png",
         "buildings/house/house-rowhouse-corner/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          62,
+          96
+        ],
+        [
+          2,
+          82,
+          62,
+          95
+        ],
+        [
+          2,
+          19,
+          61,
+          96
+        ],
+        [
+          2,
+          0,
+          61,
+          96
+        ],
+        [
+          2,
+          0,
+          61,
+          96
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -3081,6 +5001,38 @@
         "buildings/house/house-suburban-brick/stage-3.png",
         "buildings/house/house-suburban-brick/stage-4.png",
         "buildings/house/house-suburban-brick/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          54,
+          88
+        ],
+        [
+          2,
+          74,
+          54,
+          87
+        ],
+        [
+          0,
+          17,
+          56,
+          88
+        ],
+        [
+          0,
+          7,
+          56,
+          88
+        ],
+        [
+          0,
+          7,
+          56,
+          88
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -3128,6 +5080,38 @@
         "buildings/house/house-apartment-walkup/stage-4.png",
         "buildings/house/house-apartment-walkup/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          152,
+          94,
+          160
+        ],
+        [
+          2,
+          146,
+          94,
+          159
+        ],
+        [
+          7,
+          34,
+          89,
+          160
+        ],
+        [
+          7,
+          0,
+          89,
+          160
+        ],
+        [
+          7,
+          0,
+          89,
+          160
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -3174,6 +5158,38 @@
         "buildings/commercial/shop-cafe/stage-4.png",
         "buildings/commercial/shop-cafe/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          2,
+          4,
+          29,
+          24
+        ],
+        [
+          1,
+          1,
+          30,
+          24
+        ],
+        [
+          2,
+          1,
+          29,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         2,
@@ -3217,6 +5233,38 @@
         "buildings/commercial/shop-butcher/stage-3.png",
         "buildings/commercial/shop-butcher/stage-4.png",
         "buildings/commercial/shop-butcher/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          1,
+          5,
+          31,
+          24
+        ],
+        [
+          1,
+          1,
+          30,
+          24
+        ],
+        [
+          2,
+          1,
+          29,
+          24
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -3262,6 +5310,38 @@
         "buildings/commercial/shop-electronics/stage-4.png",
         "buildings/commercial/shop-electronics/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          2,
+          5,
+          30,
+          24
+        ],
+        [
+          1,
+          2,
+          28,
+          24
+        ],
+        [
+          2,
+          1,
+          30,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         2,
@@ -3305,6 +5385,38 @@
         "buildings/commercial/shop-furniture/stage-3.png",
         "buildings/commercial/shop-furniture/stage-4.png",
         "buildings/commercial/shop-furniture/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          38,
+          24
+        ],
+        [
+          2,
+          10,
+          38,
+          23
+        ],
+        [
+          7,
+          4,
+          32,
+          24
+        ],
+        [
+          5,
+          1,
+          32,
+          24
+        ],
+        [
+          6,
+          1,
+          34,
+          24
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -3350,6 +5462,38 @@
         "buildings/commercial/shop-bookstore/stage-4.png",
         "buildings/commercial/shop-bookstore/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          3,
+          4,
+          28,
+          24
+        ],
+        [
+          2,
+          1,
+          30,
+          24
+        ],
+        [
+          4,
+          1,
+          28,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         2,
@@ -3393,6 +5537,38 @@
         "buildings/commercial/shop-clothing/stage-3.png",
         "buildings/commercial/shop-clothing/stage-4.png",
         "buildings/commercial/shop-clothing/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          3,
+          4,
+          29,
+          24
+        ],
+        [
+          1,
+          1,
+          30,
+          24
+        ],
+        [
+          3,
+          1,
+          28,
+          24
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -3438,6 +5614,38 @@
         "buildings/commercial/shop-restaurant/stage-4.png",
         "buildings/commercial/shop-restaurant/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          38,
+          24
+        ],
+        [
+          2,
+          10,
+          38,
+          23
+        ],
+        [
+          7,
+          4,
+          32,
+          24
+        ],
+        [
+          5,
+          1,
+          34,
+          24
+        ],
+        [
+          6,
+          1,
+          33,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         3,
@@ -3481,6 +5689,38 @@
         "buildings/commercial/shop-bar/stage-3.png",
         "buildings/commercial/shop-bar/stage-4.png",
         "buildings/commercial/shop-bar/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          3,
+          4,
+          28,
+          24
+        ],
+        [
+          4,
+          1,
+          28,
+          24
+        ],
+        [
+          5,
+          1,
+          26,
+          24
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -3526,6 +5766,38 @@
         "buildings/commercial/office-small/stage-4.png",
         "buildings/commercial/office-small/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          30,
+          32
+        ],
+        [
+          2,
+          19,
+          30,
+          31
+        ],
+        [
+          1,
+          9,
+          31,
+          32
+        ],
+        [
+          1,
+          9,
+          26,
+          32
+        ],
+        [
+          1,
+          3,
+          31,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         2,
@@ -3569,6 +5841,38 @@
         "buildings/commercial/hotel-small/stage-3.png",
         "buildings/commercial/hotel-small/stage-4.png",
         "buildings/commercial/hotel-small/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          94,
+          88
+        ],
+        [
+          2,
+          74,
+          94,
+          87
+        ],
+        [
+          24,
+          23,
+          72,
+          88
+        ],
+        [
+          23,
+          0,
+          74,
+          88
+        ],
+        [
+          21,
+          0,
+          75,
+          88
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -3614,6 +5918,38 @@
         "buildings/commercial/commercial-market-stalls/stage-4.png",
         "buildings/commercial/commercial-market-stalls/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          8,
+          9,
+          39,
+          32
+        ],
+        [
+          3,
+          1,
+          45,
+          32
+        ],
+        [
+          4,
+          1,
+          43,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -3656,6 +5992,38 @@
         "buildings/commercial/commercial-storage/stage-3.png",
         "buildings/commercial/commercial-storage/stage-4.png",
         "buildings/commercial/commercial-storage/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          38,
+          24
+        ],
+        [
+          2,
+          10,
+          38,
+          23
+        ],
+        [
+          6,
+          4,
+          34,
+          24
+        ],
+        [
+          4,
+          1,
+          36,
+          24
+        ],
+        [
+          5,
+          1,
+          34,
+          24
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -3700,6 +6068,38 @@
         "buildings/commercial/commercial-gas-station-electric/stage-3.png",
         "buildings/commercial/commercial-gas-station-electric/stage-4.png",
         "buildings/commercial/commercial-gas-station-electric/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          38,
+          32
+        ],
+        [
+          2,
+          18,
+          38,
+          31
+        ],
+        [
+          1,
+          9,
+          38,
+          32
+        ],
+        [
+          1,
+          6,
+          39,
+          32
+        ],
+        [
+          1,
+          7,
+          39,
+          32
+        ]
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -3747,6 +6147,38 @@
         "buildings/commercial/commercial-gas-station-truck/stage-4.png",
         "buildings/commercial/commercial-gas-station-truck/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          126,
+          96
+        ],
+        [
+          2,
+          82,
+          126,
+          95
+        ],
+        [
+          8,
+          27,
+          120,
+          96
+        ],
+        [
+          0,
+          20,
+          128,
+          96
+        ],
+        [
+          0,
+          20,
+          128,
+          96
+        ]
+      ],
       "platform": "ASPHALT",
       "estimates": [
         6
@@ -3791,6 +6223,38 @@
         "buildings/commercial/commercial-gas-station-cafe/stage-3.png",
         "buildings/commercial/commercial-gas-station-cafe/stage-4.png",
         "buildings/commercial/commercial-gas-station-cafe/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          54,
+          32
+        ],
+        [
+          2,
+          18,
+          54,
+          31
+        ],
+        [
+          9,
+          9,
+          46,
+          32
+        ],
+        [
+          2,
+          1,
+          53,
+          32
+        ],
+        [
+          5,
+          1,
+          50,
+          32
+        ]
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -3837,6 +6301,38 @@
         "buildings/commercial/commercial-gas-station-wash/stage-4.png",
         "buildings/commercial/commercial-gas-station-wash/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          54,
+          32
+        ],
+        [
+          2,
+          18,
+          54,
+          31
+        ],
+        [
+          5,
+          9,
+          51,
+          32
+        ],
+        [
+          1,
+          4,
+          55,
+          32
+        ],
+        [
+          1,
+          2,
+          55,
+          32
+        ]
+      ],
       "platform": "ASPHALT",
       "estimates": [
         6
@@ -3882,6 +6378,38 @@
         "buildings/civic/civic-museum/stage-4.png",
         "buildings/civic/civic-museum/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          104,
+          110,
+          112
+        ],
+        [
+          2,
+          98,
+          110,
+          111
+        ],
+        [
+          0,
+          63,
+          112,
+          112
+        ],
+        [
+          0,
+          34,
+          112,
+          112
+        ],
+        [
+          0,
+          33,
+          112,
+          112
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -3925,6 +6453,38 @@
         "buildings/civic/civic-hospital/stage-3.png",
         "buildings/civic/civic-hospital/stage-4.png",
         "buildings/civic/civic-hospital/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          54,
+          40
+        ],
+        [
+          2,
+          26,
+          54,
+          39
+        ],
+        [
+          6,
+          11,
+          50,
+          40
+        ],
+        [
+          1,
+          3,
+          50,
+          40
+        ],
+        [
+          1,
+          2,
+          55,
+          40
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -3970,6 +6530,38 @@
         "buildings/civic/civic-university/stage-4.png",
         "buildings/civic/civic-university/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          40,
+          62,
+          48
+        ],
+        [
+          2,
+          34,
+          62,
+          47
+        ],
+        [
+          6,
+          23,
+          58,
+          48
+        ],
+        [
+          5,
+          0,
+          59,
+          48
+        ],
+        [
+          5,
+          0,
+          59,
+          48
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4014,6 +6606,38 @@
         "buildings/civic/civic-courthouse/stage-4.png",
         "buildings/civic/civic-courthouse/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          9,
+          11,
+          39,
+          40
+        ],
+        [
+          5,
+          1,
+          43,
+          40
+        ],
+        [
+          6,
+          1,
+          42,
+          40
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4057,6 +6681,38 @@
         "buildings/civic/civic-embassy/stage-3.png",
         "buildings/civic/civic-embassy/stage-4.png",
         "buildings/civic/civic-embassy/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          94,
+          88
+        ],
+        [
+          2,
+          74,
+          94,
+          87
+        ],
+        [
+          0,
+          29,
+          96,
+          88
+        ],
+        [
+          0,
+          7,
+          96,
+          88
+        ],
+        [
+          0,
+          7,
+          96,
+          88
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -4103,6 +6759,38 @@
         "buildings/civic/civic-community-center/stage-4.png",
         "buildings/civic/civic-community-center/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          3,
+          11,
+          45,
+          40
+        ],
+        [
+          1,
+          5,
+          47,
+          40
+        ],
+        [
+          1,
+          1,
+          46,
+          40
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4146,6 +6834,38 @@
         "buildings/civic/civic-aquatic-center/stage-3.png",
         "buildings/civic/civic-aquatic-center/stage-4.png",
         "buildings/civic/civic-aquatic-center/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          1,
+          15,
+          47,
+          40
+        ],
+        [
+          1,
+          14,
+          47,
+          40
+        ],
+        [
+          1,
+          12,
+          47,
+          40
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -4191,6 +6911,38 @@
         "buildings/civic/civic-transport-hub/stage-4.png",
         "buildings/civic/civic-transport-hub/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          126,
+          96
+        ],
+        [
+          2,
+          82,
+          126,
+          95
+        ],
+        [
+          2,
+          55,
+          126,
+          96
+        ],
+        [
+          0,
+          17,
+          128,
+          96
+        ],
+        [
+          0,
+          17,
+          128,
+          96
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4235,6 +6987,38 @@
         "buildings/civic/civic-waste-station/stage-4.png",
         "buildings/civic/civic-waste-station/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          110,
+          88
+        ],
+        [
+          2,
+          74,
+          110,
+          87
+        ],
+        [
+          1,
+          40,
+          112,
+          88
+        ],
+        [
+          0,
+          23,
+          112,
+          88
+        ],
+        [
+          0,
+          23,
+          112,
+          88
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4278,6 +7062,38 @@
         "buildings/civic/civic-power-substation/stage-3.png",
         "buildings/civic/civic-power-substation/stage-4.png",
         "buildings/civic/civic-power-substation/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          72,
+          94,
+          80
+        ],
+        [
+          2,
+          66,
+          94,
+          79
+        ],
+        [
+          2,
+          50,
+          94,
+          80
+        ],
+        [
+          3,
+          23,
+          93,
+          80
+        ],
+        [
+          0,
+          16,
+          96,
+          80
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -4324,6 +7140,38 @@
         "buildings/civic/civic-memorial-hall/stage-4.png",
         "buildings/civic/civic-memorial-hall/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          110,
+          96
+        ],
+        [
+          2,
+          82,
+          110,
+          95
+        ],
+        [
+          0,
+          54,
+          112,
+          96
+        ],
+        [
+          0,
+          9,
+          112,
+          96
+        ],
+        [
+          0,
+          9,
+          112,
+          96
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -4367,6 +7215,38 @@
         "buildings/civic/civic-youth-center/stage-3.png",
         "buildings/civic/civic-youth-center/stage-4.png",
         "buildings/civic/civic-youth-center/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          110,
+          96
+        ],
+        [
+          2,
+          82,
+          110,
+          95
+        ],
+        [
+          2,
+          41,
+          110,
+          96
+        ],
+        [
+          5,
+          22,
+          107,
+          96
+        ],
+        [
+          0,
+          9,
+          112,
+          96
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -4412,6 +7292,38 @@
         "buildings/highrise/highrise-residential-tower/stage-3.png",
         "buildings/highrise/highrise-residential-tower/stage-4.png",
         "buildings/highrise/highrise-residential-tower/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          272,
+          142,
+          280
+        ],
+        [
+          2,
+          266,
+          142,
+          279
+        ],
+        [
+          15,
+          95,
+          128,
+          280
+        ],
+        [
+          14,
+          0,
+          129,
+          280
+        ],
+        [
+          14,
+          0,
+          129,
+          280
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -4460,6 +7372,38 @@
         "buildings/highrise/highrise-hotel/stage-4.png",
         "buildings/highrise/highrise-hotel/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          11,
+          80,
+          100,
+          256
+        ],
+        [
+          7,
+          13,
+          105,
+          256
+        ],
+        [
+          7,
+          0,
+          104,
+          256
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         3,
@@ -4506,6 +7450,38 @@
         "buildings/highrise/highrise-office/stage-3.png",
         "buildings/highrise/highrise-office/stage-4.png",
         "buildings/highrise/highrise-office/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          10,
+          66,
+          102,
+          256
+        ],
+        [
+          6,
+          10,
+          105,
+          256
+        ],
+        [
+          6,
+          0,
+          105,
+          256
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -4554,6 +7530,38 @@
         "buildings/highrise/highrise-medical-tower/stage-4.png",
         "buildings/highrise/highrise-medical-tower/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          126,
+          256
+        ],
+        [
+          2,
+          242,
+          126,
+          255
+        ],
+        [
+          5,
+          70,
+          122,
+          256
+        ],
+        [
+          4,
+          0,
+          124,
+          256
+        ],
+        [
+          4,
+          0,
+          124,
+          256
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         3,
@@ -4601,6 +7609,38 @@
         "buildings/highrise/highrise-luxury-tower/stage-4.png",
         "buildings/highrise/highrise-luxury-tower/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          17,
+          76,
+          94,
+          256
+        ],
+        [
+          17,
+          0,
+          95,
+          256
+        ],
+        [
+          17,
+          0,
+          94,
+          256
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -4646,6 +7686,38 @@
         "buildings/highrise/highrise-sustainable-tower/stage-3.png",
         "buildings/highrise/highrise-sustainable-tower/stage-4.png",
         "buildings/highrise/highrise-sustainable-tower/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          14,
+          60,
+          98,
+          256
+        ],
+        [
+          16,
+          2,
+          96,
+          256
+        ],
+        [
+          16,
+          0,
+          96,
+          256
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -4694,6 +7766,38 @@
         "buildings/commercial/landmark-ferris-wheel/stage-4.png",
         "buildings/commercial/landmark-ferris-wheel/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          62,
+          88
+        ],
+        [
+          3,
+          75,
+          61,
+          87
+        ],
+        [
+          4,
+          25,
+          59,
+          88
+        ],
+        [
+          1,
+          20,
+          63,
+          88
+        ],
+        [
+          3,
+          1,
+          60,
+          88
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -4739,6 +7843,38 @@
         "buildings/highrise/landmark-megatall-tower/stage-3.png",
         "buildings/highrise/landmark-megatall-tower/stage-4.png",
         "buildings/highrise/landmark-megatall-tower/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          280,
+          158,
+          288
+        ],
+        [
+          2,
+          274,
+          158,
+          287
+        ],
+        [
+          12,
+          70,
+          148,
+          288
+        ],
+        [
+          11,
+          0,
+          149,
+          288
+        ],
+        [
+          11,
+          0,
+          149,
+          288
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -4789,6 +7925,38 @@
         "buildings/civic/landmark-monument/stage-4.png",
         "buildings/civic/landmark-monument/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          30,
+          72
+        ],
+        [
+          2,
+          54,
+          30,
+          71
+        ],
+        [
+          2,
+          20,
+          30,
+          72
+        ],
+        [
+          1,
+          3,
+          31,
+          72
+        ],
+        [
+          2,
+          1,
+          29,
+          72
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -4836,6 +8004,38 @@
         "buildings/house/house-canalside-terrace/stage-4.png",
         "buildings/house/house-canalside-terrace/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          62,
+          88
+        ],
+        [
+          2,
+          74,
+          62,
+          87
+        ],
+        [
+          2,
+          1,
+          62,
+          88
+        ],
+        [
+          1,
+          1,
+          63,
+          88
+        ],
+        [
+          0,
+          1,
+          64,
+          88
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -4880,6 +8080,38 @@
         "buildings/house/house-alpine-chalet/stage-4.png",
         "buildings/house/house-alpine-chalet/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          54,
+          64
+        ],
+        [
+          2,
+          50,
+          54,
+          63
+        ],
+        [
+          3,
+          7,
+          54,
+          64
+        ],
+        [
+          1,
+          3,
+          55,
+          64
+        ],
+        [
+          0,
+          2,
+          56,
+          64
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         2,
@@ -4923,6 +8155,38 @@
         "buildings/house/house-coastal-cottage/stage-3.png",
         "buildings/house/house-coastal-cottage/stage-4.png",
         "buildings/house/house-coastal-cottage/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          54,
+          72
+        ],
+        [
+          2,
+          58,
+          54,
+          71
+        ],
+        [
+          0,
+          7,
+          56,
+          72
+        ],
+        [
+          0,
+          4,
+          56,
+          72
+        ],
+        [
+          0,
+          4,
+          56,
+          72
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -4970,6 +8234,38 @@
         "buildings/house/house-farmstead/stage-4.png",
         "buildings/house/house-farmstead/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          70,
+          64
+        ],
+        [
+          2,
+          50,
+          70,
+          63
+        ],
+        [
+          0,
+          10,
+          72,
+          64
+        ],
+        [
+          2,
+          6,
+          70,
+          64
+        ],
+        [
+          0,
+          6,
+          72,
+          64
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -5012,6 +8308,38 @@
         "buildings/house/house-live-work/stage-3.png",
         "buildings/house/house-live-work/stage-4.png",
         "buildings/house/house-live-work/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          62,
+          88
+        ],
+        [
+          2,
+          74,
+          62,
+          87
+        ],
+        [
+          0,
+          7,
+          64,
+          88
+        ],
+        [
+          0,
+          4,
+          64,
+          88
+        ],
+        [
+          0,
+          3,
+          64,
+          88
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -5056,6 +8384,38 @@
         "buildings/house/house-micro-apartments/stage-3.png",
         "buildings/house/house-micro-apartments/stage-4.png",
         "buildings/house/house-micro-apartments/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          136,
+          94,
+          144
+        ],
+        [
+          2,
+          130,
+          94,
+          143
+        ],
+        [
+          8,
+          58,
+          87,
+          144
+        ],
+        [
+          8,
+          0,
+          87,
+          144
+        ],
+        [
+          8,
+          0,
+          87,
+          144
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -5103,6 +8463,38 @@
         "buildings/house/house-student-residence/stage-4.png",
         "buildings/house/house-student-residence/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          168,
+          126,
+          176
+        ],
+        [
+          2,
+          162,
+          126,
+          175
+        ],
+        [
+          5,
+          68,
+          122,
+          176
+        ],
+        [
+          5,
+          0,
+          122,
+          176
+        ],
+        [
+          5,
+          0,
+          122,
+          176
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -5147,6 +8539,38 @@
         "buildings/house/house-senior-living/stage-3.png",
         "buildings/house/house-senior-living/stage-4.png",
         "buildings/house/house-senior-living/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          120,
+          126,
+          128
+        ],
+        [
+          2,
+          114,
+          126,
+          127
+        ],
+        [
+          3,
+          32,
+          124,
+          128
+        ],
+        [
+          3,
+          0,
+          124,
+          128
+        ],
+        [
+          3,
+          0,
+          124,
+          128
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -5193,6 +8617,38 @@
         "buildings/house/house-cohousing-cluster/stage-4.png",
         "buildings/house/house-cohousing-cluster/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          120,
+          158,
+          128
+        ],
+        [
+          2,
+          114,
+          158,
+          127
+        ],
+        [
+          9,
+          44,
+          151,
+          128
+        ],
+        [
+          9,
+          0,
+          151,
+          128
+        ],
+        [
+          9,
+          0,
+          151,
+          128
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -5238,6 +8694,38 @@
         "buildings/house/house-prefab-modular/stage-4.png",
         "buildings/house/house-prefab-modular/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          62,
+          64
+        ],
+        [
+          2,
+          50,
+          62,
+          63
+        ],
+        [
+          1,
+          5,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -5281,6 +8769,38 @@
         "buildings/house/house-art-deco-apartments/stage-3.png",
         "buildings/house/house-art-deco-apartments/stage-4.png",
         "buildings/house/house-art-deco-apartments/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          168,
+          110,
+          176
+        ],
+        [
+          2,
+          162,
+          110,
+          175
+        ],
+        [
+          16,
+          48,
+          96,
+          176
+        ],
+        [
+          16,
+          0,
+          96,
+          176
+        ],
+        [
+          16,
+          0,
+          96,
+          176
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -5327,6 +8847,38 @@
         "buildings/house/house-brutalist-block/stage-4.png",
         "buildings/house/house-brutalist-block/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          168,
+          158,
+          176
+        ],
+        [
+          2,
+          162,
+          158,
+          175
+        ],
+        [
+          7,
+          65,
+          153,
+          176
+        ],
+        [
+          6,
+          0,
+          153,
+          176
+        ],
+        [
+          6,
+          0,
+          153,
+          176
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -5372,6 +8924,38 @@
         "buildings/house/house-brownstone-row/stage-4.png",
         "buildings/house/house-brownstone-row/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          70,
+          96
+        ],
+        [
+          2,
+          82,
+          70,
+          95
+        ],
+        [
+          2,
+          0,
+          70,
+          96
+        ],
+        [
+          1,
+          1,
+          72,
+          96
+        ],
+        [
+          0,
+          0,
+          72,
+          96
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -5414,6 +8998,38 @@
         "buildings/house/house-mediterranean-courtyard/stage-3.png",
         "buildings/house/house-mediterranean-courtyard/stage-4.png",
         "buildings/house/house-mediterranean-courtyard/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          120,
+          190,
+          128
+        ],
+        [
+          2,
+          114,
+          190,
+          127
+        ],
+        [
+          10,
+          40,
+          182,
+          128
+        ],
+        [
+          8,
+          0,
+          184,
+          128
+        ],
+        [
+          8,
+          0,
+          184,
+          128
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -5459,6 +9075,38 @@
         "buildings/house/house-warehouse-lofts/stage-3.png",
         "buildings/house/house-warehouse-lofts/stage-4.png",
         "buildings/house/house-warehouse-lofts/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          112,
+          174,
+          120
+        ],
+        [
+          2,
+          106,
+          174,
+          119
+        ],
+        [
+          6,
+          32,
+          169,
+          120
+        ],
+        [
+          6,
+          0,
+          169,
+          120
+        ],
+        [
+          6,
+          0,
+          169,
+          120
+        ]
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -5506,6 +9154,38 @@
         "buildings/house/house-social-housing/stage-4.png",
         "buildings/house/house-social-housing/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          168,
+          174,
+          176
+        ],
+        [
+          2,
+          162,
+          174,
+          175
+        ],
+        [
+          19,
+          36,
+          157,
+          176
+        ],
+        [
+          18,
+          0,
+          157,
+          176
+        ],
+        [
+          18,
+          0,
+          157,
+          176
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -5551,6 +9231,38 @@
         "buildings/house/house-rooftop-garden/stage-4.png",
         "buildings/house/house-rooftop-garden/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          62,
+          72
+        ],
+        [
+          2,
+          58,
+          62,
+          71
+        ],
+        [
+          0,
+          12,
+          64,
+          72
+        ],
+        [
+          1,
+          8,
+          64,
+          72
+        ],
+        [
+          0,
+          8,
+          64,
+          72
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -5595,6 +9307,38 @@
         "buildings/house/house-stilt-riverside/stage-4.png",
         "buildings/house/house-stilt-riverside/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          62,
+          72
+        ],
+        [
+          2,
+          58,
+          62,
+          71
+        ],
+        [
+          3,
+          5,
+          61,
+          72
+        ],
+        [
+          1,
+          5,
+          62,
+          72
+        ],
+        [
+          0,
+          5,
+          64,
+          72
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         3,
@@ -5638,6 +9382,38 @@
         "buildings/house/house-arcade-apartments/stage-3.png",
         "buildings/house/house-arcade-apartments/stage-4.png",
         "buildings/house/house-arcade-apartments/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          136,
+          174,
+          144
+        ],
+        [
+          2,
+          130,
+          174,
+          143
+        ],
+        [
+          6,
+          47,
+          170,
+          144
+        ],
+        [
+          6,
+          0,
+          170,
+          144
+        ],
+        [
+          6,
+          0,
+          170,
+          144
+        ]
       ],
       "platform": "YARD",
       "estimates": [
@@ -5684,6 +9460,38 @@
         "buildings/house/house-worker-tenements/stage-4.png",
         "buildings/house/house-worker-tenements/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          168,
+          158,
+          176
+        ],
+        [
+          2,
+          162,
+          158,
+          175
+        ],
+        [
+          16,
+          58,
+          144,
+          176
+        ],
+        [
+          16,
+          0,
+          144,
+          176
+        ],
+        [
+          16,
+          0,
+          144,
+          176
+        ]
+      ],
       "platform": "YARD",
       "estimates": [
         6
@@ -5729,6 +9537,38 @@
         "buildings/commercial/commercial-grocery/stage-4.png",
         "buildings/commercial/commercial-grocery/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          16,
+          30,
+          24
+        ],
+        [
+          2,
+          11,
+          30,
+          23
+        ],
+        [
+          2,
+          4,
+          29,
+          24
+        ],
+        [
+          1,
+          2,
+          31,
+          24
+        ],
+        [
+          2,
+          1,
+          29,
+          24
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         2,
@@ -5773,6 +9613,38 @@
         "buildings/commercial/commercial-food-hall/stage-4.png",
         "buildings/commercial/commercial-food-hall/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          6,
+          9,
+          42,
+          32
+        ],
+        [
+          1,
+          2,
+          47,
+          32
+        ],
+        [
+          1,
+          1,
+          46,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -5815,6 +9687,38 @@
         "buildings/commercial/commercial-cinema/stage-3.png",
         "buildings/commercial/commercial-cinema/stage-4.png",
         "buildings/commercial/commercial-cinema/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          3,
+          9,
+          45,
+          32
+        ],
+        [
+          1,
+          7,
+          47,
+          32
+        ],
+        [
+          1,
+          4,
+          47,
+          32
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -5859,6 +9763,38 @@
         "buildings/commercial/commercial-bowling/stage-4.png",
         "buildings/commercial/commercial-bowling/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          3,
+          9,
+          44,
+          32
+        ],
+        [
+          1,
+          4,
+          47,
+          32
+        ],
+        [
+          1,
+          4,
+          47,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -5901,6 +9837,38 @@
         "buildings/commercial/commercial-gym/stage-3.png",
         "buildings/commercial/commercial-gym/stage-4.png",
         "buildings/commercial/commercial-gym/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          38,
+          32
+        ],
+        [
+          2,
+          18,
+          38,
+          31
+        ],
+        [
+          1,
+          11,
+          39,
+          32
+        ],
+        [
+          1,
+          11,
+          39,
+          32
+        ],
+        [
+          1,
+          8,
+          39,
+          32
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -5946,6 +9914,38 @@
         "buildings/commercial/commercial-bank-branch/stage-4.png",
         "buildings/commercial/commercial-bank-branch/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          38,
+          32
+        ],
+        [
+          2,
+          18,
+          38,
+          31
+        ],
+        [
+          5,
+          9,
+          35,
+          32
+        ],
+        [
+          1,
+          1,
+          39,
+          32
+        ],
+        [
+          1,
+          3,
+          39,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         3,
@@ -5989,6 +9989,38 @@
         "buildings/commercial/commercial-coworking/stage-3.png",
         "buildings/commercial/commercial-coworking/stage-4.png",
         "buildings/commercial/commercial-coworking/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          38,
+          40
+        ],
+        [
+          2,
+          26,
+          38,
+          39
+        ],
+        [
+          6,
+          11,
+          33,
+          40
+        ],
+        [
+          1,
+          2,
+          39,
+          40
+        ],
+        [
+          2,
+          1,
+          38,
+          40
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -6034,6 +10066,38 @@
         "buildings/commercial/commercial-tech-workshop/stage-4.png",
         "buildings/commercial/commercial-tech-workshop/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          4,
+          9,
+          43,
+          32
+        ],
+        [
+          1,
+          3,
+          47,
+          32
+        ],
+        [
+          1,
+          4,
+          47,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -6076,6 +10140,38 @@
         "buildings/commercial/commercial-car-dealership/stage-3.png",
         "buildings/commercial/commercial-car-dealership/stage-4.png",
         "buildings/commercial/commercial-car-dealership/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          54,
+          32
+        ],
+        [
+          2,
+          18,
+          54,
+          31
+        ],
+        [
+          5,
+          9,
+          51,
+          32
+        ],
+        [
+          1,
+          5,
+          55,
+          32
+        ],
+        [
+          1,
+          2,
+          55,
+          32
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -6120,6 +10216,38 @@
         "buildings/commercial/commercial-garden-center/stage-4.png",
         "buildings/commercial/commercial-garden-center/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          54,
+          32
+        ],
+        [
+          2,
+          18,
+          54,
+          31
+        ],
+        [
+          12,
+          9,
+          43,
+          32
+        ],
+        [
+          7,
+          1,
+          48,
+          32
+        ],
+        [
+          7,
+          1,
+          49,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -6162,6 +10290,38 @@
         "buildings/commercial/commercial-night-market/stage-3.png",
         "buildings/commercial/commercial-night-market/stage-4.png",
         "buildings/commercial/commercial-night-market/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          54,
+          32
+        ],
+        [
+          2,
+          18,
+          54,
+          31
+        ],
+        [
+          1,
+          10,
+          55,
+          32
+        ],
+        [
+          1,
+          8,
+          55,
+          32
+        ],
+        [
+          1,
+          8,
+          55,
+          32
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -6206,6 +10366,38 @@
         "buildings/commercial/commercial-department-store/stage-4.png",
         "buildings/commercial/commercial-department-store/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          54,
+          40
+        ],
+        [
+          2,
+          26,
+          54,
+          39
+        ],
+        [
+          7,
+          11,
+          49,
+          40
+        ],
+        [
+          1,
+          1,
+          54,
+          40
+        ],
+        [
+          3,
+          1,
+          53,
+          40
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -6248,6 +10440,38 @@
         "buildings/commercial/commercial-office-courtyard/stage-3.png",
         "buildings/commercial/commercial-office-courtyard/stage-4.png",
         "buildings/commercial/commercial-office-courtyard/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          54,
+          40
+        ],
+        [
+          2,
+          26,
+          54,
+          39
+        ],
+        [
+          1,
+          14,
+          55,
+          40
+        ],
+        [
+          1,
+          15,
+          55,
+          40
+        ],
+        [
+          1,
+          16,
+          55,
+          40
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -6292,6 +10516,38 @@
         "buildings/commercial/commercial-logistics-hub/stage-4.png",
         "buildings/commercial/commercial-logistics-hub/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          62,
+          40
+        ],
+        [
+          2,
+          26,
+          62,
+          39
+        ],
+        [
+          1,
+          11,
+          63,
+          40
+        ],
+        [
+          1,
+          11,
+          63,
+          40
+        ],
+        [
+          1,
+          10,
+          63,
+          40
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -6334,6 +10590,38 @@
         "buildings/commercial/commercial-cold-storage/stage-3.png",
         "buildings/commercial/commercial-cold-storage/stage-4.png",
         "buildings/commercial/commercial-cold-storage/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          2,
+          9,
+          45,
+          32
+        ],
+        [
+          1,
+          6,
+          47,
+          32
+        ],
+        [
+          1,
+          4,
+          47,
+          32
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -6378,6 +10666,38 @@
         "buildings/commercial/commercial-maker-market/stage-4.png",
         "buildings/commercial/commercial-maker-market/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          54,
+          32
+        ],
+        [
+          2,
+          18,
+          54,
+          31
+        ],
+        [
+          1,
+          15,
+          55,
+          32
+        ],
+        [
+          1,
+          13,
+          55,
+          32
+        ],
+        [
+          1,
+          13,
+          55,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -6420,6 +10740,38 @@
         "buildings/commercial/commercial-rooftop-restaurant/stage-3.png",
         "buildings/commercial/commercial-rooftop-restaurant/stage-4.png",
         "buildings/commercial/commercial-rooftop-restaurant/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          38,
+          40
+        ],
+        [
+          2,
+          26,
+          38,
+          39
+        ],
+        [
+          4,
+          11,
+          36,
+          40
+        ],
+        [
+          1,
+          6,
+          39,
+          40
+        ],
+        [
+          1,
+          3,
+          39,
+          40
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -6465,6 +10817,38 @@
         "buildings/commercial/commercial-marina-office/stage-4.png",
         "buildings/commercial/commercial-marina-office/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          38,
+          32
+        ],
+        [
+          2,
+          18,
+          38,
+          31
+        ],
+        [
+          1,
+          12,
+          39,
+          32
+        ],
+        [
+          1,
+          10,
+          39,
+          32
+        ],
+        [
+          1,
+          8,
+          39,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         3,
@@ -6509,6 +10893,38 @@
         "buildings/commercial/commercial-farmers-market/stage-4.png",
         "buildings/commercial/commercial-farmers-market/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          1,
+          11,
+          47,
+          32
+        ],
+        [
+          1,
+          9,
+          47,
+          32
+        ],
+        [
+          1,
+          9,
+          47,
+          32
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -6551,6 +10967,38 @@
         "buildings/commercial/commercial-hotel-boutique/stage-3.png",
         "buildings/commercial/commercial-hotel-boutique/stage-4.png",
         "buildings/commercial/commercial-hotel-boutique/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          38,
+          40
+        ],
+        [
+          2,
+          26,
+          38,
+          39
+        ],
+        [
+          6,
+          11,
+          33,
+          40
+        ],
+        [
+          3,
+          1,
+          36,
+          40
+        ],
+        [
+          5,
+          1,
+          35,
+          40
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -6595,6 +11043,38 @@
         "buildings/civic/civic-kindergarten/stage-3.png",
         "buildings/civic/civic-kindergarten/stage-4.png",
         "buildings/civic/civic-kindergarten/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          72,
+          110,
+          80
+        ],
+        [
+          2,
+          66,
+          110,
+          79
+        ],
+        [
+          1,
+          47,
+          112,
+          80
+        ],
+        [
+          0,
+          25,
+          112,
+          80
+        ],
+        [
+          0,
+          25,
+          112,
+          80
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -6641,6 +11121,38 @@
         "buildings/civic/civic-secondary-school/stage-4.png",
         "buildings/civic/civic-secondary-school/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          126,
+          104
+        ],
+        [
+          2,
+          90,
+          126,
+          103
+        ],
+        [
+          0,
+          46,
+          128,
+          104
+        ],
+        [
+          0,
+          19,
+          128,
+          104
+        ],
+        [
+          0,
+          19,
+          128,
+          104
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -6686,6 +11198,38 @@
         "buildings/civic/civic-vocational-college/stage-4.png",
         "buildings/civic/civic-vocational-college/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          126,
+          104
+        ],
+        [
+          2,
+          90,
+          126,
+          103
+        ],
+        [
+          0,
+          32,
+          128,
+          104
+        ],
+        [
+          4,
+          16,
+          123,
+          104
+        ],
+        [
+          0,
+          9,
+          128,
+          104
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -6729,6 +11273,38 @@
         "buildings/civic/civic-research-lab/stage-3.png",
         "buildings/civic/civic-research-lab/stage-4.png",
         "buildings/civic/civic-research-lab/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          110,
+          96
+        ],
+        [
+          2,
+          82,
+          110,
+          95
+        ],
+        [
+          0,
+          22,
+          112,
+          96
+        ],
+        [
+          2,
+          6,
+          110,
+          96
+        ],
+        [
+          0,
+          2,
+          112,
+          96
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -6774,6 +11350,38 @@
         "buildings/civic/civic-public-library-modern/stage-4.png",
         "buildings/civic/civic-public-library-modern/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          110,
+          96
+        ],
+        [
+          2,
+          82,
+          110,
+          95
+        ],
+        [
+          1,
+          56,
+          111,
+          96
+        ],
+        [
+          0,
+          18,
+          112,
+          96
+        ],
+        [
+          0,
+          15,
+          112,
+          96
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -6817,6 +11425,38 @@
         "buildings/civic/civic-health-center/stage-3.png",
         "buildings/civic/civic-health-center/stage-4.png",
         "buildings/civic/civic-health-center/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          110,
+          88
+        ],
+        [
+          2,
+          74,
+          110,
+          87
+        ],
+        [
+          1,
+          55,
+          112,
+          88
+        ],
+        [
+          0,
+          15,
+          112,
+          88
+        ],
+        [
+          0,
+          15,
+          112,
+          88
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -6862,6 +11502,38 @@
         "buildings/civic/civic-emergency-center/stage-4.png",
         "buildings/civic/civic-emergency-center/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          126,
+          104
+        ],
+        [
+          2,
+          90,
+          126,
+          103
+        ],
+        [
+          6,
+          33,
+          122,
+          104
+        ],
+        [
+          4,
+          0,
+          123,
+          104
+        ],
+        [
+          4,
+          0,
+          123,
+          104
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -6905,6 +11577,38 @@
         "buildings/civic/civic-fire-station-large/stage-3.png",
         "buildings/civic/civic-fire-station-large/stage-4.png",
         "buildings/civic/civic-fire-station-large/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          126,
+          104
+        ],
+        [
+          2,
+          90,
+          126,
+          103
+        ],
+        [
+          15,
+          24,
+          114,
+          104
+        ],
+        [
+          0,
+          3,
+          128,
+          104
+        ],
+        [
+          0,
+          4,
+          128,
+          104
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -6951,6 +11655,38 @@
         "buildings/civic/civic-police-headquarters/stage-4.png",
         "buildings/civic/civic-police-headquarters/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          126,
+          104
+        ],
+        [
+          2,
+          90,
+          126,
+          103
+        ],
+        [
+          1,
+          50,
+          127,
+          104
+        ],
+        [
+          0,
+          8,
+          128,
+          104
+        ],
+        [
+          0,
+          8,
+          128,
+          104
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -6996,6 +11732,38 @@
         "buildings/civic/civic-civil-defense/stage-4.png",
         "buildings/civic/civic-civil-defense/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          5,
+          11,
+          43,
+          40
+        ],
+        [
+          2,
+          1,
+          46,
+          40
+        ],
+        [
+          2,
+          1,
+          45,
+          40
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7039,6 +11807,38 @@
         "buildings/civic/civic-train-station/stage-3.png",
         "buildings/civic/civic-train-station/stage-4.png",
         "buildings/civic/civic-train-station/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          142,
+          104
+        ],
+        [
+          2,
+          90,
+          142,
+          103
+        ],
+        [
+          0,
+          37,
+          144,
+          104
+        ],
+        [
+          0,
+          8,
+          144,
+          104
+        ],
+        [
+          0,
+          7,
+          144,
+          104
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7084,6 +11884,38 @@
         "buildings/civic/civic-bus-terminal/stage-4.png",
         "buildings/civic/civic-bus-terminal/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          62,
+          40
+        ],
+        [
+          2,
+          26,
+          62,
+          39
+        ],
+        [
+          1,
+          12,
+          63,
+          40
+        ],
+        [
+          1,
+          12,
+          63,
+          40
+        ],
+        [
+          1,
+          9,
+          63,
+          40
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7127,6 +11959,38 @@
         "buildings/civic/civic-metro-entrance/stage-3.png",
         "buildings/civic/civic-metro-entrance/stage-4.png",
         "buildings/civic/civic-metro-entrance/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          78,
+          72
+        ],
+        [
+          2,
+          58,
+          78,
+          71
+        ],
+        [
+          0,
+          38,
+          80,
+          72
+        ],
+        [
+          0,
+          23,
+          80,
+          72
+        ],
+        [
+          0,
+          20,
+          80,
+          72
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7173,6 +12037,38 @@
         "buildings/civic/civic-waterworks/stage-4.png",
         "buildings/civic/civic-waterworks/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          110,
+          88
+        ],
+        [
+          2,
+          74,
+          110,
+          87
+        ],
+        [
+          0,
+          29,
+          111,
+          88
+        ],
+        [
+          0,
+          12,
+          112,
+          88
+        ],
+        [
+          0,
+          12,
+          112,
+          88
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7216,6 +12112,38 @@
         "buildings/civic/civic-recycling-center/stage-3.png",
         "buildings/civic/civic-recycling-center/stage-4.png",
         "buildings/civic/civic-recycling-center/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          110,
+          88
+        ],
+        [
+          2,
+          74,
+          110,
+          87
+        ],
+        [
+          0,
+          40,
+          111,
+          88
+        ],
+        [
+          0,
+          24,
+          112,
+          88
+        ],
+        [
+          0,
+          24,
+          112,
+          88
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7261,6 +12189,38 @@
         "buildings/civic/civic-court-annex/stage-4.png",
         "buildings/civic/civic-court-annex/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          10,
+          11,
+          38,
+          40
+        ],
+        [
+          6,
+          1,
+          42,
+          40
+        ],
+        [
+          8,
+          1,
+          39,
+          40
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7304,6 +12264,38 @@
         "buildings/civic/civic-administration-center/stage-3.png",
         "buildings/civic/civic-administration-center/stage-4.png",
         "buildings/civic/civic-administration-center/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          40,
+          54,
+          48
+        ],
+        [
+          2,
+          34,
+          54,
+          47
+        ],
+        [
+          12,
+          13,
+          44,
+          48
+        ],
+        [
+          8,
+          1,
+          47,
+          48
+        ],
+        [
+          10,
+          1,
+          45,
+          48
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7349,6 +12341,38 @@
         "buildings/civic/civic-sports-center/stage-4.png",
         "buildings/civic/civic-sports-center/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          126,
+          104
+        ],
+        [
+          2,
+          90,
+          126,
+          103
+        ],
+        [
+          0,
+          47,
+          128,
+          104
+        ],
+        [
+          0,
+          27,
+          128,
+          104
+        ],
+        [
+          0,
+          29,
+          128,
+          104
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7392,6 +12416,38 @@
         "buildings/civic/civic-arts-school/stage-3.png",
         "buildings/civic/civic-arts-school/stage-4.png",
         "buildings/civic/civic-arts-school/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          32,
+          46,
+          40
+        ],
+        [
+          2,
+          26,
+          46,
+          39
+        ],
+        [
+          11,
+          11,
+          36,
+          40
+        ],
+        [
+          9,
+          1,
+          38,
+          40
+        ],
+        [
+          12,
+          1,
+          36,
+          40
+        ]
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7438,6 +12494,38 @@
         "buildings/civic/civic-animal-shelter/stage-4.png",
         "buildings/civic/civic-animal-shelter/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          24,
+          46,
+          32
+        ],
+        [
+          2,
+          18,
+          46,
+          31
+        ],
+        [
+          7,
+          9,
+          40,
+          32
+        ],
+        [
+          2,
+          1,
+          46,
+          32
+        ],
+        [
+          4,
+          1,
+          44,
+          32
+        ]
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7481,6 +12569,38 @@
         "buildings/highrise/highrise-twin-towers/stage-3.png",
         "buildings/highrise/highrise-twin-towers/stage-4.png",
         "buildings/highrise/highrise-twin-towers/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          158,
+          224
+        ],
+        [
+          2,
+          210,
+          158,
+          223
+        ],
+        [
+          8,
+          52,
+          152,
+          224
+        ],
+        [
+          7,
+          0,
+          152,
+          224
+        ],
+        [
+          7,
+          0,
+          152,
+          224
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -7528,6 +12648,38 @@
         "buildings/highrise/highrise-terraced/stage-4.png",
         "buildings/highrise/highrise-terraced/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          110,
+          224
+        ],
+        [
+          2,
+          210,
+          110,
+          223
+        ],
+        [
+          9,
+          102,
+          103,
+          224
+        ],
+        [
+          7,
+          0,
+          104,
+          224
+        ],
+        [
+          7,
+          0,
+          105,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -7573,6 +12725,38 @@
         "buildings/highrise/highrise-skybridge/stage-3.png",
         "buildings/highrise/highrise-skybridge/stage-4.png",
         "buildings/highrise/highrise-skybridge/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          232,
+          174,
+          240
+        ],
+        [
+          2,
+          226,
+          174,
+          239
+        ],
+        [
+          11,
+          81,
+          165,
+          240
+        ],
+        [
+          11,
+          0,
+          165,
+          240
+        ],
+        [
+          11,
+          0,
+          165,
+          240
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -7620,6 +12804,38 @@
         "buildings/highrise/highrise-cylindrical/stage-4.png",
         "buildings/highrise/highrise-cylindrical/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          110,
+          224
+        ],
+        [
+          2,
+          210,
+          110,
+          223
+        ],
+        [
+          9,
+          53,
+          102,
+          224
+        ],
+        [
+          9,
+          0,
+          103,
+          224
+        ],
+        [
+          9,
+          0,
+          103,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -7665,6 +12881,38 @@
         "buildings/highrise/highrise-crown/stage-3.png",
         "buildings/highrise/highrise-crown/stage-4.png",
         "buildings/highrise/highrise-crown/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          110,
+          224
+        ],
+        [
+          2,
+          210,
+          110,
+          223
+        ],
+        [
+          18,
+          72,
+          93,
+          224
+        ],
+        [
+          13,
+          0,
+          98,
+          224
+        ],
+        [
+          13,
+          0,
+          98,
+          224
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -7712,6 +12960,38 @@
         "buildings/highrise/highrise-podium-office/stage-4.png",
         "buildings/highrise/highrise-podium-office/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          142,
+          224
+        ],
+        [
+          2,
+          210,
+          142,
+          223
+        ],
+        [
+          15,
+          70,
+          128,
+          224
+        ],
+        [
+          13,
+          0,
+          131,
+          224
+        ],
+        [
+          13,
+          0,
+          131,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -7757,6 +13037,38 @@
         "buildings/highrise/highrise-podium-residential/stage-3.png",
         "buildings/highrise/highrise-podium-residential/stage-4.png",
         "buildings/highrise/highrise-podium-residential/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          158,
+          224
+        ],
+        [
+          2,
+          210,
+          158,
+          223
+        ],
+        [
+          13,
+          79,
+          146,
+          224
+        ],
+        [
+          10,
+          0,
+          149,
+          224
+        ],
+        [
+          10,
+          0,
+          149,
+          224
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -7804,6 +13116,38 @@
         "buildings/highrise/highrise-green-terraces/stage-4.png",
         "buildings/highrise/highrise-green-terraces/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          126,
+          224
+        ],
+        [
+          2,
+          210,
+          126,
+          223
+        ],
+        [
+          20,
+          49,
+          107,
+          224
+        ],
+        [
+          18,
+          0,
+          109,
+          224
+        ],
+        [
+          18,
+          0,
+          109,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -7849,6 +13193,38 @@
         "buildings/highrise/highrise-art-deco/stage-3.png",
         "buildings/highrise/highrise-art-deco/stage-4.png",
         "buildings/highrise/highrise-art-deco/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          16,
+          97,
+          96,
+          256
+        ],
+        [
+          5,
+          0,
+          107,
+          256
+        ],
+        [
+          5,
+          0,
+          107,
+          256
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -7896,6 +13272,38 @@
         "buildings/highrise/highrise-brutalist/stage-4.png",
         "buildings/highrise/highrise-brutalist/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          126,
+          224
+        ],
+        [
+          2,
+          210,
+          126,
+          223
+        ],
+        [
+          15,
+          52,
+          113,
+          224
+        ],
+        [
+          13,
+          0,
+          114,
+          224
+        ],
+        [
+          13,
+          0,
+          114,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -7941,6 +13349,38 @@
         "buildings/highrise/highrise-mixed-use-hotel/stage-3.png",
         "buildings/highrise/highrise-mixed-use-hotel/stage-4.png",
         "buildings/highrise/highrise-mixed-use-hotel/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          142,
+          224
+        ],
+        [
+          2,
+          210,
+          142,
+          223
+        ],
+        [
+          14,
+          68,
+          129,
+          224
+        ],
+        [
+          14,
+          0,
+          130,
+          224
+        ],
+        [
+          14,
+          0,
+          130,
+          224
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -7990,6 +13430,38 @@
         "buildings/highrise/highrise-tech-campus-tower/stage-4.png",
         "buildings/highrise/highrise-tech-campus-tower/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          158,
+          224
+        ],
+        [
+          2,
+          210,
+          158,
+          223
+        ],
+        [
+          18,
+          123,
+          143,
+          224
+        ],
+        [
+          16,
+          0,
+          144,
+          224
+        ],
+        [
+          16,
+          0,
+          144,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8035,6 +13507,38 @@
         "buildings/highrise/highrise-finance/stage-3.png",
         "buildings/highrise/highrise-finance/stage-4.png",
         "buildings/highrise/highrise-finance/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          232,
+          110,
+          240
+        ],
+        [
+          2,
+          226,
+          110,
+          239
+        ],
+        [
+          17,
+          52,
+          95,
+          240
+        ],
+        [
+          17,
+          0,
+          95,
+          240
+        ],
+        [
+          17,
+          0,
+          95,
+          240
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8082,6 +13586,38 @@
         "buildings/highrise/highrise-observation/stage-4.png",
         "buildings/highrise/highrise-observation/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          232,
+          94,
+          240
+        ],
+        [
+          2,
+          226,
+          94,
+          239
+        ],
+        [
+          9,
+          61,
+          86,
+          240
+        ],
+        [
+          9,
+          3,
+          86,
+          240
+        ],
+        [
+          9,
+          0,
+          86,
+          240
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8127,6 +13663,38 @@
         "buildings/highrise/highrise-slim-residential/stage-3.png",
         "buildings/highrise/highrise-slim-residential/stage-4.png",
         "buildings/highrise/highrise-slim-residential/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          232,
+          94,
+          240
+        ],
+        [
+          2,
+          226,
+          94,
+          239
+        ],
+        [
+          17,
+          68,
+          79,
+          240
+        ],
+        [
+          16,
+          0,
+          80,
+          240
+        ],
+        [
+          16,
+          0,
+          79,
+          240
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8175,6 +13743,38 @@
         "buildings/highrise/highrise-stacked-boxes/stage-4.png",
         "buildings/highrise/highrise-stacked-boxes/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          110,
+          224
+        ],
+        [
+          2,
+          210,
+          110,
+          223
+        ],
+        [
+          15,
+          50,
+          96,
+          224
+        ],
+        [
+          15,
+          0,
+          96,
+          224
+        ],
+        [
+          15,
+          0,
+          96,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8220,6 +13820,38 @@
         "buildings/highrise/highrise-diagonal-crown/stage-3.png",
         "buildings/highrise/highrise-diagonal-crown/stage-4.png",
         "buildings/highrise/highrise-diagonal-crown/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          232,
+          110,
+          240
+        ],
+        [
+          2,
+          226,
+          110,
+          239
+        ],
+        [
+          15,
+          64,
+          97,
+          240
+        ],
+        [
+          14,
+          0,
+          98,
+          240
+        ],
+        [
+          14,
+          0,
+          98,
+          240
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8267,6 +13899,38 @@
         "buildings/highrise/highrise-courtyard-tower/stage-4.png",
         "buildings/highrise/highrise-courtyard-tower/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          192,
+          174,
+          200
+        ],
+        [
+          2,
+          186,
+          174,
+          199
+        ],
+        [
+          5,
+          58,
+          171,
+          200
+        ],
+        [
+          5,
+          0,
+          171,
+          200
+        ],
+        [
+          5,
+          0,
+          171,
+          200
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8312,6 +13976,38 @@
         "buildings/highrise/highrise-transit-oriented/stage-3.png",
         "buildings/highrise/highrise-transit-oriented/stage-4.png",
         "buildings/highrise/highrise-transit-oriented/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          158,
+          224
+        ],
+        [
+          2,
+          210,
+          158,
+          223
+        ],
+        [
+          12,
+          63,
+          148,
+          224
+        ],
+        [
+          9,
+          0,
+          151,
+          224
+        ],
+        [
+          9,
+          0,
+          151,
+          224
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8359,6 +14055,38 @@
         "buildings/highrise/highrise-waterfront/stage-4.png",
         "buildings/highrise/highrise-waterfront/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          216,
+          142,
+          224
+        ],
+        [
+          2,
+          210,
+          142,
+          223
+        ],
+        [
+          22,
+          45,
+          122,
+          224
+        ],
+        [
+          21,
+          0,
+          122,
+          224
+        ],
+        [
+          21,
+          0,
+          122,
+          224
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8405,6 +14133,38 @@
         "buildings/commercial/landmark-stadium/stage-4.png",
         "buildings/commercial/landmark-stadium/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          40,
+          70,
+          48
+        ],
+        [
+          2,
+          34,
+          70,
+          47
+        ],
+        [
+          14,
+          13,
+          57,
+          48
+        ],
+        [
+          7,
+          1,
+          64,
+          48
+        ],
+        [
+          10,
+          1,
+          61,
+          48
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8450,6 +14210,38 @@
         "buildings/civic/landmark-observatory/stage-3.png",
         "buildings/civic/landmark-observatory/stage-4.png",
         "buildings/civic/landmark-observatory/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          40,
+          46,
+          48
+        ],
+        [
+          2,
+          34,
+          46,
+          47
+        ],
+        [
+          9,
+          13,
+          39,
+          48
+        ],
+        [
+          1,
+          1,
+          42,
+          48
+        ],
+        [
+          3,
+          1,
+          44,
+          48
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8498,6 +14290,38 @@
         "buildings/civic/landmark-concert-hall/stage-4.png",
         "buildings/civic/landmark-concert-hall/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          126,
+          104
+        ],
+        [
+          2,
+          90,
+          126,
+          103
+        ],
+        [
+          2,
+          57,
+          126,
+          104
+        ],
+        [
+          0,
+          23,
+          128,
+          104
+        ],
+        [
+          0,
+          24,
+          128,
+          104
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8545,6 +14369,38 @@
         "buildings/commercial/landmark-aquarium/stage-4.png",
         "buildings/commercial/landmark-aquarium/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          40,
+          62,
+          48
+        ],
+        [
+          2,
+          34,
+          62,
+          47
+        ],
+        [
+          12,
+          13,
+          52,
+          48
+        ],
+        [
+          5,
+          1,
+          58,
+          48
+        ],
+        [
+          8,
+          1,
+          56,
+          48
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8590,6 +14446,38 @@
         "buildings/civic/landmark-botanical-dome/stage-3.png",
         "buildings/civic/landmark-botanical-dome/stage-4.png",
         "buildings/civic/landmark-botanical-dome/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          110,
+          96
+        ],
+        [
+          2,
+          82,
+          110,
+          95
+        ],
+        [
+          2,
+          26,
+          109,
+          96
+        ],
+        [
+          0,
+          1,
+          111,
+          96
+        ],
+        [
+          0,
+          6,
+          112,
+          96
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8638,6 +14526,38 @@
         "buildings/civic/landmark-space-center/stage-4.png",
         "buildings/civic/landmark-space-center/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          104,
+          126,
+          112
+        ],
+        [
+          2,
+          98,
+          126,
+          111
+        ],
+        [
+          4,
+          65,
+          124,
+          112
+        ],
+        [
+          1,
+          32,
+          127,
+          112
+        ],
+        [
+          0,
+          27,
+          128,
+          112
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8684,6 +14604,38 @@
         "buildings/civic/landmark-grand-station/stage-3.png",
         "buildings/civic/landmark-grand-station/stage-4.png",
         "buildings/civic/landmark-grand-station/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          142,
+          104
+        ],
+        [
+          2,
+          90,
+          142,
+          103
+        ],
+        [
+          1,
+          56,
+          143,
+          104
+        ],
+        [
+          0,
+          39,
+          144,
+          104
+        ],
+        [
+          0,
+          39,
+          144,
+          104
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8732,6 +14684,38 @@
         "buildings/civic/landmark-civic-arch/stage-4.png",
         "buildings/civic/landmark-civic-arch/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          78,
+          104
+        ],
+        [
+          2,
+          90,
+          78,
+          103
+        ],
+        [
+          3,
+          53,
+          77,
+          104
+        ],
+        [
+          5,
+          0,
+          75,
+          104
+        ],
+        [
+          0,
+          0,
+          80,
+          104
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8779,6 +14763,38 @@
         "buildings/civic/landmark-lighthouse/stage-4.png",
         "buildings/civic/landmark-lighthouse/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          120,
+          62,
+          128
+        ],
+        [
+          2,
+          114,
+          62,
+          127
+        ],
+        [
+          6,
+          44,
+          57,
+          128
+        ],
+        [
+          7,
+          12,
+          57,
+          128
+        ],
+        [
+          6,
+          0,
+          58,
+          128
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8825,6 +14841,38 @@
         "buildings/highrise/landmark-sky-tower/stage-3.png",
         "buildings/highrise/landmark-sky-tower/stage-4.png",
         "buildings/highrise/landmark-sky-tower/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          248,
+          110,
+          256
+        ],
+        [
+          2,
+          242,
+          110,
+          255
+        ],
+        [
+          12,
+          73,
+          100,
+          256
+        ],
+        [
+          7,
+          1,
+          104,
+          256
+        ],
+        [
+          7,
+          0,
+          104,
+          256
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8875,6 +14923,38 @@
         "buildings/civic/state-archive-core/stage-4.png",
         "buildings/civic/state-archive-core/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          96,
+          142,
+          104
+        ],
+        [
+          2,
+          90,
+          142,
+          103
+        ],
+        [
+          0,
+          48,
+          144,
+          104
+        ],
+        [
+          0,
+          20,
+          144,
+          104
+        ],
+        [
+          0,
+          13,
+          144,
+          104
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -8919,6 +14999,38 @@
         "buildings/civic/state-archive-wing/stage-3.png",
         "buildings/civic/state-archive-wing/stage-4.png",
         "buildings/civic/state-archive-wing/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          80,
+          126,
+          88
+        ],
+        [
+          2,
+          74,
+          126,
+          87
+        ],
+        [
+          0,
+          64,
+          128,
+          88
+        ],
+        [
+          0,
+          48,
+          128,
+          88
+        ],
+        [
+          0,
+          44,
+          128,
+          88
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -8965,6 +15077,38 @@
         "buildings/civic/state-archive-vault/stage-4.png",
         "buildings/civic/state-archive-vault/stage-5.png"
       ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          88,
+          110,
+          96
+        ],
+        [
+          2,
+          82,
+          110,
+          95
+        ],
+        [
+          0,
+          61,
+          112,
+          96
+        ],
+        [
+          2,
+          48,
+          110,
+          96
+        ],
+        [
+          0,
+          42,
+          112,
+          96
+        ]
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -9009,6 +15153,38 @@
         "buildings/civic/state-archive-tower/stage-3.png",
         "buildings/civic/state-archive-tower/stage-4.png",
         "buildings/civic/state-archive-tower/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          120,
+          94,
+          128
+        ],
+        [
+          2,
+          114,
+          94,
+          127
+        ],
+        [
+          22,
+          46,
+          73,
+          128
+        ],
+        [
+          21,
+          2,
+          74,
+          128
+        ],
+        [
+          18,
+          0,
+          77,
+          128
+        ]
       ],
       "platform": "STONE",
       "estimates": [
@@ -12444,19 +18620,19 @@
       "label": "Пешеход — север, шаг A",
       "path": "props/walker-north-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "NORTH"
     },
@@ -12464,19 +18640,19 @@
       "label": "Пешеход — север, шаг B",
       "path": "props/walker-north-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "NORTH"
     },
@@ -12484,19 +18660,19 @@
       "label": "Пешеход — север, шаг C",
       "path": "props/walker-north-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "NORTH"
     },
@@ -12504,19 +18680,19 @@
       "label": "Пешеход — восток, шаг A",
       "path": "props/walker-east-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "EAST"
     },
@@ -12524,19 +18700,19 @@
       "label": "Пешеход — восток, шаг B",
       "path": "props/walker-east-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "EAST"
     },
@@ -12544,19 +18720,19 @@
       "label": "Пешеход — восток, шаг C",
       "path": "props/walker-east-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "EAST"
     },
@@ -12564,19 +18740,19 @@
       "label": "Пешеход — юг, шаг A",
       "path": "props/walker-south-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "SOUTH"
     },
@@ -12584,19 +18760,19 @@
       "label": "Пешеход — юг, шаг B",
       "path": "props/walker-south-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "SOUTH"
     },
@@ -12604,19 +18780,19 @@
       "label": "Пешеход — юг, шаг C",
       "path": "props/walker-south-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "SOUTH"
     },
@@ -12624,19 +18800,19 @@
       "label": "Пешеход — запад, шаг A",
       "path": "props/walker-west-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "WEST"
     },
@@ -12644,19 +18820,19 @@
       "label": "Пешеход — запад, шаг B",
       "path": "props/walker-west-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "WEST"
     },
@@ -12664,19 +18840,19 @@
       "label": "Пешеход — запад, шаг C",
       "path": "props/walker-west-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v3.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "WEST"
     },
@@ -13435,5 +19611,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "4f16ceb4fab91878"
+  "assetRevision": "93998879f81df296"
 }

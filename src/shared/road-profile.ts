@@ -17,11 +17,18 @@ function key(cell: Cell): string {
   return `${cell.x},${cell.y}`;
 }
 
-function axisRun(graph: ReadonlyMap<string, Cell>, cell: Cell, dx: number, dy: number): number {
+type RoadProfileCell = Cell & { roadClass?: RoadCellDto["roadClass"] };
+
+function belongsToBand(graph: ReadonlyMap<string, RoadProfileCell>, origin: RoadProfileCell, candidate: Cell): boolean {
+  const value = graph.get(key(candidate));
+  return Boolean(value && (!origin.roadClass || !value.roadClass || value.roadClass === origin.roadClass));
+}
+
+function axisRun(graph: ReadonlyMap<string, RoadProfileCell>, cell: RoadProfileCell, dx: number, dy: number): number {
   let length = 0;
   for (const sign of [-1, 1]) {
     for (let step = 1; step <= 8; step += 1) {
-      if (!graph.has(key({ x: cell.x + dx * step * sign, y: cell.y + dy * step * sign }))) break;
+      if (!belongsToBand(graph, cell, { x: cell.x + dx * step * sign, y: cell.y + dy * step * sign })) break;
       length += 1;
     }
   }
@@ -29,8 +36,8 @@ function axisRun(graph: ReadonlyMap<string, Cell>, cell: Cell, dx: number, dy: n
 }
 
 function contiguousBand(
-  graph: ReadonlyMap<string, Cell>,
-  cell: Cell,
+  graph: ReadonlyMap<string, RoadProfileCell>,
+  cell: RoadProfileCell,
   horizontal: boolean,
 ): { min: number; max: number } {
   const coordinate = horizontal ? cell.y : cell.x;
@@ -41,7 +48,7 @@ function contiguousBand(
       const candidate = horizontal
         ? { x: cell.x, y: cell.y + step * sign }
         : { x: cell.x + step * sign, y: cell.y };
-      if (!graph.has(key(candidate))) break;
+      if (!belongsToBand(graph, cell, candidate)) break;
       if (sign < 0) min = coordinate - step;
       else max = coordinate + step;
     }
@@ -54,7 +61,7 @@ function contiguousBand(
  * travel lanes; a three-cell band contains two outer travel lanes and a
  * non-drivable median/marking cell. Crossing road bands become a junction.
  */
-export function roadBandRole(graph: ReadonlyMap<string, Cell>, cell: Cell): RoadBandRole {
+export function roadBandRole(graph: ReadonlyMap<string, RoadProfileCell>, cell: RoadProfileCell): RoadBandRole {
   const horizontalRun = axisRun(graph, cell, 1, 0);
   const verticalRun = axisRun(graph, cell, 0, 1);
   if (horizontalRun >= 4 && verticalRun >= 4) return { kind: "JUNCTION" };

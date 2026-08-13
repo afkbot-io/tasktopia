@@ -13,6 +13,29 @@ export type BuildingBadgePresentation = {
   borderColor: number;
 };
 
+export type BuildingInteractiveBounds = { x: number; y: number; width: number; height: number };
+
+/** Follow opaque authored pixels instead of making transparent sky clickable. */
+export function buildingInteractiveBounds(
+  entry: BuildingCatalogEntry,
+  stage: number,
+  constructionPadDepth: number,
+  cellSize = 8,
+): BuildingInteractiveBounds {
+  if (stage <= 2) {
+    const width = (entry.footprint.width + 2) * cellSize;
+    const height = (constructionPadDepth + 2) * cellSize;
+    return { x: -width / 2, y: -height, width, height: height + cellSize };
+  }
+  const opaque = entry.stageOpaqueBounds[Math.max(0, Math.min(4, stage - 1))]!;
+  return {
+    x: opaque.left - entry.anchor.x,
+    y: opaque.top - entry.anchor.y,
+    width: opaque.right - opaque.left,
+    height: opaque.bottom - opaque.top,
+  };
+}
+
 export function buildingBadgePresentation(taskNumber: number, stage: number): BuildingBadgePresentation {
   const label = String(taskNumber);
   return {

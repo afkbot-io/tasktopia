@@ -102,6 +102,7 @@ describe("authentication HTTP boundary", () => {
     const overviewResponse = await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie } });
     const overviewChunk = overviewResponse.json();
     expect(overviewResponse.headers.etag).toContain(countryId);
+    expect(overviewResponse.headers["cache-control"]).toBe("private, max-age=60, stale-while-revalidate=300");
     const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: { cookie } })).json();
     expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
     expect(overviewChunk.terrain).toHaveLength(256);

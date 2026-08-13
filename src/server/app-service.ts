@@ -3812,7 +3812,12 @@ export class AppService {
                       if (!districtRow) throw new DomainError("NO_ACTIVE_DISTRICT", "Сначала создайте или активируйте район");
                       let district = districtDto(districtRow as Row);
                       if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "В завершённый район нельзя добавлять задачи");
-                      const visualKind = input.visualKind ?? (input.buildingHint?.startsWith("park:") ? "PARK" : "BUILDING");
+                      const inferredTags = new Set(inferTaskTags(title, input.description ?? ""));
+                      // A clearly park-shaped task must not silently turn into
+                      // another facade when an agent omits the optional visual
+                      // field. Explicit visualKind remains authoritative.
+                      const visualKind = input.visualKind
+                        ?? (input.buildingHint?.startsWith("park:") || inferredTags.has("park") ? "PARK" : "BUILDING");
                       const requestedParkVariant = input.parkVariant ?? input.buildingHint?.replace(/^park:/, "");
                       const parkVariants = new Set(["urban-formal", "urban-community", "urban-central", "urban-botanical", "urban-amusement", "urban-park"]);
                       const visualAssetKey = visualKind === "PARK" ? (requestedParkVariant || "urban-formal") : undefined;
@@ -4439,9 +4444,9 @@ export class AppService {
         }
       }
     }
-    // Sparse frontage trees make large paved parcels feel inhabited without
-    // turning every sidewalk cell into an obstacle. Selection is stable per
-    // task, stays off its access route and keeps four cells between trunks.
+    // Sparse, deterministic frontage furniture makes paved parcels feel
+    // inhabited without blocking doors or pedestrian routes. Every prop is
+    // anchored to the centre of one published surface cell by the client.
     const taskAccess = new Set(tasks.flatMap((task) => task.accessPath).map(cellKey));
     const streetTrees = ["tree-oak", "tree-maple", "tree-round", "tree-aspen", "tree-birch", "tree-apple", "tree-cherry", "tree-magnolia"];
     const streetTreeCells: Cell[] = [];
@@ -4453,14 +4458,19 @@ export class AppService {
           && terrainByCell.has(cellKey(cell)))
         .sort((left, right) => hashCoordinate(seed + task.taskNumber, left.x, left.y, 751)
           - hashCoordinate(seed + task.taskNumber, right.x, right.y, 751));
-      const target = task.footprint.length >= 150 ? 2 : 1;
+      const target = task.footprint.length >= 150 ? 4 : task.footprint.length >= 80 ? 3 : 2;
       let placed = 0;
       for (const cell of candidates) {
         if (placed >= target) break;
-        if (streetTreeCells.some((tree) => manhattan(tree, cell) < 4)) continue;
-        const kind = streetTrees[Math.floor(hashCoordinate(seed + task.taskNumber, cell.x, cell.y, 757) * streetTrees.length)]!;
-        result.push({ id: `street-tree:${task.id}:${cell.x}:${cell.y}`, kind, origin: cell });
-        streetTreeCells.push(cell);
+        if (streetTreeCells.some((tree) => manhattan(tree, cell) < 3)) continue;
+        if (result.some((decoration) => manhattan(decoration.origin, cell) < 2)) continue;
+        const pick = hashCoordinate(seed + task.taskNumber, cell.x, cell.y, 757);
+        const kind = placed === 1 ? "bench-horizontal"
+          : placed === 2 ? "trash-bin"
+            : streetTrees[Math.floor(pick * streetTrees.length) % streetTrees.length]!;
+        result.push({ id: `frontage:${task.id}:${cell.x}:${cell.y}`, kind, origin: cell });
+        occupied.add(cellKey(cell));
+        if (kind.startsWith("tree-")) streetTreeCells.push(cell);
         placed += 1;
       }
     }

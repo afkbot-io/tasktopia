@@ -1824,6 +1824,25 @@ def ai_sheet_segment(source: Path, index: int, count: int) -> Image.Image:
     return sheet.crop((left, 0, right, sheet.height))
 
 
+def ai_subject_segment(source: Path, index: int, count: int) -> Image.Image:
+    """Extract unevenly spaced figures by their chroma-separated x bands."""
+    sheet = remove_ai_chroma_key(Image.open(source).convert("RGBA"))
+    alpha = sheet.getchannel("A")
+    bands: list[tuple[int, int]] = []
+    start: int | None = None
+    for x in range(sheet.width + 1):
+        occupied = x < sheet.width and alpha.crop((x, 0, x + 1, sheet.height)).getbbox() is not None
+        if occupied and start is None:
+            start = x
+        elif not occupied and start is not None:
+            bands.append((start, x))
+            start = None
+    if len(bands) != count:
+        raise ValueError(f"{source}: expected {count} chroma-separated subjects, found {len(bands)}")
+    left, right = bands[index]
+    return sheet.crop((left, 0, right, sheet.height))
+
+
 def ai_grid_segment(source: Path, index: int, columns: int, rows: int) -> Image.Image:
     """Read one isolated cell from an approved fixed-grid source atlas."""
     count = columns * rows
@@ -2047,10 +2066,16 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         destination.mkdir(parents=True, exist_ok=True)
         authored_stages = [building_stage(spec, 1), building_stage(spec, 2), *load_ai_authored_stage_files(spec, ai_stage_sources[spec.key])]
         stages: list[str] = []
+        stage_opaque_bounds: list[list[int]] = []
         for stage in range(1, 6):
             target = destination / f"stage-{stage}.png"
-            authored_stages[stage - 1].save(target, optimize=True)
+            stage_image = authored_stages[stage - 1]
+            stage_image.save(target, optimize=True)
             stages.append(str(target.relative_to(RUNTIME)))
+            opaque = stage_image.getchannel("A").getbbox()
+            if opaque is None:
+                raise ValueError(f"{spec.key}: stage {stage} has no interactive pixels")
+            stage_opaque_bounds.append(list(opaque))
         raw = {
             "label": spec.label,
             "category": spec.category,
@@ -2059,6 +2084,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "footprintCells": list(spec.footprint),
             "anchorPx": authored_contract["anchorPx"],
             "stages": stages,
+            "stageOpaqueBounds": stage_opaque_bounds,
             **{field: authored_contract[field] for field in (
                 "platform", "estimates", "tags", "ruleIds", "entrances",
                 "maxPerCity", "maxPerDistrict", "serviceRole",
@@ -2105,6 +2131,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         source_segment = (
             ai_grid_segment(source, segment_index, int(grid[0]), int(grid[1]))
             if grid
+            else ai_subject_segment(source, segment_index, segment_count)
+            if authored.get("autoSegments")
             else ai_sheet_segment(source, segment_index, segment_count)
         )
         if authored.get("mirrorX"):

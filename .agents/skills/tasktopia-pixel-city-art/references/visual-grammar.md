@@ -38,7 +38,7 @@
 ## Building proportions
 
 - The finished visible silhouette should occupy roughly 45–95% of canvas width and 45–95% of height. Roadside compositions may use wider negative space, but their canopy/sign/shop must remain readable at `1x`.
-- Human scale is fixed before facade detail: a normal single door is `8×16 px`, a double entrance is `16×16 px`, and an adult resident has an opaque body no taller than `14 px` inside an `8×16 px` canvas. Do not resize doors independently between buildings or construction stages.
+- Human scale is fixed before facade detail: a normal single door is `8×16 px`, a double entrance is `16×16 px`, and a foreground adult resident occupies up to `12×20 px` inside a `16×24 px` canvas. The extra resident height represents perspective and readable motion, not a larger doorway; feet stay on the cell anchor. Do not resize doors independently between buildings or construction stages.
 - Windows are normally 2–6 px wide; do not represent each window with single noisy pixels on large buildings.
 - Roof plane is shallow: normally 2–8 px. A landmark may exceed this when the roof is its defining silhouette.
 - Use one strong identity cue per building and at most two supporting cues. Too many one-pixel details become noise.
@@ -79,7 +79,7 @@ Review on transparent checkerboard, dark pack background, meadow, stone, and asp
 ## Residents and vegetation
 
 - A walking resident uses three distinct frames for each direction: contact, passing and opposite contact. East may be mirrored for west; north/back and south/front require their own authored frames. The bottom-centre foot anchor remains fixed across all frames, and the head may not bob more than one pixel.
-- A resident canvas is `8×16 px`; the opaque figure is at most `6×14 px`, with hard alpha and a readable one-pixel step at native scale. Dialogue/UI is a separate foreground layer and is never baked into the sprite.
+- A walking resident canvas is `16×24 px`; the opaque figure is at most `12×20 px`, with hard alpha, one anchored baseline and three visibly distinct authored poses per direction. West may be a pixel-exact mirror of east; north and south remain separately authored. Dialogue/UI is a separate foreground layer and is never baked into the sprite.
 - Standard trees use a `16×32 px` canvas, `1×1` gameplay footprint and
   anchor `[8,32]`. Define the exact planting cell as the lower-centre
   `8×8 px` rectangle `x=4..11`, `y=24..31`. The trunk/root must touch row

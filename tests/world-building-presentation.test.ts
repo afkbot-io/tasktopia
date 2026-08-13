@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildingBadgePresentation,
+  buildingInteractiveBounds,
   buildingPlatformPresentation,
   taskPlatformCellPresentation,
   taskPlatformPresentation,
@@ -23,6 +24,25 @@ describe("building badge presentation", () => {
       fontSize: 6,
       borderColor: 0x4fa5d7,
     });
+  });
+});
+
+describe("building interactive bounds", () => {
+  it("does not expose transparent sky above an unfinished authored stage", () => {
+    const entry = getBuilding("highrise-glass");
+    const opaque = entry.stageOpaqueBounds[2]!;
+    expect(buildingInteractiveBounds(entry, 3, 5)).toEqual({
+      x: opaque.left - entry.anchor.x,
+      y: opaque.top - entry.anchor.y,
+      width: opaque.right - opaque.left,
+      height: opaque.bottom - opaque.top,
+    });
+    expect(opaque.top).toBeGreaterThan(0);
+  });
+
+  it("keeps shared planning and foundation modules clickable", () => {
+    const entry = getBuilding("highrise-glass");
+    expect(buildingInteractiveBounds(entry, 1, 5)).toEqual({ x: -56, y: -56, width: 112, height: 64 });
   });
 });
 

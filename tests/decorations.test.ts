@@ -82,7 +82,7 @@ describe("procedural decoration footprints", () => {
     expect(fishers.every((fisher) => Math.abs(fisher.origin.y - 31) > 1)).toBe(true);
   });
 
-  it("places sparse deterministic trees on the paved frontage of large task buildings", () => {
+  it("places deterministic centred trees and furniture on a large paved frontage", () => {
     const footprint = rectangleFootprint({ x: 20, y: 20 }, 10, 8);
     const surfaces: SurfaceCellDto[] = [
       ...Array.from({ length: 10 }, (_, index) => ({ x: 20 + index, y: 19, kind: "PATH" as const, finish: "PAVERS" as const })),
@@ -100,11 +100,13 @@ describe("procedural decoration footprints", () => {
     };
     const blocked = new Set([...footprint, ...surfaces].map(cellKey));
     const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;
-    const first = generate(77331, terrain, blocked, surfaces, [], [], [task]).filter((item) => item.id.startsWith("street-tree:"));
-    const second = generate(77331, terrain, blocked, surfaces, [], [], [task]).filter((item) => item.id.startsWith("street-tree:"));
+    const first = generate(77331, terrain, blocked, surfaces, [], [], [task]).filter((item) => item.id.startsWith("frontage:"));
+    const second = generate(77331, terrain, blocked, surfaces, [], [], [task]).filter((item) => item.id.startsWith("frontage:"));
     expect(first).toEqual(second);
-    expect(first).toHaveLength(1);
-    expect(surfaces.some((surface) => cellKey(surface) === cellKey(first[0]!.origin))).toBe(true);
-    expect(first[0]!.origin).not.toEqual(task.accessPath[0]);
+    expect(first).toHaveLength(3);
+    expect(first.map((item) => item.kind)).toEqual(expect.arrayContaining(["bench-horizontal", "trash-bin"]));
+    expect(first.some((item) => item.kind.startsWith("tree-"))).toBe(true);
+    expect(first.every((item) => surfaces.some((surface) => cellKey(surface) === cellKey(item.origin)))).toBe(true);
+    expect(first.every((item) => cellKey(item.origin) !== cellKey(task.accessPath[0]!))).toBe(true);
   });
 });

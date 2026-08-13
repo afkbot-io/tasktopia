@@ -36,7 +36,7 @@ describe("resident presentation", () => {
   });
 
   it("positions a speech bubble in world space above the resident head", () => {
-    expect(residentActivityPosition({ x: 84, y: 96 }, 16, 1)).toEqual({ x: 84, y: 76 });
+    expect(residentActivityPosition({ x: 84, y: 96 }, 24, 1)).toEqual({ x: 84, y: 68 });
   });
 
   it("keeps the resident foot anchor on the centreline of every walk cell", () => {

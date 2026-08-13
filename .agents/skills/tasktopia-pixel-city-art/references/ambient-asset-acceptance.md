@@ -47,7 +47,7 @@ Reject the source before catalog registration when any item applies:
 
 ## Resident and micromobility gate
 
-- Moving residents use four independently authored `8x16 px` views: north/rear, east, south/front, and west. Their feet use a bottom-centre anchor on the destination path cell; a centred `8x8` icon is obsolete.
+- Moving residents use `16x24 px` canvases with an opaque subject up to `12x20 px`: separately authored north/rear, east and south/front views, each with three readable walk poses. West may mirror the accepted east cycle. Their feet share one bottom-centre anchor on the destination path cell; a centred `8x8` icon or a single bobbing frame is obsolete.
 - Activity residents use the same body scale and frontal-top projection. A book, parcel, broom, phone, tool, or wave must remain readable at native `1x`; the prop must not create a fake second person or baked ground.
 - Cyclists and scooter riders use three authored views like road vehicles: `16x16 px` horizontal/east, `8x16 px` north/rear, and `8x16 px` south/front. West mirrors only the accepted east view. North and south are never rotations.
 - The rider, helmet, handlebar/deck or bicycle frame must form one compact silhouette. Reject detached wheels, side-view riders paired with top-view equipment, or a vehicle without a visible rider.

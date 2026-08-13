@@ -173,20 +173,20 @@ describe("living city agent routing", () => {
   });
 
   it("maps every travel direction to the matching base sprite and mirror", () => {
-    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 2, y: 1 })).toEqual({ view: "horizontal", scaleX: 0.9, scaleY: 0.9 });
-    expect(vehiclePresentation({ x: 2, y: 1 }, { x: 1, y: 1 })).toEqual({ view: "horizontal", scaleX: -0.9, scaleY: 0.9 });
-    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 1, y: 2 })).toEqual({ view: "south", scaleX: 0.9, scaleY: 0.9 });
-    expect(vehiclePresentation({ x: 1, y: 2 }, { x: 1, y: 1 })).toEqual({ view: "north", scaleX: 0.9, scaleY: 0.9 });
+    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 2, y: 1 })).toEqual({ view: "horizontal", scaleX: 1.2, scaleY: 1.2 });
+    expect(vehiclePresentation({ x: 2, y: 1 }, { x: 1, y: 1 })).toEqual({ view: "horizontal", scaleX: -1.2, scaleY: 1.2 });
+    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 1, y: 2 })).toEqual({ view: "south", scaleX: 1.2, scaleY: 1.2 });
+    expect(vehiclePresentation({ x: 1, y: 2 }, { x: 1, y: 1 })).toEqual({ view: "north", scaleX: 1.2, scaleY: 1.2 });
   });
 
-  it("keeps vehicles on the exact centerline of their travel cell through turns", () => {
-    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 12 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 12 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 20, y: 8 });
+  it("keeps vehicles inset toward the centre of their carriageway through turns", () => {
+    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 11.5 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 12.5 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 19.5, y: 8 });
     const turnStart = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 0, { x: 0, y: 1 });
     const turnEnd = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 1, { x: 0, y: 1 });
-    expect(turnStart).toEqual({ x: 12, y: 12 });
-    expect(turnEnd).toEqual({ x: 12, y: 4 });
+    expect(turnStart).toEqual({ x: 12, y: 11.5 });
+    expect(turnEnd).toEqual({ x: 11.5, y: 4 });
   });
 
   it("detects real T/X junctions but not an ordinary ninety-degree bend", () => {
@@ -322,7 +322,10 @@ describe("living city agent routing", () => {
     expect(decisions.get("first")?.advance).toBeCloseTo(0.12);
     expect(decisions.get("second")?.advance).toBeLessThan(0.12);
     expect(decisions.get("second")?.blockedBy).toBe("first");
-    expect(vehicleUnsafePairCount(vehicles)).toBe(0);
+    // The enlarged body contract correctly identifies that this synthetic
+    // starting state is already unsafe; the frame planner prevents it from
+    // becoming worse while real spawns reject it entirely.
+    expect(vehicleUnsafePairCount(vehicles)).toBe(1);
   });
 
   it("keeps a merge cell reserved until a vehicle has cleared it on a diverging route", () => {

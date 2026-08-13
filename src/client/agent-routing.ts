@@ -32,16 +32,16 @@ export type VehicleFrameDecision = {
 };
 
 // Collision dimensions mirror the non-transparent authored pixels at the
-// runtime 0.9 render scale: cars are about 14x6 px and buses about 46x15 px.
+// runtime render scale: cars are about 17x7 px at 1.2; long buses keep their
+// authored 1.0 scale so opposing buses still fit a canonical three-cell road.
 const VEHICLE_BODY_CELLS = {
-  CAR: { length: 1.575, width: 0.675 },
-  // V5 buses normalize to 46x15 authored pixels and render at 0.9 scale.
-  BUS: { length: 5.175, width: 1.6875 },
+  CAR: { length: 2.1, width: 0.9 },
+  BUS: { length: 5.75, width: 1.875 },
 } as const;
 const VEHICLE_SAFETY_GAP_CELLS = 0.16;
-// The road profile already assigns a full 8 px travel cell to every direction;
-// the physical and rendered center therefore coincide with the cell center.
-const VEHICLE_LANE_INSET_CELLS = 0;
+// A half-pixel inset moves both opposing streams toward the carriageway centre.
+// In particular the lower horizontal lane no longer hugs the outer curb.
+const VEHICLE_LANE_INSET_CELLS = 0.0625;
 const EPSILON = 1e-9;
 
 /**
@@ -441,7 +441,7 @@ export function planVehicleFrame(
  * Keeping this mapping pure prevents render code and asset metadata from
  * silently disagreeing about which way a vehicle is facing.
  */
-export function vehiclePresentation(current: Cell, next: Cell, scale = 0.9): VehiclePresentation {
+export function vehiclePresentation(current: Cell, next: Cell, scale = 1.2): VehiclePresentation {
   const horizontal = next.x !== current.x;
   return {
     view: horizontal ? "horizontal" : next.y < current.y ? "north" : "south",
@@ -457,7 +457,7 @@ export function vehicleLanePosition(
   progress: number,
   previous?: Cell,
   cellSize = 8,
-  inset = 0,
+  inset = VEHICLE_LANE_INSET_CELLS * cellSize,
 ): { x: number; y: number } {
   const clamped = Math.max(0, Math.min(1, progress));
   const startInset = previous ? rightHandLaneInset(previous, current, inset) : rightHandLaneInset(current, next, inset);
