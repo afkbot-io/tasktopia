@@ -40,8 +40,14 @@ describe("country atlas read model", () => {
     const atlas = await service.getCountryAtlas(countryId);
     const sourceFeatures = (await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id);
 
-    expect(atlas).toMatchObject({ schemaVersion: 1, cities: [{ id: city.id, name: "Riverside" }] });
+    expect(atlas).toMatchObject({ schemaVersion: 2, cities: [{ id: city.id, name: "Riverside" }] });
     expect(atlas.cities[0]!.districts).toHaveLength(3);
+    for (const district of atlas.cities[0]!.districts) {
+      expect(district.sourceBounds.minX).toBeLessThanOrEqual(district.sourceCenter.x);
+      expect(district.sourceBounds.maxX).toBeGreaterThanOrEqual(district.sourceCenter.x);
+      expect(district.sourceBounds.minY).toBeLessThanOrEqual(district.sourceCenter.y);
+      expect(district.sourceBounds.maxY).toBeGreaterThanOrEqual(district.sourceCenter.y);
+    }
     expect(atlas.cities[0]!.buildings.map((building) => building.id).sort()).toEqual(tasks.map((task) => task.id).sort());
     expect(atlas.cities[0]!.roads.length).toBeGreaterThan(0);
     expect(atlas.cities[0]!.surfaces.length).toBeGreaterThan(0);

@@ -22,6 +22,7 @@ export type CountryAtlasDistrictDto = {
   status: DistrictDto["status"];
   color: string;
   sourceCenter: { x: number; y: number };
+  sourceBounds: Rect;
   atlasCenter: Cell;
   atlasCells: Cell[];
   displayCells: Cell[];
@@ -110,7 +111,7 @@ export type CountryAtlasCityDto = {
 };
 
 export type CountryAtlasDto = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   worldVersion: number;
   bounds: Rect;
   macroTerrain: CountryAtlasMacroTerrainDto[];

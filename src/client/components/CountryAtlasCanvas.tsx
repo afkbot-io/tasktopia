@@ -76,13 +76,13 @@ function surfaceUrl(surface: CountryAtlasCityDto["surfaces"][number]): string {
   return TILE_SPRITES[surface.finish === "ASPHALT" ? "path-asphalt" : surface.finish === "PAVERS" ? "path-pavers" : "path-brown"]!;
 }
 
-export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCitySelect, onCityHover, onTaskSelect }: {
+export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCitySelect, onDistrictSelect, onCityHover }: {
   countryId: string;
   worldVersion: number;
   activeCityId?: string;
   onCitySelect: (city: CountryAtlasCityDto) => void;
+  onDistrictSelect: (city: CountryAtlasCityDto, district: CountryAtlasDistrictDto) => void;
   onCityHover: (city: CountryAtlasCityDto | null) => void;
-  onTaskSelect: (taskId: string) => void;
 }) {
   const [atlas, setAtlas] = useState<CountryAtlasDto | null>(null);
   const [error, setError] = useState("");
@@ -204,9 +204,14 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
               onPointerEnter={() => scheduleDistrictHover({ cityId: city.id, districtId: district.id })}
               onFocus={() => scheduleDistrictHover({ cityId: city.id, districtId: district.id }, true)}
               onBlur={clearDistrictHover}
+              onClick={(event) => { event.stopPropagation(); onDistrictSelect(city, district); }}
               onKeyDown={(event) => {
                 if (event.key === "Escape") clearDistrictHover();
-                if (event.key === "Enter" || event.key === " ") onCitySelect(city);
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onDistrictSelect(city, district);
+                }
               }}
             >
               <g className="atlas-district-fill" aria-hidden="true">
@@ -245,14 +250,16 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
               const minY = Math.min(...building.atlasFootprint.map((cell) => cell.y)) * CELL;
               const width = (Math.max(...building.atlasFootprint.map((cell) => cell.x)) - Math.min(...building.atlasFootprint.map((cell) => cell.x)) + 1) * CELL;
               const height = (Math.max(...building.atlasFootprint.map((cell) => cell.y)) - Math.min(...building.atlasFootprint.map((cell) => cell.y)) + 1) * CELL;
-              return <g key={building.id} role="button" aria-label={`#${building.taskNumber} ${building.title}`} tabIndex={0}
+              const district = city.districts.find((entry) => entry.id === building.districtId);
+              return <g key={building.id} role="button" aria-label={`Открыть район ${district?.name ?? city.name}`} data-district-id={building.districtId} tabIndex={0}
                 onPointerEnter={() => scheduleDistrictHover({ cityId: city.id, districtId: building.districtId })}
-                onClick={(event) => { event.stopPropagation(); onTaskSelect(building.id); }}
-                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onTaskSelect(building.id); }}>
+                onClick={(event) => { event.stopPropagation(); if (district) onDistrictSelect(city, district); else onCitySelect(city); }}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (district) onDistrictSelect(city, district); else onCitySelect(city); } }}>
                 <rect x={minX} y={minY} width={width} height={height} fill="#638c4d" stroke="#263945" strokeWidth="2" />
                 <path d={`M ${minX + width / 2} ${minY} V ${minY + height} M ${minX} ${minY + height / 2} H ${minX + width}`} stroke="#b7b8a2" strokeWidth="2" />
               </g>;
             }
+            const district = city.districts.find((entry) => entry.id === building.districtId);
             return <image
               key={building.id}
               href={gameAssetUrl(entry.stages[Math.max(0, Math.min(entry.stages.length - 1, building.stage - 1))]!)}
@@ -262,11 +269,12 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
               height={entry.spriteSize.height * scale}
               className="atlas-pixel atlas-building"
               role="button"
-              aria-label={`#${building.taskNumber} ${building.title}`}
+              aria-label={`Открыть район ${district?.name ?? city.name}`}
+              data-district-id={building.districtId}
               tabIndex={0}
               onPointerEnter={() => scheduleDistrictHover({ cityId: city.id, districtId: building.districtId })}
-              onClick={(event) => { event.stopPropagation(); onTaskSelect(building.id); }}
-              onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onTaskSelect(building.id); }}
+              onClick={(event) => { event.stopPropagation(); if (district) onDistrictSelect(city, district); else onCitySelect(city); }}
+              onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (district) onDistrictSelect(city, district); else onCitySelect(city); } }}
             />;
           })}
           {city.features.filter((feature) => feature.assetKind !== "AREA").sort((left, right) => left.atlasOrigin.y - right.atlasOrigin.y).map((feature) => {
@@ -275,12 +283,18 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
               if (!entry) return null;
               const groundX = feature.atlasOrigin.x * CELL + entry.footprint.width * CELL * city.scale / 2;
               const groundY = feature.atlasOrigin.y * CELL + entry.footprint.height * CELL * city.scale;
-              return <image key={feature.id} href={entry.path} x={groundX - entry.anchor.x * city.scale} y={groundY - entry.anchor.y * city.scale} width={entry.size.width * city.scale} height={entry.size.height * city.scale} className="atlas-pixel atlas-feature" aria-hidden="true" onPointerEnter={() => { if (feature.districtId) scheduleDistrictHover({ cityId: city.id, districtId: feature.districtId }); }} />;
+              const district = city.districts.find((candidate) => candidate.id === feature.districtId);
+              return <image key={feature.id} href={entry.path} x={groundX - entry.anchor.x * city.scale} y={groundY - entry.anchor.y * city.scale} width={entry.size.width * city.scale} height={entry.size.height * city.scale} className="atlas-pixel atlas-feature" aria-hidden="true"
+                onPointerEnter={() => { if (feature.districtId) scheduleDistrictHover({ cityId: city.id, districtId: feature.districtId }); }}
+                onClick={(event) => { if (!district) return; event.stopPropagation(); onDistrictSelect(city, district); }} />;
             }
             const entry = getBuilding(feature.assetKey);
             const groundX = feature.atlasOrigin.x * CELL + entry.footprint.width * CELL * city.scale / 2;
             const groundY = feature.atlasOrigin.y * CELL + entry.footprint.height * CELL * city.scale;
-            return <image key={feature.id} href={entry.stages[Math.max(0, Math.min(entry.stages.length - 1, feature.developmentStage - 1))]!} x={groundX - entry.anchor.x * city.scale} y={groundY - entry.anchor.y * city.scale} width={entry.spriteSize.width * city.scale} height={entry.spriteSize.height * city.scale} className="atlas-pixel atlas-feature" aria-hidden="true" onPointerEnter={() => { if (feature.districtId) scheduleDistrictHover({ cityId: city.id, districtId: feature.districtId }); }} />;
+            const district = city.districts.find((candidate) => candidate.id === feature.districtId);
+            return <image key={feature.id} href={entry.stages[Math.max(0, Math.min(entry.stages.length - 1, feature.developmentStage - 1))]!} x={groundX - entry.anchor.x * city.scale} y={groundY - entry.anchor.y * city.scale} width={entry.spriteSize.width * city.scale} height={entry.spriteSize.height * city.scale} className="atlas-pixel atlas-feature" aria-hidden="true"
+              onPointerEnter={() => { if (feature.districtId) scheduleDistrictHover({ cityId: city.id, districtId: feature.districtId }); }}
+              onClick={(event) => { if (!district) return; event.stopPropagation(); onDistrictSelect(city, district); }} />;
           })}
         </g>
         <g className="atlas-city-label" role="button" tabIndex={0} aria-label={`Открыть город ${city.name}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onCitySelect(city); }}>

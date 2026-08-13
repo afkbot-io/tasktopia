@@ -32,5 +32,40 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   }
   await page.locator(".country-atlas").hover({ position: { x: 2, y: 2 } });
   await expect(page.locator(".header-city")).toHaveCount(0);
+  await page.locator(".atlas-district").first().hover();
+  const tooltip = page.getByRole("tooltip");
+  await expect(tooltip).toBeVisible();
+  expect((await tooltip.boundingBox())!.width).toBeGreaterThanOrEqual(160);
   expect(browserErrors).toEqual([]);
+});
+
+test("a city miniature click opens the exact district instead of a task card", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+
+  const target = await page.evaluate(async () => {
+    const atlas = await fetch("/api/country-atlas", { cache: "no-store" }).then((response) => response.json()) as {
+      cities: Array<{
+        districts: Array<{ id: string; name: string; sourceCenter: { x: number; y: number } }>;
+        buildings: Array<{ taskNumber: number; title: string; districtId: string }>;
+      }>;
+    };
+    for (const city of atlas.cities) {
+      const building = city.buildings[0];
+      const district = building && city.districts.find((entry) => entry.id === building.districtId);
+      if (building && district) return { building, district };
+    }
+    throw new Error("The atlas fixture has no district building");
+  });
+
+  await page.locator(`.atlas-building[data-district-id="${target.district.id}"]`).first().click();
+
+  await expect(page.locator(".task-modal")).toHaveCount(0);
+  await expect(page.locator(".country-atlas")).toHaveCount(0);
+  const host = page.locator(".world-canvas");
+  await expect(host).toHaveAttribute("data-focus-x", String(target.district.sourceCenter.x));
+  await expect(host).toHaveAttribute("data-focus-y", String(target.district.sourceCenter.y));
 });

@@ -846,7 +846,7 @@ export class AppService {
     const districtOwnerByCell = new Map(districts.flatMap((district) => district.cells.map((cell) => [cellKey(cell), district.id] as const)));
 
     const atlas: CountryAtlasDto = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       worldVersion: country.worldVersion,
       bounds: projection.bounds,
       macroTerrain: projection.macroTerrain,
@@ -894,6 +894,7 @@ export class AppService {
               status: source.status,
               color: atlasDistrictColorById.get(source.id) ?? source.color,
               sourceCenter: district.sourceCenter,
+              sourceBounds: boundsOf(source.cells),
               atlasCenter: district.atlasCenter,
               atlasCells: district.atlasCells,
               displayCells: district.displayCells,

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.13.3 — 2026-08-13
+
+- Клик по району, зданию или городскому объекту на карте страны теперь открывает подробную карту точно в центре выбранного района и больше не вызывает карточку задачи.
+- Атлас передаёт границы каждого района, поэтому камера подбирает масштаб по району, а не по всему городу.
+- Табличка района при наведении стала крупнее и легче читается.
+- Контракт атласа обновлён до schema version 2; ETag отделяет новый ответ от закешированной версии 1.
+
 ## 1.13.2 — 2026-08-13
 
 - Production regeneration now keeps the reviewed clinic, fire and police V5 facades in the task scheduler, so 10/20/30-task city service coverage is rebuilt instead of failing the post-generation audit.

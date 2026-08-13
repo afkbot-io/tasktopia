@@ -260,13 +260,18 @@ export function App() {
                   setHoveredAtlasCity(null);
                   setMapMode("CITY");
                 }}
+                onDistrictSelect={(city, district) => {
+                  setFocusCity({ id: city.id, name: city.name, center: district.sourceCenter, bounds: district.sourceBounds });
+                  setHoveredAtlasCity(null);
+                  setSelectedTask(null);
+                  setMapMode("CITY");
+                }}
                 onCityHover={hoverAtlasCity}
-                onTaskSelect={(taskId) => { setSelectedTask(taskId); }}
               />
             : <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />}
         </Suspense>
         <div className="map-help">{effectiveMapMode === "ATLAS"
-          ? <><span>Район — навести для сводки</span><span>Город — открыть подробную карту</span><span>Здание — карточка задачи</span></>
+          ? <><span>Район — навести для сводки</span><span>Район — открыть по центру</span><span>Название — открыть весь город</span></>
           : <><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></>}</div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
       {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setMapMode("CITY"); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}

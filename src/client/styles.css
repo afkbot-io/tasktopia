@@ -211,17 +211,17 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-city-label text { fill: #fff5d5; font: 950 17px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .01em; pointer-events: none; }
 .atlas-city-label .atlas-city-meta { fill: #b4c3ba; font-size: 8px; letter-spacing: .025em; }
 .atlas-city-active-dot { fill: #8bdd6a; stroke: #102528; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
-.atlas-district-tooltip { position: absolute; z-index: 4; display: grid; gap: 1px; width: 132px; padding: 6px 7px; border: 1px solid #b4a569; border-left: 3px solid #b4a569; background: #0b1d20; color: #edf0df; box-shadow: 3px 3px 0 #061113c7; transform: translate(8px, -50%); pointer-events: none; }
+.atlas-district-tooltip { position: absolute; z-index: 4; display: grid; gap: 2px; width: 168px; padding: 9px 10px; border: 1px solid #b4a569; border-left: 4px solid #b4a569; background: #0b1d20; color: #edf0df; box-shadow: 4px 4px 0 #061113c7; transform: translate(10px, -50%); pointer-events: none; }
 .atlas-district-tooltip-left { transform: translate(calc(-100% - 10px), -50%); }
-.atlas-district-tooltip header { display: flex; align-items: center; gap: 5px; color: #c9d2c8; font: 800 8px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .07em; text-transform: uppercase; }
-.atlas-district-tooltip header i { width: 6px; height: 6px; border: 1px solid #e8e0bd; }
+.atlas-district-tooltip header { display: flex; align-items: center; gap: 6px; color: #c9d2c8; font: 800 9px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .07em; text-transform: uppercase; }
+.atlas-district-tooltip header i { width: 8px; height: 8px; border: 1px solid #e8e0bd; }
 .atlas-district-tooltip[data-status="ACTIVE"] header span { color: #f0cf56; }
-.atlas-district-tooltip strong { margin-top: 2px; overflow: hidden; font: 900 10px/1.15 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
-.atlas-district-tooltip p { margin: 0; color: #8ea39f; font-size: 9px; }
-.atlas-district-tooltip dl { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 4px -7px -6px; background: #294143; }
-.atlas-district-tooltip dl div { display: grid; gap: 1px; padding: 4px 7px; background: #10272a; }
-.atlas-district-tooltip dt { color: #78908c; font: 700 7px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .05em; text-transform: uppercase; }
-.atlas-district-tooltip dd { margin: 0; color: #f1e5b4; font: 900 10px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
+.atlas-district-tooltip strong { margin-top: 3px; overflow: hidden; font: 900 13px/1.2 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.atlas-district-tooltip p { margin: 0; color: #8ea39f; font-size: 11px; }
+.atlas-district-tooltip dl { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 6px -10px -9px; background: #294143; }
+.atlas-district-tooltip dl div { display: grid; gap: 2px; padding: 6px 10px; background: #10272a; }
+.atlas-district-tooltip dt { color: #78908c; font: 700 8px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .05em; text-transform: uppercase; }
+.atlas-district-tooltip dd { margin: 0; color: #f1e5b4; font: 900 12px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
 .atlas-state { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; background: #142629; color: #a9bcba; font-size: 13px; }
 .atlas-state strong { color: #f0f1e5; font-size: 17px; }
 .atlas-state i { width: 18px; height: 18px; border: 3px solid #49645f; border-top-color: #f2c84b; animation: spin .8s steps(8) infinite; }

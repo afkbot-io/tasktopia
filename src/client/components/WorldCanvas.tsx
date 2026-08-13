@@ -1265,6 +1265,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       world.scale.set(appliedInitialScale);
       currentLod = appliedInitialScale < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
       world.position.set(app.screen.width / 2 - focus.x * appliedInitialScale, app.screen.height / 2 - focus.y * appliedInitialScale);
+      if (initialFocus) {
+        host.dataset.focusX = String(initialFocus.point.x);
+        host.dataset.focusY = String(initialFocus.point.y);
+      }
 
       let screenSize = { width: app.screen.width, height: app.screen.height };
       let resizeFrame = 0;
@@ -2074,6 +2078,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           const point = position(area.point);
           world.scale.set(scale);
           world.position.set(app.screen.width / 2 - point.x * scale, app.screen.height / 2 - point.y * scale);
+          host.dataset.focusX = String(area.point.x);
+          host.dataset.focusY = String(area.point.y);
           clampCamera();
           renderedRange = "";
           void loadVisible();
