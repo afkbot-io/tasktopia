@@ -17,6 +17,7 @@ import { config } from "./config";
 import { createDb } from "./db";
 import { createTasktopiaMcpHandler, getMcpAuthentication } from "./mcp";
 import { registerRoutes } from "./routes";
+import { isStaticAssetRequest } from "./static-path";
 
 const app = Fastify({
   logger: {
@@ -207,7 +208,9 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
     },
   );
   app.setNotFoundHandler((request, reply) => {
-    if (request.url.startsWith("/api") || request.url.startsWith("/mcp")) return reply.code(404).send({ error: "NOT_FOUND" });
+    if (request.url.startsWith("/api") || request.url.startsWith("/mcp") || isStaticAssetRequest(request.url)) {
+      return reply.code(404).send({ error: "NOT_FOUND" });
+    }
     return reply.sendFile("index.html");
   });
 }
