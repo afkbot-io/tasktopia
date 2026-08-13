@@ -38,7 +38,7 @@ npm run test:db:stop
 Новый runtime PNG не принимается отдельно от manifest, семантического ключа и
 проверки в мире. Обязательный контракт:
 
-1. Прочитать `assets/pixel-city-pack-v4/docs/GENERATION-SPEC.md`.
+1. Прочитать `assets/pixel-city-pack/docs/GENERATION-SPEC.md`.
 2. Подготовить пять стадий здания или законченный ambient-вариант.
 3. Зарегистрировать source digest и metadata.
 4. Запустить `npm run assets:build && npm run assets:verify`.

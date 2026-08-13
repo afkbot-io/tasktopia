@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.12.2",
+  "version": "1.13.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -21,6 +21,8 @@
     "seed:test": "tsx scripts/seed-test.ts",
     "seed:growth": "tsx scripts/seed-growth-demo.ts",
     "seed:showcase": "tsx scripts/seed-readme-showcase.ts",
+    "seed:world-validation": "tsx scripts/seed-world-validation.ts",
+    "test:world-validation": "npm run seed:world-validation && WORLD_VALIDATION_SCREENSHOT_DIR=screenshots/world-validation E2E_BASE_URL=http://127.0.0.1:5198 E2E_SEED_COMMAND=true playwright test tests/e2e/world-validation.spec.ts --project=chromium --workers=1",
     "db:import-sqlite": "tsx scripts/migrate-sqlite-to-postgres.ts",
     "test:db:start": "docker compose -f docker-compose.test.yml up -d --wait",
     "test:db:stop": "docker compose -f docker-compose.test.yml down",
@@ -29,8 +31,9 @@
     "worlds:regenerate": "node dist/regenerate-worlds.mjs",
     "study:worldgen": "tsx scripts/worldgen-algorithm-study.ts",
     "assets:setup": "python3 -m venv .venv-assets && .venv-assets/bin/python -m pip install -r requirements-assets.txt",
-    "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack-v4.py",
-    "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack-v4.py && .venv-assets/bin/python .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py --manifest assets/pixel-city-pack-v4/manifest.json --runtime assets/pixel-city-pack-v4/runtime --report tmp/pixel-city-style-audit.json"
+    "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack.py",
+    "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack.py && .venv-assets/bin/python .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py --manifest assets/pixel-city-pack/manifest.json --runtime assets/pixel-city-pack/runtime --report tmp/pixel-city-style-audit.json",
+    "assets:storybook": "python3 scripts/render-pixel-city-storybook.py"
   },
   "dependencies": {
     "@fastify/compress": "^9.1.1",

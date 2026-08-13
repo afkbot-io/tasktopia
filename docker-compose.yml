@@ -39,7 +39,7 @@ services:
       UPLOAD_DIR: /data/uploads
     volumes:
       - tasktopia_uploads:/data/uploads
-      - tasktopia_asset_revisions:/app/dist/public/game-assets/v4/revisions
+      - tasktopia_asset_revisions:/app/dist/public/game-assets/v5/revisions
     depends_on:
       postgres:
         condition: service_healthy

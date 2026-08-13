@@ -1,0 +1,13 @@
+{
+  "key": "civic-library",
+  "category": "CIVIC",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [12, 14],
+  "physicalFootprintCells": [12, 8],
+  "projectedRoofDepthCells": 3,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 6 },
+  "doorSizePx": [16, 16],
+  "sitePreviewCells": [16, 15]
+}

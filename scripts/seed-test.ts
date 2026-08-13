@@ -38,8 +38,16 @@ for (let index = 0; index < 10; index += 1) {
             activate: index === 0,
             idempotencyKey: `test-district-${index}`,
   });
-  for (let taskIndex = 0; taskIndex < 2; taskIndex += 1) {
+  // The two residential archetypes need a full four-building frontage in the
+  // deterministic browser fixture; two tasks cannot visually prove that the
+  // planner reuses one shared street instead of opening isolated branches.
+  // Keep one planning task in the active district as the deterministic
+  // realtime-invalidation target; the first building and the park exercise
+  // later construction stages.
+  const taskCount = index === 0 ? 3 : index === 1 ? 4 : 2;
+  for (let taskIndex = 0; taskIndex < taskCount; taskIndex += 1) {
     const firstTask = index === 0 && taskIndex === 0;
+    const taskPark = index === 0 && taskIndex === 1;
     const task = await service.createTask(user.countryId, {
                               cityId: city.id,
                               districtId: district.id,
@@ -51,8 +59,23 @@ for (let index = 0; index < 10; index += 1) {
                               designSystem: firstTask ? "# Представление\n\nЧетыре компактные полоски открывают один читаемый Markdown-просмотр." : undefined,
                               implementationPlan: firstTask ? "# План\n\n1. Подготовить миграцию.\n2. Обновить MCP.\n3. Проверить карточку в браузере." : undefined,
                               estimate: archetype === "PRIVATE" ? 1 : 2,
+                              visualKind: taskPark ? "PARK" : "BUILDING",
+                              parkVariant: taskPark ? "urban-formal" : undefined,
                               idempotencyKey: `test-task-${index}-${taskIndex}`,
                             });
+    if (firstTask) {
+      await service.updateTaskStatus(user.countryId, { taskId: task.id, status: "STARTED", idempotencyKey: "test-task-stage-0-0-started" });
+      await service.updateTaskStatus(user.countryId, { taskId: task.id, status: "IN_PROGRESS", idempotencyKey: "test-task-stage-0-0-progress" });
+    }
+    if (taskPark) {
+      for (const [stageIndex, status] of ["STARTED", "IN_PROGRESS", "TESTING"].entries()) {
+        await service.updateTaskStatus(user.countryId, {
+          taskId: task.id,
+          status: status as "STARTED" | "IN_PROGRESS" | "TESTING",
+          idempotencyKey: `test-park-stage-${stageIndex}`,
+        });
+      }
+    }
     if (firstTask) await service.replaceTaskChecklist(user.countryId, {
       taskId: task.id,
       items: [{ title: "Подготовить миграцию", done: true }, { title: "Обновить MCP", done: true }, { title: "Проверить карточку в браузере" }],
@@ -62,5 +85,5 @@ for (let index = 0; index < 10; index += 1) {
   }
 }
 
-console.log("Test data is ready: 1 city, 10 districts, 20 tasks.");
+console.log("Test data is ready: 1 city, 10 districts, 22 buildings and 1 numbered task park.");
 await db.close();

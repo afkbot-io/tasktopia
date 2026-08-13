@@ -1,0 +1,13 @@
+{
+  "key": "civic-emergency-center",
+  "category": "CIVIC",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [16, 13],
+  "physicalFootprintCells": [16, 9],
+  "projectedRoofDepthCells": 3,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 8 },
+  "doorSizePx": [16, 16],
+  "sitePreviewCells": [20, 17]
+}

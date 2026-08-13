@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 const root = new URL("../", import.meta.url);
 const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
 const manifest = JSON.parse(
-  readFileSync(new URL("../assets/pixel-city-pack-v4/manifest.json", import.meta.url), "utf8"),
+  readFileSync(new URL("../assets/pixel-city-pack/manifest.json", import.meta.url), "utf8"),
 ) as {
   buildings: Record<string, { stages: string[] }>;
   props: Record<string, unknown>;
@@ -16,7 +16,7 @@ describe("open-source README", () => {
   it("keeps published catalog numbers synchronized with the runtime manifest", () => {
     const buildingCount = Object.keys(manifest.buildings).length;
     const stageCount = Object.values(manifest.buildings).reduce((sum, building) => sum + building.stages.length, 0);
-    const pngCount = readdirSync(new URL("../public/game-assets/v4", import.meta.url), {
+    const pngCount = readdirSync(new URL("../public/game-assets/v5", import.meta.url), {
       recursive: true,
       withFileTypes: true,
     }).filter((entry) => entry.isFile() && entry.name.endsWith(".png")).length;

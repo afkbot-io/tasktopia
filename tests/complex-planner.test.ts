@@ -56,6 +56,58 @@ describe("V10 complex planner", () => {
     expect(plan.lots.some((lot) => lot.width >= 6 && lot.height >= 6)).toBe(true);
   });
 
+  it("reserves the 18x16 grid footprint required by the canonical balcony tower", () => {
+    const rect = { minX: 0, minY: 0, maxX: 31, maxY: 25 };
+    const plan = planComplex({
+      ...BASE,
+      rect,
+      cells: rectangleFootprint({ x: 0, y: 0 }, 32, 26),
+      targetLots: 3,
+      minimumLot: { width: 18, height: 16 },
+      shape: "COMPLEX_POINT",
+    });
+
+    expect(plan.lots).toHaveLength(1);
+    expect(plan.lots[0]).toMatchObject({ height: 16, frontageSide: "S" });
+    expect(plan.lots[0]!.width).toBeGreaterThanOrEqual(18);
+  });
+
+  it("packs four compact new-build parcels along one shared first street", () => {
+    const rect = { minX: 0, minY: 0, maxX: 67, maxY: 21 };
+    const plan = planComplex({
+      ...BASE,
+      rect,
+      cells: rectangleFootprint({ x: 0, y: 0 }, 68, 22),
+      targetLots: 8,
+      minimumLot: { width: 12, height: 10 },
+      denseGrid: true,
+    });
+
+    expect(plan.shape).toBe("COMPLEX_ROW");
+    expect(plan.lots.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(plan.lots.map((lot) => lot.origin.y)).size).toBe(1);
+    expect(plan.lots.every((lot) => lot.width >= 12 && lot.height >= 10)).toBe(true);
+    expect(plan.streets).toHaveLength(1);
+  });
+
+  it("plans at least four private houses along one shared frontage street", () => {
+    const rect = { minX: 0, minY: 0, maxX: 39, maxY: 19 };
+    const plan = planComplex({
+      ...BASE,
+      archetype: "PRIVATE",
+      rect,
+      cells: rectangleFootprint({ x: 0, y: 0 }, 40, 20),
+      targetLots: 6,
+      minimumLot: { width: 9, height: 6 },
+    });
+
+    expect(plan.shape).toBe("COMPLEX_ROW");
+    expect(plan.streets).toHaveLength(1);
+    expect(plan.lots.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(plan.lots.map((lot) => lot.origin.y)).size).toBe(1);
+    expect(plan.lots.every((lot) => lot.width >= 9 && lot.height >= 6)).toBe(true);
+  });
+
   it("does not turn sprint capacity into a prebuilt empty superblock", () => {
     expect(organicComplexLotTarget(1)).toBe(3);
     expect(organicComplexLotTarget(14)).toBe(6);
@@ -108,6 +160,50 @@ describe("V10 complex planner", () => {
           .some((cell) => road.has(cellKey(cell)))
         || [{ x: 1, y: 0 }, { x: -1, y: 0 }].some((d) => road.has(cellKey({ x: lot.origin.x + 1 + d.x, y: entranceY + d.y })))),
       ).toBe(true);
+    }
+  });
+
+  it("plans a dense core as a connected compact grid", () => {
+    const rect = { minX: 10, minY: 10, maxX: 39, maxY: 39 };
+    const cells = rectangleFootprint({ x: rect.minX, y: rect.minY }, 30, 30);
+    const plan = planComplex({ ...BASE, seed: 3, rect, cells, targetLots: 12, denseGrid: true });
+
+    expect(["COMPLEX_SLAB", "COMPLEX_SQUARE", "COMPLEX_COURT", "COMPLEX_L_SHAPE"]).toContain(plan.shape);
+    expect(new Set(plan.lots.map((lot) => lot.origin.y)).size).toBeGreaterThanOrEqual(2);
+    expect(plan.lots.length).toBeGreaterThanOrEqual(10);
+    expect(connected([...corridors(plan.streets)].map((key) => {
+      const [x, y] = key.split(",").map(Number);
+      return { x: x!, y: y! };
+    }))).toBe(true);
+  });
+
+  it("varies dense-core block forms deterministically instead of repeating one slab", () => {
+    const rect = { minX: 10, minY: 10, maxX: 43, maxY: 43 };
+    const cells = rectangleFootprint({ x: rect.minX, y: rect.minY }, 34, 34);
+    const plans = Array.from({ length: 10 }, (_, complexIndex) => planComplex({
+      ...BASE,
+      complexIndex,
+      seed: 73,
+      rect,
+      cells,
+      targetLots: 14,
+      denseGrid: true,
+    }));
+    expect(new Set(plans.map((plan) => plan.shape)).size).toBeGreaterThanOrEqual(3);
+    expect(plans.map((plan) => plan.shape)).toEqual(Array.from({ length: 10 }, (_, complexIndex) => planComplex({
+      ...BASE,
+      complexIndex,
+      seed: 73,
+      rect,
+      cells,
+      targetLots: 14,
+      denseGrid: true,
+    }).shape));
+    for (const plan of plans) {
+      expect(connected([...corridors(plan.streets)].map((key) => {
+        const [x, y] = key.split(",").map(Number);
+        return { x: x!, y: y! };
+      }))).toBe(true);
     }
   });
 

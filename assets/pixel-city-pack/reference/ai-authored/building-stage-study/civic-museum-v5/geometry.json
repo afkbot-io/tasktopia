@@ -1,0 +1,13 @@
+{
+  "key": "civic-museum",
+  "category": "CIVIC",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [14, 14],
+  "physicalFootprintCells": [14, 9],
+  "projectedRoofDepthCells": 4,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 7 },
+  "doorSizePx": [16, 16],
+  "sitePreviewCells": [18, 16]
+}

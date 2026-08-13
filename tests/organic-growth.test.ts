@@ -3,7 +3,7 @@ import { AppService } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { auditWorld, type WorldAuditResult } from "../src/server/world/world-audit";
-import { BUILDING_CATALOG } from "../src/shared/catalog";
+import { BUILDING_CATALOG, TASK_BUILDING_CATALOG } from "../src/shared/catalog";
 
 // Regression for the reported incident: a NEW_BUILD district received 29
 // identical 1-SP tasks and regeneration produced a sparse half-empty area —
@@ -130,12 +130,13 @@ describe.runIf(process.env.RUN_ORGANIC_GROWTH_TESTS === "1")("organic growth inc
     }
   });
 
-  it("delivers city services on schedule in a stream of small 1-SP tasks", () => {
-    // The estimate gate used to suppress the clinic and the fire station
-    // because no service building listed a 1-SP estimate. Twenty-nine tasks
-    // cross the health (10) and fire (20) thresholds regardless of estimates.
-    expect(serviceRolesAfter).toContain("health-service");
-    expect(serviceRolesAfter).toContain("fire-service");
+  it("keeps unmigrated service buildings render-only", () => {
+    // The city crosses all former automatic service thresholds. Until those
+    // facades are migrated to V5, the scheduler must skip unavailable roles
+    // instead of silently restoring a legacy clinic/fire/police sprite.
+    expect(serviceRolesAfter).toEqual([]);
+    expect([...typesAfter.values()].every((key) =>
+      TASK_BUILDING_CATALOG.some((entry) => entry.key === key))).toBe(true);
   });
 
   it("keeps green areas capped and spread instead of clustering", () => {

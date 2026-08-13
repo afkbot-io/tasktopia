@@ -1,7 +1,7 @@
 # Каталог зданий V4
 
-Authoring source of truth — `assets/pixel-city-pack-v4/catalog/buildings.json`.
-Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`.
+Authoring source of truth — `assets/pixel-city-pack/catalog/buildings.json`.
+Runtime source of truth — `assets/pixel-city-pack/manifest.json`.
 `src/shared/catalog.ts` только типизирует manifest и предоставляет его одинаково серверу и PixiJS-клиенту.
 
 Сейчас каталог содержит 193 семейства и пять стадий каждого. Вариант описывает:
@@ -9,7 +9,7 @@ Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`.
 - стабильный `key`, русское название и category;
 - `spriteSize` в пикселях, кратный 8;
 - `footprintCells`, нижний центральный `anchorPx` и входы;
-- пять PNG одинакового canvas;
+- пять визуальных стадий: общие композиции 1–2 и три PNG здания 3–5 на одинаковом canvas;
 - platform, допустимые estimates, tags и rarity;
 - `ruleIds`, `maxPerCity`, `maxPerDistrict` и optional `serviceRole`.
 
@@ -25,28 +25,58 @@ Runtime source of truth — `assets/pixel-city-pack-v4/manifest.json`.
 
 Платформа не запекается в terrain. Footprint задаёт occupancy, а прозрачный PNG может выходить вверх за его границы. Вход и подход к тротуару хранятся отдельно; будущие дороги не могут пересекать ни footprint, ни опубликованный подход. Здания сортируются по нижней координате.
 
+## Модульная стройплощадка
+
+Стадии 1–2 не хранятся как отдельная картинка для каждой семьи. Общий
+`constructionStageLayout()` собирает участок по реальному `footprint`: глубина
+проекции равна 3–5 клеткам, а забор проходит на одну клетку снаружи. Двухклеточные
+ворота и две клетки проезда за ними всегда свободны.
+
+Площадка получает детерминированную композицию из 23 AI-authored props:
+10 геодезических/подготовительных объектов на стадии 1 и 13 единиц техники,
+материалов и инструмента на стадии 2. Маленький дом получает 2–3 объекта,
+большая новостройка — 5–7. Габариты каждого prop участвуют в occupancy;
+крупный экскаватор, бытовка или кран не появляются на участке, где не помещаются.
+На одном участке допускается максимум один башенный кран и одна тяжёлая машина.
+Одинаковые здания используют seed задачи, поэтому сохраняют композицию после
+перезагрузки, но не повторяют соседний участок. Клиент загружает только выбранные
+для видимых задач PNG.
+
 ## Добавить или заменить визуальное семейство
 
-1. Сохраните принятый горизонтальный лист из пяти стадий в
-   `assets/pixel-city-pack-v4/reference/buildings/<key>/stages.png`.
-2. Найдите стабильный ключ в `catalog/buildings.json`. Не меняйте геометрию,
-   вход, лимиты и игровые теги при простой замене графики.
-3. Запишите относительный `sheet`, SHA-256 файла и только после визуальной
-   проверки установите `reviewed: true`:
+1. Создайте три независимых принятых исходника стадий 3–5 в
+   `assets/pixel-city-pack/reference/ai-authored/building-stage-study/<key>-v5/sources/`.
+   Общие стадии 1–2 не рисуются для конкретного здания: их собирает
+   `constructionStageLayout()` из строительных тайлов и props по footprint.
+2. Проверьте каждый исходник через building-stage verifier: фронтально-верхний
+   ракурс, одинаковые canvas/anchor/вход, hard alpha, палитра и размещение на
+   контрольной сетке 8×8. Найдите стабильный ключ в `catalog/buildings.json`;
+   не меняйте игровую геометрию и лимиты при простой замене графики.
+3. Запишите три относительных `stageSources`, три SHA-256 и только после
+   визуальной проверки установите `reviewed: true`:
 
 ```json
 {
   "key": "house-yellow-duplex",
-  "sheet": "buildings/house-yellow-duplex/stages.png",
-  "sheetSha256": "<64 lowercase hex characters>",
+  "stageSources": [
+    "ai-authored/building-stage-study/house-yellow-duplex-v5/sources/stage-3.png",
+    "ai-authored/building-stage-study/house-yellow-duplex-v5/sources/stage-4.png",
+    "ai-authored/building-stage-study/house-yellow-duplex-v5/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "<stage-3 sha256>",
+    "<stage-4 sha256>",
+    "<stage-5 sha256>"
+  ],
   "reviewed": true
 }
 ```
 
 4. Выполните `npm run assets:build && npm run assets:verify`.
 
-Builder проверяет digest, режет именно утверждённые пять стадий, нормализует их
-без дорисовки геометрии, обновляет runtime/public pack и contact sheets.
+Builder проверяет digest каждого исходника, нормализует стадии 3–5 без
+дорисовки геометрии, компонует общие стадии 1–2 и обновляет runtime/public pack
+и contact sheets. Combined sheets и import fallback не поддерживаются.
 Read-only audit проверяет 193 здания / 965 стадий: уникальность стадий, сетку и
 footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, потерянные
 ссылки и лишние файлы. Runtime manifest не содержит сведений о происхождении
@@ -68,4 +98,4 @@ building art.
 - `UNIQUE_SERVICE` — одна служебная роль в городе;
 - `REQUIRES_COLLECTOR` — объект выбирается для дорожного коммерческого сценария.
 
-Полные визуальные требования, пять стадий и checklist находятся в [GENERATION-SPEC](../assets/pixel-city-pack-v4/docs/GENERATION-SPEC.md).
+Полные визуальные требования, пять стадий и checklist находятся в [GENERATION-SPEC](../assets/pixel-city-pack/docs/GENERATION-SPEC.md).

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "key": "highrise-corporate-v5-study",
+  "category": "HIGHRISE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [14, 32],
+  "physicalFootprintCells": [14, 12],
+  "projectedRoofDepthCells": 5,
+  "foundationThicknessCells": 3,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 7 },
+  "sitePreviewCells": [18, 24]
+}

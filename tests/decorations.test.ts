@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { PROP_CATALOG } from "../src/shared/catalog";
-import type { Cell, CityDto, DecorationDto, DistrictDto, SurfaceCellDto, TerrainCellDto } from "../src/shared/contracts";
+import type { Cell, CityDto, DecorationDto, DistrictDto, SurfaceCellDto, TaskDto, TerrainCellDto } from "../src/shared/contracts";
 import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 
 type DecorationGenerator = (
@@ -11,6 +11,7 @@ type DecorationGenerator = (
   surfaces: SurfaceCellDto[],
   districts: DistrictDto[],
   cities: CityDto[],
+  tasks: TaskDto[],
 ) => DecorationDto[];
 
 describe("procedural decoration footprints", () => {
@@ -26,7 +27,7 @@ describe("procedural decoration footprints", () => {
       cells, lots: [], growthDirection: "E", archetype: "MIXED_URBAN", color: "#fff", createdAt: "2026-01-01T00:00:00.000Z",
     } satisfies DistrictDto;
     const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;
-    const decorations = generate(84721, terrain, new Set(), [], [district], []);
+    const decorations = generate(84721, terrain, new Set(), [], [district], [], []);
     const fences = decorations.filter((item) => item.kind.startsWith("fence-"));
     expect(fences.length).toBeGreaterThan(0);
     const occupied = new Set<string>();
@@ -51,7 +52,7 @@ describe("procedural decoration footprints", () => {
       bounds: { minX: 24, minY: 48, maxX: 72, maxY: 88 }, styleId: "pixel-v4", morphology: "BALANCED", createdAt: "2026-01-01T00:00:00.000Z",
     };
     const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;
-    const decorations = generate(424242, terrain, new Set(), surfaces, [], [city]);
+    const decorations = generate(424242, terrain, new Set(), surfaces, [], [city], []);
     const boats = decorations.filter((item) => item.kind.startsWith("boat-"));
     const fishers = decorations.filter((item) => item.kind.startsWith("fisher-"));
     const residents = decorations.filter((item) => item.kind.startsWith("resident-"));
@@ -74,10 +75,36 @@ describe("procedural decoration footprints", () => {
       bounds: { minX: 0, minY: 24, maxX: 255, maxY: 63 }, styleId: "pixel-v4", morphology: "BALANCED", createdAt: "2026-01-01T00:00:00.000Z",
     };
     const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;
-    const fishers = Array.from({ length: 24 }, (_, seed) => generate(seed + 1, terrain, blocked, [], [], [city]))
+    const fishers = Array.from({ length: 24 }, (_, seed) => generate(seed + 1, terrain, blocked, [], [], [city], []))
       .flat()
       .filter((item) => item.kind.startsWith("fisher-"));
     expect(fishers.length).toBeGreaterThan(0);
     expect(fishers.every((fisher) => Math.abs(fisher.origin.y - 31) > 1)).toBe(true);
+  });
+
+  it("places sparse deterministic trees on the paved frontage of large task buildings", () => {
+    const footprint = rectangleFootprint({ x: 20, y: 20 }, 10, 8);
+    const surfaces: SurfaceCellDto[] = [
+      ...Array.from({ length: 10 }, (_, index) => ({ x: 20 + index, y: 19, kind: "PATH" as const, finish: "PAVERS" as const })),
+      ...Array.from({ length: 10 }, (_, index) => ({ x: 20 + index, y: 28, kind: "PATH" as const, finish: "PAVERS" as const })),
+    ];
+    const terrain: TerrainCellDto[] = rectangleFootprint({ x: 16, y: 16 }, 18, 16)
+      .map((cell) => ({ ...cell, terrain: "GRASS" as const, variant: 0 }));
+    const task: TaskDto = {
+      id: "tower", taskNumber: 81, cityId: "city", districtId: "district", title: "Башня", description: "", workItemType: "TASK",
+      acceptanceCriteria: "", systemAnalysis: "", architecture: "", designSystem: "", implementationPlan: "",
+      estimate: 3, priority: "NORMAL", status: "IN_PROGRESS", progress: 50, dueAt: null,
+      buildingType: "highrise-luxury-tower", visualKind: "BUILDING", visualAssetKey: "highrise-luxury-tower", platformType: "STONE",
+      origin: { x: 20, y: 20 }, footprint, entrance: { x: 24, y: 28 }, accessPath: [{ x: 24, y: 19 }], accessKind: "PATH", stage: 3,
+      createdAt: "now", updatedAt: "now", mergeRequests: [],
+    };
+    const blocked = new Set([...footprint, ...surfaces].map(cellKey));
+    const generate = (AppService.prototype as unknown as { decorations: DecorationGenerator }).decorations;
+    const first = generate(77331, terrain, blocked, surfaces, [], [], [task]).filter((item) => item.id.startsWith("street-tree:"));
+    const second = generate(77331, terrain, blocked, surfaces, [], [], [task]).filter((item) => item.id.startsWith("street-tree:"));
+    expect(first).toEqual(second);
+    expect(first).toHaveLength(1);
+    expect(surfaces.some((surface) => cellKey(surface) === cellKey(first[0]!.origin))).toBe(true);
+    expect(first[0]!.origin).not.toEqual(task.accessPath[0]);
   });
 });

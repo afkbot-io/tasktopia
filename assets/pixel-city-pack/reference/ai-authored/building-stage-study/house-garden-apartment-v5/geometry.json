@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "key": "house-garden-apartment-v5-study",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [16, 18],
+  "physicalFootprintCells": [16, 10],
+  "projectedRoofDepthCells": 4,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 8 },
+  "sitePreviewCells": [20, 22]
+}

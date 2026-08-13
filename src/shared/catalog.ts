@@ -1,4 +1,4 @@
-import manifest from "../../assets/pixel-city-pack-v4/manifest.json";
+import manifest from "../../assets/pixel-city-pack/manifest.json";
 import type { Estimate, PlatformKind } from "./contracts";
 
 const clientStaticOrigin = typeof window === "undefined"
@@ -8,10 +8,16 @@ export const ASSET_REVISION = (manifest as { assetRevision?: string }).assetRevi
 
 export function gameAssetUrl(path: string): string {
   if (/^https?:\/\//.test(path)) return path;
-  const versionedPrefix = `/game-assets/v4/revisions/${ASSET_REVISION}/`;
+  const versionedPrefix = `/game-assets/v5/revisions/${ASSET_REVISION}/`;
   if (path.startsWith(versionedPrefix)) return `${clientStaticOrigin}${path}`;
-  const normalized = path.startsWith("/game-assets/v4/") ? path : `/game-assets/v4/${path.replace(/^\//, "")}`;
-  const assetPath = normalized.slice("/game-assets/v4/".length);
+  const normalized = path.startsWith("/game-assets/v5/") ? path : `/game-assets/v5/${path.replace(/^\//, "")}`;
+  // Vite serves `public/` directly and does not run the production revision
+  // synchronizer from server/index.ts. Point development at the live asset
+  // tree so sprite-generation sessions are visible without copying a second
+  // revision directory on every change. Tests and production keep asserting
+  // and using immutable revision URLs.
+  if (import.meta.env?.MODE === "development") return `${clientStaticOrigin}${normalized}`;
+  const assetPath = normalized.slice("/game-assets/v5/".length);
   return `${clientStaticOrigin}${versionedPrefix}${assetPath}`;
 }
 
@@ -81,6 +87,26 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
   }))
   .sort((a, b) => a.key.localeCompare(b.key));
 
+/** Task-backed residential catalog.
+ *
+ * Large new-builds remain the vocabulary of NEW_BUILD districts, while the
+ * reviewed HOUSE families restore compact yards and continuous street rows in
+ * PRIVATE districts. Other reviewed categories remain available to rendering
+ * and explicit world features but are not selected for residential tasks.
+ */
+export const TASK_BUILDING_CATALOG: BuildingCatalogEntry[] = BUILDING_CATALOG
+  .filter((entry) => entry.tags.includes("new-build") || entry.category === "HOUSE")
+  .filter((entry) => !entry.tags.includes("archive"));
+
+export function isTaskBuilding(entry: BuildingCatalogEntry): boolean {
+  return TASK_BUILDING_CATALOG.some((candidate) => candidate.key === entry.key);
+}
+
+/** Dense new-builds use a paved apron; ordinary homes keep their catalog yard. */
+export function taskBuildingPlatform(entry: BuildingCatalogEntry): PlatformKind {
+  return entry.tags.includes("new-build") ? "STONE" : entry.platform;
+}
+
 const TASK_TAG_DICTIONARY: Array<{ tag: string; words: string[] }> = [
   { tag: "house", words: ["дом", "жиль", "квартир", "жилой", "коттедж", "таунхаус"] },
   { tag: "commercial", words: ["магазин", "торгов", "кафе", "аптек", "пекар", "заправ", "сервис", "парков", "стоянк"] },
@@ -119,6 +145,22 @@ export const PROP_CATALOG = Object.fromEntries(
 export const PROP_SPRITES = Object.fromEntries(
   Object.entries(PROP_CATALOG).map(([key, value]) => [key, value.path]),
 ) as Record<string, string>;
+
+const ILLUMINATED_PROP_PAIRS = new Map<string, string>([
+  ["streetlamp", "streetlamp-lit"],
+  ["streetlamp-modern", "streetlamp-modern-lit"],
+  ["streetlamp-double", "streetlamp-double-lit"],
+  ["streetlamp-vintage", "streetlamp-vintage-lit"],
+  ["streetlamp-solar", "streetlamp-solar-lit"],
+  ["streetlamp-industrial", "streetlamp-industrial-lit"],
+  ["streetlamp-festive", "streetlamp-festive-lit"],
+  ["park-lamp", "park-lamp-lit"],
+]);
+
+/** Resolves a placed daytime lamp to its geometry-identical night sprite. */
+export function illuminatedPropKey(key: string): string {
+  return ILLUMINATED_PROP_PAIRS.get(key) ?? key;
+}
 export const TILE_SPRITES = Object.fromEntries(
   Object.entries(manifest.tiles).map(([key, value]) => [key, gameAssetUrl((value as { path: string }).path)]),
 ) as Record<string, string>;

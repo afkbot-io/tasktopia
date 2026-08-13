@@ -145,7 +145,7 @@ origin не могут разойтись. CDN должен использова
 возвращать CORS-заголовок
 `Access-Control-Allow-Origin: https://tasktopia.online` для JS, CSS, шрифтов и
 PNG. Игровой пак публикует content revision отдельным сегментом пути
-`/game-assets/v4/revisions/<assetRevision>/...`, поэтому корректность
+`/game-assets/v5/revisions/<assetRevision>/...`, поэтому корректность
 immutable-кэша не зависит от политики CDN по query string.
 
 Если CDN сохраняет исходный Host `store.tasktopia.online`, используйте
@@ -162,7 +162,7 @@ openssl s_client -connect store.tasktopia.online:443 -servername store.tasktopia
   | openssl x509 -noout -ext subjectAltName
 # После сборки возьмите реальные URL из dist/public/index.html и manifest:
 curl -fsSIL 'https://store.tasktopia.online/assets/<vite-hash>.js'
-curl -fsSIL 'https://store.tasktopia.online/game-assets/v4/revisions/<assetRevision>/props/gazebo.png'
+curl -fsSIL 'https://store.tasktopia.online/game-assets/v5/revisions/<assetRevision>/props/gazebo.png'
 ```
 
 Если SAN не содержит `store.tasktopia.online`, `STATIC_ORIGIN` должен оставаться

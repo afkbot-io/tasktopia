@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_INCIDENT_ENGINES, incidentMode, incidentVisualProfile, planIncidentEngines } from "../src/client/task-incidents";
+import { MAX_INCIDENT_ENGINES, incidentMode, incidentVisualLayout, incidentVisualProfile, planIncidentEngines } from "../src/client/task-incidents";
 import type { ChunkTaskDto } from "../src/shared/contracts";
 
 function task(overrides: Partial<ChunkTaskDto> = {}): ChunkTaskDto {
@@ -14,6 +14,8 @@ function task(overrides: Partial<ChunkTaskDto> = {}): ChunkTaskDto {
     progress: 90,
     stage: 4,
     buildingType: "house-small-a",
+    visualKind: "BUILDING",
+    visualAssetKey: "house-small-a",
     platformType: "YARD",
     origin: { x: 10, y: 10 },
     footprint: [{ x: 10, y: 10 }],
@@ -79,6 +81,48 @@ describe("incidentVisualProfile", () => {
 
   it("stays quiet without active defects or an active hotfix", () => {
     expect(incidentVisualProfile(task())).toEqual({ activeDefects: 0, smokeStrength: 0, plumeCount: 0, burning: false });
+  });
+});
+
+describe("incidentVisualLayout", () => {
+  it("spreads a serious fire across a wide facade instead of stacking it in one spot", () => {
+    const layout = incidentVisualLayout(144, 280, {
+      activeDefects: 8,
+      smokeStrength: 6,
+      plumeCount: 3,
+      burning: true,
+    });
+
+    expect(layout.flameAnchors).toHaveLength(4);
+    expect(layout.flameAnchors[0]!.x).toBeLessThan(-30);
+    expect(layout.flameAnchors.at(-1)!.x).toBeGreaterThan(30);
+    expect(layout.smokeAnchors).toHaveLength(3);
+    expect(layout.smokeAnchors.map(({ x }) => x)).toEqual([-68, 0, 68]);
+  });
+
+  it("keeps smoke and flames inside a narrow building silhouette", () => {
+    const layout = incidentVisualLayout(24, 48, {
+      activeDefects: 6,
+      smokeStrength: 6,
+      plumeCount: 3,
+      burning: true,
+    });
+
+    expect(layout.flameAnchors).toHaveLength(1);
+    expect(layout.flameAnchors[0]!.x).toBe(0);
+    expect(layout.smokeAnchors.every(({ x }) => Math.abs(x) <= 8)).toBe(true);
+  });
+
+  it("does not create flame anchors for smoke-only defects", () => {
+    const layout = incidentVisualLayout(96, 120, {
+      activeDefects: 4,
+      smokeStrength: 4,
+      plumeCount: 2,
+      burning: false,
+    });
+
+    expect(layout.flameAnchors).toEqual([]);
+    expect(layout.smokeAnchors).toHaveLength(2);
   });
 });
 

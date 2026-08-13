@@ -27,6 +27,22 @@ test("captures the real README showcase city", async ({ page }) => {
   await expect(map).toHaveAttribute("data-map-lod", "detail", { timeout: 20_000 });
   await expect.poll(async () => Number(await map.getAttribute("data-cars")), { timeout: 20_000 }).toBeGreaterThan(0);
   await expect.poll(async () => Number(await map.getAttribute("data-walkers")), { timeout: 20_000 }).toBeGreaterThan(0);
+  // The active sprint is intentionally the last generated district and may
+  // start just above the initial fitted city frame. Pan north until all three
+  // seeded incident buildings are resident; counting only the first viewport
+  // made this visual gate depend on district geometry.
+  const canvasBox = await canvas.boundingBox();
+  if (canvasBox) {
+    for (let step = 0; step < 3 && Number(await map.getAttribute("data-incidents")) < 3; step += 1) {
+      const x = canvasBox.x + canvasBox.width / 2;
+      const y = canvasBox.y + canvasBox.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x, y + 140, { steps: 6 });
+      await page.mouse.up();
+      await page.waitForTimeout(350);
+    }
+  }
   await expect.poll(async () => Number(await map.getAttribute("data-incidents")), { timeout: 20_000 }).toBeGreaterThanOrEqual(3);
   await expect(map).toHaveAttribute("data-wrong-way-cars", "0");
 

@@ -1,19 +1,36 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { BUILDING_CATALOG, PROP_CATALOG, REGISTERED_BUILDING_RULES, gameAssetUrl } from "../src/shared/catalog";
+import {
+  BUILDING_CATALOG,
+  PROP_CATALOG,
+  REGISTERED_BUILDING_RULES,
+  TASK_BUILDING_CATALOG,
+  gameAssetUrl,
+  illuminatedPropKey,
+  taskBuildingPlatform,
+} from "../src/shared/catalog";
 
 const assetDiskPath = (url: string) => resolve(
   "public",
   new URL(url, "http://tasktopia.local").pathname
-    .replace(/\/game-assets\/v4\/revisions\/[a-f0-9]{16}\//, "/game-assets/v4/")
+    .replace(/\/game-assets\/v5\/revisions\/[a-f0-9]{16}\//, "/game-assets/v5/")
     .slice(1),
 );
 
-describe("building catalog V4", () => {
+describe("active building catalog", () => {
+  it("exposes reviewed residential families without mixing archive buildings into tasks", () => {
+    const residential = BUILDING_CATALOG.filter((entry) => entry.category === "HOUSE");
+    expect(TASK_BUILDING_CATALOG).toEqual(expect.arrayContaining(residential));
+    expect(TASK_BUILDING_CATALOG.every((entry) => entry.stages.length === 5)).toBe(true);
+    expect(TASK_BUILDING_CATALOG.some((entry) => entry.key === "house-cottage")).toBe(true);
+    expect(TASK_BUILDING_CATALOG.some((entry) => entry.tags.includes("archive"))).toBe(false);
+    expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.key === "house-cottage")!)).toBe("YARD");
+    expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.tags.includes("new-build"))!)).toBe("STONE");
+  });
   it("content-addresses every game asset URL for immutable CDN caching", () => {
-    expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v4\/revisions\/[a-f0-9]{16}\/tiles\/road\.png$/);
-    expect(gameAssetUrl("/game-assets/v4/props/gazebo.png")).toMatch(/^\/game-assets\/v4\/revisions\/[a-f0-9]{16}\/props\/gazebo\.png$/);
+    expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/tiles\/road\.png$/);
+    expect(gameAssetUrl("/game-assets/v5/props/gazebo.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/props\/gazebo\.png$/);
     const versioned = gameAssetUrl("tiles/road.png");
     expect(gameAssetUrl(versioned)).toBe(versioned);
   });
@@ -62,6 +79,19 @@ describe("building catalog V4", () => {
     }
   });
 
+  it("provides geometry-identical illuminated variants for every lamp family", () => {
+    for (const key of ["streetlamp", "streetlamp-modern", "streetlamp-double", "streetlamp-vintage", "streetlamp-solar", "streetlamp-industrial", "streetlamp-festive", "park-lamp"]) {
+      const litKey = illuminatedPropKey(key);
+      expect(litKey, key).not.toBe(key);
+      expect(PROP_CATALOG[litKey], litKey).toMatchObject({
+        size: PROP_CATALOG[key]!.size,
+        footprint: PROP_CATALOG[key]!.footprint,
+        anchor: PROP_CATALOG[key]!.anchor,
+      });
+    }
+    expect(illuminatedPropKey("trash-bin")).toBe("trash-bin");
+  });
+
   it("registers one canonical 16px paired-stop contract and no legacy variants", () => {
     for (const axis of ["horizontal", "vertical"] as const) {
       expect(PROP_CATALOG[`bus-stop-${axis}`]).toMatchObject({ size: { width: 16, height: 16 }, footprint: { width: 2, height: 2 } });
@@ -71,10 +101,10 @@ describe("building catalog V4", () => {
     }
   });
 
-  it("registers buses one cell longer than ordinary cars", () => {
-    expect(PROP_CATALOG["city-bus-horizontal"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
-    expect(PROP_CATALOG["city-bus-north"]).toMatchObject({ size: { width: 8, height: 24 }, footprint: { width: 1, height: 3 } });
-    expect(PROP_CATALOG["city-bus-south"]).toMatchObject({ size: { width: 8, height: 24 }, footprint: { width: 1, height: 3 } });
+  it("registers six-cell buses for three-cell transit roads", () => {
+    expect(PROP_CATALOG["city-bus-horizontal"]).toMatchObject({ size: { width: 48, height: 16 }, footprint: { width: 6, height: 2 } });
+    expect(PROP_CATALOG["city-bus-north"]).toMatchObject({ size: { width: 16, height: 48 }, footprint: { width: 2, height: 6 } });
+    expect(PROP_CATALOG["city-bus-south"]).toMatchObject({ size: { width: 16, height: 48 }, footprint: { width: 2, height: 6 } });
     expect(PROP_CATALOG["city-bus-vertical"]).toBeUndefined();
   });
 
@@ -87,7 +117,7 @@ describe("building catalog V4", () => {
   });
 
   it("registers crisp incident-response sprites on the same pixel grid", () => {
-    expect(PROP_CATALOG["fire-engine-horizontal"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
+    expect(PROP_CATALOG["fire-engine-horizontal"]).toMatchObject({ size: { width: 32, height: 8 }, footprint: { width: 4, height: 1 } });
     for (const key of ["incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"]) {
       expect(PROP_CATALOG[key]?.size.width, key).toBe(8);
       expect(PROP_CATALOG[key]?.size.height % 8, key).toBe(0);
@@ -99,7 +129,7 @@ describe("building catalog V4", () => {
     const walkerSize = PROP_CATALOG["walker-south-a"]?.size;
     expect(walkerSize).toEqual({ width: 8, height: 16 });
     for (const direction of ["north", "east", "south", "west"]) {
-      for (const frame of ["a", "b"]) {
+      for (const frame of ["a", "b", "c"]) {
         expect(PROP_CATALOG[`walker-${direction}-${frame}`]?.size).toEqual(walkerSize);
       }
     }

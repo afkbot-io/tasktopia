@@ -22,6 +22,11 @@ backups/
 /.agents/skills/*
 !/.agents/skills/tasktopia-pixel-city-art/
 !/.agents/skills/tasktopia-pixel-city-art/**
+!/.agents/skills/tasktopia-building-stage-generator/
+!/.agents/skills/tasktopia-building-stage-generator/**
+!/.agents/skills/tasktopia-building-stage-verifier/
+!/.agents/skills/tasktopia-building-stage-verifier/**
+/.agents/skills/tasktopia-building-stage-verifier/scripts/__pycache__/
 /.agent/
 /.tabnine/
 /agent/
@@ -29,6 +34,6 @@ backups/
 /skills-lock.json
 
 # Review rejects and one-off drawing studies are not runtime inputs.
-/assets/pixel-city-pack-v4/reference/rejected/
+/assets/pixel-city-pack/reference/rejected/
 /sprite-examples/
 /assets/generated-v2/

@@ -359,7 +359,7 @@ async function main(): Promise<void> {
     results.push(aggregate(name, layouts, metrics));
   }
 
-  const outputDir = path.resolve(".agent/plans/_misc/square-world-generation-v3/proof");
+  const outputDir = path.resolve("screenshots/worldgen-algorithm-study");
   await mkdir(outputDir, { recursive: true });
   await writeFile(path.join(outputDir, "district-algorithm-results.json"), `${JSON.stringify({ runs: STUDY_RUNS, targetCells: TARGET_CELLS, lots: LOTS, results }, null, 2)}\n`);
   await writeFile(path.join(outputDir, "district-algorithm-samples.svg"), renderSvg([rectangle(17), polyomino(17), hybrid(17)]));
@@ -381,4 +381,3 @@ async function main(): Promise<void> {
 }
 
 await main();
-

@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { getBuilding } from "../src/shared/catalog";
-import type { CityDto, DistrictDto, RoadCellDto, TaskDto } from "../src/shared/contracts";
+import type { CityDto, DistrictDto, RoadCellDto, TaskDto, WorldFeatureDto } from "../src/shared/contracts";
+import { greenAreaDevelopmentStage } from "../src/shared/green-area";
 import {
   archetypeAffinity,
   buildingCompatibleWithArchetype,
   buildingZoningRole,
   buildSurfaceMap,
+  buildingApronCells,
   buildingGapPaths,
   chooseDistrictArchetype,
+  entranceOutside,
   findAreaAccessPath,
   findAccessPlan,
 } from "../src/server/world/city-generation";
@@ -34,13 +37,34 @@ function placedTask(id: string, origin: { x: number; y: number }, width: number,
     id, taskNumber: 1, cityId: "city", districtId: "dense", title: id, description: "", workItemType: "TASK",
     acceptanceCriteria: "", systemAnalysis: "", architecture: "", designSystem: "", implementationPlan: "",
     estimate: 1, priority: "NORMAL", status: "PLANNING", progress: 0, dueAt: null,
-    buildingType: "house-cottage", platformType: "YARD", origin, footprint,
+    buildingType: "house-cottage", visualKind: "BUILDING", visualAssetKey: "house-cottage", platformType: "YARD", origin, footprint,
     entrance: { x: origin.x, y: origin.y + height }, accessPath: [], accessKind: "PATH", stage: 1,
     createdAt: "now", updatedAt: "now", mergeRequests: [],
   };
 }
 
 describe("V6 city morphology and access planning", () => {
+  it("paves only free orthogonal apron cells around task buildings", () => {
+    const task = placedTask("building", { x: 2, y: 2 }, 3, 2);
+    const blocked = new Set(task.footprint.map((cell) => `${cell.x},${cell.y}`));
+    blocked.add("1,2");
+    const roads = new Map([["5,2", { x: 5, y: 2, mask: 0, structure: "ROAD", roadClass: "LOCAL" } satisfies RoadCellDto]]);
+    const apron = buildingApronCells({ tasks: [task], roads, blocked, isSurfaceTerrain: () => true });
+    expect(apron).not.toContainEqual({ x: 1, y: 2 });
+    expect(apron).not.toContainEqual({ x: 5, y: 2 });
+    expect(apron).toContainEqual({ x: 2, y: 1 });
+    expect(apron).toContainEqual({ x: 4, y: 4 });
+  });
+  it("maps the district lifecycle onto all five park stages", () => {
+    expect(greenAreaDevelopmentStage([])).toBe(1);
+    expect(greenAreaDevelopmentStage(["PLANNING"])).toBe(1);
+    expect(greenAreaDevelopmentStage(["STARTED"])).toBe(2);
+    expect(greenAreaDevelopmentStage(["IN_PROGRESS"])).toBe(3);
+    expect(greenAreaDevelopmentStage(["TESTING"])).toBe(4);
+    expect(greenAreaDevelopmentStage(["COMPLETED"])).toBe(5);
+    expect(greenAreaDevelopmentStage(["COMPLETED", "PLANNING"])).toBe(5);
+  });
+
   it("selects explicit semantics and follows the stable balanced city profile", () => {
     expect(chooseDistrictArchetype({ name: "Новые высотки", goal: "Новостройки", morphology: "BALANCED", existing: [], variation: 0 })).toBe("NEW_BUILD");
     expect(chooseDistrictArchetype({ name: "Сосновые дома", goal: "Жильё", morphology: "DENSE_CORE", existing: [], variation: 0 })).toBe("PRIVATE");
@@ -95,16 +119,31 @@ describe("V6 city morphology and access planning", () => {
 
   it("connects opposite sidewalks with sparse oriented crosswalk cells", () => {
     const roads = new Map<string, RoadCellDto>();
-    for (let x = -8; x <= 8; x += 1) for (let y = -1; y <= 1; y += 1) {
+    for (let x = -8; x <= 8; x += 1) for (let y = -1; y <= 0; y += 1) {
       roads.set(`${x},${y}`, { x, y, mask: 0, structure: "ROAD", roadClass: "LOCAL" });
     }
     const surfaces = buildSurfaceMap({ roads, cities: [city()], districts: [], tasks: [], features: [], isSurfaceTerrain: () => true });
     const crossings = [...surfaces.values()].filter((surface) => surface.kind === "CROSSWALK");
-    expect(crossings.length).toBeGreaterThanOrEqual(3);
+    expect(crossings.length).toBeGreaterThanOrEqual(2);
     expect(crossings.every((surface) => surface.orientation === "V")).toBe(true);
     const crossingX = crossings[0]!.x;
     expect(surfaces.get(`${crossingX},-2`)?.kind).toBe("SIDEWALK");
-    expect(surfaces.get(`${crossingX},2`)?.kind).toBe("SIDEWALK");
+    expect(surfaces.get(`${crossingX},1`)?.kind).toBe("SIDEWALK");
+  });
+
+  it("publishes park navigation only after its path-construction stage", () => {
+    const footprint = rectangleFootprint({ x: 0, y: 0 }, 8, 7);
+    const feature = (developmentStage: WorldFeatureDto["developmentStage"]): WorldFeatureDto => ({
+      id: "park", cityId: "city", districtId: "dense", parentFeatureId: null,
+      kind: "PARK", assetKind: "AREA", assetKey: "urban-formal", origin: { x: 0, y: 0 },
+      footprint, orientation: "S", accessPath: [], developmentStage,
+    });
+    const build = (developmentStage: WorldFeatureDto["developmentStage"]) => buildSurfaceMap({
+      roads: new Map(), cities: [city()], districts: [district("dense", "NEW_BUILD")], tasks: [],
+      features: [feature(developmentStage)], isSurfaceTerrain: () => true,
+    });
+    expect(build(1).has("3,3")).toBe(false);
+    expect(build(2).get("3,3")?.kind).toBe("PATH");
   });
 
   it("turns a one-cell seam between occupied facades into a paved alley", () => {
@@ -128,11 +167,15 @@ describe("V6 city morphology and access planning", () => {
     const entry = getBuilding("house-brick-duplex");
     const origin = { x: 1, y: 1 };
     const footprint = rectangleFootprint(origin, entry.footprint.width, entry.footprint.height);
-    const surfaces = new Map([["2,6", { x: 2, y: 6, kind: "SIDEWALK" as const }]]);
+    const entrance = entranceOutside(origin, entry, "S", entry.entrances[0]!.offset);
+    const sidewalk = { x: entrance.x, y: entrance.y + 2 };
+    const lotWidth = Math.max(8, entry.footprint.width + 2);
+    const lotHeight = Math.max(8, entry.footprint.height + 3);
+    const surfaces = new Map([[cellKey(sidewalk), { ...sidewalk, kind: "SIDEWALK" as const }]]);
     const plan = findAccessPlan({
       entry,
       origin,
-      lotCells: new Set(rectangleFootprint({ x: 0, y: 0 }, 6, 7).map(cellKey)),
+      lotCells: new Set(rectangleFootprint({ x: 0, y: 0 }, lotWidth, lotHeight).map(cellKey)),
       buildingFootprint: new Set(footprint.map(cellKey)),
       occupied: new Set(),
       roads: new Map(),
@@ -141,7 +184,7 @@ describe("V6 city morphology and access planning", () => {
     });
     expect(plan).not.toBeNull();
     expect(plan!.path.length).toBeLessThanOrEqual(6);
-    expect(cellKey(plan!.entrance)).toBe("2,4");
+    expect(cellKey(plan!.entrance)).toBe(cellKey(entrance));
   });
 
   it("persists the sidewalk endpoint of a green-area access path", () => {

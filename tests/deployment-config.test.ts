@@ -49,16 +49,16 @@ describe("production reverse proxy", () => {
   });
 
   it("persists several immutable asset revisions across application updates", () => {
-    expect(compose).toContain("tasktopia_asset_revisions:/app/dist/public/game-assets/v4/revisions");
+    expect(compose).toContain("tasktopia_asset_revisions:/app/dist/public/game-assets/v5/revisions");
     expect(compose).toMatch(/tasktopia_asset_revisions:\s*$/mu);
   });
 
   it("keeps source art outside the production Docker context", () => {
     expect(dockerignore).toContain("assets/*");
-    expect(dockerignore).toContain("!assets/pixel-city-pack-v4/manifest.json");
-    expect(dockerignore).toContain("!assets/pixel-city-pack-v4/catalog/**");
-    expect(dockerignore).not.toContain("!assets/pixel-city-pack-v4/reference");
-    expect(dockerignore).not.toContain("!assets/pixel-city-pack-v4/runtime");
+    expect(dockerignore).toContain("!assets/pixel-city-pack/manifest.json");
+    expect(dockerignore).toContain("!assets/pixel-city-pack/catalog/**");
+    expect(dockerignore).not.toContain("!assets/pixel-city-pack/reference");
+    expect(dockerignore).not.toContain("!assets/pixel-city-pack/runtime");
   });
 
   it("guards disk space and rotates pre-update database backups", () => {

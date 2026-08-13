@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "key": "highrise-glass-v5-study",
+  "category": "HIGHRISE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [12, 28],
+  "physicalFootprintCells": [12, 10],
+  "projectedRoofDepthCells": 4,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": {
+    "side": "S",
+    "offset": 6
+  },
+  "sitePreviewCells": [16, 18]
+}

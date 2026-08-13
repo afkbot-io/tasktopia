@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "key": "house-art-deco-apartments-v5-study",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [14, 22],
+  "physicalFootprintCells": [14, 12],
+  "projectedRoofDepthCells": 4,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 7 },
+  "sitePreviewCells": [18, 26]
+}

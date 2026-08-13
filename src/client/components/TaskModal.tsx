@@ -9,6 +9,10 @@ const statusLabel: Record<TaskDto["status"], string> = {
 };
 const priorityLabel: Record<TaskDto["priority"], string> = { LOW: "Низкий", NORMAL: "Обычный", HIGH: "Высокий", CRITICAL: "Критический" };
 const workItemLabel: Record<TaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
+const parkLabel: Record<string, string> = {
+  "urban-formal": "Формальный парк", "urban-community": "Общественный парк", "urban-central": "Центральный сквер",
+  "urban-botanical": "Ботанический сад", "urban-amusement": "Парк развлечений", "urban-park": "Городской парк",
+};
 const defectStatusLabel: Record<NonNullable<TaskDto["defects"]>[number]["status"], string> = {
   OPEN: "Зафиксирован", IN_PROGRESS: "Исправляется", VERIFYING: "Проверяется", FIXED: "Исправлен",
 };
@@ -109,7 +113,7 @@ export function TaskModal({ taskId, revision, onClose }: TaskModalProps) {
       {!task ? <div className="modal-loading">Загружаем задачу…</div> : <>
         <header className="task-header">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
-          <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
+          <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
           <button className="task-share" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "🔗 Ссылка"}</button>
         </header>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>

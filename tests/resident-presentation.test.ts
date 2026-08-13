@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   residentActivityPosition,
   residentActivityVisualKey,
+  residentGroundPosition,
   residentWalkPresentation,
 } from "../src/client/resident-presentation";
 
 describe("resident presentation", () => {
-  it("alternates authored stride frames without rotating the resident sprite", () => {
+  it("cycles through three authored stride frames without rotating the resident sprite", () => {
     expect(residentWalkPresentation({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.10, 0)).toEqual({
       key: "walker-east-a",
       scaleX: 1,
@@ -17,8 +18,13 @@ describe("resident presentation", () => {
       scaleX: 1,
       scaleY: 1,
     });
-    expect(residentWalkPresentation({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.40, 0)).toEqual({
-      key: "walker-west-b",
+    expect(residentWalkPresentation({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.72, 0)).toEqual({
+      key: "walker-east-c",
+      scaleX: 1,
+      scaleY: 1,
+    });
+    expect(residentWalkPresentation({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.72, 0)).toEqual({
+      key: "walker-west-c",
       scaleX: 1,
       scaleY: 1,
     });
@@ -31,6 +37,12 @@ describe("resident presentation", () => {
 
   it("positions a speech bubble in world space above the resident head", () => {
     expect(residentActivityPosition({ x: 84, y: 96 }, 16, 1)).toEqual({ x: 84, y: 76 });
+  });
+
+  it("keeps the resident foot anchor on the centreline of every walk cell", () => {
+    expect(residentGroundPosition({ x: 2, y: 3 }, { x: 3, y: 3 }, 0, 8)).toEqual({ x: 20, y: 28 });
+    expect(residentGroundPosition({ x: 2, y: 3 }, { x: 3, y: 3 }, 0.5, 8)).toEqual({ x: 24, y: 28 });
+    expect(residentGroundPosition({ x: 3, y: 3 }, { x: 3, y: 4 }, 1, 8)).toEqual({ x: 28, y: 36 });
   });
 
   it("keeps the same resident identity while thinking or talking", () => {

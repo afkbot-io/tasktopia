@@ -5,7 +5,11 @@ import { CHUNK_SIZE, type AppService } from "../app-service";
 import type { Db } from "../db";
 import { GRID_DIRECTIONS, cellKey, connected, contains, floorDiv, intersects, manhattan, neighbors4 } from "./grid";
 import { isWater, terrainAt } from "./terrain";
-import { buildingCompatibleWithArchetype, buildingZoningRole, primaryZoningRole } from "./city-generation";
+import {
+  buildingZoningRole,
+  primaryZoningRole,
+  taskBuildingCompatibleWithArchetype,
+} from "./city-generation";
 
 type RoadRow = RoadCellDto;
 
@@ -185,7 +189,7 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
     const building = BUILDING_CATALOG.find((entry) => entry.key === task.buildingType);
     if (!building) {
       addViolation(violations, "TASK_BUILDING_UNKNOWN", `${task.title}: неизвестный тип ${task.buildingType}`);
-    } else if (!buildingCompatibleWithArchetype(building, district.archetype)) {
+    } else if (!taskBuildingCompatibleWithArchetype(building, district.archetype)) {
       addViolation(violations, "ZONING_INCOMPATIBLE", `${task.title}: ${building.label} несовместим с районом ${district.archetype}`);
     }
     const allowed = districtCells.get(district.id)!;
@@ -234,7 +238,11 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
     const owningDistricts = districts.filter((district) => district.cityId === city.id
       && area.footprint.every((cell) => districtCells.get(district.id)?.has(cellKey(cell))));
     if (owningDistricts.length !== 1) addViolation(violations, "GREEN_AREA_OUTSIDE_DISTRICT", `${area.assetKey}: площадь не принадлежит одному району`);
-    const expectedPathCells = new Set(greenAreaPathCells(area.footprint).map(cellKey));
+    // Stage one is a prepared earth plot: the authored path geometry exists in
+    // the area contract, but is deliberately neither visible nor walkable yet.
+    // From stage two onward audit the same shared cells used by the renderer
+    // and surface publisher.
+    const expectedPathCells = new Set((area.developmentStage >= 2 ? greenAreaPathCells(area.footprint, area.assetKey) : []).map(cellKey));
     for (const cell of area.footprint) {
       const key = cellKey(cell);
       if (!contains(city.bounds, cell)) addViolation(violations, "GREEN_AREA_OUTSIDE_CITY", `${area.assetKey}: клетка ${key} вне города`);
@@ -259,7 +267,7 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
       if (occupiedTaskCells.has(key)) addViolation(violations, "GREEN_AREA_ACCESS_CROSSES_TASK", `${area.assetKey}: подход проходит через задачу`);
       if (isWater(terrainAt(seed, cell.x, cell.y).terrain)) addViolation(violations, "GREEN_AREA_ACCESS_CROSSES_WATER", `${area.assetKey}: подход проходит по воде`);
     }
-    const sidewalkTouchPoints = accessCells.length > 0 ? [accessCells.at(-1)!] : greenAreaPathCells(area.footprint);
+    const sidewalkTouchPoints = accessCells.length > 0 ? [accessCells.at(-1)!] : greenAreaPathCells(area.footprint, area.assetKey);
     const pedestrianQueue = [...sidewalkTouchPoints];
     const pedestrianVisited = new Set<string>();
     let reachesSidewalk = false;
@@ -482,7 +490,7 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
   const compatibleTasks = tasks.filter((task) => {
     const district = districtById.get(task.districtId);
     const building = BUILDING_CATALOG.find((entry) => entry.key === task.buildingType);
-    return district && building && buildingCompatibleWithArchetype(building, district.archetype);
+    return district && building && taskBuildingCompatibleWithArchetype(building, district.archetype);
   }).length;
 
   return {

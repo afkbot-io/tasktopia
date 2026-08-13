@@ -1,0 +1,28 @@
+{
+  "key": "house-canalside-terrace",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [
+    8,
+    11
+  ],
+  "physicalFootprintCells": [
+    8,
+    6
+  ],
+  "projectedRoofDepthCells": 2,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": {
+    "side": "S",
+    "offset": 4
+  },
+  "doorSizePx": [
+    8,
+    16
+  ],
+  "sitePreviewCells": [
+    12,
+    12
+  ]
+}

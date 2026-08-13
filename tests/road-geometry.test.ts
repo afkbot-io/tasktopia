@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Cell } from "../src/shared/contracts";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
+import { roadBandRole, roadClassSupportsVehicle } from "../src/shared/road-profile";
 import { centeredRoadOffsets, roadCorridorBlockers, stampRoadCorridor } from "../src/server/world/road-geometry";
 import { cellKey, orthogonalPath } from "../src/server/world/grid";
 
@@ -8,12 +9,35 @@ function keys(cells: Cell[]): Set<string> {
   return new Set(cells.map(cellKey));
 }
 
-describe("v9 canonical road geometry", () => {
-  it("uses one cell per direction for two-lane local streets", () => {
+describe("canonical road geometry", () => {
+  it("uses two travel cells locally and a marked median in larger streets", () => {
     expect(ROAD_WIDTH.LOCAL).toBe(2);
-    expect(ROAD_WIDTH.COLLECTOR).toBe(2);
+    expect(ROAD_WIDTH.COLLECTOR).toBe(3);
+    expect(ROAD_WIDTH.ARTERIAL).toBe(3);
+    expect(ROAD_WIDTH.HIGHWAY).toBe(3);
     expect(centeredRoadOffsets(2)).toEqual([-1, 0]);
-    expect(centeredRoadOffsets(4)).toEqual([-2, -1, 0, 1]);
+    expect(centeredRoadOffsets(3)).toEqual([-1, 0, 1]);
+  });
+
+  it("keeps full-size buses on separated three-cell road classes", () => {
+    expect(roadClassSupportsVehicle("LOCAL", "CAR")).toBe(true);
+    expect(roadClassSupportsVehicle("LOCAL", "BUS")).toBe(false);
+    expect(roadClassSupportsVehicle("COLLECTOR", "BUS")).toBe(true);
+    expect(roadClassSupportsVehicle("ARTERIAL", "BUS")).toBe(true);
+  });
+
+  it("stamps a complete three-cell collector cross-section", () => {
+    const road = keys(stampRoadCorridor(orthogonalPath({ x: -2, y: 0 }, { x: 2, y: 0 }, true), "COLLECTOR", ROAD_WIDTH));
+    for (let x = -2; x <= 2; x += 1) for (let y = -1; y <= 1; y += 1) expect(road.has(`${x},${y}`)).toBe(true);
+    expect(road.size).toBe(15);
+  });
+
+  it("classifies visual and routing roles from the same three-cell band", () => {
+    const cells = stampRoadCorridor(orthogonalPath({ x: -4, y: 0 }, { x: 4, y: 0 }, true), "COLLECTOR", ROAD_WIDTH);
+    const graph = new Map(cells.map((cell) => [`${cell.x},${cell.y}`, cell]));
+    expect(roadBandRole(graph, { x: 0, y: -1 })).toEqual({ kind: "TRAVEL", axis: "H", dx: -1, dy: 0 });
+    expect(roadBandRole(graph, { x: 0, y: 0 })).toEqual({ kind: "MEDIAN", axis: "H" });
+    expect(roadBandRole(graph, { x: 0, y: 1 })).toEqual({ kind: "TRAVEL", axis: "H", dx: 1, dy: 0 });
   });
 
   it("stamps every cross-section of a straight local street", () => {

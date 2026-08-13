@@ -14,12 +14,13 @@ import { greenAreaPathCells } from "../../shared/green-area";
 import { cellKey, contains, neighbors4 } from "./grid";
 
 export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
-  // One 8 px cell is one traffic lane. Local and district collector streets
-  // therefore use an even two-cell profile: one lane per direction.
+  // A local street has one 8 px travel cell in each direction. Larger roads
+  // add one central marking/median cell; the two outer cells remain the only
+  // travel lanes. No canonical road is wider than three cells.
   LOCAL: 2,
-  COLLECTOR: 2,
-  ARTERIAL: 4,
-  HIGHWAY: 4,
+  COLLECTOR: 3,
+  ARTERIAL: 3,
+  HIGHWAY: 3,
 };
 
 export function findAreaAccessPath(input: {
@@ -127,6 +128,15 @@ export function buildingCompatibleWithArchetype(entry: BuildingCatalogEntry, arc
   return true;
 }
 
+/** Task buildings obey the same zoning contract as the generated city. */
+export function taskBuildingCompatibleWithArchetype(entry: BuildingCatalogEntry, archetype: DistrictArchetype): boolean {
+  if (archetype === "PRIVATE" || archetype === "NEW_BUILD") return buildingCompatibleWithArchetype(entry, archetype);
+  // The current task catalog intentionally focuses on residential growth.
+  // Dense task buildings remain the neutral fallback for older commercial or
+  // civic district records until those task types get an explicit selector.
+  return entry.tags.includes("new-build");
+}
+
 export function primaryZoningRole(archetype: DistrictArchetype, role: BuildingZoningRole): boolean {
   if (archetype === "PRIVATE") return role === "PRIVATE_RESIDENTIAL";
   if (archetype === "NEW_BUILD") return role === "DENSE_RESIDENTIAL";
@@ -206,6 +216,32 @@ export function buildingGapPaths(districts: DistrictDto[], tasks: Array<Pick<Tas
   return [...cells.values()];
 }
 
+/**
+ * A one-cell paved apron visually seats a facade into the public realm. It is
+ * derived from free orthogonal neighbours, so it never covers a road, another
+ * parcel or a persisted world feature.
+ */
+export function buildingApronCells(input: {
+  tasks: Array<Pick<TaskDto, "visualKind" | "footprint">>;
+  roads: ReadonlyMap<string, RoadCellDto>;
+  blocked: ReadonlySet<string>;
+  isSurfaceTerrain: (cell: Cell) => boolean;
+}): Cell[] {
+  const result = new Map<string, Cell>();
+  for (const task of input.tasks) {
+    if (task.visualKind !== "BUILDING") continue;
+    const own = new Set(task.footprint.map(cellKey));
+    for (const footprintCell of task.footprint) {
+      for (const cell of neighbors4(footprintCell)) {
+        const key = cellKey(cell);
+        if (own.has(key) || input.roads.has(key) || input.blocked.has(key) || !input.isSurfaceTerrain(cell)) continue;
+        result.set(key, cell);
+      }
+    }
+  }
+  return [...result.values()];
+}
+
 export function buildSurfaceMap(input: {
   roads: Map<string, RoadCellDto>;
   cities: CityDto[];
@@ -279,8 +315,22 @@ export function buildSurfaceMap(input: {
     }
   }
 
+  // New facades sit on the same small-scale paving language as the surrounding
+  // sidewalk instead of ending abruptly against grass. Street sidewalk and
+  // access cells retain priority over this decorative apron.
+  for (const cell of buildingApronCells({ tasks: input.tasks, roads: input.roads, blocked, isSurfaceTerrain: input.isSurfaceTerrain })) {
+    const key = cellKey(cell);
+    if (surfaces.get(key)?.kind !== "SIDEWALK") surfaces.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
+  }
+
   for (const task of input.tasks) {
     const finish = pathFinish(task.districtId);
+    if (task.visualKind === "PARK" && task.stage >= 2) {
+      for (const cell of greenAreaPathCells(task.footprint, task.visualAssetKey)) {
+        const key = cellKey(cell);
+        if (!input.roads.has(key)) surfaces.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
+      }
+    }
     for (const cell of task.accessPath) {
       const key = cellKey(cell);
       if (!input.roads.has(key) && !blocked.has(key) && surfaces.get(key)?.kind !== "SIDEWALK") {
@@ -290,8 +340,8 @@ export function buildSurfaceMap(input: {
   }
   for (const feature of activeFeatures) {
     const finish = pathFinish(feature.districtId ?? feature.cityId ?? feature.id);
-    if (feature.assetKind === "AREA") {
-      for (const cell of greenAreaPathCells(feature.footprint)) {
+    if (feature.assetKind === "AREA" && feature.developmentStage >= 2) {
+      for (const cell of greenAreaPathCells(feature.footprint, feature.assetKey)) {
         const key = cellKey(cell);
         if (!input.roads.has(key)) surfaces.set(key, { ...cell, kind: "PATH", finish });
       }
@@ -324,13 +374,11 @@ function publishCrosswalks(roads: Map<string, RoadCellDto>, surfaces: Map<string
       const expectedWidth = ROAD_WIDTH[firstRoad.roadClass];
       const cells: Cell[] = [];
       let current = first;
-      while (roads.has(cellKey(current)) && cells.length <= expectedWidth) {
+      while (roads.has(cellKey(current)) && cells.length < expectedWidth) {
         cells.push(current);
         current = { x: current.x + direction.x, y: current.y + direction.y };
       }
-      // Imported/legacy maps may have an odd three-cell local road. Accept one
-      // compatibility cell, but reject wider junction envelopes and turns.
-      if (surfaces.get(cellKey(current))?.kind !== "SIDEWALK" || cells.length < 2 || cells.length > expectedWidth + 1) continue;
+      if (surfaces.get(cellKey(current))?.kind !== "SIDEWALK" || cells.length !== expectedWidth) continue;
       if (cells.some((cell) => {
         const road = roads.get(cellKey(cell));
         return !road || road.structure !== "ROAD" || road.roadClass !== firstRoad.roadClass;

@@ -51,6 +51,7 @@ export async function seedGrowthDemo(service: AppService, countryId: string, dis
   const city = (await service.listCities(countryId)).find((candidate) => candidate.name === "Centuria") ?? await service.createCity(countryId, {
             name: "Centuria",
             description: "Live-test города, который последовательно растёт до ста задач.",
+            morphology: "DENSE_CORE",
             idempotencyKey: "growth-city-centuria",
           });
 

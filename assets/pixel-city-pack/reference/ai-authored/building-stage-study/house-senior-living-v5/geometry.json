@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "key": "house-senior-living-v5-study",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [16, 16],
+  "physicalFootprintCells": [16, 10],
+  "projectedRoofDepthCells": 4,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 8 },
+  "sitePreviewCells": [20, 20]
+}

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "key": "highrise-stepped-v5-study",
+  "category": "HIGHRISE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [16, 32],
+  "physicalFootprintCells": [16, 12],
+  "projectedRoofDepthCells": 5,
+  "foundationThicknessCells": 3,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 8 },
+  "sitePreviewCells": [20, 24]
+}

@@ -1,0 +1,13 @@
+{
+  "key": "civic-health-center",
+  "category": "CIVIC",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [14, 11],
+  "physicalFootprintCells": [14, 8],
+  "projectedRoofDepthCells": 3,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 7 },
+  "doorSizePx": [16, 16],
+  "sitePreviewCells": [18, 15]
+}

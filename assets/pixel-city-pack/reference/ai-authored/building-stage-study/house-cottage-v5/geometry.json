@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "key": "house-cottage-v5-study",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [6, 8],
+  "physicalFootprintCells": [6, 5],
+  "projectedRoofDepthCells": 2,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 3 },
+  "sitePreviewCells": [10, 12]
+}

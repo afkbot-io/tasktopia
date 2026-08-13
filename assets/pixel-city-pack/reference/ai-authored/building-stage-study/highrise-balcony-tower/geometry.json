@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "key": "highrise-balcony-tower-study",
+  "category": "HIGHRISE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [18, 35],
+  "physicalFootprintCells": [18, 16],
+  "projectedRoofDepthCells": 7,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": {
+    "side": "S",
+    "offset": 9
+  },
+  "sitePreviewCells": [20, 30]
+}

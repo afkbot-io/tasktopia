@@ -40,7 +40,7 @@ test("public AI integration guide is directly accessible", async ({ request }) =
   const favicon = await request.get("/favicon.svg");
   expect(favicon.ok()).toBe(true);
   expect(favicon.headers()["content-type"]).toContain("image/svg+xml");
-  const staticManifest = await request.get("/game-assets/v4/manifest.json");
+  const staticManifest = await request.get("/game-assets/v5/manifest.json");
   expect(staticManifest.ok()).toBe(true);
   expect(staticManifest.headers()["access-control-allow-origin"]).toBe(expectedAppOrigin);
   expect(staticManifest.headers()["cross-origin-resource-policy"]).toBe("cross-origin");

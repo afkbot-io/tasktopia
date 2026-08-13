@@ -1,7 +1,7 @@
 # Tasktopia AI integration guide
 
-Version: 1.12.2
-Last updated: 2026-08-11
+Version: 1.13.0
+Last updated: 2026-08-13
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
@@ -454,7 +454,9 @@ Required scope: `tasks:read`.
 
 #### `task.create`
 
-Creates a task/building.
+Creates a task and its world visual. The default visual is a building. A public
+park is also a task, not a decorative record: it receives the same task number,
+card, five statuses, checklist, defects, deletion and realtime updates.
 
 ```json
 {
@@ -490,6 +492,12 @@ omit the field when no exact building was requested. Keys beginning with
 `landmark-` create a task-linked city landmark: it follows the task through all
 five construction stages, and only one landmark task is allowed per city. The
 country-level State Archive is separate and is not selected with `buildingHint`.
+
+To create a task-backed park, set `visualKind` to `PARK` and optionally choose
+`parkVariant`: `urban-formal`, `urban-community`, `urban-central`,
+`urban-botanical`, `urban-amusement`, or `urban-park`. Do not infer a park from
+words such as "parking"; use `PARK` only when the user explicitly wants a public
+green-space task. For ordinary tasks omit both fields.
 
 Required scope: `tasks:write`.
 

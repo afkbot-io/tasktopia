@@ -1,0 +1,13 @@
+{
+  "key": "house-townhouse",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [4, 9],
+  "physicalFootprintCells": [4, 5],
+  "projectedRoofDepthCells": 2,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 2 },
+  "doorSizePx": [8, 16],
+  "sitePreviewCells": [8, 13]
+}

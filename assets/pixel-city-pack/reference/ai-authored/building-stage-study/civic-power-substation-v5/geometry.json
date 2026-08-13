@@ -1,0 +1,13 @@
+{
+  "key": "civic-power-substation",
+  "category": "CIVIC",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [12, 10],
+  "physicalFootprintCells": [12, 7],
+  "projectedRoofDepthCells": 3,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 6 },
+  "doorSizePx": [16, 16],
+  "sitePreviewCells": [16, 15]
+}

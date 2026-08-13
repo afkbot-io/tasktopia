@@ -166,7 +166,7 @@ app.route({
 
 const publicRoot = join(process.cwd(), "dist/public");
 if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
-  const gameAssetRoot = join(publicRoot, "game-assets/v4");
+  const gameAssetRoot = join(publicRoot, "game-assets/v5");
   const revisionRoot = join(gameAssetRoot, "revisions");
   await synchronizeAssetRevision(gameAssetRoot, revisionRoot, ASSET_REVISION);
   await app.register(fastifyStatic, {
@@ -196,7 +196,7 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
     },
   });
   app.get<{ Params: { revision: string; "*": string } }>(
-    "/game-assets/v4/revisions/:revision/*",
+    "/game-assets/v5/revisions/:revision/*",
     async (request, reply) => {
       const assetPath = request.params["*"];
       const unsafeSegment = assetPath.split("/").some((segment) => segment === ".." || segment === ".");

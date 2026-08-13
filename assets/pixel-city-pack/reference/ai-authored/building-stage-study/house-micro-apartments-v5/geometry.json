@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "key": "house-micro-apartments-v5-study",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [12, 18],
+  "physicalFootprintCells": [12, 10],
+  "projectedRoofDepthCells": 4,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 6 },
+  "sitePreviewCells": [16, 22]
+}

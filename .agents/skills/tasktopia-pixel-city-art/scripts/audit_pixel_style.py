@@ -32,6 +32,22 @@ def mask_difference(left: Image.Image, right: Image.Image) -> float:
     return changed / (left.width * left.height)
 
 
+def pixel_difference(left: Image.Image, right: Image.Image) -> float:
+    """Measure visible stage change, including scaffold/material repainting.
+
+    Alpha-only comparison is useful for silhouette continuity but falsely
+    rejects a near-complete construction stage whose scaffolding and unfinished
+    facade occupy pixels already covered by the finished building.
+    """
+    diff = ImageChops.difference(left.convert("RGBA"), right.convert("RGBA"))
+    changed = sum(
+        1
+        for pixel in diff.getdata()
+        if pixel != (0, 0, 0, 0)
+    )
+    return changed / (left.width * left.height)
+
+
 def silhouette_signature(image: Image.Image) -> bytes:
     return image.getchannel("A").point(lambda value: 255 if value else 0).tobytes()
 
@@ -129,10 +145,11 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
             continue
         if len({image.tobytes() for image in images}) != 5:
             errors.append(f"{label}: stages contain duplicate drawings")
-        differences = [mask_difference(images[index], images[index + 1]) for index in range(4)]
-        for index, difference in enumerate(differences, 1):
+        mask_differences = [mask_difference(images[index], images[index + 1]) for index in range(4)]
+        pixel_differences = [pixel_difference(images[index], images[index + 1]) for index in range(4)]
+        for index, difference in enumerate(pixel_differences, 1):
             if difference < 0.015:
-                errors.append(f"{label}: stages {index}->{index + 1} change only {difference:.1%} of canvas")
+                errors.append(f"{label}: stages {index}->{index + 1} change only {difference:.1%} of visible pixels")
         centres = [((left + right) / 2) for left, _, right, _ in bounds]
         if max(centres) - min(centres) > CELL:
             warnings.append(f"{label}: stage horizontal centre drifts by more than one cell")
@@ -170,7 +187,8 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         category_signatures[str(building.get("category", "UNKNOWN"))][silhouette_signature(images[-1])].append(key)
         metrics[key] = {
             "coverage": [round(value, 4) for value in stage_coverage],
-            "stageMaskDifference": [round(value, 4) for value in differences],
+            "stageMaskDifference": [round(value, 4) for value in mask_differences],
+            "stagePixelDifference": [round(value, 4) for value in pixel_differences],
             "finishedBounds": list(final_bounds),
         }
 
@@ -203,6 +221,31 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         minimum = minimum_opaque_bounds.get(key)
         if minimum and (bounds is None or bounds[2] - bounds[0] < minimum[0] or bounds[3] - bounds[1] < minimum[1]):
             errors.append(f"{label}: authored subject is too small for its runtime footprint")
+        if prop.get("visualProfile") == "TASKTOPIA_V5_TREE_FRONTAL_TOP":
+            if image.size != (16, 32):
+                errors.append(f"{label}: standard V5 tree canvas must be 16x32")
+            if footprint != [1, 1]:
+                errors.append(f"{label}: standard V5 tree footprint must be 1x1")
+            if prop.get("anchorPx") != [8, 32]:
+                errors.append(f"{label}: standard V5 tree anchor must be [8, 32]")
+            planting_top = image.height - 2
+            outside_planting_cell = [
+                (x, y)
+                for y in range(planting_top, image.height)
+                for x in range(image.width)
+                if image.getpixel((x, y))[3] and not (4 <= x < 12)
+            ]
+            if outside_planting_cell:
+                errors.append(
+                    f"{label}: {len(outside_planting_cell)} opaque pixel(s) escape "
+                    "the lower-centre 8x8 planting cell at ground contact"
+                )
+            bottom_contact = [
+                x for x in range(4, 12)
+                if x < image.width and image.getpixel((x, image.height - 1))[3]
+            ]
+            if not bottom_contact:
+                errors.append(f"{label}: trunk/root does not touch the planting-cell baseline")
 
     ai_prop_catalog = manifest_path.parent / "catalog" / "ai-authored-props.json"
     if ai_prop_catalog.exists():
@@ -256,6 +299,8 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                     errors.append(f"vehicles/{variant}/{orientation}: model is too small at native scale")
             if vehicle.get("artSource") != "AI_AUTHORED" or not vehicle.get("sourceSheet"):
                 errors.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
+            if vehicle.get("visualProfile") != "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE":
+                errors.append(f"vehicles/{variant}/{orientation}: wrong V5 oblique-road visual profile")
         horizontal = orientations.get("horizontal")
         north = orientations.get("north")
         south = orientations.get("south")

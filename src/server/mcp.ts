@@ -247,6 +247,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]),
       priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().optional(),
       buildingHint: z.string().max(100).optional(), assigneeEmail: z.string().email().optional(),
+      visualKind: z.enum(["BUILDING", "PARK"]).optional().describe("PARK создаёт привязанный к задаче парк с теми же пятью стадиями"),
+      parkVariant: z.enum(["urban-formal", "urban-community", "urban-central", "urban-botanical", "urban-amusement", "urban-park"]).optional(),
       assigneeRole: z.string().max(80).optional().describe("Роль ответственного, например backend-lead, ai-agent:hermes, qa"),
       forUserEmail: z.string().email().optional().describe("Заказчик/владелец задачи — для кого делается работа"),
       idempotencyKey: z.string().min(4).max(160),
@@ -260,6 +262,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
                                                 workItemType: input.workItemType, acceptanceCriteria: input.acceptanceCriteria, systemAnalysis: input.systemAnalysis,
                                                 architecture: input.architecture, designSystem: input.designSystem, implementationPlan: input.implementationPlan,
                                                 estimate: input.estimate, priority: input.priority, dueAt: input.dueAt, buildingHint: input.buildingHint,
+                                                visualKind: input.visualKind, parkVariant: input.parkVariant,
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.assigneeEmail), assigneeRole: input.assigneeRole,
                                                 forUserId: await resolveMember(input.forUserEmail), idempotencyKey: input.idempotencyKey,
                                               });

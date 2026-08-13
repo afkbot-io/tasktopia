@@ -42,6 +42,8 @@ export type ComplexPlanInput = {
   /** The demand that caused growth must fit at least one generated lot. */
   minimumLot?: { width: number; height: number };
   seed: number;
+  /** Prefer one connected rectilinear street grid for a dense urban core. */
+  denseGrid?: boolean;
   /** Force a shape (tests, special sites); otherwise chosen from the palette. */
   shape?: BlockPattern;
   /**
@@ -114,7 +116,10 @@ type ArchetypeProfile = { baseW: number; minW: number; maxW: number; depth: numb
 
 const PROFILE: Record<DistrictArchetype, ArchetypeProfile> = {
   NEW_BUILD: { baseW: 6, minW: 5, maxW: 8, depth: 5 },
-  PRIVATE: { baseW: 4, minW: 3, maxW: 5, depth: 4 },
+  // Current private houses span 4–9 cells. Seven-cell bays keep four varied
+  // facades on one frontage; a narrow townhouse leaves a reusable side strip
+  // instead of forcing the next task onto another road.
+  PRIVATE: { baseW: 7, minW: 6, maxW: 9, depth: 6 },
   // Mixed-use catalog entries include 5-cell-deep podiums and towers. A
   // four-cell lot made those valid buildings impossible to place and forced
   // speculative district growth before falling back to an unrelated model.
@@ -178,11 +183,36 @@ function tiersThatFit(rect: Rect, depth: number): number {
 }
 
 function chooseShape(input: ComplexPlanInput, fit: number): BlockPattern {
+  // Establish a legible neighbourhood frontage first. Courtyards and corner
+  // blocks diversify later growth after the district already has a coherent
+  // main street instead of starting as isolated 2+2 building islands.
+  if ((input.archetype === "PRIVATE" || input.archetype === "NEW_BUILD") && input.complexIndex === 0 && input.minimumLot) return "COMPLEX_ROW";
   if (input.targetLots <= 4) return input.archetype === "NEW_BUILD" ? "COMPLEX_POINT" : "COMPLEX_ROW";
   const h = hashCoordinate(input.seed, input.rect.minX, input.rect.minY, 431 + input.complexIndex);
   if (fit >= 3) return h < 0.5 ? "COMPLEX_SLAB" : "COMPLEX_SQUARE";
   if (fit === 2) return h < 0.35 ? "COMPLEX_SQUARE" : h < 0.6 ? "COMPLEX_L_SHAPE" : h < 0.8 ? "COMPLEX_SLAB" : "COMPLEX_COURT";
   return "COMPLEX_ROW";
+}
+
+/**
+ * Dense cities still need recognisable blocks, not one repeated ladder. The
+ * complex index walks a seeded palette, which keeps regeneration stable while
+ * neighbouring blocks alternate between slabs, perimeter courts and corner
+ * forms. A shallow site falls back to the only shape it can safely host.
+ */
+function chooseDenseShape(input: ComplexPlanInput, fit: number): BlockPattern {
+  if (fit < 2) return input.archetype === "NEW_BUILD" && input.targetLots <= 4 ? "COMPLEX_POINT" : "COMPLEX_ROW";
+  // The first two blocks form a dependable compact frontage runway. Later
+  // blocks introduce courts and corners after the district has enough streets
+  // to connect them without sacrificing the next requested building.
+  if (input.complexIndex === 0 && input.minimumLot) return "COMPLEX_ROW";
+  if (input.complexIndex === 0) return "COMPLEX_SLAB";
+  if (input.complexIndex === 1) return "COMPLEX_SLAB";
+  const palette: BlockPattern[] = fit >= 3
+    ? ["COMPLEX_SLAB", "COMPLEX_SQUARE", "COMPLEX_L_SHAPE", "COMPLEX_COURT"]
+    : ["COMPLEX_SQUARE", "COMPLEX_L_SHAPE", "COMPLEX_COURT", "COMPLEX_SLAB"];
+  const offset = Math.floor(hashCoordinate(input.seed, input.rect.minX, input.rect.minY, 701) * palette.length);
+  return palette[(input.complexIndex - 2 + offset) % palette.length]!;
 }
 
 export function planComplex(input: ComplexPlanInput): ComplexPlan {
@@ -196,7 +226,7 @@ export function planComplex(input: ComplexPlanInput): ComplexPlan {
     depth: Math.max(baseProfile.depth, input.minimumLot?.height ?? 0),
   };
   const fit = tiersThatFit(input.rect, profile.depth);
-  const shape = input.shape ?? chooseShape(input, fit);
+  const shape = input.shape ?? (input.denseGrid ? chooseDenseShape(input, fit) : chooseShape(input, fit));
   const groupId = `${input.districtId}:complex:${String(input.complexIndex).padStart(3, "0")}`;
   const facadeFamily = `${input.archetype.toLowerCase()}-${Math.floor(hashCoordinate(input.seed, input.rect.minX, input.rect.minY, 613 + input.complexIndex) * 5)}`;
   const allowed = new Set(input.cells.map(cellKey));

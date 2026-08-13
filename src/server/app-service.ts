@@ -1,7 +1,15 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { BUILDING_CATALOG, PROP_CATALOG, getBuilding, inferTaskTags, type BuildingCatalogEntry } from "../shared/catalog";
+import {
+  BUILDING_CATALOG,
+  PROP_CATALOG,
+  TASK_BUILDING_CATALOG,
+  taskBuildingPlatform,
+  getBuilding,
+  inferTaskTags,
+  type BuildingCatalogEntry,
+} from "../shared/catalog";
 import {
   STATUS_PROGRESS_RANGE,
   TASK_STAGE,
@@ -66,13 +74,16 @@ import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "./world/
 import { roadCorridorBlockers, stampRoadCorridor } from "./world/road-geometry";
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
 import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates } from "./green-area-planner";
+import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
+import type { CountryAtlasDto } from "../shared/country-atlas-contract";
 import { compactLotsAfterPlacement, organicComplexLotTarget, planComplex } from "./world/complex-planner";
+import { projectCountryAtlas } from "./world/country-atlas";
 import {
   ROAD_WIDTH,
   archetypeAffinity,
-  buildingCompatibleWithArchetype,
   buildingZoningRole,
   buildSurfaceMap,
+  buildingApronCells,
   buildingGapPaths,
   chooseDistrictArchetype,
   cityMorphology,
@@ -80,6 +91,7 @@ import {
   findAreaAccessPath,
   findAccessPlan,
   primaryZoningRole,
+  taskBuildingCompatibleWithArchetype,
 } from "./world/city-generation";
 
 export const CHUNK_SIZE = 64;
@@ -87,6 +99,12 @@ const CITY_SIZE = 100;
 const CITY_SPACING = 320;
 const COUNTRY_VIEW_MARGIN = 54;
 const SPRINT_COLORS = ["#52a8d8", "#dfa94b", "#9877c7", "#69ad67", "#c86f67", "#4fb49f", "#d585b4"];
+const COUNTRY_ATLAS_DISTRICT_COLORS = [
+  "#5db8e5", "#e1ad52", "#a88adb", "#79c67b", "#e27d73", "#58c1ae", "#d990c2", "#78a5e6",
+  "#e28e58", "#8f82d7", "#b7c765", "#d37bab", "#65b8c1", "#d7c15f", "#b49ad8", "#d87462",
+  "#83c19a", "#82aac8", "#c99a5a", "#9a83bf", "#70b2a1", "#d88c78", "#79b5d2", "#aebb67",
+  "#c37e95", "#6fbfcb", "#d6a66b", "#978fd0", "#75b777", "#c684c3", "#6ba3b3", "#cf8e55",
+] as const;
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
 const ARCHIVE_COMPOUND = { width: 18, height: 12 } as const;
 const ARCHIVE_CITY_CLEARANCE = 24;
@@ -137,6 +155,36 @@ export function connectorCorridorBlocked(
   if (existingRoads.has(key)) return false;
   return occupied.has(key)
     || blockedByDistrict.has(key) && (!allowForeign || !foreignSoft.has(key));
+}
+
+/**
+ * Candidate widths for a demand-driven district patch. The complex planner
+ * keeps a one-cell search margin around its own V5 envelope, so the patch must
+ * be at least two cells larger than the minimum complex rectangle. A fixed
+ * 44-cell ceiling made 18–24-cell new-build facades impossible to grow toward
+ * east/west even though the surrounding terrain was free.
+ */
+export function districtGrowthThicknesses(entry: BuildingCatalogEntry): number[] {
+  if (!entry.tags.includes("new-build")) return [24, 28, 32];
+  const minimumComplexWidth = Math.max(64, Math.min(72, entry.footprint.width * 4 + 8));
+  const required = Math.ceil((minimumComplexWidth + 2) / 4) * 4;
+  return [...new Set([64, 68, 72, required, required + 4])].sort((left, right) => left - right);
+}
+
+export function complexMinimumRect(entry: BuildingCatalogEntry, targetLots: number): { width: number; height: number } {
+  if (!entry.tags.includes("new-build")) {
+    return { width: Math.max(14, entry.footprint.width + 6), height: Math.max(12, entry.footprint.height + 6) };
+  }
+  // A three/four-lot retry is a genuine point complex: one frontage row plus
+  // the street and its margins. Keeping the two-tier dimensions here made the
+  // documented 10 → 6 → 3 retry sequence retry the same oversized rectangle.
+  if (targetLots <= 4) {
+    return { width: Math.max(14, entry.footprint.width + 8), height: Math.max(12, entry.footprint.height + 7) };
+  }
+  return {
+    width: Math.max(14, Math.min(44, entry.footprint.width * 2 + 8)),
+    height: Math.max(12, Math.min(34, entry.footprint.height * 2 + 9)),
+  };
 }
 
 function json<T>(value: unknown): T {
@@ -216,6 +264,8 @@ function taskDto(row: Row): TaskDto {
     progress: Number(row.progress),
     dueAt: row.due_at ? String(row.due_at) : null,
     buildingType,
+    visualKind: String(row.visual_kind ?? "BUILDING") as TaskDto["visualKind"],
+    visualAssetKey: String(row.visual_asset_key ?? buildingType),
     platformType: String(row.platform_type) as TaskDto["platformType"],
     origin,
     footprint: json<Cell[]>(row.footprint_json),
@@ -230,6 +280,17 @@ function taskDto(row: Row): TaskDto {
     mergeRequests: json<TaskLinkDto[]>(row.merge_requests_json ?? []),
     assigneeRole: row.assignee_role ? String(row.assignee_role) : null,
   };
+}
+
+/** Temporary construction fencing occupies one cell beyond unfinished work. */
+function taskOccupiedCells(task: TaskDto): Cell[] {
+  if (task.stage >= 5 || task.footprint.length === 0) return task.footprint;
+  const bounds = expandRect(boundsOf(task.footprint), 1);
+  return rectangleFootprint(
+    { x: bounds.minX, y: bounds.minY },
+    bounds.maxX - bounds.minX + 1,
+    bounds.maxY - bounds.minY + 1,
+  );
 }
 
 function archiveStage(recordCount: number): CountryArchiveDto["stage"] {
@@ -342,6 +403,7 @@ function featureDto(row: Row): WorldFeatureDto {
     footprint: json<Cell[]>(row.footprint_json),
     orientation: String(row.orientation) as WorldFeatureDto["orientation"],
     accessPath: row.access_json ? json<Cell[]>(row.access_json) : [],
+    developmentStage: Math.max(1, Math.min(5, Number(row.development_stage ?? 5))) as WorldFeatureDto["developmentStage"],
   };
 }
 
@@ -632,6 +694,8 @@ export class AppService {
               systemAnalysis: task.systemAnalysis, architecture: task.architecture, designSystem: task.designSystem,
               implementationPlan: task.implementationPlan, estimate: task.estimate, priority: task.priority,
               dueAt: task.dueAt ?? undefined,
+              visualKind: task.visualKind,
+              parkVariant: task.visualKind === "PARK" ? task.visualAssetKey : undefined,
               idempotencyKey: `regenerate-task:${task.id}`,
             });
             taskMap.set(task.id, generatedTask.id);
@@ -664,9 +728,9 @@ export class AppService {
         // Geometry AND identity come from the fresh build: the replay picks
         // buildings under the new seed, so the visible model must follow the
         // re-pick instead of freezing the pre-regeneration type.
-        await this.db.prepare(`UPDATE tasks_v3 SET building_type = ?, platform_type = ?, origin_x = ?, origin_y = ?, footprint_json = ?,
+        await this.db.prepare(`UPDATE tasks_v3 SET building_type = ?, visual_kind = ?, visual_asset_key = ?, platform_type = ?, origin_x = ?, origin_y = ?, footprint_json = ?,
           entrance_x = ?, entrance_y = ?, access_json = ?, access_kind = ? WHERE id = ?`).run(
-          generated.buildingType, generated.platformType, generated.origin.x, generated.origin.y, JSON.stringify(generated.footprint),
+          generated.buildingType, generated.visualKind, generated.visualAssetKey, generated.platformType, generated.origin.x, generated.origin.y, JSON.stringify(generated.footprint),
           generated.entrance.x, generated.entrance.y, JSON.stringify(generated.accessPath), generated.accessKind, task.id,
         );
       }
@@ -688,6 +752,7 @@ export class AppService {
             parentFeatureId: feature.parentFeatureId ? featureMap.get(feature.parentFeatureId) ?? null : null,
             kind: feature.kind, assetKind: feature.assetKind, assetKey: feature.assetKey,
             origin: feature.origin, footprint: feature.footprint, orientation: feature.orientation, accessPath: feature.accessPath,
+            developmentStage: feature.developmentStage,
           });
           featureMap.set(feature.id, copied.id);
         }
@@ -731,6 +796,152 @@ export class AppService {
       ? await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE c.country_id = ? AND d.city_id = ? ORDER BY d.created_at").all(countryId, cityId)
       : await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE c.country_id = ? ORDER BY d.created_at").all(countryId);
     return (rows as Row[]).map(districtDto);
+  }
+
+  async getCountryAtlas(countryId: string): Promise<CountryAtlasDto> {
+    const [countryRow, country, cities, districts, tasks, features, roadMap, surfaceMap] = await Promise.all([
+      this.countryRow(countryId),
+      this.getCountry(countryId),
+      this.listCities(countryId),
+      this.listDistricts(countryId),
+      this.listTasks(countryId),
+      this.listWorldFeatures(countryId),
+      this.roadCells(countryId),
+      this.surfaceCells(countryId),
+    ]);
+    const districtsByCity = new Map<string, DistrictDto[]>();
+    const tasksByCity = new Map<string, TaskDto[]>();
+    for (const district of districts) {
+      districtsByCity.set(district.cityId, [...districtsByCity.get(district.cityId) ?? [], district]);
+    }
+    for (const task of tasks) tasksByCity.set(task.cityId, [...tasksByCity.get(task.cityId) ?? [], task]);
+
+    const projection = projectCountryAtlas({
+      terrainSampler: (cell) => terrainAt(Number(countryRow.seed), cell.x, cell.y),
+      cities: cities.map((city) => ({
+        id: city.id,
+        sourceCenter: city.center,
+        sourceVisualSizePx: {
+          width: (city.bounds.maxX - city.bounds.minX + 1) * 8,
+          height: (city.bounds.maxY - city.bounds.minY + 1) * 8,
+        },
+        labelSizePx: { width: Math.max(208, city.name.length * 12 + 56), height: 48 },
+        districts: (districtsByCity.get(city.id) ?? []).map((district) => ({ id: district.id, cells: district.cells })),
+      })),
+    });
+    const cityById = new Map(cities.map((city) => [city.id, city]));
+    const districtById = new Map(districts.map((district) => [district.id, district]));
+    const atlasDistrictColorById = new Map(districts.map((district, index) => [
+      district.id,
+      COUNTRY_ATLAS_DISTRICT_COLORS[index % COUNTRY_ATLAS_DISTRICT_COLORS.length]!,
+    ]));
+    const districtOwnerByCell = new Map(districts.flatMap((district) => district.cells.map((cell) => [cellKey(cell), district.id] as const)));
+
+    return {
+      schemaVersion: 1,
+      worldVersion: country.worldVersion,
+      bounds: projection.bounds,
+      macroTerrain: projection.macroTerrain,
+      connections: projection.connections,
+      cities: projection.cities.map((projected) => {
+        const city = cityById.get(projected.id)!;
+        const projectedDistrictById = new Map(projected.districts.map((district) => [district.id, district]));
+        const projectCell = (cell: Cell, districtId: string): Cell => {
+          const district = projectedDistrictById.get(districtId);
+          if (!district) {
+            return {
+              x: projected.atlasCenter.x + Math.round((cell.x - city.center.x) * projected.scale),
+              y: projected.atlasCenter.y + Math.round((cell.y - city.center.y) * projected.scale),
+            };
+          }
+          return {
+            x: district.atlasCenter.x + Math.round((cell.x - district.sourceCenter.x) * projected.scale),
+            y: district.atlasCenter.y + Math.round((cell.y - district.sourceCenter.y) * projected.scale),
+          };
+        };
+        const projectFootprint = (cells: Cell[], districtId: string): Cell[] => [...new Map(cells.map((cell) => {
+          const atlasCell = projectCell(cell, districtId);
+          return [cellKey(atlasCell), atlasCell] as const;
+        })).values()];
+        const cityDistrictIds = new Set((districtsByCity.get(city.id) ?? []).map((district) => district.id));
+        return {
+          id: city.id,
+          name: city.name,
+          status: city.status,
+          sourceCenter: city.center,
+          sourceBounds: city.bounds,
+          atlasCenter: projected.atlasCenter,
+          atlasBounds: projected.atlasBounds,
+          labelBounds: projected.labelBounds,
+          scale: projected.scale,
+          miniatureSizePx: projected.miniatureSizePx,
+          atlasMask: projected.atlasMask,
+          cutoutMask: projected.cutoutMask,
+          cutoutTerrain: projected.cutoutTerrain,
+          districts: projected.districts.map((district) => {
+            const source = districtById.get(district.id)!;
+            return {
+              id: source.id,
+              name: source.name,
+              status: source.status,
+              color: atlasDistrictColorById.get(source.id) ?? source.color,
+              sourceCenter: district.sourceCenter,
+              atlasCenter: district.atlasCenter,
+              atlasCells: district.atlasCells,
+              displayCells: district.displayCells,
+            };
+          }),
+          buildings: (tasksByCity.get(city.id) ?? []).map((task) => ({
+            id: task.id,
+            taskNumber: task.taskNumber,
+            districtId: task.districtId,
+            title: task.title,
+            workItemType: task.workItemType,
+            status: task.status,
+            progress: task.progress,
+            stage: task.stage,
+            buildingType: task.buildingType,
+            visualKind: task.visualKind,
+            visualAssetKey: task.visualAssetKey,
+            platformType: task.platformType,
+            sourceOrigin: task.origin,
+            atlasOrigin: projectCell(task.origin, task.districtId),
+            atlasFootprint: projectFootprint(task.footprint, task.districtId),
+          })),
+          roads: [...roadMap.values()].flatMap((road) => {
+            const districtId = districtOwnerByCell.get(cellKey(road));
+            if (!districtId || !cityDistrictIds.has(districtId)) return [];
+            return [{
+              sourceCell: { x: road.x, y: road.y },
+              atlasCell: projectCell(road, districtId),
+              structure: road.structure,
+              roadClass: road.roadClass,
+            }];
+          }),
+          surfaces: [...surfaceMap.values()].flatMap((surface) => {
+            const districtId = districtOwnerByCell.get(cellKey(surface));
+            if (!districtId || !cityDistrictIds.has(districtId)) return [];
+            return [{
+              sourceCell: { x: surface.x, y: surface.y },
+              atlasCell: projectCell(surface, districtId),
+              kind: surface.kind,
+              ...(surface.orientation ? { orientation: surface.orientation } : {}),
+              ...(surface.finish ? { finish: surface.finish } : {}),
+            }];
+          }),
+          features: features.filter((feature) => feature.cityId === city.id).map((feature) => ({
+            id: feature.id,
+            districtId: feature.districtId,
+            assetKind: feature.assetKind,
+            assetKey: feature.assetKey,
+            developmentStage: feature.developmentStage,
+            sourceOrigin: feature.origin,
+            atlasOrigin: projectCell(feature.origin, feature.districtId ?? ""),
+            atlasFootprint: projectFootprint(feature.footprint, feature.districtId ?? ""),
+          })),
+        };
+      }),
+    };
   }
 
   async listTasks(countryId: string, districtId?: string): Promise<TaskDto[]> {
@@ -1313,7 +1524,7 @@ export class AppService {
     const roads = await this.roadCells(countryId);
     const sealed = await this.completedDistrictCells(countryId);
     const reservedFootprints = [
-      ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, task.entrance, ...task.accessPath]),
+      ...(await this.listTasks(countryId)).flatMap((task) => [...taskOccupiedCells(task), task.entrance, ...task.accessPath]),
       ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
       ...(await this.listDistricts(countryId)).flatMap((district) => district.lots.flatMap((lot) => [
                     ...rectangleFootprint(lot.origin, lot.width, lot.height),
@@ -1387,7 +1598,7 @@ export class AppService {
     const roads = await this.roadCells(countryId);
     const sealed = await this.completedDistrictCells(countryId);
     const committedFootprints = new Set([
-      ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, task.entrance, ...task.accessPath]),
+      ...(await this.listTasks(countryId)).flatMap((task) => [...taskOccupiedCells(task), task.entrance, ...task.accessPath]),
       ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
     ].map(cellKey));
     // Never publish a partially clipped road profile. A missing lateral lane
@@ -1561,7 +1772,7 @@ export class AppService {
   private async featurePlacementOpen(countryId: string, seed: number, footprint: Cell[], avoidBounds: Rect[] = []): Promise<boolean> {
     const roads = await this.roadCells(countryId);
     const occupied = new Set([
-      ...(await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey),
+      ...(await this.listTasks(countryId)).flatMap(taskOccupiedCells).map(cellKey),
       ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint).map(cellKey),
     ]);
     return footprint.every((cell) => !roads.has(cellKey(cell))
@@ -1570,17 +1781,44 @@ export class AppService {
       && isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain));
   }
 
-  private async insertWorldFeature(countryId: string, input: Omit<WorldFeatureDto, "id">): Promise<WorldFeatureDto> {
+  private async insertWorldFeature(
+    countryId: string,
+    input: Omit<WorldFeatureDto, "id" | "developmentStage"> & Partial<Pick<WorldFeatureDto, "developmentStage">>,
+  ): Promise<WorldFeatureDto> {
     const id = randomUUID();
+    const developmentStage = input.developmentStage ?? 5;
     await this.db.prepare(`INSERT INTO world_features_v6
-      (id, country_id, city_id, district_id, parent_feature_id, kind, asset_kind, asset_key, origin_x, origin_y, footprint_json, orientation, access_json, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      (id, country_id, city_id, district_id, parent_feature_id, kind, asset_kind, asset_key, origin_x, origin_y, footprint_json, orientation, access_json, development_stage, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
                               id, countryId, input.cityId, input.districtId, input.parentFeatureId, input.kind, input.assetKind, input.assetKey,
                               input.origin.x, input.origin.y, JSON.stringify(input.footprint), input.orientation,
-                              JSON.stringify(input.accessPath), now(),
+                              JSON.stringify(input.accessPath), developmentStage, now(),
                             );
     this.surfaceCache.delete(countryId);
-    return { id, ...input };
+    return { id, ...input, developmentStage };
+  }
+
+  private async districtGreenAreaStage(countryId: string, districtId: string): Promise<WorldFeatureDto["developmentStage"]> {
+    // District identifiers are globally unique; tasks_v3 is scoped through its
+    // district/city foreign keys and intentionally has no duplicated country_id.
+    await this.countryRow(countryId);
+    const rows = await this.db.prepare("SELECT status FROM tasks_v3 WHERE district_id = ?").all(districtId) as Row[];
+    return greenAreaDevelopmentStage(rows.map((row) => String(row.status) as TaskStatus));
+  }
+
+  /** Advance composed parks monotonically with their district's task lifecycle. */
+  private async syncDistrictGreenAreaDevelopment(countryId: string, districtId: string): Promise<Cell[]> {
+    const nextStage = await this.districtGreenAreaStage(countryId, districtId);
+    const areas = (await this.listWorldFeatures(countryId)).filter((feature) =>
+      feature.districtId === districtId && feature.assetKind === "AREA"
+      && (feature.kind === "PARK" || feature.kind === "GROVE")
+      && feature.developmentStage < nextStage);
+    if (areas.length === 0) return [];
+    for (const area of areas) {
+      await this.db.prepare("UPDATE world_features_v6 SET development_stage = ? WHERE id = ?").run(nextStage, area.id);
+    }
+    this.surfaceCache.delete(countryId);
+    return areas.flatMap((area) => area.footprint);
   }
 
   private async publishDistrictGreenFeature(
@@ -1592,7 +1830,7 @@ export class AppService {
     archetype: DistrictArchetype,
     districtIndex: number,
     reservedLots: PlannedLotDto[] = [],
-  ): Promise<void> {
+  ): Promise<PlannedLotDto[]> {
     const existingFeatures = await this.listWorldFeatures(countryId);
     const existingGreen = existingFeatures.filter((feature) => feature.cityId === city.id && (feature.kind === "PARK" || feature.kind === "GROVE"));
     const districtGreen = existingGreen.filter((feature) => feature.districtId === districtId);
@@ -1600,7 +1838,7 @@ export class AppService {
     // a third never. The old roll was constant for the whole district, so
     // every new complex of a lucky district spawned another park and they
     // clustered into one pocket.
-    if (districtGreen.length >= 2) return;
+    if (districtGreen.length >= 2) return reservedLots;
     const chance = archetype === "PRIVATE" ? 0.58 : archetype === "CIVIC" ? 0.48 : archetype === "COMMERCIAL" ? 0.24 : 0.4;
     const roll = hashCoordinate(seed, city.center.x, city.center.y, 811 + districtIndex * 7 + districtGreen.length * 13 + Math.floor(reservedLots.length / 4));
     // Every city must eventually receive a public green area. Keep trying on
@@ -1608,27 +1846,41 @@ export class AppService {
     // 1` gate permanently skipped parks when that single district had no valid
     // parcel.
     const forceFirstGreen = existingGreen.length === 0;
-    if (!forceFirstGreen && (districtGreen.length >= 1 ? roll > 0.18 : roll > chance)) return;
+    if (!forceFirstGreen && (districtGreen.length >= 1 ? roll > 0.18 : roll > chance)) return reservedLots;
 
     const cityIndex = (await this.listCities(countryId)).findIndex((candidate) => candidate.id === city.id);
-    const kind: Extract<WorldFeatureDto["kind"], "PARK" | "GROVE"> = (cityIndex + districtIndex + existingGreen.length) % 2 === 0 ? "GROVE" : "PARK";
-    const parkVariant = archetype === "CIVIC"
-      ? (districtIndex % 2 === 0 ? "urban-central" : "urban-botanical")
-      : archetype === "COMMERCIAL" ? "urban-amusement"
-        : archetype === "PRIVATE" ? "urban-botanical" : "urban-park";
-    const assetKey = kind === "GROVE" ? "urban-grove" : parkVariant;
+    // Unnumbered ambient greenery is always a grove. A PARK is a task-owned
+    // visual kind created through task.create, so it has one lifecycle, task
+    // number, card, defects and deletion semantics instead of a shadow feature.
+    const kind: Extract<WorldFeatureDto["kind"], "GROVE"> = "GROVE";
+    const assetKey: string = "urban-grove";
     const allowed = new Set(districtCells.map(cellKey));
     const roads = await this.roadCells(countryId);
     const bounds = boundsOf(districtCells);
     const surfaces = await this.localSurfaceCells(countryId, bounds, roads);
+    // The city's first public green area has priority over speculative empty
+    // pads. Occupied buildings and demolition plots remain hard reservations;
+    // intersecting virtual alternatives are retired after a site is selected.
+    const hardReservedLots = forceFirstGreen
+      ? reservedLots.filter((lot) => lot.taskId || lot.vacant)
+      : reservedLots;
     const occupied = new Set([
-      ...(await this.listTasks(countryId)).flatMap((task) => task.footprint),
+      ...(await this.listTasks(countryId)).flatMap(taskOccupiedCells),
       ...existingFeatures.filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint),
-      ...reservedLots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)),
-      ...reservedLots.flatMap((lot) => lot.sharedAccess ?? []),
+      ...hardReservedLots.flatMap((lot) => rectangleFootprint(lot.origin, lot.width, lot.height)),
+      ...hardReservedLots.flatMap((lot) => lot.sharedAccess ?? []),
     ].map(cellKey));
-    type GreenCandidate = { origin: Cell; footprint: Cell[]; accessPath: Cell[]; score: number; size: readonly [number, number] };
+    type GreenCandidate = {
+      origin: Cell;
+      footprint: Cell[];
+      accessPath: Cell[];
+      score: number;
+      size: readonly [number, number];
+      retainedLotCount: number;
+    };
     let selected: GreenCandidate | undefined;
+    let compactFallback: GreenCandidate | undefined;
+    const minimumRetainedLots = Math.min(3, reservedLots.length);
     for (const size of greenAreaSizeCandidates(assetKey)) {
       const candidates: GreenCandidate[] = [];
       for (let y = bounds.minY; y <= bounds.maxY - size[1] + 1; y += 1) {
@@ -1650,13 +1902,37 @@ export class AppService {
             const gb = boundsOf(feature.footprint);
             return manhattan(center, { x: Math.floor((gb.minX + gb.maxX) / 2), y: Math.floor((gb.minY + gb.maxY) / 2) }) < 14;
           });
-          candidates.push({ origin, footprint, accessPath, size, score: accessPath.length * 100 + (nearExistingGreen ? 250 : 0) + centerDistance * 0.08 + hashCoordinate(seed, x, y, 823) });
+          const reservation = new Set([...footprint, ...accessPath].map(cellKey));
+          const retainedLotCount = reservedLots.filter((lot) => lot.taskId || lot.vacant || ![
+            ...rectangleFootprint(lot.origin, lot.width, lot.height),
+            ...(lot.sharedAccess ?? []),
+          ].some((cell) => reservation.has(cellKey(cell)))).length;
+          candidates.push({
+            origin, footprint, accessPath, size, retainedLotCount,
+            score: accessPath.length * 100 + (nearExistingGreen ? 250 : 0) + centerDistance * 0.08 + hashCoordinate(seed, x, y, 823),
+          });
         }
       }
-      selected = candidates.sort((left, right) => left.score - right.score || left.origin.y - right.origin.y || left.origin.x - right.origin.x)[0];
+      const ranked = candidates.sort((left, right) =>
+        right.retainedLotCount - left.retainedLotCount
+        || left.score - right.score
+        || left.origin.y - right.origin.y
+        || left.origin.x - right.origin.x);
+      compactFallback = ranked[0] ?? compactFallback;
+      selected = forceFirstGreen
+        ? ranked.find((candidate) => candidate.retainedLotCount >= minimumRetainedLots)
+        : ranked[0];
       if (selected) break;
     }
-    if (!selected) return;
+    selected ??= compactFallback;
+    if (!selected) return reservedLots;
+    const greenReservation = new Set([...selected.footprint, ...selected.accessPath].map(cellKey));
+    const retainedLots = forceFirstGreen
+      ? reservedLots.filter((lot) => lot.taskId || lot.vacant || ![
+        ...rectangleFootprint(lot.origin, lot.width, lot.height),
+        ...(lot.sharedAccess ?? []),
+      ].some((cell) => greenReservation.has(cellKey(cell))))
+      : reservedLots;
     const area = await this.insertWorldFeature(countryId, {
                               cityId: city.id,
                               districtId,
@@ -1668,6 +1944,7 @@ export class AppService {
                               footprint: selected.footprint,
                               orientation: "S",
                               accessPath: selected.accessPath,
+                              developmentStage: await this.districtGreenAreaStage(countryId, districtId),
                             });
     await this.clearRuins(countryId, selected.footprint);
 
@@ -1680,6 +1957,14 @@ export class AppService {
     const secondaryTree = treeVariants[(cityIndex + districtIndex + 3) % treeVariants.length]!;
     type DecorPlacement = readonly [assetKey: string, offsetX: number, offsetY: number, width: number, height: number];
     const decorByArea: Record<string, readonly (readonly DecorPlacement[])[]> = {
+      "urban-formal": [
+        [["fountain-large", 7, 3, 4, 4], ["park-bench-double", 3, 4, 3, 1], ["park-bench-double", 12, 5, 3, 1], ["flower-bed-horizontal", 2, 2, 2, 1], ["flower-bed-horizontal", 14, 2, 2, 1], ["flower-bed-horizontal", 2, 7, 2, 1], ["flower-bed-horizontal", 14, 7, 2, 1], [primaryTree, 1, 1, 1, 1], [secondaryTree, 16, 1, 1, 1], [secondaryTree, 1, 8, 1, 1], [primaryTree, 16, 8, 1, 1], [lampByArchetype[archetype], 6, 1, 1, 1], [lampByArchetype[archetype], 11, 8, 1, 1]],
+        [["park-sculpture", 8, 3, 2, 3], ["park-flower-clock", 2, 4, 3, 2], ["park-flower-clock", 13, 4, 3, 2], ["flower-bed-vertical", 5, 1, 1, 2], ["flower-bed-vertical", 12, 7, 1, 2], [primaryTree, 1, 1, 1, 1], [secondaryTree, 16, 1, 1, 1], [secondaryTree, 1, 8, 1, 1], [primaryTree, 16, 8, 1, 1], ["park-bench-double", 3, 5, 3, 1], ["park-bench-double", 12, 4, 3, 1], [lampByArchetype[archetype], 7, 1, 1, 1], [lampByArchetype[archetype], 10, 8, 1, 1]],
+      ],
+      "urban-community": [
+        [["playground-carousel", 2, 2, 3, 3], ["park-pond", 9, 2, 4, 3], ["park-bench-double", 6, 7, 3, 1], [primaryTree, 1, 1, 1, 1], [secondaryTree, 14, 8, 1, 1], [lampByArchetype[archetype], 7, 2, 1, 1]],
+        [["park-bandstand", 6, 2, 4, 3], ["playground-swing", 1, 5, 3, 3], ["picnic-table", 12, 5, 2, 2], [primaryTree, 1, 1, 1, 1], [secondaryTree, 14, 1, 1, 1], ["trash-bin", 10, 7, 1, 1]],
+      ],
       "urban-central": [
         [["fountain-large", 2, 1, 4, 4], ["park-bench-double", 0, 5, 3, 1], ["park-sculpture", 6, 3, 2, 3], [lampByArchetype[archetype], 7, 6, 1, 1], [primaryTree, 0, 0, 1, 1]],
         [["park-bandstand", 2, 1, 4, 3], ["park-flower-clock", 0, 4, 3, 2], ["park-sculpture", 6, 3, 2, 3], ["park-bench-double", 3, 5, 3, 1], [secondaryTree, 7, 0, 1, 1]],
@@ -1709,6 +1994,7 @@ export class AppService {
     const variants = decorByArea[assetKey] ?? decorByArea["urban-park"]!;
     const decor = variants[Math.floor(hashCoordinate(seed, selected.origin.x, selected.origin.y, 829) * variants.length)] ?? variants[0]!;
     const legacyLayoutSize: Readonly<Record<string, readonly [number, number]>> = {
+      "urban-formal": [18, 10], "urban-community": [16, 10],
       "urban-central": [8, 7], "urban-botanical": [7, 6], "urban-amusement": [7, 5], "urban-grove": [6, 5], "urban-park": [5, 4],
     };
     const [layoutWidth, layoutHeight] = legacyLayoutSize[assetKey] ?? legacyLayoutSize["urban-park"]!;
@@ -1725,7 +2011,7 @@ export class AppService {
                                         origin, footprint, orientation: "S", accessPath: [],
                                       });
     }
-    const edgeAccents = greenAreaAccentCandidates(selected.size[0], selected.size[1])
+    const edgeAccents = greenAreaAccentCandidates(selected.size[0], selected.size[1], assetKey)
       .sort((left, right) => hashCoordinate(seed, selected.origin.x + left.x, selected.origin.y + left.y, 839)
         - hashCoordinate(seed, selected.origin.x + right.x, selected.origin.y + right.y, 839));
     const accentTarget = greenAreaAccentTarget(selected.size[0], selected.size[1]);
@@ -1734,7 +2020,10 @@ export class AppService {
       if (accentIndex >= accentTarget) break;
       const origin = { x: selected.origin.x + offset.x, y: selected.origin.y + offset.y };
       if (occupiedDecor.has(cellKey(origin))) continue;
-      const accentKey = accentIndex % 3 === 2 ? lampByArchetype[archetype] : accentIndex % 2 === 0 ? primaryTree : secondaryTree;
+      const formalAccents = [primaryTree, "flower-red", secondaryTree, "shrub-flowering", lampByArchetype[archetype]] as const;
+      const accentKey = assetKey === "urban-formal"
+        ? formalAccents[accentIndex % formalAccents.length]!
+        : accentIndex % 3 === 2 ? lampByArchetype[archetype] : accentIndex % 2 === 0 ? primaryTree : secondaryTree;
       await this.insertWorldFeature(countryId, {
         cityId: city.id, districtId, parentFeatureId: area.id, kind: "PARK_DECOR", assetKind: "PROP", assetKey: accentKey,
         origin, footprint: [origin], orientation: "S", accessPath: [],
@@ -1742,6 +2031,7 @@ export class AppService {
       occupiedDecor.add(cellKey(origin));
       accentIndex += 1;
     }
+    return retainedLots;
   }
 
   private async publishCityGatewayFeatures(
@@ -1881,7 +2171,7 @@ export class AppService {
       relocatedBounds = boundsOf([...compound.footprint, ...compound.accessPath]);
       const oldCorridor = new Map(this.roadCorridor(compound.accessPath, "LOCAL").map((cell) => [cellKey(cell), cell]));
       const protectedCells = new Set([
-        ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, ...task.accessPath]),
+        ...(await this.listTasks(countryId)).flatMap((task) => [...taskOccupiedCells(task), ...task.accessPath]),
         ...(await this.listWorldFeatures(countryId))
           .filter((feature) => feature.id !== compound!.id && feature.parentFeatureId !== compound!.id && feature.kind !== "COUNTRY_ARCHIVE")
           .flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
@@ -1929,7 +2219,7 @@ export class AppService {
       const candidates = [...preferredCandidates, ...fallbackCandidates];
       const roads = await this.roadCells(countryId);
       const occupied = new Set([
-        ...(await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey),
+        ...(await this.listTasks(countryId)).flatMap(taskOccupiedCells).map(cellKey),
         ...features.flatMap((feature) => feature.footprint).map(cellKey),
       ]);
       for (const offset of candidates) {
@@ -2340,14 +2630,23 @@ export class AppService {
   private async growDistrict(countryId: string, district: DistrictDto, entry: BuildingCatalogEntry): Promise<DistrictDto> {
     if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "Закрытый район больше не расширяется");
     const seed = Number((await this.countryRow(countryId)).seed);
+    const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
+    const denseGrid = cityDto(cityRow).morphology === "DENSE_CORE";
     // Capacity describes the team's planning horizon, not how much land may be
     // paved before demand exists. Publish one compact, reusable cluster at a
     // time; later tasks grow another cluster only after the existing choices
     // are exhausted or cannot fit the requested building footprint.
-    const targetLots = organicComplexLotTarget(district.capacitySp);
+    // A dense core uses straight shared streets, but still publishes them only
+    // as tasks consume frontage. Reserving twelve pads for the first two tasks
+    // pushed asphalt above the city audit limit and recreated empty roads.
+    // A dense core needs enough mixed-width frontage to absorb several large
+    // facades without opening a third street cluster. Ten is the smallest
+    // stable runway across the seeded 4–6 cell catalog widths; the former
+    // twelve-pad reservation over-paved the first block.
+    const targetLots = denseGrid ? Math.max(10, organicComplexLotTarget(district.capacitySp)) : organicComplexLotTarget(district.capacitySp);
     const complexIndex = new Set(district.lots.map((lot) => lot.groupId).filter(Boolean)).size;
 
-    const infill = await this.tryGrowComplex(countryId, district, entry, boundsOf(district.cells), complexIndex, targetLots, seed);
+    const infill = await this.tryGrowComplex(countryId, district, entry, boundsOf(district.cells), complexIndex, targetLots, seed, denseGrid);
     if (infill) return infill;
 
     const originalBounds = boundsOf(district.cells);
@@ -2365,7 +2664,7 @@ export class AppService {
     ]);
     const directions = ([district.growthDirection, "E", "S", "W", "N"] as GrowthDirection[])
       .filter((value, index, all) => all.indexOf(value) === index);
-    for (const thickness of [24, 28, 32]) {
+    for (const thickness of districtGrowthThicknesses(entry)) {
       for (const direction of directions) {
         const shoulder = 4;
         let patchRect: Rect;
@@ -2391,10 +2690,15 @@ export class AppService {
           for (const next of neighbors4(current)) if (availableKeys.has(cellKey(next)) && !reachable.has(cellKey(next))) queue.push(next);
         }
         const patch = [...reachable.values()];
-        if (patch.length < 300) continue;
+        if (patch.length < (entry.tags.includes("new-build") ? 900 : 300)) continue;
         const patchBounds = boundsOf(patch);
         const grown: DistrictDto = { ...district, cells: [...district.cells, ...patch], growthDirection: direction };
-        const sited = await this.tryGrowComplex(countryId, grown, entry, patchBounds, complexIndex, targetLots, seed);
+        // A connected annex may be a narrow strip along a river or forest.
+        // The next block is allowed to straddle the old/new district seam;
+        // restricting the search to patchBounds alone incorrectly rejected
+        // viable frontage even though the combined territory had ample room.
+        const grownSearchBounds = unionRect(originalBounds, patchBounds);
+        const sited = await this.tryGrowComplex(countryId, grown, entry, grownSearchBounds, complexIndex, targetLots, seed, denseGrid);
         if (!sited) continue;
         const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
         const city = cityDto(cityRow);
@@ -2420,12 +2724,13 @@ export class AppService {
     complexIndex: number,
     targetLots: number,
     seed: number,
+    denseGrid = false,
   ): Promise<DistrictDto | null> {
     const allowed = new Set(district.cells.map(cellKey));
     const roads = await this.roadCells(countryId);
     const existingRoadKeys = new Set(roads.keys());
     const occupied = new Set([
-      ...(await this.listTasks(countryId)).flatMap((task) => [...task.footprint, task.entrance, ...task.accessPath]),
+      ...(await this.listTasks(countryId)).flatMap((task) => [...taskOccupiedCells(task), task.entrance, ...task.accessPath]),
       ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN")
         .flatMap((feature) => [...feature.footprint, ...feature.accessPath]),
     ].map(cellKey));
@@ -2475,12 +2780,38 @@ export class AppService {
     // pocket park and later infill always have land left.
     const boundsWidth = searchBounds.maxX - searchBounds.minX + 1;
     const boundsHeight = searchBounds.maxY - searchBounds.minY + 1;
-    if (boundsWidth < 14 || boundsHeight < 12) return null;
-    const territoryCap = complexIndex === 0 ? Math.max(240, Math.floor(allowed.size * 0.7)) : Number.POSITIVE_INFINITY;
-    const area = Math.min(targetLots * 60, territoryCap);
-    const aspect = 0.7 + hashCoordinate(seed, searchBounds.minX, searchBounds.minY, 941 + complexIndex) * 0.9;
-    const rectWidth = Math.max(12, Math.min(40, boundsWidth - 2, Math.round(Math.sqrt(area * aspect))));
-    const rectHeight = Math.max(10, Math.min(34, boundsHeight - 2, Math.round(area / rectWidth)));
+    const v5TaskBuilding = entry.tags.includes("new-build");
+    const minimumRect = complexMinimumRect(entry, targetLots);
+    // A private neighbourhood opens with a real frontage block: four varied
+    // house bays plus reusable side strips on one shared street. Basing its
+    // width only on the first small cottage made a 2+2 island and then another
+    // road for the next wider house.
+    const privateFrontageWidth = district.archetype === "PRIVATE" && complexIndex === 0
+      ? Math.max(42, entry.footprint.width * 4 + 6)
+      : 0;
+    const newBuildFrontageWidth = district.archetype === "NEW_BUILD" && complexIndex === 0
+      ? Math.min(72, Math.max(12, entry.footprint.width) * 4 + 8)
+      : 0;
+    const minimumRectWidth = Math.max(minimumRect.width, privateFrontageWidth, newBuildFrontageWidth);
+    const minimumRectHeight = minimumRect.height;
+    if (boundsWidth < minimumRectWidth + 2 || boundsHeight < minimumRectHeight + 2) return null;
+    const territoryCap = complexIndex === 0
+      ? Math.min(
+        allowed.size,
+        Math.max(v5TaskBuilding ? 1_250 : 240, Math.floor(allowed.size * (denseGrid ? 0.82 : 0.8))),
+      )
+      : Number.POSITIVE_INFINITY;
+    const area = Math.min(
+      v5TaskBuilding ? Math.max(targetLots * 120, minimumRectWidth * minimumRectHeight) : targetLots * (denseGrid ? 68 : 60),
+      territoryCap,
+    );
+    // Dense cores need enough north/south depth for three shared frontage
+    // streets. Organic districts keep the wider seeded aspect palette.
+    const aspect = denseGrid
+      ? 0.78 + hashCoordinate(seed, searchBounds.minX, searchBounds.minY, 941 + complexIndex) * 0.16
+      : 0.7 + hashCoordinate(seed, searchBounds.minX, searchBounds.minY, 941 + complexIndex) * 0.9;
+    const rectWidth = Math.max(minimumRectWidth, Math.min(v5TaskBuilding ? 72 : 40, boundsWidth - 2, Math.round(Math.sqrt(area * aspect))));
+    const rectHeight = Math.max(minimumRectHeight, Math.min(34, boundsHeight - 2, Math.round(area / rectWidth)));
 
     const searchCenter = {
       x: Math.floor((searchBounds.minX + searchBounds.maxX) / 2),
@@ -2496,7 +2827,10 @@ export class AppService {
         // mostly inside; the planner drops the few lots that fall outside.
         const insideCount = rectCells.filter((cell) => allowed.has(cellKey(cell))).length;
         if (insideCount / rectCells.length < 0.9) continue;
-        if (rectCells.some((cell) => roads.has(cellKey(cell)) || occupied.has(cellKey(cell)))) continue;
+        // The coarse planning rectangle may cover an existing street or a
+        // neighbouring facade; individual lots and road corridors are filtered
+        // against those hard obstacles below. Rejecting the whole rectangle
+        // here forced one road per building in dense districts.
         const unsuitable = rectCells.filter((cell) => !isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain)).length;
         if (unsuitable / rectCells.length > 0.06) continue;
         // Organic rule: the next complex grows directly against the existing
@@ -2512,19 +2846,50 @@ export class AppService {
         candidates.push({ rect, score });
       }
     }
-
-    for (const candidate of candidates.sort((left, right) => left.score - right.score).slice(0, 12)) {
-      const plan = planComplex({
+    // The score orders viable frontage by distance and terrain quality. A
+    // bounded pool keeps task creation predictable under concurrent use while
+    // still covering irregular coast/forest cut-outs that need more than the
+    // former twelve probes.
+    for (const candidate of candidates.sort((left, right) => left.score - right.score).slice(0, 256)) {
+      // Size the first frontage for the whole compatible facade family, not
+      // only for whichever model happened to win the first task ranking. A
+      // six-cell cottage followed by a nine-cell duplex (or a 12-cell tower
+      // followed by a 14-cell tower) must reuse the same street instead of
+      // discovering that every vacant bay is two cells too narrow and opening
+      // a second road. Explicit statement buildings wider/deeper than the
+      // common family still raise the envelope to their real footprint.
+      const frontageMinimumLot = district.archetype === "PRIVATE"
+        ? { width: Math.max(9, entry.footprint.width), height: Math.max(6, entry.footprint.height) }
+        : district.archetype === "NEW_BUILD"
+          ? { width: Math.max(14, entry.footprint.width), height: Math.max(12, entry.footprint.height) }
+          : entry.footprint;
+      const planned = planComplex({
         districtId: district.id,
         complexIndex,
         rect: candidate.rect,
         cells: district.cells,
         archetype: district.archetype,
         targetLots,
-        minimumLot: entry.footprint,
+        minimumLot: frontageMinimumLot,
         seed,
+        denseGrid,
         reserveSupport: !district.lots.some((lot) => lot.role === "SUPPORT"),
       });
+      const plan = {
+        ...planned,
+        lots: planned.lots.filter((lot) => !rectangleFootprint(lot.origin, lot.width, lot.height)
+          .some((cell) => existingRoadKeys.has(cellKey(cell)) || occupied.has(cellKey(cell)))),
+      };
+      // Normal complexes need one occupied pad plus at least two genuine
+      // alternatives; otherwise a clipped corner publishes a one-off street
+      // and immediately forces another growth cycle. The 18×16 V5 tower is a
+      // deliberate superblock and may stand alone.
+      const minimumPublishedLots = targetLots <= 4 || entry.footprint.width >= 18 || entry.footprint.height >= 14
+        ? 1
+        : Math.min(3, targetLots);
+      if (plan.lots.length < minimumPublishedLots) {
+        continue;
+      }
       // Strict archetypes never sacrifice their few service slots to housing,
       // but a service building may occupy a regular lot when no service slot
       // fits it — zoning guides placement, it never deadlocks growth.
@@ -2582,7 +2947,8 @@ export class AppService {
                 ? []
                 : plan.lots.filter((lot) => rectangleFootprint(lot.origin, lot.width, lot.height).some((cell) => clippedKeys.has(cellKey(cell))));
               if (hit.length > 2) continue;
-              if (!fitsEntry(plan.lots.filter((lot) => !hit.some((dropped) => dropped.id === lot.id)))) continue;
+              const remainingLots = plan.lots.filter((lot) => !hit.some((dropped) => dropped.id === lot.id));
+              if (remainingLots.length < minimumPublishedLots || !fitsEntry(remainingLots)) continue;
               sacrificedLotIds = new Set(hit.map((lot) => lot.id));
             }
             connector = path;
@@ -2612,7 +2978,14 @@ export class AppService {
         pending = pending.filter((segment) => !batch.includes(segment));
       }
       await this.clearRuins(countryId, [...this.roadCorridor(connector, connectorClass), ...corridors]);
-      const lots = [...district.lots, ...plan.lots.filter((lot) => !sacrificedLotIds.has(lot.id))];
+      // Reaching this point means the broad candidate pool could not use any
+      // remaining speculative pad in an older complex. Keeping those virtual
+      // pads after publishing another street leaves permanent empty gaps and
+      // makes the district look pre-zoned instead of demand-grown. Retain
+      // occupied lots and real demolition plots (`vacant`), but retire unused
+      // planning alternatives as soon as development moves to a new complex.
+      const committedLots = district.lots.filter((lot) => lot.taskId || lot.vacant);
+      const lots = [...committedLots, ...plan.lots.filter((lot) => !sacrificedLotIds.has(lot.id))];
       await this.db.prepare("UPDATE districts_v3 SET cells_json = ?, lots_json = ?, growth_direction = ? WHERE id = ?")
                                                   .run(JSON.stringify(district.cells), JSON.stringify(lots), district.growthDirection, district.id);
       // Green areas arrive together with the first streets: a pocket park or
@@ -2620,15 +2993,21 @@ export class AppService {
       const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
       const districtIndex = (await this.listDistricts(countryId, district.cityId)).findIndex((item) => item.id === district.id);
       const city = cityDto(cityRow);
-      await this.publishDistrictGreenFeature(countryId, city, district.id, seed, district.cells, district.archetype, Math.max(0, districtIndex), lots);
-      return { ...district, lots };
+      const greenAdjustedLots = await this.publishDistrictGreenFeature(
+        countryId, city, district.id, seed, district.cells, district.archetype, Math.max(0, districtIndex), lots,
+      );
+      if (greenAdjustedLots.length !== lots.length) {
+        await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?")
+          .run(JSON.stringify(greenAdjustedLots), district.id);
+      }
+      return { ...district, lots: greenAdjustedLots };
     }
     // Demand overshoots the remaining land: retry with a smaller complex
     // (16 → 9 → 5 → 3 lots). The failure path mutated nothing, and a compact
     // infill block beats surrendering to a full territory patch.
     const nextTarget = Math.floor(targetLots * 0.6);
     if (nextTarget >= 3 && nextTarget < targetLots) {
-      return this.tryGrowComplex(countryId, district, entry, searchBounds, complexIndex, nextTarget, seed);
+      return this.tryGrowComplex(countryId, district, entry, searchBounds, complexIndex, nextTarget, seed, denseGrid);
     }
     return null;
   }
@@ -2650,6 +3029,7 @@ export class AppService {
     width: number,
     height: number,
     candidateValid?: (origin: Cell, cells: Cell[]) => boolean,
+    rectangular = false,
   ): Promise<Array<{ origin: Cell; cells: Cell[] }>> {
     const roads = await this.roadCells(countryId);
     const institutionalRoads = await this.institutionalAccessRoads(countryId);
@@ -2672,7 +3052,9 @@ export class AppService {
       for (let y = searchBounds.minY + 5; y <= searchBounds.maxY - height - 5; y += 4) {
         for (let x = searchBounds.minX + 5; x <= searchBounds.maxX - width - 5; x += 4) {
           const origin = { x, y };
-          const cells = this.districtShape(origin, width, height, seed);
+          const cells = rectangular
+            ? rectangleFootprint(origin, width, height)
+            : this.districtShape(origin, width, height, seed);
           if (candidateValid && !candidateValid(origin, cells)) continue;
           if (cells.some((cell) => occupied.has(cellKey(cell)))) continue;
           if (growthReservations.some((reservation) => cells.some((cell) => contains(reservation, cell)))) continue;
@@ -2829,25 +3211,53 @@ export class AppService {
                         existing: existingDistricts,
                         variation: hashCoordinate(seed, city.center.x, city.center.y, 533 + existingDistricts.length),
                       });
-                      // V10: a district starts as pure territory — no streets, no
+                      // V11: a district starts as pure territory — no streets, no
                       // lots. The first task grows the first complex (ЖК) inside it,
-                      // so roads never appear ahead of demand. The territory is sized
-                      // to the planned capacity (~64 cells per building) and takes a
-                      // seeded aspect so districts read as varied urban shapes.
-                      const area = Math.max(576, Math.min(2600, capacity * 64));
+                      // so roads never appear ahead of demand. SP is advisory planning
+                      // metadata, not a request to reserve an empty superblock. Start
+                      // with one compact building cluster and let later tasks annex
+                      // another patch only when the existing frontage is full.
+                      const initialLotTarget = city.morphology === "DENSE_CORE"
+                        ? Math.max(12, organicComplexLotTarget(capacity))
+                        : organicComplexLotTarget(capacity);
+                      const cellsPerPlannedLot = city.morphology === "DENSE_CORE" ? 72 : 84;
+                      // V5 new-builds start at 12x10 cells and reach 24x16.
+                      // Reserve one dense two-tier parcel up front; keeping the
+                      // old cottage-sized 420–900 cell territory forced nearly
+                      // every task to annex land and publish a separate road.
+                      const area = Math.max(1_500, Math.min(1_800, initialLotTarget * cellsPerPlannedLot));
                       const aspects = [1, 1.6, 0.62, 1.9, 0.53] as const;
-                      const aspect = aspects[Math.floor(hashCoordinate(seed, city.center.x, city.center.y, 557 + existingDistricts.length) * aspects.length)]!;
-                      const width = Math.max(18, Math.min(44, Math.round(Math.sqrt(area * aspect))));
-                      const height = Math.max(14, Math.min(36, Math.round(area / width)));
+                      const aspect = city.morphology === "DENSE_CORE"
+                        ? 0.85
+                        : aspects[Math.floor(hashCoordinate(seed, city.center.x, city.center.y, 557 + existingDistricts.length) * aspects.length)]!;
+                      const width = archetype === "NEW_BUILD"
+                        ? 60
+                        : archetype === "PRIVATE"
+                          ? 48
+                        : Math.max(42, Math.min(48, Math.round(Math.sqrt(area * aspect))));
+                      const height = archetype === "NEW_BUILD"
+                        // The V5 first complex needs a one-cell planner margin
+                        // around a 29-cell two-tier envelope. A 27-cell initial
+                        // territory could be selected successfully but could
+                        // never publish its first road/building on rough seeds.
+                        ? Math.max(31, Math.min(34, Math.round(area / width)))
+                        : Math.max(35, Math.min(42, Math.round(area / width)));
                       const id = randomUUID();
                       const existingRoads = await this.roadCells(countryId);
                       const occupied = new Set([
                         ...existingRoads.keys(),
-                        ...(await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey),
+                        ...(await this.listTasks(countryId)).flatMap(taskOccupiedCells).map(cellKey),
                         ...(await this.listWorldFeatures(countryId)).filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint).map(cellKey),
                       ]);
-                      const siteCandidates = await this.selectDistrictSites(countryId, city, seed, width, height, (_origin, cells) =>
-                                                                                cells.every((cell) => !occupied.has(cellKey(cell))));
+                      const siteCandidates = await this.selectDistrictSites(
+                        countryId,
+                        city,
+                        seed,
+                        width,
+                        height,
+                        (_origin, cells) => cells.every((cell) => !occupied.has(cellKey(cell))),
+                        city.morphology === "DENSE_CORE",
+                      );
                       let site = siteCandidates[0]!;
                       // A remote site receives its access road together with the
                       // territory: a collector stub runs from the nearest street
@@ -3070,11 +3480,12 @@ export class AppService {
     ];
     for (const item of schedule) {
       if (present.has(item.role)) continue;
+      if (!TASK_BUILDING_CATALOG.some((entry) => entry.serviceRole === item.role)) continue;
       const due = district?.archetype === "CIVIC" || tasks.length + 1 >= item.threshold;
       if (!due) continue;
       // City services arrive on schedule regardless of the task's estimate:
       // a stream of small 1-SP chores still deserves a fire station by twenty.
-      for (const entry of BUILDING_CATALOG) {
+      for (const entry of TASK_BUILDING_CATALOG) {
         if (entry.serviceRole === item.role && await this.entryAllowed(entry, cityId, districtId)) return item.role;
       }
     }
@@ -3092,11 +3503,13 @@ export class AppService {
     if (!district) throw new DomainError("NOT_FOUND", "Район не найден");
     const archetype = districtDto(district).archetype;
     if (hint) {
-      const exact = BUILDING_CATALOG.find((entry) => entry.key === hint);
+      const exact = TASK_BUILDING_CATALOG.find((entry) => entry.key === hint);
       if (!exact) throw new DomainError("INVALID_BUILDING_HINT", "Указанный тип здания не существует");
       if (exact.tags.includes("archive")) throw new DomainError("INVALID_BUILDING_HINT", "Корпуса Государственного архива не являются зданиями задач");
+      if (!taskBuildingCompatibleWithArchetype(exact, archetype)) {
+        throw new DomainError("INCOMPATIBLE_BUILDING", "Здание несовместимо с архитектурой выбранного района");
+      }
       if (!await this.entryAllowed(exact, cityId, districtId)) throw new DomainError("BUILDING_QUOTA_REACHED", "Лимит этого типа здания уже достигнут");
-      if (!buildingCompatibleWithArchetype(exact, archetype)) throw new DomainError("BUILDING_ZONE_CONFLICT", "Этот тип здания несовместим с архитектурой района");
       return [exact];
     }
     const tags = new Set(inferTaskTags(title, description));
@@ -3136,9 +3549,9 @@ export class AppService {
     // building may host a task of any size. Estimate stays as planning
     // metadata with only a soft nudge in the score below.
     const compatible: BuildingCatalogEntry[] = [];
-    for (const entry of BUILDING_CATALOG) {
+    for (const entry of TASK_BUILDING_CATALOG) {
       if (!entry.tags.includes("archive") && await this.entryAllowed(entry, cityId, districtId)
-        && buildingCompatibleWithArchetype(entry, archetype)
+        && taskBuildingCompatibleWithArchetype(entry, archetype)
         && (!requiredService || entry.serviceRole === requiredService)) compatible.push(entry);
     }
     if (compatible.length === 0) throw new DomainError("NO_BUILDING_VARIANT", "В каталоге нет здания, совместимого с архитектурой района");
@@ -3155,12 +3568,16 @@ export class AppService {
       : archetype === "CIVIC" || archetype === "NEW_BUILD" ? 2 : 3;
     const wantsSupport = tags.has("commercial") || tags.has("civic") || Boolean(requiredService);
     const primaryCandidates = compatible.filter((entry) => primaryZoningRole(archetype, buildingZoningRole(entry)));
+    const compactNewBuildCandidates = archetype === "NEW_BUILD"
+      ? primaryCandidates.filter((entry) => entry.footprint.width <= 14 && entry.footprint.height <= 12)
+      : [];
     const supportCandidates = compatible.filter((entry) => !primaryZoningRole(archetype, buildingZoningRole(entry)));
     const candidates = requiredService
       ? compatible
       : wantsSupport && existingSupport < supportLimit && supportCandidates.length > 0
         ? supportCandidates
-        : primaryCandidates.length > 0 ? primaryCandidates : compatible;
+        : compactNewBuildCandidates.length > 0 ? compactNewBuildCandidates
+          : primaryCandidates.length > 0 ? primaryCandidates : compatible;
     const countryId = String((await this.db.prepare("SELECT country_id FROM cities_v3 WHERE id = ?").get(cityId) as Row).country_id);
     const seed = Number((await this.countryRow(countryId)).seed);
     const taskOrdinal = cityRows.length + 1;
@@ -3173,13 +3590,20 @@ export class AppService {
       // Estimate is a soft nudge only (the gate above is gone): matching
       // sizes are mildly preferred, everything stays possible.
       const estimatePenalty = entry.estimates.includes(estimate) ? 0 : 3;
+      // The V5 catalog contains statement towers as well as compact 12x10
+      // apartment blocks. Unhinted work starts in the compact family so four
+      // tasks can share a two-tier complex; larger footprints remain available
+      // through semantic ranking and explicit hints instead of forcing one
+      // road cluster per task.
+      const footprintArea = entry.footprint.width * entry.footprint.height;
+      const footprintPenalty = Math.max(0, footprintArea - 120) / 18;
       // Regeneration replays the same task stream under a new country seed.
       // Seeding the tie-break with that seed makes the replay genuinely
       // re-pick buildings instead of reproducing the old set in new spots.
       const seededJitter = hashCoordinate(seed, taskOrdinal, Math.floor(stringHash(entry.key) * 10_000), 887) * 5;
       const score = (cityCounts.get(entry.key) ?? 0) * 7 + (districtCounts.get(entry.key) ?? 0) * 9
         + complexRepeat(entry.key) * 12
-        + (categoryCounts.get(entry.category) ?? 0) * 1.2 + rarityPenalty + unrelatedServicePenalty + estimatePenalty + seededJitter - semanticBonus - morphologyBonus
+        + (categoryCounts.get(entry.category) ?? 0) * 1.2 + rarityPenalty + unrelatedServicePenalty + estimatePenalty + footprintPenalty + seededJitter - semanticBonus - morphologyBonus
         + stringHash(`${title}:${entry.key}`) * 2;
       return { entry, score };
     }).sort((a, b) => a.score - b.score).map((ranked) => ranked.entry);
@@ -3254,6 +3678,7 @@ export class AppService {
   }
 
   private lotRoleForEntry(archetype: DistrictArchetype, entry: BuildingCatalogEntry): PlannedLotRole {
+    if (entry.tags.includes("new-build")) return "PRIMARY";
     return primaryZoningRole(archetype, buildingZoningRole(entry)) ? "PRIMARY" : "SUPPORT";
   }
 
@@ -3319,6 +3744,8 @@ export class AppService {
     priority?: TaskPriority;
     dueAt?: string;
     buildingHint?: string;
+    visualKind?: TaskDto["visualKind"];
+    parkVariant?: string;
     creatorUserId?: string;
     assigneeUserId?: string;
     assigneeRole?: string;
@@ -3342,8 +3769,38 @@ export class AppService {
                       if (!districtRow) throw new DomainError("NO_ACTIVE_DISTRICT", "Сначала создайте или активируйте район");
                       let district = districtDto(districtRow as Row);
                       if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "В завершённый район нельзя добавлять задачи");
-                      const ranked = await this.selectBuilding(input.cityId, district.id, input.estimate, title, input.description ?? "", input.buildingHint);
+                      const visualKind = input.visualKind ?? (input.buildingHint?.startsWith("park:") ? "PARK" : "BUILDING");
+                      const requestedParkVariant = input.parkVariant ?? input.buildingHint?.replace(/^park:/, "");
+                      const parkVariants = new Set(["urban-formal", "urban-community", "urban-central", "urban-botanical", "urban-amusement", "urban-park"]);
+                      const visualAssetKey = visualKind === "PARK" ? (requestedParkVariant || "urban-formal") : undefined;
+                      if (visualKind === "PARK" && !parkVariants.has(visualAssetKey!)) {
+                        throw new DomainError("INVALID_INPUT", "Неизвестный вариант парка");
+                      }
+                      const parkProfile: Readonly<Record<string, string>> = {
+                        "urban-formal": "house-cohousing-cluster",
+                        "urban-community": "house-courtyard-apartments",
+                        "urban-central": "house-small-apartments",
+                        "urban-botanical": "house-small-apartments",
+                        "urban-amusement": "house-small-apartments",
+                        "urban-park": "house-small-apartments",
+                      };
+                      const ranked = await this.selectBuilding(
+                        input.cityId,
+                        district.id,
+                        input.estimate,
+                        title,
+                        input.description ?? "",
+                        visualKind === "PARK" ? parkProfile[visualAssetKey!] : input.buildingHint,
+                      );
                       let roads = await this.roadCells(countryId);
+                      // Neighbouring buildings are planned against permanent
+                      // structure footprints, not temporary construction-site
+                      // fences. The renderer may merge/overlap adjacent one-cell
+                      // site envelopes while both tasks are under construction;
+                      // treating that envelope as a permanent building setback
+                      // made dense blocks lose roughly a quarter of their lots.
+                      // Roads and world features still use taskOccupiedCells(),
+                      // so they cannot cut through an active construction site.
                       const occupiedTasks = new Set((await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey));
                       // Walk the ranked candidates until one actually fits the
                       // ground. The favourite may be a tower with no lot wide
@@ -3355,8 +3812,12 @@ export class AppService {
                       // the semantic favourites instead of scanning all 193
                       // entries (and repeatedly growing the district).
                       const compactFallbacks = ranked
-                        .filter((candidate) => candidate.footprint.width * candidate.footprint.height <= 12 && !preferredCandidates.includes(candidate))
-                        .slice(0, 4);
+                        .filter((candidate) => candidate.footprint.width <= 14 && candidate.footprint.height <= 12 && !preferredCandidates.includes(candidate))
+                        .sort((left, right) =>
+                          left.footprint.width * left.footprint.height - right.footprint.width * right.footprint.height
+                          || left.footprint.width - right.footprint.width
+                          || left.key.localeCompare(right.key))
+                        .slice(0, 8);
                       const candidatePool = [...preferredCandidates, ...compactFallbacks];
                       const selectFromExistingLots = async () => {
                         const surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
@@ -3395,13 +3856,23 @@ export class AppService {
                       // stayed behind as empty streets and lots. Grow at most
                       // one semantic candidate, then re-check the whole pool.
                       let placement = await selectFromExistingLots();
-                      const growthCandidate = candidatePool[0];
-                      for (let growth = 0; !placement && growthCandidate && growth < 4; growth += 1) {
+                      // A terrain cut-out can reject the highest-ranked facade
+                      // even when the district has room for another compatible
+                      // model. `growDistrict` is atomic until a complete road +
+                      // lot plan is found, so try a bounded set of distinct
+                      // geometries instead of treating one blocked favourite as
+                      // proof that the entire district is full.
+                      const growthCandidates = candidatePool.filter((candidate, index, all) =>
+                        all.findIndex((other) => other.footprint.width === candidate.footprint.width
+                          && other.footprint.height === candidate.footprint.height) === index,
+                      );
+                      for (const growthCandidate of growthCandidates) {
+                        if (placement) break;
                         try {
                           district = await this.growDistrict(countryId, district, growthCandidate);
                         } catch (error) {
                           if (!(error instanceof DomainError) || error.code !== "PLACEMENT_BLOCKED") throw error;
-                          break;
+                          continue;
                         }
                         roads = await this.roadCells(countryId);
                         placement = await selectFromExistingLots();
@@ -3430,13 +3901,13 @@ export class AppService {
                       // A new building redevelops any ruin plot it overlaps.
                       await this.clearRuins(countryId, selected.placement.footprint);
                       await this.db.prepare(`INSERT INTO tasks_v3
-        (id, task_number, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, assignee_role, for_user_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        (id, task_number, city_id, district_id, title, description, work_item_type, acceptance_criteria, system_analysis, architecture, design_system, implementation_plan, estimate, priority, status, progress, due_at, building_type, visual_kind, visual_asset_key, platform_type, origin_x, origin_y, footprint_json, entrance_x, entrance_y, access_json, access_kind, creator_user_id, assignee_user_id, assignee_role, for_user_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
                                                         id, taskNumber, input.cityId, district.id, title, input.description?.trim().slice(0, 8000) ?? "", input.workItemType ?? "TASK",
                                                         input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", input.systemAnalysis?.trim().slice(0, 16000) ?? "",
                                                         input.architecture?.trim().slice(0, 16000) ?? "", input.designSystem?.trim().slice(0, 16000) ?? "",
                                                         input.implementationPlan?.trim().slice(0, 16000) ?? "", input.estimate,
-                                                        input.priority ?? "NORMAL", "PLANNING", 0, input.dueAt ?? null, entry.key, entry.platform,
+                                                        input.priority ?? "NORMAL", "PLANNING", 0, input.dueAt ?? null, entry.key, visualKind, visualAssetKey ?? entry.key, visualKind === "PARK" ? "PARK" : taskBuildingPlatform(entry),
                                                         selected.placement.origin.x, selected.placement.origin.y, JSON.stringify(selected.placement.footprint),
                                                         selected.placement.entrance.x, selected.placement.entrance.y, JSON.stringify(selected.placement.accessPath), selected.placement.accessKind,
                                                         input.creatorUserId ?? null, input.assigneeUserId ?? null, input.assigneeRole?.trim().slice(0, 80) ?? null, input.forUserId ?? null, createdAt, createdAt,
@@ -3590,14 +4061,16 @@ export class AppService {
                         const lots = json<PlannedLotDto[]>(districtRow.lots_json).map((lot) => lot.taskId === task.id ? { ...lot, taskId: null, vacant: true } : lot);
                         await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?").run(JSON.stringify(lots), task.districtId);
                       }
-                      // Demolition leaves a ruin plot on the map. It blocks nothing
-                      // and is cleared automatically when a new building, road or
-                      // park redevelops the cell.
-                      await this.insertWorldFeature(countryId, {
-                                                        cityId: task.cityId, districtId: task.districtId, parentFeatureId: null,
-                                                        kind: "RUIN", assetKind: "AREA", assetKey: "demolished-lot",
-                                                        origin: task.origin, footprint: task.footprint, orientation: "S", accessPath: [],
-                                                      });
+                      // Demolished buildings leave a reusable ruin plot. A park
+                      // is soft landscape: deleting its task restores the parcel
+                      // directly and must not fabricate a building foundation.
+                      if (task.visualKind === "BUILDING") {
+                        await this.insertWorldFeature(countryId, {
+                          cityId: task.cityId, districtId: task.districtId, parentFeatureId: null,
+                          kind: "RUIN", assetKind: "AREA", assetKey: "demolished-lot",
+                          origin: task.origin, footprint: task.footprint, orientation: "S", accessPath: [],
+                        });
+                      }
                       await this.db.prepare("DELETE FROM tasks_v3 WHERE id = ?").run(task.id);
                       this.surfaceCache.delete(countryId);
                       const data = { deleted: true as const, taskId: task.id, districtId: task.districtId, cityId: task.cityId, title: task.title };
@@ -3638,7 +4111,17 @@ export class AppService {
                                                         from: task.status, to: input.status, progress, comment: input.comment?.trim() || null,
                                                       }, updatedAt);
                       const data = await this.getTask(countryId, input.taskId);
-                      return { data, eventType: "task.status_changed", eventPayload: { taskId: input.taskId, status: input.status, progress, affectedBounds: boundsOf(data.footprint) } };
+                      const changedGreenArea = await this.syncDistrictGreenAreaDevelopment(countryId, data.districtId);
+                      return {
+                        data,
+                        eventType: "task.status_changed",
+                        eventPayload: {
+                          taskId: input.taskId,
+                          status: input.status,
+                          progress,
+                          affectedBounds: boundsOf([...data.footprint, ...changedGreenArea]),
+                        },
+                      };
                     });
   }
 
@@ -3810,6 +4293,7 @@ export class AppService {
     surfaces: SurfaceCellDto[],
     districts: DistrictDto[],
     cities: CityDto[],
+    tasks: TaskDto[],
   ): DecorationDto[] {
     const result: DecorationDto[] = [];
     const ambientCounts = { boats: 0, fishers: 0, residents: 0 };
@@ -3910,6 +4394,31 @@ export class AppService {
             for (let dx = -clearance; dx <= clearance; dx += 1) occupied.add(cellKey({ x: part.x + dx, y: part.y + dy }));
           }
         }
+      }
+    }
+    // Sparse frontage trees make large paved parcels feel inhabited without
+    // turning every sidewalk cell into an obstacle. Selection is stable per
+    // task, stays off its access route and keeps four cells between trunks.
+    const taskAccess = new Set(tasks.flatMap((task) => task.accessPath).map(cellKey));
+    const streetTrees = ["tree-oak", "tree-maple", "tree-round", "tree-aspen", "tree-birch", "tree-apple", "tree-cherry", "tree-magnolia"];
+    const streetTreeCells: Cell[] = [];
+    for (const task of tasks) {
+      if (task.visualKind !== "BUILDING" || task.stage < 3 || task.footprint.length < 80) continue;
+      const own = new Set(task.footprint.map(cellKey));
+      const candidates = [...new Map(task.footprint.flatMap(neighbors4).map((cell) => [cellKey(cell), cell])).values()]
+        .filter((cell) => !own.has(cellKey(cell)) && surfaceKeys.has(cellKey(cell)) && !taskAccess.has(cellKey(cell))
+          && terrainByCell.has(cellKey(cell)))
+        .sort((left, right) => hashCoordinate(seed + task.taskNumber, left.x, left.y, 751)
+          - hashCoordinate(seed + task.taskNumber, right.x, right.y, 751));
+      const target = task.footprint.length >= 150 ? 2 : 1;
+      let placed = 0;
+      for (const cell of candidates) {
+        if (placed >= target) break;
+        if (streetTreeCells.some((tree) => manhattan(tree, cell) < 4)) continue;
+        const kind = streetTrees[Math.floor(hashCoordinate(seed + task.taskNumber, cell.x, cell.y, 757) * streetTrees.length)]!;
+        result.push({ id: `street-tree:${task.id}:${cell.x}:${cell.y}`, kind, origin: cell });
+        streetTreeCells.push(cell);
+        placed += 1;
       }
     }
     return result;
@@ -4021,6 +4530,17 @@ export class AppService {
         for (const cell of lot.sharedAccess ?? []) publish(cell);
       }
       for (const cell of buildingGapPaths(nearbyDistricts, nearbyTasks)) publish(cell);
+      for (const cell of buildingApronCells({
+        tasks: nearbyTasks,
+        roads: new Map(roads.map((road) => [cellKey(road), road])),
+        blocked: blockedKeys,
+        isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
+      })) publish(cell);
+      for (const task of nearbyTasks) if (task.visualKind === "PARK" && task.stage >= 2) {
+        for (const cell of greenAreaPathCells(task.footprint, task.visualAssetKey)) {
+          if (contains(chunkBounds, cell) && !roadKeys.has(cellKey(cell))) paths.set(cellKey(cell), { ...cell, kind: "PATH", finish: "PAVERS" });
+        }
+      }
       for (const task of nearbyTasks) if (task.accessKind === "PATH") for (const cell of task.accessPath) publish(cell);
       return [...paths.values()];
     })() : [...buildSurfaceMap({
@@ -4044,10 +4564,11 @@ export class AppService {
         workItemType: task.workItemType,
         ...(lod === "DETAIL" && defectSummaryByTask.has(task.id) ? { defectSummary: defectSummaryByTask.get(task.id) } : {}),
         status: task.status, progress: task.progress, stage: task.stage,
-        buildingType: task.buildingType, platformType: task.platformType, origin: task.origin, footprint: task.footprint,
+        buildingType: task.buildingType, visualKind: task.visualKind, visualAssetKey: task.visualAssetKey,
+        platformType: task.platformType, origin: task.origin, footprint: task.footprint,
       })),
       worldFeatures,
-      decorations: lod === "DETAIL" ? this.decorations(seed, terrain, blocked, surfaces, nearbyDistricts, nearbyCities) : [],
+      decorations: lod === "DETAIL" ? this.decorations(seed, terrain, blocked, surfaces, nearbyDistricts, nearbyCities, nearbyTasks) : [],
       worldVersion,
     };
     // A mutation can commit while a cold chunk is being assembled. Its newer

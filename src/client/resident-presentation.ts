@@ -1,7 +1,8 @@
 import type { Cell } from "../shared/contracts";
 
 export type ResidentDirection = "north" | "east" | "south" | "west";
-export type ResidentWalkKey = `walker-${ResidentDirection}-${"a" | "b"}`;
+export type ResidentWalkFrame = "a" | "b" | "c";
+export type ResidentWalkKey = `walker-${ResidentDirection}-${ResidentWalkFrame}`;
 export type ResidentActivity = "NONE" | "THINK" | "CHAT";
 
 function residentDirection(current: Cell, next: Cell): ResidentDirection {
@@ -11,7 +12,7 @@ function residentDirection(current: Cell, next: Cell): ResidentDirection {
 }
 
 /**
- * Select one of two authored stride silhouettes. The frame follows distance
+ * Select one of three authored stride silhouettes. The frame follows distance
  * travelled rather than wall-clock time, so a stopped resident never walks in
  * place and pan/zoom cannot restart the gait.
  */
@@ -22,11 +23,25 @@ export function residentWalkPresentation(
   phase: number,
 ): { key: ResidentWalkKey; scaleX: number; scaleY: number } {
   const normalized = ((progress + phase) % 1 + 1) % 1;
-  const frame = Math.floor(normalized * 4) % 2 === 0 ? "a" : "b";
+  const frame = (["a", "b", "c"] as const)[Math.min(2, Math.floor(normalized * 3))]!;
   return {
     key: `walker-${residentDirection(current, next)}-${frame}`,
     scaleX: 1,
     scaleY: 1,
+  };
+}
+
+/** Foot position travels through the centre of each pedestrian surface cell. */
+export function residentGroundPosition(
+  current: Cell,
+  next: Cell,
+  progress: number,
+  cellSize: number,
+): { x: number; y: number } {
+  const clamped = Math.max(0, Math.min(1, progress));
+  return {
+    x: (current.x + (next.x - current.x) * clamped) * cellSize + cellSize / 2,
+    y: (current.y + (next.y - current.y) * clamped) * cellSize + cellSize / 2,
   };
 }
 

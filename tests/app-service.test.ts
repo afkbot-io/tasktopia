@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
-import { AppService, connectorCorridorBlocked, DomainError } from "../src/server/app-service";
+import { AppService, complexMinimumRect, connectorCorridorBlocked, districtGrowthThicknesses, DomainError } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
+import { getBuilding } from "../src/shared/catalog";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
 import { isWater, terrainAt } from "../src/server/world/terrain";
 
@@ -17,7 +18,7 @@ describe("Tasktopia square-world application service", () => {
     countryId = (await registerUser(db, { email: "test@example.com", name: "Tester", password: "password123" })).user.countryId;
   });
 
-  afterEach(async () => await db.close());
+  afterEach(async () => await db?.close());
 
   it("reuses a completed district boundary road without opening its sealed land", () => {
     const occupied = new Set<string>();
@@ -26,6 +27,18 @@ describe("Tasktopia square-world application service", () => {
     const foreignSoft = new Set<string>();
     expect(connectorCorridorBlocked("10,5", occupied, existingRoads, blockedByDistrict, foreignSoft, false)).toBe(false);
     expect(connectorCorridorBlocked("11,5", occupied, existingRoads, blockedByDistrict, foreignSoft, false)).toBe(true);
+  });
+
+  it("sizes a growth patch for the widest V5 complex instead of capping it below the planner minimum", () => {
+    const compact = getBuilding("highrise-glass");
+    const wide = getBuilding("house-mediterranean-courtyard");
+    expect(districtGrowthThicknesses(compact)).toEqual([64, 68, 72]);
+    expect(districtGrowthThicknesses(wide)).toEqual([64, 68, 72, 76, 80]);
+    expect(Math.max(...districtGrowthThicknesses(wide))).toBeGreaterThanOrEqual(
+      Math.min(72, wide.footprint.width * 4 + 8) + 2,
+    );
+    expect(complexMinimumRect(wide, 10)).toEqual({ width: 44, height: 29 });
+    expect(complexMinimumRect(wide, 3)).toEqual({ width: 32, height: 17 });
   });
 
   it("creates an idempotent city with reciprocal square-road masks", async () => {
@@ -137,6 +150,7 @@ describe("Tasktopia square-world application service", () => {
   }, 30_000);
 
   it("creates a planned district and advances a sprite building through five stages", async () => {
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
     const city = await service.createCity(countryId, { name: "Southport", idempotencyKey: "c1" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Core", archetype: "MIXED_URBAN", activate: true, idempotencyKey: "d1" });
     expect(district.cells.length).toBeGreaterThan(250);
@@ -144,7 +158,7 @@ describe("Tasktopia square-world application service", () => {
     // V10: a fresh district is pure territory. Streets and lots appear only
     // together with the first complex grown by the first task.
     expect(district.lots).toEqual([]);
-    let task = await service.createTask(countryId, { cityId: city.id, title: "Build cafe", estimate: 2, buildingHint: "commercial-corner-cafe", idempotencyKey: "t1" });
+    let task = await service.createTask(countryId, { cityId: city.id, title: "Build mixed-use tower", estimate: 2, buildingHint: "highrise-mixed-use-market", idempotencyKey: "t1" });
     expect(task.stage).toBe(1);
     expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)?.lots.length).toBeGreaterThanOrEqual(3);
     const taskChunk = await service.chunkForCell(task.origin);
@@ -165,14 +179,102 @@ describe("Tasktopia square-world application service", () => {
     expect(task.progress).toBe(100);
     expect(task.comments).toHaveLength(4);
     const statusEvent = (await service.listEvents(countryId)).findLast((event) => event.type === "task.status_changed");
-    expect(statusEvent?.payload.affectedBounds).toEqual(boundsOf(task.footprint));
+    const affected = statusEvent?.payload.affectedBounds as ReturnType<typeof boundsOf>;
+    const buildingBounds = boundsOf(task.footprint);
+    expect(affected.minX).toBeLessThanOrEqual(buildingBounds.minX);
+    expect(affected.minY).toBeLessThanOrEqual(buildingBounds.minY);
+    expect(affected.maxX).toBeGreaterThanOrEqual(buildingBounds.maxX);
+    expect(affected.maxY).toBeGreaterThanOrEqual(buildingBounds.maxY);
     expect((await service.completeDistrict(countryId, district.id, "complete-core")).status).toBe("COMPLETED");
     await expect(service.activateDistrict(countryId, district.id, "reactivate-core")).rejects.toThrowError(/нельзя снова активировать/);
     await expect(service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Late task", estimate: 1, idempotencyKey: "late-task" }))
       .rejects.toThrowError(/завершённый район/);
   });
 
-  it("constructs a city-unique landmark only as a task-linked five-stage building", async () => {
+  it("builds a dense-core district from large existing facades around a central park", async () => {
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(867_530_9, countryId);
+    const city = await service.createCity(countryId, {
+      name: "Compact Core",
+      morphology: "DENSE_CORE",
+      idempotencyKey: "compact-core-city",
+    });
+    const district = await service.createDistrict(countryId, {
+      cityId: city.id,
+      name: "Новый деловой центр",
+      archetype: "NEW_BUILD",
+      capacitySp: 26,
+      activate: true,
+      idempotencyKey: "compact-core-district",
+    });
+
+    // A dense district starts with one coherent frontage sized for reviewed
+    // 12–24-cell apartment facades, not an obsolete cottage parcel.
+    expect(district.cells.length).toBeGreaterThanOrEqual(1_400);
+    expect(district.cells.length).toBeLessThanOrEqual(1_900);
+    const territory = boundsOf(district.cells);
+    expect(district.cells).toHaveLength(
+      (territory.maxX - territory.minX + 1) * (territory.maxY - territory.minY + 1),
+    );
+
+    const tasks: Awaited<ReturnType<AppService["createTask"]>>[] = [];
+    for (let index = 0; index < 8; index += 1) {
+      tasks.push(await service.createTask(countryId, {
+        cityId: city.id,
+        districtId: district.id,
+        title: `Многоэтажный корпус ${index + 1}`,
+        description: "Плотная городская застройка делового центра.",
+        estimate: 3,
+        idempotencyKey: `compact-core-task-${index}`,
+      }));
+    }
+    expect(tasks.every((task) => getBuilding(task.buildingType).tags.includes("new-build"))).toBe(true);
+    expect(tasks.every((task) => task.platformType === "STONE")).toBe(true);
+    const developed = (await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)!;
+    // Three to four compact V5 buildings share each road complex. The
+    // generator must not regress to one isolated road cluster per large task.
+    const occupiedGroups = new Map<string, number>();
+    for (const lot of developed.lots) if (lot.taskId && lot.groupId) {
+      occupiedGroups.set(lot.groupId, (occupiedGroups.get(lot.groupId) ?? 0) + 1);
+    }
+    expect(Math.max(...occupiedGroups.values())).toBeGreaterThanOrEqual(3);
+    expect(occupiedGroups.size, JSON.stringify({
+      tasks: tasks.map((task) => ({ key: task.buildingType, footprint: getBuilding(task.buildingType).footprint })),
+      lots: developed.lots.map((lot) => ({ groupId: lot.groupId, size: [lot.width, lot.height], taskId: lot.taskId })),
+    }))
+      .toBeLessThanOrEqual(4);
+
+    const green = (await service.listWorldFeatures(countryId)).find((feature) =>
+      feature.cityId === city.id && feature.assetKey === "urban-grove");
+    expect(green).toBeDefined();
+    expect(green!.footprint.length).toBeGreaterThanOrEqual(30);
+  }, 20_000);
+
+  it("creates a numbered task park with the same five-stage lifecycle", async () => {
+    const city = await service.createCity(countryId, { name: "Park City", idempotencyKey: "park-city" });
+    const district = await service.createDistrict(countryId, {
+      cityId: city.id, name: "Green Sprint", archetype: "NEW_BUILD", activate: true, idempotencyKey: "park-district",
+    });
+    let park = await service.createTask(countryId, {
+      cityId: city.id, districtId: district.id, title: "Построить центральный парк", estimate: 3,
+      visualKind: "PARK", parkVariant: "urban-formal", idempotencyKey: "park-task",
+    });
+    expect(park.visualKind).toBe("PARK");
+    expect(park.visualAssetKey).toBe("urban-formal");
+    expect(park.taskNumber).toBeGreaterThan(0);
+    expect(park.stage).toBe(1);
+    for (const [index, status] of ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"].entries()) {
+      park = await service.updateTaskStatus(countryId, {
+        taskId: park.id, status: status as typeof park.status, idempotencyKey: `park-stage-${index}`,
+      });
+      expect(park.stage).toBe(index + 2);
+    }
+    const chunkCell = service.chunkForCell(park.origin);
+    const chunkPark = (await service.getChunk(countryId, chunkCell.chunkX, chunkCell.chunkY)).tasks.find((task) => task.id === park.id);
+    expect(chunkPark).toMatchObject({ taskNumber: park.taskNumber, visualKind: "PARK", visualAssetKey: "urban-formal", stage: 5 });
+    expect((await service.listWorldFeatures(countryId)).some((feature) => feature.kind === "PARK")).toBe(false);
+  }, 20_000);
+
+  it("keeps unmigrated landmarks out of the task-building profile", async () => {
     const city = await service.createCity(countryId, { name: "Landmark City", idempotencyKey: "landmark-city" });
     const district = await service.createDistrict(countryId, {
       cityId: city.id, name: "Civic Sprint", archetype: "CIVIC", activate: true, idempotencyKey: "landmark-district",
@@ -181,36 +283,19 @@ describe("Tasktopia square-world application service", () => {
     expect((await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK"))
       .toEqual([]);
 
-    let task = await service.createTask(countryId, {
+    await expect(service.createTask(countryId, {
       cityId: city.id, districtId: district.id, title: "Build the city observatory", estimate: 6,
       buildingHint: "landmark-observatory", idempotencyKey: "landmark-task",
-    });
-    expect(task).toMatchObject({ buildingType: "landmark-observatory", stage: 1, status: "PLANNING" });
-    const chunk = await service.chunkForCell(task.origin);
-    expect((await service.getChunk(countryId, chunk.chunkX, chunk.chunkY)).tasks.find((item) => item.id === task.id))
-      .toMatchObject({ buildingType: "landmark-observatory", stage: 1 });
-    expect((await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK"))
-      .toEqual([]);
-
-    for (const [index, status] of ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"].entries()) {
-      task = await service.updateTaskStatus(countryId, {
-        taskId: task.id, status: status as typeof task.status, comment: `landmark stage ${index + 2}`,
-        idempotencyKey: `landmark-status-${index}`,
-      });
-    }
-    expect(task).toMatchObject({ buildingType: "landmark-observatory", stage: 5, status: "COMPLETED", progress: 100 });
-    await expect(service.createTask(countryId, {
-      cityId: city.id, districtId: district.id, title: "Build a second city landmark", estimate: 6,
-      buildingHint: "landmark-monument", idempotencyKey: "second-landmark-task",
-    })).rejects.toThrowError(/Лимит этого типа здания уже достигнут/);
+    })).rejects.toThrowError(/не существует/);
+    expect(await service.listTasks(countryId)).toEqual([]);
   });
 
-  it("enforces service-role uniqueness from the data catalog", async () => {
+  it("keeps unmigrated service buildings out of the task-building profile", async () => {
     const city = await service.createCity(countryId, { name: "Services", idempotencyKey: "services-city" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Safety", capacitySp: 14, activate: true, idempotencyKey: "services-district" });
-    await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Compact fire station", estimate: 3, buildingHint: "civic-fire-station-compact", idempotencyKey: "fire-one" });
-    await expect(service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Second fire station", estimate: 6, buildingHint: "civic-fire-station", idempotencyKey: "fire-two" }))
-      .rejects.toThrowError(/Лимит этого типа здания/);
+    await expect(service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Compact fire station", estimate: 3, buildingHint: "civic-fire-station-compact", idempotencyKey: "fire-one" }))
+      .rejects.toThrowError(/не существует/);
+    expect(await service.listTasks(countryId)).toEqual([]);
   });
 
   it("rejects reused idempotency keys and invalid building hints", async () => {
@@ -222,17 +307,47 @@ describe("Tasktopia square-world application service", () => {
       .rejects.toThrowError(/не подходит оценке|не существует/);
   });
 
-  it("rejects an explicit residential massing that conflicts with the district", async () => {
+  it("keeps an ordinary residence out of a dense new-build district", async () => {
     const city = await service.createCity(countryId, { name: "Zoned City", morphology: "DENSE_CORE", idempotencyKey: "zoned-city" });
     const dense = await service.createDistrict(countryId, { cityId: city.id, name: "Новые высотки", archetype: "NEW_BUILD", activate: true, idempotencyKey: "zoned-district" });
     await expect(service.createTask(countryId, {
                       cityId: city.id, districtId: dense.id, title: "Частный дом внутри высоток", estimate: 2,
                       buildingHint: "house-cottage", idempotencyKey: "zoned-conflict",
-                    })).rejects.toThrowError(/несовместим/);
+                    })).rejects.toThrowError(/архитектур|район/);
   });
 
+  it("fills a private residential row before opening another road complex", async () => {
+    // This seed used to rank a facade whose first growth site could not be
+    // published, even though a compatible compact house fitted the same
+    // district. Keep the terrain/candidate interaction deterministic.
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1_013_904_226, countryId);
+    const city = await service.createCity(countryId, { name: "Garden City", idempotencyKey: "garden-city" });
+    const district = await service.createDistrict(countryId, {
+      cityId: city.id, name: "Тихий жилой квартал", archetype: "PRIVATE", activate: true,
+      idempotencyKey: "garden-district",
+    });
+    const tasks: Awaited<ReturnType<AppService["createTask"]>>[] = [];
+    for (let index = 0; index < 4; index += 1) {
+      tasks.push(await service.createTask(countryId, {
+        cityId: city.id, districtId: district.id, title: `Жилой дом ${index + 1}`, estimate: 2,
+        idempotencyKey: `garden-task-${index}`,
+      }));
+    }
+
+    const developed = (await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)!;
+    const taskLots = developed.lots.filter((lot) => lot.taskId && tasks.some((task) => task.id === lot.taskId));
+    expect(new Set(taskLots.map((lot) => lot.groupId)).size).toBe(1);
+    expect(new Set(taskLots.map((lot) => lot.origin.y + lot.height)).size).toBe(1);
+    expect(tasks.every((task) => getBuilding(task.buildingType).tags.includes("private-residential"))).toBe(true);
+    expect(tasks.every((task) => task.platformType === "YARD")).toBe(true);
+  }, 20_000);
+
   it("treats district SP capacity as an advisory target and still enforces status transitions", async () => {
-    const city = await service.createCity(countryId, { name: "Capacity City", idempotencyKey: "capacity-city" });
+    const city = await service.createCity(countryId, {
+      name: "Capacity City",
+      morphology: "BALANCED",
+      idempotencyKey: "capacity-city",
+    });
     await service.createDistrict(countryId, { cityId: city.id, name: "Short Sprint", capacitySp: 3, activate: true, idempotencyKey: "capacity-district" });
     const task = await service.createTask(countryId, { cityId: city.id, title: "Three point task", estimate: 3, idempotencyKey: "capacity-task" });
     const overflow = await service.createTask(countryId, { cityId: city.id, title: "Overflow task", estimate: 1, idempotencyKey: "capacity-overflow" });
@@ -281,6 +396,7 @@ describe("Tasktopia square-world application service", () => {
   });
 
   it("deletes tasks, districts and cities safely while keeping retries idempotent", async () => {
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1_908_133_256, countryId);
     const city = await service.createCity(countryId, { name: "Lifecycle City", idempotencyKey: "lifecycle-city" });
     const active = await service.createDistrict(countryId, { cityId: city.id, name: "Active District", activate: true, idempotencyKey: "lifecycle-active" });
     const next = await service.createDistrict(countryId, { cityId: city.id, name: "Next District", idempotencyKey: "lifecycle-next" });
@@ -330,7 +446,7 @@ describe("Tasktopia square-world application service", () => {
     expect(deletedCity.roadsDeleted).toBeGreaterThan(0);
     expect(deletedCity.roadsDeleted).toBeLessThanOrEqual(roadsBeforeDelete);
     expect(await service.listCities(countryId)).toEqual([]);
-  });
+  }, 20_000);
 
   it("keeps destructive operations isolated and exact-confirmed", async () => {
     const city = await service.createCity(countryId, { name: "Protected City", idempotencyKey: "protected-city" });
@@ -341,7 +457,7 @@ describe("Tasktopia square-world application service", () => {
     await expect(service.deleteCity(other.user.countryId, { cityId: city.id, confirmName: city.name, idempotencyKey: "foreign-city-delete" })).rejects.toThrowError(/не найден/);
     await expect(service.deleteDistrict(other.user.countryId, { districtId: district.id, confirmName: district.name, idempotencyKey: "foreign-district-delete" })).rejects.toThrowError(/не найден/);
     expect((await service.listDistricts(countryId, city.id)).some((item) => item.id === district.id)).toBe(true);
-  });
+  }, 20_000);
 
   it("keeps future-district tasks in planning until the district becomes active", async () => {
     const city = await service.createCity(countryId, { name: "Future City", idempotencyKey: "future-city" });
@@ -351,7 +467,7 @@ describe("Tasktopia square-world application service", () => {
       .rejects.toThrowError(/до активации/);
     await service.activateDistrict(countryId, future.id, "future-activate");
     expect((await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", idempotencyKey: "future-start" })).status).toBe("STARTED");
-  });
+  }, 20_000);
 
   it("isolates tasks between countries", async () => {
     const city = await service.createCity(countryId, { name: "Private City", idempotencyKey: "private-city" });

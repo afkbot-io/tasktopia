@@ -9,6 +9,39 @@ export type IncidentVisualProfile = {
   burning: boolean;
 };
 
+export type IncidentVisualLayout = {
+  flameAnchors: Array<{ x: number; y: number }>;
+  smokeAnchors: Array<{ x: number; y: number }>;
+};
+
+function distributedAnchors(count: number, halfWidth: number, y: number): Array<{ x: number; y: number }> {
+  if (count <= 0) return [];
+  if (count === 1) return [{ x: 0, y }];
+  return Array.from({ length: count }, (_, index) => ({
+    x: Math.round(-halfWidth + 2 * halfWidth * index / (count - 1)),
+    y: y - index % 2 * 2,
+  }));
+}
+
+/**
+ * Place incident effects across the actual facade instead of stacking every
+ * plume on one arbitrary pixel. Anchors remain inside the sprite silhouette,
+ * scale with its width and are deterministic for chunk reconciliation.
+ */
+export function incidentVisualLayout(
+  spriteWidth: number,
+  spriteHeight: number,
+  profile: IncidentVisualProfile,
+): IncidentVisualLayout {
+  const halfWidth = Math.max(0, Math.floor(spriteWidth / 2) - 4);
+  const facadeY = -Math.max(12, Math.round(spriteHeight * 0.58));
+  const flameCount = profile.burning ? Math.max(1, Math.min(4, Math.floor(spriteWidth / 32))) : 0;
+  return {
+    flameAnchors: distributedAnchors(flameCount, halfWidth, facadeY),
+    smokeAnchors: distributedAnchors(profile.plumeCount, halfWidth, facadeY - 5),
+  };
+}
+
 export function incidentMode(task: Pick<ChunkTaskDto, "workItemType" | "status" | "defectSummary">): IncidentMode {
   if (task.workItemType === "HOTFIX" && task.status !== "PLANNING" && task.status !== "COMPLETED") return "HOTFIX_ACTIVE";
   const defects = task.defectSummary;

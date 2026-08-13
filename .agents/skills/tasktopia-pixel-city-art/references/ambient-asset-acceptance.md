@@ -36,7 +36,7 @@ Reject the source before catalog registration when any item applies:
 - The horizontal silhouette must occupy at least `13x6 px`; both north and south silhouettes at least `6x13 px`.
 - Distinct models must differ structurally: compact, sedan, estate, taxi, van, pickup, electric hatch, or classic car. A color swap is not a model.
 - Every model must have a unique full RGBA drawing and a visibly different source-level body/roof/cargo structure. The reviewed contact sheet is the silhouette gate: tiny runtime cars may share the same safe lane envelope, so an alpha-bounds hash alone is not proof of diversity.
-- City buses use the same three-view contract but occupy `24x8 px` horizontally and `8x24 px` vertically. Their opaque subject must occupy at least `20x7 px` horizontally and `6x18 px` north/south, so the bus remains visibly longer than a passenger car instead of hiding a short facade inside a three-cell canvas. North/south roof panels need contrasting divisions that survive native `1x` reduction.
+- City buses use the same three-view contract but occupy `48x16 px` horizontally and `16x48 px` vertically (`6x2` or `2x6` cells). Their opaque subject must occupy at least `44x14 px` horizontally and `13x44 px` north/south. The long roof, articulated window rhythm, front/rear lighting and two-cell width must remain readable at native `1x`. A short vehicle padded inside the large canvas is blocking. Buses run only on canonical three-cell roads.
 
 ## Transit-stop gate
 
@@ -63,11 +63,24 @@ Reject the source before catalog registration when any item applies:
 
 ## Tree gate
 
-- Standard trees use `8x16 px`; signature/large trees may use `16x24 px` with explicit footprint.
-- The trunk must reach the bottom anchor. The crown must use readable clustered masses with at least three tones: outline/shadow, body, upper-left highlight.
+- Standard trees use exactly `16x32 px`, a `1x1` footprint and anchor `[8,32]`.
+  The lower-centre `8x8 px` rectangle (`x=4..11`, `y=24..31`) is the planting
+  cell. All opaque pixels in the two ground-contact rows `30..31` stay inside
+  `x=4..11`, and the trunk/root reaches the final row. Crown pixels may overhang
+  above that contact band because y-sorting is anchored at the trunk. Signature
+  trees require a separate
+  explicit contract; never silently reuse the standard profile at another size.
+- The crown may overhang the planting cell only above the ground-contact band. It must use
+  readable clustered masses with at least three tones: outline/shadow, body,
+  upper-left highlight, plus a shallow top-lit plane matching the building
+  camera rather than a flat circular side icon.
 - Species differ by silhouette as well as color: columnar, conical, umbrella, weeping, round, spreading, multi-stem, or sparse/deadwood.
 - Do not bake grass or a circular ground shadow into the tree.
 - Reject crowns made from one flat blob, random confetti pixels, symmetric lollipops, or foliage that merges into an unreadable square at `1x`.
+- Render every accepted tree on an actual `8x8` pavement grid at native `1x`
+  and nearest-neighbour `4x`. Reject a tree whose ground contact appears to sit
+  between cells, whose lower foliage covers neighbouring tiles, or whose camera
+  differs from the approved building benchmark.
 
 ## AI-authored source workflow
 

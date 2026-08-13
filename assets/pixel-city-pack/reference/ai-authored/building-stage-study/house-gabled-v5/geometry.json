@@ -1,0 +1,13 @@
+{
+  "key": "house-gabled",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [7, 8],
+  "physicalFootprintCells": [7, 5],
+  "projectedRoofDepthCells": 2,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 3 },
+  "doorSizePx": [8, 16],
+  "sitePreviewCells": [11, 12]
+}

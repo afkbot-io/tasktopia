@@ -1,6 +1,8 @@
 export type GreenAreaSize = [width: number, height: number];
 
 const GREEN_AREA_SIZES: Readonly<Record<string, readonly (readonly [number, number])[]>> = {
+  "urban-formal": [[18, 10], [16, 9], [14, 8]],
+  "urban-community": [[16, 10], [14, 9], [12, 8]],
   "urban-central": [[12, 10], [10, 9], [8, 7]],
   "urban-botanical": [[10, 9], [8, 8], [7, 6]],
   "urban-amusement": [[10, 8], [8, 7], [7, 5]],
@@ -17,13 +19,13 @@ export function greenAreaSizeCandidates(assetKey: string): GreenAreaSize[] {
  * Interior cells available to size-aware decor. The central cross is reserved
  * for pedestrian paths, while a one-cell perimeter keeps props off the border.
  */
-export function greenAreaAccentCandidates(width: number, height: number): Array<{ x: number; y: number }> {
-  const centerX = Math.floor((width - 1) / 2);
-  const centerY = Math.floor((height - 1) / 2);
+export function greenAreaAccentCandidates(width: number, height: number, assetKey = "urban-park"): Array<{ x: number; y: number }> {
+  const footprint = Array.from({ length: width * height }, (_, index) => ({ x: index % width, y: Math.floor(index / width) }));
+  const pathCells = new Set(greenAreaPathCells(footprint, assetKey).map((cell) => `${cell.x},${cell.y}`));
   const candidates: Array<{ x: number; y: number }> = [];
   for (let y = 1; y < height - 1; y += 2) {
     for (let x = 1; x < width - 1; x += 2) {
-      if (x === centerX || y === centerY) continue;
+      if (pathCells.has(`${x},${y}`)) continue;
       candidates.push({ x, y });
     }
   }
@@ -32,5 +34,7 @@ export function greenAreaAccentCandidates(width: number, height: number): Array<
 
 /** Roughly one accent per ten cells, bounded to avoid both empty and noisy parks. */
 export function greenAreaAccentTarget(width: number, height: number): number {
-  return Math.min(12, Math.max(4, Math.floor((width * height) / 10)));
+  const area = width * height;
+  return Math.min(20, Math.max(4, Math.floor(area / (area >= 64 ? 8 : 10))));
 }
+import { greenAreaPathCells } from "../shared/green-area";

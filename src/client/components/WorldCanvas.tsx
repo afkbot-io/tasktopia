@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
+import { roadBandRole, roadClassSupportsVehicle } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto } from "../../shared/contracts";
 import { api } from "../api";
 import {
@@ -18,7 +19,6 @@ import {
   vehicleUnsafePairCount,
   vehicleCruiseSpeed,
   vehiclePresentation,
-  vehicleLanePosition,
   mustYieldAtCrosswalk,
   mustYieldForBlockedJunctionExit,
   mustYieldAtTrafficSignal,
@@ -29,7 +29,8 @@ import {
   type TrafficJunction,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
-import { incidentMode, incidentVisualProfile, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
+import { incidentMode, incidentVisualLayout, incidentVisualProfile, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
+import { ambientMotionPresentation } from "../ambient-motion";
 import {
   chunkRangeForViewport,
   progressiveChunkPlan,
@@ -38,12 +39,24 @@ import {
   minimumCameraScale,
 } from "../world-camera";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
-import { buildingBadgePresentation, buildingPlatformPresentation } from "../world-building-presentation";
+import {
+  buildingBadgePresentation,
+  buildingPlatformPresentation,
+  taskPlatformCellPresentation,
+} from "../world-building-presentation";
 import { micromobilityOccupancy, micromobilityPresentation } from "../micromobility-presentation";
-import { residentActivityPosition, residentActivityVisualKey, residentWalkPresentation } from "../resident-presentation";
+import { residentActivityPosition, residentActivityVisualKey, residentGroundPosition, residentWalkPresentation } from "../resident-presentation";
 import { compareWorldObjects, type WorldObjectKind } from "../world-object-depth";
 import { overviewFromDetailChunk } from "../world-chunk-cache";
-import { greenAreaPathCells } from "../../shared/green-area";
+import { greenAreaDecorStage, greenAreaSurfaceRole } from "../../shared/green-area";
+import { taskParkDecorLayout } from "../../shared/task-park";
+import {
+  CONSTRUCTION_DETAIL_SPEC_BY_KEY,
+  CONSTRUCTION_TILE_KEYS,
+  constructionStageLayout,
+  type ConstructionDetailPlacement,
+  type ConstructionTile,
+} from "../../shared/construction-stage";
 
 const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1.12;
@@ -65,8 +78,7 @@ type IncidentView = {
   mode: IncidentMode;
   profile: IncidentVisualProfile;
   fullResponse: boolean;
-  flameA: Sprite;
-  flameB: Sprite;
+  flames: Array<{ frameA: Sprite; frameB: Sprite }>;
   smokePlumes: Array<{ frameA: Sprite; frameB: Sprite; alpha: number }>;
   beacon: Graphics;
   water: Graphics;
@@ -88,13 +100,9 @@ const GRID_DIRECTIONS = [
   { x: 0, y: -1, bit: 1 }, { x: 1, y: 0, bit: 2 }, { x: 0, y: 1, bit: 4 }, { x: -1, y: 0, bit: 8 },
 ] as const;
 
-const PLATFORM_TILE: Record<PlatformKind, string> = {
-  YARD: TERRAIN_SPRITES.GRASS![1]!,
-  STONE: TILE_SPRITES.pavement!,
-  ASPHALT: TILE_SPRITES.road!,
-  SERVICE: TILE_SPRITES.pavement!,
-  PARK: TERRAIN_SPRITES.MEADOW![1]!,
-};
+function parkStage(stage: number): 1 | 2 | 3 | 4 | 5 {
+  return Math.max(1, Math.min(5, Math.round(stage))) as 1 | 2 | 3 | 4 | 5;
+}
 
 function buildingPlatformUrl(platform: PlatformKind): string {
   const presentation = buildingPlatformPresentation(platform);
@@ -164,6 +172,11 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, road
   const crossing = surfaces.get(key(cell));
   if (crossing?.kind === "CROSSWALK") {
     group.addChild(sprite(TILE_SPRITES[crossing.orientation === "V" ? "crosswalk-vertical" : "crosswalk-horizontal"]!, p.x, p.y));
+  } else {
+    const role = roadBandRole(roads, cell);
+    if (role.kind === "MEDIAN") {
+      group.addChild(sprite(TILE_SPRITES[role.axis === "H" ? "road-marking-horizontal" : "road-marking-vertical"]!, p.x, p.y));
+    }
   }
   for (let direction = 0; direction < GRID_DIRECTIONS.length; direction += 1) {
     const config = GRID_DIRECTIONS[direction]!;
@@ -243,26 +256,136 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
 
 function drawPlatform(task: ChunkTaskDto): Container {
   const group = new Container();
-  const tile = PLATFORM_TILE[task.platformType];
+  if (task.visualKind === "PARK") {
+    for (const cell of task.footprint) {
+      const p = position(cell);
+      const role = greenAreaSurfaceRole(task.footprint, cell, parkStage(task.stage), task.visualAssetKey);
+      const tile = role === "EARTH" ? gameAssetUrl(TERRAIN_SPRITES.DIRT![1]!)
+        : role === "MEADOW" ? gameAssetUrl(TERRAIN_SPRITES.MEADOW![1]!)
+          : TILE_SPRITES[role === "BOUNDARY" ? "pavement" : "path-pavers"]!;
+      group.addChild(sprite(tile, p.x, p.y));
+    }
+    return group;
+  }
+  const entry = getBuilding(task.buildingType);
   for (const cell of task.footprint) {
     const p = position(cell);
-    group.addChild(sprite(tile.startsWith("http") ? tile : gameAssetUrl(tile), p.x, p.y));
+    const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
+    const tile = presentation.family === "tile"
+      ? TILE_SPRITES[presentation.key]!
+      : gameAssetUrl(TERRAIN_SPRITES[presentation.key]![presentation.variant]!);
+    group.addChild(sprite(tile, p.x, p.y));
+  }
+  return group;
+}
+
+function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, tooltipLayer: Container): Container {
+  const group = new Container();
+  const bounds = {
+    minX: Math.min(...task.footprint.map((cell) => cell.x)), maxX: Math.max(...task.footprint.map((cell) => cell.x)),
+    minY: Math.min(...task.footprint.map((cell) => cell.y)), maxY: Math.max(...task.footprint.map((cell) => cell.y)),
+  };
+  const width = (bounds.maxX - bounds.minX + 1) * CELL_SIZE;
+  const height = (bounds.maxY - bounds.minY + 1) * CELL_SIZE;
+  group.position.set(bounds.minX * CELL_SIZE, bounds.minY * CELL_SIZE);
+  group.eventMode = "static";
+  group.cursor = "pointer";
+  group.hitArea = new Rectangle(0, 0, width, height);
+  const decor = taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)
+    .sort((left, right) => left.origin.y + left.height - right.origin.y - right.height || left.origin.x - right.origin.x);
+  for (const placement of decor) {
+    const metadata = PROP_CATALOG[placement.kind];
+    if (!metadata) continue;
+    const view = sprite(
+      metadata.path,
+      (placement.origin.x - bounds.minX) * CELL_SIZE + metadata.footprint.width * CELL_SIZE / 2,
+      (placement.origin.y - bounds.minY + metadata.footprint.height) * CELL_SIZE,
+    );
+    view.anchor.set(metadata.anchor.x / metadata.size.width, metadata.anchor.y / metadata.size.height);
+    group.addChild(view);
+  }
+  const badge = buildingBadgePresentation(task.taskNumber, task.stage);
+  const badgeX = width - badge.width / 2 - 2;
+  const badgeY = height - badge.height / 2 - 2;
+  group.addChild(new Graphics()
+    .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
+    .fill(0x0b171a).stroke({ color: badge.borderColor, width: 1 }));
+  const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: badge.fontSize, fontWeight: "900", fill: 0xffffff }) });
+  label.anchor.set(0.5); label.position.set(badgeX, badgeY); group.addChild(label);
+  let tooltip: Container | undefined;
+  group.on("pointerover", () => {
+    if (!tooltip) {
+      const text = new Text({
+        text: `#${task.taskNumber} · ${task.title}\n${TASK_STATUS_LABEL[task.status]} · ${task.progress}%`, resolution: 4,
+        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "600", lineHeight: 11, fill: 0xeaf2ee, wordWrap: true, wordWrapWidth: 144 }),
+      });
+      const panel = new Graphics().roundRect(-5, -5, text.width + 10, text.height + 10, 3)
+        .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x69ad67, width: 1 });
+      tooltip = new Container(); tooltip.eventMode = "none"; tooltip.addChild(panel, text);
+      tooltip.position.set(group.position.x + width / 2 - text.width / 2, group.position.y - text.height - 8);
+      tooltipLayer.addChild(tooltip);
+    }
+    tooltip.visible = true;
+  });
+  group.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
+  group.once("destroyed", () => {
+    if (!tooltip?.destroyed) { tooltip?.removeFromParent(); tooltip?.destroy({ children: true }); }
+  });
+  group.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onSelect(task.id); });
+  return group;
+}
+
+function drawConstructionTiles(tiles: ConstructionTile[], footprintWidth: number): Container {
+  const group = new Container();
+  const left = -footprintWidth * CELL_SIZE / 2;
+  for (const tile of tiles) {
+    const view = sprite(TILE_SPRITES[tile.key]!, left + tile.x * CELL_SIZE + CELL_SIZE / 2, tile.y * CELL_SIZE + CELL_SIZE / 2);
+    view.anchor.set(0.5);
+    view.rotation = (tile.quarterTurns ?? 0) * Math.PI / 2;
+    group.addChild(view);
+  }
+  return group;
+}
+
+function drawConstructionDetails(details: ConstructionDetailPlacement[], footprintWidth: number): Container {
+  const group = new Container();
+  const left = -footprintWidth * CELL_SIZE / 2;
+  for (const detail of details) {
+    const spec = CONSTRUCTION_DETAIL_SPEC_BY_KEY[detail.key];
+    const view = sprite(
+      PROP_SPRITES[detail.key]!,
+      left + (detail.x + spec.footprint.width / 2) * CELL_SIZE,
+      (detail.y + spec.footprint.height) * CELL_SIZE,
+    );
+    view.anchor.set(0.5, 1);
+    group.addChild(view);
   }
   return group;
 }
 
 function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, tooltipLayer: Container): Container {
+  if (task.visualKind === "PARK") return drawTaskPark(task, onSelect, tooltipLayer);
   const entry = getBuilding(task.buildingType);
   const group = new Container();
   group.eventMode = "static";
   group.cursor = "pointer";
-  const building = sprite(entry.stages[task.stage - 1]!, 0, 0);
-  building.anchor.set(0.5, 1);
+  const entranceOffset = entry.entrances[0]?.offset ?? Math.floor(entry.footprint.width / 2);
+  const construction = constructionStageLayout(entry.footprint, entranceOffset, task.stage, task.taskNumber);
+  const building = task.stage <= 2 ? null : sprite(entry.stages[task.stage - 1]!, 0, 0);
+  building?.anchor.set(0.5, 1);
   const x = task.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2;
   const y = task.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE;
   group.position.set(x, y);
-  group.hitArea = new Rectangle(-entry.spriteSize.width / 2, -entry.spriteSize.height, entry.spriteSize.width, entry.spriteSize.height);
-  group.addChild(building);
+  const visualWidth = Math.max(entry.spriteSize.width, (entry.footprint.width + 2) * CELL_SIZE);
+  const visualHeight = task.stage <= 2 ? (construction.padDepth + 2) * CELL_SIZE : entry.spriteSize.height;
+  group.hitArea = new Rectangle(-visualWidth / 2, -visualHeight, visualWidth, visualHeight + CELL_SIZE);
+  group.addChild(drawConstructionTiles(construction.rearFence, entry.footprint.width));
+  if (task.stage <= 2) {
+    group.addChild(drawConstructionTiles(construction.site, entry.footprint.width));
+    group.addChild(drawConstructionDetails(construction.details, entry.footprint.width));
+  }
+  else if (building) group.addChild(building);
+  group.addChild(drawConstructionTiles(construction.frontFence, entry.footprint.width));
   {
     const badge = buildingBadgePresentation(task.taskNumber, task.stage);
     const badgeX = entry.spriteSize.width / 2 - badge.width / 2;
@@ -293,7 +416,7 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
       tooltip.addChild(panel, tooltipText);
       tooltip.position.set(
         group.position.x - tooltipText.width / 2,
-        group.position.y - entry.spriteSize.height - tooltipText.height - 8,
+        group.position.y - visualHeight - tooltipText.height - 8,
       );
       tooltipLayer.addChild(tooltip);
     }
@@ -320,7 +443,14 @@ function drawOverviewBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => 
   const height = Math.max(CELL_SIZE, entry.footprint.height * CELL_SIZE - 2);
   group.position.set(task.origin.x * CELL_SIZE + 1, task.origin.y * CELL_SIZE + 1);
   group.hitArea = new Rectangle(0, 0, width, height);
-  group.addChild(new Graphics().rect(0, 0, width, height).fill(colors[entry.category]).stroke({ color: 0x263945, width: 2 }));
+  const fill = task.visualKind === "PARK" ? 0x638c4d : colors[entry.category];
+  group.addChild(new Graphics().rect(0, 0, width, height).fill(fill).stroke({ color: 0x263945, width: 2 }));
+  if (task.visualKind === "PARK") {
+    group.addChild(new Graphics()
+      .rect(Math.floor(width / 2) - 1, 1, 2, height - 2)
+      .rect(1, Math.floor(height / 2) - 1, width - 2, 2)
+      .fill(0xb7b8a2));
+  }
   const progressWidth = Math.max(2, Math.floor((width - 2) * task.progress / 100));
   group.addChild(new Graphics().rect(1, height - 3, progressWidth, 2).fill(task.status === "COMPLETED" ? 0x69ad67 : 0xf2c84b));
   group.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onSelect(task.id); });
@@ -339,23 +469,29 @@ function drawDecoration(decoration: ChunkDto["decorations"][number]): Sprite | n
   return result;
 }
 
-function drawWorldFeature(feature: WorldFeatureDto, includePlatform: boolean, onArchiveSelect: () => void): { platform?: Container; visual?: Container } | null {
+function drawWorldFeature(
+  feature: WorldFeatureDto,
+  includePlatform: boolean,
+  onArchiveSelect: () => void,
+  parent?: WorldFeatureDto,
+): { platform?: Container; visual?: Container } | null {
   if (!includePlatform) return null;
   if (feature.assetKind === "AREA") {
     const platform = new Container();
-    const occupied = new Set(feature.footprint.map(key));
-    const pathCells = new Set(greenAreaPathCells(feature.footprint).map(key));
     for (const cell of feature.footprint) {
       const p = position(cell);
-      const boundary = GRID_DIRECTIONS.some((direction) => !occupied.has(key({ x: cell.x + direction.x, y: cell.y + direction.y })));
-      const tile = boundary ? TILE_SPRITES["path-brown"]!
-        : pathCells.has(key(cell)) ? TILE_SPRITES[feature.assetKey === "urban-grove" ? "path-brown" : "path-pavers"]!
-          : gameAssetUrl(TERRAIN_SPRITES.MEADOW![1]!);
+      const role = greenAreaSurfaceRole(feature.footprint, cell, feature.developmentStage, feature.assetKey);
+      const tile = role === "EARTH" ? gameAssetUrl(TERRAIN_SPRITES.DIRT![1]!)
+        : role === "MEADOW" ? gameAssetUrl(TERRAIN_SPRITES.MEADOW![1]!)
+          : role === "BOUNDARY" ? TILE_SPRITES.pavement!
+            : feature.assetKey === "urban-grove" ? TILE_SPRITES["path-brown"]!
+            : TILE_SPRITES["path-pavers"]!;
       platform.addChild(sprite(tile, p.x, p.y));
     }
     return { platform };
   }
   if (feature.assetKind === "PROP") {
+    if (parent && parent.assetKind === "AREA" && parent.developmentStage < greenAreaDecorStage(feature.assetKey)) return null;
     const metadata = PROP_CATALOG[feature.assetKey];
     if (!metadata) return null;
     const prop = sprite(
@@ -436,12 +572,12 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   );
 
   const visualSeed = [...task.id].reduce((value, char) => ((value * 33) ^ char.charCodeAt(0)) >>> 0, 5381);
-  const engineX = entry.spriteSize.width / 2 + 11;
+  const engineX = entry.spriteSize.width / 2 + 15;
   const engine = sprite(PROP_SPRITES[FIRE_ENGINE_KEYS[visualSeed % FIRE_ENGINE_KEYS.length]!]!, engineX, 2);
   engine.anchor.set(0.5, 1);
 
-  const flameX = Math.max(-6, Math.min(4, entry.spriteSize.width / 8));
-  const flameY = -Math.max(12, entry.spriteSize.height * 0.58);
+  const layout = incidentVisualLayout(entry.spriteSize.width, entry.spriteSize.height, profile);
+  const alarmAnchor = layout.flameAnchors[0] ?? layout.smokeAnchors[0] ?? { x: 0, y: -Math.max(12, entry.spriteSize.height * 0.58) };
 
   // Full response parks an engine with a flashing beacon at the curb. The
   // compact response is a small pulsing roof alarm: the emergency stays
@@ -449,21 +585,20 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const beacon = fullResponse
     ? new Graphics().rect(-2, -2, 4, 2).fill(0x71d7f2)
     : new Graphics().rect(-2, -2, 4, 4).fill(0xf2574c);
-  beacon.position.set(fullResponse ? engineX - 4 : flameX - 2, fullResponse ? -7 : flameY - 3);
+  beacon.position.set(fullResponse ? engineX - 4 : alarmAnchor.x - 2, fullResponse ? -7 : alarmAnchor.y - 3);
 
-  const flameA = sprite(PROP_SPRITES[FLAME_KEYS[visualSeed % FLAME_KEYS.length]!]!, flameX, flameY);
-  const flameB = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + 1) % FLAME_KEYS.length]!]!, flameX, flameY);
-  flameA.anchor.set(0.5, 1); flameB.anchor.set(0.5, 1);
+  const flames = layout.flameAnchors.map((anchor, index) => {
+    const frameA = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
+    const frameB = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index + 1) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
+    frameA.anchor.set(0.5, 1); frameB.anchor.set(0.5, 1);
+    return { frameA, frameB };
+  });
 
   const smokeScale = [0, 0.5, 0.62, 0.74, 0.88, 1, 1.12][profile.smokeStrength] ?? 1.12;
   const smokeAlpha = Math.min(0.84, 0.32 + profile.smokeStrength * 0.085);
-  const smokeSpread = Math.max(4, Math.min(10, Math.floor(entry.spriteSize.width * 0.18)));
-  const smokeOffsets = [0, -smokeSpread, smokeSpread];
-  const smokePlumes = smokeOffsets.slice(0, profile.plumeCount).map((offset, index) => {
-    const smokeX = flameX + offset - 1;
-    const smokeY = flameY - 5 - (index % 2) * 2;
-    const frameA = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index) % SMOKE_KEYS.length]!]!, smokeX, smokeY);
-    const frameB = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index + 1) % SMOKE_KEYS.length]!]!, smokeX, smokeY);
+  const smokePlumes = layout.smokeAnchors.map((anchor, index) => {
+    const frameA = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index) % SMOKE_KEYS.length]!]!, anchor.x, anchor.y);
+    const frameB = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index + 1) % SMOKE_KEYS.length]!]!, anchor.x, anchor.y);
     frameA.anchor.set(0.5, 1); frameB.anchor.set(0.5, 1);
     const scale = smokeScale * (1 - index * 0.06);
     frameA.scale.set(scale); frameB.scale.set(scale);
@@ -473,8 +608,9 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   });
 
   const water = new Graphics();
-  const targetX = flameX + 3;
-  const targetY = flameY - 2;
+  const waterTarget = layout.flameAnchors[Math.floor(layout.flameAnchors.length / 2)] ?? alarmAnchor;
+  const targetX = waterTarget.x + 3;
+  const targetY = waterTarget.y - 2;
   const sourceX = engineX - 10;
   const sourceY = -5;
   for (let step = 0; step < 9; step += 1) {
@@ -490,18 +626,18 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
 
   const hasFlame = profile.burning;
   const hasWater = fullResponse && (profile.burning || mode === "DEFECT_REPAIRING");
-  flameA.visible = hasFlame; flameB.visible = false;
+  for (const flame of flames) { flame.frameA.visible = hasFlame; flame.frameB.visible = false; }
   water.visible = hasWater;
   engine.visible = fullResponse;
   if (mode === "HOTFIX_ACTIVE") {
-    flameA.scale.set(1.18); flameB.scale.set(1.18);
+    for (const flame of flames) { flame.frameA.scale.set(1.18); flame.frameB.scale.set(1.18); }
   } else if (profile.burning) {
-    flameA.scale.set(0.92); flameB.scale.set(0.92);
+    for (const flame of flames) { flame.frameA.scale.set(0.92); flame.frameB.scale.set(0.92); }
   }
   if (mode === "DEFECT_REPORTED") engine.alpha = 0.9;
-  container.addChild(water, ...smokePlumes.flatMap((plume) => [plume.frameA, plume.frameB]), flameA, flameB, engine, beacon);
+  container.addChild(water, ...smokePlumes.flatMap((plume) => [plume.frameA, plume.frameB]), ...flames.flatMap((flame) => [flame.frameA, flame.frameB]), engine, beacon);
   const phaseMs = visualSeed % 700;
-  return { signature, container, mode, profile, fullResponse, flameA, flameB, smokePlumes, beacon, water, phaseMs };
+  return { signature, container, mode, profile, fullResponse, flames, smokePlumes, beacon, water, phaseMs };
 }
 
 function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
@@ -511,8 +647,30 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
     for (const task of chunk.tasks) {
       const entry = getBuilding(task.buildingType);
       if (lod === "DETAIL") {
-        urls.add(entry.stages[task.stage - 1]!);
-        urls.add(assetUrl(PLATFORM_TILE[task.platformType]));
+        if (task.visualKind === "PARK") {
+          urls.add(assetUrl(TERRAIN_SPRITES.DIRT![1]!));
+          urls.add(assetUrl(TERRAIN_SPRITES.MEADOW![1]!));
+          urls.add(TILE_SPRITES.pavement!);
+          urls.add(TILE_SPRITES["path-pavers"]!);
+          for (const placement of taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)) {
+            const metadata = PROP_CATALOG[placement.kind];
+            if (metadata) urls.add(metadata.path);
+          }
+        } else {
+          if (task.stage < 5) for (const key of CONSTRUCTION_TILE_KEYS) urls.add(TILE_SPRITES[key]!);
+          if (task.stage <= 2) {
+          const entranceOffset = entry.entrances[0]?.offset ?? Math.floor(entry.footprint.width / 2);
+          const construction = constructionStageLayout(entry.footprint, entranceOffset, task.stage, task.taskNumber);
+          for (const detail of construction.details) urls.add(PROP_SPRITES[detail.key]!);
+          }
+          if (task.stage > 2) urls.add(entry.stages[task.stage - 1]!);
+          for (const cell of task.footprint) {
+            const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
+            urls.add(presentation.family === "tile"
+              ? TILE_SPRITES[presentation.key]!
+              : gameAssetUrl(TERRAIN_SPRITES[presentation.key]![presentation.variant]!));
+          }
+        }
         if (incidentMode(task) !== "NONE") for (const key of INCIDENT_ASSET_KEYS) urls.add(PROP_SPRITES[key]!);
       }
     }
@@ -552,7 +710,7 @@ function ambientDetailAssets(): string[] {
   const urls = new Set<string>();
   for (const path of Object.values(VEHICLE_SPRITES).flatMap((views) => [views.horizontal, views.north, views.south])) urls.add(path);
   for (const key of ["city-bus-horizontal", "city-bus-north", "city-bus-south"] as const) urls.add(PROP_SPRITES[key]!);
-  for (const direction of ["north", "east", "south", "west"] as const) for (const frame of ["a", "b"] as const) {
+  for (const direction of ["north", "east", "south", "west"] as const) for (const frame of ["a", "b", "c"] as const) {
     urls.add(PROP_SPRITES[`walker-${direction}-${frame}`]!);
   }
   for (const key of ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"] as const) urls.add(PROP_SPRITES[key]!);
@@ -570,7 +728,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
   countryId: string;
   chunkSize: number;
   viewBounds: Rect;
-  focusCity?: BootstrapDto["initialCity"];
+  focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
   focusTask?: { origin: Cell; token: number } | null;
   invalidation?: MapInvalidation;
   showDistricts: boolean;
@@ -971,12 +1129,6 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               setWalkerActivity(agent, "THINK");
             }
           }
-          const vehiclePosition = agent.kind === "CAR" || agent.kind === "BUS"
-            ? vehicleLanePosition(agent.current, agent.next, agent.progress, agent.previous, CELL_SIZE)
-            : undefined;
-          const x = agent.current.x + (agent.next.x - agent.current.x) * agent.progress;
-          const y = agent.current.y + (agent.next.y - agent.current.y) * agent.progress;
-          const cycle = Math.sin((agent.progress + agent.phase) * Math.PI * 4);
           if (agent.kind === "WALKER" && agent.activity === "NONE") {
             const presentation = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase);
             if (agent.visualKey !== presentation.key) {
@@ -985,17 +1137,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               agent.visualKey = presentation.key;
             }
           }
-          const step = agent.kind === "WALKER" ? 0
-            : agent.kind === "CYCLIST" || agent.kind === "SCOOTER" ? Math.abs(cycle) * 0.22
-              : agent.kind === "ANIMAL" ? Math.abs(cycle) * 0.35 : Math.abs(cycle) * 0.14;
-          const tallRoadUser = agent.kind === "WALKER" || agent.kind === "CYCLIST" || agent.kind === "SCOOTER";
-          agent.view.position.set(
-            vehiclePosition?.x ?? x * CELL_SIZE + CELL_SIZE / 2,
-            (vehiclePosition?.y ?? y * CELL_SIZE + (tallRoadUser ? CELL_SIZE : CELL_SIZE / 2)) - step,
-          );
-          agent.view.rotation = agent.kind === "WALKER" ? 0
-            : agent.kind === "CYCLIST" || agent.kind === "SCOOTER" ? cycle * 0.012
-              : agent.kind === "ANIMAL" ? cycle * 0.025 : cycle * 0.008;
+          const motion = ambientMotionPresentation(agent.kind, agent.current, agent.next, agent.progress, agent.previous, CELL_SIZE);
+          agent.view.position.set(motion.x, motion.y);
+          agent.view.rotation = motion.rotation;
           if (agent.activityView) {
             const bubble = residentActivityPosition(
               { x: agent.view.x, y: agent.view.y },
@@ -1009,6 +1153,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         if (nextDepthSortMs <= 0) {
           sortWorldObjects();
           host.dataset.activeWalkerActivities = String(movingWalkers.filter((walker) => walker.activity !== "NONE").length);
+          host.dataset.residentCenterErrors = String(movingWalkers.filter((walker) => {
+            const expected = residentGroundPosition(walker.current, walker.next, walker.progress, CELL_SIZE);
+            return Math.abs(walker.view.x - expected.x) > 0.01 || Math.abs(walker.view.y - expected.y) > 0.01;
+          }).length);
           host.dataset.residentWalkFrames = [...new Set(movingWalkers.map((walker) => walker.visualKey))].sort().join(",");
           host.dataset.residentWalkState = movingWalkers.map((walker) => `${walker.id}:${walker.visualKey}`).sort().join(",");
           host.dataset.trafficSteps = String(motorAgents.reduce((sum, agent) => sum + agent.steps, 0));
@@ -1043,15 +1191,18 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             ambient.view.position.set(ambient.baseX + cycle * 0.35, ambient.baseY + Math.abs(cycle) * 0.45);
             ambient.view.rotation = cycle * 0.012;
           } else {
-            ambient.view.position.set(ambient.baseX, ambient.baseY + Math.abs(cycle) * 0.25);
-            ambient.view.rotation = cycle * 0.008;
+            ambient.view.position.set(ambient.baseX, ambient.baseY);
+            ambient.view.rotation = 0;
           }
         }
         for (const incident of incidentViews.values()) {
           const time = simulationTimeMs + incident.phaseMs;
           const flameFrame = Math.floor(time / 210) % 2;
-          incident.flameA.visible = incident.profile.burning && flameFrame === 0;
-          incident.flameB.visible = incident.profile.burning && flameFrame === 1;
+          incident.flames.forEach((flame, index) => {
+            const visibleFrame = (flameFrame + index) % 2;
+            flame.frameA.visible = incident.profile.burning && visibleFrame === 0;
+            flame.frameB.visible = incident.profile.burning && visibleFrame === 1;
+          });
           incident.smokePlumes.forEach((plume, index) => {
             const smokeFrame = Math.floor((time + index * 130) / 360) % 2;
             plume.frameA.visible = smokeFrame === 0;
@@ -1283,7 +1434,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           taskPlatformViews,
           platformLayer,
           drawPlatform,
-          (task) => JSON.stringify([task.platformType, task.footprint]),
+          (task) => JSON.stringify([task.platformType, task.visualKind, task.visualAssetKey, task.stage, task.footprint]),
         );
         reconcile(
           tasks,
@@ -1371,7 +1522,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             current.platform?.removeFromParent(); current.platform?.destroy({ children: true });
             current.visual?.removeFromParent(); current.visual?.destroy({ children: true });
           }
-          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", onArchiveSelect);
+          const parent = feature.parentFeatureId ? features.get(feature.parentFeatureId) : undefined;
+          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", onArchiveSelect, parent);
           if (!drawn) { featureViews.delete(id); continue; }
           if (drawn.platform && currentLod === "DETAIL") featurePlatformLayer.addChild(drawn.platform);
           else if (drawn.platform) drawn.platform.destroy({ children: true });
@@ -1465,7 +1617,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               : undefined;
             const url = movingAgentSpriteUrl({ kind, variant, current, next, progress, phase });
             const tallRoadUser = kind === "WALKER" || kind === "CYCLIST" || kind === "SCOOTER";
-            const view = sprite(url, current.x * CELL_SIZE + CELL_SIZE / 2, current.y * CELL_SIZE + (tallRoadUser ? CELL_SIZE : CELL_SIZE / 2));
+            const groundPosition = tallRoadUser
+              ? residentGroundPosition(current, next, progress, CELL_SIZE)
+              : { x: current.x * CELL_SIZE + CELL_SIZE / 2, y: current.y * CELL_SIZE + CELL_SIZE / 2 };
+            const view = sprite(url, groundPosition.x, groundPosition.y);
             view.anchor.set(0.5, tallRoadUser ? 1 : 0.5);
             worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
             const activityView = kind === "WALKER" ? new Graphics() : undefined;
@@ -1520,8 +1675,25 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           .filter(([cellKey]) => trafficCore.has(cellKey))
           .map(([cellKey, candidates]) => [cellKey, candidates.filter((candidate) => trafficCore.has(key(candidate)))] as const)
           .filter(([, candidates]) => candidates.length > 0));
+        const residentBusRoadGraph = new Map<string, Cell>([...roads]
+          .filter(([, road]) => roadClassSupportsVehicle(road.roadClass, "BUS"))
+          .map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y }] as const));
+        const residentBusEdges = buildDirectedCarEdges(residentBusRoadGraph);
+        const busTrafficCore = directedTrafficCore(residentBusEdges);
+        const busGraph = new Map<string, Cell>([...residentBusRoadGraph].filter(([cellKey]) => busTrafficCore.has(cellKey)));
+        const busEdges = new Map<string, Cell[]>([...residentBusEdges]
+          .filter(([cellKey]) => busTrafficCore.has(cellKey))
+          .map(([cellKey, candidates]) => [cellKey, candidates.filter((candidate) => busTrafficCore.has(key(candidate)))] as const)
+          .filter(([, candidates]) => candidates.length > 0));
         const blockedWalkCells = new Set([
-          ...[...tasks.values()].flatMap((task) => task.footprint),
+          ...[...tasks.values()].filter((task) => task.visualKind !== "PARK" || task.stage < 2).flatMap((task) => task.footprint),
+          ...[...tasks.values()].filter((task) => task.visualKind === "PARK").flatMap((task) => (
+            taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)
+              .flatMap((placement) => Array.from({ length: placement.width * placement.height }, (_, index) => ({
+                x: placement.origin.x + index % placement.width,
+                y: placement.origin.y + Math.floor(index / placement.width),
+              })))
+          )),
           ...[...features.values()].filter((feature) => feature.assetKind !== "AREA").flatMap((feature) => feature.footprint),
           ...[...decorations.values()].flatMap((decoration) => {
             const prop = PROP_CATALOG[decoration.kind];
@@ -1557,7 +1729,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           for (const platformCell of feature.footprint) {
             for (const direction of GRID_DIRECTIONS) {
               const roadCell = { x: platformCell.x + direction.x, y: platformCell.y + direction.y };
-              if (roadGraph.has(key(roadCell))) busStopRoadCells.add(key(roadCell));
+              if (busGraph.has(key(roadCell))) busStopRoadCells.add(key(roadCell));
             }
           }
         }
@@ -1567,14 +1739,14 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           if (agent.activityView) agent.activityView.visible = agentsVisible && agent.activity !== "NONE";
         }
         if (currentLod === "DETAIL" && ambientAssetsReady) {
-          const graphs = { CAR: roadGraph, BUS: roadGraph, WALKER: walkGraph, CYCLIST: walkGraph, SCOOTER: walkGraph, ANIMAL: animalGraph } as const;
+          const graphs = { CAR: roadGraph, BUS: busGraph, WALKER: walkGraph, CYCLIST: walkGraph, SCOOTER: walkGraph, ANIMAL: animalGraph } as const;
           const before = movingAgents.length;
           movingAgents = movingAgents.filter((agent) => {
             const graph = graphs[agent.kind];
             const retained = graph.has(key(agent.current)) && graph.has(key(agent.next));
             if (retained) {
               agent.graph = graph;
-              agent.outgoing = agent.kind === "CAR" || agent.kind === "BUS" ? carEdges : undefined;
+              agent.outgoing = agent.kind === "BUS" ? busEdges : agent.kind === "CAR" ? carEdges : undefined;
               if (!isAgentEdgeAllowed(agent.current, agent.next, agent.outgoing)) {
                 if (agent.kind === "CAR" || agent.kind === "BUS") {
                   destroyMovingAgent(agent);
@@ -1593,7 +1765,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           });
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
           addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR", carEdges);
-          addAgents(roadGraph, busStopRoadCells.size > 0 ? Math.min(4, Math.max(1, Math.floor(busStopRoadCells.size / 2))) : 0, "BUS", carEdges);
+          addAgents(busGraph, busStopRoadCells.size > 0 ? Math.min(4, Math.max(1, Math.floor(busStopRoadCells.size / 2))) : 0, "BUS", busEdges);
           addAgents(walkGraph, Math.min(24, Math.max(4, Math.floor(walkGraph.size / 120))), "WALKER");
           addAgents(walkGraph, Math.min(4, Math.floor(walkGraph.size / 340)), "CYCLIST");
           addAgents(walkGraph, Math.min(3, Math.floor(walkGraph.size / 440)), "SCOOTER");

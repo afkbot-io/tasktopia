@@ -12,10 +12,10 @@ coverage
 archive
 backups
 assets/*
-!assets/pixel-city-pack-v4/
-assets/pixel-city-pack-v4/*
-!assets/pixel-city-pack-v4/manifest.json
-!assets/pixel-city-pack-v4/catalog/
-!assets/pixel-city-pack-v4/catalog/**
+!assets/pixel-city-pack/
+assets/pixel-city-pack/*
+!assets/pixel-city-pack/manifest.json
+!assets/pixel-city-pack/catalog/
+!assets/pixel-city-pack/catalog/**
 *.log
 .DS_Store

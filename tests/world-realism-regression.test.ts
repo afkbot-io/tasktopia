@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import manifest from "../assets/pixel-city-pack-v4/manifest.json";
+import manifest from "../assets/pixel-city-pack/manifest.json";
 import { planComplex } from "../src/server/world/complex-planner";
 import { rectangleFootprint } from "../src/server/world/grid";
 

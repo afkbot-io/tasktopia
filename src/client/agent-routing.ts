@@ -1,4 +1,5 @@
 import type { Cell } from "../shared/contracts";
+import { roadBandRole } from "../shared/road-profile";
 
 export function agentCellKey(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
@@ -31,14 +32,16 @@ export type VehicleFrameDecision = {
 };
 
 // Collision dimensions mirror the non-transparent authored pixels at the
-// runtime 0.9 render scale: cars are 14 px long, buses are 20 px long, and
-// both bodies are about 6 px wide on an 8 px road cell.
+// runtime 0.9 render scale: cars are about 14x6 px and buses about 46x15 px.
 const VEHICLE_BODY_CELLS = {
   CAR: { length: 1.575, width: 0.675 },
-  BUS: { length: 2.25, width: 0.675 },
+  // V5 buses normalize to 46x15 authored pixels and render at 0.9 scale.
+  BUS: { length: 5.175, width: 1.6875 },
 } as const;
 const VEHICLE_SAFETY_GAP_CELLS = 0.16;
-const VEHICLE_LANE_INSET_CELLS = 1 / 8;
+// The road profile already assigns a full 8 px travel cell to every direction;
+// the physical and rendered center therefore coincide with the cell center.
+const VEHICLE_LANE_INSET_CELLS = 0;
 const EPSILON = 1e-9;
 
 /**
@@ -447,14 +450,14 @@ export function vehiclePresentation(current: Cell, next: Cell, scale = 0.9): Veh
   };
 }
 
-/** Pixel position on the inner half of a right-hand lane, blended at turns. */
+/** Pixel position on the exact centre of the assigned travel cell. */
 export function vehicleLanePosition(
   current: Cell,
   next: Cell,
   progress: number,
   previous?: Cell,
   cellSize = 8,
-  inset = 1,
+  inset = 0,
 ): { x: number; y: number } {
   const clamped = Math.max(0, Math.min(1, progress));
   const startInset = previous ? rightHandLaneInset(previous, current, inset) : rightHandLaneInset(current, next, inset);
@@ -474,36 +477,6 @@ export function isAgentEdgeAllowed(current: Cell, next: Cell, outgoing?: AgentEd
 function directedNeighbors(graph: ReadonlyMap<string, Cell>, cell: Cell, outgoing?: AgentEdges): Cell[] {
   return outgoing ? [...outgoing.get(agentCellKey(cell)) ?? []] : adjacentGraphCells(graph, cell);
 }
-
-function axisRun(graph: ReadonlyMap<string, Cell>, cell: Cell, dx: number, dy: number): number {
-  let length = 0;
-  for (const sign of [-1, 1]) {
-    for (let step = 1; step <= 8; step += 1) {
-      if (!graph.has(agentCellKey({ x: cell.x + dx * step * sign, y: cell.y + dy * step * sign }))) break;
-      length += 1;
-    }
-  }
-  return length;
-}
-
-function contiguousBand(graph: ReadonlyMap<string, Cell>, cell: Cell, horizontal: boolean): { min: number; max: number } {
-  const coordinate = horizontal ? cell.y : cell.x;
-  let min = coordinate;
-  let max = coordinate;
-  for (const sign of [-1, 1]) {
-    for (let step = 1; step <= 6; step += 1) {
-      const candidate = horizontal
-        ? { x: cell.x, y: cell.y + step * sign }
-        : { x: cell.x + step * sign, y: cell.y };
-      if (!graph.has(agentCellKey(candidate))) break;
-      if (sign < 0) min = coordinate - step;
-      else max = coordinate + step;
-    }
-  }
-  return { min, max };
-}
-
-type Lane = { axis: "H" | "V" | "J"; dx: number; dy: number };
 
 export type TrafficArm = "N" | "E" | "S" | "W";
 export type TrafficJunction = {
@@ -649,34 +622,27 @@ export function mustYieldForBlockedJunctionExit(
   return false;
 }
 
-function laneAt(graph: ReadonlyMap<string, Cell>, cell: Cell): Lane {
-  const horizontalRun = axisRun(graph, cell, 1, 0);
-  const verticalRun = axisRun(graph, cell, 0, 1);
-  if (horizontalRun >= 4 && verticalRun >= 4) return { axis: "J", dx: 0, dy: 0 };
-  if (horizontalRun >= verticalRun) {
-    const band = contiguousBand(graph, cell, true);
-    return { axis: "H", dx: cell.y > (band.min + band.max) / 2 ? 1 : -1, dy: 0 };
-  }
-  const band = contiguousBand(graph, cell, false);
-  return { axis: "V", dx: 0, dy: cell.x <= (band.min + band.max) / 2 ? 1 : -1 };
-}
-
 /**
  * Build a directed road graph for right-hand traffic. Ordinary road bands are
  * one-way per lane; intersections temporarily allow turns, but a car may only
  * leave them through a lane whose direction matches the movement.
  */
 export function buildDirectedCarEdges(graph: ReadonlyMap<string, Cell>): Map<string, Cell[]> {
-  const lanes = new Map([...graph].map(([key, cell]) => [key, laneAt(graph, cell)]));
+  const lanes = new Map([...graph].map(([key, cell]) => [key, roadBandRole(graph, cell)]));
   const edges = new Map<string, Cell[]>();
   for (const cell of graph.values()) {
     const lane = lanes.get(agentCellKey(cell))!;
+    if (lane.kind === "MEDIAN") {
+      edges.set(agentCellKey(cell), []);
+      continue;
+    }
     const candidates = adjacentGraphCells(graph, cell).filter((next) => {
       const dx = next.x - cell.x;
       const dy = next.y - cell.y;
       const nextLane = lanes.get(agentCellKey(next))!;
-      if (lane.axis !== "J" && (dx !== lane.dx || dy !== lane.dy)) return false;
-      return nextLane.axis === "J" || dx === nextLane.dx && dy === nextLane.dy;
+      if (nextLane.kind === "MEDIAN") return false;
+      if (lane.kind !== "JUNCTION" && (dx !== lane.dx || dy !== lane.dy)) return false;
+      return nextLane.kind === "JUNCTION" || dx === nextLane.dx && dy === nextLane.dy;
     });
     edges.set(agentCellKey(cell), candidates);
   }

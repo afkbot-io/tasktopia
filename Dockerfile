@@ -19,7 +19,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
-RUN mkdir -p /app/dist/public/game-assets/v4/revisions /data/uploads \
+RUN mkdir -p /app/dist/public/game-assets/v5/revisions /data/uploads \
     && chown -R node:node /app /data
 USER node
 EXPOSE 3000

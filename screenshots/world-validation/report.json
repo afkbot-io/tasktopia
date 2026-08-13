@@ -1,0 +1,316 @@
+{
+  "generatedAt": "2026-08-12T11:05:50.301Z",
+  "login": {
+    "email": "world-validation@tasktopia.local"
+  },
+  "countryId": "a3616d52-2c3f-46d0-94f0-d3efbc194430",
+  "country": "Федерация Новостроек",
+  "newBuildCatalogSize": 50,
+  "cities": [
+    {
+      "index": 1,
+      "id": "f51c4323-1a59-4fc6-b6d3-39281b7c555f",
+      "name": "Янтарный Берег",
+      "morphology": "BALANCED",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 5,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 0
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 1281,
+      "roadClasses": {
+        "LOCAL": 850,
+        "COLLECTOR": 96,
+        "ARTERIAL": 188,
+        "HIGHWAY": 147
+      },
+      "generationMs": 2892,
+      "violations": []
+    },
+    {
+      "index": 2,
+      "id": "b51bd32c-1453-44ec-b80e-ef02f0b05e13",
+      "name": "Северные Ворота",
+      "morphology": "DENSE_CORE",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 4,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 3999,
+      "roadClasses": {
+        "LOCAL": 1570,
+        "COLLECTOR": 225,
+        "ARTERIAL": 391,
+        "HIGHWAY": 1813
+      },
+      "generationMs": 6137,
+      "violations": []
+    },
+    {
+      "index": 3,
+      "id": "50611cb8-2be0-4c1e-ba17-fec5ed3f7d7e",
+      "name": "Озероград",
+      "morphology": "GARDEN_CITY",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 4,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 6229,
+      "roadClasses": {
+        "LOCAL": 2390,
+        "COLLECTOR": 306,
+        "ARTERIAL": 648,
+        "HIGHWAY": 2885
+      },
+      "generationMs": 6381,
+      "violations": []
+    },
+    {
+      "index": 4,
+      "id": "6d4b2321-e2f3-42cf-a8df-e34d86c2b4b3",
+      "name": "Каменный Мост",
+      "morphology": "POLYCENTRIC",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 5,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 0
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 7903,
+      "roadClasses": {
+        "LOCAL": 3005,
+        "COLLECTOR": 444,
+        "ARTERIAL": 929,
+        "HIGHWAY": 3525
+      },
+      "generationMs": 5032,
+      "violations": []
+    },
+    {
+      "index": 5,
+      "id": "c9484d54-3869-455d-99d0-61007c65364f",
+      "name": "Лазурная Долина",
+      "morphology": "GARDEN_CITY",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 4,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 9288,
+      "roadClasses": {
+        "LOCAL": 3586,
+        "COLLECTOR": 540,
+        "ARTERIAL": 1061,
+        "HIGHWAY": 4101
+      },
+      "generationMs": 4459,
+      "violations": []
+    },
+    {
+      "index": 6,
+      "id": "9b11824f-6da9-43e8-8a16-9e3e518b6e8f",
+      "name": "Новый Горизонт",
+      "morphology": "DENSE_CORE",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 4,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 10803,
+      "roadClasses": {
+        "LOCAL": 4283,
+        "COLLECTOR": 720,
+        "ARTERIAL": 1642,
+        "HIGHWAY": 4158
+      },
+      "generationMs": 7883,
+      "violations": []
+    },
+    {
+      "index": 7,
+      "id": "6f43c87d-ad9e-47c8-8fb2-e7097fc77c77",
+      "name": "Речной Порт",
+      "morphology": "BALANCED",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 5,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 0
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 13281,
+      "roadClasses": {
+        "LOCAL": 5314,
+        "COLLECTOR": 866,
+        "ARTERIAL": 1905,
+        "HIGHWAY": 5196
+      },
+      "generationMs": 9750,
+      "violations": []
+    },
+    {
+      "index": 8,
+      "id": "064a1125-6800-4fef-b8b0-f722a986038c",
+      "name": "Зелёный Квартал",
+      "morphology": "GARDEN_CITY",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 4,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 16143,
+      "roadClasses": {
+        "LOCAL": 6124,
+        "COLLECTOR": 969,
+        "ARTERIAL": 2189,
+        "HIGHWAY": 6861
+      },
+      "generationMs": 10728,
+      "violations": []
+    },
+    {
+      "index": 9,
+      "id": "d6cd66c7-b7ba-4e1a-bd60-be9407345f95",
+      "name": "Стальные Башни",
+      "morphology": "POLYCENTRIC",
+      "districts": 2,
+      "tasks": 8,
+      "taskStages": {
+        "1": 4,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1
+      },
+      "uniqueBuildingTypes": 8,
+      "roads": 18778,
+      "roadClasses": {
+        "LOCAL": 6503,
+        "COLLECTOR": 1051,
+        "ARTERIAL": 2342,
+        "HIGHWAY": 8882
+      },
+      "generationMs": 9007,
+      "violations": []
+    },
+    {
+      "index": 10,
+      "id": "d721d08d-7167-4bf1-8b2c-6607013a403c",
+      "name": "Город Будущего",
+      "morphology": "DENSE_CORE",
+      "districts": 4,
+      "tasks": 16,
+      "taskStages": {
+        "1": 4,
+        "2": 0,
+        "3": 2,
+        "4": 0,
+        "5": 10
+      },
+      "uniqueBuildingTypes": 12,
+      "roads": 20918,
+      "roadClasses": {
+        "LOCAL": 7386,
+        "COLLECTOR": 1258,
+        "ARTERIAL": 2549,
+        "HIGHWAY": 9725
+      },
+      "generationMs": 10417,
+      "violations": []
+    }
+  ],
+  "finalCity": {
+    "index": 10,
+    "id": "d721d08d-7167-4bf1-8b2c-6607013a403c",
+    "name": "Город Будущего",
+    "morphology": "DENSE_CORE",
+    "districts": [
+      {
+        "name": "Завершённый центр",
+        "status": "COMPLETED",
+        "tasks": {
+          "COMPLETED": 4
+        }
+      },
+      {
+        "name": "Завершённая набережная",
+        "status": "COMPLETED",
+        "tasks": {
+          "COMPLETED": 4
+        }
+      },
+      {
+        "name": "Строящийся квартал",
+        "status": "ACTIVE",
+        "tasks": {
+          "COMPLETED": 2,
+          "IN_PROGRESS": 2
+        }
+      },
+      {
+        "name": "Район будущего",
+        "status": "PLANNED",
+        "tasks": {
+          "PLANNING": 4
+        }
+      }
+    ],
+    "tasks": 16,
+    "taskStages": {
+      "1": 4,
+      "2": 0,
+      "3": 2,
+      "4": 0,
+      "5": 10
+    },
+    "uniqueBuildingTypes": 12,
+    "roads": 20918,
+    "roadClasses": {
+      "LOCAL": 7386,
+      "COLLECTOR": 1258,
+      "ARTERIAL": 2549,
+      "HIGHWAY": 9725
+    },
+    "generationMs": 10417,
+    "violations": []
+  }
+}
