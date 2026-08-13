@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { BootstrapDto, CityDto, RealtimeEvent, Rect, TaskSearchResultDto } from "../shared/contracts";
+import type { CountryAtlasCityDto } from "../shared/country-atlas-contract";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
 import { CountryPanel } from "./components/CountryPanel";
@@ -68,6 +69,7 @@ export function App() {
   const [showDistricts, setShowDistricts] = useState(false);
   const [mapMode, setMapMode] = useState<"ATLAS" | "CITY">("ATLAS");
   const [focusCity, setFocusCity] = useState<CityFocus | null>(null);
+  const [hoveredAtlasCity, setHoveredAtlasCity] = useState<CityFocus | null>(null);
   const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
   const deepLinkHandledRef = useRef(false);
   const [revision, setRevision] = useState(0);
@@ -86,6 +88,9 @@ export function App() {
     setPlanSection("archive");
     setPlanOpen(true);
   }, []);
+  const hoverAtlasCity = useCallback((city: CountryAtlasCityDto | null) => {
+    setHoveredAtlasCity(city ? { id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds } : null);
+  }, []);
 
   const logout = useCallback(async () => {
     await api("/api/auth/logout", { method: "POST" });
@@ -99,6 +104,7 @@ export function App() {
   const applyBootstrap = useCallback((next: BootstrapDto) => {
     setBootstrap(next);
     setFocusCity(next.initialCity);
+    setHoveredAtlasCity(null);
     setMapMode(next.stats.cities > 1 ? "ATLAS" : "CITY");
     setSelectedTask(null);
     setRevision((value) => value + 1);
@@ -203,8 +209,9 @@ export function App() {
 
   const activeCity = focusCity ?? bootstrap.initialCity;
   const effectiveMapMode = bootstrap.stats.cities > 1 ? mapMode : "CITY";
+  const headerCity = effectiveMapMode === "ATLAS" ? hoveredAtlasCity : activeCity;
   return <main className="grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
-    <header className="relative z-10 grid min-h-[72px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 py-2 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:h-[72px] md:grid-cols-[minmax(0,1.2fr)_minmax(0,340px)_auto_auto] md:gap-3 md:px-5 md:py-0" aria-label="Панель управления страной">
+    <header className="app-header relative z-10 grid min-h-[62px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 py-2 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:h-[62px] md:grid-cols-[minmax(0,1fr)_minmax(260px,400px)_minmax(0,1fr)] md:gap-3 md:px-4 md:py-0" aria-label="Панель управления страной">
       <div className="order-1 flex min-w-0 items-center gap-2.5 md:gap-4">
         <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
         <div className="relative min-w-0">
@@ -214,29 +221,29 @@ export function App() {
         </button>
         {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={applyBootstrap} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} onCreate={() => { setCountryMenuOpen(false); setCountryDialog("create"); }} />}
         </div>
-        {activeCity && <div className="hidden min-w-0 border-l border-[#304850] pl-4 sm:grid">
-          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">{effectiveMapMode === "ATLAS" ? "РЕЖИМ" : "ГОРОД"}</span>
-          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7]">{effectiveMapMode === "ATLAS" ? "Карта страны" : activeCity.name}</strong>
+        {headerCity && <div className="header-city hidden min-w-0 border-l border-[#304850] pl-4 sm:grid" aria-live="polite">
+          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">ГОРОД</span>
+          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7]">{headerCity.name}</strong>
         </div>}
       </div>
 
-      <div className="order-3 col-span-2 min-w-0 md:order-2 md:col-span-1">
+      <div className="header-search order-3 col-span-2 min-w-0 md:order-2 md:col-span-1">
         <TaskSearch onSelect={openTaskFromSearch} />
       </div>
 
-      <div className="order-3 hidden items-center gap-4 text-xs text-[#9cafb2] md:flex xl:gap-6">
-        <span className="flex items-center gap-2 whitespace-nowrap"><i className={cx("h-2 w-2 rounded-full", online ? "bg-[#78be6d] shadow-[0_0_8px_#78be6d]" : "bg-[#d66e5d]")} />{online ? "В сети" : "Подключение"}</span>
-        <span className="hidden whitespace-nowrap lg:inline">Районов строится · {bootstrap.stats.activeDistricts}</span>
-        <span className="hidden whitespace-nowrap xl:inline">Зданий строится · {bootstrap.stats.unfinishedBuildings}</span>
+      <div className="order-2 flex min-w-0 items-center justify-end gap-2 md:order-3">
+        <div className="hidden items-center gap-3 text-[11px] text-[#9cafb2] lg:flex">
+          <span className="flex items-center gap-1.5 whitespace-nowrap"><i className={cx("h-2 w-2 rounded-full", online ? "bg-[#78be6d] shadow-[0_0_8px_#78be6d]" : "bg-[#d66e5d]")} />{online ? "В сети" : "Подключение"}</span>
+          <span className="hidden whitespace-nowrap 2xl:inline">Районов · {bootstrap.stats.activeDistricts}</span>
+          <span className="hidden whitespace-nowrap 2xl:inline">Зданий · {bootstrap.stats.unfinishedBuildings}</span>
+        </div>
+        <nav className="flex items-center justify-end gap-1.5" aria-label="Действия карты">
+          {bootstrap.stats.cities > 1 && <Button className={cx("map-mode-button h-9 min-h-9 w-9 px-0", effectiveMapMode === "ATLAS" && "!border-signal !bg-[#3a321d] !text-signal")} aria-pressed={effectiveMapMode === "ATLAS"} aria-label={effectiveMapMode === "ATLAS" ? "Открыть выбранный город" : "Открыть карту страны"} title={effectiveMapMode === "ATLAS" ? "Открыть выбранный город" : "Открыть карту страны"} onClick={() => { setHoveredAtlasCity(null); setMapMode((value) => value === "ATLAS" ? "CITY" : "ATLAS"); }}><span aria-hidden="true">{effectiveMapMode === "ATLAS" ? "▤" : "▦"}</span></Button>}
+          <Button data-plan-trigger className={cx("min-h-9 px-3 text-xs", planOpen && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={planOpen} onClick={() => { setCountryMenuOpen(false); setPlanSection("cities"); setPlanOpen((value) => !value); }}>План</Button>
+          {effectiveMapMode === "CITY" && <Button className={cx("min-h-9 px-3 text-xs", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>}
+          <Button className="h-9 min-h-9 w-9 rounded-full px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
+        </nav>
       </div>
-
-      <nav className="order-2 flex items-center justify-end gap-1.5 sm:gap-2 md:order-4" aria-label="Действия карты">
-        {bootstrap.stats.cities > 1 && <Button className={cx("min-h-10 px-3 text-xs sm:px-4", effectiveMapMode === "ATLAS" && "!border-signal !bg-[#3a321d] !text-signal")} aria-pressed={effectiveMapMode === "ATLAS"} onClick={() => setMapMode((value) => value === "ATLAS" ? "CITY" : "ATLAS")}>{effectiveMapMode === "ATLAS" ? "Открыть город" : "Карта страны"}</Button>}
-        <Button data-plan-trigger className={cx("min-h-10 px-3 text-xs sm:px-4", planOpen && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={planOpen} onClick={() => { setCountryMenuOpen(false); setPlanSection("cities"); setPlanOpen((value) => !value); }}>План</Button>
-        {effectiveMapMode === "CITY" && <Button className={cx("min-h-10 px-3 text-xs sm:px-4", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>}
-        <Button className="h-10 min-h-10 w-10 px-0 text-lg text-signal" onClick={() => openSettings("mcp")} title="MCP-интеграции" aria-label="MCP-интеграции">⌁</Button>
-        <Button className="h-10 min-h-10 w-10 rounded-full px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
-      </nav>
     </header>
 
     <section className="map-region">
@@ -250,8 +257,10 @@ export function App() {
                 activeCityId={activeCity?.id}
                 onCitySelect={(city) => {
                   setFocusCity({ id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds });
+                  setHoveredAtlasCity(null);
                   setMapMode("CITY");
                 }}
+                onCityHover={hoverAtlasCity}
                 onTaskSelect={(taskId) => { setSelectedTask(taskId); }}
               />
             : <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />}

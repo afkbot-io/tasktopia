@@ -23,13 +23,17 @@ export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onManage, onC
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest(".country-title-button")) return;
-      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) onClose();
+      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }
     };
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("pointerdown", closeOutside, true);
     document.addEventListener("keydown", closeOnEscape);
     return () => {
-      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("pointerdown", closeOutside, true);
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [onClose]);

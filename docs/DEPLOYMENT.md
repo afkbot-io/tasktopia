@@ -84,6 +84,12 @@ sudo /srv/tasktopia/app/deploy/update-server.sh
 
 Production-схема: системный nginx принимает `80/443`, приложение работает непривилегированным пользователем внутри Docker и доступно только на `127.0.0.1:3000`. PostgreSQL 16 хранит данные в named volume `tasktopia_postgres` и должен пройти healthcheck до запуска приложения.
 
+Хешированные JS/CSS и versioned game assets после успешного healthcheck
+копируются в `/srv/tasktopia/static/releases/<release>` и атомарно публикуются
+через `/srv/tasktopia/static/current`. Поэтому nginx и `store.tasktopia.online`
+продолжают отдавать предыдущую полную ревизию во время пересоздания app-контейнера,
+а пользователи не получают частично обновлённый набор чанков и спрайтов.
+
 ## Первый запуск на Ubuntu/Debian
 
 ```bash
@@ -99,6 +105,11 @@ chmod 0600 .env
 
 docker compose up -d --build app
 curl -fsS http://127.0.0.1:3000/health
+
+release_dir="/srv/tasktopia/static/releases/bootstrap-$(date +%Y%m%d%H%M%S)"
+install -d -m 0755 "$release_dir"
+docker compose cp app:/app/dist/public/. "$release_dir/"
+ln -sfn "$release_dir" /srv/tasktopia/static/current
 
 install -m 0644 deploy/nginx-tasktopia-bootstrap.conf /etc/nginx/sites-available/tasktopia
 ln -sfn /etc/nginx/sites-available/tasktopia /etc/nginx/sites-enabled/tasktopia
@@ -136,6 +147,7 @@ APP_CPU_LIMIT=2.00
 POSTGRES_MEMORY_LIMIT=1g
 POSTGRES_CPU_LIMIT=1.00
 BACKUP_RETENTION_COUNT=14
+STATIC_RETENTION_COUNT=3
 MIN_FREE_SPACE_MB=1024
 ```
 
@@ -184,7 +196,8 @@ curl -fsSIL 'https://store.tasktopia.online/game-assets/v5/revisions/<assetRevis
 
 Скрипт использует только fast-forward `git pull`, проверяет свободное место,
 создаёт dump, сохраняет последние `BACKUP_RETENTION_COUNT` копий, пересобирает
-один сервис, ждёт health check и не публикует порт 3000 наружу.
+один сервис, ждёт health check и только затем атомарно переключает каталог
+статики. Порт 3000 наружу не публикуется.
 
 Compose ограничивает Tasktopia отдельно от соседних проектов: приложение — 2 CPU, 1,5 GiB RAM и 160 процессов; PostgreSQL — 1 CPU, 1 GiB RAM и 100 процессов. Это верхние границы, а не резервирование: неиспользованные CPU остаются доступны другим контейнерам. После изменения бюджетов проверяйте `docker inspect`, `docker stats --no-stream` и флаг `OOMKilled`; не снимайте лимиты соседнего проекта для ускорения Tasktopia.
 

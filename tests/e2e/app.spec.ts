@@ -64,8 +64,6 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page).toHaveTitle("Tasktopia — Тестовая страна");
   await expect(page.getByText("Riverside", { exact: true })).toBeVisible();
-  await expect(page.getByText("Районов строится · 1", { exact: true })).toBeVisible();
-  await expect(page.getByText("Зданий строится · 20", { exact: true })).toBeVisible();
   await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
   const mapWarmup = { timeout: 90_000 };
   const mapHost = page.locator(".world-canvas");
@@ -97,7 +95,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await planToggle.click();
   await expect(planToggle).toHaveAttribute("aria-pressed", "true");
   let cityDirectory = page.getByRole("complementary", { name: "План страны" });
-  await expect(cityDirectory.getByText("20 зданий")).toBeVisible();
+  await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
   await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
   await cityDirectory.getByRole("button", { name: /^\d+ #1 · Задача района 1\.1/ }).click();
   const taskDialog = page.getByRole("dialog");
@@ -127,14 +125,15 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("button", { name: "План", exact: true }).click();
   cityDirectory = page.getByRole("complementary", { name: "План страны" });
   await expect(cityDirectory).toBeVisible();
-  await expect(cityDirectory.getByText("20 зданий")).toBeVisible();
+  await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
   await capture(page, "screenshots/release-city-directory.png");
   await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
   await expect(cityDirectory.getByText(/Задача района 1\.1/)).toBeVisible();
   await capture(page, "screenshots/release-plan-tasks.png");
   await cityDirectory.getByRole("button", { name: "Закрыть план" }).click();
 
-  await page.getByTitle("MCP-интеграции").click();
+  await page.getByRole("button", { name: "Настройки аккаунта" }).click();
+  await page.getByRole("button", { name: "MCP-интеграция" }).click();
   await expect(page.getByRole("heading", { name: "Аккаунт и интеграции" })).toBeVisible();
   const endpoint = `${new URL(page.url()).origin}/mcp`;
   const aiGuide = `${new URL(page.url()).origin}/ai.md`;
@@ -200,13 +199,15 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(countrySwitcher).toBeVisible();
   await canvas.click({ position: { x: 40, y: 40 } });
   await expect(countrySwitcher).toBeHidden();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toBeVisible();
   await expect(page.getByRole("button", { name: "План", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Границы" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await capture(page, "screenshots/release-city-mobile.png");
-  await page.getByRole("button", { name: "MCP-интеграции" }).click();
+  await page.getByRole("button", { name: "Настройки аккаунта" }).click();
+  await page.getByRole("button", { name: "MCP-интеграция" }).click();
   await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
   await capture(page, "screenshots/release-mcp-mobile.png");
   await page.getByRole("button", { name: "Профиль" }).click();

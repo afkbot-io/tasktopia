@@ -4,6 +4,7 @@ import { AppService } from "../src/server/app-service";
 import { loginUser, registerUser, type AuthUser } from "../src/server/auth";
 import { createDb, transaction } from "../src/server/db";
 import { auditWorld } from "../src/server/world/world-audit";
+import { taskBuildingCompatibleWithArchetype } from "../src/server/world/city-generation";
 import { TASK_BUILDING_CATALOG } from "../src/shared/catalog";
 import type { CityMorphology, DistrictDto, TaskDto, TaskStatus } from "../src/shared/contracts";
 
@@ -34,10 +35,17 @@ const CITY_SPECS: Array<{ name: string; morphology: CityMorphology; seedOffset: 
 
 const BUILDING_KEYS = TASK_BUILDING_CATALOG
   .filter((entry) => !entry.maxPerCity && !entry.maxPerDistrict && entry.ruleIds.every((rule) => rule === "STANDARD"))
+  .filter((entry) => taskBuildingCompatibleWithArchetype(entry, "NEW_BUILD"))
   .map((entry) => entry.key);
 const COMPACT_BUILDING_KEYS = TASK_BUILDING_CATALOG
   .filter((entry) => !entry.maxPerCity && !entry.maxPerDistrict && entry.ruleIds.every((rule) => rule === "STANDARD")
+    && taskBuildingCompatibleWithArchetype(entry, "NEW_BUILD")
     && entry.footprint.width <= 14 && entry.footprint.height <= 12)
+  .map((entry) => entry.key);
+const PLANNED_BUILDING_KEYS = TASK_BUILDING_CATALOG
+  .filter((entry) => !entry.maxPerCity && !entry.maxPerDistrict && entry.ruleIds.every((rule) => rule === "STANDARD")
+    && taskBuildingCompatibleWithArchetype(entry, "NEW_BUILD")
+    && entry.footprint.width <= 12 && entry.footprint.height <= 10)
   .map((entry) => entry.key);
 
 const STATUS_PATHS: Record<Exclude<TaskStatus, "PLANNING">, TaskStatus[]> = {
@@ -178,7 +186,7 @@ for (let cityIndex = 0; cityIndex < CITY_SPECS.length; cityIndex += 1) {
     await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 0, taskCount: 4, targets: ["COMPLETED"], activate: true, complete: true, district: reserved[0], buildingKeys: COMPACT_BUILDING_KEYS });
     await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 1, taskCount: 4, targets: ["COMPLETED"], activate: true, complete: true, district: reserved[1], buildingKeys: COMPACT_BUILDING_KEYS });
     await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 2, taskCount: 4, targets: ["COMPLETED", "IN_PROGRESS"], activate: true, complete: false, district: reserved[2], buildingKeys: COMPACT_BUILDING_KEYS });
-    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 3, taskCount: 4, targets: ["PLANNING"], activate: false, complete: false, district: reserved[3], buildingKeys: COMPACT_BUILDING_KEYS });
+    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 3, taskCount: 4, targets: ["PLANNING"], activate: false, complete: false, district: reserved[3], buildingKeys: PLANNED_BUILDING_KEYS });
   } else {
     const progressiveTargets: TaskStatus[][] = [
       ["PLANNING", "STARTED", "IN_PROGRESS", "TESTING"],

@@ -445,6 +445,12 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .task-search-title { overflow: hidden; color: #e8efea; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .task-search-results small { grid-column: 2; overflow: hidden; color: #7f969a; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .task-search-empty { padding: 12px; color: #7f969a; font-size: 12px; text-align: center; }
+.app-header .header-search { justify-self: center; width: 100%; }
+.app-header .map-mode-button span { display: block; font-size: 17px; line-height: 1; transform: translateY(-1px); }
+@media (max-width: 767px) {
+  .app-header { min-height: 104px; }
+  .app-header .header-search { padding-top: 2px; }
+}
 
 /* ── Realtime city feedback ───────────────────────────────── */
 .realtime-notices { position: fixed; z-index: 80; right: 18px; top: 88px; display: grid; gap: 8px; width: min(340px, calc(100vw - 28px)); pointer-events: none; }

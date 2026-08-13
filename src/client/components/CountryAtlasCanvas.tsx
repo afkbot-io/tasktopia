@@ -76,11 +76,12 @@ function surfaceUrl(surface: CountryAtlasCityDto["surfaces"][number]): string {
   return TILE_SPRITES[surface.finish === "ASPHALT" ? "path-asphalt" : surface.finish === "PAVERS" ? "path-pavers" : "path-brown"]!;
 }
 
-export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCitySelect, onTaskSelect }: {
+export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCitySelect, onCityHover, onTaskSelect }: {
   countryId: string;
   worldVersion: number;
   activeCityId?: string;
   onCitySelect: (city: CountryAtlasCityDto) => void;
+  onCityHover: (city: CountryAtlasCityDto | null) => void;
   onTaskSelect: (taskId: string) => void;
 }) {
   const [atlas, setAtlas] = useState<CountryAtlasDto | null>(null);
@@ -151,7 +152,11 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
   if (error) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
   if (!atlas) return <div className="atlas-state" role="status"><i /><span>Сжимаем расстояния между городами…</span></div>;
 
-  return <div className="country-atlas" data-country-atlas-cities={atlas.cities.length}>
+  return <div className="country-atlas" data-country-atlas-cities={atlas.cities.length} onPointerMove={(event) => {
+    const target = event.target instanceof Element ? event.target.closest<SVGGElement>(".atlas-city") : null;
+    const city = target ? atlas.cities.find((entry) => entry.id === target.dataset.cityId) : undefined;
+    onCityHover(city ?? null);
+  }}>
     <svg viewBox={viewport} role="group" aria-label={`Карта страны: ${atlas.cities.length} городов`} preserveAspectRatio="xMidYMin meet">
       <defs>
         {terrainPatterns.map(({ terrain, variant }) => {
@@ -235,6 +240,7 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
             const groundX = building.atlasOrigin.x * CELL + entry.footprint.width * CELL * scale / 2;
             const groundY = building.atlasOrigin.y * CELL + entry.footprint.height * CELL * scale;
             if (building.visualKind === "PARK") {
+              if (building.atlasFootprint.length === 0) return null;
               const minX = Math.min(...building.atlasFootprint.map((cell) => cell.x)) * CELL;
               const minY = Math.min(...building.atlasFootprint.map((cell) => cell.y)) * CELL;
               const width = (Math.max(...building.atlasFootprint.map((cell) => cell.x)) - Math.min(...building.atlasFootprint.map((cell) => cell.x)) + 1) * CELL;

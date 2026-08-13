@@ -14,14 +14,14 @@ test("authentication and MCP settings have no serious accessibility violations",
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-  await page.getByRole("button", { name: "MCP-интеграции" }).click();
+  await page.getByRole("button", { name: "Настройки аккаунта" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  expect(seriousViolations(await new AxeBuilder({ page }).include(".settings-panel").analyze())).toEqual([]);
-
   await expect(page.getByRole("button", { name: "Закрыть" })).toBeFocused();
-  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
   await expect(page.locator(".settings-panel :focus")).toBeVisible();
   await expect(page.getByRole("button", { name: "Закрыть" })).not.toBeFocused();
+  await page.getByRole("button", { name: "MCP-интеграция" }).click();
+  expect(seriousViolations(await new AxeBuilder({ page }).include(".settings-panel").analyze())).toEqual([]);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
 });

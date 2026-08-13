@@ -422,6 +422,7 @@ export class AppService {
   private readonly chunkCache = new Map<string, ChunkDto>();
   private readonly pendingChunkBuilds = new Map<string, Promise<ChunkDto>>();
   private readonly knownWorldVersions = new Map<string, number>();
+  private readonly countryAtlasCache = new Map<string, { worldVersion: number; atlas: CountryAtlasDto }>();
   // A desktop viewport can hold a few dozen chunks in two LODs. Keeping only
   // 64 entries caused one user's zoom to evict the previous level and denied
   // concurrent viewers any cache reuse. 512 remains a small bounded footprint
@@ -799,9 +800,12 @@ export class AppService {
   }
 
   async getCountryAtlas(countryId: string): Promise<CountryAtlasDto> {
+    const countrySnapshot = await this.getCountry(countryId);
+    const cached = this.countryAtlasCache.get(countryId);
+    if (cached?.worldVersion === countrySnapshot.worldVersion) return cached.atlas;
     const [countryRow, country, cities, districts, tasks, features, roadMap, surfaceMap] = await Promise.all([
       this.countryRow(countryId),
-      this.getCountry(countryId),
+      Promise.resolve(countrySnapshot),
       this.listCities(countryId),
       this.listDistricts(countryId),
       this.listTasks(countryId),
@@ -837,7 +841,7 @@ export class AppService {
     ]));
     const districtOwnerByCell = new Map(districts.flatMap((district) => district.cells.map((cell) => [cellKey(cell), district.id] as const)));
 
-    return {
+    const atlas: CountryAtlasDto = {
       schemaVersion: 1,
       worldVersion: country.worldVersion,
       bounds: projection.bounds,
@@ -942,6 +946,8 @@ export class AppService {
         };
       }),
     };
+    this.countryAtlasCache.set(countryId, { worldVersion: country.worldVersion, atlas });
+    return atlas;
   }
 
   async listTasks(countryId: string, districtId?: string): Promise<TaskDto[]> {
@@ -1548,7 +1554,7 @@ export class AppService {
     // leave the envelope through still-empty space. Reserved lots, buildings,
     // paths, features and sealed cells remain hard obstacles.
     const protectedBounds = avoidBounds.filter((bounds) => !contains(bounds, start) && !contains(bounds, end));
-    const path = aStarPath(start, end, (cell) => {
+    const costAt = (cell: Cell): number => {
               const isEndpoint = cell.x === start.x && cell.y === start.y || cell.x === end.x && cell.y === end.y;
               const existing = roads.get(cellKey(cell));
               // An intercity route may follow an established highway out of a city
@@ -1560,7 +1566,13 @@ export class AppService {
               // be stamped again without touching a committed feature. The
               // selected branch anchor is filtered separately, so an existing
               // road inside an occupied halo is never required as an escape.
-              if (!isEndpoint && occupied.has(cellKey(cell))) return Number.POSITIVE_INFINITY;
+              // A branch anchor is one cell within a multi-cell asphalt
+              // profile. Let its centreline cross that profile and leave the
+              // occupied urban halo, but never treat an entire old highway as
+              // a free route: roadside stops and service areas may legitimately
+              // touch it farther away and would be clipped by a new turn.
+              const leavesBranchProfile = reusableRoad && manhattan(cell, start) <= ROAD_WIDTH.HIGHWAY + 1;
+              if (!isEndpoint && occupied.has(cellKey(cell)) && !leavesBranchProfile) return Number.POSITIVE_INFINITY;
               if (existing) return 0.12;
               if (sealed.has(cellKey(cell))) return Number.POSITIVE_INFINITY;
               // The centerline may be free while a lateral lane still clips a
@@ -1582,7 +1594,16 @@ export class AppService {
               if (terrain === "FOREST") return 3.2;
               if (terrain === "STONE") return 2.2;
               return 1;
-            }, 160, 1.4, false);
+            };
+    // Established countries can force a connector around two city envelopes,
+    // a completed district and the national archive at once. The normal
+    // 160-cell search window keeps everyday district routing cheap, while the
+    // bounded retry gives intercity links enough room to go around that whole
+    // protected belt instead of failing a valid third-city placement.
+    let path = aStarPath(start, end, costAt, 160, 1.4, false);
+    if (path.length === 0 && (avoidBounds.length > 1 || reservationRadius >= 3)) {
+      path = aStarPath(start, end, costAt, 240, 1.4, false);
+    }
     if (path.length === 0) throw new DomainError(
       "ROUTE_BLOCKED",
       `Не удалось проложить дорогу без пересечения существующих зданий (${start.x},${start.y} → ${end.x},${end.y})`,
@@ -1731,7 +1752,7 @@ export class AppService {
     return { x: gateway.x, y: gateway.y - bounds.minY < bounds.maxY - gateway.y ? bounds.minY - 1 : bounds.maxY + 1 };
   }
 
-  private async highwayAnchor(countryId: string, target: Cell, cities: CityDto[]): Promise<Cell | undefined> {
+  private async highwayAnchors(countryId: string, target: Cell, cities: CityDto[]): Promise<Cell[]> {
     const highways = [...(await this.roadCells(countryId)).values()].filter((road) => road.roadClass === "HIGHWAY");
     const originalCities = cities.map((city) => rectForCenter(city.center));
     const districtEnvelopes = (await this.listDistricts(countryId)).filter((district) => district.cells.length > 0).map((district) => expandRect(boundsOf(district.cells), 3));
@@ -1751,11 +1772,10 @@ export class AppService {
     // connector can reuse a local street and accidentally upgrade an entire
     // urban block to HIGHWAY.
     const candidates = rural.length > 0 ? rural : outsideDistricts.length > 0 ? outsideDistricts : highways;
-    return candidates
-      .reduce<Cell | undefined>((best, road) => !best || manhattan(road, target) < manhattan(best, target) ? road : best, undefined);
+    return [...candidates].sort((left, right) => manhattan(left, target) - manhattan(right, target));
   }
 
-  private async roadNetworkAnchor(countryId: string, target: Cell, cities: CityDto[]): Promise<Cell | undefined> {
+  private async roadNetworkAnchors(countryId: string, target: Cell, cities: CityDto[]): Promise<Cell[]> {
     const roads = [...(await this.roadCells(countryId)).values()];
     const urban = cities.map((city) => rectForCenter(city.center));
     const featureEnvelopes = (await this.listWorldFeatures(countryId))
@@ -1765,8 +1785,7 @@ export class AppService {
       && !featureEnvelopes.some((bounds) => contains(bounds, road)));
     const safe = roads.filter((road) => !featureEnvelopes.some((bounds) => contains(bounds, road)));
     const candidates = rural.length > 0 ? rural : safe.length > 0 ? safe : roads;
-    return candidates.reduce<Cell | undefined>((best, road) =>
-      !best || manhattan(road, target) < manhattan(best, target) ? road : best, undefined);
+    return [...candidates].sort((left, right) => manhattan(left, target) - manhattan(right, target));
   }
 
   private async featurePlacementOpen(countryId: string, seed: number, footprint: Cell[], avoidBounds: Rect[] = []): Promise<boolean> {
@@ -2379,10 +2398,6 @@ export class AppService {
                       const approach = nearest?.center ?? { x: bounds.minX - COUNTRY_VIEW_MARGIN, y: center.y + 9 };
                       const gateway = this.cityGateway(bounds, center, approach);
                       const portal = this.cityPortal(bounds, gateway.cell, gateway.horizontalApproach);
-                      const source = nearest
-                        ? await this.highwayAnchor(countryId, portal, cities) ?? await this.roadNetworkAnchor(countryId, portal, cities)
-                        : approach;
-                      if (!source) throw new DomainError("ROUTE_BLOCKED", "В существующем мире не найдена дорожная сеть для подключения нового города");
                       const hub = this.cityHub(seed, center);
                       const protectedUrbanEnvelopes = [
                         ...cities.map((city) => rectForCenter(city.center)),
@@ -2391,7 +2406,22 @@ export class AppService {
                       // A connector branches from a rural highway and routes around every
                       // existing district. The new 100x100 reservation is protected as well so
                       // the route reaches only its chosen portal.
-                      const connector = await this.route(countryId, seed, source, portal, [...protectedUrbanEnvelopes, bounds], [], 3);
+                      const sourceCandidates = nearest
+                        ? [...await this.highwayAnchors(countryId, portal, cities), ...await this.roadNetworkAnchors(countryId, portal, cities)]
+                        : [approach];
+                      const uniqueSources = [...new Map(sourceCandidates.map((cell) => [cellKey(cell), cell])).values()];
+                      let source: Cell | undefined;
+                      let connector: Cell[] | undefined;
+                      for (const candidate of uniqueSources.slice(0, 48)) {
+                        try {
+                          connector = await this.route(countryId, seed, candidate, portal, [...protectedUrbanEnvelopes, bounds], [], 3);
+                          source = candidate;
+                          break;
+                        } catch (error) {
+                          if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+                        }
+                      }
+                      if (!source || !connector) throw new DomainError("ROUTE_BLOCKED", "В существующем мире не найден безопасный узел для подключения нового города");
                       // The first-city approach point sits at the viewport edge
                       // without a terrain check. When that edge is water, the
                       // stamped highway would begin mid-lake — a bridge with a
@@ -2818,8 +2848,15 @@ export class AppService {
       y: Math.floor((searchBounds.minY + searchBounds.maxY) / 2),
     };
     const candidates: Array<{ rect: Rect; score: number }> = [];
-    for (let y = searchBounds.minY + 1; y + rectHeight - 1 <= searchBounds.maxY - 1; y += 3) {
-      for (let x = searchBounds.minX + 1; x + rectWidth - 1 <= searchBounds.maxX - 1; x += 3) {
+    // Large V5 facades have a much smaller valid window between existing
+    // streets and cut terrain than compact houses. A three-cell sampling step
+    // could jump over that window entirely and report PLACEMENT_BLOCKED even
+    // though a valid 18x14 lot was visible inside the district. Keep the cheap
+    // coarse scan for compact entries and use a two-cell lattice for statement
+    // buildings; the ranked cap below still bounds connector work.
+    const siteStep = entry.footprint.width >= 18 || entry.footprint.height >= 14 ? 2 : 3;
+    for (let y = searchBounds.minY + 1; y + rectHeight - 1 <= searchBounds.maxY - 1; y += siteStep) {
+      for (let x = searchBounds.minX + 1; x + rectWidth - 1 <= searchBounds.maxX - 1; x += siteStep) {
         const rect: Rect = { minX: x, minY: y, maxX: x + rectWidth - 1, maxY: y + rectHeight - 1 };
         const rectCells = rectangleFootprint({ x, y }, rectWidth, rectHeight);
         // The district silhouette has cut corners, so a complex nearly as big
@@ -2850,7 +2887,8 @@ export class AppService {
     // bounded pool keeps task creation predictable under concurrent use while
     // still covering irregular coast/forest cut-outs that need more than the
     // former twelve probes.
-    for (const candidate of candidates.sort((left, right) => left.score - right.score).slice(0, 256)) {
+    const candidateLimit = siteStep === 2 ? 512 : 256;
+    for (const candidate of candidates.sort((left, right) => left.score - right.score).slice(0, candidateLimit)) {
       // Size the first frontage for the whole compatible facade family, not
       // only for whichever model happened to win the first task ranking. A
       // six-cell cottage followed by a nine-cell duplex (or a 12-cell tower
