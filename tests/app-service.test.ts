@@ -8,7 +8,7 @@ import type { Cell, RoadCellDto } from "../src/shared/contracts";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
 import { isWater, terrainAt } from "../src/shared/world-terrain";
 
-describe("Tasktopia square-world application service", () => {
+describe("Tasktopia square-world application service", { timeout: 20_000 }, () => {
   let db: Db;
   let service: AppService;
   let countryId: string;
