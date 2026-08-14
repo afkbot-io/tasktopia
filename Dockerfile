@@ -12,6 +12,7 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000 \
     SESSION_COOKIE_SECURE=true \
+    REGISTRATION_ENABLED=false \
     TRUST_PROXY=true \
     LOG_LEVEL=info
 WORKDIR /app

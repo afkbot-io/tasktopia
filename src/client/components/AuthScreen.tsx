@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api";
 import { Button, Field } from "./ui";
 
@@ -17,16 +17,37 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [countryLoadFailed, setCountryLoadFailed] = useState(false);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void api<{ registrationEnabled: boolean }>("/api/auth/config")
+      .then((result) => {
+        if (active) setRegistrationEnabled(result.registrationEnabled);
+      })
+      .catch(() => {
+        if (active) setRegistrationEnabled(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!registrationEnabled && mode === "register") setMode("login");
+  }, [mode, registrationEnabled]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    if (mode === "register" && data.get("password") !== data.get("passwordConfirmation")) {
+      setError("Пароли не совпадают");
+      return;
+    }
     setPending(true);
     setError("");
-    const data = new FormData(event.currentTarget);
     try {
       const body = mode === "register"
         ? {
-            email: data.get("email"), password: data.get("password"), name: data.get("name"),
+            email: data.get("email"), password: data.get("password"), passwordConfirmation: data.get("passwordConfirmation"), name: data.get("name"),
             countryName: data.get("countryName"), cityName: data.get("cityName"),
           }
         : { email: data.get("email"), password: data.get("password") };
@@ -100,13 +121,14 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
           </>}
           <Field label="Email" name="email" type="email" required autoComplete="email" />
           <Field label="Пароль" name="password" type="password" minLength={8} maxLength={128} required autoComplete={mode === "login" ? "current-password" : "new-password"} />
+          {mode === "register" && <Field label="Повторите пароль" name="passwordConfirmation" type="password" minLength={8} maxLength={128} required autoComplete="new-password" />}
           {visibleError && <div className="grid gap-1 rounded-xl border border-[#9b4d4d] bg-[#4a2025] px-3 py-2.5 text-sm text-[#ffd7d7]"><strong className="text-[10px] tracking-wider">НЕ УДАЛОСЬ ПРОДОЛЖИТЬ</strong><span role="alert">{visibleError}</span></div>}
           <Button variant="primary" type="submit" className="mt-1 w-full" disabled={pending}>{pending ? "Подождите…" : mode === "login" ? "Открыть страну" : "Создать аккаунт"}</Button>
         </form>
         {canRetryCountry && <Button className="mt-2 w-full" disabled={pending} onClick={() => void retryCountryLoad()}>Повторить загрузку</Button>}
-        <Button variant="quiet" className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
+        {(registrationEnabled || mode === "register") && <Button variant="quiet" className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
           {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
-        </Button>
+        </Button>}
         <p className="mb-0 mt-4 border-t border-[#293d43] pt-4 text-[10px] leading-4 text-[#748b8f]">Сессия хранится в защищённой HTTP-only cookie. Пароль не передаётся интеграциям.</p>
       </div>
     </section>

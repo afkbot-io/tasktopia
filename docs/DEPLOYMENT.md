@@ -21,6 +21,22 @@ docker compose ps
 curl -fsS http://127.0.0.1:3000/health
 ```
 
+Публичная регистрация в self-hosted production закрыта по умолчанию. Создайте
+первого владельца после успешного healthcheck:
+
+```bash
+docker compose exec app npm run user:create -- \
+  --email admin@example.com \
+  --name "Администратор" \
+  --country "Компания" \
+  --city "Главный продукт"
+```
+
+Пароль вводится два раза без отображения в терминале. Для CI/secret manager
+доступен `--password-stdin`: первые две строки stdin должны содержать пароль и
+его подтверждение. Передавать пароль через аргументы командной строки команда
+намеренно не разрешает.
+
 Обязательные параметры находятся в [`deploy/.env.self-host.example`](../deploy/.env.self-host.example).
 Named volumes `tasktopia_postgres` и `tasktopia_uploads` переживают замену
 контейнеров. Не используйте `docker compose down -v` на сервере с данными.
@@ -141,6 +157,7 @@ APP_ORIGIN=https://tasktopia.online
 # STATIC_ORIGIN=https://store.tasktopia.online
 POSTGRES_PASSWORD=<длинный-случайный-пароль>
 SESSION_COOKIE_SECURE=true
+REGISTRATION_ENABLED=false
 LOG_LEVEL=info
 APP_MEMORY_LIMIT=1536m
 APP_CPU_LIMIT=2.00
@@ -150,6 +167,12 @@ BACKUP_RETENTION_COUNT=14
 STATIC_RETENTION_COUNT=3
 MIN_FREE_SPACE_MB=1024
 ```
+
+`REGISTRATION_ENABLED=false` оставляет доступным только вход и блокирует
+публичный endpoint регистрации. Учётные записи по-прежнему создаются локальной
+командой `docker compose exec app npm run user:create -- ...`. Для открытого
+экземпляра самостоятельная регистрация включается только явным значением
+`REGISTRATION_ENABLED=true` и пересозданием app-контейнера.
 
 `STATIC_ORIGIN` одновременно встраивается в клиент во время
 `docker compose build` и добавляется в CSP приложения, поэтому client/runtime

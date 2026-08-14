@@ -102,6 +102,7 @@ if (upgradedArchives > 0) app.log.info({ countries: upgradedArchives }, "State a
 const mcpHandler = createTasktopiaMcpHandler(db, service, (error) => app.log.error({ err: error }, "MCP handler error"));
 
 await registerRoutes(app, db, service, {
+  registrationEnabled: config.registrationEnabled,
   async onCountryAccessRevoked(countryId, userId) {
     const sockets = await io.in(`country:${countryId}`).fetchSockets();
     for (const socket of sockets) {

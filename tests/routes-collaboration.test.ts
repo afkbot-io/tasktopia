@@ -21,7 +21,7 @@ describe("country collaboration HTTP boundary", () => {
 
   async function register(email: string, name: string): Promise<string> {
     const response = await app.inject({ method: "POST", url: "/api/auth/register", payload: {
-      email, name, password: "password-123", countryName: `${name} country`, cityName: `${name} city`,
+      email, name, password: "password-123", passwordConfirmation: "password-123", countryName: `${name} country`, cityName: `${name} city`,
     } });
     expect(response.statusCode).toBe(200);
     const setCookie = response.headers["set-cookie"]!;

@@ -22,6 +22,7 @@ export default defineConfig({
     env: {
       APP_ORIGIN: baseURL,
       AUTH_RATE_LIMIT_MAX: "100",
+      REGISTRATION_ENABLED: "true",
       DATABASE_URL: process.env.E2E_DATABASE_URL ?? testDatabaseURL,
       TEST_DATABASE_URL: testDatabaseURL,
     },

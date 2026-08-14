@@ -34,6 +34,7 @@ services:
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
       STATIC_ORIGIN: ${STATIC_ORIGIN:-}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
       TRUST_PROXY: "true"
       LOG_LEVEL: ${LOG_LEVEL:-info}
       UPLOAD_DIR: /data/uploads

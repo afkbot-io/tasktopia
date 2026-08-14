@@ -38,6 +38,9 @@ describe("open-source README", () => {
     expect(readme).toContain("deploy/.env.self-host.example");
     expect(readme).toContain("deploy/install-server.sh");
     expect(readme).toContain("docs/DEPLOYMENT.md");
+    expect(readme).toContain("REGISTRATION_ENABLED=false");
+    expect(readme).toContain("npm run user:create");
+    expect(readme).toContain("--password-stdin");
     expect(readme).toContain("LICENSE");
     expect(readme).toContain("SECURITY.md");
     expect(readdirSync(root)).toContain("LICENSE");

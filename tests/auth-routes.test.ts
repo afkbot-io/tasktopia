@@ -2,6 +2,7 @@ import fastifyCookie from "@fastify/cookie";
 import Fastify, { type FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppService } from "../src/server/app-service";
+import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
 import { APP_VERSION } from "../src/server/version";
@@ -51,7 +52,7 @@ describe("authentication HTTP boundary", () => {
     const registered = await app.inject({
       method: "POST",
       url: "/api/auth/register",
-      payload: { email: "mayor@example.test", name: "Test Mayor", password: "safe-password-123", countryName: "Mayor Project", cityName: "Mayor City" },
+      payload: { email: "mayor@example.test", name: "Test Mayor", password: "safe-password-123", passwordConfirmation: "safe-password-123", countryName: "Mayor Project", cityName: "Mayor City" },
     });
     expect(registered.statusCode).toBe(200);
     const setCookie = registered.headers["set-cookie"]!;
@@ -186,6 +187,7 @@ describe("authentication HTTP boundary", () => {
         email: "founder@example.test",
         name: "Product Founder",
         password: "safe-password-123",
+        passwordConfirmation: "safe-password-123",
         countryName: "Платформа",
         cityName: "Мобильное приложение",
       },
@@ -215,7 +217,7 @@ describe("authentication HTTP boundary", () => {
   it("exposes exact-confirmed city, district and task deletion to an authenticated editor", async () => {
     const registered = await app.inject({
       method: "POST", url: "/api/auth/register",
-      payload: { email: "delete-http@example.test", name: "Delete Mayor", password: "safe-password-123", countryName: "Deletion Land", cityName: "Permanent City" },
+      payload: { email: "delete-http@example.test", name: "Delete Mayor", password: "safe-password-123", passwordConfirmation: "safe-password-123", countryName: "Deletion Land", cityName: "Permanent City" },
     });
     const setCookie = registered.headers["set-cookie"]!;
     const cookie = (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;
@@ -238,10 +240,54 @@ describe("authentication HTTP boundary", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/auth/register",
-      payload: { email: "empty-world@example.test", name: "Empty World", password: "safe-password-123" },
+      payload: { email: "empty-world@example.test", name: "Empty World", password: "safe-password-123", passwordConfirmation: "safe-password-123" },
     });
     expect(response.statusCode).toBe(400);
     expect(response.json()).toMatchObject({ error: "INVALID_INPUT", message: "Введите название первой страны" });
+  });
+
+  it("keeps login available while public registration is disabled", async () => {
+    await app.close();
+    await registerUser(db, {
+      email: "private-user@example.test",
+      name: "Private User",
+      password: "safe-password-123",
+    });
+    app = Fastify();
+    await app.register(fastifyCookie);
+    await registerRoutes(app, db, service, { registrationEnabled: false });
+    await app.ready();
+
+    const authConfig = await app.inject({ method: "GET", url: "/api/auth/config" });
+    expect(authConfig.statusCode).toBe(200);
+    expect(authConfig.json()).toEqual({ registrationEnabled: false });
+    expect(authConfig.headers["cache-control"]).toBe("no-store");
+
+    const registration = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        email: "outsider@example.test",
+        name: "Outsider",
+        password: "safe-password-123",
+        passwordConfirmation: "safe-password-123",
+        countryName: "Outsider Country",
+        cityName: "Outsider City",
+      },
+    });
+    expect(registration.statusCode).toBe(403);
+    expect(registration.json()).toEqual({
+      error: "REGISTRATION_DISABLED",
+      message: "Публичная регистрация отключена администратором",
+    });
+
+    const login = await app.inject({
+      method: "POST",
+      url: "/api/auth/login",
+      payload: { email: "private-user@example.test", password: "safe-password-123" },
+    });
+    expect(login.statusCode).toBe(200);
+    expect(login.headers["set-cookie"]).toBeDefined();
   });
 
   it("rolls back the whole onboarding when first-city generation fails", async () => {
@@ -249,7 +295,7 @@ describe("authentication HTTP boundary", () => {
     const response = await app.inject({
       method: "POST", url: "/api/auth/register",
       payload: {
-        email: "rollback@example.test", name: "Rollback Founder", password: "safe-password-123",
+        email: "rollback@example.test", name: "Rollback Founder", password: "safe-password-123", passwordConfirmation: "safe-password-123",
         countryName: "Rollback Product", cityName: "Rollback Epic",
       },
     });
@@ -259,7 +305,7 @@ describe("authentication HTTP boundary", () => {
   });
 
   it("returns a clear conflict instead of Bad Request or 500 for an existing email", async () => {
-    const payload = { email: "duplicate@example.test", name: "First Mayor", password: "safe-password-123", countryName: "Duplicate Project", cityName: "Duplicate City" };
+    const payload = { email: "duplicate@example.test", name: "First Mayor", password: "safe-password-123", passwordConfirmation: "safe-password-123", countryName: "Duplicate Project", cityName: "Duplicate City" };
     expect((await app.inject({ method: "POST", url: "/api/auth/register", payload })).statusCode).toBe(200);
 
     const duplicate = await app.inject({
@@ -279,7 +325,7 @@ describe("authentication HTTP boundary", () => {
     const malformed = await app.inject({
       method: "POST",
       url: "/api/auth/register",
-      payload: { email: "not-an-email", name: "X", password: "short", countryName: "Invalid Project", cityName: "Invalid City" },
+      payload: { email: "not-an-email", name: "X", password: "short", passwordConfirmation: "short", countryName: "Invalid Project", cityName: "Invalid City" },
     });
     expect(malformed.statusCode).toBe(400);
     expect(malformed.json()).toMatchObject({ error: "INVALID_INPUT", message: "Введите корректный email" });
@@ -293,12 +339,49 @@ describe("authentication HTTP boundary", () => {
     expect(invalidLogin.json()).toMatchObject({ error: "UNAUTHENTICATED", message: "Неверный email или пароль" });
   });
 
+  it("requires matching password confirmation for public registration", async () => {
+    const missing = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        email: "missing-confirmation@example.test",
+        name: "Missing Confirmation",
+        password: "safe-password-123",
+        countryName: "Missing Confirmation Country",
+        cityName: "Missing Confirmation City",
+      },
+    });
+    expect(missing.statusCode).toBe(400);
+    expect(missing.json()).toMatchObject({
+      error: "INVALID_INPUT",
+      message: "Повторите пароль",
+    });
+
+    const mismatched = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        email: "mismatched-password@example.test",
+        name: "Mismatched Password",
+        password: "safe-password-123",
+        passwordConfirmation: "different-password-456",
+        countryName: "Mismatched Password Country",
+        cityName: "Mismatched Password City",
+      },
+    });
+    expect(mismatched.statusCode).toBe(400);
+    expect(mismatched.json()).toMatchObject({
+      error: "INVALID_INPUT",
+      message: "Пароли не совпадают",
+    });
+  });
+
   it("does not trust a client-supplied forwarded host for CSRF checks", async () => {
     const rejected = await app.inject({
       method: "POST",
       url: "/api/auth/register",
       headers: { origin: "https://attacker.example", "x-forwarded-host": "attacker.example" },
-      payload: { email: "csrf@example.test", name: "CSRF Test", password: "safe-password-123", countryName: "CSRF Project", cityName: "CSRF City" },
+      payload: { email: "csrf@example.test", name: "CSRF Test", password: "safe-password-123", passwordConfirmation: "safe-password-123", countryName: "CSRF Project", cityName: "CSRF City" },
     });
     expect(rejected.statusCode).toBe(403);
     expect(rejected.json()).toMatchObject({ error: "INVALID_ORIGIN" });
@@ -307,7 +390,7 @@ describe("authentication HTTP boundary", () => {
       method: "POST",
       url: "/api/auth/register",
       headers: { origin: "http://localhost:5173" },
-      payload: { email: "trusted@example.test", name: "Trusted Test", password: "safe-password-123", countryName: "Trusted Project", cityName: "Trusted City" },
+      payload: { email: "trusted@example.test", name: "Trusted Test", password: "safe-password-123", passwordConfirmation: "safe-password-123", countryName: "Trusted Project", cityName: "Trusted City" },
     });
     expect(accepted.statusCode).toBe(200);
   });
@@ -324,7 +407,7 @@ describe("authentication HTTP boundary", () => {
     const registered = await app.inject({
       method: "POST",
       url: "/api/auth/register",
-      payload: { email: "socket-logout@example.test", name: "Socket Logout", password: "safe-password-123", countryName: "Socket Project", cityName: "Socket City" },
+      payload: { email: "socket-logout@example.test", name: "Socket Logout", password: "safe-password-123", passwordConfirmation: "safe-password-123", countryName: "Socket Project", cityName: "Socket City" },
     });
     const cookieHeader = registered.headers["set-cookie"]!;
     const cookie = (Array.isArray(cookieHeader) ? cookieHeader[0]! : cookieHeader).split(";")[0]!;

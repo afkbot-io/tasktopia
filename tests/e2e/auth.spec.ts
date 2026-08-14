@@ -7,11 +7,47 @@ test("shows a clear duplicate-registration error and keeps the form usable", asy
   await page.getByLabel("Название вашей первой страны").fill("Duplicate Product");
   await page.getByLabel("Название первого города").fill("Duplicate Epic");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("safe-password-123");
+  await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
+  await page.getByLabel("Повторите пароль", { exact: true }).fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
 
   await expect(page.getByRole("alert")).toHaveText("Аккаунт с таким email уже существует");
   await expect(page.getByRole("button", { name: "Создать аккаунт" })).toBeEnabled();
+});
+
+test("requires matching passwords before sending registration", async ({ page }) => {
+  let registrationRequests = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/api/auth/register")) registrationRequests += 1;
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
+  await page.getByLabel("Имя", { exact: true }).fill("Private Mayor");
+  await page.getByLabel("Название вашей первой страны").fill("Private Product");
+  await page.getByLabel("Название первого города").fill("Private City");
+  await page.getByLabel("Email").fill("private@example.test");
+  await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
+  await page.getByLabel("Повторите пароль", { exact: true }).fill("different-password-456");
+  await page.getByRole("button", { name: "Создать аккаунт" }).click();
+
+  await expect(page.getByRole("alert")).toHaveText("Пароли не совпадают");
+  expect(registrationRequests).toBe(0);
+});
+
+test("shows only login when public registration is disabled", async ({ page }) => {
+  await page.route("**/api/auth/config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ registrationEnabled: false }),
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Войти в Tasktopia" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" })).toHaveCount(0);
 });
 
 test("keeps authentication pending through bootstrap and offers retry after a country-load failure", async ({ page }) => {
@@ -31,7 +67,7 @@ test("keeps authentication pending through bootstrap and offers retry after a co
 
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   failNextBootstrap = true;
   await page.getByRole("button", { name: "Открыть страну" }).click();
 

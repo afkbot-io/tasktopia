@@ -89,4 +89,6 @@ systemctl reload nginx
 curl --fail --silent --show-error --retry 10 --retry-delay 2 "https://$domain/health"
 echo
 echo "Tasktopia is ready: https://$domain"
+echo "Public registration is disabled by default."
+echo "Create the first user: cd '$app_dir' && docker compose exec app npm run user:create -- --email EMAIL --name NAME --country COUNTRY --city CITY"
 echo "Updates: TASKTOPIA_APP_DIR='$app_dir' TASKTOPIA_BRANCH='$branch' $app_dir/deploy/update-server.sh"

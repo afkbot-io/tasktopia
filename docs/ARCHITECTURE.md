@@ -2,13 +2,13 @@
 
 Tasktopia: React/PixiJS → Fastify HTTP/Socket.IO/MCP → доменный `AppService` → асинхронный пул PostgreSQL 16. Геометрия мира хранится отдельно от read model чанков; terrain и часть поверхностей вычисляются детерминированно по seed.
 
-Регистрация вызывает единый `AppService.onboardUser`: аккаунт, session, страна и необязательный первый город создаются внутри одной транзакции. HTTP-route только валидирует вход и не собирает доменный workflow самостоятельно. Вложенные мутации откладывают realtime-публикацию и cache invalidation до commit внешней транзакции; rollback очищает изменённые in-memory индексы.
+Регистрация вызывает единый `AppService.onboardUser`: аккаунт, session, страна и необязательный первый город создаются внутри одной транзакции. HTTP-route только валидирует вход и не собирает доменный workflow самостоятельно. В production публичный route и UI закрыты по умолчанию через `REGISTRATION_ENABLED=false`; локальная `user:create` CLI использует тот же onboarding workflow, удаляет ненужную CLI-session и остаётся доступной оператору контейнера. Вложенные мутации откладывают realtime-публикацию и cache invalidation до commit внешней транзакции; rollback очищает изменённые in-memory индексы.
 
 ## Карта сущностей
 
 | Семейство | Сущности | Владелец и граница | Жизненный цикл |
 | --- | --- | --- | --- |
-| Identity | `users`, `sessions` | пользователь; session хранится только как SHA-256 hash | register/login → restore → expire/logout/delete |
+| Identity | `users`, `sessions` | пользователь; session хранится только как SHA-256 hash | controlled CLI/public register → login → restore → expire/logout/delete |
 | Access | `countries`, `country_members` | глава `OWNER`, министр `MEMBER`, наблюдатель `VIEWER`; все чтения мира ограничены выбранной страной | create → invite/select → revoke member → delete country |
 | MCP | `mcp_tokens` | персональный token; права = текущая роль ∩ scopes, новые expiry 30/90/365 дней | issue → use/last-used → reissue/revoke/expire |
 | Country context | поля `countries` | страна выбранного аккаунта | описание, цель, продуктовый контекст, критерии успеха и ограничения обновляются независимо от геометрии |

@@ -31,6 +31,7 @@ describe("country atlas HTTP boundary", () => {
         email: "atlas-route@example.test",
         name: "Atlas Route",
         password: "safe-password-123",
+        passwordConfirmation: "safe-password-123",
         countryName: "Atlas Country",
         cityName: "Atlas City",
       },

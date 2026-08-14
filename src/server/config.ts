@@ -19,6 +19,7 @@ const schema = z.object({
   UPLOAD_DIR: z.string().default("data/uploads"),
   MAX_ATTACHMENT_BYTES: z.coerce.number().int().min(1024).max(50 * 1024 * 1024).default(10 * 1024 * 1024),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(5).max(1000).default(10),
+  REGISTRATION_ENABLED: z.enum(["true", "false"]).optional(),
 });
 
 const raw = schema.parse(process.env);
@@ -31,4 +32,7 @@ export const config = {
   uploadDir: raw.UPLOAD_DIR,
   maxAttachmentBytes: raw.MAX_ATTACHMENT_BYTES,
   authRateLimitMax: raw.AUTH_RATE_LIMIT_MAX,
+  registrationEnabled: raw.REGISTRATION_ENABLED === undefined
+    ? raw.NODE_ENV !== "production"
+    : raw.REGISTRATION_ENABLED === "true",
 };

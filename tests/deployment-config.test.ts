@@ -7,12 +7,16 @@ describe("production reverse proxy", () => {
   const compose = readFileSync(new URL("../docker-compose.yml", import.meta.url), "utf8");
   const developmentCompose = readFileSync(new URL("../docker-compose.dev.yml", import.meta.url), "utf8");
   const developmentEnv = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+  const selfHostEnv = readFileSync(new URL("../deploy/.env.self-host.example", import.meta.url), "utf8");
   const playwright = readFileSync(new URL("../playwright.config.ts", import.meta.url), "utf8");
   const serverConfig = readFileSync(new URL("../src/server/config.ts", import.meta.url), "utf8");
   const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   const dockerfile = readFileSync(new URL("../Dockerfile", import.meta.url), "utf8");
   const dockerignore = readFileSync(new URL("../.dockerignore", import.meta.url), "utf8");
   const updateScript = readFileSync(new URL("../deploy/update-server.sh", import.meta.url), "utf8");
+  const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
+    scripts: Record<string, string>;
+  };
 
   it("keeps full country regeneration alive beyond the ordinary API timeout", () => {
     const location = nginx.match(/location ~ \^\/api\/countries\/\[0-9a-f-\]\+\/regenerate\$ \{([\s\S]*?)\n\s*\}/)?.[1];
@@ -39,6 +43,21 @@ describe("production reverse proxy", () => {
   it("uses the real browser origin and keeps the application bound to loopback by default", () => {
     expect(compose).toContain("APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}");
     expect(compose).toContain("${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3000}:3000");
+  });
+
+  it("fails closed for public registration in production while keeping development explicit", () => {
+    expect(compose).toContain("REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}");
+    expect(dockerfile).toContain("REGISTRATION_ENABLED=false");
+    expect(selfHostEnv).toContain("REGISTRATION_ENABLED=false");
+    expect(developmentEnv).toContain("REGISTRATION_ENABLED=true");
+    expect(serverConfig).toContain('raw.NODE_ENV !== "production"');
+    expect(playwright).toContain('REGISTRATION_ENABLED: "true"');
+  });
+
+  it("ships the controlled user-creation command in the production bundle", () => {
+    expect(packageJson.scripts["user:create"]).toBe("node dist/create-user.mjs");
+    expect(packageJson.scripts.build).toContain("src/server/create-user-cli.ts");
+    expect(packageJson.scripts.build).toContain("dist/create-user.mjs");
   });
 
   it("uses one CDN origin for the browser build and runtime policy", () => {

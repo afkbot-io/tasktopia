@@ -33,9 +33,13 @@ const registerSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
   name: z.string().trim().min(2, { message: "Имя должно содержать минимум 2 символа" }).max(60, { message: "Имя слишком длинное" }),
   password: z.string().min(8, { message: "Пароль должен содержать минимум 8 символов" }).max(128, { message: "Пароль слишком длинный" }),
+  passwordConfirmation: z.string({ error: "Повторите пароль" }).min(8, { message: "Повторите пароль" }).max(128, { message: "Пароль слишком длинный" }),
   countryName: z.string({ error: "Введите название первой страны" }).trim().min(2, { message: "Название страны должно содержать минимум 2 символа" }).max(100, { message: "Название страны слишком длинное" }),
   cityName: z.string({ error: "Введите название первого города" }).trim().min(2, { message: "Название города должно содержать минимум 2 символа" }).max(100, { message: "Название города слишком длинное" }),
-}).strict();
+}).strict().refine((input) => input.password === input.passwordConfirmation, {
+  message: "Пароли не совпадают",
+  path: ["passwordConfirmation"],
+});
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
   password: z.string().min(1, { message: "Введите пароль" }).max(128, { message: "Пароль слишком длинный" }),
@@ -120,6 +124,7 @@ export function requestErrorStatus(error: unknown): number {
 export type RouteRuntimeHooks = {
   onCountryAccessRevoked?: (countryId: string, userId: string) => Promise<void> | void;
   onUserSessionRevoked?: (userId: string) => Promise<void> | void;
+  registrationEnabled?: boolean;
 };
 
 export async function registerRoutes(app: FastifyInstance, db: Db, service: AppService, hooks: RouteRuntimeHooks = {}): Promise<void> {
@@ -152,8 +157,26 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             return { status: "ok", version: APP_VERSION, uptime: Math.round(process.uptime()) };
           });
 
+  const registrationEnabled = hooks.registrationEnabled ?? config.registrationEnabled;
+  app.get("/api/auth/config", async (_request, reply) => {
+    return reply.header("Cache-Control", "no-store").send({ registrationEnabled });
+  });
+
   app.post("/api/auth/register", { config: { rateLimit: { max: config.authRateLimitMax, timeWindow: "1 minute" } } }, async (request, reply) => {
-    const body = parse(registerSchema, request.body);
+    if (!registrationEnabled) {
+      return reply.code(403).send({
+        error: "REGISTRATION_DISABLED",
+        message: "Публичная регистрация отключена администратором",
+      });
+    }
+    const parsed = parse(registerSchema, request.body);
+    const body = {
+      email: parsed.email,
+      name: parsed.name,
+      password: parsed.password,
+      countryName: parsed.countryName,
+      cityName: parsed.cityName,
+    };
     let result;
     try {
       result = await service.onboardUser(body);
