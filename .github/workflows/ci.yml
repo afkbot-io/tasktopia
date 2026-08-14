@@ -7,7 +7,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Asset regeneration, the full unit suite, and the ultra-wide streaming
+    # browser gate intentionally run together and exceed 15 minutes on hosted
+    # runners. Keep a bounded ceiling without cancelling a healthy release.
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16-alpine
