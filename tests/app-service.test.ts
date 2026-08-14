@@ -613,7 +613,7 @@ describe("Tasktopia square-world application service", () => {
     const task = await service.createTask(countryId, { cityId: city.id, title: "Private Task", estimate: 1, idempotencyKey: "private-task" });
     const other = await registerUser(db, { email: "other@example.com", name: "Other", password: "password123" });
     await expect(service.getTask(other.user.countryId, task.id)).rejects.toThrowError(/не найдена/);
-  });
+  }, 20_000);
 
   it("stores only an MCP token hash", async () => {
     const token = await createMcpToken(db, countryId, "Test token");

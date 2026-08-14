@@ -268,11 +268,15 @@ test("keeps the rendered LOD coherent and recovers a rapid zoom reversal", async
   let armed = false;
   let slowOverviewStarted = false;
   let slowOverviewResolved = false;
+  let releaseSlowOverview: (() => void) | undefined;
+  const slowOverviewGate = new Promise<void>((resolve) => {
+    releaseSlowOverview = resolve;
+  });
   await page.route("**/api/chunks/**", async (route) => {
     const isSlowLod = armed && new URL(route.request().url()).searchParams.get("lod") === slowLod;
     if (isSlowLod && !slowOverviewStarted) {
       slowOverviewStarted = true;
-      await new Promise((resolve) => setTimeout(resolve, 2_500));
+      await slowOverviewGate;
       slowOverviewResolved = true;
     } else if (isSlowLod) {
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -296,6 +300,7 @@ test("keeps the rendered LOD coherent and recovers a rapid zoom reversal", async
   expect(Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
   expect(slowOverviewResolved).toBe(false);
   for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, slowLod === "overview" ? -800 : 800);
+  releaseSlowOverview?.();
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", initialLod);
 });

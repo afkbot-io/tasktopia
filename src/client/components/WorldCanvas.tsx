@@ -1461,6 +1461,12 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       const resizeObserver = new ResizeObserver(() => {
         cancelAnimationFrame(resizeFrame);
         resizeFrame = requestAnimationFrame(() => {
+          // ResizePlugin listens to the same host indirectly through the
+          // window resize event. Its queued frame may run after this observer,
+          // leaving app.screen stale while we calculate the next chunk range.
+          // Resize synchronously first so a single host resize always plans
+          // against the renderer dimensions that will actually be displayed.
+          app.resize();
           world.position.x += (app.screen.width - screenSize.width) / 2;
           world.position.y += (app.screen.height - screenSize.height) / 2;
           screenSize = { width: app.screen.width, height: app.screen.height };

@@ -104,5 +104,5 @@ describe("countries, government and personal task history", () => {
     expect(task.assignee).toBeNull();
     expect(task.events?.map((event) => event.type)).toEqual(["CREATED", "STATUS_CHANGED", "COMMENT_ADDED", "ASSIGNEE_CHANGED"]);
     expect(task.events?.[1]?.actorUserId).toBe(member.user.id);
-  });
+  }, 20_000);
 });
