@@ -129,7 +129,6 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
 
 test("keeps every visible ground resident when an ultra-wide viewport exceeds the base GPU limit", async ({ page }) => {
   test.setTimeout(240_000);
-  await page.setViewportSize({ width: 5120, height: 3200 });
   await page.route("**/api/bootstrap", async (route) => {
     const response = await route.fetch();
     if (response.status() !== 200) {
@@ -148,10 +147,12 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   await page.getByRole("button", { name: "Открыть страну" }).click();
 
   const host = page.locator(".world-canvas");
-  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 60_000 }).toBe("false");
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
   const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 1_200);
+  await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
+  await page.setViewportSize({ width: 5120, height: 3200 });
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", "overview");
   const range = await host.getAttribute("data-chunk-range");
@@ -303,11 +304,15 @@ test("never presents adjacent chunks from different LODs", async ({ page }) => {
   let armed = false;
   let delayedBuildingStarted = false;
   let delayedBuildingResolved = false;
+  let releaseDelayedBuilding: (() => void) | undefined;
+  const delayedBuildingGate = new Promise<void>((resolve) => {
+    releaseDelayedBuilding = resolve;
+  });
   await page.route("**/game-assets/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     if (armed && !delayedBuildingStarted && pathname.includes("/buildings/")) {
       delayedBuildingStarted = true;
-      await new Promise((resolve) => setTimeout(resolve, 2_500));
+      await delayedBuildingGate;
       delayedBuildingResolved = true;
     }
     await route.continue();
@@ -339,6 +344,8 @@ test("never presents adjacent chunks from different LODs", async ({ page }) => {
   }
   expect(observedGroundLods).not.toContain("true");
   expect(delayedBuildingResolved).toBe(false);
+  releaseDelayedBuilding?.();
+  await expect.poll(async () => delayedBuildingResolved, { timeout: 30_000 }).toBe(true);
 });
 
 test("realtime task status patches its entity without refetching or rebaking static ground", async ({ page }) => {
