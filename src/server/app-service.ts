@@ -60,6 +60,7 @@ import { listAccessibleCountries, registerUser, type AuthUser, type Registration
 import {
   GRID_DIRECTIONS,
   aStarPath,
+  aStarPathToAny,
   boundsOf,
   cellKey,
   contains,
@@ -1564,12 +1565,15 @@ export class AppService {
     countryId: string,
     seed: number,
     start: Cell,
-    end: Cell,
+    end: Cell | readonly Cell[],
     avoidBounds: Rect[] = [],
     extraReserved: Cell[] = [],
     reservationRadius = 1,
     reuseUrbanRoads = false,
   ): Promise<Cell[]> {
+    const targets: readonly Cell[] = Array.isArray(end) ? end : [end as Cell];
+    if (targets.length === 0) throw new DomainError("ROUTE_BLOCKED", "Не указана конечная точка дороги");
+    const targetKeys = new Set(targets.map(cellKey));
     const roads = await this.roadCells(countryId);
     const sealed = await this.completedDistrictCells(countryId);
     const reservedFootprints = [
@@ -1596,9 +1600,10 @@ export class AppService {
     // selected branch cell. In that case the connector must be allowed to
     // leave the envelope through still-empty space. Reserved lots, buildings,
     // paths, features and sealed cells remain hard obstacles.
-    const protectedBounds = avoidBounds.filter((bounds) => !contains(bounds, start) && !contains(bounds, end));
+    const protectedBounds = avoidBounds.filter((bounds) =>
+      !contains(bounds, start) && !targets.some((target) => contains(bounds, target)));
     const costAt = (cell: Cell): number => {
-              const isEndpoint = cell.x === start.x && cell.y === start.y || cell.x === end.x && cell.y === end.y;
+              const isEndpoint = cell.x === start.x && cell.y === start.y || targetKeys.has(cellKey(cell));
               const existing = roads.get(cellKey(cell));
               // An intercity route may follow an established highway out of a city
               // that later grew around it. It may not reuse local/collector streets:
@@ -1643,13 +1648,19 @@ export class AppService {
     // 160-cell search window keeps everyday district routing cheap, while the
     // bounded retry gives intercity links enough room to go around that whole
     // protected belt instead of failing a valid third-city placement.
-    let path = aStarPath(start, end, costAt, 160, 1.4, false);
+    const findPath = (searchMargin: number) => targets.length === 1
+      ? aStarPath(start, targets[0]!, costAt, searchMargin, 1.4, false)
+      : aStarPathToAny(start, targets, costAt, searchMargin, 1.4);
+    let path = findPath(160);
     if (path.length === 0 && (avoidBounds.length > 1 || reservationRadius >= 3)) {
-      path = aStarPath(start, end, costAt, 240, 1.4, false);
+      path = findPath(240);
     }
+    const targetLabel = targets.length === 1
+      ? `${targets[0]!.x},${targets[0]!.y}`
+      : `${targets.length} целей`;
     if (path.length === 0) throw new DomainError(
       "ROUTE_BLOCKED",
-      `Не удалось проложить дорогу без пересечения существующих зданий (${start.x},${start.y} → ${end.x},${end.y})`,
+      `Не удалось проложить дорогу без пересечения существующих зданий (${start.x},${start.y} → ${targetLabel})`,
     );
     return path;
   }
@@ -2304,18 +2315,26 @@ export class AppService {
       // tempting local street can otherwise cut a new road straight through
       // the city's reserved building envelope.
       const ruralRoads = allRoads.filter((road) => !cityAvoid.some((bounds) => contains(bounds, road)));
-      const roads = (ruralRoads.length > 0 ? ruralRoads : allRoads)
+      const hasRuralTargets = ruralRoads.length > 0;
+      const roads = (hasRuralTargets ? ruralRoads : allRoads)
         .sort((left, right) => {
           const classPenalty = (road: RoadCellDto) => road.roadClass === "HIGHWAY" ? 10_000 : 0;
           return manhattan(left, apron[apron.length - 1]!) + classPenalty(left)
             - manhattan(right, apron[apron.length - 1]!) - classPenalty(right);
         });
       let connector: Cell[] | undefined;
-      for (const target of roads.slice(0, 24)) {
+      // Search a bounded batch of road cells as one multi-goal A* problem.
+      // This avoids retrying the same explored space for adjacent dead ends,
+      // while advancing through every batch means a fragmented imported map
+      // cannot hide a valid connection behind an arbitrary candidate cap.
+      // Urban fallback targets stay single-goal so a batch can never relax
+      // several protected city envelopes at once.
+      const targetBatchSize = hasRuralTargets ? 64 : 1;
+      for (let offset = 0; offset < roads.length; offset += targetBatchSize) {
         try {
           // Two-cell clearance protects the fence from the lateral lane of the
           // stamped two-lane driveway, not just from its A* centreline.
-          const routed = await this.route(countryId, seed, apron[apron.length - 1]!, target, cityAvoid, [], 2, true);
+          const routed = await this.route(countryId, seed, apron[apron.length - 1]!, roads.slice(offset, offset + targetBatchSize), cityAvoid, [], 2, true);
           connector = [...apron, ...routed.slice(1)];
           break;
         } catch (error) {

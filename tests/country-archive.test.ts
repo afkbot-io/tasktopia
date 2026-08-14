@@ -108,6 +108,45 @@ describe("Государственный архив", () => {
     expect(compound!.accessPath.some((cell) => cell.y > origin.y + 13)).toBe(true);
   });
 
+  it("пробует доступную дорогу после изолированных ближайших целей", async () => {
+    const city = await service.createCity(countryId, { name: "Столица", idempotencyKey: "archive-road-candidates-city" });
+    const compound = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
+    const horizontal = Math.abs(compound.origin.x - city.center.x) >= Math.abs(compound.origin.y - city.center.y);
+    const direction = horizontal
+      ? Math.sign(compound.origin.x - city.center.x) || 1
+      : Math.sign(compound.origin.y - city.center.y) || 1;
+    const decoys = Array.from({ length: 24 }, (_, index) => horizontal
+      ? { x: compound.origin.x + direction * (30 + Math.floor(index / 8) * 8), y: compound.origin.y - 16 + index % 8 * 5 }
+      : { x: compound.origin.x - 16 + index % 8 * 5, y: compound.origin.y + direction * (30 + Math.floor(index / 8) * 8) });
+    const reachable = horizontal
+      ? { x: compound.origin.x + direction * 110, y: compound.origin.y + 6 }
+      : { x: compound.origin.x + 9, y: compound.origin.y + direction * 110 };
+
+    await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(countryId);
+    await db.prepare("DELETE FROM world_features_v6 WHERE parent_feature_id = ? AND asset_kind = 'PROP'").run(compound.id);
+    await db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify([]), compound.id);
+    const createdAt = new Date().toISOString();
+    for (const [index, cell] of decoys.entries()) {
+      await db.prepare("INSERT INTO roads_v3 (country_id, x, y) VALUES (?, ?, ?)").run(countryId, cell.x, cell.y);
+      // The road cell itself is a legal route endpoint, but its occupied halo
+      // makes it unreachable. This reproduces stale/fragmented imported maps
+      // where the closest indexed road cells are not part of the live network.
+      await db.prepare(`INSERT INTO world_features_v6
+        (id, country_id, city_id, district_id, parent_feature_id, kind, asset_kind, asset_key,
+          origin_x, origin_y, footprint_json, orientation, access_json, development_stage, created_at)
+        VALUES (?, ?, NULL, NULL, NULL, 'TEST_BLOCKER', 'AREA', 'route-blocker', ?, ?, ?, 'S', ?, 5, ?)`).run(
+        `route-blocker-${index}`, countryId, cell.x, cell.y, JSON.stringify([cell]), JSON.stringify([]), createdAt,
+      );
+    }
+    await db.prepare("INSERT INTO roads_v3 (country_id, x, y) VALUES (?, ?, ?)").run(countryId, reachable.x, reachable.y);
+
+    service = new AppService(db);
+    await expect(service.upgradeCountryArchiveInfrastructure()).resolves.toBe(1);
+    const restored = (await service.listWorldFeatures(countryId)).find((feature) => feature.id === compound.id)!;
+    expect(restored.accessPath).toContainEqual(reachable);
+  }, 20_000);
+
   it("достраивает периметр и въезд существующего архива при запуске", async () => {
     await service.createCity(countryId, { name: "Старый мир", idempotencyKey: "archive-upgrade-city" });
     const compound = (await service.listWorldFeatures(countryId))

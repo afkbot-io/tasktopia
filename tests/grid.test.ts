@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aStarPath, connected, floorDiv, floorMod, manhattan, perimeterSegments, rectangleFootprint } from "../src/server/world/grid";
+import { aStarPath, aStarPathToAny, connected, floorDiv, floorMod, manhattan, perimeterSegments, rectangleFootprint } from "../src/server/world/grid";
 
 describe("square grid geometry", () => {
   it("creates four-neighbor A* paths", () => {
@@ -7,6 +7,17 @@ describe("square grid geometry", () => {
     expect(path[0]).toEqual({ x: -3, y: 2 });
     expect(path.at(-1)).toEqual({ x: 7, y: -4 });
     for (let index = 1; index < path.length; index += 1) expect(manhattan(path[index - 1]!, path[index]!)).toBe(1);
+  });
+
+  it("routes to a reachable goal when a nearer goal is isolated", () => {
+    const blocked = new Set(["3,-1", "3,1", "2,0", "4,0"]);
+    const path = aStarPathToAny(
+      { x: 0, y: 0 },
+      [{ x: 3, y: 0 }, { x: 7, y: 0 }],
+      (cell) => blocked.has(`${cell.x},${cell.y}`) ? Number.POSITIVE_INFINITY : 1,
+    );
+
+    expect(path.at(-1)).toEqual({ x: 7, y: 0 });
   });
 
   it("handles negative chunks with mathematical floor division", () => {
@@ -23,4 +34,3 @@ describe("square grid geometry", () => {
     expect(perimeterSegments(cells)).toHaveLength(14);
   });
 });
-

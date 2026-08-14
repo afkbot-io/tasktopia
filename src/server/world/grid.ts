@@ -161,20 +161,25 @@ class MinHeap {
   }
 }
 
-export function aStarPath(
+function searchAStarPath(
   start: Cell,
-  end: Cell,
+  ends: readonly Cell[],
   costAt: (cell: Cell) => number,
   searchMargin = 48,
   turnPenalty = 0,
-  fallbackToOrthogonal = true,
 ): Cell[] {
+  if (ends.length === 0) return [];
+  const goalKeys = new Set(ends.map(cellKey));
   const bounds: Rect = {
-    minX: Math.min(start.x, end.x) - searchMargin,
-    minY: Math.min(start.y, end.y) - searchMargin,
-    maxX: Math.max(start.x, end.x) + searchMargin,
-    maxY: Math.max(start.y, end.y) + searchMargin,
+    minX: Math.min(start.x, ...ends.map((cell) => cell.x)) - searchMargin,
+    minY: Math.min(start.y, ...ends.map((cell) => cell.y)) - searchMargin,
+    maxX: Math.max(start.x, ...ends.map((cell) => cell.x)) + searchMargin,
+    maxY: Math.max(start.y, ...ends.map((cell) => cell.y)) + searchMargin,
   };
+  const nearestGoalDistance = (cell: Cell) => ends.reduce(
+    (best, goal) => Math.min(best, manhattan(cell, goal)),
+    Number.POSITIVE_INFINITY,
+  );
   const open = new MinHeap();
   const startKey = cellKey(start);
   const cameFrom = new Map<string, string>();
@@ -183,7 +188,7 @@ export function aStarPath(
   // Every edge is clamped to at least 0.05 below. Scaling the heuristic by
   // that same lower bound keeps it admissible even when existing roads are
   // intentionally much cheaper than terrain.
-  open.push({ cell: start, priority: manhattan(start, end) * 0.05 });
+  open.push({ cell: start, priority: nearestGoalDistance(start) * 0.05 });
   let visited = 0;
   while (open.size > 0 && visited < 750_000) {
     const current = open.pop()!.cell;
@@ -191,8 +196,8 @@ export function aStarPath(
     if (closed.has(currentKey)) continue;
     closed.add(currentKey);
     visited += 1;
-    if (current.x === end.x && current.y === end.y) {
-      const path: Cell[] = [end];
+    if (goalKeys.has(currentKey)) {
+      const path: Cell[] = [current];
       let cursor = currentKey;
       while (cursor !== startKey) {
         const previous = cameFrom.get(cursor);
@@ -215,8 +220,32 @@ export function aStarPath(
       if (nextCost >= (cost.get(nextKey) ?? Number.POSITIVE_INFINITY)) continue;
       cost.set(nextKey, nextCost);
       cameFrom.set(nextKey, currentKey);
-      open.push({ cell: next, priority: nextCost + manhattan(next, end) * 0.05 });
+      open.push({ cell: next, priority: nextCost + nearestGoalDistance(next) * 0.05 });
     }
   }
-  return fallbackToOrthogonal ? orthogonalPath(start, end, Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)) : [];
+  return [];
+}
+
+export function aStarPath(
+  start: Cell,
+  end: Cell,
+  costAt: (cell: Cell) => number,
+  searchMargin = 48,
+  turnPenalty = 0,
+  fallbackToOrthogonal = true,
+): Cell[] {
+  const path = searchAStarPath(start, [end], costAt, searchMargin, turnPenalty);
+  return path.length > 0 || !fallbackToOrthogonal
+    ? path
+    : orthogonalPath(start, end, Math.abs(end.x - start.x) >= Math.abs(end.y - start.y));
+}
+
+export function aStarPathToAny(
+  start: Cell,
+  ends: readonly Cell[],
+  costAt: (cell: Cell) => number,
+  searchMargin = 48,
+  turnPenalty = 0,
+): Cell[] {
+  return searchAStarPath(start, ends, costAt, searchMargin, turnPenalty);
 }
