@@ -98,10 +98,13 @@ jobs:
   atlas:
     # The country atlas uses a dedicated ten-city fixture. Keeping it out of
     # the stateful default E2E seed prevents accidental dependence on local DB
-    # leftovers while retaining full hover/navigation coverage in CI.
+    # leftovers while retaining full hover/navigation coverage in CI. Hosted
+    # runners can need more than 15 minutes to generate all ten cities before
+    # the browser assertions begin, so keep the same bounded release ceiling as
+    # the primary verification job.
     needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16-alpine
