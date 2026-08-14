@@ -2042,9 +2042,17 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         chunkPayloadCache.set(key, cached);
         return cached;
       };
+      const crossesDecorationStage = (before: ChunkPayloadDto, after: ChunkPayloadDto): boolean => {
+        const previousStages = new Map(before.decorationContext.tasks.map((task) => [task.id, task.stage]));
+        return after.decorationContext.tasks.some((task) => {
+          const previousStage = previousStages.get(task.id);
+          return previousStage !== undefined && (previousStage >= 3) !== (task.stage >= 3);
+        });
+      };
       const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal): Promise<ChunkDto> => {
         const materializeStartedAt = performance.now();
         let candidate = patchChunkPayloadTaskStatuses(payload, latestTaskStatusPatches);
+        let realtimeDecorationsRematerialized = crossesDecorationStage(payload, candidate);
         let materialized: ChunkDto;
         while (true) {
           materialized = await chunkMaterializer.materialize(candidate, signal);
@@ -2053,9 +2061,11 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           // A status event can cross the stage-3 frontage-decoration threshold
           // while the worker is running. Re-materialize from the latest context
           // instead of committing deterministic entities from the stale job.
+          realtimeDecorationsRematerialized ||= crossesDecorationStage(candidate, latest);
           candidate = latest;
         }
         materialized = patchChunkTaskStatuses(materialized, latestTaskStatusPatches);
+        if (realtimeDecorationsRematerialized) host!.dataset.realtimeDecorations = "rematerialized";
         const duration = performance.now() - materializeStartedAt;
         exposeRollingMetric(host!, "chunkMaterialize", chunkMaterializeMetric, duration);
         return materialized;

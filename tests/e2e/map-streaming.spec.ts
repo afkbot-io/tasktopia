@@ -400,6 +400,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
   const transport = new StreamableHTTPClientTransport(new URL("/mcp", page.url()), {
     requestInit: { headers: { authorization: `Bearer ${integration.token}` } },
   });
+  let releaseChunkRefresh: (() => void) | undefined;
   try {
     await client.connect(transport);
     const result = await client.callTool({
@@ -457,6 +458,24 @@ test("realtime task status patches its entity without refetching or rebaking sta
     await expect.poll(async () => Number(await host.getAttribute("data-incident-fires")), { timeout: 30_000 }).toBe(0);
     for (const remainingDefectId of defectIds.slice(1)) await updateDefect(remainingDefectId, "FIXED");
     await expect.poll(async () => Number(await host.getAttribute("data-incidents")), { timeout: 30_000 }).toBe(0);
+    let delayedChunkRefreshStarted = false;
+    let holdChunkRefresh = false;
+    const chunkRefreshGate = new Promise<void>((resolve) => {
+      releaseChunkRefresh = resolve;
+    });
+    await page.route("**/api/chunks/**", async (route) => {
+      const match = new URL(route.request().url()).pathname.match(/\/api\/chunks\/(-?\d+)\/(-?\d+)/);
+      if (holdChunkRefresh && !delayedChunkRefreshStarted && match
+        && `${match[1]},${match[2]}` === integration.chunkKey) {
+        const response = await route.fetch();
+        delayedChunkRefreshStarted = true;
+        await chunkRefreshGate;
+        await route.fulfill({ response });
+        return;
+      }
+      await route.continue();
+    });
+    holdChunkRefresh = true;
     const checklistResult = await client.callTool({
       name: "task.checklist_replace",
       arguments: {
@@ -466,6 +485,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
       },
     });
     expect(checklistResult.isError).not.toBe(true);
+    await expect.poll(() => delayedChunkRefreshStarted, { timeout: 30_000 }).toBe(true);
     let realtimeAssetFailures = 0;
     let realtimeAssetRetried = false;
     await page.route("**/game-assets/**", async (route) => {
@@ -488,6 +508,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
       arguments: { taskId: integration.taskId, status: "IN_PROGRESS", progress: 55, idempotencyKey: `e2e-map-IN_PROGRESS-${Date.now()}` },
     });
     expect(inProgressResult.isError).not.toBe(true);
+    releaseChunkRefresh?.();
     await expect.poll(() => realtimeAssetFailures, { timeout: 30_000 }).toBe(3);
     await expect.poll(() => realtimeAssetRetried, {
       message: "realtime stage assets must recover after internal retries and the delayed outer retry are exhausted",
@@ -498,6 +519,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
     await expect(host).toHaveAttribute("data-realtime-decorations", "rematerialized", { timeout: 30_000 });
     expect(Number(await host.getAttribute("data-ground-rebuilds"))).toBe(beforeRebuilds);
     expect(requestedChunks.has(integration.chunkKey)).toBe(false);
+    await page.unroute("**/api/chunks/**");
     await page.unroute("**/game-assets/**");
     for (const [status, progress] of [["TESTING", 90], ["COMPLETED", 100]] as const) {
       const result = await client.callTool({
@@ -509,6 +531,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
     await expect(page.locator(".realtime-notice-success")).toContainText("Здание завершено — город обновлён");
     await expect.poll(async () => Number(await host.getAttribute("data-celebrations") ?? 0), { timeout: 30_000 }).toBeGreaterThan(0);
   } finally {
+    releaseChunkRefresh?.();
     await client.close().catch(() => undefined);
     await page.evaluate(async (tokenId) => { await fetch(`/api/tokens/${tokenId}`, { method: "DELETE" }); }, integration.id);
   }
