@@ -66,7 +66,10 @@ test("a city miniature click opens the exact district instead of a task card", a
     throw new Error("The atlas fixture has no district building");
   });
 
-  await page.locator(`.atlas-building[data-district-id="${target.district.id}"]`).first().click();
+  // Atlas sprites are painted in depth order and may overlap within one
+  // district. Click its topmost painted sprite so the test exercises the same
+  // real hit target a user can reach instead of waiting on an occluded image.
+  await page.locator(`.atlas-building[data-district-id="${target.district.id}"]`).last().click();
 
   await expect(page.locator(".task-modal")).toHaveCount(0);
   await expect(page.locator(".country-atlas")).toHaveCount(0);
