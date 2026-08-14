@@ -7,6 +7,7 @@ import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, C
 import { apiWithMetrics } from "../api";
 import { ChunkMaterializer } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
+import { loadGameAssets } from "../game-asset-loader";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
 import {
   agentCellKey,
@@ -167,6 +168,16 @@ function concurrencyGate(limit: number): <T>(task: () => Promise<T>) => Promise<
     try { return await task(); }
     finally { release(); }
   };
+}
+
+function loadTextureAssets(urls: string[]): Promise<void> {
+  return loadGameAssets({
+    load: (assets) => Assets.load(assets),
+    add: (assets) => {
+      for (const asset of assets) Assets.resolver.removeAlias(asset.alias);
+      Assets.add(assets);
+    },
+  }, urls);
 }
 
 function sprite(url: string, x: number, y: number): Sprite {
@@ -2156,7 +2167,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         while (valid()) {
           const loadedAssets = requiredEntityAssets([candidate], lod).sort();
           try {
-            await withAssetSlot(() => Assets.load(loadedAssets).then(() => undefined));
+            await withAssetSlot(() => loadTextureAssets(loadedAssets));
             assetFailures = 0;
           } catch (error) {
             assetFailures += 1;
@@ -2182,7 +2193,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       };
       const preloadAmbientAssets = (): void => {
         if (ambientAssetsReady || ambientAssetsPromise) return;
-        ambientAssetsPromise = Assets.load(ambientDetailAssets()).then(() => {
+        ambientAssetsPromise = loadTextureAssets(ambientDetailAssets()).then(() => {
           if (disposed) return;
           ambientAssetsReady = true;
           host!.dataset.ambientAssets = "ready";
@@ -2285,7 +2296,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
                 });
                 fetched.set(cacheKey, chunk);
                 if (lod === "DETAIL") preloadAmbientAssets();
-                await withAssetSlot(() => Assets.load(requiredGroundAssets([chunk], lod)).then(() => undefined));
+                await withAssetSlot(() => loadTextureAssets(requiredGroundAssets([chunk], lod)));
                 if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) return;
                 const ground = groundContainers.get(cacheKey);
                 if (invalidatedGroundKeys.has(cacheKey) || ground?.lod !== lod) {
