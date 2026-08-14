@@ -1458,14 +1458,13 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         panFrame = requestAnimationFrame(() => { void loadVisible(); });
       };
       clampCamera();
-      const resizeObserver = new ResizeObserver(() => {
+      const scheduleResize = () => {
         cancelAnimationFrame(resizeFrame);
         resizeFrame = requestAnimationFrame(() => {
-          // ResizePlugin listens to the same host indirectly through the
-          // window resize event. Its queued frame may run after this observer,
-          // leaving app.screen stale while we calculate the next chunk range.
-          // Resize synchronously first so a single host resize always plans
-          // against the renderer dimensions that will actually be displayed.
+          // ResizePlugin and ResizeObserver are independent signals: a browser
+          // viewport resize can deliver either one first, and under load an
+          // unchanged observer box may not deliver at all. Coalesce both into
+          // one synchronous resize + chunk-range calculation.
           app.resize();
           world.position.x += (app.screen.width - screenSize.width) / 2;
           world.position.y += (app.screen.height - screenSize.height) / 2;
@@ -1474,8 +1473,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           clampCamera();
           void loadVisible();
         });
-      });
+      };
+      const resizeObserver = new ResizeObserver(scheduleResize);
       resizeObserver.observe(host);
+      window.addEventListener("resize", scheduleResize);
       app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
       app.stage.on("pointerdown", (event) => { dragging = true; previous = { x: event.global.x, y: event.global.y }; });
@@ -2676,7 +2677,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         if (districtLayerRef.current === districtLayer) districtLayerRef.current = null;
         if (districtTooltipLayerRef.current === districtTooltipLayer) districtTooltipLayerRef.current = null;
         if (runtimeRef.current) runtimeRef.current = null;
-        resizeObserver.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer); window.clearTimeout(streamingTimer);
+        resizeObserver.disconnect(); window.removeEventListener("resize", scheduleResize); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer); window.clearTimeout(streamingTimer);
         cancelGroundBakes();
         intersectionObserver.disconnect();
         for (const pending of pendingChunks.values()) pending.controller.abort();
