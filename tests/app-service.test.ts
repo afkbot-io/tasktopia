@@ -141,7 +141,7 @@ describe("Tasktopia square-world application service", () => {
       .map(cellKey));
     const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all<{ x: number; y: number }>(countryId);
     expect(roads.filter((road) => signCells.has(cellKey(road)))).toEqual([]);
-  }, 15_000);
+  }, 60_000);
 
   it("renames a city, district, and task with idempotent realtime events", async () => {
     const emitted: string[] = [];

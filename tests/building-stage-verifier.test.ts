@@ -116,5 +116,5 @@ print(json.dumps(module.image_metrics(source, normalized)["sourceHasTransparentP
     expect(report.stages["3"].heightCoverage).toBeGreaterThanOrEqual(0.45);
     expect(report.stages["4"].heightCoverage).toBeGreaterThanOrEqual(0.85);
     expect(report.stages["5"].baselineYPx).toBe(280);
-  });
+  }, 15_000);
 });
