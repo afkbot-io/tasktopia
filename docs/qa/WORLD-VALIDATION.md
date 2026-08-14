@@ -11,7 +11,7 @@ PixiJS-клиент поверх PostgreSQL и серверного генера
 - 10 городов с `BALANCED`, `DENSE_CORE`, `GARDEN_CITY` и `POLYCENTRIC`
   морфологией;
 - 22 района и 88 задач;
-- задачи используют только 50 элементов `TASK_BUILDING_CATALOG`;
+- задачи используют только 95 принятых элементов `TASK_BUILDING_CATALOG`, включая 50 V5-новостроек, жилые и городские сервисы;
 - под каждой задачей используется каменная городская платформа;
 - локальные дороги имеют ширину 2 клетки, коллекторы, магистрали и highway —
   3 клетки;
@@ -74,6 +74,6 @@ npm run assets:verify
 npm run assets:storybook
 ```
 
-Принятый каталог содержит 50 V5-новостроек, 208 props, 8 транспортных моделей,
-12 terrain families и 1 274 runtime PNG. `assets:verify` обязан завершаться без
+Принятый каталог содержит 50 V5-новостроек, 284 props, 8 транспортных моделей,
+12 terrain families и 1 350 runtime PNG. `assets:verify` обязан завершаться без
 missing/orphan/contract/style violations и незавершённых стадий.

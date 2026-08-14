@@ -91,21 +91,24 @@ describe("V10 complex planner", () => {
   });
 
   it("plans at least four private houses along one shared frontage street", () => {
-    const rect = { minX: 0, minY: 0, maxX: 39, maxY: 19 };
+    const rect = { minX: 0, minY: 0, maxX: 51, maxY: 19 };
     const plan = planComplex({
       ...BASE,
       archetype: "PRIVATE",
       rect,
-      cells: rectangleFootprint({ x: 0, y: 0 }, 40, 20),
+      cells: rectangleFootprint({ x: 0, y: 0 }, 52, 20),
       targetLots: 6,
-      minimumLot: { width: 9, height: 6 },
+      minimumLot: { width: 8, height: 5 },
     });
 
     expect(plan.shape).toBe("COMPLEX_ROW");
     expect(plan.streets).toHaveLength(1);
-    expect(plan.lots.length).toBeGreaterThanOrEqual(4);
+    expect(plan.lots.length).toBeGreaterThanOrEqual(5);
+    expect(plan.lots.length).toBeLessThanOrEqual(6);
     expect(new Set(plan.lots.map((lot) => lot.origin.y)).size).toBe(1);
-    expect(plan.lots.every((lot) => lot.width >= 9 && lot.height >= 6)).toBe(true);
+    expect(plan.lots.every((lot) => lot.width >= 8 && lot.height >= 5)).toBe(true);
+    const sorted = [...plan.lots].sort((left, right) => left.origin.x - right.origin.x);
+    expect(sorted.slice(1).every((lot, index) => lot.origin.x === sorted[index]!.origin.x + sorted[index]!.width)).toBe(true);
   });
 
   it("does not turn sprint capacity into a prebuilt empty superblock", () => {

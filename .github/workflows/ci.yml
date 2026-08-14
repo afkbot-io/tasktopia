@@ -91,3 +91,35 @@ jobs:
         run: npm run seed
         env:
           SEED_PRINT_TOKEN: "false"
+
+  atlas:
+    # The country atlas uses a dedicated ten-city fixture. Keeping it out of
+    # the stateful default E2E seed prevents accidental dependence on local DB
+    # leftovers while retaining full hover/navigation coverage in CI.
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tasktopia_test
+          POSTGRES_USER: tasktopia
+          POSTGRES_PASSWORD: tasktopia
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U tasktopia -d tasktopia_test"
+          --health-interval 2s --health-timeout 3s --health-retries 15
+    env:
+      TEST_DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test
+      DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:atlas

@@ -4,6 +4,7 @@ import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { auditWorld, type WorldAuditResult } from "../src/server/world/world-audit";
 import { BUILDING_CATALOG, TASK_BUILDING_CATALOG } from "../src/shared/catalog";
+import { greenAreaTarget } from "../src/server/green-area-planner";
 
 // Regression for the reported incident: a NEW_BUILD district received 29
 // identical 1-SP tasks and regeneration produced a sparse half-empty area —
@@ -136,9 +137,8 @@ describe.runIf(process.env.RUN_ORGANIC_GROWTH_TESTS === "1")("organic growth inc
       TASK_BUILDING_CATALOG.some((entry) => entry.key === key))).toBe(true);
   });
 
-  it("keeps green areas capped and spread instead of clustering", () => {
-    expect(districtGreenBefore).toBeLessThanOrEqual(2);
-    expect(districtGreenAfter).toBeLessThanOrEqual(2);
-    expect(districtGreenBefore + districtGreenAfter).toBeGreaterThanOrEqual(1);
+  it("publishes the workload-driven green-area cadence before and after regeneration", () => {
+    expect(districtGreenBefore).toBe(greenAreaTarget(29));
+    expect(districtGreenAfter).toBe(greenAreaTarget(29));
   });
 });

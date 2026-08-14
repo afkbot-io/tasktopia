@@ -41,6 +41,11 @@ class Geometry:
     foundation_thickness_cells: int
     clearance_cells: int
     entrance_offset: int
+    door_module_size: tuple[int, int]
+    door_leaf_size: tuple[int, int]
+    door_bottom_inset_px: int
+    finished_occupied_width_range: tuple[int, int] | None
+    finished_occupied_height_range: tuple[int, int] | None
     site_columns: int
     site_rows: int
 
@@ -87,6 +92,17 @@ def load_geometry(path: Path) -> Geometry:
         foundation_thickness_cells=int(raw.get("foundationThicknessCells", 2)),
         clearance_cells=int(raw.get("constructionClearanceCells", 1)),
         entrance_offset=int(raw["entrance"]["offset"]),
+        door_module_size=tuple(int(value) for value in raw.get("doorSizePx", [8, 16])),
+        door_leaf_size=tuple(int(value) for value in raw.get("doorLeafSizePx", [6, 14])),
+        door_bottom_inset_px=int(raw.get("doorBottomInsetPx", 0)),
+        finished_occupied_width_range=(
+            tuple(int(value) for value in raw["finishedOccupiedWidthPxRange"])
+            if "finishedOccupiedWidthPxRange" in raw else None
+        ),
+        finished_occupied_height_range=(
+            tuple(int(value) for value in raw["finishedOccupiedHeightPxRange"])
+            if "finishedOccupiedHeightPxRange" in raw else None
+        ),
         site_columns=int(site[0]),
         site_rows=int(site[1]),
     )
@@ -109,6 +125,26 @@ def load_geometry(path: Path) -> Geometry:
         errors.append("construction clearance must be exactly one cell")
     if not 0 <= geometry.entrance_offset < geometry.width_cells:
         errors.append("south entrance offset is outside the footprint")
+    if geometry.door_module_size not in ((8, 16), (16, 16)):
+        errors.append("doorSizePx must be an 8x16 single or 16x16 double module")
+    expected_leaf_width = 6 if geometry.door_module_size[0] == 8 else 12
+    if geometry.door_leaf_size != (expected_leaf_width, 14):
+        errors.append(
+            "doorLeafSizePx must be 6x14 for a single door or 12x14 for a double door"
+        )
+    if not 0 <= geometry.door_bottom_inset_px <= geometry.cell:
+        errors.append("doorBottomInsetPx must stay within one 8px cell")
+    for label, value_range, maximum in (
+        ("finishedOccupiedWidthPxRange", geometry.finished_occupied_width_range, geometry.sprite_size[0]),
+        ("finishedOccupiedHeightPxRange", geometry.finished_occupied_height_range, geometry.sprite_size[1]),
+    ):
+        if value_range is not None and (
+            len(value_range) != 2
+            or value_range[0] <= 0
+            or value_range[0] > value_range[1]
+            or value_range[1] > maximum
+        ):
+            errors.append(f"{label} must be an ordered positive range inside the sprite canvas")
     envelope_width, envelope_depth = geometry.envelope_cells
     if geometry.site_columns < envelope_width or geometry.site_rows < envelope_depth:
         errors.append("preview site cannot contain the construction envelope")
@@ -183,7 +219,17 @@ def normalize(
     shift_y = target_height - bottom
     anchored = Image.new("RGBA", geometry.sprite_size, (0, 0, 0, 0))
     anchored.alpha_composite(output, (shift_x, shift_y))
-    return anchored
+    alpha = anchored.getchannel("A").point(lambda value: 255 if value >= 80 else 0)
+    # Catalog sources are the production-size authority. Quantize here, after
+    # geometry is fixed, so the runtime fast path cannot accidentally preserve
+    # thousands of antialiased generator colors in an otherwise tiny sprite.
+    reduced = anchored.quantize(
+        colors=31,
+        method=Image.Quantize.FASTOCTREE,
+        dither=Image.Dither.NONE,
+    ).convert("RGBA")
+    reduced.putalpha(alpha)
+    return reduced
 
 
 def pavement_tile(index: int, cell: int) -> Image.Image:
@@ -327,6 +373,33 @@ def render_preview(image: Image.Image, geometry: Geometry, stage: int, *, debug:
 
     if debug:
         draw = ImageDraw.Draw(canvas)
+        # Draw entrance rulers above the sprite. Pixel-color heuristics confuse
+        # teal windows, shop glazing and doors, so the native-grid visual gate
+        # needs an explicit functional module and moving-leaf measurement.
+        cell = geometry.cell
+        left = current_layout["originX"] * cell
+        bottom = y_offset + (current_layout["originY"] + geometry.depth_cells) * cell - 1
+        module_width, module_height = geometry.door_module_size
+        leaf_width, leaf_height = geometry.door_leaf_size
+        # Catalog entrance offsets are axes measured from the footprint's left
+        # edge (the same convention used by construction gates), not cell
+        # indices whose centre needs another half-cell shift.
+        entrance_center_x = left + geometry.entrance_offset * cell
+        entrance_baseline_y = bottom + 1 - geometry.door_bottom_inset_px
+        module_left = entrance_center_x - module_width // 2
+        module_top = entrance_baseline_y - module_height
+        leaf_left = entrance_center_x - leaf_width // 2
+        leaf_top = entrance_baseline_y - leaf_height
+        draw.rectangle(
+            (module_left, module_top, module_left + module_width - 1, entrance_baseline_y - 1),
+            outline=(61, 211, 255, 255),
+            width=1,
+        )
+        draw.rectangle(
+            (leaf_left, leaf_top, leaf_left + leaf_width - 1, entrance_baseline_y - 1),
+            outline=(255, 105, 180, 255),
+            width=1,
+        )
         anchor_x = current_layout["anchorX"]
         anchor_y = y_offset + current_layout["anchorY"]
         draw.line((anchor_x - 3, anchor_y, anchor_x + 3, anchor_y), fill=(220, 72, 72, 255), width=1)
@@ -388,6 +461,21 @@ def validate_stages(geometry: Geometry, metrics: dict[int, dict[str, Any]]) -> t
         if not 0.70 <= final["heightCoverage"] <= 1.00:
             errors.append("stage 5: ordinary house occupied height must cover 70–100% of canvas")
 
+    if geometry.finished_occupied_width_range is not None:
+        minimum, maximum = geometry.finished_occupied_width_range
+        if not minimum <= final["opaqueWidthPx"] <= maximum:
+            errors.append(
+                f"stage 5: occupied width {final['opaqueWidthPx']}px is outside the building-specific "
+                f"{minimum}–{maximum}px scale contract"
+            )
+    if geometry.finished_occupied_height_range is not None:
+        minimum, maximum = geometry.finished_occupied_height_range
+        if not minimum <= final["opaqueHeightPx"] <= maximum:
+            errors.append(
+                f"stage 5: occupied height {final['opaqueHeightPx']}px is outside the building-specific "
+                f"{minimum}–{maximum}px scale contract"
+            )
+
     final_width = float(final["opaqueWidthPx"])
     final_height = float(final["opaqueHeightPx"])
     final_center = float(final["centerXPx"])
@@ -409,12 +497,10 @@ def validate_stages(geometry: Geometry, metrics: dict[int, dict[str, Any]]) -> t
     stage3 = metrics.get(3)
     if stage3 and not (0.60 * final_width <= stage3["opaqueWidthPx"] <= 1.10 * final_width):
         errors.append("stage 3: occupied width must remain within 60–110% of final")
-    stage3_max_height_ratio = 1.00 if geometry.category == "HOUSE" else 0.80
+    stage3_max_height_ratio = 0.80
     if stage3 and not (0.45 * final_height <= stage3["opaqueHeightPx"] <= stage3_max_height_ratio * final_height):
         errors.append(
-            "stage 3: occupied height must remain within 45–100% of final for a house frame"
-            if geometry.category == "HOUSE"
-            else "stage 3: occupied height must remain within 45–80% of final"
+            "stage 3: occupied height must remain within 45–80% of final"
         )
 
     stage2 = metrics.get(2)
@@ -510,6 +596,13 @@ def main() -> None:
             "constructionClearanceCells": geometry.clearance_cells,
             "constructionEnvelopeCells": list(geometry.envelope_cells),
             "anchorPx": list(geometry.anchor),
+            "doorSizePx": list(geometry.door_module_size),
+            "doorLeafSizePx": list(geometry.door_leaf_size),
+            "doorBottomInsetPx": geometry.door_bottom_inset_px,
+            "finishedOccupiedWidthPxRange": list(geometry.finished_occupied_width_range)
+            if geometry.finished_occupied_width_range else None,
+            "finishedOccupiedHeightPxRange": list(geometry.finished_occupied_height_range)
+            if geometry.finished_occupied_height_range else None,
             "authoringFrameNormalized": list(authoring_frame) if authoring_frame else None,
         },
         "stages": {str(stage): metric for stage, metric in sorted(metrics.items())},
@@ -518,10 +611,12 @@ def main() -> None:
         "warnings": warnings,
         "manualChecks": [
             "strict frontal-top projection; no side or isometric facade",
+            "roof, porch, steps, canopy, balconies, podium, setbacks and crown share one compressed top-plane direction",
             "foundation screen plane matches the finished roof plane",
             "same building identity, entrance and facade bay rhythm",
             "fence remains a separate site overlay with a south gate",
             "native-scale pixel clusters remain readable without blur",
+            "cyan door-module guide encloses the complete entrance; magenta leaf guide encloses only moving leaves",
         ],
         "acceptedByCode": not errors,
     }

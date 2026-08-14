@@ -46,12 +46,15 @@ catalog work must use the shared construction-layout tests instead. The verifier
 - Warn on excessive source colors or soft source edges; normalized drafts may harden alpha but must not be published until the authored source is approved. Generator pixels with alpha below `16` are treated as invisible noise so they cannot expand the common authoring frame and squash every stage.
 - Never stretch one axis to force a pass. Regenerate the source.
 - Never infer physical depth from source height alone. Require `depthCells` and `projectedRoofDepthCells` in the contract.
+- For compact/private houses, require building-specific
+  `finishedOccupiedWidthPxRange` and `finishedOccupiedHeightPxRange`. Reject a
+  materially mismatched source and regenerate it instead of scaling one axis.
 
 ## Review every stage separately
 
 Inspect each clean preview at native `1x` and nearest-neighbour `4x`:
 
-1. Confirm strict frontal-top projection: verticals remain vertical, floors horizontal, no receding side facade.
+1. Confirm strict frontal-top projection: verticals remain vertical, floors horizontal, no receding side facade. Inspect the roof, porch, steps, canopy, balcony, podium, every setback and crown independently; all top planes must share one compressed depth direction and none may collapse into a flat stripe.
 2. Confirm the structure sits on the same bottom-centre anchor.
 3. In the shared five-stage preview, confirm stages 1–2 match the building width and use the projected site depth formula rather than full physical depth.
 4. Confirm the one-cell modular fence ring surrounds stages 1–4 but never changes the structure anchor; the road-facing gate aligns with the entrance.
@@ -59,7 +62,12 @@ Inspect each clean preview at native `1x` and nearest-neighbour `4x`:
 6. Inspect every construction prop at native `1x` before approving the composed site. Reject a heavy vehicle below `40×24 px`, a tower crane below `64×64 px`, a vehicle without the approved shallow top view, or any prop whose key parts disappear after normalization. Confirm no site contains more than one crane or one heavy vehicle.
 7. Confirm stage identity and palette continuity.
 8. Confirm no pavement, yard, fence, labels, shadows or UI are baked into the transparent structure layer.
-9. Confirm a single entrance is `8×16 px` or a double entrance is `16×16 px`, and that the same door axis and scale survive stages 3–5.
+9. Confirm a single entrance is an `8×16 px` outer module with a `6×14 px`
+   moving leaf, or a double entrance is a `16×16 px` outer module with two
+   leaves occupying `12×14 px` together. Inspect the cyan module ruler and
+   magenta leaf ruler in every geometry preview; neither windows nor decorative
+   portal trim count as part of the door. The same axis and scale must survive
+   stages 3–5.
 10. For the finished-stage environment preview, place adjacent standard trees
    only by their `[8,32]` anchor and central lower `8×8` planting cell. A tree
    must not be baked into the building source and must not compensate for an

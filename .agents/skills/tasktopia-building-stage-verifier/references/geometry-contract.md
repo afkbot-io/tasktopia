@@ -39,9 +39,42 @@ depthProjectionRatio = projectedRoofDepthCells / depthCells
 foundationTotalHeightPx = projectedRoofDepthPx + foundationThicknessCells × 8
 ```
 
+Store the entrance ruler separately from the footprint:
+
+```json
+{
+  "doorSizePx": [8, 16],
+  "doorLeafSizePx": [6, 14],
+  "doorBottomInsetPx": 0
+}
+```
+
+For a compact/private building, also pin its approved finished opaque mass so
+that a later source cannot silently turn a bungalow into a stretched apartment
+block (or shrink a readable house into a miniature):
+
+```json
+{
+  "finishedOccupiedWidthPxRange": [88, 96],
+  "finishedOccupiedHeightPxRange": [52, 60]
+}
+```
+
+These are building-specific measurements taken from the approved stage 5, not
+category-wide guesses. If a source misses them materially, regenerate the
+building at the correct scale. Never resize one axis, compress storeys, or use
+an oversized plot/canvas to disguise the mismatch.
+
+Use `[8,16]` + `[6,14]` for a single door and `[16,16]` + `[12,14]`
+for a double door. `doorSizePx` is the full functional frame; the leaf is the
+moving colored surface inside it. A canopy, transom, pilasters, lobby glazing
+or ornamental portal never enlarges either measurement. The verifier draws
+both rulers on the native grid so approval does not depend on guessing from a
+large authoring source.
+
 Measure `projectedRoofDepthCells` from the approved finished source after normalization. Use the closest whole-cell value that preserves its back and front roof edges. Typical high-rise values are 25–50% of physical depth; the building-specific measurement is authoritative.
 
-Reject a source when the roof plane is absent, changes camera across its width, forms an isometric diamond or reveals a receding side facade.
+Reject a source when the roof plane is absent, changes camera across its width, forms an isometric diamond or reveals a receding side facade. Apply the same rejection to every secondary horizontal surface. Porches, entrance landings, canopies, balconies, podiums, setbacks and crowns must use the same compressed depth vector as the principal roof. A source fails when one ledge is a flat stripe while another exposes a top plane, even if its main roof is acceptable.
 
 ## Foundation and fence
 
@@ -78,11 +111,20 @@ Compare normalized opaque bounds against stage 5:
 
 Across all stages require horizontal-centre drift ≤8 px and baseline drift ≤1 px. The structure layer must not include the external fence or pavement.
 
+Stage 5 owns the immutable normalized authoring window. Record its source-space
+top and bottom fractions in `authoringFrameNormalized`; stage 3 must be authored
+inside that same window, not centred independently by the image model. For a
+target ratio `r`, keep the finished bottom fraction `b` and target the stage-3
+top near `b - r × (b - t)`, where `t` is the finished top fraction. Verify the
+resulting normalized bounds immediately. This formula is prompt guidance, not
+permission to transform an authored raster after generation.
+
 ## Automated and visual gates
 
 Automate exact canvas, alpha, palette, occupied bounds, centre, baseline, stage ratios, envelope formula and individual pavement previews. Keep these visual-only and blocking:
 
 - strict frontal-top camera and shallow roof plane;
+- one coherent frontal-top camera for roof, porch, steps, canopy, balcony, podium, setbacks and crown;
 - same building identity and entrance;
 - foundation visually matching the roof plane;
 - scaffolding following rather than replacing the final massing;

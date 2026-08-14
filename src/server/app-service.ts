@@ -3,7 +3,6 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   BUILDING_CATALOG,
-  PROP_CATALOG,
   TASK_BUILDING_CATALOG,
   taskBuildingPlatform,
   getBuilding,
@@ -18,12 +17,13 @@ import {
   type ArchiveRecordKind,
   type Cell,
   type ChunkDto,
+  type ChunkLod,
+  type ChunkPayloadDto,
   type ChunkTaskDto,
   type CityDto,
   type CityMorphology,
   type DistrictArchetype,
   type CountryDto,
-  type DecorationDto,
   type DistrictDto,
   type DistrictStatus,
   type Estimate,
@@ -52,6 +52,7 @@ import {
   type WorkItemType,
   type WorldFeatureDto,
 } from "../shared/contracts";
+import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { config } from "./config";
 import type { Db } from "./db";
 import { now, onTransactionCommit, onTransactionRollback, transaction } from "./db";
@@ -70,10 +71,11 @@ import {
   orthogonalPath,
   rectangleFootprint,
 } from "./world/grid";
-import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "./world/terrain";
+import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "../shared/world-terrain";
+import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { roadCorridorBlockers, stampRoadCorridor } from "./world/road-geometry";
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
-import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates } from "./green-area-planner";
+import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
 import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
 import type { CountryAtlasDto } from "../shared/country-atlas-contract";
 import { compactLotsAfterPlacement, organicComplexLotTarget, planComplex } from "./world/complex-planner";
@@ -125,6 +127,12 @@ function roadReachable(roads: ReadonlyMap<string, Cell>, start: Cell, target: Ce
   }
   return false;
 }
+
+function compareCellsByDistance(target: Cell): (left: Cell, right: Cell) => number {
+  return (left, right) => manhattan(left, target) - manhattan(right, target)
+    || left.y - right.y
+    || left.x - right.x;
+}
 const ARCHIVE_BUILDINGS = [
   { assetKey: "state-archive-core", offset: { x: 5, y: 6 }, width: 8, height: 5 },
   { assetKey: "state-archive-wing", offset: { x: 0, y: 1 }, width: 8, height: 4 },
@@ -140,6 +148,8 @@ export class DomainError extends Error {
     super(message);
   }
 }
+
+class StaleChunkBuildError extends Error {}
 
 export function connectorCorridorBlocked(
   key: string,
@@ -423,8 +433,8 @@ function unionRect(a: Rect, b: Rect): Rect {
 export class AppService {
   private readonly roadCache = new Map<string, Map<string, RoadCellDto>>();
   private readonly surfaceCache = new Map<string, Map<string, SurfaceCellDto>>();
-  private readonly chunkCache = new Map<string, ChunkDto>();
-  private readonly pendingChunkBuilds = new Map<string, Promise<ChunkDto>>();
+  private readonly chunkCache = new Map<string, ChunkPayloadDto>();
+  private readonly pendingChunkBuilds = new Map<string, Promise<ChunkPayloadDto>>();
   private readonly knownWorldVersions = new Map<string, number>();
   private readonly countryAtlasCache = new Map<string, { worldVersion: number; atlas: CountryAtlasDto }>();
   // A desktop viewport can hold a few dozen chunks in two LODs. Keeping only
@@ -432,6 +442,7 @@ export class AppService {
   // concurrent viewers any cache reuse. 512 remains a small bounded footprint
   // while covering several active viewports.
   private static readonly CHUNK_CACHE_LIMIT = 512;
+  private static readonly PUBLISHED_CHUNK_LIMIT_PER_COUNTRY = 2048;
 
   constructor(
     private readonly db: Db,
@@ -452,18 +463,17 @@ export class AppService {
     });
   }
 
-  private cachedChunk(key: string, worldVersion: number): ChunkDto | undefined {
+  private cachedChunk(key: string): ChunkPayloadDto | undefined {
     const cached = this.chunkCache.get(key);
     if (!cached) return undefined;
-    // Refresh insertion order so the bounded map behaves as an LRU. World
-    // version is response metadata; geometry is invalidated separately using
-    // affected bounds and can be reused across unrelated task events.
+    // Refresh insertion order so the bounded map behaves as an LRU. Published
+    // payloads have their own content validator and survive unrelated events.
     this.chunkCache.delete(key);
     this.chunkCache.set(key, cached);
-    return { ...cached, worldVersion };
+    return cached;
   }
 
-  private storeChunk(key: string, chunk: ChunkDto): ChunkDto {
+  private storeChunk(key: string, chunk: ChunkPayloadDto): ChunkPayloadDto {
     this.chunkCache.set(key, chunk);
     while (this.chunkCache.size > AppService.CHUNK_CACHE_LIMIT) {
       const oldest = this.chunkCache.keys().next().value as string | undefined;
@@ -473,24 +483,32 @@ export class AppService {
     return chunk;
   }
 
-  private invalidateChunkCache(countryId: string, event: RealtimeEvent): void {
-    if (event.type === "task.comment_added" || event.type === "task.assignee_changed" || event.type === "country.profile_updated") return;
+  private chunkInvalidationScope(event: RealtimeEvent): "NONE" | "ALL" | Rect {
+    if (event.type === "task.comment_added" || event.type === "task.assignee_changed"
+      || event.type === "country.profile_updated" || event.type === "archive.record_updated") return "NONE";
     const candidate = event.payload.affectedBounds as Partial<Rect> | undefined;
     const hasBounds = candidate
       && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite);
     // Road and district generation can touch connectors beyond the published
     // entity envelope, so structural mutations conservatively clear this
-    // country's bounded cache. Metadata, status and defect changes only alter
-    // entities inside their published envelope and stay chunk-local.
+    // country. Metadata, status and defect changes remain chunk-local.
     const boundedMutation = new Set([
       "task.status_changed", "task.fields_updated", "task.defect_created", "task.defect_updated",
-      "city.updated", "district.updated",
+      "task.renamed", "city.updated", "city.renamed", "district.updated", "district.renamed",
+      "district.activated", "district.completed",
+      "archive.record_created", "archive.record_deleted",
     ]).has(event.type);
-    if (!boundedMutation || !hasBounds) {
+    return boundedMutation && hasBounds ? candidate as Rect : "ALL";
+  }
+
+  private invalidateChunkCache(countryId: string, event: RealtimeEvent): void {
+    const scope = this.chunkInvalidationScope(event);
+    if (scope === "NONE") return;
+    if (scope === "ALL") {
       for (const key of this.chunkCache.keys()) if (key.startsWith(`${countryId}:`)) this.chunkCache.delete(key);
       return;
     }
-    const bounds = candidate as Rect;
+    const bounds = scope;
     const minChunkX = floorDiv(bounds.minX, CHUNK_SIZE);
     const maxChunkX = floorDiv(bounds.maxX, CHUNK_SIZE);
     const minChunkY = floorDiv(bounds.minY, CHUNK_SIZE);
@@ -503,6 +521,21 @@ export class AppService {
         this.chunkCache.delete(key);
       }
     }
+  }
+
+  private async invalidatePublishedChunkPayloads(countryId: string, event: RealtimeEvent): Promise<void> {
+    const scope = this.chunkInvalidationScope(event);
+    if (scope === "NONE") return;
+    if (scope === "ALL") {
+      await this.db.prepare("DELETE FROM world_chunk_payloads_v1 WHERE country_id = ?").run(countryId);
+      return;
+    }
+    await this.db.prepare(`DELETE FROM world_chunk_payloads_v1 WHERE country_id = ?
+      AND chunk_x BETWEEN ? AND ? AND chunk_y BETWEEN ? AND ?`).run(
+      countryId,
+      floorDiv(scope.minX, CHUNK_SIZE), floorDiv(scope.maxX, CHUNK_SIZE),
+      floorDiv(scope.minY, CHUNK_SIZE), floorDiv(scope.maxY, CHUNK_SIZE),
+    );
   }
 
   private async countryRow(countryId: string): Promise<Row> {
@@ -543,6 +576,11 @@ export class AppService {
                                 }
                                 const result = await callback();
                                 emitted = await this.createEvent(countryId, result.eventType, result.eventPayload);
+                                // Published payloads are disposable projections.
+                                // Invalidate them in the same transaction as the
+                                // canonical mutation so a restart cannot revive
+                                // geometry that is already stale.
+                                await this.invalidatePublishedChunkPayloads(countryId, emitted);
                                 await this.db.prepare("INSERT INTO idempotency (country_id, operation, idempotency_key, request_hash, response_json, created_at) VALUES (?, ?, ?, ?, ?, ?)")
                                                                           .run(countryId, operation, idempotencyKey, requestHash, JSON.stringify(result.data), now());
                                 return result.data;
@@ -1777,7 +1815,7 @@ export class AppService {
     // connector can reuse a local street and accidentally upgrade an entire
     // urban block to HIGHWAY.
     const candidates = rural.length > 0 ? rural : outsideDistricts.length > 0 ? outsideDistricts : highways;
-    return [...candidates].sort((left, right) => manhattan(left, target) - manhattan(right, target));
+    return [...candidates].sort(compareCellsByDistance(target));
   }
 
   private async roadNetworkAnchors(countryId: string, target: Cell, cities: CityDto[]): Promise<Cell[]> {
@@ -1790,7 +1828,7 @@ export class AppService {
       && !featureEnvelopes.some((bounds) => contains(bounds, road)));
     const safe = roads.filter((road) => !featureEnvelopes.some((bounds) => contains(bounds, road)));
     const candidates = rural.length > 0 ? rural : safe.length > 0 ? safe : roads;
-    return [...candidates].sort((left, right) => manhattan(left, target) - manhattan(right, target));
+    return [...candidates].sort(compareCellsByDistance(target));
   }
 
   private async featurePlacementOpen(countryId: string, seed: number, footprint: Cell[], avoidBounds: Rect[] = []): Promise<boolean> {
@@ -1858,20 +1896,13 @@ export class AppService {
     const existingFeatures = await this.listWorldFeatures(countryId);
     const existingGreen = existingFeatures.filter((feature) => feature.cityId === city.id && (feature.kind === "PARK" || feature.kind === "GROVE"));
     const districtGreen = existingGreen.filter((feature) => feature.districtId === districtId);
-    // One green area per district is the norm, a second appears rarely, and
-    // a third never. The old roll was constant for the whole district, so
-    // every new complex of a lucky district spawned another park and they
-    // clustered into one pocket.
-    if (districtGreen.length >= 2) return reservedLots;
-    const chance = archetype === "PRIVATE" ? 0.58 : archetype === "CIVIC" ? 0.48 : archetype === "COMMERCIAL" ? 0.24 : 0.4;
-    const roll = hashCoordinate(seed, city.center.x, city.center.y, 811 + districtIndex * 7 + districtGreen.length * 13 + Math.floor(reservedLots.length / 4));
-    // Every city must eventually receive a public green area. Keep trying on
-    // subsequent districts until one actually fits; the old `districtIndex ===
-    // 1` gate permanently skipped parks when that single district had no valid
-    // parcel.
-    const forceFirstGreen = existingGreen.length === 0;
-    if (!forceFirstGreen && (districtGreen.length >= 1 ? roll > 0.18 : roll > chance)) return reservedLots;
-
+    const developedTaskLots = reservedLots.filter((lot) => lot.taskId).length;
+    const targetGreenAreas = greenAreaTarget(developedTaskLots);
+    if (districtGreen.length >= targetGreenAreas) return reservedLots;
+    // Green space follows real district workload rather than road-growth
+    // timing. The first grove is mandatory and another one is due for roughly
+    // every six occupied lots. A due area may retire only speculative empty
+    // pads; task-owned and demolition lots remain immutable reservations.
     const cityIndex = (await this.listCities(countryId)).findIndex((candidate) => candidate.id === city.id);
     // Unnumbered ambient greenery is always a grove. A PARK is a task-owned
     // visual kind created through task.create, so it has one lifecycle, task
@@ -1885,9 +1916,7 @@ export class AppService {
     // The city's first public green area has priority over speculative empty
     // pads. Occupied buildings and demolition plots remain hard reservations;
     // intersecting virtual alternatives are retired after a site is selected.
-    const hardReservedLots = forceFirstGreen
-      ? reservedLots.filter((lot) => lot.taskId || lot.vacant)
-      : reservedLots;
+    const hardReservedLots = reservedLots.filter((lot) => lot.taskId || lot.vacant);
     const occupied = new Set([
       ...(await this.listTasks(countryId)).flatMap(taskOccupiedCells),
       ...existingFeatures.filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint),
@@ -1943,20 +1972,16 @@ export class AppService {
         || left.origin.y - right.origin.y
         || left.origin.x - right.origin.x);
       compactFallback = ranked[0] ?? compactFallback;
-      selected = forceFirstGreen
-        ? ranked.find((candidate) => candidate.retainedLotCount >= minimumRetainedLots)
-        : ranked[0];
+      selected = ranked.find((candidate) => candidate.retainedLotCount >= minimumRetainedLots) ?? ranked[0];
       if (selected) break;
     }
     selected ??= compactFallback;
     if (!selected) return reservedLots;
     const greenReservation = new Set([...selected.footprint, ...selected.accessPath].map(cellKey));
-    const retainedLots = forceFirstGreen
-      ? reservedLots.filter((lot) => lot.taskId || lot.vacant || ![
-        ...rectangleFootprint(lot.origin, lot.width, lot.height),
-        ...(lot.sharedAccess ?? []),
-      ].some((cell) => greenReservation.has(cellKey(cell))))
-      : reservedLots;
+    const retainedLots = reservedLots.filter((lot) => lot.taskId || lot.vacant || ![
+      ...rectangleFootprint(lot.origin, lot.width, lot.height),
+      ...(lot.sharedAccess ?? []),
+    ].some((cell) => greenReservation.has(cellKey(cell))));
     const area = await this.insertWorldFeature(countryId, {
                               cityId: city.id,
                               districtId,
@@ -2419,7 +2444,24 @@ export class AppService {
                       let connector: Cell[] | undefined;
                       for (const candidate of uniqueSources.slice(0, 48)) {
                         try {
-                          connector = await this.route(countryId, seed, candidate, portal, [...protectedUrbanEnvelopes, bounds], [], 3);
+                          const routed = await this.route(countryId, seed, candidate, portal, [...protectedUrbanEnvelopes, bounds], [], 3);
+                          // The first-city approach point sits at the viewport edge
+                          // without a terrain check. Trim its leading water cells so
+                          // the highway begins at dry shoreline; interior spans stay
+                          // proper two-portal bridges.
+                          const publishable = nearest ? routed : (() => {
+                            let startIndex = 0;
+                            const dryAt = (cell: Cell) => [-2, -1, 0, 1, 2].every((offset) =>
+                              isBuildableTerrain(terrainAt(seed, cell.x + offset, cell.y).terrain)
+                              && isBuildableTerrain(terrainAt(seed, cell.x, cell.y + offset).terrain));
+                            while (startIndex < routed.length - 1 && !dryAt(routed[startIndex]!)) startIndex += 1;
+                            return routed.slice(startIndex);
+                          })();
+                          // A* checks the centreline; publication checks the exact
+                          // three-cell profile and branch apron. A rejected profile
+                          // must advance to the next anchor, not abort city creation.
+                          await this.addRoadPath(countryId, seed, publishable, "HIGHWAY");
+                          connector = publishable;
                           source = candidate;
                           break;
                         } catch (error) {
@@ -2427,21 +2469,6 @@ export class AppService {
                         }
                       }
                       if (!source || !connector) throw new DomainError("ROUTE_BLOCKED", "В существующем мире не найден безопасный узел для подключения нового города");
-                      // The first-city approach point sits at the viewport edge
-                      // without a terrain check. When that edge is water, the
-                      // stamped highway would begin mid-lake — a bridge with a
-                      // single land portal. Trim the leading water cells so the
-                      // highway starts on the first dry shoreline; interior
-                      // water spans further along stay proper two-portal bridges.
-                      const dryConnector = nearest ? connector : (() => {
-                        let startIndex = 0;
-                        const dryAt = (cell: Cell) => [-2, -1, 0, 1, 2].every((offset) =>
-                          isBuildableTerrain(terrainAt(seed, cell.x + offset, cell.y).terrain)
-                          && isBuildableTerrain(terrainAt(seed, cell.x, cell.y + offset).terrain));
-                        while (startIndex < connector.length - 1 && !dryAt(connector[startIndex]!)) startIndex += 1;
-                        return connector.slice(startIndex);
-                      })();
-                      await this.addRoadPath(countryId, seed, dryConnector, "HIGHWAY");
                       await this.addRoadPath(countryId, seed, orthogonalPath(portal, gateway.cell, gateway.horizontalApproach), "HIGHWAY");
                       await this.addRoadPath(countryId, seed, orthogonalPath(gateway.cell, hub, gateway.horizontalApproach), "ARTERIAL");
                       // The hub cross is stamped, not routed: trim each ray so a
@@ -2461,13 +2488,13 @@ export class AppService {
                       // existing city. Its urban portion must remain an arterial.
                       for (const existingCity of cities) await this.normalizeUrbanHighways(countryId, existingCity.bounds);
                       await this.normalizeUrbanHighways(countryId, bounds);
-                      await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, dryConnector, gateway.horizontalApproach);
+                      await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, connector, gateway.horizontalApproach);
                       const archiveBounds = await this.syncCountryArchiveComplex(countryId, hub);
 
                       const publishedRoads = await this.roadCells(countryId);
                       const centerRoad = [...publishedRoads.values()].reduce<Cell | undefined>((best, road) =>
                         !best || manhattan(road, center) < manhattan(best, center) ? road : best, undefined);
-                      const networkStart = nearest ? source : dryConnector[0];
+                      const networkStart = nearest ? source : connector[0];
                       if (!centerRoad || !networkStart || manhattan(centerRoad, center) > 2 || !roadReachable(publishedRoads, networkStart, centerRoad)) {
                         throw new DomainError("ROUTE_BLOCKED", "Новый город не удалось присоединить к единой дорожной сети");
                       }
@@ -2493,8 +2520,21 @@ export class AppService {
                       if (!row) throw new DomainError("NOT_FOUND", "Город не найден");
                       await this.db.prepare("UPDATE cities_v3 SET name = ? WHERE id = ?").run(name, input.cityId);
                       const data = cityDto({ ...row, name });
-                      return { data, eventType: "city.renamed", eventPayload: { cityId: input.cityId, name, affectedBounds: data.bounds } };
+                      return {
+                        data,
+                        eventType: "city.renamed",
+                        eventPayload: { cityId: input.cityId, name, affectedBounds: await this.cityPresentationBounds(countryId, data) },
+                      };
                     });
+  }
+
+  private async cityPresentationBounds(countryId: string, city: CityDto): Promise<Rect> {
+    const signs = await this.db.prepare(`SELECT footprint_json FROM world_features_v6
+      WHERE country_id = ? AND city_id = ? AND kind = 'CITY_SIGN'`).all(countryId, city.id) as Row[];
+    return signs.reduce<Rect>((affected, row) => {
+      const cells = json<Cell[]>(row.footprint_json);
+      return cells.length > 0 ? unionRect(affected, boundsOf(cells)) : affected;
+    }, city.bounds);
   }
 
   async updateCity(countryId: string, input: {
@@ -2517,7 +2557,11 @@ export class AppService {
       );
       const updated = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(input.cityId) as Row;
       const data = cityDto(updated);
-      return { data, eventType: "city.updated", eventPayload: { cityId: data.id, affectedBounds: data.bounds } };
+      return {
+        data,
+        eventType: "city.updated",
+        eventPayload: { cityId: data.id, affectedBounds: await this.cityPresentationBounds(countryId, data) },
+      };
     });
   }
 
@@ -2817,12 +2861,14 @@ export class AppService {
     const boundsHeight = searchBounds.maxY - searchBounds.minY + 1;
     const v5TaskBuilding = entry.tags.includes("new-build");
     const minimumRect = complexMinimumRect(entry, targetLots);
-    // A private neighbourhood opens with a real frontage block: four varied
-    // house bays plus reusable side strips on one shared street. Basing its
-    // width only on the first small cottage made a 2+2 island and then another
-    // road for the next wider house.
+    // A private neighbourhood opens with a compact five/six-house frontage on
+    // one shared street. Private V5 houses are deliberately much smaller than
+    // new-build towers, so reserving the old universal nine-cell bays made a
+    // cottage district look like four isolated villas. A genuinely large
+    // villa still raises its own minimum lot below, but ordinary houses first
+    // fill this continuous row before another road complex may open.
     const privateFrontageWidth = district.archetype === "PRIVATE" && complexIndex === 0
-      ? Math.max(42, entry.footprint.width * 4 + 6)
+      ? Math.max(52, Math.min(9, entry.footprint.width) * 5 + 6)
       : 0;
     const newBuildFrontageWidth = district.archetype === "NEW_BUILD" && complexIndex === 0
       ? Math.min(72, Math.max(12, entry.footprint.width) * 4 + 8)
@@ -2902,7 +2948,7 @@ export class AppService {
       // a second road. Explicit statement buildings wider/deeper than the
       // common family still raise the envelope to their real footprint.
       const frontageMinimumLot = district.archetype === "PRIVATE"
-        ? { width: Math.max(9, entry.footprint.width), height: Math.max(6, entry.footprint.height) }
+        ? { width: Math.max(8, entry.footprint.width), height: Math.max(5, entry.footprint.height) }
         : district.archetype === "NEW_BUILD"
           ? { width: Math.max(14, entry.footprint.width), height: Math.max(12, entry.footprint.height) }
           : entry.footprint;
@@ -3086,12 +3132,24 @@ export class AppService {
     const growthReservations = districts
       .filter((district) => district.status === "ACTIVE")
       .map((district) => this.districtGrowthReserve(district));
+    const directionUsage = new Map<GrowthDirection, number>([["N", 0], ["E", 0], ["S", 0], ["W", 0]]);
+    for (const district of cityDistricts) {
+      if (district.cells.length === 0) continue;
+      const districtBounds = boundsOf(district.cells);
+      const districtCenter = {
+        x: Math.floor((districtBounds.minX + districtBounds.maxX) / 2),
+        y: Math.floor((districtBounds.minY + districtBounds.maxY) / 2),
+      };
+      const direction = this.outwardDirection(city, districtCenter);
+      directionUsage.set(direction, (directionUsage.get(direction) ?? 0) + 1);
+    }
+    const leastUsedDirectionCount = Math.min(...directionUsage.values());
     const protectedCities = (await this.listCities(countryId))
               .filter((candidate) => candidate.id !== city.id)
               .map((candidate) => expandRect(candidate.bounds, 12));
     for (const extension of [0, 32, 64, 96]) {
       const searchBounds = expandRect(city.bounds, extension);
-      const candidates: Array<{ origin: Cell; cells: Cell[]; score: number }> = [];
+      const candidates: Array<{ origin: Cell; cells: Cell[]; score: number; repeatedDirection: number }> = [];
       for (let y = searchBounds.minY + 5; y <= searchBounds.maxY - height - 5; y += 4) {
         for (let x = searchBounds.minX + 5; x <= searchBounds.maxX - width - 5; x += 4) {
           const origin = { x, y };
@@ -3123,26 +3181,30 @@ export class AppService {
           }));
           const centerDistance = manhattan(center, city.center);
           const candidateDirection = this.outwardDirection(city, center);
-          const repeatedDirection = cityDistricts.filter((district) => {
-            if (district.cells.length === 0) return false;
-            const districtBounds = boundsOf(district.cells);
-            const districtCenter = {
-              x: Math.floor((districtBounds.minX + districtBounds.maxX) / 2),
-              y: Math.floor((districtBounds.minY + districtBounds.maxY) / 2),
-            };
-            return this.outwardDirection(city, districtCenter) === candidateDirection;
-          }).length;
+          const repeatedDirection = directionUsage.get(candidateDirection) ?? 0;
           // First district grows around the city hub. Later districts hug the
           // existing urban envelope, while still keeping a short connection to
           // a collector/local road. Reusing the same cardinal sector is costly:
           // a third district should form a T/blob, not extend a linear chain.
           const compactness = cityDistricts.length === 0 ? centerDistance * 2.4 : districtDistance * 38 + centerDistance * 0.18;
           const score = compactness + repeatedDirection * 180 + roadDistance * 7 + unsuitable * 30 + extension * 2 + hashCoordinate(seed, x, y, 541);
-          candidates.push({ origin, cells, score });
+          candidates.push({ origin, cells, score, repeatedDirection });
         }
       }
-      const selected = candidates.sort((a, b) => a.score - b.score).slice(0, 16);
-      if (selected.length > 0) return selected;
+      const ranked = candidates.sort((a, b) => a.score - b.score);
+      // City bounds can become elongated after a district grows. If every site
+      // in the current envelope repeats an already saturated direction, widen
+      // the search before asking the expensive full-profile router to try many
+      // equivalent sites in one line. Once a least-used sector is represented,
+      // put those sites first and keep a small deterministic fallback tail.
+      const balanced = ranked.filter((candidate) => candidate.repeatedDirection === leastUsedDirectionCount);
+      if (balanced.length > 0 || extension === 96) {
+        const selected = [...balanced, ...ranked]
+          .filter((candidate, index, all) => all.findIndex((other) =>
+            other.origin.x === candidate.origin.x && other.origin.y === candidate.origin.y) === index)
+          .slice(0, 16);
+        if (selected.length > 0) return selected;
+      }
     }
     throw new DomainError("PLACEMENT_UNAVAILABLE", "В городе и безопасных секторах расширения не осталось площадки для района");
   }
@@ -3165,8 +3227,6 @@ export class AppService {
       + Math.max(0, siteBounds.minY - road.y, road.y - siteBounds.maxY);
     const rankedAnchors = [...anchorRoads]
       .sort((left, right) => gapTo(left) - gapTo(right) || left.y - right.y || left.x - right.x);
-    if (gapTo(rankedAnchors[0]!) <= 2) return true;
-
     const profileBlocked = new Set(occupied);
     const existingRoadKeys = new Set(existingRoads.keys());
     const exitCandidates = rankedAnchors.slice(0, 96).flatMap((anchor) =>
@@ -3305,8 +3365,10 @@ export class AppService {
                       // A remote site receives its access road together with the
                       // territory: a collector stub runs from the nearest street
                       // to the site edge, so the first complex can anchor later.
-                      // Sites already near the network skip it — their complexes
-                      // connect on their own when they grow.
+                      // Even a site already near the network publishes a short
+                      // validated stub. A geometric two-cell gap can otherwise
+                      // hide a sealed boundary corner that the first complex is
+                      // unable to leave.
                       if (existingDistricts.length > 0) {
                         let connectedSite: typeof site | undefined;
                         const sealedCells = await this.completedDistrictCells(countryId);
@@ -3436,10 +3498,15 @@ export class AppService {
                       if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
                       if (row.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "Завершённый район нельзя снова активировать");
                       if (row.status === "ABANDONED") throw new DomainError("DISTRICT_ABANDONED", "Заброшенный район нельзя активировать");
+                      const previousActive = await this.db.prepare("SELECT * FROM districts_v3 WHERE city_id = ? AND status = 'ACTIVE' LIMIT 1")
+                        .get(String(row.city_id)) as Row | undefined;
                       await this.db.prepare("UPDATE districts_v3 SET status = 'PLANNED' WHERE city_id = ? AND status = 'ACTIVE'").run(String(row.city_id));
                       await this.db.prepare("UPDATE districts_v3 SET status = 'ACTIVE' WHERE id = ?").run(districtId);
                       const data = districtDto({ ...row, status: "ACTIVE" });
-                      return { data, eventType: "district.activated", eventPayload: { districtId, cityId: data.cityId, affectedBounds: boundsOf(data.cells) } };
+                      const affectedBounds = previousActive && String(previousActive.id) !== districtId
+                        ? unionRect(boundsOf(data.cells), boundsOf(districtDto(previousActive).cells))
+                        : boundsOf(data.cells);
+                      return { data, eventType: "district.activated", eventPayload: { districtId, cityId: data.cityId, affectedBounds } };
                     });
   }
 
@@ -3614,12 +3681,22 @@ export class AppService {
     const compactNewBuildCandidates = archetype === "NEW_BUILD"
       ? primaryCandidates.filter((entry) => entry.footprint.width <= 14 && entry.footprint.height <= 12)
       : [];
+    const explicitlyLargePrivateHome = archetype === "PRIVATE"
+      && /(усад|вилл|особняк|помест|large home|estate|villa|mansion)/i.test(`${title} ${description}`);
+    const compactPrivateCandidates = archetype === "PRIVATE" && !explicitlyLargePrivateHome
+      ? primaryCandidates.filter((entry) => entry.footprint.width <= 9 && entry.footprint.height <= 6)
+      : [];
     const supportCandidates = compatible.filter((entry) => !primaryZoningRole(archetype, buildingZoningRole(entry)));
+    const requestedParking = tags.has("parking")
+      ? compatible.filter((entry) => entry.serviceRole === "parking-service")
+      : [];
     const candidates = requiredService
       ? compatible
-      : wantsSupport && existingSupport < supportLimit && supportCandidates.length > 0
+      : requestedParking.length > 0 ? requestedParking
+        : wantsSupport && existingSupport < supportLimit && supportCandidates.length > 0
         ? supportCandidates
-        : compactNewBuildCandidates.length > 0 ? compactNewBuildCandidates
+        : compactPrivateCandidates.length > 0 ? compactPrivateCandidates
+          : compactNewBuildCandidates.length > 0 ? compactNewBuildCandidates
           : primaryCandidates.length > 0 ? primaryCandidates : compatible;
     const countryId = String((await this.db.prepare("SELECT country_id FROM cities_v3 WHERE id = ?").get(cityId) as Row).country_id);
     const seed = Number((await this.countryRow(countryId)).seed);
@@ -3798,8 +3875,8 @@ export class AppService {
     const title = input.title.trim();
     if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название задачи должно содержать от 2 до 160 символов");
     return await this.mutate(countryId, "task.create.v3", input.idempotencyKey, input, async () => {
-                      const city = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
-                      if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
+                      const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
+                      if (!cityRow) throw new DomainError("NOT_FOUND", "Город не найден");
                       for (const [field, userId] of [["создатель", input.creatorUserId], ["ответственный", input.assigneeUserId], ["заказчик", input.forUserId]] as const) {
                         if (userId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, userId)) {
                           throw new DomainError("ASSIGNEE_NOT_MEMBER", `${field} должен состоять в правительстве страны`);
@@ -3817,7 +3894,8 @@ export class AppService {
                       // another facade when an agent omits the optional visual
                       // field. Explicit visualKind remains authoritative.
                       const visualKind = input.visualKind
-                        ?? (input.buildingHint?.startsWith("park:") || inferredTags.has("park") ? "PARK" : "BUILDING");
+                        ?? (input.buildingHint?.startsWith("park:")
+                          || inferredTags.has("park") && !inferredTags.has("parking") ? "PARK" : "BUILDING");
                       const requestedParkVariant = input.parkVariant ?? input.buildingHint?.replace(/^park:/, "");
                       const parkVariants = new Set(["urban-formal", "urban-community", "urban-central", "urban-botanical", "urban-amusement", "urban-park"]);
                       const visualAssetKey = visualKind === "PARK" ? (requestedParkVariant || "urban-formal") : undefined;
@@ -3978,9 +4056,41 @@ export class AppService {
                       await this.recordTaskEvent(id, "CREATED", creator?.name ?? "Система страны", input.creatorUserId, {
                                                         status: "PLANNING", estimate: input.estimate, assigneeUserId: input.assigneeUserId ?? null, assigneeRole: input.assigneeRole?.trim() ?? null, forUserId: input.forUserId ?? null,
                                                       }, createdAt);
+                      // Park cadence is task-driven, not road-growth-driven.
+                      // Reconcile after the task exists so the occupied lot is
+                      // protected and the sixth, twelfth, ... task can publish
+                      // its next small or large green area immediately.
+                      const taskCity = cityDto(cityRow);
+                      const districtIndex = (await this.listDistricts(countryId, input.cityId))
+                        .findIndex((item) => item.id === district.id);
+                      const greenAdjustedLots = await this.publishDistrictGreenFeature(
+                        countryId,
+                        taskCity,
+                        district.id,
+                        Number((await this.countryRow(countryId)).seed),
+                        district.cells,
+                        district.archetype,
+                        Math.max(0, districtIndex),
+                        lots,
+                      );
+                      if (greenAdjustedLots.length !== lots.length) {
+                        await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?")
+                          .run(JSON.stringify(greenAdjustedLots), district.id);
+                      }
                       this.surfaceCache.delete(countryId);
                       const data = await this.getTask(countryId, id);
-                      return { data, eventType: "task.created", eventPayload: { taskId: id, districtId: district.id, buildingType: entry.key, affectedBounds: boundsOf(data.footprint) } };
+                      return {
+                        data,
+                        eventType: "task.created",
+                        eventPayload: {
+                          taskId: id,
+                          districtId: district.id,
+                          buildingType: entry.key,
+                          affectedBounds: greenAdjustedLots.length !== lots.length
+                            ? unionRect(boundsOf(data.footprint), boundsOf(district.cells))
+                            : boundsOf(data.footprint),
+                        },
+                      };
                     });
   }
 
@@ -4167,7 +4277,17 @@ export class AppService {
                           taskId: input.taskId,
                           status: input.status,
                           progress,
-                          affectedBounds: boundsOf([...data.footprint, ...changedGreenArea]),
+                          stage: data.stage,
+                          // Ordinary building progress changes only dynamic
+                          // entities and can be patched over realtime without
+                          // refetching or rebaking static chunk ground. A park
+                          // development change still invalidates its ground.
+                          groundChanged: data.visualKind === "PARK" || changedGreenArea.length > 0,
+                          // Frontage decorations are generated from the task's
+                          // access/footprint context and can land one cell into
+                          // a neighbouring chunk. Invalidate that ownership halo
+                          // even though ordinary building ground remains reusable.
+                          affectedBounds: expandRect(boundsOf([...data.footprint, ...data.accessPath, ...changedGreenArea]), 1),
                         },
                       };
                     });
@@ -4334,191 +4454,119 @@ export class AppService {
     });
   }
 
-  private decorations(
-    seed: number,
-    terrain: ChunkDto["terrain"],
-    blocked: Set<string>,
-    surfaces: SurfaceCellDto[],
-    districts: DistrictDto[],
-    cities: CityDto[],
-    tasks: TaskDto[],
-  ): DecorationDto[] {
-    const result: DecorationDto[] = [];
-    const ambientCounts = { boats: 0, fishers: 0, residents: 0 };
-    const occupied = new Set(blocked);
-    const terrainByCell = new Map(terrain.map((cell) => [cellKey(cell), cell]));
-    const surfaceKeys = new Set(surfaces.map(cellKey));
-    const districtByCell = new Map(districts.flatMap((district) => district.cells.map((cell) => [cellKey(cell), district] as const)));
-    const districtCellKeys = new Map(districts.map((district) => [district.id, new Set(district.cells.map(cellKey))]));
-    const cityRanges = new Map([24, 72, 96].map((margin) => [margin, cities.map((city) => expandRect(city.bounds, margin))]));
-    const closeToCity = (cell: Cell, margin = 72) => (cityRanges.get(margin) ?? []).some((bounds) => contains(bounds, cell));
-    const adjacentToSurface = (cell: Cell) => neighbors4(cell).some((neighbor) => surfaceKeys.has(cellKey(neighbor)));
-    const closeToBlocked = (cell: Cell, distance: number) => {
-      for (let dy = -distance; dy <= distance; dy += 1) for (let dx = -distance; dx <= distance; dx += 1) {
-        if (Math.abs(dx) + Math.abs(dy) <= distance && blocked.has(cellKey({ x: cell.x + dx, y: cell.y + dy }))) return true;
-      }
-      return false;
-    };
-    const waterDirection = (cell: Cell): "north" | "east" | "south" | "west" | undefined => {
-      const names = ["north", "east", "south", "west"] as const;
-      for (let distance = 1; distance <= 4; distance += 1) {
-        for (let index = 0; index < GRID_DIRECTIONS.length; index += 1) {
-          const direction = GRID_DIRECTIONS[index]!;
-          const nearby = terrainByCell.get(cellKey({ x: cell.x + direction.x * distance, y: cell.y + direction.y * distance }));
-          if (nearby && isWater(nearby.terrain)) return names[index];
-        }
-      }
-      return undefined;
-    };
-    for (const cell of terrain) {
-      if (occupied.has(cellKey(cell))) continue;
-      const chance = hashCoordinate(seed, cell.x, cell.y, 701);
-      let kind: string | undefined;
-      let clearance = 0;
-      const district = districtByCell.get(cellKey(cell));
-      const shoreDirection = (cell.terrain === "SAND" || cell.terrain === "WET_SAND") && closeToCity(cell) ? waterDirection(cell) : undefined;
-      if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && ambientCounts.boats < 3 && chance < 0.0005) {
-        const horizontal = hashCoordinate(seed, cell.x, cell.y, 719) < 0.5;
-        kind = `boat-${horizontal ? "horizontal" : "vertical"}-${hashCoordinate(seed, cell.x, cell.y, 727) < 0.5 ? "a" : "b"}`;
-      } else if (shoreDirection && !closeToBlocked(cell, 1) && ambientCounts.fishers < 2 && chance < 0.0028) {
-        kind = `fisher-${shoreDirection}`;
-      } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && ambientCounts.residents < 4 && chance < 0.014) {
-        const residents = ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"];
-        const lampByArchetype: Record<DistrictArchetype, string> = {
-          PRIVATE: "streetlamp-vintage", NEW_BUILD: "streetlamp-modern", MIXED_URBAN: "streetlamp-double",
-          CIVIC: "streetlamp-solar", COMMERCIAL: "streetlamp-industrial",
-        };
-        kind = chance < 0.01 ? lampByArchetype[district?.archetype ?? "MIXED_URBAN"] : residents[Math.floor(hashCoordinate(seed, cell.x, cell.y, 733) * residents.length)];
-      } else if (district && district.status !== "ACTIVE" && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.006) {
-        const own = districtCellKeys.get(district.id)!;
-        const edge = GRID_DIRECTIONS.findIndex((direction) => !own.has(cellKey({ x: cell.x + direction.x, y: cell.y + direction.y })));
-        if (edge >= 0) kind = edge % 2 === 0 ? "fence-horizontal" : "fence-vertical";
-      } else if (cell.terrain === "FOREST" && chance < 0.17) {
-        const forestTrees = ["tree-conifer", "tree-round", "tree-birch", "tree-pine", "tree-oak", "tree-cherry", "tree-maple", "tree-cedar", "tree-aspen", "tree-redwood", "tree-deadwood"];
-        kind = forestTrees[Math.floor(hashCoordinate(seed, cell.x, cell.y, 739) * forestTrees.length)];
-      } else if (cell.terrain === "HILL" && chance < 0.085) {
-        kind = chance < 0.035 ? "hill-rocky" : chance < 0.06 ? "hill-small" : "tree-pine";
-      } else if (cell.terrain === "MOUNTAIN" && chance < 0.075) {
-        kind = chance < 0.03 ? "mountain-peak" : chance < 0.052 ? "mountain-ridge" : "rock-cluster";
-      }
-      else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.016) {
-        const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple", "bush-dark", "bush-light", "bush-berries", "shrub-hazel", "shrub-fern", "shrub-flowering", "shrub-dry", "shrub-juniper", "rock-small"];
-        kind = variants[Math.floor(hashCoordinate(seed, cell.x, cell.y, 709) * variants.length)];
-      } else if (cell.terrain === "STONE" && chance < 0.035) kind = chance < 0.017 ? "rock-small" : "rock-cluster";
-      else if (cell.terrain === "SHALLOW_WATER" && chance < 0.02) kind = chance < 0.01 ? "reed-green" : "reed-cattail";
-      if (kind) {
-        const prop = PROP_CATALOG[kind];
-        if (!prop) continue;
-        const footprint = rectangleFootprint(cell, prop.footprint.width, prop.footprint.height);
-        const ownDistrict = district ? districtCellKeys.get(district.id) : undefined;
-        const footprintValid = footprint.every((part) => {
-          const terrainCell = terrainByCell.get(cellKey(part));
-          if (!terrainCell || occupied.has(cellKey(part))) return false;
-          if (kind!.startsWith("boat-") && terrainCell.terrain !== "DEEP_WATER") return false;
-          if (kind!.startsWith("fisher-") && terrainCell.terrain !== "SAND" && terrainCell.terrain !== "WET_SAND") return false;
-          if (kind!.startsWith("fence-") && !ownDistrict?.has(cellKey(part))) return false;
-          return true;
-        });
-        if (!footprintValid) continue;
-        const landform = kind.startsWith("hill-") || kind.startsWith("mountain-");
-        clearance = landform ? 2 : clearance;
-        let available = true;
-        for (const part of footprint) {
-          for (let dy = -clearance; dy <= clearance && available; dy += 1) {
-            for (let dx = -clearance; dx <= clearance; dx += 1) {
-              if (occupied.has(cellKey({ x: part.x + dx, y: part.y + dy }))) { available = false; break; }
-              if (landform && (dx !== 0 || dy !== 0) && hashCoordinate(seed, part.x + dx, part.y + dy, 701) < chance) { available = false; break; }
-            }
-          }
-          if (!available) break;
-        }
-        if (!available) continue;
-        result.push({ id: `${kind}:${cell.x}:${cell.y}`, kind, origin: { x: cell.x, y: cell.y } });
-        if (kind.startsWith("boat-")) ambientCounts.boats += 1;
-        else if (kind.startsWith("fisher-")) ambientCounts.fishers += 1;
-        else if (kind.startsWith("resident-")) ambientCounts.residents += 1;
-        for (const part of footprint) {
-          for (let dy = -clearance; dy <= clearance; dy += 1) {
-            for (let dx = -clearance; dx <= clearance; dx += 1) occupied.add(cellKey({ x: part.x + dx, y: part.y + dy }));
-          }
-        }
-      }
-    }
-    // Sparse, deterministic frontage furniture makes paved parcels feel
-    // inhabited without blocking doors or pedestrian routes. Every prop is
-    // anchored to the centre of one published surface cell by the client.
-    const taskAccess = new Set(tasks.flatMap((task) => task.accessPath).map(cellKey));
-    const streetTrees = ["tree-oak", "tree-maple", "tree-round", "tree-aspen", "tree-birch", "tree-apple", "tree-cherry", "tree-magnolia"];
-    const streetTreeCells: Cell[] = [];
-    for (const task of tasks) {
-      if (task.visualKind !== "BUILDING" || task.stage < 3 || task.footprint.length < 80) continue;
-      const own = new Set(task.footprint.map(cellKey));
-      const candidates = [...new Map(task.footprint.flatMap(neighbors4).map((cell) => [cellKey(cell), cell])).values()]
-        .filter((cell) => !own.has(cellKey(cell)) && surfaceKeys.has(cellKey(cell)) && !taskAccess.has(cellKey(cell))
-          && terrainByCell.has(cellKey(cell)))
-        .sort((left, right) => hashCoordinate(seed + task.taskNumber, left.x, left.y, 751)
-          - hashCoordinate(seed + task.taskNumber, right.x, right.y, 751));
-      const target = task.footprint.length >= 150 ? 4 : task.footprint.length >= 80 ? 3 : 2;
-      let placed = 0;
-      for (const cell of candidates) {
-        if (placed >= target) break;
-        if (streetTreeCells.some((tree) => manhattan(tree, cell) < 3)) continue;
-        if (result.some((decoration) => manhattan(decoration.origin, cell) < 2)) continue;
-        const pick = hashCoordinate(seed + task.taskNumber, cell.x, cell.y, 757);
-        const kind = placed === 1 ? "bench-horizontal"
-          : placed === 2 ? "trash-bin"
-            : streetTrees[Math.floor(pick * streetTrees.length) % streetTrees.length]!;
-        result.push({ id: `frontage:${task.id}:${cell.x}:${cell.y}`, kind, origin: cell });
-        occupied.add(cellKey(cell));
-        if (kind.startsWith("tree-")) streetTreeCells.push(cell);
-        placed += 1;
-      }
-    }
-    return result;
+  async getChunk(countryId: string, chunkX: number, chunkY: number, lod: ChunkLod = "DETAIL"): Promise<ChunkDto> {
+    return materializeChunkPayload(await this.getChunkPayload(countryId, chunkX, chunkY, lod));
   }
 
-  async getChunk(countryId: string, chunkX: number, chunkY: number, lod: "DETAIL" | "OVERVIEW" = "DETAIL"): Promise<ChunkDto> {
+  async getChunkPayload(
+    countryId: string,
+    chunkX: number,
+    chunkY: number,
+    lod: ChunkLod = "DETAIL",
+    retryAttempt = 0,
+  ): Promise<ChunkPayloadDto> {
     const country = await this.countryRow(countryId);
     const worldVersion = Number(country.world_version);
     this.knownWorldVersions.set(countryId, Math.max(worldVersion, this.knownWorldVersions.get(countryId) ?? 0));
     const cacheKey = `${countryId}:${chunkX}:${chunkY}:${lod}`;
-    const cached = this.cachedChunk(cacheKey, worldVersion);
-    if (cached) return cached;
+    const cached = this.cachedChunk(cacheKey);
+    if (cached) {
+      if (cached.publishedVersion === worldVersion) return cached;
+      // Another app replica may have committed a visual mutation and deleted
+      // the shared projection while this process still owns an L1 entry. Only
+      // carry a payload across world versions when the authoritative row still
+      // validates its content hash (metadata-only events preserve that row).
+      const validation = await this.db.prepare(`SELECT content_hash FROM world_chunk_payloads_v1
+        WHERE country_id = ? AND chunk_x = ? AND chunk_y = ? AND lod = ?`)
+        .get(countryId, chunkX, chunkY, lod) as Row | undefined;
+      if (validation?.content_hash === cached.contentHash) {
+        return this.storeChunk(cacheKey, { ...cached, publishedVersion: worldVersion });
+      }
+      this.chunkCache.delete(cacheKey);
+    }
+
+    const published = await this.db.prepare(`SELECT payload_json FROM world_chunk_payloads_v1
+      WHERE country_id = ? AND chunk_x = ? AND chunk_y = ? AND lod = ?`)
+      .get(countryId, chunkX, chunkY, lod) as Row | undefined;
+    if (published) {
+      const payload = json<ChunkPayloadDto>(published.payload_json);
+      if (payload.payloadVersion === 1 && payload.generatorVersion === "square-v7"
+        && payload.chunkX === chunkX && payload.chunkY === chunkY && payload.lod === lod) {
+        return this.storeChunk(cacheKey, payload.publishedVersion === worldVersion
+          ? payload
+          : { ...payload, publishedVersion: worldVersion });
+      }
+    }
+
     const pendingKey = `${cacheKey}:${worldVersion}`;
     let pending = this.pendingChunkBuilds.get(pendingKey);
     if (!pending) {
-      pending = this.buildChunk(countryId, chunkX, chunkY, lod, country, cacheKey, worldVersion);
+      pending = this.buildChunkPayload(countryId, chunkX, chunkY, lod, country, cacheKey, worldVersion);
       this.pendingChunkBuilds.set(pendingKey, pending);
     }
     try {
-      return { ...await pending, worldVersion };
+      return await pending;
+    } catch (error) {
+      if (error instanceof StaleChunkBuildError && retryAttempt < 2) {
+        return await this.getChunkPayload(countryId, chunkX, chunkY, lod, retryAttempt + 1);
+      }
+      throw error;
     } finally {
       if (this.pendingChunkBuilds.get(pendingKey) === pending) this.pendingChunkBuilds.delete(pendingKey);
     }
   }
 
-  private async buildChunk(
+  private async publishChunkPayload(countryId: string, payload: ChunkPayloadDto): Promise<boolean> {
+    return transaction(this.db, async () => {
+      // Serialize publication with canonical mutations. If publishing wins,
+      // the later mutation deletes this row; if mutation wins, its new world
+      // version prevents an old in-flight build from being persisted.
+      const country = await this.db.prepare("SELECT world_version FROM countries WHERE id = ? FOR KEY SHARE")
+        .get(countryId) as Row | undefined;
+      if (!country || Number(country.world_version) !== payload.publishedVersion) return false;
+      await this.db.prepare(`INSERT INTO world_chunk_payloads_v1
+        (country_id, chunk_x, chunk_y, lod, content_hash, payload_json, published_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (country_id, chunk_x, chunk_y, lod) DO UPDATE SET
+          content_hash = EXCLUDED.content_hash,
+          payload_json = EXCLUDED.payload_json,
+          published_at = EXCLUDED.published_at`).run(
+        countryId, payload.chunkX, payload.chunkY, payload.lod,
+        payload.contentHash, JSON.stringify(payload), now(),
+      );
+      await this.db.prepare(`WITH stale AS (
+        SELECT country_id, chunk_x, chunk_y, lod FROM world_chunk_payloads_v1
+        WHERE country_id = ? ORDER BY published_at DESC
+        OFFSET ?
+      )
+      DELETE FROM world_chunk_payloads_v1 AS payload USING stale
+      WHERE payload.country_id = stale.country_id
+        AND payload.chunk_x = stale.chunk_x AND payload.chunk_y = stale.chunk_y AND payload.lod = stale.lod`).run(
+        countryId, AppService.PUBLISHED_CHUNK_LIMIT_PER_COUNTRY,
+      );
+      return true;
+    });
+  }
+
+  private async buildChunkPayload(
     countryId: string,
     chunkX: number,
     chunkY: number,
-    lod: "DETAIL" | "OVERVIEW",
+    lod: ChunkLod,
     country: Row,
     cacheKey: string,
     worldVersion: number,
-  ): Promise<ChunkDto> {
+  ): Promise<ChunkPayloadDto> {
     const seed = Number(country.seed);
     const minX = chunkX * CHUNK_SIZE;
     const minY = chunkY * CHUNK_SIZE;
     const chunkBounds = { minX, minY, maxX: minX + CHUNK_SIZE - 1, maxY: minY + CHUNK_SIZE - 1 };
-    const terrain: ChunkDto["terrain"] = [];
-    const terrainStep = lod === "OVERVIEW" ? 4 : 1;
-    for (let y = chunkBounds.minY; y <= chunkBounds.maxY; y += terrainStep) {
-      for (let x = chunkBounds.minX; x <= chunkBounds.maxX; x += terrainStep) terrain.push({ x, y, ...terrainAt(seed, x, y) });
-    }
     const roadRows = async (bounds: Rect) => (await this.db.prepare("SELECT x, y, mask, structure, road_class FROM roads_v3 WHERE country_id = ? AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?")
-                      .all(countryId, bounds.minX, bounds.maxX, bounds.minY, bounds.maxY) as Row[]).map((row) => ({
-      x: Number(row.x), y: Number(row.y), mask: Number(row.mask), structure: String(row.structure) as RoadCellDto["structure"], roadClass: String(row.road_class) as RoadCellDto["roadClass"],
-    }));
+      .all(countryId, bounds.minX, bounds.maxX, bounds.minY, bounds.maxY) as Row[]).map((row) => ({
+        x: Number(row.x), y: Number(row.y), mask: Number(row.mask),
+        structure: String(row.structure) as RoadCellDto["structure"],
+        roadClass: String(row.road_class) as RoadCellDto["roadClass"],
+      }));
     const surfaceScope = lod === "DETAIL" ? expandRect(chunkBounds, 2) : chunkBounds;
     const [surfaceRoads, nearbyDistricts, nearbyCities, nearbyTasks, nearbyFeatures] = await Promise.all([
       roadRows(surfaceScope),
@@ -4554,8 +4602,10 @@ export class AppService {
     }
     const cityNames = new Map(nearbyCities.map((city) => [city.id, city.name]));
     const worldFeatures = lod === "OVERVIEW" ? [] : nearbyFeatures
-      .filter((feature) => feature.footprint.some((cell) => contains(chunkBounds, cell)) || feature.accessPath.some((cell) => contains(chunkBounds, cell)))
-      .map((feature) => feature.kind === "CITY_SIGN" && feature.cityId ? { ...feature, label: cityNames.get(feature.cityId) } : feature);
+      .filter((feature) => feature.footprint.some((cell) => contains(chunkBounds, cell))
+        || feature.accessPath.some((cell) => contains(chunkBounds, cell)))
+      .map((feature) => feature.kind === "CITY_SIGN" && feature.cityId
+        ? { ...feature, label: cityNames.get(feature.cityId) } : feature);
     const surfaces = lod === "OVERVIEW" ? (() => {
       const roadKeys = new Set(roads.map(cellKey));
       const blockedKeys = new Set([
@@ -4565,11 +4615,10 @@ export class AppService {
       const paths = new Map<string, SurfaceCellDto>();
       const publish = (cell: Cell) => {
         const key = cellKey(cell);
-        if (contains(chunkBounds, cell) && !roadKeys.has(key) && !blockedKeys.has(key)) paths.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
+        if (contains(chunkBounds, cell) && !roadKeys.has(key) && !blockedKeys.has(key)) {
+          paths.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
+        }
       };
-      // The pedestrian layer follows the streets: every road edge carries a
-      // sidewalk in the overview too, so frontage access stays visible at the
-      // zoomed-out level even when no extra footpath was needed.
       for (const road of roads) {
         for (const cell of neighbors4(road)) {
           const key = cellKey(cell);
@@ -4591,44 +4640,69 @@ export class AppService {
       })) publish(cell);
       for (const task of nearbyTasks) if (task.visualKind === "PARK" && task.stage >= 2) {
         for (const cell of greenAreaPathCells(task.footprint, task.visualAssetKey)) {
-          if (contains(chunkBounds, cell) && !roadKeys.has(cellKey(cell))) paths.set(cellKey(cell), { ...cell, kind: "PATH", finish: "PAVERS" });
+          if (contains(chunkBounds, cell) && !roadKeys.has(cellKey(cell))) {
+            paths.set(cellKey(cell), { ...cell, kind: "PATH", finish: "PAVERS" });
+          }
         }
       }
-      for (const task of nearbyTasks) if (task.accessKind === "PATH") for (const cell of task.accessPath) publish(cell);
+      for (const task of nearbyTasks) if (task.accessKind === "PATH") {
+        for (const cell of task.accessPath) publish(cell);
+      }
       return [...paths.values()];
     })() : [...buildSurfaceMap({
-                      roads: new Map(surfaceRoads.map((road) => [cellKey(road), road])),
-                      cities: nearbyCities,
-                      districts: nearbyDistricts,
-                      tasks: nearbyTasks,
-                      features: nearbyFeatures,
-                      isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
-                    }).values()].filter((surface) => contains(chunkBounds, surface));
-    const blocked = new Set<string>([
-      ...roads.map(cellKey),
-      ...surfaces.map(cellKey),
-      ...chunkTasks.flatMap((task) => task.footprint).map(cellKey),
-      ...worldFeatures.flatMap((feature) => feature.footprint).map(cellKey),
-    ]);
-    const chunk: ChunkDto = {
-      chunkX, chunkY, size: CHUNK_SIZE, terrain, roads, surfaces, districts,
+      roads: new Map(surfaceRoads.map((road) => [cellKey(road), road])),
+      cities: nearbyCities,
+      districts: nearbyDistricts,
+      tasks: nearbyTasks,
+      features: nearbyFeatures,
+      isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
+    }).values()].filter((surface) => contains(chunkBounds, surface));
+
+    const content: Omit<ChunkPayloadDto, "contentHash"> = {
+      payloadVersion: 1,
+      generatorVersion: "square-v7",
+      terrainSeed: seed,
+      publishedVersion: worldVersion,
+      lod,
+      chunkX,
+      chunkY,
+      size: CHUNK_SIZE,
+      roads: [...roads].sort((left, right) => left.y - right.y || left.x - right.x),
+      surfaces: [...surfaces].sort((left, right) => left.y - right.y || left.x - right.x),
+      districts: [...districts].sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
       tasks: chunkTasks.map((task) => ({
         id: task.id, taskNumber: task.taskNumber, cityId: task.cityId, districtId: task.districtId, title: task.title,
         workItemType: task.workItemType,
         ...(lod === "DETAIL" && defectSummaryByTask.has(task.id) ? { defectSummary: defectSummaryByTask.get(task.id) } : {}),
         status: task.status, progress: task.progress, stage: task.stage,
         buildingType: task.buildingType, visualKind: task.visualKind, visualAssetKey: task.visualAssetKey,
-        platformType: task.platformType, origin: task.origin, footprint: task.footprint,
+        platformType: task.platformType, origin: task.origin, footprint: task.footprint, accessPath: task.accessPath,
       })),
-      worldFeatures,
-      decorations: lod === "DETAIL" ? this.decorations(seed, terrain, blocked, surfaces, nearbyDistricts, nearbyCities, nearbyTasks) : [],
-      worldVersion,
+      worldFeatures: [...worldFeatures].sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
+      decorationContext: {
+        cityBounds: nearbyCities.map((city) => city.bounds)
+          .sort((left, right) => left.minY - right.minY || left.minX - right.minX || left.maxY - right.maxY || left.maxX - right.maxX),
+        districts: nearbyDistricts.map((district) => ({
+          id: district.id,
+          status: district.status,
+          archetype: district.archetype,
+          cells: district.cells.filter((cell) => contains(expandRect(chunkBounds, 1), cell)),
+        })).filter((district) => district.cells.length > 0)
+          .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
+        tasks: lod === "DETAIL" ? nearbyTasks.map((task) => ({
+          id: task.id,
+          taskNumber: task.taskNumber,
+          visualKind: task.visualKind,
+          stage: task.stage,
+          footprint: task.footprint,
+          accessPath: task.accessPath,
+        })).sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0) : [],
+      },
     };
-    // A mutation can commit while a cold chunk is being assembled. Its newer
-    // request has a different single-flight key; do not let this older result
-    // repopulate the invalidated cache afterwards.
-    if ((this.knownWorldVersions.get(countryId) ?? worldVersion) !== worldVersion) return chunk;
-    return this.storeChunk(cacheKey, chunk);
+    const payload: ChunkPayloadDto = { ...content, contentHash: chunkPayloadContentHash(content) };
+    if ((this.knownWorldVersions.get(countryId) ?? worldVersion) !== worldVersion) throw new StaleChunkBuildError();
+    if (!await this.publishChunkPayload(countryId, payload)) throw new StaleChunkBuildError();
+    return this.storeChunk(cacheKey, payload);
   }
 
   chunkForCell(cell: Cell): { chunkX: number; chunkY: number } {

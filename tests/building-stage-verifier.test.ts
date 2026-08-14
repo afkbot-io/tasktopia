@@ -104,6 +104,11 @@ print(json.dumps(module.image_metrics(source, normalized)["sourceHasTransparentP
       constructionClearanceCells: 1,
       constructionEnvelopeCells: [20, 18],
       anchorPx: [72, 280],
+      doorSizePx: [8, 16],
+      doorLeafSizePx: [6, 14],
+      doorBottomInsetPx: 0,
+      finishedOccupiedWidthPxRange: null,
+      finishedOccupiedHeightPxRange: null,
     });
     expect(report.geometry.depthProjectionRatio).toBeCloseTo(0.4375);
     expect(report.stages["1"]).toBeUndefined();

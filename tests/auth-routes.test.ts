@@ -99,23 +99,71 @@ describe("authentication HTTP boundary", () => {
     expect((await app.inject({ method: "GET", url: "/api/plan/cities-page?cursor=tampered", headers: { cookie } })).statusCode).toBe(400);
 
     const taskChunk = await service.chunkForCell(task.origin);
-    const overviewResponse = await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie } });
+    const compactHeaders = { cookie, accept: "application/vnd.tasktopia.chunk-payload+json; version=2" };
+    const overviewResponse = await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: compactHeaders });
     const overviewChunk = overviewResponse.json();
     expect(overviewResponse.headers.etag).toContain(countryId);
-    expect(overviewResponse.headers["cache-control"]).toBe("private, max-age=60, stale-while-revalidate=300");
-    const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: { cookie } })).json();
+    expect(overviewResponse.headers["cache-control"]).toBe("private, no-cache, must-revalidate");
+    expect(overviewResponse.headers["x-world-version"]).toBe(String(overviewChunk.publishedVersion));
+    const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: compactHeaders })).json();
     expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
-    expect(overviewChunk.terrain).toHaveLength(256);
+    expect(overviewChunk).toMatchObject({ payloadVersion: 1, generatorVersion: "square-v7", lod: "OVERVIEW" });
+    expect(overviewChunk.contentHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(overviewChunk).not.toHaveProperty("terrain");
+    expect(overviewChunk).not.toHaveProperty("decorations");
     // V10: the overview pedestrian layer contains SIDEWALK cells along every
     // street plus PATH cells where a lot needed an extra footpath.
     expect(overviewChunk.surfaces.length).toBeLessThan(400);
     expect(overviewChunk.surfaces.every((surface: SurfaceCellDto) => surface.kind === "PATH" || surface.kind === "SIDEWALK")).toBe(true);
     expect(overviewChunk.worldFeatures).toEqual([]);
-    expect(detailChunk.terrain).toHaveLength(4096);
+    expect(detailChunk).toMatchObject({ payloadVersion: 1, generatorVersion: "square-v7", lod: "DETAIL" });
+    expect(detailChunk).not.toHaveProperty("terrain");
+    expect(detailChunk).not.toHaveProperty("decorations");
     // A task footprint may legally straddle a chunk whose access surface is in
     // the adjacent chunk. The detail contract guarantees the collection, not
     // that every task-containing chunk has a surface cell of its own.
     expect(detailChunk.surfaces).toEqual(expect.any(Array));
+    const legacyResponse = await app.inject({
+      method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie },
+    });
+    expect(legacyResponse.json()).toMatchObject({ chunkX: taskChunk.chunkX, chunkY: taskChunk.chunkY, terrain: expect.any(Array), decorations: expect.any(Array) });
+    expect(legacyResponse.json()).not.toHaveProperty("payloadVersion");
+    expect(legacyResponse.headers.etag).not.toBe(overviewResponse.headers.etag);
+    expect(legacyResponse.headers.vary).toBe("Accept");
+    const revalidated = await app.inject({
+      method: "GET",
+      url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`,
+      headers: { ...compactHeaders, "if-none-match": overviewResponse.headers.etag! },
+    });
+    expect(revalidated.statusCode).toBe(304);
+    expect(revalidated.headers["x-world-version"]).toBe(String(overviewChunk.publishedVersion));
+    const persisted = await db.prepare(`SELECT content_hash FROM world_chunk_payloads_v1
+      WHERE country_id = ? AND chunk_x = ? AND chunk_y = ? AND lod = 'OVERVIEW'`)
+      .get(countryId, taskChunk.chunkX, taskChunk.chunkY);
+    expect(persisted?.content_hash).toBe(overviewChunk.contentHash);
+    const afterRestart = await new AppService(db).getChunkPayload(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW");
+    expect(afterRestart.contentHash).toBe(overviewChunk.contentHash);
+    await service.addTaskComment(countryId, {
+      taskId: task.id,
+      body: "Metadata-only update must preserve published geometry",
+      idempotencyKey: "chunk-etag-comment",
+    });
+    const afterComment = await new AppService(db).getChunkPayload(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW");
+    expect(afterComment.contentHash).toBe(overviewChunk.contentHash);
+    expect(afterComment.publishedVersion).toBeGreaterThan(overviewChunk.publishedVersion);
+    const revalidatedAfterComment = await app.inject({
+      method: "GET",
+      url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`,
+      headers: { ...compactHeaders, "if-none-match": overviewResponse.headers.etag! },
+    });
+    expect(revalidatedAfterComment.statusCode).toBe(304);
+    expect(revalidatedAfterComment.headers["x-world-version"]).toBe(String(afterComment.publishedVersion));
+    await db.prepare(`DELETE FROM world_chunk_payloads_v1
+      WHERE country_id = ? AND chunk_x = ? AND chunk_y = ? AND lod = 'OVERVIEW'`)
+      .run(countryId, taskChunk.chunkX, taskChunk.chunkY);
+    const rebuiltAfterComment = await new AppService(db).getChunkPayload(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW");
+    expect(rebuiltAfterComment.publishedVersion).toBeGreaterThan(overviewChunk.publishedVersion);
+    expect(rebuiltAfterComment.contentHash).toBe(overviewChunk.contentHash);
 
     const loggedOut = await app.inject({ method: "POST", url: "/api/auth/logout", headers: { cookie } });
     expect(loggedOut.statusCode).toBe(200);

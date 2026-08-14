@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { terrainAt } from "../src/server/world/terrain";
+import { terrainAt } from "../src/shared/world-terrain";
 
 describe("deterministic square terrain", () => {
   it("is independent of request order and exposes the core biome families", () => {

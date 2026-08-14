@@ -90,15 +90,17 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
   }))
   .sort((a, b) => a.key.localeCompare(b.key));
 
-const CORE_CITY_SERVICE_ROLES = new Set(["health-service", "fire-service", "police-service"]);
+const CORE_CITY_SERVICE_ROLES = new Set(["health-service", "fire-service", "police-service", "parking-service"]);
 
 /** Task-backed city catalog.
  *
  * Large new-builds remain the vocabulary of NEW_BUILD districts, while the
  * reviewed HOUSE families restore compact yards and continuous street rows in
  * PRIVATE districts. Reviewed health, fire and police facades stay in the same
- * selector because the city audit requires them at 10/20/30 tasks. Other
- * categories remain render-only until their task placement contract is ready.
+ * selector because the city audit requires them at 10/20/30 tasks. The compact
+ * parking service is also task-backed so an explicitly named parking task does
+ * not have to grow a residential superblock. Other categories remain
+ * render-only until their task placement contract is ready.
  */
 export const TASK_BUILDING_CATALOG: BuildingCatalogEntry[] = BUILDING_CATALOG
   .filter((entry) => entry.tags.includes("new-build") || entry.category === "HOUSE"

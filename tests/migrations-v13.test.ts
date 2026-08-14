@@ -15,9 +15,24 @@ describe("PostgreSQL migrations", () => {
       "0001_initial.sql", "0002_backfill_spatial.sql", "0003_feature_ownership.sql", "0004_ai_work_model.sql",
       "0005_incident_response.sql", "0006_task_extras.sql", "0007_ai_fields.sql", "0008_starter_city.sql",
       "0009_country_archive.sql", "0010_task_linked_landmarks.sql", "0011_task_documents_checklist.sql",
-      "0012_staged_green_areas.sql", "0013_task_visual_kind.sql",
+      "0012_staged_green_areas.sql", "0013_task_visual_kind.sql", "0014_published_chunk_payloads.sql",
+      "0015_published_chunk_retention.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("stores disposable published chunk payloads separately from canonical world state", async () => {
+    expect(await db.prepare("SELECT to_regclass('world_chunk_payloads_v1') AS table_name").get())
+      .toMatchObject({ table_name: "world_chunk_payloads_v1" });
+    const columns = await db.prepare(`SELECT column_name FROM information_schema.columns
+      WHERE table_schema = current_schema() AND table_name = 'world_chunk_payloads_v1' ORDER BY column_name`)
+      .all<{ column_name: string }>();
+    expect(columns.map((column) => column.column_name)).toEqual(expect.arrayContaining([
+      "content_hash", "country_id", "chunk_x", "chunk_y", "lod", "payload_json",
+    ]));
+    const indexes = await db.prepare(`SELECT indexname FROM pg_indexes
+      WHERE schemaname = current_schema() AND tablename = 'world_chunk_payloads_v1'`).all<{ indexname: string }>();
+    expect(indexes.map((index) => index.indexname)).toContain("world_chunk_payloads_v1_published_idx");
   });
 
   it("creates a singleton country archive and stores tags as jsonb", async () => {

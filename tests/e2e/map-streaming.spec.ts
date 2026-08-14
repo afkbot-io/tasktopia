@@ -116,8 +116,87 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
   expect(Math.max(0, ...requestCounts.values())).toBeLessThanOrEqual(1);
   expect(Number(await host.getAttribute("data-ground-cache"))).toBeGreaterThanOrEqual(Number(await host.getAttribute("data-resident-chunks")));
   expect(Number(await host.getAttribute("data-ground-cache"))).toBeLessThanOrEqual(96);
-  expect(Number(await host.getAttribute("data-chunk-data-cache"))).toBeLessThanOrEqual(160);
+  expect(Number(await host.getAttribute("data-chunk-data-cache"))).toBeLessThanOrEqual(48);
+  expect(Number(await host.getAttribute("data-chunk-payload-cache"))).toBeLessThanOrEqual(160);
+  expect(Number(await host.getAttribute("data-ground-bakes-per-frame-max"))).toBe(1);
+  await expect(host).toHaveAttribute("data-chunk-request-p95-ms", /\d/);
+  await expect(host).toHaveAttribute("data-chunk-parse-p95-ms", /\d/);
+  await expect(host).toHaveAttribute("data-chunk-materialize-p95-ms", /\d/);
+  await expect(host).toHaveAttribute("data-ground-bake-p95-ms", /\d/);
+  await expect(host).toHaveAttribute("data-chunk-payload-p95-bytes", /\d/);
   expect(consoleProblems).toEqual([]);
+});
+
+test("keeps every visible ground resident when an ultra-wide viewport exceeds the base GPU limit", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 5120, height: 3200 });
+  await page.route("**/api/bootstrap", async (route) => {
+    const response = await route.fetch();
+    if (response.status() !== 200) {
+      await route.fulfill({ response });
+      return;
+    }
+    const bootstrap = await response.json();
+    await route.fulfill({
+      response,
+      json: { ...bootstrap, viewBounds: { minX: -1_000, minY: -1_000, maxX: 999, maxY: 999 } },
+    });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("demo@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+
+  const host = page.locator(".world-canvas");
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 60_000 }).toBe("false");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  await canvas.hover();
+  for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 1_200);
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
+  await expect(host).toHaveAttribute("data-map-lod", "overview");
+  const range = await host.getAttribute("data-chunk-range");
+  expect(range).not.toBeNull();
+  const [minimum, maximum] = range!.split(":").map((point) => point.split(",").map(Number));
+  const visibleCount = (maximum![0]! - minimum![0]! + 1) * (maximum![1]! - minimum![1]! + 1);
+
+  expect(visibleCount).toBeGreaterThan(96);
+  expect(Number(await host.getAttribute("data-resident-chunks"))).toBe(visibleCount);
+  expect(Number(await host.getAttribute("data-ground-cache"))).toBe(visibleCount);
+  expect(Number(await host.getAttribute("data-ground-bake-queue-max"))).toBeLessThanOrEqual(visibleCount);
+});
+
+test("returns across a chunk boundary from decoded and GPU caches", async ({ page }) => {
+  test.setTimeout(120_000);
+  const chunkRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/api/chunks/")) chunkRequests.push(request.url());
+  });
+  const { host, canvas } = await openDemoMap(page);
+  const initialRange = await host.getAttribute("data-chunk-range");
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  const drag = async (deltaX: number) => {
+    const startX = box!.x + box!.width / 2;
+    const y = box!.y + box!.height / 2;
+    await page.mouse.move(startX, y);
+    await page.mouse.down();
+    await page.mouse.move(startX + deltaX, y, { steps: 12 });
+    await page.mouse.up();
+    await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  };
+
+  await drag(-Math.min(700, box!.width * 0.55));
+  await expect.poll(async () => await host.getAttribute("data-chunk-range"), { timeout: 30_000 }).not.toBe(initialRange);
+  chunkRequests.length = 0;
+  const bakesBeforeReturn = Number(await host.getAttribute("data-ground-rebuilds") ?? 0);
+
+  await drag(Math.min(700, box!.width * 0.55));
+
+  await expect.poll(async () => await host.getAttribute("data-chunk-range"), { timeout: 30_000 }).toBe(initialRange);
+  expect(chunkRequests).toEqual([]);
+  expect(Number(await host.getAttribute("data-ground-rebuilds") ?? 0)).toBe(bakesBeforeReturn);
+  await expect(page.getByText("Подгружаем карту…", { exact: true })).toBeHidden();
+  expect(Number(await host.getAttribute("data-resident-chunks") ?? 0)).toBeGreaterThan(0);
 });
 
 test("recovers a failed chunk and paints a static map with reduced motion", async ({ page }) => {
@@ -262,7 +341,7 @@ test("never presents adjacent chunks from different LODs", async ({ page }) => {
   expect(delayedBuildingResolved).toBe(false);
 });
 
-test("realtime task invalidation refetches and rebuilds the affected ground", async ({ page }) => {
+test("realtime task status patches its entity without refetching or rebaking static ground", async ({ page }) => {
   test.setTimeout(120_000);
   const requestedChunks = new Set<string>();
   page.on("request", (request) => {
@@ -307,6 +386,7 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
   }, [...requestedChunks]);
 
   const beforeRebuilds = Number(await host.getAttribute("data-ground-rebuilds"));
+  const beforeEntityRebuilds = Number(await host.getAttribute("data-entity-rebuilds"));
   const beforeMovementRebuilds = Number(await host.getAttribute("data-movement-rebuilds"));
   requestedChunks.clear();
   const client = new Client({ name: "realtime-map-test", version: "1.0.0" }, { versionNegotiation: { mode: "auto" } });
@@ -320,9 +400,11 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
       arguments: { taskId: integration.taskId, status: "STARTED", progress: 10, idempotencyKey: `e2e-map-${Date.now()}` },
     });
     expect(result.isError, JSON.stringify(result.content)).not.toBe(true);
-    await expect.poll(async () => Number(await host.getAttribute("data-ground-rebuilds")), { timeout: 30_000 }).toBeGreaterThan(beforeRebuilds);
-    expect(requestedChunks.has(integration.chunkKey)).toBe(true);
+    await expect.poll(async () => Number(await host.getAttribute("data-entity-rebuilds")), { timeout: 30_000 }).toBeGreaterThan(beforeEntityRebuilds);
+    expect(Number(await host.getAttribute("data-ground-rebuilds"))).toBe(beforeRebuilds);
+    expect(requestedChunks.has(integration.chunkKey)).toBe(false);
     expect(Number(await host.getAttribute("data-movement-rebuilds"))).toBe(beforeMovementRebuilds);
+    expect(await host.getAttribute("data-realtime-decorations")).toBeNull();
 
     const defectIds = await page.evaluate(async (taskId) => {
       const ids: string[] = [];
@@ -377,7 +459,40 @@ test("realtime task invalidation refetches and rebuilds the affected ground", as
       },
     });
     expect(checklistResult.isError).not.toBe(true);
-    for (const [status, progress] of [["IN_PROGRESS", 55], ["TESTING", 90], ["COMPLETED", 100]] as const) {
+    let realtimeAssetFailures = 0;
+    let realtimeAssetRetried = false;
+    await page.route("**/game-assets/**", async (route) => {
+      if (!new URL(route.request().url()).pathname.includes("/buildings/")) {
+        await route.continue();
+        return;
+      }
+      if (realtimeAssetFailures < 3) {
+        realtimeAssetFailures += 1;
+        await route.abort("failed");
+        return;
+      }
+      realtimeAssetRetried = true;
+      await route.continue();
+    });
+    const entityRebuildsBeforeRetry = Number(await host.getAttribute("data-entity-rebuilds"));
+    requestedChunks.clear();
+    const inProgressResult = await client.callTool({
+      name: "task.set_status",
+      arguments: { taskId: integration.taskId, status: "IN_PROGRESS", progress: 55, idempotencyKey: `e2e-map-IN_PROGRESS-${Date.now()}` },
+    });
+    expect(inProgressResult.isError).not.toBe(true);
+    await expect.poll(() => realtimeAssetFailures, { timeout: 30_000 }).toBe(3);
+    await expect.poll(() => realtimeAssetRetried, {
+      message: "realtime stage assets must recover after internal retries and the delayed outer retry are exhausted",
+      timeout: 30_000,
+    }).toBe(true);
+    await expect.poll(async () => Number(await host.getAttribute("data-entity-rebuilds")), { timeout: 30_000 })
+      .toBeGreaterThan(entityRebuildsBeforeRetry);
+    await expect(host).toHaveAttribute("data-realtime-decorations", "rematerialized", { timeout: 30_000 });
+    expect(Number(await host.getAttribute("data-ground-rebuilds"))).toBe(beforeRebuilds);
+    expect(requestedChunks.has(integration.chunkKey)).toBe(false);
+    await page.unroute("**/game-assets/**");
+    for (const [status, progress] of [["TESTING", 90], ["COMPLETED", 100]] as const) {
       const result = await client.callTool({
         name: "task.set_status",
         arguments: { taskId: integration.taskId, status, progress, idempotencyKey: `e2e-map-${status}-${Date.now()}` },

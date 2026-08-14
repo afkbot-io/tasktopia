@@ -251,7 +251,12 @@ describe("Pixel City active asset contract", () => {
       for (const suffix of ["a", "b", "c", "d"]) expect(props[`${prefix}-${suffix}`], `${prefix}-${suffix}`).toBeDefined();
     }
     for (const species of ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"]) {
-      for (const direction of ["north", "east", "south", "west"]) expect(props[`animal-${species}-${direction}`], `${species}-${direction}`).toBeDefined();
+      for (const direction of ["north", "east", "south", "west"]) for (const frame of ["a", "b", "c"]) {
+        expect(props[`animal-${species}-${direction}-${frame}`], `${species}-${direction}-${frame}`).toBeDefined();
+      }
+    }
+    for (const family of ["cyclist", "scooter"]) for (const view of ["horizontal", "north", "south"]) for (const frame of ["a", "b", "c"]) {
+      expect(props[`${family}-${view}-${frame}`], `${family}-${view}-${frame}`).toBeDefined();
     }
   });
 });

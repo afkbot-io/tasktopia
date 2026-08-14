@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, ApiError } from "../src/client/api";
+import { api, apiWithMetrics, ApiError } from "../src/client/api";
 
 describe("client API errors", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -62,5 +62,17 @@ describe("client API errors", () => {
     expect(textRequest.body).toBe("plain");
     expect(new Headers(formRequest.headers).has("content-type")).toBe(false);
     expect(formRequest.body).toBe(form);
+  });
+
+  it("returns response timing and UTF-8 body size without reserializing parsed JSON", async () => {
+    const raw = JSON.stringify({ title: "Чанк", roads: [1, 2, 3] });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(raw, { status: 200 })));
+
+    const result = await apiWithMetrics<{ title: string; roads: number[] }>("/api/chunks/0/0");
+
+    expect(result.data).toEqual({ title: "Чанк", roads: [1, 2, 3] });
+    expect(result.metrics.decodedBytes).toBe(new TextEncoder().encode(raw).byteLength);
+    expect(result.metrics.requestMs).toBeGreaterThanOrEqual(0);
+    expect(result.metrics.parseMs).toBeGreaterThanOrEqual(0);
   });
 });

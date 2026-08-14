@@ -308,7 +308,7 @@ export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "name" | "dea
 };
 
 export type ChunkTaskDto = Pick<TaskDto,
-  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint"
+  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint" | "accessPath"
 > & {
   defectSummary?: { open: number; inProgress: number; verifying: number; active: number };
 };
@@ -325,6 +325,30 @@ export type ChunkDto = {
   decorations: DecorationDto[];
   worldFeatures: WorldFeatureDto[];
   worldVersion: number;
+};
+
+export type ChunkLod = "DETAIL" | "OVERVIEW";
+
+/**
+ * Compact persisted/wire representation. Deterministic environment arrays are
+ * reconstructed in a browser worker instead of crossing the network.
+ */
+export type ChunkPayloadDto = Omit<ChunkDto, "terrain" | "decorations" | "worldVersion"> & {
+  payloadVersion: 1;
+  contentHash: string;
+  generatorVersion: "square-v7";
+  terrainSeed: number;
+  publishedVersion: number;
+  lod: ChunkLod;
+  decorationContext: {
+    cityBounds: Rect[];
+    // One-cell ownership halo prevents clipped district boundaries from
+    // turning chunk seams into artificial fence lines.
+    districts: Array<Pick<ChunkDistrictDto, "id" | "status" | "archetype" | "cells">>;
+    // Decoration generation needs neighbouring task access paths even when a
+    // task footprint itself belongs to the adjacent chunk.
+    tasks: Array<Pick<ChunkTaskDto, "id" | "taskNumber" | "visualKind" | "stage" | "footprint" | "accessPath">>;
+  };
 };
 
 export type BootstrapDto = {

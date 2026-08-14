@@ -3,12 +3,12 @@
   "category": "HOUSE",
   "cellSizePx": 8,
   "spriteCanvasCells": [
-    7,
-    6
+    9,
+    8
   ],
   "physicalFootprintCells": [
-    7,
-    5
+    9,
+    6
   ],
   "projectedRoofDepthCells": 2,
   "foundationThicknessCells": 1,
@@ -21,8 +21,21 @@
     8,
     16
   ],
+  "doorLeafSizePx": [
+    6,
+    14
+  ],
+  "doorBottomInsetPx": 0,
+  "finishedOccupiedWidthPxRange": [
+    66,
+    72
+  ],
+  "finishedOccupiedHeightPxRange": [
+    48,
+    62
+  ],
   "sitePreviewCells": [
-    11,
-    11
+    13,
+    12
   ]
 }

@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates } from "../src/server/green-area-planner";
+import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates, greenAreaTarget } from "../src/server/green-area-planner";
 
 describe("green area planning", () => {
+  it("adds another green area for roughly every six occupied task lots", () => {
+    expect(greenAreaTarget(0)).toBe(1);
+    expect(greenAreaTarget(5)).toBe(1);
+    expect(greenAreaTarget(6)).toBe(2);
+    expect(greenAreaTarget(12)).toBe(3);
+    expect(greenAreaTarget(30)).toBe(4);
+  });
   it("tries spacious public parks before compact fallbacks", () => {
     expect(greenAreaSizeCandidates("urban-formal")).toEqual([[18, 10], [16, 9], [14, 8]]);
     expect(greenAreaSizeCandidates("urban-community")).toEqual([[16, 10], [14, 9], [12, 8]]);

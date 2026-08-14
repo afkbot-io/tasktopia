@@ -11,7 +11,30 @@ type ApiInit = Omit<RequestInit, "body"> & (
   | { body?: BodyInit | null; json?: never }
 );
 
-export async function api<T>(path: string, init?: ApiInit): Promise<T> {
+export type ApiResponseMetrics = {
+  decodedBytes: number;
+  requestMs: number;
+  parseMs: number;
+};
+
+export type ApiResult<T> = { data: T; headers: Headers; metrics: ApiResponseMetrics };
+
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code < 0x80) bytes += 1;
+    else if (code < 0x800) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff && index + 1 < value.length
+      && value.charCodeAt(index + 1) >= 0xdc00 && value.charCodeAt(index + 1) <= 0xdfff) {
+      bytes += 4;
+      index += 1;
+    } else bytes += 3;
+  }
+  return bytes;
+}
+
+export async function apiWithMetrics<T>(path: string, init?: ApiInit): Promise<ApiResult<T>> {
   const { json, ...requestInit } = init ?? {};
   const hasJson = init !== undefined && "json" in init;
   const body = hasJson ? JSON.stringify(json) : requestInit.body;
@@ -19,6 +42,7 @@ export async function api<T>(path: string, init?: ApiInit): Promise<T> {
   if (hasJson && body !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
+  const requestStartedAt = performance.now();
   const response = await fetch(path, {
     credentials: "include",
     ...requestInit,
@@ -26,10 +50,21 @@ export async function api<T>(path: string, init?: ApiInit): Promise<T> {
     headers,
   });
   const raw = await response.text();
+  const requestMs = performance.now() - requestStartedAt;
+  const parseStartedAt = performance.now();
   let payload: { message?: string } = {};
   try { payload = raw ? JSON.parse(raw) as { message?: string } : {}; } catch { /* Plain-text proxy/server response. */ }
+  const parseMs = performance.now() - parseStartedAt;
   if (!response.ok) {
     throw new ApiError(response.status, payload.message ?? SAFE_HTTP_ERROR_MESSAGES[response.status] ?? `Ошибка HTTP ${response.status}`);
   }
-  return payload as T;
+  return {
+    data: payload as T,
+    headers: response.headers,
+    metrics: { decodedBytes: utf8ByteLength(raw), requestMs, parseMs },
+  };
+}
+
+export async function api<T>(path: string, init?: ApiInit): Promise<T> {
+  return (await apiWithMetrics<T>(path, init)).data;
 }

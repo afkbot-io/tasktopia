@@ -4,7 +4,7 @@ import type { Cell, CityDto, RoadCellDto, SurfaceCellDto, TaskDto } from "../../
 import { CHUNK_SIZE, type AppService } from "../app-service";
 import type { Db } from "../db";
 import { GRID_DIRECTIONS, cellKey, connected, contains, floorDiv, intersects, manhattan, neighbors4 } from "./grid";
-import { isWater, terrainAt } from "./terrain";
+import { isWater, terrainAt } from "../../shared/world-terrain";
 import {
   buildingZoningRole,
   primaryZoningRole,

@@ -732,38 +732,6 @@ def prop_city_sign(vertical: bool) -> Image.Image:
     return image
 
 
-def prop_animal(species: str, direction: str) -> Image.Image:
-    image = transparent_tile()
-    draw = ImageDraw.Draw(image)
-    body = {"fox": "#b7653fff", "deer": "#9b774fff", "rabbit": "#aaa89cff", "boar": "#665044ff", "duck": "#527052ff", "sheep": "#d8d3c5ff", "dog": "#9b673fff", "cat": "#6f7474ff"}[species]
-    light = {"fox": "#dfb071ff", "deer": "#c6a879ff", "rabbit": "#ddd8c8ff", "boar": "#9a7960ff", "duck": "#d0aa43ff", "sheep": "#f0eadcff", "dog": "#d5a366ff", "cat": "#aeb4b0ff"}[species]
-    if direction in "EW":
-        draw.rectangle((2, 3, 6, 5), fill=rgba(body), outline=rgba(OUTLINE))
-        head_x = 6 if direction == "E" else 1
-        draw.rectangle((head_x, 2, head_x + 1, 4), fill=rgba(body))
-        tail_x = 0 if direction == "E" else 7
-        draw.line((tail_x, 3, 2 if direction == "E" else 6, 4), fill=rgba(light))
-        draw.point((3, 6), fill=rgba(OUTLINE)); draw.point((6, 6), fill=rgba(OUTLINE))
-    else:
-        draw.rectangle((2, 2, 5, 6), fill=rgba(body), outline=rgba(OUTLINE))
-        head_y = 1 if direction == "N" else 6
-        draw.rectangle((3, head_y, 4, min(7, head_y + 1)), fill=rgba(light))
-        draw.point((2, 7 if direction == "S" else 1), fill=rgba(OUTLINE)); draw.point((5, 7 if direction == "S" else 1), fill=rgba(OUTLINE))
-    if species == "deer":
-        draw.point((2, 1), fill=rgba("#5a4435ff")); draw.point((5, 1), fill=rgba("#5a4435ff"))
-    elif species == "rabbit":
-        draw.point((2, 1), fill=rgba(light)); draw.point((5, 1), fill=rgba(light))
-    elif species == "boar":
-        draw.point((1 if direction == "W" else 6, 5), fill=rgba("#e5d2a8ff"))
-    elif species == "duck":
-        draw.point((1 if direction == "W" else 7, 3), fill=rgba("#e1b844ff"))
-    elif species == "sheep":
-        draw.point((2, 3), fill=rgba(light)); draw.point((5, 4), fill=rgba(light))
-    elif species in {"dog", "cat"}:
-        draw.point((2, 1), fill=rgba(body)); draw.point((5, 1), fill=rgba(body))
-    return image
-
-
 def prop_boat(horizontal: bool, variant: int) -> Image.Image:
     # Three cells give the hull a readable slender proportion at gameplay
     # zoom. The seated passenger reuses the walker's exact 2 px head / 4 px
@@ -2117,11 +2085,6 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     generated_props = {
         **{key: prop_park_feature(key) for key in PARK_FEATURE_SIZES if key not in authored_prop_keys},
     }
-    for species in ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"):
-        for direction in ("north", "east", "south", "west"):
-            key = f"animal-{species}-{direction}"
-            if key not in authored_prop_keys:
-                generated_props[key] = prop_animal(species, direction[0].upper())
     ai_prop_metadata: dict[str, dict] = {}
     for authored in ai_prop_entries:
         source = AI_AUTHORED_ART / authored["sheet"]
@@ -2496,8 +2459,12 @@ def resident_mobility_style_sheet(manifest: dict) -> None:
         "walker-west-a", "walker-west-b", "walker-west-c",
         "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave",
         "fisher-north", "fisher-east", "fisher-south", "fisher-west",
-        "cyclist-horizontal", "cyclist-north", "cyclist-south",
-        "scooter-horizontal", "scooter-north", "scooter-south",
+        "cyclist-horizontal-a", "cyclist-horizontal-b", "cyclist-horizontal-c",
+        "cyclist-north-a", "cyclist-north-b", "cyclist-north-c",
+        "cyclist-south-a", "cyclist-south-b", "cyclist-south-c",
+        "scooter-horizontal-a", "scooter-horizontal-b", "scooter-horizontal-c",
+        "scooter-north-a", "scooter-north-b", "scooter-north-c",
+        "scooter-south-a", "scooter-south-b", "scooter-south-c",
     )
     scale, columns = 8, 5
     card_width, card_height = 210, 190

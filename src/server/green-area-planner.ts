@@ -1,5 +1,16 @@
 export type GreenAreaSize = [width: number, height: number];
 
+/**
+ * Desired ambient green areas for a developed district. The first area is
+ * mandatory; subsequent parks follow the visible workload at roughly one
+ * area per six occupied task lots. The cap keeps parks meaningful without
+ * replacing the task city with greenery.
+ */
+export function greenAreaTarget(taskLotCount: number): number {
+  if (taskLotCount <= 0) return 1;
+  return Math.min(4, 1 + Math.floor(taskLotCount / 6));
+}
+
 const GREEN_AREA_SIZES: Readonly<Record<string, readonly (readonly [number, number])[]>> = {
   "urban-formal": [[18, 10], [16, 9], [14, 8]],
   "urban-community": [[16, 10], [14, 9], [12, 8]],

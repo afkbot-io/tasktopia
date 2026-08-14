@@ -24,6 +24,7 @@ import {
 import { BUILDING_CATALOG } from "../shared/catalog";
 import { MCP_SCOPES, type McpScope } from "../shared/contracts";
 import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
+import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { config } from "./config";
 import { APP_VERSION } from "./version";
 import { z } from "zod";
@@ -359,15 +360,24 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
               throw new DomainError("INVALID_INPUT", "Некорректные координаты чанка");
             }
             const lod = parse(z.enum(["detail", "overview"]).default("detail"), (request.query as { lod?: string }).lod);
-            const chunk = await service.getChunk(user.countryId, chunkX, chunkY, lod === "overview" ? "OVERVIEW" : "DETAIL");
-            // Active country is implicit in this route. It must still be part
-            // of the validator or two countries at the same world version can
-            // incorrectly share a browser's credentialed 304 response.
-            const etag = `"${user.countryId}-${chunk.worldVersion}-${chunkX}-${chunkY}-${lod}"`;
+            const chunk = await service.getChunkPayload(user.countryId, chunkX, chunkY, lod === "overview" ? "OVERVIEW" : "DETAIL");
+            const compact = request.headers.accept?.includes("application/vnd.tasktopia.chunk-payload+json") ?? false;
+            // The payload hash is content-addressed, so unrelated country
+            // events no longer invalidate every visible chunk. A weak ETag is
+            // intentional: PostgreSQL JSONB may reorder equivalent object keys.
+            // Representation identity is included so a legacy full ChunkDto
+            // and the compact v2 body never share a validator in a proxy.
+            const etag = `W/"${user.countryId}-${chunk.contentHash}-${compact ? "v2" : "v1"}"`;
+            reply.header("ETag", etag)
+              .header("Cache-Control", "private, no-cache, must-revalidate")
+              .header("Vary", "Accept")
+              .header("X-World-Version", String(chunk.publishedVersion));
             if (request.headers["if-none-match"] === etag) {
               return reply.code(304).send();
             }
-            return reply.header("ETag", etag).header("Cache-Control", "private, max-age=60, stale-while-revalidate=300").send(chunk);
+            // Default to the v1 representation for tabs opened before this
+            // deployment. New clients opt into the compact worker payload.
+            return reply.send(compact ? chunk : materializeChunkPayload(chunk));
           });
 
   const archiveRecordSchema = z.object({

@@ -3,8 +3,11 @@ import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadBandRole, roadClassSupportsVehicle } from "../../shared/road-profile";
-import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto } from "../../shared/contracts";
-import { api } from "../api";
+import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto } from "../../shared/contracts";
+import { apiWithMetrics } from "../api";
+import { ChunkMaterializer } from "../chunk-materializer";
+import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
+import { RollingPerformanceMetric } from "../rolling-performance-metric";
 import {
   agentCellKey,
   buildDirectedCarEdges,
@@ -68,10 +71,21 @@ const DETAIL_LOD_EXIT_SCALE = 1.04;
 // following chunks in waves of three.
 const CHUNK_FETCH_CONCURRENCY = 8;
 const CHUNK_ASSET_CONCURRENCY = 6;
-const CHUNK_DATA_CACHE_LIMIT = 160;
+const CHUNK_DATA_CACHE_LIMIT = 48;
+const CHUNK_PAYLOAD_CACHE_LIMIT = 160;
 const GROUND_CACHE_LIMIT = 96;
+const TASK_STATUS_PATCH_LIMIT = 512;
 type MapLod = "DETAIL" | "OVERVIEW";
-type MapInvalidation = { id: number; type: string; affectedBounds?: Rect; taskId?: string; status?: string; progress?: number };
+const GROUND_PRESERVING_EVENTS = new Set([
+  "task.fields_updated", "task.renamed", "task.defect_created", "task.defect_updated",
+  "city.updated", "city.renamed", "district.updated", "district.renamed",
+  "district.activated", "district.completed",
+  "archive.record_created", "archive.record_deleted",
+]);
+type MapInvalidation = {
+  id: number; worldVersion: number; type: string; affectedBounds?: Rect; taskId?: string;
+  status?: string; progress?: number; stage?: number; groundChanged?: boolean;
+};
 type FocusArea = { point: Cell; bounds: Rect };
 type IncidentView = {
   signature: string;
@@ -91,6 +105,23 @@ type WorldRuntime = {
   retry(): void;
   setViewBounds(bounds: Rect): void;
 };
+
+function exposeRollingMetric(
+  host: HTMLDivElement,
+  prefix: string,
+  metric: RollingPerformanceMetric,
+  value: number,
+  unit: "Ms" | "Bytes" = "Ms",
+): void {
+  const snapshot = metric.record(value);
+  const format = (sample: number) => unit === "Bytes" ? String(Math.round(sample)) : sample.toFixed(1);
+  host.dataset[`${prefix}${unit}`] = format(snapshot.last);
+  host.dataset[`${prefix}Max${unit}`] = format(snapshot.max);
+  host.dataset[`${prefix}P50${unit}`] = format(snapshot.p50);
+  host.dataset[`${prefix}P95${unit}`] = format(snapshot.p95);
+  host.dataset[`${prefix}P99${unit}`] = format(snapshot.p99);
+  host.dataset[`${prefix}Samples`] = String(snapshot.samples);
+}
 
 const TERRAIN_COLORS: Record<string, number> = {
   GRASS: 0x668548, MEADOW: 0x789451, FOREST: 0x315f3d,
@@ -123,14 +154,19 @@ function key(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
 function chunkKey(chunkX: number, chunkY: number): string { return `${chunkX},${chunkY}`; }
 
-async function inParallel<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
-  let cursor = 0;
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (cursor < items.length) {
-      const item = items[cursor++];
-      if (item !== undefined) await worker(item);
-    }
-  }));
+function concurrencyGate(limit: number): <T>(task: () => Promise<T>) => Promise<T> {
+  let active = 0;
+  const queue: Array<() => void> = [];
+  const release = () => {
+    active -= 1;
+    queue.shift()?.();
+  };
+  return async function run<T>(task: () => Promise<T>): Promise<T> {
+    if (active >= limit) await new Promise<void>((resolve) => queue.push(resolve));
+    active += 1;
+    try { return await task(); }
+    finally { release(); }
+  };
 }
 
 function sprite(url: string, x: number, y: number): Sprite {
@@ -641,7 +677,23 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   return { signature, container, mode, profile, fullResponse, flames, smokePlumes, beacon, water, phaseMs };
 }
 
-function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
+function requiredGroundAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
+  if (lod !== "DETAIL") return [];
+  const urls = new Set<string>([
+    assetUrl(TERRAIN_SPRITES.DIRT![1]!),
+    TILE_SPRITES.pavement!, TILE_SPRITES["path-pavers"]!, TILE_SPRITES["path-asphalt"]!, TILE_SPRITES["path-brown"]!,
+    TILE_SPRITES.road!, TILE_SPRITES["crosswalk-vertical"]!, TILE_SPRITES["crosswalk-horizontal"]!,
+    TILE_SPRITES["road-marking-horizontal"]!, TILE_SPRITES["road-marking-vertical"]!,
+    TILE_SPRITES["bridge-side-horizontal"]!, TILE_SPRITES["bridge-side-vertical"]!,
+  ]);
+  for (const chunk of chunks) for (const cell of chunk.terrain) {
+    const variants = TERRAIN_SPRITES[cell.terrain] ?? TERRAIN_SPRITES.GRASS!;
+    urls.add(assetUrl(variants[cell.variant % variants.length]!));
+  }
+  return [...urls];
+}
+
+function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   const urls = new Set<string>();
   urls.add(PROP_SPRITES["active-district-flag"]!);
   for (const chunk of chunks) {
@@ -689,10 +741,6 @@ function requiredAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
       }
     }
     if (lod !== "DETAIL") continue;
-    for (const cell of chunk.terrain) {
-      const variants = TERRAIN_SPRITES[cell.terrain] ?? TERRAIN_SPRITES.GRASS!;
-      urls.add(assetUrl(variants[cell.variant % variants.length]!));
-    }
     for (const decoration of chunk.decorations) {
       const metadata = PROP_CATALOG[decoration.kind];
       if (metadata) urls.add(metadata.path);
@@ -716,18 +764,17 @@ function ambientDetailAssets(): string[] {
   }
   for (const key of ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"] as const) urls.add(PROP_SPRITES[key]!);
   for (const family of ["cyclist", "scooter"] as const) for (const view of ["horizontal", "north", "south"] as const) {
-    urls.add(PROP_SPRITES[`${family}-${view}`]!);
+    for (const frame of ["a", "b", "c"] as const) urls.add(PROP_SPRITES[`${family}-${view}-${frame}`]!);
   }
   for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
-    urls.add(PROP_SPRITES[`animal-${species}-${direction}`]!);
+    for (const frame of ["a", "b", "c"] as const) urls.add(PROP_SPRITES[`animal-${species}-${direction}-${frame}`]!);
   }
   for (const plane of ["airplane-small", "airplane-courier", "airplane-twin"] as const) urls.add(PROP_SPRITES[plane]!);
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
+export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
   countryId: string;
-  worldVersion: number;
   chunkSize: number;
   viewBounds: Rect;
   focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
@@ -744,7 +791,6 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
   const districtLayerRef = useRef<Container | null>(null);
   const districtTooltipLayerRef = useRef<Container | null>(null);
   const runtimeRef = useRef<WorldRuntime | null>(null);
-  const worldVersionRef = useRef(worldVersion);
   const showDistrictsRef = useRef(showDistricts);
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
@@ -759,10 +805,6 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
   const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
   const initialFocusRef = useRef(focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
-
-  useEffect(() => {
-    worldVersionRef.current = worldVersion;
-  }, [worldVersion]);
 
   useEffect(() => {
     showDistrictsRef.current = showDistricts;
@@ -820,10 +862,22 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
     };
     const app = new Application();
     const chunks = new Map<string, ChunkDto>();
+    const entityChunks = new Map<string, ChunkDto>();
+    const entityChunkLods = new Map<string, MapLod>();
     const chunkLods = new Map<string, MapLod>();
     const chunkDataCache = new Map<string, ChunkDto>();
-    const groundContainers = new Map<string, { terrain: Container; surfaces: Container; roads: Container; lod: MapLod; usedAt: number }>();
+    const chunkPayloadCache = new Map<string, ChunkPayloadDto>();
+    // Static terrain, surfaces and roads are baked into one GPU texture per
+    // chunk. This replaces thousands of live display objects with one sprite.
+    const groundContainers = new Map<string, { view: Sprite; lod: MapLod; usedAt: number }>();
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
+    const chunkMaterializer = new ChunkMaterializer();
+    const chunkPayloadMetric = new RollingPerformanceMetric();
+    const chunkRequestMetric = new RollingPerformanceMetric();
+    const chunkParseMetric = new RollingPerformanceMetric();
+    const chunkMaterializeMetric = new RollingPerformanceMetric();
+    const groundBakeMetric = new RollingPerformanceMetric();
+    const latestTaskStatusPatches = new Map<string, ChunkTaskStatusPatch>();
     const invalidatedGroundKeys = new Set<string>();
     const groundFades: Array<{ containers: Container[]; elapsed: number; duration: number }> = [];
     const initialFocus = initialFocusRef.current;
@@ -998,22 +1052,30 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
           const presentation = vehiclePresentation(agent.current, agent.next, agent.kind === "BUS" ? 1 : 1.2);
           agent.view.scale.set(presentation.scaleX, presentation.scaleY);
         } else if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
-          const presentation = micromobilityPresentation(agent.kind === "CYCLIST" ? "cyclist" : "scooter", agent.current, agent.next);
+          const presentation = micromobilityPresentation(agent.kind === "CYCLIST" ? "cyclist" : "scooter", agent.current, agent.next, agent.steps);
           agent.view.scale.set(presentation.scaleX, presentation.scaleY);
         }
       };
 
-      const movingAgentSpriteUrl = (agent: Pick<MovingAgent, "kind" | "variant" | "current" | "next"> & Partial<Pick<MovingAgent, "progress" | "phase">>): string => {
+      const movingAgentSpriteUrl = (agent: Pick<MovingAgent, "kind" | "variant" | "current" | "next"> & Partial<Pick<MovingAgent, "progress" | "phase" | "steps">>): string => {
         const presentation = vehiclePresentation(agent.current, agent.next);
         const horizontal = presentation.view === "horizontal";
         const direction = horizontal ? agent.next.x > agent.current.x ? "east" : "west" : presentation.view;
         if (agent.kind === "CAR") return VEHICLE_SPRITES[agent.variant]![presentation.view];
         if (agent.kind === "BUS") return PROP_SPRITES[`city-bus-${presentation.view}`]!;
         if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
-          const micro = micromobilityPresentation(agent.kind === "CYCLIST" ? "cyclist" : "scooter", agent.current, agent.next);
+          const micro = micromobilityPresentation(
+            agent.kind === "CYCLIST" ? "cyclist" : "scooter",
+            agent.current,
+            agent.next,
+            (agent.steps ?? 0) + Math.floor((agent.progress ?? 0) * 3),
+          );
           return PROP_SPRITES[micro.key]!;
         }
-        if (agent.kind === "ANIMAL") return PROP_SPRITES[`animal-${agent.variant}-${direction}`]!;
+        if (agent.kind === "ANIMAL") {
+          const frame = (["a", "b", "c"] as const)[Math.abs((agent.steps ?? 0) + Math.floor((agent.progress ?? 0) * 3)) % 3]!;
+          return PROP_SPRITES[`animal-${agent.variant}-${direction}-${frame}`]!;
+        }
         return PROP_SPRITES[residentWalkPresentation(agent.current, agent.next, agent.progress ?? 0, agent.phase ?? 0).key]!;
       };
       const plannedVehiclePath = (agent: MovingAgent): Cell[] => {
@@ -1142,6 +1204,27 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
               const texture = Assets.get<Texture>(PROP_SPRITES[presentation.key]!);
               if (texture) agent.view.texture = texture;
               agent.visualKey = presentation.key;
+            }
+          }
+          if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
+            const presentation = micromobilityPresentation(
+              agent.kind === "CYCLIST" ? "cyclist" : "scooter",
+              agent.current,
+              agent.next,
+              agent.steps + Math.floor(agent.progress * 3),
+            );
+            if (agent.visualKey !== presentation.key) {
+              const texture = Assets.get<Texture>(PROP_SPRITES[presentation.key]!);
+              if (texture) agent.view.texture = texture;
+              agent.visualKey = presentation.key;
+            }
+          }
+          if (agent.kind === "ANIMAL") {
+            const url = movingAgentSpriteUrl(agent);
+            if (agent.visualKey !== url) {
+              const texture = Assets.get<Texture>(url);
+              if (texture) agent.view.texture = texture;
+              agent.visualKey = url;
             }
           }
           const motion = ambientMotionPresentation(agent.kind, agent.current, agent.next, agent.progress, agent.previous, CELL_SIZE);
@@ -1285,6 +1368,76 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
       let pendingMovementRebuild = false;
       let loadGeneration = 0;
       let loadRunning = false;
+      const withAssetSlot = concurrencyGate(CHUNK_ASSET_CONCURRENCY);
+      const publishEntityChunk = (cacheKey: string, chunk: ChunkDto, lod: MapLod) => {
+        entityChunks.set(cacheKey, chunk);
+        entityChunkLods.set(cacheKey, lod);
+        host.dataset.entityReadyPublishes = String(Number(host.dataset.entityReadyPublishes ?? 0) + 1);
+      };
+      type GroundBakeRequest = {
+        key: string;
+        valid: () => boolean;
+        task: () => Sprite;
+        resolve: (view: Sprite | undefined) => void;
+        reject: (error: unknown) => void;
+      };
+      const groundBakeQueue: GroundBakeRequest[] = [];
+      const pendingGroundBakes = new Map<string, Promise<Sprite | undefined>>();
+      let groundBakeFrame = 0;
+      let lastGroundBakeFrameTime = -1;
+      let groundBakesThisFrame = 0;
+      const discardInvalidGroundBakes = () => {
+        // Viewport generations can interleave in the queue: an obsolete item
+        // is not necessarily at the head. Purge every stale request so rapid
+        // zoom/pan cannot leave dead work ahead of the current center chunks.
+        for (let index = groundBakeQueue.length - 1; index >= 0; index -= 1) {
+          const request = groundBakeQueue[index]!;
+          if (request.valid()) continue;
+          groundBakeQueue.splice(index, 1);
+          request.resolve(undefined);
+        }
+      };
+      const pumpGroundBakes = () => {
+        discardInvalidGroundBakes();
+        host.dataset.groundBakeQueue = String(groundBakeQueue.length);
+        if (groundBakeFrame || groundBakeQueue.length === 0) return;
+        groundBakeFrame = requestAnimationFrame((frameTime) => {
+          groundBakeFrame = 0;
+          const request = groundBakeQueue.shift();
+          if (!request) return;
+          groundBakesThisFrame = frameTime === lastGroundBakeFrameTime ? groundBakesThisFrame + 1 : 1;
+          lastGroundBakeFrameTime = frameTime;
+          host.dataset.groundBakesPerFrameMax = String(Math.max(Number(host.dataset.groundBakesPerFrameMax ?? 0), groundBakesThisFrame));
+          try { request.resolve(request.valid() ? request.task() : undefined); }
+          catch (error) { request.reject(error); }
+          pumpGroundBakes();
+        });
+      };
+      const scheduleGroundBake = (requestKey: string, valid: () => boolean, task: () => Sprite): Promise<Sprite | undefined> => {
+        const pending = pendingGroundBakes.get(requestKey);
+        if (pending) return pending;
+        const promise = new Promise<Sprite | undefined>((resolve, reject) => {
+          groundBakeQueue.push({ key: requestKey, valid, task, resolve, reject });
+          host.dataset.groundBakeQueueMax = String(Math.max(
+            Number(host.dataset.groundBakeQueueMax ?? 0),
+            groundBakeQueue.length,
+          ));
+          pumpGroundBakes();
+        });
+        pendingGroundBakes.set(requestKey, promise);
+        const clearPending = () => {
+          if (pendingGroundBakes.get(requestKey) === promise) pendingGroundBakes.delete(requestKey);
+        };
+        void promise.then(clearPending, clearPending);
+        return promise;
+      };
+      const cancelGroundBakes = () => {
+        cancelAnimationFrame(groundBakeFrame);
+        groundBakeFrame = 0;
+        for (const request of groundBakeQueue.splice(0)) request.resolve(undefined);
+        pendingGroundBakes.clear();
+        host.dataset.groundBakeQueue = "0";
+      };
       let loadRetryAttempt = 0;
       let loadRetryTimer = 0;
       let renderedRange = "";
@@ -1329,13 +1482,19 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         scheduleVisibleLoad();
       });
 
+      function destroyGroundView(view: Sprite): void {
+        const texture = view.texture;
+        view.removeFromParent();
+        view.destroy();
+        texture.destroy(true);
+      }
+
       function removeGround(cacheKey: string): void {
         const record = groundContainers.get(cacheKey);
         if (!record) return;
-        record.terrain.removeFromParent(); record.terrain.destroy({ children: true });
-        record.surfaces.removeFromParent(); record.surfaces.destroy({ children: true });
-        record.roads.removeFromParent(); record.roads.destroy({ children: true });
+        destroyGroundView(record.view);
         groundContainers.delete(cacheKey);
+        host!.dataset.staticGroundViews = String(groundContainers.size);
       }
 
       const updateGroundLodDiagnostics = (): void => {
@@ -1348,18 +1507,20 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         host!.dataset.mixedGroundLods = String(activeLods.size > 1);
       };
 
-      function buildGround(cacheKey: string, chunk: ChunkDto, lod: MapLod, animate = false): void {
-        removeGround(cacheKey);
-        const terrain = new Container();
-        const surfaces = new Container();
-        const roads = new Container();
-        terrain.eventMode = "none"; surfaces.eventMode = "none"; roads.eventMode = "none";
+      function createGroundView(chunk: ChunkDto, lod: MapLod): Sprite {
+        const bakeStartedAt = performance.now();
+        const source = new Container();
+        source.eventMode = "none";
         if (lod === "DETAIL") {
+          const terrain = new Container();
+          const surfaces = new Container();
+          const roads = new Container();
           for (const cell of chunk.terrain) terrain.addChild(terrainSprite(cell));
           const surfaceMap = new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
           for (const surface of chunk.surfaces) surfaces.addChild(drawSurface(surface));
           const roadMap = new Map(chunk.roads.map((road) => [key(road), road]));
           for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap, roadMap));
+          source.addChild(terrain, surfaces, roads);
         } else {
           const terrainGraphics = new Graphics();
           for (const cell of chunk.terrain) {
@@ -1369,26 +1530,52 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
             terrainGraphics.rect(cell.x * CELL_SIZE, cell.y * CELL_SIZE, CELL_SIZE * 4, CELL_SIZE * 4)
               .fill(TERRAIN_COLORS[cell.terrain] ?? TERRAIN_COLORS.GRASS);
           }
-          terrain.addChild(terrainGraphics);
           const surfaceGraphics = new Graphics();
           for (const surface of chunk.surfaces) {
             const color = surface.finish === "ASPHALT" ? 0x59636c : surface.finish === "PAVERS" ? 0x8d8f87 : 0x8b6949;
-            surfaceGraphics.rect(surface.x * CELL_SIZE + 1, surface.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2).fill({ color, alpha: 0.92 });
+            surfaceGraphics.rect(surface.x * CELL_SIZE + 1, surface.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2)
+              .fill({ color, alpha: 0.92 });
           }
-          surfaces.addChild(surfaceGraphics);
           const roadGraphics = new Graphics();
           for (const road of chunk.roads) {
-            const color = road.roadClass === "HIGHWAY" ? 0x283542 : road.roadClass === "ARTERIAL" ? 0x32414d : road.roadClass === "COLLECTOR" ? 0x3e4e58 : 0x4b5a61;
+            const color = road.roadClass === "HIGHWAY" ? 0x283542 : road.roadClass === "ARTERIAL" ? 0x32414d
+              : road.roadClass === "COLLECTOR" ? 0x3e4e58 : 0x4b5a61;
             roadGraphics.rect(road.x * CELL_SIZE, road.y * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(color);
           }
-          roads.addChild(roadGraphics);
+          source.addChild(terrainGraphics, surfaceGraphics, roadGraphics);
         }
-        terrainLayer.addChild(terrain); surfaceLayer.addChild(surfaces); roadLayer.addChild(roads);
+
+        const originX = chunk.chunkX * chunk.size * CELL_SIZE;
+        const originY = chunk.chunkY * chunk.size * CELL_SIZE;
+        const texture = app.renderer.textureGenerator.generateTexture({
+          target: source,
+          frame: new Rectangle(originX, originY, chunk.size * CELL_SIZE, chunk.size * CELL_SIZE),
+          resolution: 1,
+          antialias: false,
+        });
+        texture.source.scaleMode = "nearest";
+        source.destroy({ children: true });
+        const view = new Sprite(texture);
+        view.position.set(originX, originY);
+        view.eventMode = "none";
+        const bakeDuration = performance.now() - bakeStartedAt;
+        exposeRollingMetric(host!, "groundBake", groundBakeMetric, bakeDuration);
+        return view;
+      }
+
+      function installGround(cacheKey: string, view: Sprite, lod: MapLod, animate = false): void {
+        removeGround(cacheKey);
+        terrainLayer.addChild(view);
         if (animate && !reducedMotion) {
-          terrain.alpha = surfaces.alpha = roads.alpha = 0;
-          groundFades.push({ containers: [terrain, surfaces, roads], elapsed: 0, duration: 360 });
+          view.alpha = 0;
+          groundFades.push({ containers: [view], elapsed: 0, duration: 360 });
         }
-        groundContainers.set(cacheKey, { terrain, surfaces, roads, lod, usedAt: performance.now() });
+        groundContainers.set(cacheKey, { view, lod, usedAt: performance.now() });
+        // Stale/failed generations can install partial ground and never reach
+        // the end-of-generation pruning pass. Enforce the GPU bound at the
+        // ownership point so rapid pan/LOD churn cannot accumulate textures.
+        pruneGroundCache(desiredKeys);
+        host!.dataset.staticGroundViews = String(groundContainers.size);
         updateGroundLodDiagnostics();
       }
 
@@ -1400,7 +1587,8 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         const terrain = new Map<string, ChunkDto["terrain"][number]>();
         const decorations = new Map<string, ChunkDto["decorations"][number]>();
         const features = new Map<string, WorldFeatureDto>();
-        for (const chunk of chunks.values()) {
+        for (const [cacheKey, chunk] of entityChunks) {
+          if (entityChunkLods.get(cacheKey) !== currentLod) continue;
           for (const cell of chunk.terrain) terrain.set(key(cell), cell);
           for (const road of chunk.roads) roads.set(key(road), road);
           for (const surface of chunk.surfaces) surfaces.set(key(surface), surface);
@@ -1550,6 +1738,7 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         host!.dataset.entityViews = String(
           districtViews.size + taskPlatformViews.size + taskBuildingViews.size + incidentViews.size + decorationViews.size + featureViews.size,
         );
+        host!.dataset.taskBuildingViews = String(taskBuildingViews.size);
         host!.dataset.incidents = String(incidentViews.size);
         host!.dataset.incidentEngines = String([...incidentViews.values()].filter((view) => view.fullResponse).length);
         host!.dataset.hotfixIncidents = String([...incidentViews.values()].filter((view) => view.mode === "HOTFIX_ACTIVE").length);
@@ -1835,6 +2024,42 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         chunkDataCache.set(key, cached);
         return cached;
       };
+      const storeChunkPayload = (cacheKey: string, lod: MapLod, payload: ChunkPayloadDto) => {
+        const key = dataKey(cacheKey, lod);
+        chunkPayloadCache.delete(key);
+        chunkPayloadCache.set(key, payload);
+        while (chunkPayloadCache.size > CHUNK_PAYLOAD_CACHE_LIMIT) {
+          const oldest = chunkPayloadCache.keys().next().value as string | undefined;
+          if (!oldest) break;
+          chunkPayloadCache.delete(oldest);
+        }
+      };
+      const cachedChunkPayload = (cacheKey: string, lod: MapLod): ChunkPayloadDto | undefined => {
+        const key = dataKey(cacheKey, lod);
+        const cached = chunkPayloadCache.get(key);
+        if (!cached) return undefined;
+        chunkPayloadCache.delete(key);
+        chunkPayloadCache.set(key, cached);
+        return cached;
+      };
+      const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal): Promise<ChunkDto> => {
+        const materializeStartedAt = performance.now();
+        let candidate = patchChunkPayloadTaskStatuses(payload, latestTaskStatusPatches);
+        let materialized: ChunkDto;
+        while (true) {
+          materialized = await chunkMaterializer.materialize(candidate, signal);
+          const latest = patchChunkPayloadTaskStatuses(candidate, latestTaskStatusPatches);
+          if (latest === candidate) break;
+          // A status event can cross the stage-3 frontage-decoration threshold
+          // while the worker is running. Re-materialize from the latest context
+          // instead of committing deterministic entities from the stale job.
+          candidate = latest;
+        }
+        materialized = patchChunkTaskStatuses(materialized, latestTaskStatusPatches);
+        const duration = performance.now() - materializeStartedAt;
+        exposeRollingMetric(host!, "chunkMaterialize", chunkMaterializeMetric, duration);
+        return materialized;
+      };
       const fetchChunkData = async (chunkX: number, chunkY: number, lod: MapLod): Promise<ChunkDto> => {
         const cacheKey = chunkKey(chunkX, chunkY);
         let chunk = cachedChunkData(cacheKey, lod);
@@ -1850,12 +2075,40 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
           let pending = pendingChunks.get(key);
           if (!pending) {
             const controller = new AbortController();
-            const promise = api<ChunkDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${lod.toLowerCase()}&worldVersion=${worldVersionRef.current}`, { signal: controller.signal });
+            const promise = (async () => {
+              let payload = cachedChunkPayload(cacheKey, lod);
+              if (!payload) {
+                const response = await apiWithMetrics<ChunkPayloadDto | ChunkDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${lod.toLowerCase()}`, {
+                  signal: controller.signal,
+                  cache: "no-cache",
+                  headers: { accept: "application/vnd.tasktopia.chunk-payload+json; version=2" },
+                });
+                const responseWorldVersion = Number(response.headers.get("x-world-version"));
+                exposeRollingMetric(host!, "chunkPayload", chunkPayloadMetric, response.metrics.decodedBytes, "Bytes");
+                exposeRollingMetric(host!, "chunkRequest", chunkRequestMetric, response.metrics.requestMs);
+                exposeRollingMetric(host!, "chunkParse", chunkParseMetric, response.metrics.parseMs);
+                if (!("payloadVersion" in response.data)) {
+                  // A v1.13.5 server ignores the v2 Accept header and returns a
+                  // fully materialized chunk. Keep this reader during rollout
+                  // and rollback so already-loaded v2 tabs remain functional.
+                  const legacy = Number.isFinite(responseWorldVersion)
+                    ? { ...response.data, worldVersion: responseWorldVersion }
+                    : response.data;
+                  return patchChunkTaskStatuses(legacy, latestTaskStatusPatches);
+                }
+                payload = Number.isFinite(responseWorldVersion)
+                  ? { ...response.data, publishedVersion: responseWorldVersion }
+                  : response.data;
+                storeChunkPayload(cacheKey, lod, payload);
+              }
+              return materializePayload(payload, controller.signal);
+            })();
             pending = { controller, promise };
             pendingChunks.set(key, pending);
           }
           try {
             chunk = await pending.promise;
+            if (pendingChunks.get(key) !== pending) throw new DOMException("Stale chunk request", "AbortError");
             storeChunkData(cacheKey, lod, chunk);
           } finally {
             if (pendingChunks.get(key) === pending) pendingChunks.delete(key);
@@ -1863,6 +2116,7 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         }
         return chunk;
       };
+
       const scheduleEntityReconcile = (rebuildMovement: boolean) => {
         reconcileMovement ||= rebuildMovement;
         if (reconcileFrame) return;
@@ -1871,6 +2125,43 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
           renderEntities(reconcileMovement);
           reconcileMovement = false;
         });
+      };
+      const publishEntityWhenReady = async (
+        cacheKey: string,
+        baseChunk: ChunkDto,
+        lod: MapLod,
+        valid: () => boolean,
+        rebuildMovement: boolean,
+      ): Promise<void> => {
+        entityChunkLods.delete(cacheKey);
+        let candidate = patchChunkTaskStatuses(baseChunk, latestTaskStatusPatches);
+        let assetFailures = 0;
+        while (valid()) {
+          const loadedAssets = requiredEntityAssets([candidate], lod).sort();
+          try {
+            await withAssetSlot(() => Assets.load(loadedAssets).then(() => undefined));
+            assetFailures = 0;
+          } catch (error) {
+            assetFailures += 1;
+            if (assetFailures > 2 || !valid()) throw error;
+            await new Promise<void>((resolve) => window.setTimeout(resolve, assetFailures * 250));
+            continue;
+          }
+          if (!valid()) return;
+          // A realtime status may arrive while PNG decoding is in progress.
+          // Re-read it after every await and load another stage when needed;
+          // the final patch + publish below is synchronous.
+          const latest = patchChunkTaskStatuses(candidate, latestTaskStatusPatches);
+          const latestAssets = requiredEntityAssets([latest], lod).sort();
+          if (latestAssets.length !== loadedAssets.length
+            || latestAssets.some((asset, index) => asset !== loadedAssets[index])) {
+            candidate = latest;
+            continue;
+          }
+          publishEntityChunk(cacheKey, latest, lod);
+          scheduleEntityReconcile(rebuildMovement);
+          return;
+        }
       };
       const preloadAmbientAssets = (): void => {
         if (ambientAssetsReady || ambientAssetsPromise) return;
@@ -1886,15 +2177,25 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
           if (!disposed) host!.dataset.ambientAssets = "retry";
         });
       };
-      const commitChunk = (cacheKey: string, chunk: ChunkDto, lod: MapLod, rebuildMovement: boolean, deferStaticRender = false) => {
+      const commitChunk = (
+        cacheKey: string,
+        chunk: ChunkDto,
+        lod: MapLod,
+        rebuildMovement: boolean,
+        deferStaticRender = false,
+        deferEntityRender = false,
+        preparedGround?: Sprite,
+      ) => {
         chunks.set(cacheKey, chunk);
         chunkLods.set(cacheKey, lod);
+        if (!deferEntityRender) publishEntityChunk(cacheKey, chunk, lod);
         const ground = groundContainers.get(cacheKey);
         const wasInvalidated = invalidatedGroundKeys.delete(cacheKey);
         const rebuildGround = wasInvalidated || ground?.lod !== lod;
         if (!rebuildGround && ground) ground.usedAt = performance.now();
-        else buildGround(cacheKey, chunk, lod, wasInvalidated);
-        scheduleEntityReconcile(rebuildMovement);
+        else if (preparedGround) installGround(cacheKey, preparedGround, lod, wasInvalidated);
+        else throw new Error(`Ground ${cacheKey}:${lod} was committed before its queued bake completed`);
+        if (!deferEntityRender) scheduleEntityReconcile(rebuildMovement);
         host!.dataset.groundRebuilds = String(Number(host!.dataset.groundRebuilds ?? 0) + (rebuildGround ? 1 : 0));
         host!.dataset.residentChunks = String(chunks.size);
         host!.dataset.mapLod = lod.toLowerCase();
@@ -1905,16 +2206,25 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         setFirstFrameReady(true);
         paintedFrame = true;
       };
-      const pruneGroundCache = (active: Set<string>) => {
-        if (groundContainers.size <= GROUND_CACHE_LIMIT) return;
+      function pruneGroundCache(active: Set<string>): void {
+        const effectiveLimit = Math.max(GROUND_CACHE_LIMIT, active.size);
+        if (groundContainers.size <= effectiveLimit) return;
         const candidates = [...groundContainers.entries()]
           .filter(([cacheKey]) => !active.has(cacheKey))
           .sort((left, right) => left[1].usedAt - right[1].usedAt);
+        let removedEntitySource = false;
         for (const [cacheKey] of candidates) {
-          if (groundContainers.size <= GROUND_CACHE_LIMIT) break;
+          if (groundContainers.size <= effectiveLimit) break;
           removeGround(cacheKey);
+          chunks.delete(cacheKey);
+          chunkLods.delete(cacheKey);
+          entityChunks.delete(cacheKey);
+          entityChunkLods.delete(cacheKey);
+          removedEntitySource = true;
         }
-      };
+        if (removedEntitySource) scheduleEntityReconcile(false);
+        host!.dataset.groundCache = String(groundContainers.size);
+      }
       const drainVisibleLoads = async (): Promise<void> => {
         if (loadRunning) return;
         loadRunning = true;
@@ -1926,52 +2236,116 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
             const active = new Set(desiredKeys);
             const rebuildMovement = pendingMovementRebuild;
             const lodTransition = lod !== currentLod;
+            const preparedGrounds = new Map<string, Sprite>();
+            const discardPreparedGrounds = () => {
+              for (const view of preparedGrounds.values()) destroyGroundView(view);
+              preparedGrounds.clear();
+            };
             try {
               const fetched = new Map<string, ChunkDto>();
-              await inParallel(wanted, CHUNK_FETCH_CONCURRENCY, async ([chunkX, chunkY]) => {
+              const groundReady = new Set<string>();
+              const withFetchSlot = concurrencyGate(CHUNK_FETCH_CONCURRENCY);
+              // The center-first plan now flows through fetch -> worker decode
+              // -> assets -> paint independently. One slow background response
+              // can no longer hold the first visible chunk behind a viewport
+              // sized Promise.all barrier.
+              await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
                 if (disposed || generation !== loadGeneration) return;
                 const cacheKey = chunkKey(chunkX, chunkY);
                 if (!lodTransition
                   && chunks.has(cacheKey)
                   && chunkLods.get(cacheKey) === lod
                   && groundContainers.get(cacheKey)?.lod === lod
+                  && entityChunkLods.get(cacheKey) === lod
                   && !invalidatedGroundKeys.has(cacheKey)) {
                   const ground = groundContainers.get(cacheKey);
                   if (ground) ground.usedAt = performance.now();
                   return;
                 }
-                const chunk = await fetchChunkData(chunkX, chunkY, lod);
+                let chunk = await withFetchSlot(() => {
+                  if (disposed || generation !== loadGeneration) return Promise.reject(new DOMException("Stale viewport", "AbortError"));
+                  return fetchChunkData(chunkX, chunkY, lod);
+                });
                 fetched.set(cacheKey, chunk);
-              });
-              if (disposed || generation !== loadGeneration || desiredLod !== lod) continue;
-              if (lod === "DETAIL") preloadAmbientAssets();
-              await inParallel(wanted, CHUNK_ASSET_CONCURRENCY, async ([chunkX, chunkY]) => {
-                if (disposed || generation !== loadGeneration) return;
-                const cacheKey = chunkKey(chunkX, chunkY);
-                const chunk = fetched.get(cacheKey);
-                if (!chunk) return;
-                await Assets.load(requiredAssets([chunk], lod));
+                if (lod === "DETAIL") preloadAmbientAssets();
+                await withAssetSlot(() => Assets.load(requiredGroundAssets([chunk], lod)).then(() => undefined));
                 if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) return;
-                // Panning within one LOD stays progressive. During an LOD
-                // transition the old coherent frame remains visible until every
-                // target chunk is asset-ready; the synchronous swap below then
-                // prevents overview/detail rectangles from sharing a frame.
-                if (!lodTransition) commitChunk(cacheKey, chunk, lod, rebuildMovement);
-              });
-              if (disposed || generation !== loadGeneration || desiredLod !== lod) continue;
+                const ground = groundContainers.get(cacheKey);
+                if (invalidatedGroundKeys.has(cacheKey) || ground?.lod !== lod) {
+                  const prepared = await scheduleGroundBake(
+                    `${generation}:${lod}:${cacheKey}`,
+                    () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey),
+                    () => createGroundView(chunk, lod),
+                  );
+                  if (!prepared) return;
+                  if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) {
+                    destroyGroundView(prepared);
+                    return;
+                  }
+                  preparedGrounds.set(cacheKey, prepared);
+                }
+                groundReady.add(cacheKey);
+                // During an LOD transition the previous coherent frame remains
+                // until all targets are ready. Ordinary movement paints each
+                // central ground as soon as its static assets are complete;
+                // buildings and props cannot hold that first paint hostage.
+                if (!lodTransition) {
+                  chunk = patchChunkTaskStatuses(chunk, latestTaskStatusPatches);
+                  fetched.set(cacheKey, chunk);
+                  commitChunk(cacheKey, chunk, lod, rebuildMovement, false, true, preparedGrounds.get(cacheKey));
+                  preparedGrounds.delete(cacheKey);
+                  await publishEntityWhenReady(
+                    cacheKey,
+                    chunk,
+                    lod,
+                    () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey),
+                    rebuildMovement,
+                  );
+                }
+              }));
+
+              if (disposed || generation !== loadGeneration || desiredLod !== lod) {
+                discardPreparedGrounds();
+                continue;
+              }
               if (lodTransition) {
                 currentLod = lod;
                 for (const [chunkX, chunkY] of wanted) {
                   const cacheKey = chunkKey(chunkX, chunkY);
-                  const chunk = fetched.get(cacheKey);
-                  if (chunk && desiredKeys.has(cacheKey)) commitChunk(cacheKey, chunk, lod, rebuildMovement, true);
+                  let chunk = fetched.get(cacheKey);
+                  if (chunk && groundReady.has(cacheKey) && desiredKeys.has(cacheKey)) {
+                    chunk = patchChunkTaskStatuses(chunk, latestTaskStatusPatches);
+                    fetched.set(cacheKey, chunk);
+                    commitChunk(cacheKey, chunk, lod, rebuildMovement, true, true, preparedGrounds.get(cacheKey));
+                    preparedGrounds.delete(cacheKey);
+                  }
                 }
+                // Entity payloads from the previous LOD remain cached but are
+                // not a valid source for the new renderer while its assets load.
+                scheduleEntityReconcile(rebuildMovement);
                 if (reducedMotion) {
                   app.render();
                   host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
                 }
+                // The coherent ground swap is complete. Dynamic entities may
+                // now stream independently without leaving the old LOD visible.
+                await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
+                  const cacheKey = chunkKey(chunkX, chunkY);
+                  const chunk = fetched.get(cacheKey);
+                  if (!chunk || !desiredKeys.has(cacheKey)) return;
+                  await publishEntityWhenReady(
+                    cacheKey,
+                    chunk,
+                    lod,
+                    () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey),
+                    rebuildMovement,
+                  );
+                }));
+                if (disposed || generation !== loadGeneration || desiredLod !== lod) continue;
               }
+              discardPreparedGrounds();
             } catch (error) {
+              discardPreparedGrounds();
               if (!disposed && generation === loadGeneration && !(error instanceof DOMException && error.name === "AbortError")) {
                 host!.dataset.loadError = "true";
                 host!.dataset.loading = "false";
@@ -2001,6 +2375,8 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
             for (const cacheKey of [...chunks.keys()]) {
               if (active.has(cacheKey)) continue;
               chunks.delete(cacheKey);
+              entityChunks.delete(cacheKey);
+              entityChunkLods.delete(cacheKey);
               chunkLods.delete(cacheKey);
               removedEntities = true;
             }
@@ -2012,6 +2388,7 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
             host!.dataset.residentChunks = String(chunks.size);
             host!.dataset.groundCache = String(groundContainers.size);
             host!.dataset.chunkDataCache = String(chunkDataCache.size);
+            host!.dataset.chunkPayloadCache = String(chunkPayloadCache.size);
             host!.dataset.chunkRange = renderedRange;
             host!.dataset.mapLod = currentLod.toLowerCase();
             host!.dataset.loading = "false";
@@ -2044,6 +2421,8 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         }
         const resident = new Set([...chunks.keys()].filter((cacheKey) => (
           chunkLods.get(cacheKey) === nextLod && groundContainers.get(cacheKey)?.lod === nextLod && !invalidatedGroundKeys.has(cacheKey)
+          && entityChunkLods.get(cacheKey) === nextLod
+          && !options.forceKeys?.has(cacheKey)
         )));
         const plan = progressiveChunkPlan(range, resident);
         const wanted = [...plan.critical, ...plan.background] as Array<[number, number]>;
@@ -2059,6 +2438,7 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
           for (const cacheKey of options.forceKeys) {
             for (const lod of ["DETAIL", "OVERVIEW"] as const) {
               chunkDataCache.delete(dataKey(cacheKey, lod));
+              chunkPayloadCache.delete(dataKey(cacheKey, lod));
               const pending = pendingChunks.get(dataKey(cacheKey, lod));
               pending?.controller.abort();
               pendingChunks.delete(dataKey(cacheKey, lod));
@@ -2068,6 +2448,17 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         }
         pendingMovementRebuild ||= Boolean(options.rebuildMovement);
         loadGeneration += 1;
+        // Cancel only work that cannot serve the new viewport. Overlapping
+        // requests remain useful, while a slow off-screen response no longer
+        // holds the single drain loop behind obsolete Promise.all work.
+        for (const [key, pending] of pendingChunks) {
+          const separator = key.lastIndexOf(":");
+          const cacheKey = key.slice(0, separator);
+          const lod = key.slice(separator + 1) as MapLod;
+          if (lod === nextLod && activeKeys.has(cacheKey)) continue;
+          pending.controller.abort();
+          pendingChunks.delete(key);
+        }
         host!.dataset.loading = "true";
         beginStreamingFeedback();
         void drainVisibleLoads();
@@ -2093,6 +2484,106 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         },
         invalidate(event) {
           if (event.type === "task.status_changed" && event.status === "COMPLETED" && event.affectedBounds) launchCelebration(event.affectedBounds);
+          if (event.type === "task.status_changed" && event.taskId && event.status
+            && event.progress !== undefined && event.stage !== undefined) {
+            const previous = latestTaskStatusPatches.get(event.taskId);
+            if (!previous || event.worldVersion > previous.worldVersion) {
+              latestTaskStatusPatches.delete(event.taskId);
+              latestTaskStatusPatches.set(event.taskId, {
+                status: event.status as ChunkTaskDto["status"],
+                progress: event.progress,
+                stage: event.stage,
+                worldVersion: event.worldVersion,
+              });
+            }
+            while (latestTaskStatusPatches.size > TASK_STATUS_PATCH_LIMIT) {
+              const oldest = latestTaskStatusPatches.keys().next().value as string | undefined;
+              if (!oldest) break;
+              latestTaskStatusPatches.delete(oldest);
+            }
+          }
+          if (event.type === "task.comment_added" || event.type === "task.assignee_changed"
+            || event.type === "country.profile_updated" || event.type === "archive.record_updated") return;
+          if (event.type === "task.status_changed" && event.groundChanged === false
+            && event.taskId && event.status && event.progress !== undefined && event.stage !== undefined) {
+            let patched = false;
+            const patchedChunks = new Map<string, ChunkDto>();
+            const decorationRefreshes = new Map<string, { payload: ChunkPayloadDto; lod: MapLod }>();
+            for (const [payloadKey, payload] of chunkPayloadCache) {
+              const contextTask = payload.decorationContext.tasks.find((task) => task.id === event.taskId);
+              const next = patchChunkPayloadTaskStatuses(payload, latestTaskStatusPatches);
+              if (next !== payload) chunkPayloadCache.set(payloadKey, next);
+              if (!contextTask || (contextTask.stage >= 3) === (event.stage >= 3)) continue;
+              const separator = payloadKey.lastIndexOf(":");
+              const cacheKey = payloadKey.slice(0, separator);
+              const lod = payloadKey.slice(separator + 1) as MapLod;
+              chunkDataCache.delete(payloadKey);
+              if (lod === currentLod && chunks.has(cacheKey) && desiredKeys.has(cacheKey)) {
+                decorationRefreshes.set(cacheKey, { payload: next, lod });
+              }
+            }
+            for (const [cacheKey, chunk] of chunks) {
+              const next = patchChunkTaskStatuses(chunk, latestTaskStatusPatches);
+              if (next !== chunk) { chunks.set(cacheKey, next); patchedChunks.set(cacheKey, next); patched = true; }
+            }
+            for (const [cacheKey, chunk] of chunkDataCache) {
+              const next = patchChunkTaskStatuses(chunk, latestTaskStatusPatches);
+              if (next !== chunk) chunkDataCache.set(cacheKey, next);
+            }
+            if (patched || decorationRefreshes.size > 0) {
+              // A status transition can point at a different authored stage.
+              // Use the same entity-only retry path as ordinary streaming so
+              // a transient PNG error cannot leave this new stage permanently
+              // marked ready or force a ground refetch/rebake.
+              for (const [cacheKey, refresh] of decorationRefreshes) {
+                entityChunkLods.delete(cacheKey);
+                void materializePayload(refresh.payload).then(async (chunk) => {
+                  if (disposed || !desiredKeys.has(cacheKey) || chunkLods.get(cacheKey) !== refresh.lod) return;
+                  const resident = chunks.get(cacheKey);
+                  if (resident && resident.worldVersion > chunk.worldVersion) return;
+                  chunks.set(cacheKey, chunk);
+                  storeChunkData(cacheKey, refresh.lod, chunk);
+                  host!.dataset.realtimeDecorations = "rematerialized";
+                  await publishEntityWhenReady(
+                    cacheKey,
+                    chunk,
+                    refresh.lod,
+                    () => !disposed && desiredKeys.has(cacheKey) && chunks.get(cacheKey) === chunk,
+                    false,
+                  );
+                }).catch(() => {
+                  if (disposed || !desiredKeys.has(cacheKey)) return;
+                  host!.dataset.realtimeAssets = "retry";
+                  desiredRange = "";
+                  window.clearTimeout(loadRetryTimer);
+                  loadRetryTimer = window.setTimeout(() => {
+                    if (!disposed && desiredKeys.has(cacheKey)) loadVisible({ isRetry: true });
+                  }, 500);
+                });
+              }
+              for (const [cacheKey, chunk] of patchedChunks) {
+                if (decorationRefreshes.has(cacheKey)) continue;
+                entityChunkLods.delete(cacheKey);
+                void publishEntityWhenReady(
+                  cacheKey,
+                  chunk,
+                  currentLod,
+                  () => !disposed && desiredKeys.has(cacheKey) && chunks.get(cacheKey) === chunk,
+                  false,
+                ).catch(() => {
+                  if (disposed || chunks.get(cacheKey) !== chunk) return;
+                  host!.dataset.realtimeAssets = "retry";
+                  desiredRange = "";
+                  window.clearTimeout(loadRetryTimer);
+                  loadRetryTimer = window.setTimeout(() => {
+                    if (!disposed && chunks.get(cacheKey) === chunk) loadVisible({ isRetry: true });
+                  }, 500);
+                });
+              }
+            }
+            return;
+          }
+          const groundChanged = event.groundChanged ?? !GROUND_PRESERVING_EVENTS.has(event.type);
           const forceKeys = new Set<string>();
           const affectedKeys = new Set<string>();
           if (event.affectedBounds) {
@@ -2107,12 +2598,14 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
             for (const cacheKey of chunks.keys()) affectedKeys.add(cacheKey);
             for (const cacheKey of groundContainers.keys()) affectedKeys.add(cacheKey);
             chunkDataCache.clear();
+            chunkPayloadCache.clear();
           }
           for (const cacheKey of affectedKeys) {
-            if (groundContainers.has(cacheKey)) invalidatedGroundKeys.add(cacheKey);
+            if (groundChanged && groundContainers.has(cacheKey)) invalidatedGroundKeys.add(cacheKey);
             for (const lod of ["DETAIL", "OVERVIEW"] as const) {
               const key = dataKey(cacheKey, lod);
               chunkDataCache.delete(key);
+              chunkPayloadCache.delete(key);
               pendingChunks.get(key)?.controller.abort();
               pendingChunks.delete(key);
             }
@@ -2168,9 +2661,12 @@ export function WorldCanvas({ countryId, worldVersion, chunkSize, viewBounds, fo
         if (districtTooltipLayerRef.current === districtTooltipLayer) districtTooltipLayerRef.current = null;
         if (runtimeRef.current) runtimeRef.current = null;
         resizeObserver.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer); window.clearTimeout(streamingTimer);
+        cancelGroundBakes();
         intersectionObserver.disconnect();
         for (const pending of pendingChunks.values()) pending.controller.abort();
         pendingChunks.clear();
+        for (const cacheKey of [...groundContainers.keys()]) removeGround(cacheKey);
+        chunkMaterializer.destroy();
         canvas.removeEventListener("wheel", wheel); document.removeEventListener("visibilitychange", visibility);
       };
     })();

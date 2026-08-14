@@ -7,7 +7,7 @@ import type {
   Rect,
 } from "../../shared/contracts";
 import { cellKey, rectangleFootprint } from "./grid";
-import { hashCoordinate } from "./terrain";
+import { hashCoordinate } from "../../shared/world-terrain";
 
 /**
  * V10 complex planner. A complex (ЖК) is one coherent perimeter block that
@@ -116,10 +116,11 @@ type ArchetypeProfile = { baseW: number; minW: number; maxW: number; depth: numb
 
 const PROFILE: Record<DistrictArchetype, ArchetypeProfile> = {
   NEW_BUILD: { baseW: 6, minW: 5, maxW: 8, depth: 5 },
-  // Current private houses span 4–9 cells. Seven-cell bays keep four varied
-  // facades on one frontage; a narrow townhouse leaves a reusable side strip
-  // instead of forcing the next task onto another road.
-  PRIVATE: { baseW: 7, minW: 6, maxW: 9, depth: 6 },
+  // Current ordinary private houses span 4–9 cells and are intentionally much
+  // smaller than new-build towers. Seven/eight-cell bays produce five/six-
+  // house frontage rows while seeded widths keep neighbouring quarters from
+  // becoming clones. Oversized villas raise minimumLot explicitly.
+  PRIVATE: { baseW: 8, minW: 7, maxW: 9, depth: 5 },
   // Mixed-use catalog entries include 5-cell-deep podiums and towers. A
   // four-cell lot made those valid buildings impossible to place and forced
   // speculative district growth before falling back to an unrelated model.

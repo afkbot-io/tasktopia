@@ -12,7 +12,7 @@
 ## Canvas and projection
 
 - Base cell is `8×8 px`; every runtime dimension is a positive multiple of eight.
-- Camera is strict frontal-top, not a three-quarter view: the facade plane is parallel to the screen, all vertical edges stay vertical, storeys stay horizontal, and the left/right facade edges have the same height. A shallow roof/top plane is visible. A darker right depth cue is optional and may occupy at most `max(2 px, 8% of sprite width)`; a receding side facade is forbidden. Do not use isometric diamonds or a flat elevation with no roof information.
+- Camera is strict frontal-top, not a three-quarter view: the facade plane is parallel to the screen, all vertical edges stay vertical, storeys stay horizontal, and the left/right facade edges have the same height. A shallow roof/top plane is visible. The same camera applies to **every** horizontal architectural surface: porch and canopy roofs, entrance steps and landings, bay-window caps, balcony floors, podiums, setbacks, terraces, parapets and high-rise crowns. Their near and far edges stay horizontal and share one compressed depth direction; none may collapse into a flat front stripe. A darker right depth cue is optional and may occupy at most `max(2 px, 8% of sprite width)`; a receding side facade is forbidden. Do not use isometric diamonds or a flat elevation with no roof information.
 - `anchorPx = [width / 2, height]`. Opaque pixels must touch the bottom two rows unless the asset contract documents a deliberate floating effect.
 - Canvas width equals footprint width × 8 for buildings. Height may exceed footprint height to contain the facade.
 - Entrance position in the drawing and manifest must agree within one cell.
@@ -41,7 +41,15 @@
 - Human scale is fixed before facade detail: a normal single door is `8×16 px`, a double entrance is `16×16 px`, and a foreground adult resident occupies up to `12×20 px` inside a `16×24 px` canvas. The extra resident height represents perspective and readable motion, not a larger doorway; feet stay on the cell anchor. Do not resize doors independently between buildings or construction stages.
 - Windows are normally 2–6 px wide; do not represent each window with single noisy pixels on large buildings.
 - Roof plane is shallow: normally 2–8 px. A landmark may exceed this when the roof is its defining silhouette.
+- A detached house must expose both the main roof plane and the top plane of any porch/landing that projects toward the street. The porch projection is normally `2–4 px`, remains centred on the declared entrance and never reveals a side facade. A high-rise with stepped massing must expose a consistent `2–6 px` top strip on every setback; alternating flat and top-visible ledges inside one sprite is a projection failure.
 - Use one strong identity cue per building and at most two supporting cues. Too many one-pixel details become noise.
+- A detached one-storey private house normally occupies 6–9 cells in width,
+  5–8 sprite-canvas cells in height and 4–6 physical depth cells. Its finished
+  facade mass is measured in the building geometry contract. A single entrance
+  remains 8×16 px; normal windows stay 4–6 px wide and roughly 8–12 px high.
+  If an inherited sprite violates that human scale, regenerate the architecture
+  compactly. Do not shrink a large facade as one bitmap: that produces tiny
+  doors/windows and destroys the approved pixel clusters.
 
 ## Five-stage progression
 
@@ -80,6 +88,9 @@ Review on transparent checkerboard, dark pack background, meadow, stone, and asp
 
 - A walking resident uses three distinct frames for each direction: contact, passing and opposite contact. East may be mirrored for west; north/back and south/front require their own authored frames. The bottom-centre foot anchor remains fixed across all frames, and the head may not bob more than one pixel.
 - A walking resident canvas is `16×24 px`; the opaque figure is at most `12×20 px`, with hard alpha, one anchored baseline and three visibly distinct authored poses per direction. West may be a pixel-exact mirror of east; north and south remain separately authored. Dialogue/UI is a separate foreground layer and is never baked into the sprite.
+- A cyclist or scooter rider uses a `3×3` authored atlas: horizontal, north and south rows; contact, passing and opposite-contact columns. Horizontal west is the exact east mirror. Advance the frame from route progress plus a persistent step counter, never from camera movement, zoom or chunk mount. The shared lower-centre contact anchor stays in its sidewalk cell in all nine frames.
+- Every walking animal uses a `3×4` authored atlas: north, east, south and west rows; three gait phases per row. Do not fake motion by vertical jumping, whole-sprite rotation or reusing a static pose. Small species may use an `8×8` frontal canvas and `16×8` side canvas; tall species use `8×16` frontal and `16×16` side canvases, while their logical occupied cell remains one centred terrain cell.
+- Emergency road vehicles are measured against the normal car family. A fire engine is `32×8 px` with a `30×7 px` opaque body — approximately two `16×8 px` cars, not a miniature car and not a building-sized prop. It keeps the same horizontal frontal-top roof visibility and road baseline as cars; ladders and roof equipment stay within the authored vehicle silhouette.
 - Standard trees use a `16×32 px` canvas, `1×1` gameplay footprint and
   anchor `[8,32]`. Define the exact planting cell as the lower-centre
   `8×8 px` rectangle `x=4..11`, `y=24..31`. The trunk/root must touch row

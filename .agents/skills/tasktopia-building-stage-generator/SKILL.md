@@ -21,8 +21,13 @@ Read all of these before generating:
 1. Inspect stage 5 at original resolution.
 2. Require explicit `widthCells`, `depthCells`, `heightCells`, `projectedRoofDepthCells`, entrance and one-cell construction clearance.
 3. Run the verifier against stage 5 before generating. Stop if stage 5 fails canvas, coverage or projection checks.
-4. Treat physical depth and screen depth separately. Never draw a `depthCells × 8`-pixel roof plane. Use `projectedRoofDepthCells × 8` for every visible horizontal plane.
+4. Treat physical depth and screen depth separately. Never draw a `depthCells × 8`-pixel roof plane. Use `projectedRoofDepthCells × 8` for the principal roof and preserve that same compressed depth direction on every secondary horizontal plane. Porches, landings, canopies, balconies, podiums, setbacks, terraces and crowns must expose a shallow top surface; none may become a flat facade stripe or introduce a receding side wall.
 5. Treat the outside fence, stage-1 site and stage-2 foundation as shared tile composition. Do not bake them or pavement into the structure image.
+6. Classify scale before drawing. A private one-storey house is not a shortened
+   high-rise: use a compact canvas/footprint, one 8×16 entrance module, 4–6 px
+   wide windows and a building-specific finished occupied-size range. When an
+   existing source is materially too large, too small or vertically stretched,
+   regenerate it; do not squeeze it into the target canvas.
 
 ## Generate backwards
 
@@ -34,7 +39,13 @@ Generate in this order: `5 → 4 → 3`. If stage 5 is already approved, derive 
 - Ask for exactly one isolated stage with **true transparent alpha**. Never request a checkerboard, chroma backdrop, sheet, sequence, comparison board, pavement or surrounding scene. A chroma source is permitted only as an explicit recovery fallback and must never enter the catalog.
 - Preserve the approved stage-5 **source canvas aspect ratio and subject-to-canvas scale** in every reverse-stage request. Never force a landscape source into a square canvas (or the reverse): the verifier normalizes the full source canvas, so changing its aspect ratio silently changes occupied width and breaks stage registration.
 - Preserve facade centre, roof bounds, entrance centre, floor rhythm, material palette and light from upper-left.
-- Preserve the human-scale contract: single doors are `8×16 px`, double doors are `16×16 px`; construction staging must not shrink them to make the facade fit.
+- Preserve one camera across the complete massing. On a private house show a shallow top plane on both roof and street-facing porch/landing. On a stepped high-rise show a consistent shallow top strip on every setback, podium and crown. Reject alternating flat ledges and top-visible ledges.
+- Preserve the human-scale contract: a single door is an `8×16 px` outer
+  module with a `6×14 px` moving leaf; a double door is a `16×16 px` outer
+  module with two moving leaves occupying `12×14 px` together. Portal columns,
+  canopy, transom and ground-floor glazing stay outside that measurement.
+  Construction staging must not shrink or enlarge the module to make the
+  facade fit.
 - Keep all landscaping external: trees use their own `16×32` sprite and
   central lower `8×8` planting cell, so no tree, planter, bench or fence may be
   painted into a building stage.
@@ -49,6 +60,17 @@ Generate in this order: `5 → 4 → 3`. If stage 5 is already approved, derive 
 
 - Stage 4: retain 90–100% of final massing; expose unfinished panels and close scaffolding without changing the silhouette.
 - Stage 3: retain the same structural bay grid; show columns, floor slabs and core at 50–75% of final height.
+- Before requesting stage 3, read the verifier's `authoringFrameNormalized`
+  from the accepted stage 5. State the finished top and bottom fractions in the
+  prompt and require stage 3 to share the exact finished bottom fraction while
+  starting lower in the canvas. A reliable target is `65%` of the finished
+  occupied height. Empty magenta/transparent margin must remain above the
+  partial frame; asking only for a "half-built house" is not precise enough.
+- If the first generated frame is too tall or too short, edit that authored
+  frame with the accepted stage 5 as the placement reference. Change the
+  structural height and source placement in the image model; never crop,
+  stretch, translate or squash the accepted source with code to satisfy the
+  ratio.
 - Stage 2: shared `8×8` foundation tiles fill the full building width and a projected site depth of `clamp(ceil(physicalDepth × 0.42), 3, 5)` cells.
 - Stage 1: shared earth/survey tiles fill the same projected site rectangle.
 - Stage 1 selects only planning equipment; stage 2 selects only foundation equipment. A compact site receives 2–3 unique props and a tower site 5–7, seeded by task identity. Large machines require a large enough pad; every footprint stays disjoint and the two-cell gate corridor stays empty. Never place more than one `CRANE` or one `VEHICLE` group on one site.

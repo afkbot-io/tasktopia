@@ -16,7 +16,10 @@ const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
 type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
-type MapInvalidation = { id: number; type: string; affectedBounds?: Rect; taskId?: string; status?: string; progress?: number };
+type MapInvalidation = {
+  id: number; worldVersion: number; type: string; affectedBounds?: Rect; taskId?: string;
+  status?: string; progress?: number; stage?: number; groundChanged?: boolean;
+};
 type RealtimeNotice = { id: number; text: string; tone: "info" | "success" };
 type CityFocus = Pick<CityDto, "id" | "name" | "center" | "bounds">;
 
@@ -27,10 +30,12 @@ function eventInvalidation(event: RealtimeEvent): MapInvalidation {
     ? candidate as Rect
     : undefined;
   return {
-    id: event.id, type: event.type, affectedBounds,
+    id: event.id, worldVersion: event.worldVersion, type: event.type, affectedBounds,
     taskId: typeof event.payload.taskId === "string" ? event.payload.taskId : undefined,
     status: typeof event.payload.status === "string" ? event.payload.status : undefined,
     progress: typeof event.payload.progress === "number" ? event.payload.progress : undefined,
+    stage: typeof event.payload.stage === "number" ? event.payload.stage : undefined,
+    groundChanged: typeof event.payload.groundChanged === "boolean" ? event.payload.groundChanged : undefined,
   };
 }
 
@@ -268,7 +273,7 @@ export function App() {
                 }}
                 onCityHover={hoverAtlasCity}
               />
-            : <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} worldVersion={bootstrap.country.worldVersion} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />}
+            : <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />}
         </Suspense>
         <div className="map-help">{effectiveMapMode === "ATLAS"
           ? <><span>Район — навести для сводки</span><span>Район — открыть по центру</span><span>Название — открыть весь город</span></>

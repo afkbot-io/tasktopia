@@ -29,8 +29,8 @@ describe("active building catalog", () => {
     expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.tags.includes("new-build"))!)).toBe("STONE");
   });
 
-  it("keeps the reviewed emergency-service facades available to the task scheduler", () => {
-    for (const role of ["health-service", "fire-service", "police-service"]) {
+  it("keeps the reviewed city-service facades available to the task scheduler", () => {
+    for (const role of ["health-service", "fire-service", "police-service", "parking-service"]) {
       expect(TASK_BUILDING_CATALOG.some((entry) => entry.serviceRole === role), role).toBe(true);
     }
   });
@@ -119,7 +119,9 @@ describe("active building catalog", () => {
       expect(PROP_CATALOG[key]).toMatchObject({ size: { width: 32, height: 16 }, footprint: { width: 1, height: 1 } });
       expect(existsSync(assetDiskPath(PROP_CATALOG[key]!.path))).toBe(true);
     }
-    for (const species of ["fox", "deer", "rabbit", "boar"]) expect(PROP_CATALOG[`animal-${species}-east`]).toBeDefined();
+    for (const species of ["fox", "deer", "rabbit", "boar"]) for (const frame of ["a", "b", "c"]) {
+      expect(PROP_CATALOG[`animal-${species}-east-${frame}`]).toBeDefined();
+    }
   });
 
   it("registers crisp incident-response sprites on the same pixel grid", () => {
@@ -131,27 +133,29 @@ describe("active building catalog", () => {
     }
   });
 
-  it("keeps every human on the enlarged authored walker scale and gives crewed boats a slender footprint", () => {
+  it("keeps moving residents on the enlarged authored scale and gives crewed boats a slender footprint", () => {
     const walkerSize = PROP_CATALOG["walker-south-a"]?.size;
-    expect(walkerSize).toEqual({ width: 8, height: 16 });
+    expect(walkerSize).toEqual({ width: 16, height: 24 });
     for (const direction of ["north", "east", "south", "west"]) {
       for (const frame of ["a", "b", "c"]) {
         expect(PROP_CATALOG[`walker-${direction}-${frame}`]?.size).toEqual(walkerSize);
       }
     }
     for (const key of ["fisher-north", "fisher-east", "fisher-south", "fisher-west", "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"]) {
-      expect(PROP_CATALOG[key]?.size, key).toEqual(walkerSize);
+      expect(PROP_CATALOG[key]?.size, key).toEqual({ width: 8, height: 16 });
       expect(PROP_CATALOG[key]?.footprint, key).toEqual({ width: 1, height: 1 });
     }
     expect(PROP_CATALOG["boat-horizontal-a"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
     expect(PROP_CATALOG["boat-vertical-a"]).toMatchObject({ size: { width: 8, height: 24 }, footprint: { width: 1, height: 3 } });
   });
 
-  it("registers three authored views for bicycles and scooters", () => {
+  it("registers three authored animation frames for each bicycle and scooter view", () => {
     for (const family of ["cyclist", "scooter"] as const) {
-      expect(PROP_CATALOG[`${family}-horizontal`]).toMatchObject({ size: { width: 16, height: 16 }, footprint: { width: 2, height: 1 } });
-      expect(PROP_CATALOG[`${family}-north`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
-      expect(PROP_CATALOG[`${family}-south`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
+      for (const frame of ["a", "b", "c"] as const) {
+        expect(PROP_CATALOG[`${family}-horizontal-${frame}`]).toMatchObject({ size: { width: 16, height: 16 }, footprint: { width: 2, height: 1 } });
+        expect(PROP_CATALOG[`${family}-north-${frame}`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
+        expect(PROP_CATALOG[`${family}-south-${frame}`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
+      }
     }
   });
 });

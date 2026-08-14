@@ -408,7 +408,7 @@
         "ai-authored/building-stage-study/house-gabled-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ef66ff556ba6a9ee812e72b37ccca6ed8c02c3ee4754c58f9068d6fb9255c8e8",
+        "4237ac1d3080343ae63f0ce78e2f8d7011cf84faadcb56e08cb55867302c5b55",
         "3c4283e6f7271deec0c3feb7df5f3b6e6aad88b70083787032bed28dab21dc28",
         "d537d1da5b1f8f1e303517e127ee62ecf22a27942bc6ea62910cd2233d9a8ec2"
       ]
@@ -459,7 +459,7 @@
         "ai-authored/building-stage-study/house-duplex-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "087c90191558b07e146a50a01f7d967af2d919320cf16093b03b9cdceba0701c",
+        "82dc1b1304f49a65836fcbcf4e6d84dffac6860d48abd200ae8bf92a46655f74",
         "fb69950afe283fad1e993c41febd2161dea4213b122d19bea78d45935ed5cca4",
         "953c0f8652a3ef60ee26a07c1b5ceb2a0acb18519b46b8f7c8e71666142b5d58"
       ]
@@ -1320,16 +1320,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        128,
-        120
+        64,
+        48
       ],
       "footprintCells": [
-        16,
-        10
+        8,
+        5
       ],
       "anchorPx": [
-        64,
-        120
+        32,
+        48
       ],
       "platform": "YARD",
       "estimates": [
@@ -1345,7 +1345,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 4
         }
       ],
       "maxPerCity": null,
@@ -1358,9 +1358,9 @@
         "ai-authored/building-stage-study/house-bungalow-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ea032a895d480cf6da0c62f162845dea50294c6576fa1b3af920f32e5c3c2b73",
-        "9c665ed1acae96cf3dc00054d59998e9729dff51899c03cc1c2450dc49f74b8b",
-        "605485613a7857620f5fa68a656148340a6a7ef91ee87cfd066d06b2789a1175"
+        "fe47bba3431e81eeb03130b7130a9981d1e976af5c580d643ea455b3ecf13bae",
+        "7d152b79abe64eae0778e10cc22a271a34b458d3e770ffb7cfef5d8ed9a4dc74",
+        "b7700bf773a676e99996c26c47c059957819b3371154d619d1e76fca822a6cc9"
       ]
     },
     {
@@ -1370,7 +1370,7 @@
       "rarity": "COMMON",
       "spriteSize": [
         48,
-        96
+        64
       ],
       "footprintCells": [
         6,
@@ -1378,7 +1378,7 @@
       ],
       "anchorPx": [
         24,
-        96
+        64
       ],
       "platform": "YARD",
       "estimates": [
@@ -1396,7 +1396,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -1409,9 +1409,9 @@
         "ai-authored/building-stage-study/house-suburban-narrow-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "34b7810d7875e828b80fa52156b060684d77314885eb1467cdc4d1b0482ad19c",
-        "c1a35d4b0bfcc89a2b41367b1d36159790c013264bb63169e9cc128bef264c49",
-        "6a2bffe6acdab9f20974f37ba46377197179f824619f2f3f7a0eb783228a3518"
+        "22539c8d034304419127f64b261b643c8e219b7ef24bce36bc2047b3fbfc1ec9",
+        "b7fdd3bec06b86439e638fa791406a11d471e84ebfd3b471397e887ea4afbc1d",
+        "b3246105d826694d4bbda8a2f067b098e73b8e173e1b81d151313bd8d7cfecda"
       ]
     },
     {
@@ -1459,7 +1459,7 @@
         "ai-authored/building-stage-study/house-garden-villa-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "abf01e864e673ae7a1ad7e789a05bdc12467d92e94a0930ef25130b0ed148277",
+        "cfa04794cdf857aff09d2ce59e4251450eee80a88021175fdab8cd64889d7d0d",
         "2b2bfd0fe145060f2d81f70bb8cd31cef6ece61fb8fa23687bd78ef2c2d70e13",
         "9ab31666e317a00bb6bb7ef87736cd4f0978805bd1d07cc85a31d3951595e46f"
       ]
@@ -1508,7 +1508,7 @@
         "ai-authored/building-stage-study/house-modern-compact-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "a5d67906d1d5dac1b745c89da7660d23753ddb839d0a458dd3dc1cf42af5abfa",
+        "533ddfc30027db393b0936e6c34c8bd58271a3fd7f6dc9a71cf3ef30e614080b",
         "3bce4b3ef7726a6069d278d7fb21c71496f275d3a7e25230aa5b8ef80317aa53",
         "e41e0384dd5faa0c5fdd8869b0ea2329cab45dd2574f1dfa79e9de773d6ecf7a"
       ]
@@ -1559,7 +1559,7 @@
         "ai-authored/building-stage-study/house-rustic-cottage-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "04b9967781566f54592b1e47bc22d1fc640d03fe41af86f3eea436c489178e44",
+        "76ddf4d06771d99f7899c2b2c8403c7d2bd8a7d135f8f7911151c9e86bc91621",
         "98cb15774ce21196c0d04774d7e09c8777575048c6fb2a9c035cae1fe2585371",
         "7c112ffaf29d5b3f421dc05eaa023d5e2c631e8e3582901015c598ba2b1fcd89"
       ]
@@ -1662,7 +1662,7 @@
         "ai-authored/building-stage-study/house-rowhomes-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "eacbd9970df719910553620fc7f00cd0cd988ad8819f80fcfa7b9122478835d4",
+        "f140641b79e18f4910d845fda12aeb5a867bfd13ae5282870b41862e08f39a26",
         "fdbec578a5cbc05df6b2f1d9673e5054a5f31759ddae139545c2cdb0cbd06311",
         "e3572f9592c6622571f75e424a3b7f75b0837d7134ff27461ec166e8d1d459ea"
       ]
@@ -1713,7 +1713,7 @@
         "ai-authored/building-stage-study/house-brick-duplex-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ccfbfa6504c3f626a6387380b81214488a57cbb34aac2f7d313e1a05d77097c0",
+        "2a70251e795efc8ff46cdf463060ba68e6ec54249ac638e7cfea1b91a984f0c0",
         "167e71835b4dca8f4f26fb919b1d82f783f095554f53e23c3d978e7ff79c5252",
         "a3768d39fc4e08f0485b474f7ffbcf3bc6bfba64881680f2196611dc71c40c62"
       ]
@@ -1812,7 +1812,7 @@
         "ai-authored/building-stage-study/house-modern-lowrise-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "80491ede9055d9195e26966bd2bca1a3d7a04a7690ad7237bdf9999a8acc9a00",
+        "561d502e74a18aa1988ad67e3af157b610f7b41ff38fa4d3d5d7f067a5b12279",
         "8078df1f5634dfac69e59f41d7dac36f00b4cca7746bb6852243557ea47b847e",
         "5a021ceb58aa7441ad20d86ba31b8704f06486e7c7ccf536e7f6437ad079ec38"
       ]
@@ -1823,16 +1823,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        96
+        72,
+        64
       ],
       "footprintCells": [
-        14,
-        8
+        9,
+        6
       ],
       "anchorPx": [
-        56,
-        96
+        36,
+        64
       ],
       "platform": "YARD",
       "estimates": [
@@ -1863,9 +1863,9 @@
         "ai-authored/building-stage-study/house-woodland-home-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0e4a8feeb40dfc59b5dc50318db608d11b52a6c9d4871d10b4961b48c61d9dda",
-        "0cfe37ccd5f2480b08a0c45a034643b8b022359b7f500eea3b4df5074ab1907a",
-        "8e60871a4cada6917e04955a4f1793ef7bf4c96de22a0979c131b2280a08594f"
+        "a9867e876a19d67042225e53039ce9c562f66e99d842b63ee101acdf24a2ff43",
+        "9b937885132b5905fc47924d943314ff5f49ba8b2d2182ccf0a46fcaadb84610",
+        "5af6fabc194beb2eea0b70fe3058f9e622df6295b257c6da5b9bcde2f60de1ae"
       ]
     },
     {
@@ -2369,7 +2369,7 @@
         "ai-authored/building-stage-study/house-colonial-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d9be3a340d22bdd52b92dc99020dd3c29c59255404f9d6875b744284d7650794",
+        "8082a00835659907481187d3d982d86279747bc0aa10a27fbfa31ec4ceca6219",
         "82983470650fd3b1bea1dd9fc0fbdeafe1017f718f673d8f20e5c0d40b0b7ca2",
         "d2494ad1cc38fa4f6ab8330a64e5cd76c15bfd2b27348a106ee261ae78b7936b"
       ]
@@ -2418,7 +2418,7 @@
         "ai-authored/building-stage-study/house-craftsman-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ee1abdd2079c6b8d0021fea1c45a7181af81343ad25063e18f772ffd3c5479dc",
+        "ad5d187edf783fe96f7474824cd0752097ff895d6db2c814e5990c98076a9c30",
         "7455ba70f5a0ba3ce6ddecd68bc9c5f7da018719ed0159aa2ecfaf585a6b92dc",
         "2bfe9b5ae61d85ec053b2901b727826a69a484b11588dd0c8097e20f2b897fb8"
       ]
@@ -2467,7 +2467,7 @@
         "ai-authored/building-stage-study/house-ranch-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ac3cea727084e3f5acd487bcd0fe7cdfa42b5bf6a36f0e1d61f8f9e0ed8d9e37",
+        "1ada3e98b09c3c094ac469784a1d21c3bfbd8692975bc4de6fdfdd5df7d79c31",
         "a9aa71767a66bf541ce57a1a06ab65b7eb960ce2bb64a70eea66b7ea9b686820",
         "8b12b3f10cad410febe7f66778645eca617524277c65c3fc8518059b723251da"
       ]
@@ -2516,7 +2516,7 @@
         "ai-authored/building-stage-study/house-split-level-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0587c71e629adc75bf2b3d187881837f10281af5a6af52fcc9e02f2c812ae500",
+        "1fc6547e897feb9cfb5af9e3e766bda8ec526dbf06c1a5c4fadd1199a7be53e3",
         "730b73c077a000a2836a02ec39772560fae63637798b55cc10a12647d1733dc8",
         "26994953822924f89f3b449ccf9f2fc0b924a12c9e723e623c8664dfe52d8f46"
       ]
@@ -2719,7 +2719,7 @@
         "ai-authored/building-stage-study/house-eco-cottage-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "1df0b63192250b61514d967442ff8ab03c261c86649771b0269b21a543eb4e5c",
+        "a40f1365530ece47cac8c3041e36ee488a4d3bcbcf21d2fe2ca3ebc15efa298f",
         "75883ee8ed0d379932b26340e0f85c8ae4c67943d4f603656207cd5decb227eb",
         "9a67c8a4398aff96d62b5cc433c8f136e874140b3e8fdcdc2939b8789509bc11"
       ]
@@ -2768,7 +2768,7 @@
         "ai-authored/building-stage-study/house-narrow-shotgun-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "c7edafd394b8ba271afecaeed11a9418714334f242c76ae60fccbe6c0183dbf2",
+        "53e939d5fedd22df0ba4e044c09adff439135744f6cfc70450e2c7b4748b8684",
         "1ccc3d8371a382d6b2dd14df4ba38f98ad99ed1431434336015106ae29361bb3",
         "33b0075da7215fb6a287d99023338aef9fe26f98aa0be05e528ee345c2e38e8e"
       ]
@@ -2816,7 +2816,7 @@
         "ai-authored/building-stage-study/house-courtyard-block-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "b20d9124afcf2d11333e3a0b3e8079edfc4adceb05db18c5c629d280789085cc",
+        "1d860e7c8231455ae9f8462c6f24471bd9a9ba67b5a59d21ce04bb08b7c437e0",
         "e5da9ae2a9be3078ffbf6a6a501e6ae9da8d372da0bfe96a80662656066922eb",
         "1fd9ab0e8f814a7b314e86515ab176ea5f3a0e65e432844469bc52ca976e1c3f"
       ]
@@ -2865,7 +2865,7 @@
         "ai-authored/building-stage-study/house-modern-villa-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "beaf75ed9baa39ad7f6b3817bc789e6fa518fc266c77c34339be202acc777572",
+        "2845a5514ab8144fed5821a69a4ab299268eaa0f08696dc496c148cd819b7270",
         "5d1a344c8487c28a17a7e744c9a1eea27212672bfd5937bd7f50dece57995d9c",
         "7d5369dca9a9675a55926445a1d49c237dd6d84fe2a0b733b98e6c44f31c29f4"
       ]
@@ -2916,7 +2916,7 @@
         "ai-authored/building-stage-study/house-duplex-brick-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "389e85e2920f142b35b029a71cde32a2e85b06b35355e4d06eaa95066a0db8a7",
+        "be62121a762133d212467714fed21ea5ba3dec75d39a7458478efc072c83eb61",
         "2cde186c06487cc2c8b1a76213b6ea29c566062a2b07cfefe1eb58b8d19f5f53",
         "1c3d4acfe1753050a696bb7997ea246f69b338fa0a6c46b897ebc63e10732559"
       ]
@@ -2965,7 +2965,7 @@
         "ai-authored/building-stage-study/house-studio-loft-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "dbb53a0e880659c0a54740575e11109deac88477051ee5e806c050d6002da8cc",
+        "01e362ddf635418178c7ba7564abb364d6cb549eb267db67d699e70db17eda45",
         "f5a0ca4200b4ba479e0a04876bc7ec8ae472ea4478a1dcac780ed76223aedccf",
         "55e3c358669dd1be67c1d3707b9daac2355fa28417154526c0495a0d9f9be0c6"
       ]
@@ -3014,7 +3014,7 @@
         "ai-authored/building-stage-study/house-rowhouse-corner-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "2b0b5744e76638a4418d9d0a4522efb066ef1bb2846b662b0557d2babca48214",
+        "c11cae773d804f5900e31da048518021dc3b0bdd512564c7409466c1a345d71f",
         "394f62e4baaefeb223c85bbd2dd8393595e3665630041452332c9ebc2820e31a",
         "951109a8e411f57d0e85b9306d232a80d99cd9e6550220da380b8dd0a42a26ec"
       ]
@@ -3065,7 +3065,7 @@
         "ai-authored/building-stage-study/house-suburban-brick-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "2bb06362c0a82d4ad093c02275dfaf0bdc29504b7cb34e0d1501505f8e868337",
+        "7f09a6321f928214b16d60aabece762c9cf4272be416b29ecd8a6e52e692e84d",
         "0e6d423e8eff495ec56bae6929b8153e51a8ffd4936645650df0099ef4c7562c",
         "a8caca13465e5866efc527e30691ffc8d14a3054742895abe863fcc642bad393"
       ]
@@ -5012,7 +5012,7 @@
         "ai-authored/building-stage-study/house-canalside-terrace-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "34fa53101485ab05868c5f266bb3125e5900323795f9df4479c5f29095d90937",
+        "f9677be83a7527d9afb8edc39615444bb389240ea1d356b58f9ced8083454e40",
         "79c60d7fa0c55e1b755a8feb135e53068c8bc44a12fac94589b1c9d6268a4db4",
         "4b61836d7558a9aec9bbf414105bef62bbae7ee2ad3f055b0baa1a14ebf56958"
       ]
@@ -5061,7 +5061,7 @@
         "ai-authored/building-stage-study/house-alpine-chalet-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d0e00577eab7f102cbfff8ff16cafb3533433458b247b7c6b57130ec11d2b6bb",
+        "bef4a02d9b018bca8c685a2ef6be2ab2c09faa785c406d30f736a2c85b049385",
         "940c062de79deb409199c420b8b042eeb0e56c9a90e4bde83c64394f789edd94",
         "7fcf915b3be962f3e03fc00e7bb7589c1dc75c1e2d87f2038dbef70ffb3bb969"
       ]
@@ -5112,7 +5112,7 @@
         "ai-authored/building-stage-study/house-coastal-cottage-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "5712f6055b9f2dc9d19c658ca6ad92d2ec79734f42fccb3dd6b07b74d78048d7",
+        "687493675c86c0a825fd57e37c3be586c9a2c32cef4cb09af890275f186e2db4",
         "1b32eb170e3a99aedc0ede43a379e7ece7e56da7dac82c03501cb10bfac8d767",
         "85780e9fb11b5141b088d9faba2572a8dd1d04611fb83623680d81d760b72467"
       ]
@@ -5160,7 +5160,7 @@
         "ai-authored/building-stage-study/house-farmstead-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "568c0b2084b01058bc92d1d051746fc6f2c837455c92373a396500035ff7bae9",
+        "8c6337a26c3bf4c30d7be1579dc071ca0cc5cd62bf127ee1ab03487e4d97c5da",
         "1303a4b6996096e68316faac52548369cd6ae03e3782d6154ba36e5f37d36b7e",
         "7d94a07571576de461975cb06a67bdecebfa835f44baa8d765d5a2fb70b80710"
       ]
@@ -5209,7 +5209,7 @@
         "ai-authored/building-stage-study/house-live-work-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "c0a84b5912a9e41b66b186b10032965970eb4db1dd759f1299abc5c73ca935c6",
+        "ffa188fc05b7fccc6ed0aa6921cbdda8e50a656febb9aa9236ab626e3a9ddc74",
         "e10c1504b3f933bd3220e0006153e6714d1b2b8d3be7572aea2ed2a127254a11",
         "11583e3d69de1019116443e15c0dd9a1ebaad17f7649663dc5dcd37b2a0d21c7"
       ]
@@ -5459,7 +5459,7 @@
         "ai-authored/building-stage-study/house-prefab-modular-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "a7970d55864d18a11d5c58de3583cfadff6add4dbcb0fa240291b083780895d4",
+        "5849339884539a117649c99df5cb3f6689408d03d9c0739364162f3b18522421",
         "82c66280f6c5cf4a09a89cd6c14e463b1ac523eb1c9c7aa62de2cd08bdd22a50",
         "fb053e5bf1a04e3f1c76dcb0663334efb8b27690afb5f851d03bda5e6939647b"
       ]
@@ -5607,7 +5607,7 @@
         "ai-authored/building-stage-study/house-brownstone-row-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "eb0759543ca7062a8de2ff70c9889f33876efe4548a8571b1480790dccba216f",
+        "c1ff28c1a1cead9e0a4de27a2766a098311e639b2d5e19fa20650f918de63087",
         "fe5a8ff467100fccb3965ee93e06c3a15d75697b273e9d0a34fa3bdfc8acc132",
         "feac6dbb3bf47a19f1c9401d0de40a5daa203511399181a7e517cb32679334a5"
       ]
@@ -5807,7 +5807,7 @@
         "ai-authored/building-stage-study/house-rooftop-garden-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "7cda7a3336e6baa6883a71a440de0615d9f7056119c6dbda4a952c1f75e2b4dd",
+        "a6c5a3eb69eea5a487b2e4ec09c77003885ff481a3da8bf4cbc91e9e436c2697",
         "bb9a4b1beb376773c0eb1d34a60f27be5a50ade631615fc3d9da08698b9a093d",
         "1b1088f44b4ce9b7e35a825ae39e5108221428f28967a085b35b91aa9ac8eac0"
       ]
@@ -5856,7 +5856,7 @@
         "ai-authored/building-stage-study/house-stilt-riverside-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "83ac1c0c77b9d3262d0202eff48893cd9ff526ade21c851315c354f65ec7241c",
+        "d5ee84f302d6f804b64f41ec0d97b3c5b3c82742a46d3e93dd300296e951aa7c",
         "7f11a51163f4712b20137bb6dbf36fb57e04f334bed6fc0701a13dfabdc9c9b9",
         "6cfeb2996bd326c7f72df09e8f2f20fd0238f7e28e92087bd74ad865ffeea905"
       ]
@@ -8728,9 +8728,9 @@
         "ai-authored/building-stage-study/highrise-stacked-boxes-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "35d75901011daa8234638c79a76f822af89448c141d003291721b2233988d6d1",
-        "cf0107d4f9db4b3c87cdac9c403debf5a7404ac95c4836d13b893c024c342394",
-        "ec210987509973f370611664f3d73f39cf5059bcbdef4de862f256c26e2014ad"
+        "141aeffce8329ff70d812666310f9ed251ab52b39c558e17abe0a1711c75e3fa",
+        "1ad2d26656a2bb7a5e0a2586bd8735c7667584af66b7cf0ade7d314c3cfd075b",
+        "5312a406207005fb2f6f0f784751eda955b48621d471ef117c351556efb30fb1"
       ]
     },
     {

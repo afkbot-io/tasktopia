@@ -19,6 +19,7 @@ function task(overrides: Partial<ChunkTaskDto> = {}): ChunkTaskDto {
     platformType: "YARD",
     origin: { x: 10, y: 10 },
     footprint: [{ x: 10, y: 10 }],
+    accessPath: [],
     ...overrides,
   };
 }

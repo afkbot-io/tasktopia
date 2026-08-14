@@ -107,6 +107,34 @@ describe("unified building art catalog", () => {
     }
   });
 
+  it("locks the corrected bungalow canvas, footprint and human-scale entrance", () => {
+    const bungalow = catalogBuildings.find((building) => building.key === "house-bungalow");
+    expect(bungalow).toMatchObject({
+      spriteSize: [64, 48],
+      footprintCells: [8, 5],
+      anchorPx: [32, 48],
+      entrances: [{ side: "S", offset: 4 }],
+    });
+    const contract = JSON.parse(
+      readFileSync(
+        resolve(
+          "assets/pixel-city-pack/reference/ai-authored/building-stage-study/house-bungalow-v5/geometry.json",
+        ),
+        "utf8",
+      ),
+    );
+    expect(contract).toMatchObject({
+      spriteCanvasCells: [8, 6],
+      physicalFootprintCells: [8, 5],
+      projectedRoofDepthCells: 2,
+      entrance: { side: "S", offset: 4 },
+      doorSizePx: [8, 16],
+      doorLeafSizePx: [6, 14],
+      finishedOccupiedWidthPxRange: [58, 64],
+      finishedOccupiedHeightPxRange: [34, 42],
+    });
+  });
+
   it("does not mark a replacement ready without a complete reviewed source", () => {
     for (const building of catalogBuildings) {
       const hasStages = building.stageSources?.length === 3
