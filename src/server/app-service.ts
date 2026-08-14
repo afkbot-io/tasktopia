@@ -2806,6 +2806,8 @@ export class AppService {
     denseGrid = false,
   ): Promise<DistrictDto | null> {
     const allowed = new Set(district.cells.map(cellKey));
+    const bootstrapCollector = entry.ruleIds.includes("REQUIRES_COLLECTOR")
+      && !await this.districtHasCollector(district.id);
     const roads = await this.roadCells(countryId);
     const existingRoadKeys = new Set(roads.keys());
     const occupied = new Set([
@@ -3004,7 +3006,7 @@ export class AppService {
       // street rather than losing the complex.
       let connector: Cell[] | null = null;
       let sacrificedLotIds = new Set<string>();
-      const connectorClass = complexIndex === 0 ? "COLLECTOR" : "LOCAL";
+      const connectorClass = complexIndex === 0 || bootstrapCollector ? "COLLECTOR" : "LOCAL";
       for (const [allowLotClipping, allowForeign] of [[false, false], [false, true], [true, true]] as const) {
         for (const pair of pairs) {
           try {
@@ -3536,12 +3538,17 @@ export class AppService {
                                       .get(String(row.city_id), bounds.minX, bounds.maxX, bounds.minY, bounds.maxY));
   }
 
-  private async buildingRulesAllow(entry: BuildingCatalogEntry, cityId: string, districtId: string): Promise<boolean> {
+  private async buildingRulesAllow(
+    entry: BuildingCatalogEntry,
+    cityId: string,
+    districtId: string,
+    allowMissingCollector = false,
+  ): Promise<boolean> {
     for (const ruleId of entry.ruleIds) {
       switch (ruleId) {
         case "STANDARD": break;
         case "REQUIRES_COLLECTOR":
-          if (!await this.districtHasCollector(districtId)) return false;
+          if (!allowMissingCollector && !await this.districtHasCollector(districtId)) return false;
           break;
         case "UNIQUE_SERVICE": {
           if (!entry.serviceRole) break;
@@ -3561,8 +3568,13 @@ export class AppService {
     return true;
   }
 
-  private async entryAllowed(entry: BuildingCatalogEntry, cityId: string, districtId: string): Promise<boolean> {
-    if (!await this.buildingRulesAllow(entry, cityId, districtId)) return false;
+  private async entryAllowed(
+    entry: BuildingCatalogEntry,
+    cityId: string,
+    districtId: string,
+    allowMissingCollector = false,
+  ): Promise<boolean> {
+    if (!await this.buildingRulesAllow(entry, cityId, districtId, allowMissingCollector)) return false;
     if (entry.tags.includes("landmark")) {
       const cityLandmark = await this.db.prepare(
         "SELECT 1 FROM tasks_v3 WHERE city_id = ? AND building_type LIKE 'landmark-%' LIMIT 1",
@@ -3612,6 +3624,7 @@ export class AppService {
     const district = (await this.db.prepare("SELECT * FROM districts_v3 WHERE id = ? AND city_id = ?").get(districtId, cityId) as Row | undefined);
     if (!district) throw new DomainError("NOT_FOUND", "Район не найден");
     const archetype = districtDto(district).archetype;
+    const tags = new Set(inferTaskTags(title, description));
     if (hint) {
       const exact = TASK_BUILDING_CATALOG.find((entry) => entry.key === hint);
       if (!exact) throw new DomainError("INVALID_BUILDING_HINT", "Указанный тип здания не существует");
@@ -3619,10 +3632,10 @@ export class AppService {
       if (!taskBuildingCompatibleWithArchetype(exact, archetype)) {
         throw new DomainError("INCOMPATIBLE_BUILDING", "Здание несовместимо с архитектурой выбранного района");
       }
-      if (!await this.entryAllowed(exact, cityId, districtId)) throw new DomainError("BUILDING_QUOTA_REACHED", "Лимит этого типа здания уже достигнут");
+      const bootstrapCollector = exact.serviceRole === "parking-service" && (tags.has("parking") || hint === "commercial-parking-lot");
+      if (!await this.entryAllowed(exact, cityId, districtId, bootstrapCollector)) throw new DomainError("BUILDING_QUOTA_REACHED", "Лимит этого типа здания уже достигнут");
       return [exact];
     }
-    const tags = new Set(inferTaskTags(title, description));
     const requiredService = await this.requiredServiceRole(cityId, districtId);
     const cityRows = await this.db.prepare("SELECT building_type FROM tasks_v3 WHERE city_id = ?").all(cityId) as Row[];
     const districtRows = await this.db.prepare("SELECT id, building_type FROM tasks_v3 WHERE district_id = ?").all(districtId) as Row[];
@@ -3660,7 +3673,8 @@ export class AppService {
     // metadata with only a soft nudge in the score below.
     const compatible: BuildingCatalogEntry[] = [];
     for (const entry of TASK_BUILDING_CATALOG) {
-      if (!entry.tags.includes("archive") && await this.entryAllowed(entry, cityId, districtId)
+      const bootstrapCollector = entry.serviceRole === "parking-service" && tags.has("parking");
+      if (!entry.tags.includes("archive") && await this.entryAllowed(entry, cityId, districtId, bootstrapCollector)
         && taskBuildingCompatibleWithArchetype(entry, archetype)
         && (!requiredService || entry.serviceRole === requiredService)) compatible.push(entry);
     }
@@ -3949,6 +3963,13 @@ export class AppService {
                         const surfaces = await this.localSurfaceCells(countryId, boundsOf(district.cells), roads, [district]);
                         const districtCellKeys = new Set(district.cells.map(cellKey));
                         for (const candidate of candidatePool) {
+                          // A semantic service request may bootstrap missing
+                          // collector infrastructure, but it must not occupy an
+                          // old local-street lot first. Force one growth pass;
+                          // tryGrowComplex publishes the collector frontage and
+                          // then the normal placement contract applies.
+                          if (candidate.ruleIds.includes("REQUIRES_COLLECTOR")
+                            && !await this.districtHasCollector(district.id)) continue;
                           const options = await this.taskPlacementOptions(
                             countryId,
                             district,

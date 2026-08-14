@@ -152,7 +152,9 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 1_200);
   await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
+  const rangeBeforeResize = await host.getAttribute("data-chunk-range");
   await page.setViewportSize({ width: 5120, height: 3200 });
+  await expect.poll(async () => await host.getAttribute("data-chunk-range"), { timeout: 180_000 }).not.toBe(rangeBeforeResize);
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", "overview");
   const range = await host.getAttribute("data-chunk-range");

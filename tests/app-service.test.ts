@@ -363,6 +363,10 @@ describe("Tasktopia square-world application service", () => {
   }, 20_000);
 
   it("does not misclassify a parking task as a park", async () => {
+    // This terrain seed places the first commercial district outside the
+    // existing collector halo. An explicitly named parking task must bootstrap
+    // its own collector frontage instead of silently falling back to a tower.
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1_996_730_220, countryId);
     const city = await service.createCity(countryId, { name: "Parking City", idempotencyKey: "parking-city" });
     const district = await service.createDistrict(countryId, {
       cityId: city.id, name: "Commercial Sprint", archetype: "COMMERCIAL", activate: true, idempotencyKey: "parking-district",
@@ -376,6 +380,18 @@ describe("Tasktopia square-world application service", () => {
       buildingType: "commercial-parking-lot",
       platformType: "ASPHALT",
     });
+    const grownDistrict = (await service.listDistricts(countryId, city.id)).find((candidate) => candidate.id === district.id)!;
+    const grownBounds = boundsOf(grownDistrict.cells);
+    const collector = await db.prepare(`SELECT COUNT(*) AS count FROM roads_v3
+      WHERE country_id = ? AND road_class IN ('COLLECTOR', 'ARTERIAL', 'HIGHWAY')
+      AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?`).get<{ count: number }>(
+        countryId,
+        grownBounds.minX - 3,
+        grownBounds.maxX + 3,
+        grownBounds.minY - 3,
+        grownBounds.maxY + 3,
+      );
+    expect(Number(collector?.count)).toBeGreaterThan(0);
   }, 20_000);
 
   it("keeps unmigrated landmarks out of the task-building profile", async () => {
