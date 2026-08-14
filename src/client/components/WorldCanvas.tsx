@@ -180,8 +180,12 @@ function loadTextureAssets(urls: string[]): Promise<void> {
   }, urls);
 }
 
+function cachedTexture(url: string): Texture | undefined {
+  return Cache.has(url) ? Cache.get<Texture>(url) : undefined;
+}
+
 function sprite(url: string, x: number, y: number): Sprite {
-  const result = new Sprite(Cache.has(url) ? Cache.get<Texture>(url) : Texture.EMPTY);
+  const result = new Sprite(cachedTexture(url) ?? Texture.EMPTY);
   result.texture.source.scaleMode = "nearest";
   result.position.set(x, y);
   return result;
@@ -1044,7 +1048,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         agent.activity = activity;
         const walkKey = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase).key;
         agent.visualKey = residentActivityVisualKey(walkKey, activity);
-        const activityTexture = Assets.get<Texture>(PROP_SPRITES[agent.visualKey]!);
+        const activityTexture = cachedTexture(PROP_SPRITES[agent.visualKey]!);
         if (activityTexture) agent.view.texture = activityTexture;
         const marker = agent.activityView;
         if (!marker) return;
@@ -1196,7 +1200,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             }
             agent.next = routed ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous, agent.outgoing);
             const url = movingAgentSpriteUrl(agent);
-            const texture = url ? Assets.get<Texture>(url) : undefined;
+            const texture = url ? cachedTexture(url) : undefined;
             if (texture) {
               agent.view.texture = texture;
               agent.visualKey = agent.kind === "WALKER"
@@ -1212,7 +1216,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           if (agent.kind === "WALKER" && agent.activity === "NONE") {
             const presentation = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase);
             if (agent.visualKey !== presentation.key) {
-              const texture = Assets.get<Texture>(PROP_SPRITES[presentation.key]!);
+              const texture = cachedTexture(PROP_SPRITES[presentation.key]!);
               if (texture) agent.view.texture = texture;
               agent.visualKey = presentation.key;
             }
@@ -1225,7 +1229,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               agent.steps + Math.floor(agent.progress * 3),
             );
             if (agent.visualKey !== presentation.key) {
-              const texture = Assets.get<Texture>(PROP_SPRITES[presentation.key]!);
+              const texture = cachedTexture(PROP_SPRITES[presentation.key]!);
               if (texture) agent.view.texture = texture;
               agent.visualKey = presentation.key;
             }
@@ -1233,7 +1237,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           if (agent.kind === "ANIMAL") {
             const url = movingAgentSpriteUrl(agent);
             if (agent.visualKey !== url) {
-              const texture = Assets.get<Texture>(url);
+              const texture = cachedTexture(url);
               if (texture) agent.view.texture = texture;
               agent.visualKey = url;
             }
@@ -1269,7 +1273,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
           if (state === signal.state) continue;
           signal.state = state;
           const url = PROP_SPRITES[`traffic-light-${state.toLowerCase()}`]!;
-          const texture = Cache.has(url) ? Cache.get<Texture>(url) : undefined;
+          const texture = cachedTexture(url);
           if (texture) signal.view.texture = texture;
         }
         nextSocialCheckMs -= elapsed;
@@ -1320,7 +1324,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
             spawnState = random.state;
             const planeKeys = ["airplane-small", "airplane-courier", "airplane-twin"] as const;
             const planeKey = planeKeys[Math.floor(random.value * planeKeys.length)]!;
-            const texture = Assets.get<Texture>(PROP_SPRITES[planeKey]!);
+            const texture = cachedTexture(PROP_SPRITES[planeKey]!);
             if (texture) {
               const view = new Sprite(texture);
               view.texture.source.scaleMode = "nearest";
