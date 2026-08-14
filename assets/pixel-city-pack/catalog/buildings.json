@@ -1172,16 +1172,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        64,
+        64
       ],
       "footprintCells": [
-        4,
-        3
+        8,
+        6
       ],
       "anchorPx": [
-        16,
-        24
+        32,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -1197,7 +1197,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": null,
@@ -1210,9 +1210,9 @@
         "ai-authored/building-stage-study/commercial-corner-cafe-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "b7438f85b23c637bd89fa5690d9122629d7b1bcd1d9175a0891e6413d29ee7d9",
-        "ca79ef0aab4430e06bffa885f98e6dd502b0c6ed3ba863b34788ca7bc942c48e",
-        "7362c9eccabb4397e40dede5e64fea4de3d4b9e5ecc655f3623c32078838b912"
+        "37932346b2a643f31415e22336ef8c58091120a84a16f37ba9572def1b2e9c25",
+        "9d319a79d132016428e47f00056a68ac07d20131afa75968a6b3e997e9402a9f",
+        "a883ee735bd08b146d0e7dbab7516d50d15367167ad5b3cfecad97d1cbe6aa56"
       ]
     },
     {

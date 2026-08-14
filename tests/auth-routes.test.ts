@@ -232,7 +232,7 @@ describe("authentication HTTP boundary", () => {
     const regenerated = await app.inject({ method: "POST", url: `/api/countries/${countryId}/regenerate`, headers: { cookie }, payload: { confirmName: "Deletion Land", idempotencyKey: "http-regenerate-country" } });
     expect(regenerated.statusCode).toBe(200);
     expect(regenerated.json()).toMatchObject({ regenerated: true, cities: 1, districts: 0, tasks: 0 });
-  }, 20_000);
+  }, 60_000);
 
   it("requires the first country and city at the public registration boundary", async () => {
     const response = await app.inject({

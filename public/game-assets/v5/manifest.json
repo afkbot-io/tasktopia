@@ -2132,16 +2132,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        64,
+        64
       ],
       "footprintCells": [
-        4,
-        3
+        8,
+        6
       ],
       "anchorPx": [
-        16,
-        24
+        32,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-corner-cafe/stage-1.png",
@@ -2153,33 +2153,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          56,
+          62,
+          64
         ],
         [
           2,
-          11,
-          30,
-          23
+          50,
+          62,
+          63
         ],
         [
-          1,
-          5,
-          28,
-          24
+          10,
+          20,
+          53,
+          64
         ],
         [
-          1,
-          2,
-          31,
-          24
+          8,
+          0,
+          56,
+          64
         ],
         [
-          1,
-          3,
-          31,
-          24
+          8,
+          0,
+          56,
+          64
         ]
       ],
       "platform": "STONE",
@@ -2196,7 +2196,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": null,
@@ -21131,5 +21131,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "e12f330d2465a526"
+  "assetRevision": "f6e6cd231e7003ac"
 }

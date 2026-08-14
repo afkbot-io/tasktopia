@@ -11,11 +11,11 @@ previews, and no legacy or procedural fallback.
 
 | Scope | Catalog families | Geometry studies | Passing studies | Remaining |
 | --- | ---: | ---: | ---: | ---: |
-| All buildings | 193 | 121 | 86 | 107 |
-| Existing V5 studies | 121 | 121 | 86 | 35 |
-| Missing V5 studies | 72 | 0 | 0 | 72 |
+| All buildings | 193 | 122 | 87 | 106 |
+| Existing V5 studies | 122 | 122 | 87 | 35 |
+| Missing V5 studies | 71 | 0 | 0 | 71 |
 
-The current full verifier batch found 86 passing catalog families. All 52
+The current full verifier batch found 87 passing catalog families. All 52
 private-house families pass and no private-house stage-3 frame remains in the
 failing queue. Thirty-four older civic, landmark and archive studies are now
 correctly blocked by the strict V5 door-leaf contract, rather than being treated
@@ -24,13 +24,16 @@ needs its building-specific study.
 
 The catalog families still missing a building-specific V5 study are:
 
-- 51 `COMMERCIAL` families;
+- 50 `COMMERCIAL` families;
 - 21 `CIVIC` families outside the accepted study set.
 
 ## Completed in this migration
 
 - `house-bungalow`, `house-suburban-narrow`, `house-woodland-home` and
   `highrise-stacked-boxes` were regenerated and integrated with new geometry.
+- `commercial-corner-cafe` is the first migrated commercial family: its new
+  8×8-cell canvas, strict 8×16 entrance, authored stages 5→4→3 and geometry
+  report pass the same release gate as the private-house set.
 - twenty-nine private-house families received corrected partial stage-3 frames and now
   pass the immutable stage-5 authoring-window check: `house-gabled`,
   `house-alpine-chalet`, `house-rowhouse-corner`, `house-suburban-brick`,
@@ -57,7 +60,7 @@ The catalog families still missing a building-specific V5 study are:
 
 ## Blocking completion order
 
-1. Create geometry contracts and authored stages 5→4→3 for all 51 commercial
+1. Create geometry contracts and authored stages 5→4→3 for the remaining 50 commercial
    families.
 2. Finish the 21 civic families without studies, migrate the 34 older
    civic/landmark/archive studies to the strict entrance contract, and create
