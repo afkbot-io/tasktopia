@@ -224,7 +224,8 @@ test("registration creates the named country and first city", async ({ page }) =
   await page.getByLabel("Название вашей первой страны").fill("Новый продукт");
   await page.getByLabel("Название первого города").fill("Первый релиз");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Пароль").fill("safe-password-123");
+  await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
+  await page.getByLabel("Повторите пароль", { exact: true }).fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
   await expect(page.getByText("Новый продукт", { exact: true })).toBeVisible();
   await expect(page.getByText("Первый релиз", { exact: true })).toBeVisible();
