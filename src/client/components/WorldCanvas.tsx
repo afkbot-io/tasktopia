@@ -74,6 +74,7 @@ const CHUNK_FETCH_CONCURRENCY = 8;
 const CHUNK_ASSET_CONCURRENCY = 6;
 const CHUNK_DATA_CACHE_LIMIT = 48;
 const CHUNK_PAYLOAD_CACHE_LIMIT = 160;
+const OVERVIEW_GROUND_TEXTURE_RESOLUTION = 0.5;
 const GROUND_CACHE_LIMIT = 96;
 const TASK_STATUS_PATCH_LIMIT = 512;
 type MapLod = "DETAIL" | "OVERVIEW";
@@ -1572,9 +1573,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         const texture = app.renderer.textureGenerator.generateTexture({
           target: source,
           frame: new Rectangle(originX, originY, chunk.size * CELL_SIZE, chunk.size * CELL_SIZE),
-          resolution: 1,
+          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
           antialias: false,
         });
+        host!.dataset.groundTextureResolution = String(texture.source.resolution);
         texture.source.scaleMode = "nearest";
         source.destroy({ children: true });
         const view = new Sprite(texture);

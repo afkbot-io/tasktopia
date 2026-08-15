@@ -129,7 +129,7 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
 
 test("keeps every visible ground resident when an ultra-wide viewport exceeds the base GPU limit", async ({ page }) => {
   test.setTimeout(240_000);
-  await page.setViewportSize({ width: 5120, height: 3200 });
+  await page.setViewportSize({ width: 4970, height: 2420 });
   await page.route("**/api/bootstrap", async (route) => {
     const response = await route.fetch();
     if (response.status() !== 200) {
@@ -166,6 +166,7 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   const visibleCount = (maximum![0]! - minimum![0]! + 1) * (maximum![1]! - minimum![1]! + 1);
 
   expect(visibleCount).toBeGreaterThan(96);
+  expect(await host.getAttribute("data-ground-texture-resolution")).toBe("0.5");
   expect(Number(await host.getAttribute("data-resident-chunks"))).toBe(visibleCount);
   expect(Number(await host.getAttribute("data-ground-cache"))).toBe(visibleCount);
   expect(Number(await host.getAttribute("data-ground-bake-queue-max"))).toBeLessThanOrEqual(visibleCount);
