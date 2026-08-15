@@ -137,9 +137,14 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
       return;
     }
     const bootstrap = await response.json();
+    const viewBounds = { minX: -1_000, minY: -1_000, maxX: 999, maxY: 999 };
     await route.fulfill({
       response,
-      json: { ...bootstrap, viewBounds: { minX: -1_000, minY: -1_000, maxX: 999, maxY: 999 } },
+      json: {
+        ...bootstrap,
+        viewBounds,
+        initialCity: bootstrap.initialCity ? { ...bootstrap.initialCity, bounds: viewBounds } : null,
+      },
     });
   });
   await page.goto("/");
@@ -152,18 +157,6 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   await expect(canvas).toBeVisible();
   await expect(host).toHaveAttribute("data-input-ready", "true");
   await expect(host).toHaveAttribute("data-loading", "true");
-  await canvas.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
-    for (let step = 0; step < 8; step += 1) {
-      element.dispatchEvent(new WheelEvent("wheel", {
-        bubbles: true,
-        cancelable: true,
-        clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2,
-        deltaY: 1_200,
-      }));
-    }
-  });
   await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", "overview");
