@@ -2673,6 +2673,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         void loadVisible();
       };
       canvas.addEventListener("wheel", wheel, { passive: false });
+      host.dataset.inputReady = "true";
       let intersectsViewport = true;
       const updateAnimation = () => {
         const active = !reducedMotion && !document.hidden && intersectsViewport;
