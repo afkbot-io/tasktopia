@@ -21,6 +21,7 @@ services:
     cpu_shares: 512
 
   app:
+    image: ${APP_IMAGE:-${COMPOSE_PROJECT_NAME:-tasktopia}-app:latest}
     build:
       context: .
       args:

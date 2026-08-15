@@ -170,11 +170,12 @@ sudo /tmp/tasktopia-bootstrap/deploy/install-server.sh \
   --email admin@example.com
 ```
 
-Установщик подготовит Docker, PostgreSQL, nginx и Certbot, создаст секреты, запустит сервисы и выпустит TLS-сертификат. По умолчанию приложение устанавливается в `/srv/tasktopia/app`.
+Установщик подготовит Docker, PostgreSQL, nginx и Certbot, создаст секреты, запустит сервисы, материализует атомарный каталог статики и выпустит TLS-сертификат. По умолчанию приложение устанавливается в `/srv/tasktopia/app`.
 
 Обновление выполняется с предварительной резервной копией базы:
 
 ```bash
+sudo git -C /srv/tasktopia/app pull --ff-only origin main
 sudo /srv/tasktopia/app/deploy/update-server.sh
 ```
 

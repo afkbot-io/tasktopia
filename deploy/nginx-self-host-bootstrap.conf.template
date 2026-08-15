@@ -1,7 +1,24 @@
+# Managed by Tasktopia's self-host installer.
 server {
     listen 80;
     listen [::]:80;
     server_name __DOMAIN__;
+
+    location = /game-assets/v5/manifest.json {
+        root __STATIC_DIR__/current;
+        try_files $uri =404;
+        expires -1;
+        add_header Cache-Control "no-cache, must-revalidate" always;
+        access_log off;
+    }
+
+    location ~* ^/(game-assets|assets)/ {
+        root __STATIC_DIR__/current;
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        access_log off;
+    }
 
     location / {
         proxy_pass http://127.0.0.1:3000;

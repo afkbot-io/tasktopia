@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "concurrently -k -n web,server -c cyan,yellow \"vite --host 0.0.0.0\" \"tsx watch src/server/index.ts\"",
-    "build": "npm run typecheck && vite build && esbuild src/server/index.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/server.mjs && esbuild src/server/regenerate-worlds.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/regenerate-worlds.mjs && esbuild src/server/create-user-cli.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/create-user.mjs",
+    "build": "npm run typecheck && vite build && esbuild src/server/index.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/server.mjs && esbuild src/server/regenerate-worlds.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/regenerate-worlds.mjs && esbuild src/server/create-user-cli.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/create-user.mjs && esbuild src/server/synchronize-assets-cli.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/synchronize-assets.mjs",
     "start": "node dist/server.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
