@@ -151,8 +151,18 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
   await expect(canvas).toBeVisible();
   await expect(host).toHaveAttribute("data-loading", "true");
-  await canvas.hover();
-  for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 1_200);
+  await canvas.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    for (let step = 0; step < 8; step += 1) {
+      element.dispatchEvent(new WheelEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+        deltaY: 1_200,
+      }));
+    }
+  });
   await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", "overview");
