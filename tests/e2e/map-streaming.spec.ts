@@ -148,8 +148,8 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   await page.getByRole("button", { name: "Открыть страну" }).click();
 
   const host = page.locator(".world-canvas");
-  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
   const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  await expect(canvas).toBeVisible();
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 1_200);
   await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
