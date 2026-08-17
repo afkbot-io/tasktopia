@@ -4,6 +4,7 @@ import type { CityDto, DistrictDto, RoadCellDto, TaskDto, WorldFeatureDto } from
 import { greenAreaDevelopmentStage } from "../src/shared/green-area";
 import {
   archetypeAffinity,
+  buildingVisualReservationCells,
   buildingVisualSetbackCells,
   buildingCompatibleWithArchetype,
   buildingZoningRole,
@@ -49,6 +50,17 @@ describe("V6 city morphology and access planning", () => {
     expect(buildingVisualSetbackCells(getBuilding("highrise-glass"))).toBe(18);
     expect(buildingVisualSetbackCells(getBuilding("civic-library"))).toBe(6);
     expect(buildingVisualSetbackCells(getBuilding("house-cottage"))).toBe(0);
+  });
+
+  it("reserves the complete north-projecting facade above a building footprint", () => {
+    const entry = getBuilding("civic-library");
+    const reservation = buildingVisualReservationCells(entry, { x: 10, y: 20 });
+    expect(reservation).toHaveLength(entry.footprint.width * (entry.footprint.height + 6));
+    expect(reservation).toContainEqual({ x: 10, y: 14 });
+    expect(reservation).toContainEqual({
+      x: 10 + entry.footprint.width - 1,
+      y: 20 + entry.footprint.height - 1,
+    });
   });
 
   it("paves only free orthogonal apron cells around task buildings", () => {

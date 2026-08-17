@@ -85,6 +85,7 @@ import {
   ROAD_WIDTH,
   archetypeAffinity,
   buildingLotDepthCells,
+  buildingVisualReservationCells,
   buildingVisualSetbackCells,
   buildingZoningRole,
   buildSurfaceMap,
@@ -3838,14 +3839,12 @@ export class AppService {
         const origin = { x: lot.origin.x + offsetX, y: lot.origin.y + offsetY };
         if (offsetY < northSetback) continue;
         const footprint = rectangleFootprint(origin, entry.footprint.width, entry.footprint.height);
-        const visualReservation = rectangleFootprint(
-          { x: origin.x, y: origin.y - northSetback },
-          entry.footprint.width,
-          requiredDepth,
-        );
+        const visualReservation = reserveVisualSetback
+          ? buildingVisualReservationCells(entry, origin)
+          : footprint;
         const footprintKeys = new Set(footprint.map(cellKey));
-        if (visualReservation.some((cell) => occupied.has(cellKey(cell)))
-          || footprint.some((cell) => roads.has(cellKey(cell)) || projected.has(cellKey(cell)))) continue;
+        if (visualReservation.some((cell) => occupied.has(cellKey(cell))
+          || roads.has(cellKey(cell)) || projected.has(cellKey(cell)))) continue;
         const access = findAccessPlan({
           entry,
           origin,

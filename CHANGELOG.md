@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.16.4 — 2026-08-17
+
+- Ресурсоёмкие organic-worldgen и десятигородской atlas перенесены из GitHub Actions в явный локальный release-gate `npm run test:release-world`; основной CI сохраняет asset verification, typecheck, lint, unit, production build, MCP smoke, E2E и dependency audit.
+- Размещение и world audit теперь учитывают всю северную экранную проекцию фасада при проверке дорог и поверхностей, поэтому высокий корпус не может визуально накрыть уже существующую улицу за пределами физического footprint.
+
 ## 1.16.3 — 2026-08-17
 
 - Холодный GitHub runner получает до 20 минут на полный 29-задачный worldgen regression и отдельный 60-секундный teardown базы; общий job остаётся ограничен 30 минутами, а геометрические, плотностные и regeneration-проверки не сокращаются.

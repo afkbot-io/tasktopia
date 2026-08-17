@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.16.3",
+  "version": "1.16.4",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -31,6 +31,7 @@
     "test:db:stop": "docker compose -f docker-compose.test.yml down",
     "test:scale": "tsx scripts/worldgen-scale-smoke.ts",
     "test:worldgen": "RUN_ORGANIC_GROWTH_TESTS=1 vitest run tests/organic-growth.test.ts --no-file-parallelism",
+    "test:release-world": "npm run test:worldgen && npm run test:atlas",
     "worlds:regenerate": "node dist/regenerate-worlds.mjs",
     "user:create": "node dist/create-user.mjs",
     "study:worldgen": "tsx scripts/worldgen-algorithm-study.ts",

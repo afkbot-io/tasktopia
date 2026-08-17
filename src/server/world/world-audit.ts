@@ -8,6 +8,7 @@ import { isWater, terrainAt } from "../../shared/world-terrain";
 import { bridgeComponentsWithoutTwoLandPortals } from "./road-geometry";
 import {
   buildingZoningRole,
+  buildingVisualReservationCells,
   primaryZoningRole,
   taskBuildingCompatibleWithArchetype,
 } from "./city-generation";
@@ -202,6 +203,15 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
       if (owner && owner !== task.id) addViolation(violations, "TASK_OVERLAP", `${task.title}: клетка ${key} занята другой задачей`);
       occupiedTaskCells.set(key, task.id);
       if (roadKeys.has(key)) addViolation(violations, "TASK_ROAD_OVERLAP", `${task.title}: дорога проходит через ${key}`);
+    }
+    if (building && task.visualKind === "BUILDING") {
+      const footprintKeys = new Set(task.footprint.map(cellKey));
+      for (const cell of buildingVisualReservationCells(building, task.origin)) {
+        const key = cellKey(cell);
+        if (!footprintKeys.has(key) && roadKeys.has(key)) {
+          addViolation(violations, "TASK_ROAD_OVERLAP", `${task.title}: фасад перекрывает дорогу ${key}`);
+        }
+      }
     }
     const roadDistance = distanceToRoad(task.footprint, roadKeys, 8);
     maximumTaskRoadDistance = Math.max(maximumTaskRoadDistance, roadDistance);

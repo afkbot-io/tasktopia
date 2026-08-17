@@ -258,7 +258,14 @@ npm run assets:verify
 npm run test:db:stop
 ```
 
-Тяжёлые сценарии генерации мира вынесены в отдельную команду `npm run test:worldgen` и не запускаются вместе с обычным набором тестов.
+Тяжёлые сценарии генерации мира и десятигородской atlas запускаются локально
+перед релизом и не расходуют GitHub Actions runner:
+
+```bash
+npm run test:db:start
+npm run test:release-world
+npm run test:db:stop
+```
 
 Правила разработки и обязательные проверки описаны в [CONTRIBUTING.md](CONTRIBUTING.md).
 

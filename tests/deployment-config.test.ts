@@ -541,9 +541,10 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
     expect(playwright).toContain("TEST_DATABASE_URL: testDatabaseURL");
   });
 
-  it("runs heavy world generation after the ordinary CI gate", () => {
-    expect(ci).toMatch(/worldgen:\n[\s\S]*?needs: test/);
-    expect(ci).toMatch(/worldgen:[\s\S]*?npm run test:worldgen/);
+  it("keeps heavy world generation in the explicit local release gate", () => {
+    expect(ci).not.toMatch(/^ {2}(worldgen|atlas):/mu);
+    expect(packageJson.scripts["test:release-world"]).toContain("npm run test:worldgen");
+    expect(packageJson.scripts["test:release-world"]).toContain("npm run test:atlas");
   });
 
   it("keeps the HTTPS CDN hostname asset-only", () => {

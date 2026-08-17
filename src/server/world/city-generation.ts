@@ -11,7 +11,7 @@ import type {
   WorldFeatureDto,
 } from "../../shared/contracts";
 import { greenAreaPathCells } from "../../shared/green-area";
-import { cellKey, contains, neighbors4 } from "./grid";
+import { cellKey, contains, neighbors4, rectangleFootprint } from "./grid";
 
 export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
   // A local street has one 8 px travel cell in each direction. Larger roads
@@ -38,6 +38,15 @@ export function buildingVisualSetbackCells(entry: BuildingCatalogEntry): number 
 
 export function buildingLotDepthCells(entry: BuildingCatalogEntry): number {
   return entry.footprint.height + buildingVisualSetbackCells(entry);
+}
+
+export function buildingVisualReservationCells(entry: BuildingCatalogEntry, origin: Cell): Cell[] {
+  const northSetback = buildingVisualSetbackCells(entry);
+  return rectangleFootprint(
+    { x: origin.x, y: origin.y - northSetback },
+    entry.footprint.width,
+    entry.footprint.height + northSetback,
+  );
 }
 
 export function findAreaAccessPath(input: {
