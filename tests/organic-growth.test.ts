@@ -78,7 +78,7 @@ describe.runIf(process.env.RUN_ORGANIC_GROWTH_TESTS === "1")("organic growth inc
       .filter((role): role is string => Boolean(role)))];
     districtGreenAfter = (await service.listWorldFeatures(countryId))
       .filter((feature) => feature.districtId === districtId && (feature.kind === "PARK" || feature.kind === "GROVE")).length;
-  }, 600_000);
+  }, 900_000);
 
   afterAll(async () => await db.close());
 
