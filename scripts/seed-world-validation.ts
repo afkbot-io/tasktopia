@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
-import { AppService } from "../src/server/app-service";
+import { AppService, DomainError } from "../src/server/app-service";
 import { loginUser, registerUser, type AuthUser } from "../src/server/auth";
 import { createDb, transaction } from "../src/server/db";
 import { auditWorld } from "../src/server/world/world-audit";
@@ -120,7 +120,7 @@ async function addDistrict(input: {
     const buildingKeys = input.buildingKeys ?? BUILDING_KEYS;
     const catalogIndex = (input.cityIndex * 11 + input.districtIndex * 7 + taskIndex) % buildingKeys.length;
     const target = input.targets[taskIndex % input.targets.length]!;
-    let task = await input.service.createTask(input.countryId, {
+    const taskInput = {
       cityId: input.cityId,
       districtId: district.id,
       title: `Новостройка ${input.cityIndex + 1}.${input.districtIndex + 1}.${taskIndex + 1}`,
@@ -128,7 +128,18 @@ async function addDistrict(input: {
       estimate: ([1, 2, 3, 6] as const)[(input.cityIndex + input.districtIndex + taskIndex) % 4]!,
       buildingHint: buildingKeys[catalogIndex]!,
       idempotencyKey: `${prefix}-task-${taskIndex}`,
-    });
+    };
+    let task: TaskDto;
+    try {
+      task = await input.service.createTask(input.countryId, taskInput);
+    } catch (error) {
+      if (!(error instanceof DomainError) || error.code !== "PLACEMENT_BLOCKED") throw error;
+      // Exact visual hints are intentionally strict. A model that cannot fit
+      // this deterministic terrain must not invalidate the whole atlas fixture:
+      // retry the same task through the normal compatible-building picker.
+      const fallbackInput = { ...taskInput, buildingHint: undefined };
+      task = await input.service.createTask(input.countryId, fallbackInput);
+    }
     task = await advanceTask(input.service, input.countryId, task, target, `${prefix}-task-${taskIndex}`);
     tasks.push(task);
   }

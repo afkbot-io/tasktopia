@@ -2766,7 +2766,11 @@ export class AppService {
     if (district.status === "COMPLETED") throw new DomainError("DISTRICT_SEALED", "Закрытый район больше не расширяется");
     const seed = Number((await this.countryRow(countryId)).seed);
     const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
-    const denseGrid = cityDto(cityRow).morphology === "DENSE_CORE";
+    const city = cityDto(cityRow);
+    const denseGrid = city.morphology === "DENSE_CORE";
+    const protectedCities = (await this.listCities(countryId))
+      .filter((candidate) => candidate.id !== city.id)
+      .map((candidate) => expandRect(candidate.bounds, 12));
     // Capacity describes the team's planning horizon, not how much land may be
     // paved before demand exists. Publish one compact, reusable cluster at a
     // time; later tasks grow another cluster only after the existing choices
@@ -2827,6 +2831,8 @@ export class AppService {
         const patch = [...reachable.values()];
         if (patch.length < (entry.tags.includes("new-build") ? 900 : 300)) continue;
         const patchBounds = boundsOf(patch);
+        const expandedCity = unionRect(city.bounds, expandRect(patchBounds, 8));
+        if (protectedCities.some((bounds) => intersects(bounds, expandedCity))) continue;
         const grown: DistrictDto = { ...district, cells: [...district.cells, ...patch], growthDirection: direction };
         // A connected annex may be a narrow strip along a river or forest.
         // The next block is allowed to straddle the old/new district seam;
@@ -2835,9 +2841,6 @@ export class AppService {
         const grownSearchBounds = unionRect(originalBounds, patchBounds);
         const sited = await this.tryGrowComplex(countryId, grown, entry, grownSearchBounds, complexIndex, targetLots, seed, denseGrid);
         if (!sited) continue;
-        const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
-        const city = cityDto(cityRow);
-        const expandedCity = unionRect(city.bounds, expandRect(patchBounds, 8));
         if (JSON.stringify(expandedCity) !== JSON.stringify(city.bounds)) await this.db.prepare("UPDATE cities_v3 SET bounds_json = ? WHERE id = ?").run(JSON.stringify(expandedCity), city.id);
         await this.normalizeUrbanHighways(countryId, expandedCity);
         return sited;
@@ -4022,9 +4025,11 @@ export class AppService {
                       // the semantic favourites instead of scanning all 193
                       // entries (and repeatedly growing the district).
                       const compactFallbacks = ranked
-                        .filter((candidate) => candidate.footprint.width <= 14 && candidate.footprint.height <= 12 && !preferredCandidates.includes(candidate))
+                        .filter((candidate) => candidate.footprint.width <= 14
+                          && buildingLotDepthCells(candidate) <= 12
+                          && !preferredCandidates.includes(candidate))
                         .sort((left, right) =>
-                          left.footprint.width * left.footprint.height - right.footprint.width * right.footprint.height
+                          left.footprint.width * buildingLotDepthCells(left) - right.footprint.width * buildingLotDepthCells(right)
                           || left.footprint.width - right.footprint.width
                           || left.key.localeCompare(right.key))
                         .slice(0, 8);
@@ -4082,7 +4087,7 @@ export class AppService {
                       // proof that the entire district is full.
                       const growthCandidates = candidatePool.filter((candidate, index, all) =>
                         all.findIndex((other) => other.footprint.width === candidate.footprint.width
-                          && other.footprint.height === candidate.footprint.height) === index,
+                          && buildingLotDepthCells(other) === buildingLotDepthCells(candidate)) === index,
                       );
                       for (const growthCandidate of growthCandidates) {
                         if (placement) break;
