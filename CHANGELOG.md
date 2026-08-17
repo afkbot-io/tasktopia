@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.16.5 — 2026-08-18
+
+- Обычный GitHub CI сохраняет полный browser E2E, но получает 45-минутный общий потолок: большой authored asset checkout больше не отменяет корректно выполняющийся E2E на отметке 30 минут.
+
 ## 1.16.4 — 2026-08-17
 
 - Ресурсоёмкие organic-worldgen и десятигородской atlas перенесены из GitHub Actions в явный локальный release-gate `npm run test:release-world`; основной CI сохраняет asset verification, typecheck, lint, unit, production build, MCP smoke, E2E и dependency audit.
