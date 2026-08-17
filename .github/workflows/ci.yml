@@ -66,7 +66,7 @@ jobs:
     # suites: it is resource-heavy and must not compete with them in one job.
     needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16-alpine

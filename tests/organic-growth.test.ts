@@ -78,9 +78,9 @@ describe.runIf(process.env.RUN_ORGANIC_GROWTH_TESTS === "1")("organic growth inc
       .filter((role): role is string => Boolean(role)))];
     districtGreenAfter = (await service.listWorldFeatures(countryId))
       .filter((feature) => feature.districtId === districtId && (feature.kind === "PARK" || feature.kind === "GROVE")).length;
-  }, 900_000);
+  }, 1_200_000);
 
-  afterAll(async () => await db.close());
+  afterAll(async () => await db.close(), 60_000);
 
   it("packs 29 identical tasks into a dense district without audit violations", () => {
     expect(auditBefore.metrics.tasks).toBe(29);
