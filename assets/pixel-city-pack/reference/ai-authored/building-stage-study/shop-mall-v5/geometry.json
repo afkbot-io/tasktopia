@@ -1,0 +1,17 @@
+{
+  "key": "shop-mall",
+  "category": "COMMERCIAL",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [14, 10],
+  "physicalFootprintCells": [14, 8],
+  "projectedRoofDepthCells": 3,
+  "foundationThicknessCells": 1,
+  "constructionClearanceCells": 1,
+  "entrance": { "side": "S", "offset": 7 },
+  "doorSizePx": [16, 16],
+  "doorLeafSizePx": [12, 14],
+  "doorBottomInsetPx": 0,
+  "finishedOccupiedWidthPxRange": [100, 112],
+  "finishedOccupiedHeightPxRange": [56, 80],
+  "sitePreviewCells": [18, 12]
+}

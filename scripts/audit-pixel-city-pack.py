@@ -15,6 +15,7 @@ PACK = ROOT / "assets" / "pixel-city-pack"
 RUNTIME = PACK / "runtime"
 MANIFEST_PATH = PACK / "manifest.json"
 AI_PROP_CATALOG_PATH = PACK / "catalog" / "ai-authored-props.json"
+BUILDING_STUDY_ROOT = PACK / "reference" / "ai-authored" / "building-stage-study"
 CELL = 8
 PALETTE_BUDGET = 32
 GAS_STATION_KEYS = {
@@ -26,6 +27,18 @@ GAS_STATION_KEYS = {
     "commercial-gas-station-cafe",
     "commercial-gas-station-wash",
 }
+
+
+def minimum_finished_height_ratio(key: str, canvas_height: int) -> float:
+    """Use the accepted building geometry instead of a generic tall-building ratio."""
+    contract_path = BUILDING_STUDY_ROOT / f"{key}-v5" / "geometry.json"
+    if not contract_path.is_file() or canvas_height <= 0:
+        return 0.6
+    contract = json.loads(contract_path.read_text())
+    height_range = contract.get("finishedOccupiedHeightPxRange")
+    if not isinstance(height_range, list) or len(height_range) != 2:
+        return 0.6
+    return float(height_range[0]) / canvas_height
 
 
 def alpha_contract(image: Image.Image, label: str, violations: list[str]) -> tuple[int, int, int, int] | None:
@@ -109,7 +122,12 @@ def audit() -> dict[str, Any]:
             finished = load_image(stages[-1], f"{key}/finished-readability", violations)
             if finished is not None:
                 bounds = finished.getchannel("A").getbbox()
-                if bounds is None or bounds[2] - bounds[0] < width * 0.8 or bounds[3] - bounds[1] < height * 0.6:
+                minimum_height_ratio = minimum_finished_height_ratio(key, height)
+                if (
+                    bounds is None
+                    or bounds[2] - bounds[0] < width * 0.8
+                    or bounds[3] - bounds[1] < height * minimum_height_ratio
+                ):
                     violations.append(f"{key}: finished fuel-station silhouette is too small at native scale")
 
     if set(gas_station_finished) != GAS_STATION_KEYS:

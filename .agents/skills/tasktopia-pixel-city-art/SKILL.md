@@ -11,8 +11,8 @@ Produce runtime-safe assets that read clearly at native `1x`, remain stable at e
 
 Before drawing or reviewing, read:
 
-1. `assets/pixel-city-pack-v4/docs/GENERATION-SPEC.md` — canonical geometry and style contract.
-2. `assets/pixel-city-pack-v4/docs/ASSET-EXPANSION-PLAN.md` — requested catalog and quotas.
+1. `assets/pixel-city-pack/docs/GENERATION-SPEC.md` — canonical geometry and style contract.
+2. `assets/pixel-city-pack/docs/ASSET-EXPANSION-PLAN.md` — requested catalog and quotas.
 3. `references/visual-grammar.md` — measurable proportions and stage rules.
 4. `references/prompt-template.md` only when generating concept/reference art.
 5. `references/production-acceptance.md` when generating, migrating, or approving AI-authored runtime buildings.
@@ -79,7 +79,7 @@ Between external image requests, wait `2–5 s` after completion. Do not use lon
 
 After generation:
 
-1. Save accepted authored stages as `assets/pixel-city-pack-v4/reference/ai-authored/building-stage-study/<key>/sources/stage-{3..5}.png`.
+1. Save accepted authored stages as `assets/pixel-city-pack/reference/ai-authored/building-stage-study/<key>/sources/stage-{3..5}.png`.
 2. Register the three relative `stageSources` and `stageSha256` values in the matching `catalog/buildings.json` entry. Building catalog entries must not contain combined-sheet fields.
 3. Set `reviewed: true` only after projection, five-stage and native-scale review; runtime manifests never expose authoring provenance.
 4. Normalize the approved source deterministically at its exact target size; never replace it with code-drawn geometry.
@@ -91,14 +91,19 @@ Run:
 ```bash
 npm run assets:build
 python3 .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py \
-  --manifest assets/pixel-city-pack-v4/manifest.json \
-  --runtime assets/pixel-city-pack-v4/runtime \
+  --manifest assets/pixel-city-pack/manifest.json \
+  --runtime assets/pixel-city-pack/runtime \
   --report tmp/pixel-city-style-audit.json
 npm run assets:verify
 .venv-assets/bin/python scripts/render-tree-grid-preview.py
 ```
 
 Treat every error as blocking. Review warnings visually; do not suppress one without documenting why the asset intentionally differs.
+
+Run this pipeline serially. Wait for `assets:build` to finish before starting
+either audit or `assets:verify`; concurrent verification can observe the
+runtime directory while files are being replaced and produce false missing-file
+failures.
 
 The audit must cover the complete pack, not only newly created files:
 

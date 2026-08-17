@@ -1,0 +1,19 @@
+{
+  "city": "Большой Атлас",
+  "lod": "detail",
+  "residentChunks": 12,
+  "worldObjects": 1604,
+  "cars": 9,
+  "buses": 0,
+  "walkers": 12,
+  "cyclists": 4,
+  "scooters": 3,
+  "animals": 6,
+  "trafficSignals": 21,
+  "wrongWayCars": 0,
+  "wrongWayBuses": 0,
+  "trafficUnsafePairs": 0,
+  "worldObjectDepthErrors": 0,
+  "residentCenterErrors": 0,
+  "consoleErrors": []
+}

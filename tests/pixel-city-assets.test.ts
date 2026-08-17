@@ -198,7 +198,7 @@ describe("Pixel City active asset contract", () => {
     }
   });
 
-  it("ships a three-frame, twenty-pixel resident walk cycle in every direction", () => {
+  it("ships a compact three-frame resident walk cycle in every direction", () => {
     const props = manifest.props as Record<string, { size: number[]; footprintCells: number[] }>;
     for (const direction of ["north", "east", "south", "west"]) {
       for (const frame of ["a", "b", "c"]) {

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "key": "highrise-residential-tower-v5-study",
+  "category": "HIGHRISE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [18, 35],
+  "physicalFootprintCells": [18, 16],
+  "projectedRoofDepthCells": 5,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": {
+    "side": "S",
+    "offset": 9
+  },
+  "sitePreviewCells": [22, 39],
+  "finishedOpaqueWidthPx": [96, 112],
+  "finishedOpaqueHeightPx": [232, 280]
+}

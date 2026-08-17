@@ -221,6 +221,63 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         minimum = minimum_opaque_bounds.get(key)
         if minimum and (bounds is None or bounds[2] - bounds[0] < minimum[0] or bounds[3] - bounds[1] < minimum[1]):
             errors.append(f"{label}: authored subject is too small for its runtime footprint")
+        if prop.get("visualProfile") == "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME":
+            if image.size != (16, 24):
+                errors.append(f"{label}: walking resident canvas must be 16x24")
+            if bounds is None:
+                errors.append(f"{label}: walking resident has no opaque subject")
+            else:
+                resident_width = bounds[2] - bounds[0]
+                resident_height = bounds[3] - bounds[1]
+                if resident_width < 8 or resident_width > 12:
+                    errors.append(f"{label}: walking resident opaque width must be 8..12 px")
+                if resident_height < 16 or resident_height > 18:
+                    errors.append(f"{label}: walking resident opaque height must be 16..18 px, got {resident_height}")
+                if bounds[3] != image.height:
+                    errors.append(f"{label}: walking resident feet must share the bottom baseline")
+        if prop.get("visualProfile") == "TASKTOPIA_V5_RESIDENT_ACTIVITY":
+            if image.size != (16, 24):
+                errors.append(f"{label}: activity resident canvas must be 16x24")
+            if bounds is None:
+                errors.append(f"{label}: activity resident has no opaque subject")
+            else:
+                resident_width = bounds[2] - bounds[0]
+                resident_height = bounds[3] - bounds[1]
+                if key.startswith("fisher-"):
+                    if resident_width < 8 or resident_width > 10 or resident_height < 12 or resident_height > 14:
+                        errors.append(
+                            f"{label}: fishing pose must occupy 8..10x12..14 px at canonical human scale, "
+                            f"got {resident_width}x{resident_height}"
+                        )
+                elif resident_width < 8 or resident_width > 10 or resident_height < 16 or resident_height > 18:
+                    errors.append(
+                        f"{label}: upright activity resident must occupy 8..10x16..18 px, "
+                        f"got {resident_width}x{resident_height}"
+                    )
+                if bounds[3] != image.height:
+                    errors.append(f"{label}: activity resident feet must share the bottom baseline")
+        if prop.get("visualProfile") == "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP":
+            horizontal = "-horizontal-" in key
+            expected_canvas = (24, 24) if horizontal else (16, 24)
+            if image.size != expected_canvas:
+                errors.append(f"{label}: micromobility canvas must be {expected_canvas[0]}x{expected_canvas[1]}")
+            if bounds is None:
+                errors.append(f"{label}: micromobility sprite has no opaque subject")
+            else:
+                subject_width = bounds[2] - bounds[0]
+                subject_height = bounds[3] - bounds[1]
+                if horizontal and (subject_width < 12 or subject_width > 18 or subject_height < 13 or subject_height > 18):
+                    errors.append(
+                        f"{label}: horizontal rider and vehicle must occupy 12..18x13..18 px, "
+                        f"got {subject_width}x{subject_height}"
+                    )
+                if not horizontal and (subject_width < 6 or subject_width > 8 or subject_height < 16 or subject_height > 18):
+                    errors.append(
+                        f"{label}: vertical rider and vehicle must occupy 6..8x16..18 px, "
+                        f"got {subject_width}x{subject_height}"
+                    )
+                if bounds[3] != image.height:
+                    errors.append(f"{label}: micromobility contact point must share the bottom baseline")
         if prop.get("visualProfile") == "TASKTOPIA_V5_TREE_FRONTAL_TOP":
             if image.size != (16, 32):
                 errors.append(f"{label}: standard V5 tree canvas must be 16x32")

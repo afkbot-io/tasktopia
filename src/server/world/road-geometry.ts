@@ -1,7 +1,49 @@
 import type { Cell, RoadCellDto } from "../../shared/contracts";
-import { cellKey } from "./grid";
+import { cellKey, neighbors4 } from "./grid";
 
 export type RoadWidthPolicy = Record<RoadCellDto["roadClass"], number>;
+
+/** Bridge components must connect two distinct pieces of dry-road frontage. */
+export function bridgeComponentsWithoutTwoLandPortals(roads: Iterable<RoadCellDto>): Array<Set<string>> {
+  const roadMap = new Map([...roads].map((road) => [cellKey(road), road]));
+  const unvisited = new Set([...roadMap.values()].filter((road) => road.structure === "BRIDGE").map(cellKey));
+  const invalid: Array<Set<string>> = [];
+  while (unvisited.size > 0) {
+    const start = unvisited.values().next().value as string;
+    unvisited.delete(start);
+    const component = [roadMap.get(start)!];
+    const componentKeys = new Set([start]);
+    const landPortals = new Set<string>();
+    for (let index = 0; index < component.length; index += 1) {
+      for (const neighborCell of neighbors4(component[index]!)) {
+        const neighbor = roadMap.get(cellKey(neighborCell));
+        if (!neighbor) continue;
+        const neighborKey = cellKey(neighbor);
+        if (neighbor.structure === "ROAD") landPortals.add(neighborKey);
+        else if (unvisited.delete(neighborKey)) {
+          component.push(neighbor);
+          componentKeys.add(neighborKey);
+        }
+      }
+    }
+    let portalComponents = 0;
+    while (landPortals.size > 0) {
+      portalComponents += 1;
+      const portalStart = landPortals.values().next().value as string;
+      landPortals.delete(portalStart);
+      const queue = [roadMap.get(portalStart)!];
+      for (let index = 0; index < queue.length; index += 1) {
+        for (const neighbor of neighbors4(queue[index]!)) {
+          const neighborKey = cellKey(neighbor);
+          if (!landPortals.delete(neighborKey)) continue;
+          queue.push(roadMap.get(neighborKey)!);
+        }
+      }
+    }
+    if (portalComponents < 2) invalid.push(componentKeys);
+  }
+  return invalid;
+}
 
 export function centeredRoadOffsets(width: number): number[] {
   if (!Number.isInteger(width) || width < 1) throw new Error(`Invalid road width: ${width}`);

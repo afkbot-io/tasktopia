@@ -24,7 +24,8 @@ Append:
 ```text
 Primary request: derive only construction stage 4 from Image 1
 Stage state: retain the complete final silhouette, setbacks, roof and entrance; leave selected facade panels/windows unfinished; add close scaffolding attached to the facade and small construction details inside the footprint
-Coverage: 90–100% of final height and 85–105% of final occupied width; scaffold must not force the building to shrink or widen materially
+Coverage: target 90–100% of final occupied height and width; the verifier's 85–105% height and 85–110% width bands are rejection tolerances, not authoring targets; scaffold must not force the building to shrink or widen materially
+Extrema lock: preserve every integral mast, spire, antenna, tower and crown that defines Image 1's highest or widest point; leave it structurally present but unfinished
 Keep unchanged: foundation/roof screen plane, ground baseline, building centre and entrance
 ```
 
@@ -34,9 +35,10 @@ Append:
 
 ```text
 Primary request: derive only construction stage 3 from Image 1
-Stage state: show the recognisable structural skeleton of the same building—columns, core and floor slabs following the final bay rhythm; reach 50–75% of final height
+Stage state: show the recognisable structural skeleton of the same building—columns, core and floor slabs following the final bay rhythm; target 55–65% of final occupied height
 Coverage: retain the final foundation width and projected depth; do not invent a new podium, crane silhouette or side facade
 Keep unchanged: foundation corners, horizontal centre, ground baseline and entrance bay
+Low-rise rule: normally keep one structural storey plus short rebar; do not complete a second storey merely to make the frame look substantial
 ```
 
 ## Stages 1–2 — never prompt an image model

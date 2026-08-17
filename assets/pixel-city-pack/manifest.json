@@ -1131,16 +1131,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        16
+        96,
+        64
       ],
       "footprintCells": [
-        5,
-        2
+        12,
+        6
       ],
       "anchorPx": [
-        20,
-        16
+        48,
+        64
       ],
       "stages": [
         "buildings/commercial/shop-supermarket/stage-1.png",
@@ -1152,33 +1152,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          8,
-          38,
-          16
+          56,
+          94,
+          64
         ],
         [
           2,
-          2,
-          38,
-          15
+          50,
+          94,
+          63
         ],
         [
-          1,
-          4,
-          39,
-          16
+          0,
+          33,
+          95,
+          64
         ],
         [
-          1,
-          3,
-          39,
-          16
+          0,
+          16,
+          96,
+          64
         ],
         [
-          1,
-          4,
-          39,
-          16
+          0,
+          16,
+          96,
+          64
         ]
       ],
       "platform": "STONE",
@@ -1195,7 +1195,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -1207,16 +1207,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        16
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        2
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        16
+        40,
+        64
       ],
       "stages": [
         "buildings/commercial/shop-bakery-long/stage-1.png",
@@ -1228,33 +1228,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          8,
-          46,
-          16
+          56,
+          78,
+          64
         ],
         [
           2,
-          2,
-          46,
-          15
+          50,
+          78,
+          63
         ],
         [
-          9,
-          3,
-          39,
-          16
+          0,
+          37,
+          80,
+          64
         ],
         [
-          7,
-          1,
-          40,
-          16
+          0,
+          17,
+          80,
+          64
         ],
         [
-          8,
-          1,
-          39,
-          16
+          0,
+          17,
+          80,
+          64
         ]
       ],
       "platform": "STONE",
@@ -1271,7 +1271,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -1283,16 +1283,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        24
+        112,
+        80
       ],
       "footprintCells": [
-        7,
-        3
+        14,
+        8
       ],
       "anchorPx": [
-        28,
-        24
+        56,
+        80
       ],
       "stages": [
         "buildings/commercial/shop-mall/stage-1.png",
@@ -1304,33 +1304,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          54,
-          24
+          72,
+          110,
+          80
         ],
         [
           2,
-          10,
-          54,
-          23
+          66,
+          110,
+          79
         ],
         [
-          10,
-          4,
-          42,
-          24
+          0,
+          26,
+          111,
+          80
         ],
         [
-          10,
-          1,
-          45,
-          24
+          0,
+          11,
+          112,
+          80
         ],
         [
-          7,
-          1,
-          48,
-          24
+          0,
+          11,
+          112,
+          80
         ]
       ],
       "platform": "STONE",
@@ -1346,7 +1346,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -1358,16 +1358,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        24
+        40,
+        64
       ],
       "stages": [
         "buildings/commercial/shop-warehouse/stage-1.png",
@@ -1379,33 +1379,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          46,
-          24
+          56,
+          78,
+          64
         ],
         [
           2,
-          10,
-          46,
-          23
+          50,
+          78,
+          63
         ],
         [
-          3,
-          4,
-          44,
-          24
-        ],
-        [
-          4,
           1,
-          44,
-          24
+          25,
+          79,
+          64
         ],
         [
-          2,
-          1,
-          45,
-          24
+          0,
+          15,
+          80,
+          64
+        ],
+        [
+          0,
+          15,
+          80,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -1423,7 +1423,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -1467,21 +1467,21 @@
           111
         ],
         [
-          5,
-          54,
-          91,
+          2,
+          30,
+          93,
           112
         ],
         [
-          0,
-          54,
-          96,
+          3,
+          3,
+          93,
           112
         ],
         [
+          3,
           0,
-          46,
-          96,
+          93,
           112
         ]
       ],
@@ -1513,16 +1513,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        32
+        80,
+        80
       ],
       "footprintCells": [
-        6,
-        4
+        10,
+        7
       ],
       "anchorPx": [
-        24,
-        32
+        40,
+        80
       ],
       "stages": [
         "buildings/civic/civic-fire-station/stage-1.png",
@@ -1534,33 +1534,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          72,
+          78,
+          80
         ],
         [
           2,
-          18,
-          46,
-          31
+          66,
+          78,
+          79
         ],
         [
-          9,
-          9,
-          39,
-          32
+          0,
+          48,
+          80,
+          80
         ],
         [
-          6,
           1,
-          42,
-          32
+          9,
+          79,
+          80
         ],
         [
-          6,
-          1,
-          42,
-          32
+          0,
+          9,
+          80,
+          80
         ]
       ],
       "platform": "SERVICE",
@@ -1578,7 +1578,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 1
         }
       ],
       "maxPerCity": 1,
@@ -1622,20 +1622,20 @@
           87
         ],
         [
-          10,
-          29,
-          86,
-          88
-        ],
-        [
-          5,
-          13,
-          91,
+          1,
+          33,
+          95,
           88
         ],
         [
           0,
-          8,
+          1,
+          96,
+          88
+        ],
+        [
+          0,
+          1,
           96,
           88
         ]
@@ -1668,16 +1668,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        32
+        80,
+        80
       ],
       "footprintCells": [
-        4,
-        4
+        10,
+        7
       ],
       "anchorPx": [
-        16,
-        32
+        40,
+        80
       ],
       "stages": [
         "buildings/civic/civic-bank/stage-1.png",
@@ -1689,33 +1689,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          30,
-          32
+          72,
+          78,
+          80
         ],
         [
           2,
-          19,
-          30,
-          31
+          66,
+          78,
+          79
         ],
         [
-          3,
-          9,
-          28,
-          32
+          5,
+          23,
+          75,
+          80
         ],
         [
-          1,
           4,
-          31,
-          32
+          0,
+          75,
+          80
         ],
         [
-          1,
-          3,
-          31,
-          32
+          4,
+          0,
+          75,
+          80
         ]
       ],
       "platform": "SERVICE",
@@ -1733,7 +1733,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -1746,7 +1746,7 @@
       "rarity": "UNIQUE",
       "spriteSize": [
         112,
-        88
+        96
       ],
       "footprintCells": [
         14,
@@ -1754,7 +1754,7 @@
       ],
       "anchorPx": [
         56,
-        88
+        96
       ],
       "stages": [
         "buildings/civic/civic-school/stage-1.png",
@@ -1766,33 +1766,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          80,
+          88,
           110,
-          88
+          96
         ],
         [
           2,
-          74,
+          82,
           110,
-          87
+          95
         ],
         [
-          17,
-          23,
-          94,
-          88
+          1,
+          45,
+          111,
+          96
         ],
         [
-          15,
           0,
-          96,
-          88
+          19,
+          112,
+          96
         ],
         [
-          15,
           0,
-          96,
-          88
+          19,
+          112,
+          96
         ]
       ],
       "platform": "SERVICE",
@@ -1822,16 +1822,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        40
+        96,
+        96
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        96
       ],
       "stages": [
         "buildings/civic/civic-city-hall/stage-1.png",
@@ -1843,33 +1843,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          88,
+          94,
+          96
         ],
         [
           2,
-          26,
-          46,
-          39
+          82,
+          94,
+          95
         ],
         [
           3,
-          11,
-          45,
-          40
+          25,
+          93,
+          96
         ],
         [
-          1,
           2,
-          47,
-          40
+          0,
+          94,
+          96
         ],
         [
-          1,
-          1,
-          47,
-          40
+          2,
+          0,
+          94,
+          96
         ]
       ],
       "platform": "SERVICE",
@@ -1887,7 +1887,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -1899,16 +1899,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        40,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station/stage-1.png",
@@ -1920,33 +1920,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          56,
+          78,
+          64
         ],
         [
           2,
-          18,
-          46,
-          31
+          50,
+          78,
+          63
         ],
         [
-          3,
-          9,
-          45,
-          32
+          0,
+          26,
+          80,
+          64
         ],
         [
-          1,
-          7,
-          47,
-          32
+          0,
+          6,
+          80,
+          64
         ],
         [
-          1,
-          4,
-          47,
-          32
+          0,
+          6,
+          80,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -1965,7 +1965,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -1977,16 +1977,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        24
+        40,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-parking-lot/stage-1.png",
@@ -1998,33 +1998,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          46,
-          24
+          56,
+          78,
+          64
         ],
         [
           2,
-          10,
-          46,
-          23
+          50,
+          78,
+          63
         ],
         [
-          5,
-          4,
-          43,
-          24
+          0,
+          37,
+          80,
+          64
         ],
         [
-          1,
-          3,
-          47,
-          24
+          0,
+          19,
+          80,
+          64
         ],
         [
-          1,
-          2,
-          47,
-          24
+          0,
+          19,
+          80,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -2045,7 +2045,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -2057,16 +2057,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        24
+        96,
+        64
       ],
       "footprintCells": [
-        7,
-        3
+        12,
+        6
       ],
       "anchorPx": [
-        28,
-        24
+        48,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-shopping-plaza/stage-1.png",
@@ -2078,33 +2078,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          54,
-          24
+          56,
+          94,
+          64
         ],
         [
           2,
-          10,
-          54,
-          23
+          50,
+          94,
+          63
         ],
         [
-          4,
-          4,
-          51,
-          24
+          0,
+          33,
+          96,
+          64
         ],
         [
-          1,
-          1,
-          54,
-          24
+          0,
+          16,
+          96,
+          64
         ],
         [
-          3,
-          1,
-          52,
-          24
+          0,
+          16,
+          96,
+          64
         ]
       ],
       "platform": "STONE",
@@ -2120,7 +2120,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -2208,16 +2208,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        64
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        6
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-pharmacy/stage-1.png",
@@ -2229,33 +2229,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          56,
+          46,
+          64
         ],
         [
           2,
-          11,
-          30,
-          23
+          50,
+          46,
+          63
         ],
         [
-          1,
-          4,
-          30,
-          24
+          2,
+          23,
+          45,
+          64
         ],
         [
-          1,
-          3,
-          31,
-          24
+          2,
+          0,
+          45,
+          64
         ],
         [
-          1,
-          3,
-          31,
-          24
+          2,
+          0,
+          45,
+          64
         ]
       ],
       "platform": "STONE",
@@ -2272,7 +2272,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -2284,16 +2284,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        20,
-        24
+        40,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-auto-repair/stage-1.png",
@@ -2305,33 +2305,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          38,
-          24
+          56,
+          78,
+          64
         ],
         [
           2,
-          10,
-          38,
-          23
-        ],
-        [
-          4,
-          4,
-          36,
-          24
+          50,
+          78,
+          63
         ],
         [
           1,
-          1,
-          38,
-          24
+          40,
+          79,
+          64
         ],
         [
-          2,
-          1,
-          38,
-          24
+          0,
+          27,
+          80,
+          64
+        ],
+        [
+          0,
+          27,
+          80,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -2349,7 +2349,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -2547,20 +2547,20 @@
           63
         ],
         [
+          2,
+          27,
+          55,
+          64
+        ],
+        [
+          0,
           7,
-          18,
-          50,
+          55,
           64
         ],
         [
           0,
-          3,
-          56,
-          64
-        ],
-        [
-          0,
-          3,
+          8,
           56,
           64
         ]
@@ -2747,7 +2747,7 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         96,
-        112
+        96
       ],
       "footprintCells": [
         12,
@@ -2755,7 +2755,7 @@
       ],
       "anchorPx": [
         48,
-        112
+        96
       ],
       "stages": [
         "buildings/civic/civic-post-office/stage-1.png",
@@ -2767,33 +2767,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          104,
+          88,
           94,
-          112
+          96
         ],
         [
           2,
-          98,
+          82,
           94,
-          111
+          95
         ],
         [
-          7,
-          54,
-          90,
-          112
-        ],
-        [
-          0,
-          44,
-          96,
-          112
+          3,
+          43,
+          93,
+          96
         ],
         [
           0,
-          44,
+          4,
           96,
-          112
+          96
+        ],
+        [
+          0,
+          4,
+          96,
+          96
         ]
       ],
       "platform": "SERVICE",
@@ -3290,16 +3290,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        40
+        96,
+        88
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        88
       ],
       "stages": [
         "buildings/civic/civic-theatre/stage-1.png",
@@ -3311,33 +3311,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          80,
+          94,
+          88
         ],
         [
           2,
-          26,
-          46,
-          39
+          74,
+          94,
+          87
         ],
         [
-          3,
-          11,
-          45,
-          40
+          2,
+          25,
+          94,
+          88
         ],
         [
+          0,
+          2,
+          96,
+          88
+        ],
+        [
+          0,
           1,
-          8,
-          47,
-          40
-        ],
-        [
-          1,
-          8,
-          47,
-          40
+          96,
+          88
         ]
       ],
       "platform": "SERVICE",
@@ -3354,7 +3354,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -3398,21 +3398,21 @@
           111
         ],
         [
-          2,
-          47,
-          94,
+          5,
+          31,
+          90,
           112
         ],
         [
+          3,
           0,
-          15,
-          96,
+          92,
           112
         ],
         [
+          3,
           0,
-          15,
-          96,
+          92,
           112
         ]
       ],
@@ -3475,20 +3475,20 @@
           95
         ],
         [
+          1,
+          44,
+          94,
+          96
+        ],
+        [
           0,
-          49,
+          13,
           96,
           96
         ],
         [
           0,
-          19,
-          96,
-          96
-        ],
-        [
-          0,
-          19,
+          13,
           96,
           96
         ]
@@ -3554,19 +3554,19 @@
         ],
         [
           0,
-          32,
+          42,
+          79,
+          80
+        ],
+        [
+          0,
+          28,
           80,
           80
         ],
         [
           0,
-          1,
-          80,
-          80
-        ],
-        [
-          0,
-          1,
+          28,
           80,
           80
         ]
@@ -3599,16 +3599,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        24
+        80,
+        72
       ],
       "footprintCells": [
-        4,
-        3
+        10,
+        7
       ],
       "anchorPx": [
-        16,
-        24
+        40,
+        72
       ],
       "stages": [
         "buildings/civic/civic-clinic-neighborhood/stage-1.png",
@@ -3620,33 +3620,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          64,
+          78,
+          72
         ],
         [
           2,
-          11,
-          30,
-          23
+          58,
+          78,
+          71
         ],
         [
-          1,
           4,
-          30,
-          24
+          25,
+          76,
+          72
         ],
         [
           1,
-          1,
-          31,
-          24
+          7,
+          79,
+          72
         ],
         [
-          2,
-          1,
-          30,
-          24
+          0,
+          6,
+          80,
+          72
         ]
       ],
       "platform": "SERVICE",
@@ -3665,7 +3665,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -3677,16 +3677,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        32
+        64,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        8,
+        5
       ],
       "anchorPx": [
-        20,
-        32
+        32,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station-compact/stage-1.png",
@@ -3698,33 +3698,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          38,
-          32
+          56,
+          62,
+          64
         ],
         [
           2,
-          18,
-          38,
-          31
+          50,
+          62,
+          63
         ],
         [
-          1,
-          12,
-          39,
-          32
+          4,
+          35,
+          61,
+          64
         ],
         [
-          1,
-          11,
-          39,
-          32
+          4,
+          26,
+          60,
+          64
         ],
         [
-          1,
-          8,
-          39,
-          32
+          0,
+          24,
+          64,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -3743,7 +3743,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": 1,
@@ -3835,16 +3835,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        64,
-        40
+        112,
+        80
       ],
       "footprintCells": [
-        8,
-        5
+        14,
+        8
       ],
       "anchorPx": [
-        32,
-        40
+        56,
+        80
       ],
       "stages": [
         "buildings/commercial/commercial-highway-service-plaza/stage-1.png",
@@ -3856,33 +3856,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          62,
-          40
+          72,
+          110,
+          80
         ],
         [
           2,
-          26,
-          62,
-          39
+          66,
+          110,
+          79
         ],
         [
-          1,
-          11,
-          62,
-          40
+          2,
+          56,
+          109,
+          80
         ],
         [
-          1,
-          11,
-          63,
-          40
+          0,
+          38,
+          112,
+          80
         ],
         [
-          1,
-          11,
-          63,
-          40
+          0,
+          38,
+          112,
+          80
         ]
       ],
       "platform": "ASPHALT",
@@ -3900,7 +3900,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 7
         }
       ],
       "maxPerCity": 1,
@@ -4583,7 +4583,9 @@
         2
       ],
       "tags": [
-        "house"
+        "house",
+        "private-residential",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -5140,16 +5142,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "stages": [
         "buildings/commercial/shop-cafe/stage-1.png",
@@ -5161,33 +5163,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          40,
+          46,
+          48
         ],
         [
           2,
-          11,
-          30,
-          23
-        ],
-        [
-          2,
-          4,
-          29,
-          24
+          34,
+          46,
+          47
         ],
         [
           1,
-          1,
-          30,
-          24
+          23,
+          48,
+          48
         ],
         [
-          2,
+          0,
           1,
-          29,
-          24
+          48,
+          48
+        ],
+        [
+          0,
+          1,
+          48,
+          48
         ]
       ],
       "platform": "STONE",
@@ -5204,7 +5206,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -5216,16 +5218,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "stages": [
         "buildings/commercial/shop-butcher/stage-1.png",
@@ -5237,33 +5239,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          40,
+          46,
+          48
         ],
         [
           2,
-          11,
-          30,
-          23
-        ],
-        [
-          1,
-          5,
-          31,
-          24
-        ],
-        [
-          1,
-          1,
-          30,
-          24
+          34,
+          46,
+          47
         ],
         [
           2,
-          1,
-          29,
-          24
+          15,
+          46,
+          48
+        ],
+        [
+          2,
+          0,
+          46,
+          48
+        ],
+        [
+          2,
+          0,
+          46,
+          48
         ]
       ],
       "platform": "STONE",
@@ -5280,7 +5282,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -5292,16 +5294,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "stages": [
         "buildings/commercial/shop-electronics/stage-1.png",
@@ -5313,33 +5315,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          40,
+          46,
+          48
         ],
         [
           2,
-          11,
-          30,
-          23
+          34,
+          46,
+          47
         ],
         [
           2,
-          5,
-          30,
-          24
-        ],
-        [
-          1,
-          2,
-          28,
-          24
+          19,
+          45,
+          48
         ],
         [
           2,
-          1,
-          30,
-          24
+          0,
+          45,
+          48
+        ],
+        [
+          2,
+          0,
+          45,
+          48
         ]
       ],
       "platform": "STONE",
@@ -5356,7 +5358,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -5368,16 +5370,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        24
+        64,
+        56
       ],
       "footprintCells": [
-        5,
-        3
+        8,
+        6
       ],
       "anchorPx": [
-        20,
-        24
+        32,
+        56
       ],
       "stages": [
         "buildings/commercial/shop-furniture/stage-1.png",
@@ -5389,33 +5391,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          38,
-          24
+          48,
+          62,
+          56
         ],
         [
           2,
-          10,
-          38,
-          23
+          42,
+          62,
+          55
         ],
         [
-          7,
-          4,
-          32,
-          24
+          0,
+          22,
+          64,
+          56
         ],
         [
-          5,
-          1,
-          32,
-          24
-        ],
-        [
+          0,
           6,
-          1,
-          34,
-          24
+          64,
+          56
+        ],
+        [
+          0,
+          6,
+          64,
+          56
         ]
       ],
       "platform": "STONE",
@@ -5432,7 +5434,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": null,
@@ -5444,16 +5446,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "stages": [
         "buildings/commercial/shop-bookstore/stage-1.png",
@@ -5465,33 +5467,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          40,
+          46,
+          48
         ],
         [
           2,
-          11,
-          30,
-          23
+          34,
+          46,
+          47
         ],
         [
-          3,
-          4,
-          28,
-          24
-        ],
-        [
-          2,
           1,
-          30,
-          24
+          18,
+          47,
+          48
         ],
         [
-          4,
-          1,
-          28,
-          24
+          0,
+          0,
+          48,
+          48
+        ],
+        [
+          0,
+          0,
+          48,
+          48
         ]
       ],
       "platform": "STONE",
@@ -5508,7 +5510,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -5520,16 +5522,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "stages": [
         "buildings/commercial/shop-clothing/stage-1.png",
@@ -5541,33 +5543,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          40,
+          46,
+          48
         ],
         [
           2,
-          11,
-          30,
-          23
-        ],
-        [
-          3,
-          4,
-          29,
-          24
+          34,
+          46,
+          47
         ],
         [
           1,
-          1,
-          30,
-          24
+          18,
+          47,
+          48
         ],
         [
-          3,
           1,
-          28,
-          24
+          0,
+          47,
+          48
+        ],
+        [
+          1,
+          0,
+          47,
+          48
         ]
       ],
       "platform": "STONE",
@@ -5584,7 +5586,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -5596,16 +5598,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        24
+        64,
+        48
       ],
       "footprintCells": [
-        5,
-        3
+        8,
+        5
       ],
       "anchorPx": [
-        20,
-        24
+        32,
+        48
       ],
       "stages": [
         "buildings/commercial/shop-restaurant/stage-1.png",
@@ -5617,33 +5619,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          38,
-          24
+          40,
+          62,
+          48
         ],
         [
           2,
-          10,
-          38,
-          23
-        ],
-        [
-          7,
-          4,
-          32,
-          24
-        ],
-        [
-          5,
-          1,
           34,
-          24
+          62,
+          47
         ],
         [
-          6,
-          1,
-          33,
-          24
+          0,
+          18,
+          64,
+          48
+        ],
+        [
+          0,
+          0,
+          64,
+          48
+        ],
+        [
+          0,
+          0,
+          64,
+          48
         ]
       ],
       "platform": "STONE",
@@ -5660,7 +5662,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": null,
@@ -5672,16 +5674,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "stages": [
         "buildings/commercial/shop-bar/stage-1.png",
@@ -5693,33 +5695,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          40,
+          46,
+          48
         ],
         [
           2,
-          11,
-          30,
-          23
+          34,
+          46,
+          47
         ],
         [
+          1,
+          19,
+          47,
+          48
+        ],
+        [
+          0,
           3,
-          4,
-          28,
-          24
+          48,
+          48
         ],
         [
-          4,
-          1,
-          28,
-          24
-        ],
-        [
-          5,
-          1,
-          26,
-          24
+          0,
+          3,
+          48,
+          48
         ]
       ],
       "platform": "STONE",
@@ -5736,7 +5738,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -5748,16 +5750,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        32
+        56,
+        64
       ],
       "footprintCells": [
-        4,
-        3
+        7,
+        6
       ],
       "anchorPx": [
-        16,
-        32
+        28,
+        64
       ],
       "stages": [
         "buildings/commercial/office-small/stage-1.png",
@@ -5769,33 +5771,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          30,
-          32
+          56,
+          54,
+          64
         ],
         [
           2,
-          19,
-          30,
-          31
+          50,
+          54,
+          63
         ],
         [
           1,
-          9,
-          31,
-          32
+          18,
+          54,
+          64
         ],
         [
           1,
-          9,
-          26,
-          32
+          0,
+          54,
+          64
         ],
         [
           1,
-          3,
-          31,
-          32
+          0,
+          54,
+          64
         ]
       ],
       "platform": "STONE",
@@ -5812,7 +5814,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -5825,15 +5827,15 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         96,
-        88
+        104
       ],
       "footprintCells": [
         12,
-        8
+        10
       ],
       "anchorPx": [
         48,
-        88
+        104
       ],
       "stages": [
         "buildings/commercial/hotel-small/stage-1.png",
@@ -5845,33 +5847,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          80,
+          96,
           94,
-          88
+          104
         ],
         [
           2,
-          74,
+          90,
           94,
-          87
+          103
         ],
         [
+          4,
           24,
-          23,
-          72,
-          88
+          91,
+          104
         ],
         [
-          23,
+          4,
           0,
-          74,
-          88
+          91,
+          104
         ],
         [
-          21,
+          4,
           0,
-          75,
-          88
+          91,
+          104
         ]
       ],
       "platform": "STONE",
@@ -5900,16 +5902,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        80,
+        56
       ],
       "footprintCells": [
-        6,
-        4
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        40,
+        56
       ],
       "stages": [
         "buildings/commercial/commercial-market-stalls/stage-1.png",
@@ -5921,33 +5923,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          48,
+          78,
+          56
         ],
         [
           2,
-          18,
-          46,
-          31
+          42,
+          78,
+          55
         ],
         [
-          8,
-          9,
-          39,
-          32
+          0,
+          17,
+          80,
+          56
         ],
         [
-          3,
-          1,
-          45,
-          32
+          0,
+          2,
+          80,
+          56
         ],
         [
-          4,
-          1,
-          43,
-          32
+          0,
+          2,
+          80,
+          56
         ]
       ],
       "platform": "STONE",
@@ -5963,7 +5965,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -5975,16 +5977,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        20,
-        24
+        40,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-storage/stage-1.png",
@@ -5996,33 +5998,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          38,
-          24
+          56,
+          78,
+          64
         ],
         [
           2,
-          10,
-          38,
-          23
+          50,
+          78,
+          63
         ],
         [
-          6,
-          4,
-          34,
-          24
+          2,
+          40,
+          78,
+          64
         ],
         [
-          4,
-          1,
-          36,
-          24
+          0,
+          22,
+          80,
+          64
         ],
         [
-          5,
-          1,
-          34,
-          24
+          0,
+          21,
+          80,
+          64
         ]
       ],
       "platform": "STONE",
@@ -6039,7 +6041,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -6051,16 +6053,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        32
+        80,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        20,
-        32
+        40,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station-electric/stage-1.png",
@@ -6072,33 +6074,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          38,
-          32
+          56,
+          78,
+          64
         ],
         [
           2,
-          18,
-          38,
-          31
+          50,
+          78,
+          63
         ],
         [
           1,
-          9,
-          38,
-          32
+          35,
+          80,
+          64
         ],
         [
-          1,
-          6,
-          39,
-          32
+          0,
+          23,
+          80,
+          64
         ],
         [
-          1,
-          7,
-          39,
-          32
+          0,
+          23,
+          80,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -6117,7 +6119,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -6161,20 +6163,20 @@
           95
         ],
         [
-          8,
-          27,
-          120,
+          5,
+          57,
+          123,
           96
         ],
         [
           0,
-          20,
+          37,
           128,
           96
         ],
         [
           0,
-          20,
+          37,
           128,
           96
         ]
@@ -6206,16 +6208,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        32
+        88,
+        64
       ],
       "footprintCells": [
-        7,
-        3
+        11,
+        6
       ],
       "anchorPx": [
-        28,
-        32
+        44,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station-cafe/stage-1.png",
@@ -6227,33 +6229,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          54,
-          32
+          56,
+          86,
+          64
         ],
         [
           2,
-          18,
-          54,
-          31
-        ],
-        [
-          9,
-          9,
-          46,
-          32
-        ],
-        [
-          2,
-          1,
-          53,
-          32
-        ],
-        [
-          5,
-          1,
           50,
-          32
+          86,
+          63
+        ],
+        [
+          0,
+          27,
+          87,
+          64
+        ],
+        [
+          0,
+          13,
+          88,
+          64
+        ],
+        [
+          0,
+          13,
+          88,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -6271,7 +6273,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -6283,16 +6285,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        32
+        96,
+        64
       ],
       "footprintCells": [
-        7,
-        3
+        12,
+        6
       ],
       "anchorPx": [
-        28,
-        32
+        48,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station-wash/stage-1.png",
@@ -6304,33 +6306,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          54,
-          32
+          56,
+          94,
+          64
         ],
         [
           2,
-          18,
-          54,
-          31
+          50,
+          94,
+          63
         ],
         [
-          5,
-          9,
-          51,
-          32
+          0,
+          47,
+          96,
+          64
         ],
         [
-          1,
-          4,
-          55,
-          32
+          0,
+          31,
+          96,
+          64
         ],
         [
-          1,
-          2,
-          55,
-          32
+          0,
+          31,
+          96,
+          64
         ]
       ],
       "platform": "ASPHALT",
@@ -6348,7 +6350,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -6436,16 +6438,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        56,
-        40
+        112,
+        96
       ],
       "footprintCells": [
-        7,
-        5
+        14,
+        9
       ],
       "anchorPx": [
-        28,
-        40
+        56,
+        96
       ],
       "stages": [
         "buildings/civic/civic-hospital/stage-1.png",
@@ -6457,33 +6459,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          54,
-          40
+          88,
+          110,
+          96
         ],
         [
           2,
-          26,
-          54,
-          39
+          82,
+          110,
+          95
         ],
         [
-          6,
-          11,
-          50,
-          40
-        ],
-        [
-          1,
           3,
-          50,
-          40
+          21,
+          109,
+          96
         ],
         [
-          1,
+          0,
+          5,
+          111,
+          96
+        ],
+        [
+          0,
           2,
-          55,
-          40
+          111,
+          96
         ]
       ],
       "platform": "SERVICE",
@@ -6500,7 +6502,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -6588,16 +6590,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        40
+        96,
+        88
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        88
       ],
       "stages": [
         "buildings/civic/civic-courthouse/stage-1.png",
@@ -6609,33 +6611,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          80,
+          94,
+          88
         ],
         [
           2,
-          26,
-          46,
-          39
+          74,
+          94,
+          87
         ],
         [
-          9,
-          11,
-          39,
-          40
+          0,
+          34,
+          96,
+          88
         ],
         [
+          0,
           5,
-          1,
-          43,
-          40
+          96,
+          88
         ],
         [
-          6,
-          1,
-          42,
-          40
+          0,
+          5,
+          96,
+          88
         ]
       ],
       "platform": "SERVICE",
@@ -6652,7 +6654,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -6697,19 +6699,19 @@
         ],
         [
           0,
-          29,
+          38,
           96,
           88
         ],
         [
           0,
-          7,
+          12,
           96,
           88
         ],
         [
           0,
-          7,
+          12,
           96,
           88
         ]
@@ -6741,16 +6743,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        40
+        96,
+        80
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        7
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        80
       ],
       "stages": [
         "buildings/civic/civic-community-center/stage-1.png",
@@ -6762,33 +6764,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          72,
+          94,
+          80
         ],
         [
           2,
-          26,
-          46,
-          39
+          66,
+          94,
+          79
         ],
         [
-          3,
-          11,
-          45,
-          40
+          0,
+          42,
+          96,
+          80
         ],
         [
-          1,
-          5,
-          47,
-          40
+          0,
+          20,
+          96,
+          80
         ],
         [
-          1,
-          1,
-          46,
-          40
+          0,
+          21,
+          96,
+          80
         ]
       ],
       "platform": "SERVICE",
@@ -6805,7 +6807,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -6817,16 +6819,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        40
+        112,
+        72
       ],
       "footprintCells": [
-        6,
-        5
+        14,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        56,
+        72
       ],
       "stages": [
         "buildings/civic/civic-aquatic-center/stage-1.png",
@@ -6838,33 +6840,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          64,
+          110,
+          72
         ],
         [
           2,
-          26,
-          46,
-          39
+          58,
+          110,
+          71
         ],
         [
-          1,
-          15,
-          47,
-          40
+          0,
+          39,
+          112,
+          72
         ],
         [
-          1,
-          14,
-          47,
-          40
+          0,
+          20,
+          112,
+          72
         ],
         [
-          1,
-          12,
-          47,
-          40
+          0,
+          20,
+          112,
+          72
         ]
       ],
       "platform": "SERVICE",
@@ -6881,7 +6883,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -6926,19 +6928,19 @@
         ],
         [
           2,
-          55,
-          126,
+          59,
+          125,
           96
         ],
         [
           0,
-          17,
+          38,
           128,
           96
         ],
         [
           0,
-          17,
+          36,
           128,
           96
         ]
@@ -7077,20 +7079,20 @@
           79
         ],
         [
-          2,
-          50,
-          94,
-          80
-        ],
-        [
-          3,
-          23,
-          93,
+          0,
+          42,
+          96,
           80
         ],
         [
           0,
-          16,
+          4,
+          96,
+          80
+        ],
+        [
+          0,
+          4,
           96,
           80
         ]
@@ -7307,21 +7309,21 @@
           279
         ],
         [
-          15,
-          95,
-          128,
+          36,
+          74,
+          108,
           280
         ],
         [
-          14,
-          0,
-          129,
+          21,
+          24,
+          122,
           280
         ],
         [
-          14,
+          13,
           0,
-          129,
+          131,
           280
         ]
       ],
@@ -7748,16 +7750,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        64,
-        88
+        96,
+        112
       ],
       "footprintCells": [
-        8,
-        8
+        12,
+        10
       ],
       "anchorPx": [
-        32,
-        88
+        48,
+        112
       ],
       "stages": [
         "buildings/commercial/landmark-ferris-wheel/stage-1.png",
@@ -7769,33 +7771,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          80,
-          62,
-          88
+          104,
+          94,
+          112
         ],
         [
           3,
-          75,
-          61,
-          87
+          99,
+          93,
+          111
         ],
         [
-          4,
-          25,
-          59,
-          88
+          0,
+          55,
+          95,
+          112
         ],
         [
           1,
-          20,
-          63,
-          88
+          0,
+          95,
+          112
         ],
         [
-          3,
-          1,
-          60,
-          88
+          0,
+          0,
+          96,
+          112
         ]
       ],
       "platform": "STONE",
@@ -7814,7 +7816,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -7907,16 +7909,16 @@
       "category": "CIVIC",
       "rarity": "RARE",
       "spriteSize": [
-        32,
-        72
+        64,
+        96
       ],
       "footprintCells": [
-        4,
-        4
+        8,
+        7
       ],
       "anchorPx": [
-        16,
-        72
+        32,
+        96
       ],
       "stages": [
         "buildings/civic/landmark-monument/stage-1.png",
@@ -7928,33 +7930,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          64,
-          30,
-          72
+          88,
+          62,
+          96
         ],
         [
           2,
-          54,
-          30,
-          71
+          78,
+          62,
+          95
         ],
         [
-          2,
-          20,
+          15,
           30,
-          72
+          49,
+          96
         ],
         [
+          14,
           1,
-          3,
-          31,
-          72
+          50,
+          96
         ],
         [
-          2,
-          1,
-          29,
-          72
+          14,
+          0,
+          50,
+          96
         ]
       ],
       "platform": "STONE",
@@ -7974,7 +7976,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": 1,
@@ -9519,16 +9521,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "stages": [
         "buildings/commercial/commercial-grocery/stage-1.png",
@@ -9540,33 +9542,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          16,
-          30,
-          24
+          40,
+          46,
+          48
         ],
         [
           2,
-          11,
-          30,
-          23
+          34,
+          46,
+          47
         ],
         [
-          2,
-          4,
-          29,
-          24
+          0,
+          26,
+          47,
+          48
         ],
         [
-          1,
-          2,
-          31,
-          24
+          0,
+          13,
+          48,
+          48
         ],
         [
-          2,
-          1,
-          29,
-          24
+          0,
+          12,
+          48,
+          48
         ]
       ],
       "platform": "STONE",
@@ -9583,7 +9585,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -9595,16 +9597,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        96,
+        64
       ],
       "footprintCells": [
-        6,
-        4
+        12,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        48,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-food-hall/stage-1.png",
@@ -9616,33 +9618,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          56,
+          94,
+          64
         ],
         [
           2,
-          18,
-          46,
-          31
+          50,
+          94,
+          63
         ],
         [
-          6,
-          9,
-          42,
-          32
+          0,
+          36,
+          96,
+          64
         ],
         [
-          1,
-          2,
-          47,
-          32
+          0,
+          25,
+          96,
+          64
         ],
         [
-          1,
-          1,
-          46,
-          32
+          0,
+          25,
+          96,
+          64
         ]
       ],
       "platform": "STONE",
@@ -9658,7 +9660,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -9670,16 +9672,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        96,
+        72
       ],
       "footprintCells": [
-        6,
-        4
+        12,
+        7
       ],
       "anchorPx": [
-        24,
-        32
+        48,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-cinema/stage-1.png",
@@ -9691,33 +9693,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          64,
+          94,
+          72
         ],
         [
           2,
-          18,
-          46,
-          31
+          58,
+          94,
+          71
         ],
         [
-          3,
-          9,
-          45,
-          32
-        ],
-        [
-          1,
-          7,
-          47,
-          32
-        ],
-        [
-          1,
           4,
-          47,
-          32
+          26,
+          92,
+          72
+        ],
+        [
+          4,
+          0,
+          92,
+          72
+        ],
+        [
+          4,
+          0,
+          92,
+          72
         ]
       ],
       "platform": "STONE",
@@ -9733,7 +9735,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -9745,16 +9747,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        96,
+        64
       ],
       "footprintCells": [
-        6,
-        4
+        12,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        48,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-bowling/stage-1.png",
@@ -9766,33 +9768,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          56,
+          94,
+          64
         ],
         [
           2,
-          18,
-          46,
-          31
+          50,
+          94,
+          63
         ],
         [
-          3,
-          9,
-          44,
-          32
+          0,
+          41,
+          96,
+          64
         ],
         [
-          1,
-          4,
-          47,
-          32
+          0,
+          28,
+          96,
+          64
         ],
         [
-          1,
-          4,
-          47,
-          32
+          0,
+          28,
+          96,
+          64
         ]
       ],
       "platform": "STONE",
@@ -9808,7 +9810,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -9820,16 +9822,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        32
+        72,
+        64
       ],
       "footprintCells": [
-        5,
-        4
+        9,
+        6
       ],
       "anchorPx": [
-        20,
-        32
+        36,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-gym/stage-1.png",
@@ -9841,715 +9843,38 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          38,
-          32
+          56,
+          70,
+          64
         ],
         [
           2,
+          50,
+          70,
+          63
+        ],
+        [
+          0,
+          40,
+          72,
+          64
+        ],
+        [
+          0,
           18,
-          38,
-          31
+          72,
+          64
         ],
         [
-          1,
-          11,
-          39,
-          32
-        ],
-        [
-          1,
-          11,
-          39,
-          32
-        ],
-        [
-          1,
-          8,
-          39,
-          32
+          0,
+          18,
+          72,
+          64
         ]
       ],
       "platform": "STONE",
       "estimates": [
         3,
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-bank-branch": {
-      "label": "Банковское отделение",
-      "category": "COMMERCIAL",
-      "rarity": "COMMON",
-      "spriteSize": [
-        40,
-        32
-      ],
-      "footprintCells": [
-        5,
-        4
-      ],
-      "anchorPx": [
-        20,
-        32
-      ],
-      "stages": [
-        "buildings/commercial/commercial-bank-branch/stage-1.png",
-        "buildings/commercial/commercial-bank-branch/stage-2.png",
-        "buildings/commercial/commercial-bank-branch/stage-3.png",
-        "buildings/commercial/commercial-bank-branch/stage-4.png",
-        "buildings/commercial/commercial-bank-branch/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          24,
-          38,
-          32
-        ],
-        [
-          2,
-          18,
-          38,
-          31
-        ],
-        [
-          5,
-          9,
-          35,
-          32
-        ],
-        [
-          1,
-          1,
-          39,
-          32
-        ],
-        [
-          1,
-          3,
-          39,
-          32
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-coworking": {
-      "label": "Коворкинг",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        40,
-        40
-      ],
-      "footprintCells": [
-        5,
-        4
-      ],
-      "anchorPx": [
-        20,
-        40
-      ],
-      "stages": [
-        "buildings/commercial/commercial-coworking/stage-1.png",
-        "buildings/commercial/commercial-coworking/stage-2.png",
-        "buildings/commercial/commercial-coworking/stage-3.png",
-        "buildings/commercial/commercial-coworking/stage-4.png",
-        "buildings/commercial/commercial-coworking/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          32,
-          38,
-          40
-        ],
-        [
-          2,
-          26,
-          38,
-          39
-        ],
-        [
-          6,
-          11,
-          33,
-          40
-        ],
-        [
-          1,
-          2,
-          39,
-          40
-        ],
-        [
-          2,
-          1,
-          38,
-          40
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-tech-workshop": {
-      "label": "Технологическая мастерская",
-      "category": "COMMERCIAL",
-      "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        32
-      ],
-      "footprintCells": [
-        6,
-        4
-      ],
-      "anchorPx": [
-        24,
-        32
-      ],
-      "stages": [
-        "buildings/commercial/commercial-tech-workshop/stage-1.png",
-        "buildings/commercial/commercial-tech-workshop/stage-2.png",
-        "buildings/commercial/commercial-tech-workshop/stage-3.png",
-        "buildings/commercial/commercial-tech-workshop/stage-4.png",
-        "buildings/commercial/commercial-tech-workshop/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          24,
-          46,
-          32
-        ],
-        [
-          2,
-          18,
-          46,
-          31
-        ],
-        [
-          4,
-          9,
-          43,
-          32
-        ],
-        [
-          1,
-          3,
-          47,
-          32
-        ],
-        [
-          1,
-          4,
-          47,
-          32
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-car-dealership": {
-      "label": "Автосалон",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        32
-      ],
-      "footprintCells": [
-        7,
-        4
-      ],
-      "anchorPx": [
-        28,
-        32
-      ],
-      "stages": [
-        "buildings/commercial/commercial-car-dealership/stage-1.png",
-        "buildings/commercial/commercial-car-dealership/stage-2.png",
-        "buildings/commercial/commercial-car-dealership/stage-3.png",
-        "buildings/commercial/commercial-car-dealership/stage-4.png",
-        "buildings/commercial/commercial-car-dealership/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          24,
-          54,
-          32
-        ],
-        [
-          2,
-          18,
-          54,
-          31
-        ],
-        [
-          5,
-          9,
-          51,
-          32
-        ],
-        [
-          1,
-          5,
-          55,
-          32
-        ],
-        [
-          1,
-          2,
-          55,
-          32
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-garden-center": {
-      "label": "Садовый центр",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        32
-      ],
-      "footprintCells": [
-        7,
-        4
-      ],
-      "anchorPx": [
-        28,
-        32
-      ],
-      "stages": [
-        "buildings/commercial/commercial-garden-center/stage-1.png",
-        "buildings/commercial/commercial-garden-center/stage-2.png",
-        "buildings/commercial/commercial-garden-center/stage-3.png",
-        "buildings/commercial/commercial-garden-center/stage-4.png",
-        "buildings/commercial/commercial-garden-center/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          24,
-          54,
-          32
-        ],
-        [
-          2,
-          18,
-          54,
-          31
-        ],
-        [
-          12,
-          9,
-          43,
-          32
-        ],
-        [
-          7,
-          1,
-          48,
-          32
-        ],
-        [
-          7,
-          1,
-          49,
-          32
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-night-market": {
-      "label": "Ночной рынок",
-      "category": "COMMERCIAL",
-      "rarity": "RARE",
-      "spriteSize": [
-        56,
-        32
-      ],
-      "footprintCells": [
-        7,
-        4
-      ],
-      "anchorPx": [
-        28,
-        32
-      ],
-      "stages": [
-        "buildings/commercial/commercial-night-market/stage-1.png",
-        "buildings/commercial/commercial-night-market/stage-2.png",
-        "buildings/commercial/commercial-night-market/stage-3.png",
-        "buildings/commercial/commercial-night-market/stage-4.png",
-        "buildings/commercial/commercial-night-market/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          24,
-          54,
-          32
-        ],
-        [
-          2,
-          18,
-          54,
-          31
-        ],
-        [
-          1,
-          10,
-          55,
-          32
-        ],
-        [
-          1,
-          8,
-          55,
-          32
-        ],
-        [
-          1,
-          8,
-          55,
-          32
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-department-store": {
-      "label": "Универмаг",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        40
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        40
-      ],
-      "stages": [
-        "buildings/commercial/commercial-department-store/stage-1.png",
-        "buildings/commercial/commercial-department-store/stage-2.png",
-        "buildings/commercial/commercial-department-store/stage-3.png",
-        "buildings/commercial/commercial-department-store/stage-4.png",
-        "buildings/commercial/commercial-department-store/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          32,
-          54,
-          40
-        ],
-        [
-          2,
-          26,
-          54,
-          39
-        ],
-        [
-          7,
-          11,
-          49,
-          40
-        ],
-        [
-          1,
-          1,
-          54,
-          40
-        ],
-        [
-          3,
-          1,
-          53,
-          40
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-office-courtyard": {
-      "label": "Офисы с внутренним двором",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        40
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        40
-      ],
-      "stages": [
-        "buildings/commercial/commercial-office-courtyard/stage-1.png",
-        "buildings/commercial/commercial-office-courtyard/stage-2.png",
-        "buildings/commercial/commercial-office-courtyard/stage-3.png",
-        "buildings/commercial/commercial-office-courtyard/stage-4.png",
-        "buildings/commercial/commercial-office-courtyard/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          32,
-          54,
-          40
-        ],
-        [
-          2,
-          26,
-          54,
-          39
-        ],
-        [
-          1,
-          14,
-          55,
-          40
-        ],
-        [
-          1,
-          15,
-          55,
-          40
-        ],
-        [
-          1,
-          16,
-          55,
-          40
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null
-    },
-    "commercial-logistics-hub": {
-      "label": "Логистический терминал",
-      "category": "COMMERCIAL",
-      "rarity": "RARE",
-      "spriteSize": [
-        64,
-        40
-      ],
-      "footprintCells": [
-        8,
-        5
-      ],
-      "anchorPx": [
-        32,
-        40
-      ],
-      "stages": [
-        "buildings/commercial/commercial-logistics-hub/stage-1.png",
-        "buildings/commercial/commercial-logistics-hub/stage-2.png",
-        "buildings/commercial/commercial-logistics-hub/stage-3.png",
-        "buildings/commercial/commercial-logistics-hub/stage-4.png",
-        "buildings/commercial/commercial-logistics-hub/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          32,
-          62,
-          40
-        ],
-        [
-          2,
-          26,
-          62,
-          39
-        ],
-        [
-          1,
-          11,
-          63,
-          40
-        ],
-        [
-          1,
-          11,
-          63,
-          40
-        ],
-        [
-          1,
-          10,
-          63,
-          40
-        ]
-      ],
-      "platform": "STONE",
-      "estimates": [
         6
       ],
       "tags": [
@@ -10568,21 +9893,698 @@
       "maxPerDistrict": null,
       "serviceRole": null
     },
+    "commercial-bank-branch": {
+      "label": "Банковское отделение",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        6
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "stages": [
+        "buildings/commercial/commercial-bank-branch/stage-1.png",
+        "buildings/commercial/commercial-bank-branch/stage-2.png",
+        "buildings/commercial/commercial-bank-branch/stage-3.png",
+        "buildings/commercial/commercial-bank-branch/stage-4.png",
+        "buildings/commercial/commercial-bank-branch/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          62,
+          64
+        ],
+        [
+          2,
+          50,
+          62,
+          63
+        ],
+        [
+          0,
+          23,
+          64,
+          64
+        ],
+        [
+          0,
+          8,
+          64,
+          64
+        ],
+        [
+          0,
+          8,
+          64,
+          64
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-coworking": {
+      "label": "Коворкинг",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        72,
+        72
+      ],
+      "footprintCells": [
+        9,
+        6
+      ],
+      "anchorPx": [
+        36,
+        72
+      ],
+      "stages": [
+        "buildings/commercial/commercial-coworking/stage-1.png",
+        "buildings/commercial/commercial-coworking/stage-2.png",
+        "buildings/commercial/commercial-coworking/stage-3.png",
+        "buildings/commercial/commercial-coworking/stage-4.png",
+        "buildings/commercial/commercial-coworking/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          70,
+          72
+        ],
+        [
+          2,
+          58,
+          70,
+          71
+        ],
+        [
+          0,
+          39,
+          72,
+          72
+        ],
+        [
+          0,
+          22,
+          72,
+          72
+        ],
+        [
+          0,
+          22,
+          72,
+          72
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-tech-workshop": {
+      "label": "Технологическая мастерская",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        80,
+        64
+      ],
+      "footprintCells": [
+        10,
+        6
+      ],
+      "anchorPx": [
+        40,
+        64
+      ],
+      "stages": [
+        "buildings/commercial/commercial-tech-workshop/stage-1.png",
+        "buildings/commercial/commercial-tech-workshop/stage-2.png",
+        "buildings/commercial/commercial-tech-workshop/stage-3.png",
+        "buildings/commercial/commercial-tech-workshop/stage-4.png",
+        "buildings/commercial/commercial-tech-workshop/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          78,
+          64
+        ],
+        [
+          2,
+          50,
+          78,
+          63
+        ],
+        [
+          0,
+          23,
+          80,
+          64
+        ],
+        [
+          0,
+          8,
+          80,
+          64
+        ],
+        [
+          0,
+          8,
+          80,
+          64
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 5
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-car-dealership": {
+      "label": "Автосалон",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        112,
+        64
+      ],
+      "footprintCells": [
+        14,
+        6
+      ],
+      "anchorPx": [
+        56,
+        64
+      ],
+      "stages": [
+        "buildings/commercial/commercial-car-dealership/stage-1.png",
+        "buildings/commercial/commercial-car-dealership/stage-2.png",
+        "buildings/commercial/commercial-car-dealership/stage-3.png",
+        "buildings/commercial/commercial-car-dealership/stage-4.png",
+        "buildings/commercial/commercial-car-dealership/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          110,
+          64
+        ],
+        [
+          2,
+          50,
+          110,
+          63
+        ],
+        [
+          0,
+          39,
+          112,
+          64
+        ],
+        [
+          0,
+          27,
+          112,
+          64
+        ],
+        [
+          0,
+          27,
+          112,
+          64
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-garden-center": {
+      "label": "Садовый центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        96,
+        72
+      ],
+      "footprintCells": [
+        12,
+        7
+      ],
+      "anchorPx": [
+        48,
+        72
+      ],
+      "stages": [
+        "buildings/commercial/commercial-garden-center/stage-1.png",
+        "buildings/commercial/commercial-garden-center/stage-2.png",
+        "buildings/commercial/commercial-garden-center/stage-3.png",
+        "buildings/commercial/commercial-garden-center/stage-4.png",
+        "buildings/commercial/commercial-garden-center/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          94,
+          72
+        ],
+        [
+          2,
+          58,
+          94,
+          71
+        ],
+        [
+          0,
+          31,
+          96,
+          72
+        ],
+        [
+          0,
+          19,
+          96,
+          72
+        ],
+        [
+          0,
+          19,
+          96,
+          72
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-night-market": {
+      "label": "Ночной рынок",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        112,
+        64
+      ],
+      "footprintCells": [
+        14,
+        6
+      ],
+      "anchorPx": [
+        56,
+        64
+      ],
+      "stages": [
+        "buildings/commercial/commercial-night-market/stage-1.png",
+        "buildings/commercial/commercial-night-market/stage-2.png",
+        "buildings/commercial/commercial-night-market/stage-3.png",
+        "buildings/commercial/commercial-night-market/stage-4.png",
+        "buildings/commercial/commercial-night-market/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          56,
+          110,
+          64
+        ],
+        [
+          2,
+          50,
+          110,
+          63
+        ],
+        [
+          0,
+          38,
+          112,
+          64
+        ],
+        [
+          0,
+          23,
+          112,
+          64
+        ],
+        [
+          0,
+          23,
+          112,
+          64
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-department-store": {
+      "label": "Универмаг",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        80,
+        80
+      ],
+      "footprintCells": [
+        10,
+        7
+      ],
+      "anchorPx": [
+        40,
+        80
+      ],
+      "stages": [
+        "buildings/commercial/commercial-department-store/stage-1.png",
+        "buildings/commercial/commercial-department-store/stage-2.png",
+        "buildings/commercial/commercial-department-store/stage-3.png",
+        "buildings/commercial/commercial-department-store/stage-4.png",
+        "buildings/commercial/commercial-department-store/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          72,
+          78,
+          80
+        ],
+        [
+          2,
+          66,
+          78,
+          79
+        ],
+        [
+          1,
+          20,
+          78,
+          80
+        ],
+        [
+          0,
+          3,
+          80,
+          80
+        ],
+        [
+          0,
+          3,
+          80,
+          80
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 5
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-office-courtyard": {
+      "label": "Офисы с внутренним двором",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        96,
+        80
+      ],
+      "footprintCells": [
+        12,
+        8
+      ],
+      "anchorPx": [
+        48,
+        80
+      ],
+      "stages": [
+        "buildings/commercial/commercial-office-courtyard/stage-1.png",
+        "buildings/commercial/commercial-office-courtyard/stage-2.png",
+        "buildings/commercial/commercial-office-courtyard/stage-3.png",
+        "buildings/commercial/commercial-office-courtyard/stage-4.png",
+        "buildings/commercial/commercial-office-courtyard/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          72,
+          94,
+          80
+        ],
+        [
+          2,
+          66,
+          94,
+          79
+        ],
+        [
+          0,
+          46,
+          96,
+          80
+        ],
+        [
+          0,
+          21,
+          96,
+          80
+        ],
+        [
+          0,
+          21,
+          96,
+          80
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
+    "commercial-logistics-hub": {
+      "label": "Логистический терминал",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        128,
+        72
+      ],
+      "footprintCells": [
+        16,
+        7
+      ],
+      "anchorPx": [
+        64,
+        72
+      ],
+      "stages": [
+        "buildings/commercial/commercial-logistics-hub/stage-1.png",
+        "buildings/commercial/commercial-logistics-hub/stage-2.png",
+        "buildings/commercial/commercial-logistics-hub/stage-3.png",
+        "buildings/commercial/commercial-logistics-hub/stage-4.png",
+        "buildings/commercial/commercial-logistics-hub/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          126,
+          72
+        ],
+        [
+          2,
+          58,
+          126,
+          71
+        ],
+        [
+          0,
+          49,
+          128,
+          72
+        ],
+        [
+          0,
+          21,
+          128,
+          72
+        ],
+        [
+          0,
+          21,
+          128,
+          72
+        ]
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 8
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null
+    },
     "commercial-cold-storage": {
       "label": "Холодильный склад",
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        96,
+        72
       ],
       "footprintCells": [
-        6,
-        4
+        12,
+        7
       ],
       "anchorPx": [
-        24,
-        32
+        48,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-cold-storage/stage-1.png",
@@ -10594,33 +10596,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          64,
+          94,
+          72
         ],
         [
           2,
-          18,
-          46,
-          31
+          58,
+          94,
+          71
         ],
         [
-          2,
-          9,
-          45,
-          32
+          0,
+          35,
+          96,
+          72
         ],
         [
-          1,
-          6,
-          47,
-          32
+          0,
+          15,
+          96,
+          72
         ],
         [
-          1,
-          4,
-          47,
-          32
+          0,
+          15,
+          96,
+          72
         ]
       ],
       "platform": "STONE",
@@ -10636,7 +10638,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -10648,16 +10650,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        32
+        112,
+        72
       ],
       "footprintCells": [
-        7,
-        4
+        14,
+        7
       ],
       "anchorPx": [
-        28,
-        32
+        56,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-maker-market/stage-1.png",
@@ -10669,33 +10671,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          54,
-          32
+          64,
+          110,
+          72
         ],
         [
           2,
-          18,
-          54,
-          31
+          58,
+          110,
+          71
         ],
         [
           1,
-          15,
-          55,
-          32
+          36,
+          111,
+          72
         ],
         [
-          1,
-          13,
-          55,
-          32
+          0,
+          21,
+          112,
+          72
         ],
         [
-          1,
-          13,
-          55,
-          32
+          0,
+          17,
+          112,
+          72
         ]
       ],
       "platform": "STONE",
@@ -10711,7 +10713,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -10723,16 +10725,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        40,
-        40
+        80,
+        96
       ],
       "footprintCells": [
-        5,
-        4
+        10,
+        8
       ],
       "anchorPx": [
-        20,
-        40
+        40,
+        96
       ],
       "stages": [
         "buildings/commercial/commercial-rooftop-restaurant/stage-1.png",
@@ -10744,33 +10746,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          38,
-          40
+          88,
+          78,
+          96
         ],
         [
           2,
-          26,
-          38,
-          39
+          82,
+          78,
+          95
         ],
         [
-          4,
-          11,
-          36,
-          40
-        ],
-        [
-          1,
-          6,
-          39,
-          40
-        ],
-        [
-          1,
           3,
-          39,
-          40
+          22,
+          77,
+          96
+        ],
+        [
+          3,
+          0,
+          77,
+          96
+        ],
+        [
+          3,
+          0,
+          77,
+          96
         ]
       ],
       "platform": "STONE",
@@ -10787,7 +10789,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -10799,16 +10801,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        32
+        80,
+        80
       ],
       "footprintCells": [
-        5,
-        4
+        10,
+        7
       ],
       "anchorPx": [
-        20,
-        32
+        40,
+        80
       ],
       "stages": [
         "buildings/commercial/commercial-marina-office/stage-1.png",
@@ -10820,33 +10822,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          38,
-          32
+          72,
+          78,
+          80
         ],
         [
           2,
-          18,
-          38,
-          31
+          66,
+          78,
+          79
         ],
         [
-          1,
-          12,
-          39,
-          32
+          0,
+          23,
+          80,
+          80
         ],
         [
-          1,
-          10,
-          39,
-          32
+          0,
+          5,
+          80,
+          80
         ],
         [
-          1,
-          8,
-          39,
-          32
+          0,
+          5,
+          80,
+          80
         ]
       ],
       "platform": "STONE",
@@ -10863,7 +10865,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -10875,16 +10877,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        32
+        112,
+        64
       ],
       "footprintCells": [
-        6,
-        4
+        14,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        56,
+        64
       ],
       "stages": [
         "buildings/commercial/commercial-farmers-market/stage-1.png",
@@ -10896,33 +10898,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          56,
+          110,
+          64
         ],
         [
           2,
-          18,
-          46,
-          31
+          50,
+          110,
+          63
         ],
         [
-          1,
-          11,
-          47,
-          32
+          0,
+          29,
+          112,
+          64
         ],
         [
-          1,
-          9,
-          47,
-          32
+          0,
+          16,
+          112,
+          64
         ],
         [
-          1,
-          9,
-          47,
-          32
+          0,
+          15,
+          112,
+          64
         ]
       ],
       "platform": "STONE",
@@ -10938,7 +10940,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -10950,16 +10952,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        40
+        80,
+        96
       ],
       "footprintCells": [
-        5,
-        4
+        10,
+        8
       ],
       "anchorPx": [
-        20,
-        40
+        40,
+        96
       ],
       "stages": [
         "buildings/commercial/commercial-hotel-boutique/stage-1.png",
@@ -10971,33 +10973,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          38,
-          40
+          88,
+          78,
+          96
         ],
         [
           2,
-          26,
-          38,
-          39
+          82,
+          78,
+          95
         ],
         [
-          6,
-          11,
-          33,
-          40
+          8,
+          20,
+          72,
+          96
         ],
         [
-          3,
-          1,
-          36,
-          40
+          7,
+          0,
+          72,
+          96
         ],
         [
-          5,
-          1,
-          35,
-          40
+          7,
+          0,
+          72,
+          96
         ]
       ],
       "platform": "STONE",
@@ -11014,7 +11016,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -11365,19 +11367,19 @@
         ],
         [
           1,
-          56,
-          111,
+          42,
+          110,
           96
         ],
         [
           0,
-          18,
+          9,
           112,
           96
         ],
         [
           0,
-          15,
+          9,
           112,
           96
         ]
@@ -11440,14 +11442,14 @@
           87
         ],
         [
-          1,
-          55,
-          112,
+          2,
+          32,
+          111,
           88
         ],
         [
           0,
-          15,
+          14,
           112,
           88
         ],
@@ -11516,21 +11518,21 @@
           103
         ],
         [
-          6,
-          33,
-          122,
+          3,
+          49,
+          125,
           104
         ],
         [
-          4,
           0,
-          123,
+          17,
+          127,
           104
         ],
         [
-          4,
           0,
-          123,
+          4,
+          128,
           104
         ]
       ],
@@ -11592,20 +11594,20 @@
           103
         ],
         [
-          15,
-          24,
-          114,
-          104
-        ],
-        [
           0,
-          3,
+          38,
           128,
           104
         ],
         [
           0,
-          4,
+          2,
+          128,
+          104
+        ],
+        [
+          0,
+          2,
           128,
           104
         ]
@@ -11669,20 +11671,20 @@
           103
         ],
         [
-          1,
-          50,
-          127,
+          7,
+          47,
+          121,
           104
         ],
         [
           0,
-          8,
+          11,
           128,
           104
         ],
         [
           0,
-          8,
+          11,
           128,
           104
         ]
@@ -11714,16 +11716,16 @@
       "category": "CIVIC",
       "rarity": "RARE",
       "spriteSize": [
-        48,
-        40
+        96,
+        80
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        80
       ],
       "stages": [
         "buildings/civic/civic-civil-defense/stage-1.png",
@@ -11735,33 +11737,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          72,
+          94,
+          80
         ],
         [
           2,
-          26,
-          46,
-          39
+          66,
+          94,
+          79
         ],
         [
-          5,
-          11,
-          43,
-          40
+          3,
+          31,
+          93,
+          80
         ],
         [
-          2,
-          1,
-          46,
-          40
+          0,
+          10,
+          96,
+          80
         ],
         [
-          2,
-          1,
-          45,
-          40
+          0,
+          7,
+          96,
+          80
         ]
       ],
       "platform": "SERVICE",
@@ -11778,7 +11780,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -11866,16 +11868,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        64,
-        40
+        144,
+        72
       ],
       "footprintCells": [
-        8,
-        5
+        18,
+        8
       ],
       "anchorPx": [
-        32,
-        40
+        72,
+        72
       ],
       "stages": [
         "buildings/civic/civic-bus-terminal/stage-1.png",
@@ -11887,33 +11889,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          62,
-          40
+          64,
+          142,
+          72
         ],
         [
           2,
-          26,
-          62,
-          39
+          58,
+          142,
+          71
         ],
         [
           1,
-          12,
-          63,
-          40
+          46,
+          143,
+          72
         ],
         [
-          1,
-          12,
-          63,
-          40
+          0,
+          37,
+          144,
+          72
         ],
         [
-          1,
-          9,
-          63,
-          40
+          0,
+          37,
+          144,
+          72
         ]
       ],
       "platform": "SERVICE",
@@ -11930,7 +11932,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -11975,19 +11977,19 @@
         ],
         [
           0,
-          38,
+          41,
           80,
           72
         ],
         [
           0,
-          23,
+          7,
           80,
           72
         ],
         [
           0,
-          20,
+          7,
           80,
           72
         ]
@@ -12051,20 +12053,20 @@
           87
         ],
         [
-          0,
-          29,
-          111,
+          4,
+          46,
+          108,
           88
         ],
         [
           0,
-          12,
+          26,
           112,
           88
         ],
         [
           0,
-          12,
+          26,
           112,
           88
         ]
@@ -12127,9 +12129,9 @@
           87
         ],
         [
-          0,
-          40,
-          111,
+          10,
+          50,
+          102,
           88
         ],
         [
@@ -12171,16 +12173,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        40
+        80,
+        80
       ],
       "footprintCells": [
-        6,
-        5
+        10,
+        7
       ],
       "anchorPx": [
-        24,
-        40
+        40,
+        80
       ],
       "stages": [
         "buildings/civic/civic-court-annex/stage-1.png",
@@ -12192,33 +12194,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          72,
+          78,
+          80
         ],
         [
           2,
-          26,
-          46,
-          39
+          66,
+          78,
+          79
         ],
         [
-          10,
-          11,
-          38,
-          40
-        ],
-        [
-          6,
-          1,
-          42,
-          40
-        ],
-        [
-          8,
-          1,
+          3,
           39,
-          40
+          77,
+          80
+        ],
+        [
+          0,
+          16,
+          80,
+          80
+        ],
+        [
+          0,
+          16,
+          80,
+          80
         ]
       ],
       "platform": "SERVICE",
@@ -12235,7 +12237,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -12247,16 +12249,16 @@
       "category": "CIVIC",
       "rarity": "RARE",
       "spriteSize": [
-        56,
-        48
+        112,
+        96
       ],
       "footprintCells": [
-        7,
-        6
+        14,
+        9
       ],
       "anchorPx": [
-        28,
-        48
+        56,
+        96
       ],
       "stages": [
         "buildings/civic/civic-administration-center/stage-1.png",
@@ -12268,33 +12270,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          40,
-          54,
-          48
+          88,
+          110,
+          96
         ],
         [
           2,
+          82,
+          110,
+          95
+        ],
+        [
+          1,
           34,
-          54,
-          47
+          110,
+          96
         ],
         [
-          12,
-          13,
-          44,
-          48
-        ],
-        [
-          8,
           1,
-          47,
-          48
+          0,
+          111,
+          96
         ],
         [
-          10,
           1,
-          45,
-          48
+          0,
+          111,
+          96
         ]
       ],
       "platform": "SERVICE",
@@ -12311,7 +12313,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -12399,16 +12401,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        40
+        96,
+        80
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        7
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        80
       ],
       "stages": [
         "buildings/civic/civic-arts-school/stage-1.png",
@@ -12420,33 +12422,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          32,
-          46,
-          40
+          72,
+          94,
+          80
         ],
         [
           2,
-          26,
-          46,
-          39
+          66,
+          94,
+          79
         ],
         [
-          11,
-          11,
-          36,
-          40
+          1,
+          39,
+          95,
+          80
         ],
         [
+          0,
           9,
-          1,
-          38,
-          40
+          96,
+          80
         ],
         [
-          12,
-          1,
-          36,
-          40
+          0,
+          9,
+          96,
+          80
         ]
       ],
       "platform": "SERVICE",
@@ -12464,7 +12466,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -12476,16 +12478,16 @@
       "category": "CIVIC",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        32
+        112,
+        64
       ],
       "footprintCells": [
-        6,
-        4
+        14,
+        7
       ],
       "anchorPx": [
-        24,
-        32
+        56,
+        64
       ],
       "stages": [
         "buildings/civic/civic-animal-shelter/stage-1.png",
@@ -12497,33 +12499,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          24,
-          46,
-          32
+          56,
+          110,
+          64
         ],
         [
           2,
+          50,
+          110,
+          63
+        ],
+        [
+          2,
+          29,
+          109,
+          64
+        ],
+        [
+          0,
           18,
-          46,
-          31
+          111,
+          64
         ],
         [
-          7,
-          9,
-          40,
-          32
-        ],
-        [
-          2,
-          1,
-          46,
-          32
-        ],
-        [
-          4,
-          1,
-          44,
-          32
+          0,
+          18,
+          112,
+          64
         ]
       ],
       "platform": "SERVICE",
@@ -12540,7 +12542,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -14115,16 +14117,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNIQUE",
       "spriteSize": [
-        72,
-        48
+        144,
+        96
       ],
       "footprintCells": [
-        9,
-        6
+        18,
+        12
       ],
       "anchorPx": [
-        36,
-        48
+        72,
+        96
       ],
       "stages": [
         "buildings/commercial/landmark-stadium/stage-1.png",
@@ -14136,33 +14138,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          40,
-          70,
-          48
+          88,
+          142,
+          96
         ],
         [
           2,
-          34,
-          70,
-          47
+          82,
+          142,
+          95
         ],
         [
-          14,
-          13,
-          57,
-          48
-        ],
-        [
-          7,
           1,
-          64,
-          48
+          39,
+          143,
+          96
         ],
         [
-          10,
-          1,
-          61,
-          48
+          0,
+          18,
+          144,
+          96
+        ],
+        [
+          0,
+          18,
+          144,
+          96
         ]
       ],
       "platform": "STONE",
@@ -14181,7 +14183,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 9
         }
       ],
       "maxPerCity": 1,
@@ -14193,16 +14195,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        48
+        96,
+        88
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        48
+        48,
+        88
       ],
       "stages": [
         "buildings/civic/landmark-observatory/stage-1.png",
@@ -14214,33 +14216,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          40,
-          46,
-          48
+          80,
+          94,
+          88
         ],
         [
           2,
-          34,
-          46,
-          47
-        ],
-        [
-          9,
-          13,
-          39,
-          48
+          74,
+          94,
+          87
         ],
         [
           1,
-          1,
-          42,
-          48
+          25,
+          95,
+          88
         ],
         [
-          3,
+          0,
           1,
-          44,
-          48
+          95,
+          88
+        ],
+        [
+          0,
+          0,
+          96,
+          88
         ]
       ],
       "platform": "STONE",
@@ -14260,7 +14262,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -14304,20 +14306,20 @@
           103
         ],
         [
-          2,
-          57,
-          126,
+          16,
+          68,
+          112,
           104
         ],
         [
           0,
-          23,
+          30,
           128,
           104
         ],
         [
           0,
-          24,
+          30,
           128,
           104
         ]
@@ -14351,16 +14353,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNIQUE",
       "spriteSize": [
-        64,
-        48
+        112,
+        88
       ],
       "footprintCells": [
-        8,
-        5
+        14,
+        10
       ],
       "anchorPx": [
-        32,
-        48
+        56,
+        88
       ],
       "stages": [
         "buildings/commercial/landmark-aquarium/stage-1.png",
@@ -14372,33 +14374,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          40,
-          62,
-          48
+          80,
+          110,
+          88
         ],
         [
           2,
-          34,
-          62,
-          47
+          74,
+          110,
+          87
         ],
         [
-          12,
-          13,
-          52,
-          48
+          0,
+          41,
+          112,
+          88
         ],
         [
-          5,
-          1,
-          58,
-          48
+          0,
+          27,
+          112,
+          88
         ],
         [
-          8,
-          1,
-          56,
-          48
+          0,
+          27,
+          112,
+          88
         ]
       ],
       "platform": "STONE",
@@ -14417,7 +14419,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 7
         }
       ],
       "maxPerCity": 1,
@@ -14540,20 +14542,20 @@
           111
         ],
         [
-          4,
-          65,
-          124,
-          112
-        ],
-        [
-          1,
-          32,
-          127,
+          5,
+          51,
+          123,
           112
         ],
         [
           0,
-          27,
+          8,
+          128,
+          112
+        ],
+        [
+          0,
+          9,
           128,
           112
         ]
@@ -14619,20 +14621,20 @@
           103
         ],
         [
-          1,
-          56,
-          143,
+          2,
+          44,
+          142,
           104
         ],
         [
           0,
-          39,
+          21,
           144,
           104
         ],
         [
           0,
-          39,
+          21,
           144,
           104
         ]
@@ -14698,20 +14700,20 @@
           103
         ],
         [
-          3,
-          53,
-          77,
-          104
-        ],
-        [
-          5,
-          0,
-          75,
+          2,
+          55,
+          78,
           104
         ],
         [
           0,
+          22,
+          80,
+          104
+        ],
+        [
           0,
+          21,
           80,
           104
         ]
@@ -14937,20 +14939,20 @@
           103
         ],
         [
+          1,
+          54,
+          142,
+          104
+        ],
+        [
           0,
-          48,
+          10,
           144,
           104
         ],
         [
           0,
-          20,
-          144,
-          104
-        ],
-        [
-          0,
-          13,
+          10,
           144,
           104
         ]
@@ -15014,20 +15016,20 @@
           87
         ],
         [
-          0,
-          64,
-          128,
+          7,
+          57,
+          120,
           88
         ],
         [
           0,
-          48,
-          128,
+          22,
+          127,
           88
         ],
         [
           0,
-          44,
+          21,
           128,
           88
         ]
@@ -15091,20 +15093,20 @@
           95
         ],
         [
+          13,
+          35,
+          99,
+          96
+        ],
+        [
           0,
-          61,
+          8,
           112,
           96
         ],
         [
-          2,
-          48,
-          110,
-          96
-        ],
-        [
           0,
-          42,
+          9,
           112,
           96
         ]
@@ -15168,21 +15170,21 @@
           127
         ],
         [
-          22,
-          46,
-          73,
+          9,
+          40,
+          86,
           128
         ],
         [
-          21,
-          2,
-          74,
-          128
-        ],
-        [
-          18,
+          3,
           0,
-          77,
+          93,
+          128
+        ],
+        [
+          3,
+          0,
+          93,
           128
         ]
       ],
@@ -20140,16 +20142,16 @@
       "label": "Житель с книгой",
       "path": "props/resident-reader.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -20159,16 +20161,16 @@
       "label": "Курьер с посылкой",
       "path": "props/resident-box.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -20178,16 +20180,16 @@
       "label": "Дворник",
       "path": "props/resident-sweeper.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -20197,16 +20199,16 @@
       "label": "Житель с телефоном",
       "path": "props/resident-phone.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -20216,16 +20218,16 @@
       "label": "Рабочий",
       "path": "props/resident-worker.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -20235,16 +20237,16 @@
       "label": "Житель приветствует",
       "path": "props/resident-wave.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -20254,16 +20256,16 @@
       "label": "Рыбак — север",
       "path": "props/fisher-north.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
@@ -20274,16 +20276,16 @@
       "label": "Рыбак — восток",
       "path": "props/fisher-east.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
@@ -20294,16 +20296,16 @@
       "label": "Рыбак — юг",
       "path": "props/fisher-south.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
@@ -20314,16 +20316,16 @@
       "label": "Рыбак — запад",
       "path": "props/fisher-west.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
@@ -20334,16 +20336,16 @@
       "label": "Велосипедист — горизонтально A",
       "path": "props/cyclist-horizontal-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         2,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20354,16 +20356,16 @@
       "label": "Велосипедист — горизонтально B",
       "path": "props/cyclist-horizontal-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         2,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20374,16 +20376,16 @@
       "label": "Велосипедист — горизонтально C",
       "path": "props/cyclist-horizontal-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         2,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20394,16 +20396,16 @@
       "label": "Велосипедист — север A",
       "path": "props/cyclist-north-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20414,16 +20416,16 @@
       "label": "Велосипедист — север B",
       "path": "props/cyclist-north-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20434,16 +20436,16 @@
       "label": "Велосипедист — север C",
       "path": "props/cyclist-north-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20454,16 +20456,16 @@
       "label": "Велосипедист — юг A",
       "path": "props/cyclist-south-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20474,16 +20476,16 @@
       "label": "Велосипедист — юг B",
       "path": "props/cyclist-south-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20494,16 +20496,16 @@
       "label": "Велосипедист — юг C",
       "path": "props/cyclist-south-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
@@ -20514,16 +20516,16 @@
       "label": "Самокатчик — горизонтально A",
       "path": "props/scooter-horizontal-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         2,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20534,16 +20536,16 @@
       "label": "Самокатчик — горизонтально B",
       "path": "props/scooter-horizontal-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         2,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20554,16 +20556,16 @@
       "label": "Самокатчик — горизонтально C",
       "path": "props/scooter-horizontal-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         2,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20574,16 +20576,16 @@
       "label": "Самокатчик — север A",
       "path": "props/scooter-north-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20594,16 +20596,16 @@
       "label": "Самокатчик — север B",
       "path": "props/scooter-north-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20614,16 +20616,16 @@
       "label": "Самокатчик — север C",
       "path": "props/scooter-north-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20634,16 +20636,16 @@
       "label": "Самокатчик — юг A",
       "path": "props/scooter-south-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20654,16 +20656,16 @@
       "label": "Самокатчик — юг B",
       "path": "props/scooter-south-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -20674,16 +20676,16 @@
       "label": "Самокатчик — юг C",
       "path": "props/scooter-south-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
@@ -21131,5 +21133,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "f6e6cd231e7003ac"
+  "assetRevision": "fe5b7a88fa87fa4b"
 }

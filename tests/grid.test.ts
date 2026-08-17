@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aStarPath, aStarPathToAny, connected, floorDiv, floorMod, manhattan, perimeterSegments, rectangleFootprint } from "../src/server/world/grid";
+import { aStarPath, aStarPathToAny, boundsOf, connected, floorDiv, floorMod, manhattan, perimeterSegments, rectangleFootprint } from "../src/server/world/grid";
 
 describe("square grid geometry", () => {
   it("creates four-neighbor A* paths", () => {
@@ -32,5 +32,19 @@ describe("square grid geometry", () => {
     expect(cells).toHaveLength(12);
     expect(connected(cells)).toBe(true);
     expect(perimeterSegments(cells)).toHaveLength(14);
+  });
+
+  it("calculates bounds for a megacity-sized cell collection", () => {
+    const cells = Array.from({ length: 200_001 }, (_value, index) => ({
+      x: index - 100_000,
+      y: 75_000 - index,
+    }));
+
+    expect(boundsOf(cells)).toEqual({
+      minX: -100_000,
+      minY: -125_000,
+      maxX: 100_000,
+      maxY: 75_000,
+    });
   });
 });

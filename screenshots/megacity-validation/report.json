@@ -1,0 +1,240 @@
+{
+  "generatedAt": "2026-08-17T18:07:04.146Z",
+  "generationMs": 1966018,
+  "login": {
+    "email": "megacity-validation@tasktopia.local"
+  },
+  "countryId": "fabaf03d-4be8-4a75-9dc9-a81d1b931537",
+  "country": "Республика Атлас",
+  "city": {
+    "id": "042fc0a1-c8ab-4219-bd82-fd71ffd5cff1",
+    "name": "Большой Атлас",
+    "morphology": "DENSE_CORE"
+  },
+  "districts": [
+    {
+      "id": "5bed81d2-5a12-4ab6-bf1b-6fd89ca3a5ec",
+      "name": "Северные усадьбы",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 18
+    },
+    {
+      "id": "67a4f1db-d1c2-444b-9741-18af806e9ed7",
+      "name": "Южные кварталы",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 18
+    },
+    {
+      "id": "8f296306-4362-41fa-ab64-f6c6b808c596",
+      "name": "Новый центр",
+      "archetype": "NEW_BUILD",
+      "status": "ACTIVE",
+      "tasks": 64
+    }
+  ],
+  "tasks": 100,
+  "taskStages": {
+    "1": 12,
+    "2": 13,
+    "3": 13,
+    "4": 13,
+    "5": 49
+  },
+  "uniqueBuildingTypes": 73,
+  "maximumLegalUniqueTypes": 89,
+  "taskCatalogSize": 95,
+  "categoryCoverage": {
+    "HOUSE": {
+      "represented": 52,
+      "catalog": 52
+    },
+    "HIGHRISE": {
+      "represented": 18,
+      "catalog": 34
+    },
+    "COMMERCIAL": {
+      "represented": 0,
+      "catalog": 1
+    },
+    "CIVIC": {
+      "represented": 3,
+      "catalog": 8
+    }
+  },
+  "allHouseTypesCovered": true,
+  "missingHouseTypes": [],
+  "visualBuildingOverlaps": [
+    {
+      "left": 2,
+      "leftKey": "house-brownstone-row",
+      "right": 4,
+      "rightKey": "house-farmstead",
+      "width": 48,
+      "height": 16
+    },
+    {
+      "left": 6,
+      "leftKey": "house-canalside-terrace",
+      "right": 7,
+      "rightKey": "house-live-work",
+      "width": 64,
+      "height": 7
+    },
+    {
+      "left": 25,
+      "leftKey": "house-studio-loft",
+      "right": 26,
+      "rightKey": "house-suburban-brick",
+      "width": 56,
+      "height": 23
+    },
+    {
+      "left": 27,
+      "leftKey": "house-townhouse-brick",
+      "right": 28,
+      "rightKey": "house-townhouse-stone",
+      "width": 56,
+      "height": 5
+    },
+    {
+      "left": 44,
+      "leftKey": "house-student-residence",
+      "right": 45,
+      "rightKey": "house-art-deco-apartments",
+      "width": 43,
+      "height": 32
+    },
+    {
+      "left": 49,
+      "leftKey": "house-corner-apartments",
+      "right": 50,
+      "rightKey": "house-apartment-walkup",
+      "width": 80,
+      "height": 24
+    }
+  ],
+  "blockingVisualBuildingOverlaps": [],
+  "missingLegal": [
+    "civic-clinic",
+    "civic-fire-station",
+    "civic-police",
+    "commercial-parking-lot",
+    "highrise-brutalist",
+    "highrise-courtyard-tower",
+    "highrise-green-terraces",
+    "highrise-landmark",
+    "highrise-medical-tower",
+    "highrise-mixed-use-hotel",
+    "highrise-podium-office",
+    "highrise-podium-residential",
+    "highrise-residential-tower",
+    "highrise-skybridge",
+    "highrise-stepped",
+    "highrise-tech-campus-tower",
+    "highrise-transit-oriented",
+    "highrise-twin-towers",
+    "highrise-waterfront",
+    "landmark-megatall-tower"
+  ],
+  "excludedAlternatives": [
+    {
+      "key": "civic-clinic",
+      "serviceRole": "health-service"
+    },
+    {
+      "key": "civic-fire-station",
+      "serviceRole": "fire-service"
+    },
+    {
+      "key": "civic-fire-station-large",
+      "serviceRole": "fire-service"
+    },
+    {
+      "key": "civic-police",
+      "serviceRole": "police-service"
+    },
+    {
+      "key": "civic-police-headquarters",
+      "serviceRole": "police-service"
+    },
+    {
+      "key": "commercial-parking-lot",
+      "serviceRole": "parking-service"
+    },
+    {
+      "key": "highrise-brutalist",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-courtyard-tower",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-green-terraces",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-landmark",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-medical-tower",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-mixed-use-hotel",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-podium-office",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-podium-residential",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-residential-tower",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-skybridge",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-stepped",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-tech-campus-tower",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-transit-oriented",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-twin-towers",
+      "serviceRole": null
+    },
+    {
+      "key": "highrise-waterfront",
+      "serviceRole": null
+    },
+    {
+      "key": "landmark-megatall-tower",
+      "serviceRole": "office-service"
+    }
+  ],
+  "roads": 6862,
+  "repairedBridgeCells": 6,
+  "roadClasses": {
+    "LOCAL": 6163,
+    "COLLECTOR": 334,
+    "ARTERIAL": 332,
+    "HIGHWAY": 33
+  },
+  "violations": []
+}

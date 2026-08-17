@@ -522,16 +522,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        16
+        96,
+        64
       ],
       "footprintCells": [
-        5,
-        2
+        12,
+        6
       ],
       "anchorPx": [
-        20,
-        16
+        48,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -547,7 +547,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -560,9 +560,9 @@
         "ai-authored/building-stage-study/shop-supermarket-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "5f8a5ba33ab527d84e46172c92d4663af261174307844560f12c7045908b2453",
-        "227eaaa2d39bf5630520d25da14ded64511365a627b461bf8edc0dcafd6a15d1",
-        "1ad9227bffc6b252ca38a541e5f100cf7210db9338c7e7bcf659db0effcf85b9"
+        "7638e98b3b7b8e50fc708b6091b5fd6d0248cb4a6f974de5826cd489a95400bf",
+        "7abe14f213c8057ccfc7c914140b1c3d2d27476d82bcdfa8f3dbb7c8c2352a0e",
+        "c6514139c83aa6bb023e4c512e6ac845e61c86984e8ea5dd685de690dbe6984c"
       ]
     },
     {
@@ -571,16 +571,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        16
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        2
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        16
+        40,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -596,7 +596,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -609,9 +609,9 @@
         "ai-authored/building-stage-study/shop-bakery-long-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0a7807d67e1966f6503717ed06fdbc6163527b59d530801b12bd078d7e7eadda",
-        "eff1fbb3e3a3b127478474d826f5471991cd5f1f6dd11fee1ee6b283227e551c",
-        "61d72cd4d47303e6808da6dca0cbfbed535dc371d28a5772a4b9145c331f4702"
+        "2de24834707a830433c6531966d3c4c961207d1594991a03bc9864ea03e4f843",
+        "44cd4be93d7f2c50a51a41bb6fd807396ec9b3522fa60334447595d22cae6da5",
+        "d1e874b99729d34129b2da86459e2d2e5e9394d92f262797aa68e05f0a30a737"
       ]
     },
     {
@@ -620,16 +620,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        24
+        112,
+        80
       ],
       "footprintCells": [
-        7,
-        3
+        14,
+        8
       ],
       "anchorPx": [
-        28,
-        24
+        56,
+        80
       ],
       "platform": "STONE",
       "estimates": [
@@ -644,7 +644,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -657,9 +657,9 @@
         "ai-authored/building-stage-study/shop-mall-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "e6247cad579844d825cbd94b4ee70f89355394d350f8e30d702c99bae11dcf52",
-        "dec79efd90a1178aa02f4b4af3c01ba52dafd1c8e2435ddd8b8a4d2deaa68306",
-        "bc7db7a61abc72a2369d1ccaef13fa2560d9989e4055451b74b760df71cae6ac"
+        "c59c2b4322bc5f956b6a95264c2f78e65e3447e9d96595ba66408c36e7357118",
+        "220949b70b2ac8b9a5b05280fa58fc7300a01336cea1e41c5dace3f2f66693a7",
+        "95e93783df0949c41430802fe261dc2ba8e1e848153878326151b8df09dc9ddd"
       ]
     },
     {
@@ -668,16 +668,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        24
+        40,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -694,7 +694,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -707,9 +707,9 @@
         "ai-authored/building-stage-study/shop-warehouse-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "de6c7be1d8063a13c34d21f226a366237b0460e8bff5c6102132c0a4ca02dd8a",
-        "381debe4a6c4ceead141074531c6cb1041ac1ba83126d00cefea74b7e20c985c",
-        "4e85387e444c2b8afdc5ea191db49e62d5503b6e02717c99d96a4267f741f2d1"
+        "3d40935d87de20d8718605e62054216bf155ab43f009e0b666ca4afdddc63bfc",
+        "cfb6278677ab39263e0163cfd7eec482b8df22eaa9ba1c8c995f3cd7f912e8e0",
+        "09db43a4e1322cb46f2581e6e4e3af35342658720827cda1058fb6bbb4d7d642"
       ]
     },
     {
@@ -758,9 +758,9 @@
         "ai-authored/building-stage-study/civic-clinic-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "662088e474e99df6e1b9c9c6c3ba5695eb5100a1aeb80858b41a76708b8ec845",
-        "f669435d76cb3906b1dd63ccfdbd26b9c6af251d2e61f08e33423f51a09981d1",
-        "0bc2555e87d6520d6f862c9445232c607258dd09a876cf4863e76adfed8dfd83"
+        "dfb73efce734b69ba0cb00275cc21d8799311db787146259f5ccdfd11f85a10e",
+        "723995f8fcc44684374810cd5e0cc2c7012f5c9428dea05ae7a8769d55cca59b",
+        "f9df46d8e16a53b2b11dad18bbcb8a08be8ce51025ad2ac9df98ad6f07e4c187"
       ]
     },
     {
@@ -769,16 +769,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        32
+        80,
+        80
       ],
       "footprintCells": [
-        6,
-        4
+        10,
+        7
       ],
       "anchorPx": [
-        24,
-        32
+        40,
+        80
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -795,7 +795,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 1
         }
       ],
       "maxPerCity": 1,
@@ -808,9 +808,9 @@
         "ai-authored/building-stage-study/civic-fire-station-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "c312a3768b18fba1908a72c09769bf96c205838d64f4294733cd0898ffdff501",
-        "f1807092d6db3fd44e61c007c6caa9e09ac2ba3736d0bad96ae034d90977762a",
-        "52ab1eaed05cd24ba4ebb101283e93db2ad68deae77f702a197f521d49b650f4"
+        "3370e45b3a0cc1d39bd28dc4536f6aea31737104d7538891be35eb8e70105490",
+        "f442f79ffddb03910eb13935fb541388b5530a7d6eb0fb7dcc27d074c2d72510",
+        "caab1fd14de1fc666bd2b9108b7d172a2ec600540aebfd0b74c3df1ae01a7025"
       ]
     },
     {
@@ -859,9 +859,9 @@
         "ai-authored/building-stage-study/civic-police-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "c8886dcf8e57f214e9c47f738afba0fc501e3f9769b1038f6409489a098e69cf",
-        "1e28d035b21a886c40404ce861feefc6ca40f82ddc54ce05e0b8d8ffab7bd0d6",
-        "ec3d89a2a0286da43c1c5654ba7c6d58529c453f9c71d4eb125d333fbd4265ea"
+        "9ac565faa0d2f959d7609b578582c222610a7943cd15a7a06a369a236afca60d",
+        "0d98e8dcbfeda74cdc0f34a5b836a4da17f14e7208e5459b37158ee7ae65cd45",
+        "adcf07b01a5bd417f90e036cf2c8cfdd2a63e0ae040e7290413018ec31389d33"
       ]
     },
     {
@@ -870,16 +870,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        32
+        80,
+        80
       ],
       "footprintCells": [
-        4,
-        4
+        10,
+        7
       ],
       "anchorPx": [
-        16,
-        32
+        40,
+        80
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -896,7 +896,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -909,9 +909,9 @@
         "ai-authored/building-stage-study/civic-bank-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "6c29f07e6c412c62571703f3df79f04d9d6f358b2855549c3acb64690922c04c",
-        "d3d6bfe38c48a8151b3b602322cdf5301f797b903a5bdf6711831bceae667401",
-        "886f03814298d39701305d9eb68812f21e54b1d37b839730ffabf5f720b56cda"
+        "847607f5b2d7d8d13df9cadd014948dbc524504aac22b0f1dc6e98e85e24bc0b",
+        "4d499c9ac80ce7a7e6948fdbb97ba08a34025ef1b803d661782de0acbf563777",
+        "1b0fe5955f538720b160099a464c8104914da2ed7e63bae55bf26cf17c357631"
       ]
     },
     {
@@ -921,7 +921,7 @@
       "rarity": "UNIQUE",
       "spriteSize": [
         112,
-        88
+        96
       ],
       "footprintCells": [
         14,
@@ -929,7 +929,7 @@
       ],
       "anchorPx": [
         56,
-        88
+        96
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -959,9 +959,9 @@
         "ai-authored/building-stage-study/civic-school-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "36e73f5a2759f0df264ab86ec01f1122b82cba0f1f228a36da68f862e7fbd23c",
-        "7b486f17016a28ffe55086b65ecdc718f7538025748355641729a63801e3932e",
-        "c2177091e99d0c0a919cbad9e0adc10d3989603044831ea262ea7e86ac0baf29"
+        "cf632dd2376ee4caa598d29d561904a8f519dca545e1a5b3c4c97e6d9a39f4b3",
+        "c5cb732287485a84eb7b8c9e3278891086a7518fcf2d3db087f16df3d576cf40",
+        "c293a31759af4e823d16728ce10031a64b82205c37a536e959096979f7ec148f"
       ]
     },
     {
@@ -970,16 +970,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        40
+        96,
+        96
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        96
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -996,7 +996,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -1009,9 +1009,9 @@
         "ai-authored/building-stage-study/civic-city-hall-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "00bd8c547792cefb9f92b05e818158329776fe453f5e13a459ab4c277845bfea",
-        "a2e82cc3721b2990b6e4a4854ae3f485b135dbce3e358b1e2fbcdc72cdfd3ad9",
-        "9c60d35422138ffdc5759e93f9c94b4f03233207991b9ede7a250b4ad72b1791"
+        "9feda96578c12383396f37265e875d7b59ce4d5db9e2daf48cd064404dd5ded9",
+        "218ce7668cba96d8eedaa593bfba376fa5f823ce94a512749064a0dd25c6251f",
+        "bdab5215e07c08dcdc6555aedf9456b0b8578ee44dc6927c06f4f7fab2a5dc51"
       ]
     },
     {
@@ -1020,16 +1020,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        40,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1047,7 +1047,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -1060,9 +1060,9 @@
         "ai-authored/building-stage-study/commercial-gas-station-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ade891c4c7740bda65d1713ad20bb535507c619b22766e36a2517492a8f44f57",
-        "750c32b09c1e274a61fba2b25e8ff809aa7ecfc7aa347c93ea37473fbab91c06",
-        "5231b9b1f8cf26207eb787cd3ad9a2dbb9860f8c93b565781f07a97cb9b735a6"
+        "4031f76c41d31000f3472d4310d1e8d328d0be4cda2fc0f916aa23f72bf0c399",
+        "fc5259f274b967ade78e7c9de7a6bddd00b72accdcf06c1460946a2347e38f54",
+        "f3d0042d4fd692ec8db91538e2517e315b157f22e0551957b8503b4785392d6f"
       ]
     },
     {
@@ -1071,16 +1071,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        6,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        24
+        40,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1100,7 +1100,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -1113,9 +1113,9 @@
         "ai-authored/building-stage-study/commercial-parking-lot-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "b350e3a836c9232939ca2c749c4a7da8c5c2513a8d72d7e42b26c6bcd3d108ca",
-        "f94d63f746fe6a7479780e20ef0614383d9348e154ce7180274e82ba265f3a99",
-        "1285fa41e89fac061235d0e9bba77247ca6e6960f5a7c8e3952a79623d2ec2e0"
+        "2f81beb0c80189eed38da4db7a72bc6dfdd82905af914861945987198c59c679",
+        "2a827e8a5da873246e9e2145e34137369b1f7c3b83314bfa478598c9eef7a322",
+        "0d1adcbc2b43ee6988513dedff60bc286d6c0c8f79f3c543416df0ce5db6a269"
       ]
     },
     {
@@ -1124,16 +1124,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        24
+        96,
+        64
       ],
       "footprintCells": [
-        7,
-        3
+        12,
+        6
       ],
       "anchorPx": [
-        28,
-        24
+        48,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -1148,7 +1148,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -1161,9 +1161,9 @@
         "ai-authored/building-stage-study/commercial-shopping-plaza-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0e0957899afecc3ace0f860d44f993ddd2ebbda0b88d68ea5996e705a3eb8bbf",
-        "943d09bf51ff401ef493fb19bc7a6bf22d989cdcc2b51d7cb2c69d3a89baaf41",
-        "00ec203d8f3980349503ab606356c3d8a80636b3b9a5798fa8eeec4a5f53fbfd"
+        "ae0ea584cc7c91a9fc7f776a202889450da5ab8982ba93a0f5937b51563e0128",
+        "9ea0398b9e3ec4571268b1750ca85630c30754d1c4c469e7958400d6020de710",
+        "fdc98bc02425d6f6c4e65f0ee1595f24d904053d709f67c6ccf0a0f97204a89f"
       ]
     },
     {
@@ -1221,16 +1221,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        64
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        6
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -1246,7 +1246,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -1259,9 +1259,9 @@
         "ai-authored/building-stage-study/commercial-pharmacy-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "33cb28eb680856c57bbbb2364d65c6f5a2386bb12fee5015b8f06307f834b525",
-        "92f326d7330d9dbf7bcc3019337726a453c52492826de59726815ef896f8377d",
-        "ed038243f0d4cacbfca1cf0715da2c075c7ddd3fb086da1761b21d04fbc31500"
+        "1d2dd4dc95bb8417497ae9434151857629149a98ec948cccca783a37c8d66da8",
+        "fc333aa81dea19a223a7f22203be602b66c5ad77ecf2d4969d4ee180b5a069ea",
+        "55b37594d0a620305546607deba061d90241224cdb5817d3f4b85b88263b0d84"
       ]
     },
     {
@@ -1270,16 +1270,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        20,
-        24
+        40,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1296,7 +1296,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -1309,9 +1309,9 @@
         "ai-authored/building-stage-study/commercial-auto-repair-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "34788829c7c78aa61511fd1b98735a64f6a0a26266a2db72bf3ca8284468667c",
-        "52170d79db84a18545457ae46f04b1f0ff7bba1a941ffdb1253b240ce88996f0",
-        "82ff17e9be55f3b9859a16315b8f71145ddb6e8170fd7e0d528594ec92cf37d4"
+        "5f9cea595a7accdcf9b3bafd0f555bf5e46fa5a67fca13a2fa986b572971cc11",
+        "3c58426031689560b43560335b94588b92bdc793ed26e7d84e977eb9367ee003",
+        "dd70bfb767000426f78ac01510a026a6516d813b0c64a6e5f1397610892158d2"
       ]
     },
     {
@@ -1459,9 +1459,9 @@
         "ai-authored/building-stage-study/house-garden-villa-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "cfa04794cdf857aff09d2ce59e4251450eee80a88021175fdab8cd64889d7d0d",
-        "2b2bfd0fe145060f2d81f70bb8cd31cef6ece61fb8fa23687bd78ef2c2d70e13",
-        "9ab31666e317a00bb6bb7ef87736cd4f0978805bd1d07cc85a31d3951595e46f"
+        "0a247e6595d5dfd574fcc81b3a106b49ebe8f61ef9eea49e8eec33c0188b6d0c",
+        "e3655079b090d94cd5d6ea2f64b4a75624d57615dd1ec78507310a3f29d1f51b",
+        "0c7616baf873de992c04d04384bed33fd140b9a29dd1616e1e6c451988cc68c8"
       ]
     },
     {
@@ -1571,7 +1571,7 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         96,
-        112
+        96
       ],
       "footprintCells": [
         12,
@@ -1579,7 +1579,7 @@
       ],
       "anchorPx": [
         48,
-        112
+        96
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -1610,9 +1610,9 @@
         "ai-authored/building-stage-study/civic-post-office-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "f41171bb3677fe3e68568e53a0a19d11222263182c7ae96b27715242fa1f698f",
-        "4c5647fcc26c0d52c9e5036b0bc3fb7c2fa6749d8faac533aab9f851d83894c5",
-        "14f3a5e72b2bbec5c8315d9aeb5f29e809196470490ee6daced210d27e551ef6"
+        "c30421833d19fae3cff853fb9fbc9227de7acc0c9803850238660bc67c065682",
+        "1603c096167c858cd5a75a13750ea073cc7bcff7a1bda6829b9aa188507a54b3",
+        "7938f3d14cfaef6dcda01aaae23df9e4d8b7cd7b3e0749a9bf97902a47cd88f7"
       ]
     },
     {
@@ -1925,16 +1925,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        40
+        96,
+        88
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        88
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -1950,7 +1950,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -1963,9 +1963,9 @@
         "ai-authored/building-stage-study/civic-theatre-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ebfd51dab263fc5bdb61c8a38d20dcb008e13c27a548f8d01c809a400e34f288",
-        "d3a9563f2261c268e19fa7c3487ce5f2b5dd5db928d58164570162022976bc92",
-        "fcf81153dc1695131c1e94f6dd6a533005f7b2917df4ff752d6463696609ef7a"
+        "d8a2ed5ba8c3cfa9ac43f722faef0d689e41bd8acb28381d66006bc9d411850c",
+        "2430e771752cdf8b0854c0b11d68b529d4b013796ccb54c8e4839aa7508a7ce0",
+        "774ae5919fb3df686a831ecdd1ca8187b6341c9dce648285def17048a526508f"
       ]
     },
     {
@@ -2013,9 +2013,9 @@
         "ai-authored/building-stage-study/civic-library-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "1628a75c71e8fe4ab798417933636738bb43a6e256e917ff15f2184510c925e2",
-        "1d38860d741f45a7e79d528db73d997c1e964a72b60c9239e2e5775ac46c8bbf",
-        "ae2952355ea5f6aeddc5ff52869f105632294a20e0e05976361e4f1a1cd5032c"
+        "23617e2d33a35046b1e82d19cbdea6ef984b94a9a87e3c7a3fcdec0b06fb6ad0",
+        "6ac1864afb978f5f60ba9ac5726d0206d11cc798c75592c16545764bfb3ef11f",
+        "ef7f970daf0c73cc859d5c439b7442f84ca2a33744b4b52ddd87689dd5eed563"
       ]
     },
     {
@@ -2064,9 +2064,9 @@
         "ai-authored/building-stage-study/civic-fire-station-compact-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "1ce4e7620706176d3c050e010fc39b19025a4e70b3324488a36223236d63258d",
-        "0454a912ac16ce08931c587b0d0a6ab34486ef7ea42bcbc5fd508a5dd6980e56",
-        "902718977c3bf8900054c5c9cb7f26ed2af3886a3e285897f73102718efc4150"
+        "2a2d713aea493dea6173587236570084d8792160a527a0557adf8075a13113c7",
+        "9884da77f067724c7f774451c30d544ef1bab7d7169da51feb9517b8ab495313",
+        "7300e3d86d503c3323b7f12dab9829d5f9216e0a4c632e0c1a68204194db80ea"
       ]
     },
     {
@@ -2115,9 +2115,9 @@
         "ai-authored/building-stage-study/civic-police-neighborhood-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0ec1116475caea7cbbe926f0a5057f202af944e5fe4072c46979de2410297e05",
-        "35aee6c485395bdd17dc4420ce3994bbaeb56830d7fe1fb36b77e081d15488a3",
-        "ca6fb05597377a8b097f077e738ce1531adceadb75ac78bae77cc0c18ef9dde6"
+        "71145a82567ed2052a85cf83f032dd2b4af0384e8e0710bae0e540a346a40216",
+        "2cd64965b9f7b85aaa592eed19fc9b464e534d33abc54064917d174036d61b41",
+        "a301ccbf69585c0cfec9f51edd61eeeec67abaaff3fdaaf3e1911de8d869ea64"
       ]
     },
     {
@@ -2126,16 +2126,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        32,
-        24
+        80,
+        72
       ],
       "footprintCells": [
-        4,
-        3
+        10,
+        7
       ],
       "anchorPx": [
-        16,
-        24
+        40,
+        72
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -2153,7 +2153,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -2166,9 +2166,9 @@
         "ai-authored/building-stage-study/civic-clinic-neighborhood-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "bf98baaf4c0d6e75f4e588a9df460d90cc2b9318053469e43ddcb3767cfc0357",
-        "5553309b682450ce81334308c5d17e9f54e475765d60b902e2671b4f2dd1eb63",
-        "848f80519c52b846bf20f3c60aeb3fffe523364b987443fd02bf310321d7f1f5"
+        "4c09fc468a7fffcb073f4f4d929eaa531f9a2c7060bef8dfc1c78f7c058fb7aa",
+        "1898bb22b37c8f661167546a58b1f383c2989babbb60e30ba3804d4f9041b434",
+        "04ba1bdf828c5cb32227079974014ffcdf0d032116a95b7baad371f01bde3301"
       ]
     },
     {
@@ -2177,16 +2177,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        32
+        64,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        8,
+        5
       ],
       "anchorPx": [
-        20,
-        32
+        32,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -2204,7 +2204,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": 1,
@@ -2217,9 +2217,9 @@
         "ai-authored/building-stage-study/commercial-gas-station-compact-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "4805fff3e5fe660d7de2c39399f4f710c8b2dba6f672f226f80899c93c8ddd47",
-        "de952bbe62fba8e123c4f242e6f071face19fadc6aad601b85a127cda376715b",
-        "062979551a7f1a65645b17176fbe1fcf4b1355fd4f9e6db848086394fae83f03"
+        "0fa43b3b91fa7e53918286cb0313f955d5ebac0ee92dacc58243c52e4941e6f1",
+        "b65cbbe0c9b064641118b26bc968281a1af908e661b42e72e3a52d7f04474505",
+        "7a8e659c1f2c1487f0b1bb8f899739cfbe6c41d9be4ead91909a0a0088afcf2e"
       ]
     },
     {
@@ -2281,16 +2281,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        64,
-        40
+        112,
+        80
       ],
       "footprintCells": [
-        8,
-        5
+        14,
+        8
       ],
       "anchorPx": [
-        32,
-        40
+        56,
+        80
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -2307,7 +2307,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 7
         }
       ],
       "maxPerCity": 1,
@@ -2320,9 +2320,9 @@
         "ai-authored/building-stage-study/commercial-highway-service-plaza-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "f85c0c49297972a7bc336bc52516d5306dd7c6e1815095b8466fab84750a9051",
-        "8e3134ad37417915595aa1591f1ff681252fc599c4c7c381a45d858b99ba9b59",
-        "39e760aed3477af1d4b9e5684845c956c3963855ad3397d9b9b24e23dfe05196"
+        "64bf2dacc3fb6b31f890e66ef4bcb5805299c0663367a90b5febf292c0c52838",
+        "0c2f5f2cdc6019191065c4ea89907a6c3fcb61fc347dd239c162f4c5cc1e8fdd",
+        "296e9c5994418d82816de40298feac146ee04b4a05ed924000f38b01dffc5003"
       ]
     },
     {
@@ -2747,7 +2747,9 @@
         2
       ],
       "tags": [
-        "house"
+        "house",
+        "private-residential",
+        "residential"
       ],
       "ruleIds": [
         "STANDARD"
@@ -3127,16 +3129,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -3152,7 +3154,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -3165,9 +3167,9 @@
         "ai-authored/building-stage-study/shop-cafe-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "2148c70e3d2e2c92f10608d5e79d4d2c960ee7091bf11f42cfb2c9adc6298251",
-        "1afec04cb958bc72a36ec46d45119543404da924408bc5a695d773169a3bce7a",
-        "655dd41200365abc8c5ddc2141e674331bd4af425caad63d8b967d0cd51cca33"
+        "8120a084124cb555dd04668c0fc92018043d3f498f1d3994e74c751f61897c61",
+        "0ca70f1be84e4908dd2898189ec06c172e5c1ea8e53f67809e05a9587e559143",
+        "60bb5eaf01f5ca8f8d7a2aaf9f1c4c373d7a6ac0f45720908eaf32420a8e6d70"
       ]
     },
     {
@@ -3176,16 +3178,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -3201,7 +3203,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -3214,9 +3216,9 @@
         "ai-authored/building-stage-study/shop-butcher-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "01b565d8ff7d67839f246cd972fcd5b87e1d354a96aaa68d121c5f104c9eeb61",
-        "176c88ef5ec82bd0fd64bf200b6dfc9013705ae3e659287f6b6cb44d70524242",
-        "07939d4f14d912cbe1527c0d12422135d3c05c475e08dbe34e7ccee82d865592"
+        "403e7550332a3d7d780f2e87ddcb9f2d75aa1e20cee6ef2c91313377a7eab8ac",
+        "78ee1cc83dd3b49ec60fe5d5639265ea2b9a0f974b5fd35b64a691f4633eac78",
+        "4420b637a850d141223ef8a02d9f9f2e35b115a48d8692a177c98b94d7d56e33"
       ]
     },
     {
@@ -3225,16 +3227,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -3250,7 +3252,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -3263,9 +3265,9 @@
         "ai-authored/building-stage-study/shop-electronics-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "2f5911c7c2514a0adc0f26398f6052865cc82c79bf2e9828a455665126d0d3be",
-        "4bd1ee79979ffd600fed1ddf0a93ba18956e11bacee5d1f22f6665e69d486db1",
-        "24040753a222e538c5e474abc9e82dd487c922281e309461ca392c1c4382ddfe"
+        "7a9399bfa8179d1aa084522468fb5e242c3807c62f38c1a19252362e1a78d2ce",
+        "b1d0929cfa4a11501f9611bb6a4e3df16b57ebfe46ef1591d124e5b9803c3561",
+        "2a86a0f970ed19f7838c5060fb1557c4ed779690f197d461aec8ef5eb6ef2a70"
       ]
     },
     {
@@ -3274,16 +3276,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        24
+        64,
+        56
       ],
       "footprintCells": [
-        5,
-        3
+        8,
+        6
       ],
       "anchorPx": [
-        20,
-        24
+        32,
+        56
       ],
       "platform": "STONE",
       "estimates": [
@@ -3299,7 +3301,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": null,
@@ -3312,9 +3314,9 @@
         "ai-authored/building-stage-study/shop-furniture-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "5cc0d0a10e4b57fcd3788ceaeb3bdcabcdabffe7d561bf93d77fe7f0eb7990eb",
-        "db35a26c942adc923897ab87c3020e4ff64d06b3a5b6a86d0fd5578a1b43235f",
-        "d4754bdecd01ce8d5ca8f1ec187cb72b6e5570285198385c9c6f975f5861a08e"
+        "f0c2d7ef69e2cb1135fc34216fa3f1a150217046cd8afc98b14d1bb1c26a3013",
+        "d9aa8e0307b73b055d23473068624d3bc32ab01c50c4a125ca79f5e8b1f69b36",
+        "16f122f4a22596127af5b6bb0040778274df3c48d53a6d721ee7fefe65dd0366"
       ]
     },
     {
@@ -3323,16 +3325,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -3348,7 +3350,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -3361,9 +3363,9 @@
         "ai-authored/building-stage-study/shop-bookstore-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "fb0806972a1959343f2b12b94ef297061cdbaa0af2060d2ea2cca2d801264eda",
-        "4656a4906433537827426599125c2cd4f5db0360b5d7b02325bc8a446f98711f",
-        "95786c6f60ebf243bfd15122aca3d5df26b8cf31462d699c0b3a904f6257be95"
+        "f3f6052f8f8e2882387a50b3ccf73cba9f861df84667433de8c755d891b1507c",
+        "b1206c73c8662dd7ef2be04a6d2cfd2d785a2180ff39d88df13ff495204d3e5c",
+        "ba14ec6d619870d50893864efa52c19956a6d0d4cc155462835f4b182f109e38"
       ]
     },
     {
@@ -3372,16 +3374,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -3397,7 +3399,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -3410,9 +3412,9 @@
         "ai-authored/building-stage-study/shop-clothing-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "e4611f0256a523c138a3049445197a9de23104613dcd3eebaa4a9ec01a30a488",
-        "d0403af327336612451c2bbe220be334847337c99f45a58d168ba79035cd0624",
-        "9abaad95e0b4a78db4afdcd395c2e57e10a75fe539c7ea7304dd26163803ac1d"
+        "284fbd6bae5479eb8b5ce108500fac287e89d9cf95e60d3ff646192a48e0f0f0",
+        "d33f7e2ca6429b3bcfd560affe82def1986decfee906d3d29fb6c88000f6dfbc",
+        "9ea1c70c7cdcb7d9cfe5c070edb09b82a4112fab17c51e501a64be15788c1a50"
       ]
     },
     {
@@ -3421,16 +3423,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        24
+        64,
+        48
       ],
       "footprintCells": [
-        5,
-        3
+        8,
+        5
       ],
       "anchorPx": [
-        20,
-        24
+        32,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -3446,7 +3448,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 4
         }
       ],
       "maxPerCity": null,
@@ -3459,9 +3461,9 @@
         "ai-authored/building-stage-study/shop-restaurant-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0b401adab5e4b98a8bc67cb51b480c6a61301be6be751b416beb3f318d76b368",
-        "9499e4ad606fab232f95ad872b76c7182cbcf9e69db05eb8de12f8dddd703bd3",
-        "362472aa746b7b0326204b1389077eaa211ed57ec26734c412b65053fc48255c"
+        "47e39d5bbde688fd1bbcd62cbbe4a910334685865f345d404c9501ea0ae7454f",
+        "223a317fd2b759c2a66019d808ae7183486f1b6fee81373fbf30dbec76aaadbf",
+        "babe29df66d84d386e3a2bd99946ccd224367f01ab828203e2e9b0b8783b5888"
       ]
     },
     {
@@ -3470,16 +3472,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -3495,7 +3497,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -3508,9 +3510,9 @@
         "ai-authored/building-stage-study/shop-bar-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "96f6353e6173a9dcbabf590a30a3842b6db73bec32b93dc57cc18e4c07b13945",
-        "0910823f071db2e598d9ee09158e47df204b0da583414aed5a37ead85ee18010",
-        "93b13f0141f8b5001883f6752cd6d2cb79b6228b1f769e9abacd97c4c67f9f11"
+        "abab2fce8dba7ddb5335b5ed50144107695090f8fd26954b7a13d27696f00929",
+        "f705d9da92fc97d2964415942ac9437d4bcd46c78cd39b096fbc1c1a37d2d458",
+        "b6889925e2951808dbcf03e68655ea107d254b06cf8122493c36a182e8530074"
       ]
     },
     {
@@ -3519,16 +3521,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        32
+        56,
+        64
       ],
       "footprintCells": [
-        4,
-        3
+        7,
+        6
       ],
       "anchorPx": [
-        16,
-        32
+        28,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -3544,7 +3546,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -3557,9 +3559,9 @@
         "ai-authored/building-stage-study/office-small-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "722a5cb9bd12fface0c0e37bc3bf316387cc6a8ff3c3ad2e8903d2f43d045df7",
-        "e1448d61cc81d93d898163d765268088b49efe4ba490b74614a63230da02a163",
-        "abf73966b3603f4d02990694b3b283b8b3b02a214bbc8bfb3f27b08c975cb129"
+        "eb1a109d048239fd6095adb0e7a63113cd19b41edd857a644be0de945ab422e6",
+        "62ff82f61cc4b39c7772548c2a8ba5547e494010291e945939d03031c2242e16",
+        "bd8b22f0e609f2c2ba681fe3056cfd0598cca0419a7769b7a0e180696fce4e33"
       ]
     },
     {
@@ -3569,15 +3571,15 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         96,
-        88
+        104
       ],
       "footprintCells": [
         12,
-        8
+        10
       ],
       "anchorPx": [
         48,
-        88
+        104
       ],
       "platform": "STONE",
       "estimates": [
@@ -3606,9 +3608,9 @@
         "ai-authored/building-stage-study/hotel-small-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "c23893f9d1e32760a103140d7ce697de6e4796cff118f63a3766932b73da3bad",
-        "024f0356fe4c6eb6197ac6bafd0c031a2bfbef57d8f133f5394a1e877ecf2cd6",
-        "60707866ba0552ad147c3f191814aa29432e69dbd42537209aa7a0d371729779"
+        "399f5f4e33860f82db013cbacd85e9896e68cc397a520b5c64b22fbbf0d9362f",
+        "b1cc8d1a3a992b1d454caf0378d242cdaacecb05b4cde717d980268b54729191",
+        "272e592d54c8714e671c7ad33d6455bcb459d51f184f1dfa5fb60d7adec6ca30"
       ]
     },
     {
@@ -3617,16 +3619,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        80,
+        56
       ],
       "footprintCells": [
-        6,
-        4
+        10,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        40,
+        56
       ],
       "platform": "STONE",
       "estimates": [
@@ -3641,7 +3643,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -3654,9 +3656,9 @@
         "ai-authored/building-stage-study/commercial-market-stalls-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "e454c1d91bc84066eade20ff9265739539650445a462d58130264644e3682719",
-        "9d61d13a9f6222ea214ee372433e2760f68de1205206c4f496fb6ae25b2833e3",
-        "f763a421668993ad6e864a2958465b38de9ee538993e10058c1f0633bfc8d6b8"
+        "41d1bf4e88e96cc9e8f21dcff524986582a7e0b2662f41aea12dc0c2eb535b7f",
+        "8a7e5a0007c5878469bc32278b7b7915e964d00ca4bc21db1b5ae60c3036290e",
+        "b964fa01dafe19ca83bc67e8b7754a3af2f16286b5ce468e3fd9ca0c99dc88dd"
       ]
     },
     {
@@ -3665,16 +3667,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        24
+        80,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        20,
-        24
+        40,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -3690,7 +3692,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -3703,9 +3705,9 @@
         "ai-authored/building-stage-study/commercial-storage-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "a181e4f5f522b2c07f86d96c154842d132b4695699652d0d7d1b127abce9eacf",
-        "b5e9cee4ff1ab50af160bc4b18618f23f549dbf42425ebc9473edbe04f7e611c",
-        "3e09e32911d3defdd3ff743a2d47c8a0578d9890e8b6f18c4ef59b1ff70ba6f0"
+        "13d9f957ed4f69163bd34f4957d2b9622c4203041b7d3c284bcfaabba89cc743",
+        "d8aafb5b2196f25a9abb0456c5c3811132ccafc2051881508e042b39838cab03",
+        "fb40ad5d63943127abf7a39ebe25639858110fba8bc1e4a3cac5da9a75d8c698"
       ]
     },
     {
@@ -3714,16 +3716,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        32
+        80,
+        64
       ],
       "footprintCells": [
-        5,
-        3
+        10,
+        6
       ],
       "anchorPx": [
-        20,
-        32
+        40,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -3741,7 +3743,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -3754,9 +3756,9 @@
         "ai-authored/building-stage-study/commercial-gas-station-electric-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "27d3991cae1f847724df70cd807403414b8e1682d6946c02763c87c7bd6eb545",
-        "7fc23f388488993704305060f6a377502d7c78e61ceaff26655c8255d13b5e22",
-        "32812d2e91bccf2474f5285cf39924c072989b0ff629c07ee785fe256a296408"
+        "61ae133317a09df2515d2c2317f594da2c3167eca0a3bcfa18c3b51b62186514",
+        "00d428b78a397ef3d67ac7740a7088b212912fe592ff4c066bbe5990687fbc3b",
+        "c4276c5b852c05e29702479dfd20e0e6cc5f99a825159f9a6e34fd6c877c7e9c"
       ]
     },
     {
@@ -3804,9 +3806,9 @@
         "ai-authored/building-stage-study/commercial-gas-station-truck-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "123e2294eb773ab7881f3419e8fa72ba51ab9d28a109af23218afe07711104c6",
-        "159f1c4019e2732fa53621d63b58477f9709f2f96243a0768792574e3a167df7",
-        "2ad63430f730eb25fcf6fcfe24cc83a797bca91db51e87e39c34eea2ede86a1d"
+        "3264f4f89376b286672454acca76c87ab30f1f29993fa18f5d51dbbcb03fb923",
+        "181695250f9cfcaf44ba0ce23514a1c536f53ae09eca0e9c840aba104f3089c1",
+        "dc72e0bd627cf9c62250e7072e0b2da8acb572527c0634571c25df3948de5f18"
       ]
     },
     {
@@ -3815,16 +3817,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        32
+        88,
+        64
       ],
       "footprintCells": [
-        7,
-        3
+        11,
+        6
       ],
       "anchorPx": [
-        28,
-        32
+        44,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -3841,7 +3843,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": 1,
@@ -3854,9 +3856,9 @@
         "ai-authored/building-stage-study/commercial-gas-station-cafe-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "3544c1f8992dc1ca16a50f1e75aae031666afeff865bc16707cffe4147f3fb6c",
-        "6bef4b97ff095f4e6505e17f084cc886796ca26d2d2a6cb2fa2a88db74570dd0",
-        "fe7ec377e3126841bf6344b3512dbdf0a674c55b3ee7190c6ff737f2215c2aa6"
+        "6ad270a8a468db058412fe8c49610c00a6b6bd262d4e67defc5815eaa40bd8eb",
+        "c3b241dc8c0f1301318452482b3fb95c72de520db20cf2ff13b2473974d376ee",
+        "7a9617d8da7ced7f8406754ea1c4cf63b0ff3e001123c701df3acd8305e80eb0"
       ]
     },
     {
@@ -3865,16 +3867,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        32
+        96,
+        64
       ],
       "footprintCells": [
-        7,
-        3
+        12,
+        6
       ],
       "anchorPx": [
-        28,
-        32
+        48,
+        64
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -3891,7 +3893,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -3904,9 +3906,9 @@
         "ai-authored/building-stage-study/commercial-gas-station-wash-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "f6e2ebd701a0d8d749c7caf9dfaeee08c0bf3e59045a6c3dc5073e62c6cafcab",
-        "2b4e6883e5a2b00b5f3f0cae528e4156ba4c488ca7c3e1beb30b420c79e072f9",
-        "309b2433ccfae06ba9635b3642aa0d1ed9801a5415067c052fcc51963150fd79"
+        "ee861abcd1ab701fdea27e83d3e96f74ed18f8ea79307ed592244c572708765f",
+        "95c50af1033c5cd7a190315dde79e99e9d8fcc785186a05f76cb8fa1083ff3cb",
+        "4e098be40eaa3fcbdab34358569fb36e300c2f9d5e54f77961bf090ea478f71a"
       ]
     },
     {
@@ -3964,16 +3966,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        56,
-        40
+        112,
+        96
       ],
       "footprintCells": [
-        7,
-        5
+        14,
+        9
       ],
       "anchorPx": [
-        28,
-        40
+        56,
+        96
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -3989,7 +3991,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -4002,9 +4004,9 @@
         "ai-authored/building-stage-study/civic-hospital-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "6ec5d6dc646053b6299e6f5c28ee98f93efab17a379ca8668aa56ed25774c66a",
-        "bf677953b9396507abad1218400ff4145e4e96a04b9f46bcb43cf5fc266c17ce",
-        "e584df2a76a927f83eeabc546e2baad0ec92821ff5482f4f7cfcdeb098d8ca0e"
+        "6a8e6bfef96ad7e5fb10bc659ee6aae3a6fdf69329c9ded22bf0e6a37fb4786b",
+        "a525011f98a914c880240ee0686ebca997713fb0ac13304c729f5a1e56684468",
+        "15b273c7c4f23d970e74eb3ecf186eb3e61840429b94df85b87004696f0bca6d"
       ]
     },
     {
@@ -4062,16 +4064,16 @@
       "category": "CIVIC",
       "rarity": "UNIQUE",
       "spriteSize": [
-        48,
-        40
+        96,
+        88
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        88
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -4087,7 +4089,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -4100,9 +4102,9 @@
         "ai-authored/building-stage-study/civic-courthouse-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "dfdcdf3011c6f52e759f6b5c1da5b67c19cc75796c958564b7d15a855bd23ea3",
-        "bfc6fec3ae3c3b62d7000479d0014800af96ac5ab694570c0ff06ffab8f83b01",
-        "af45d75ce5587bfc83ae0c2cb2f4e3e4bfa86f912937e84f20b4d4a6b4729b8f"
+        "5bfdf9ddc5354dc312839c66d1243f347ac2ab5fe65e40b2e396af5482b9f3a9",
+        "07683162f14cc70c915335525bb6d217b3919e86613154ee17c0dfbcbd4d3af9",
+        "b11b67360ac8e15cabadf8304f4f69f879288efd50b21ffe15a99ce51c421bf3"
       ]
     },
     {
@@ -4150,9 +4152,9 @@
         "ai-authored/building-stage-study/civic-embassy-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ae30a7dda926c143b15ec119fc244cd89f62e663562bd54b8e848eb2acc1052d",
-        "49f0b9ca19f379f86e65e35c41ef0200fa01beab4748d4a515b9b6c1fe5a6f2a",
-        "fb51dc54b3e2490bcd33ebc7e9ff2b0b8eb738e18766eaab145d6d19e53c27cc"
+        "bac1d3b7283aa22e28f88a09265942f65600de3fe7480834eae459a9cfb4878e",
+        "534ee9aac6d78dd09e8321e5013660d501e4d9941954ed15e1f34332c448ab5e",
+        "481684d3ed81f87b792f90828a76e2f4a08a163726402992153e32ed47674edc"
       ]
     },
     {
@@ -4161,16 +4163,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        40
+        96,
+        80
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        7
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        80
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -4186,7 +4188,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -4199,9 +4201,9 @@
         "ai-authored/building-stage-study/civic-community-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "b96571cfd108c1dcbace5fbfe4090da9ea236cac8a23b987e21ae805ea2f515a",
-        "28b6f4f1d658d4096c5d500c0736a5cd88cad6282a1b079fb18cd869f71fdce1",
-        "9c72a32d9407149234d2738c835a87402c67617298c633f156004907eff9d6aa"
+        "231b198152efa2f31d75eda1d5a6c8ab751669278111f7613cbe97678c9a5f8a",
+        "ae1aabaecfcaf24aa911dad43503b20d3e7acff72109bb4710149090aa57ea7d",
+        "316b8bbd1738e1403d15f2f0d82441805049527098d988113a57ae6ab4275d83"
       ]
     },
     {
@@ -4210,16 +4212,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        40
+        112,
+        72
       ],
       "footprintCells": [
-        6,
-        5
+        14,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        56,
+        72
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -4235,7 +4237,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -4248,9 +4250,9 @@
         "ai-authored/building-stage-study/civic-aquatic-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "f28f4ab8a88a78590aa1e812d8bb2c638eb1de49510c2e9bbf061f620541e8f2",
-        "7567c83efaec171c4d730e384def99ee79f58856cd8cab0c83f13205684a70e4",
-        "00823640adcff29d1b4964ff84c7e8551e9d1dc7df62825ac7b98f03d1d65fd2"
+        "ba1e81d8a549056be38ef5ea6624f085a69bbc054b8fd9a8e7a224ee97318e6d",
+        "37aec7501f8a24e91d7cc6c980905595f0cf08b34ece33ba88a3339a91dd096b",
+        "6dfc345dda04b42884cf5a34061c5acbad78ba13c9be8232164d85e4afd9de90"
       ]
     },
     {
@@ -4297,9 +4299,9 @@
         "ai-authored/building-stage-study/civic-transport-hub-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "5465bab39d2f489a41d68a63b10cc7007de916244b6ffae4ddb164f8acc6d258",
-        "f351879b509e551785682dccd3c9079c1be14358a8cf496c7c6cf31dca52820d",
-        "b83496cd07a03e0573df6da16559e6bde3fa6bf8728db47a9b276d3cc2b0530b"
+        "2324cec073ba8d5b918ed87dae180fa904ce2bd938b7faada056b96ee91aa79c",
+        "51f4043c4b172f617ccf4d657c83f5276db604f67b875f6bef44bb9e4fad7dca",
+        "aef9b066ec4254db007806429f49e03f297868524b3e7c32455b1477b7f634f0"
       ]
     },
     {
@@ -4396,9 +4398,9 @@
         "ai-authored/building-stage-study/civic-power-substation-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d65426754912b7ab37e491a1777d564b1c5d03c0fbecffb9a6d6b2a330e6bc29",
-        "d02a10b8eb03a965d19f9c8b9fa06bc4812596c686f85bd0fbaf22d52b77bdac",
-        "902d13d5072dfc90376a1dc0e06c6e80bebd287ebce036f7b110490eed6a2f31"
+        "dbb663634bfbe9a9ea340fb98acd1c241962c032cde9c174ba1015bd3f48c9f7",
+        "8b7bf362aa01d5a34021bba4ab1abd76e2bc25f2a518451d3ab635402fbafcc3",
+        "12d2e2e358a7b0ec9ae7c97c1aa2d37f0a79629001624f2566044ddeea96bea4"
       ]
     },
     {
@@ -4541,14 +4543,14 @@
       "maxPerDistrict": 1,
       "serviceRole": null,
       "stageSources": [
-        "ai-authored/building-stage-study/highrise-balcony-tower/sources/stage-3.png",
-        "ai-authored/building-stage-study/highrise-balcony-tower/sources/stage-4.png",
-        "ai-authored/building-stage-study/highrise-balcony-tower/sources/stage-5.png"
+      "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-3.png",
+      "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-4.png",
+      "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "3ae9d3a63072625a360006b30b913d1008dd2c3e5a351ab9e15a6cf89aa4d496",
-        "3d1657015d66b772fb32575b74c7fc07811dbdad945f1bfe6074e63616bcbf63",
-        "6ac1727f467db5f2382edcf2cf1eadb5d33c52a426b17355a54fc0e191de0050"
+      "f3d5d32c36ed9e3c00d3024128c1ae0f2947a1de221344ff3603ba6f503bce8e",
+      "55197eb10984f24682e2e27303a1024bd253325ea6bb99b0f8bd736044634821",
+      "ad1930872f8f46e32153b17ca6ff7708b7d3fdd4eb3d9c2c23d8f01b72bbcc6d"
       ],
       "reviewed": true
     },
@@ -4817,16 +4819,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        64,
-        88
+        96,
+        112
       ],
       "footprintCells": [
-        8,
-        8
+        12,
+        10
       ],
       "anchorPx": [
-        32,
-        88
+        48,
+        112
       ],
       "platform": "STONE",
       "estimates": [
@@ -4844,7 +4846,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -4857,9 +4859,9 @@
         "ai-authored/building-stage-study/landmark-ferris-wheel-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "44e46689a19d11335ea51ff0513055aebec7d5316e4068dd1bb12299aa1feb7b",
-        "4c935eaa2edf793b7722e0435ea8b55f9ed2a34131676bff42d85ab6e4b64346",
-        "08c9042a140229f62f82c10e4398f9ba3f99797e71842a336a5e9b65f6276eb4"
+        "62100b83391348a9d85758ab14893bb07de7bf2bdde8515752474190a14bf77c",
+        "600e1236fbd9e0764afbc29003f04fef9f98063f3a8578349f82489707d0d147",
+        "db2edcf3e85dfc2da336761b10e3e6b37d380992ca1cb85e70402da2a90ff09d"
       ]
     },
     {
@@ -4921,18 +4923,18 @@
       "label": "Городской памятник",
       "category": "CIVIC",
       "rarity": "RARE",
-      "spriteSize": [
-        32,
-        72
-      ],
-      "footprintCells": [
-        4,
-        4
-      ],
-      "anchorPx": [
-        16,
-        72
-      ],
+    "spriteSize": [
+      64,
+      96
+    ],
+    "footprintCells": [
+      8,
+      7
+    ],
+    "anchorPx": [
+      32,
+      96
+    ],
       "platform": "STONE",
       "estimates": [
         6
@@ -4950,7 +4952,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+        "offset": 4
         }
       ],
       "maxPerCity": 1,
@@ -4963,9 +4965,9 @@
         "ai-authored/building-stage-study/landmark-monument-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "f1af6ad7a661160e2dfbe354c409b15706386562c830fd0fa8354aa4b214ff83",
-        "9bfdef28e4fe43e8992171f274c73bcedcd0af58bc3035cb36976721a6fb3836",
-        "9cafb29df1c4a9f16e40e900d6bfc530ca758fdf2db0c0e18e74bf6c8bf3c6f9"
+      "eddb1c67cbfc6640be67333c415cb62afd6c06362b4ad14a0c9cb0680d779485",
+      "7d95d6e654e0310fc08d47ea35ed495105bf6728fb1ddc4541341b328c4d69b6",
+      "f57d9f5ac4e6aba333f9bb5cd593c09ad943b4d8a918105dede58bde27a057f0"
       ]
     },
     {
@@ -5967,16 +5969,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        32,
-        24
+        48,
+        48
       ],
       "footprintCells": [
-        4,
-        3
+        6,
+        5
       ],
       "anchorPx": [
-        16,
-        24
+        24,
+        48
       ],
       "platform": "STONE",
       "estimates": [
@@ -5992,7 +5994,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 3
         }
       ],
       "maxPerCity": null,
@@ -6005,9 +6007,9 @@
         "ai-authored/building-stage-study/commercial-grocery-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "97ee705b8faa75ebf18b33396ef98c96a20582859d9dc5e1d0e434c5c623f2e0",
-        "76fcc7a135b486f956da880b4ce193a1c4ff3dc860b67f9788b218aa362b7db3",
-        "3b15695821781f687e8024dc939854dfe4d054151a21672aca023a8b07ff9c14"
+        "8acbedf70d43ecf541aa2ee45919812ab5fd7ce92052178bf9b1a364aeae00c5",
+        "287bc4016010bb0d50b4087142c4e19d5cb8d505e514509334c41f8df6739f1a",
+        "3264a643348cdfd6f497d59c6ed6707d03bc6060642e8a87e565253f7b33c9b3"
       ]
     },
     {
@@ -6016,16 +6018,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        96,
+        64
       ],
       "footprintCells": [
-        6,
-        4
+        12,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        48,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -6040,7 +6042,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -6053,9 +6055,9 @@
         "ai-authored/building-stage-study/commercial-food-hall-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "6446831f5eed46504a065d9c1a7219cc3fe4a7b7f410d9e396e453ed274ea63b",
-        "0245236a5ed4ed51625d5101cf0eea187607f911b48fa78801cb02e7a1dbdca3",
-        "9813adc50f384fe628746dc9a13ef0d51e6a340c2b8502a61eb490309ed725fc"
+        "d9fd8169147b742cec94cef4d33f15603c5a6d9c80581919ac579ea2e7f5cbb3",
+        "efe89c15f083a5b101fc322601eea4186af50a099bd9eb33d5e486002f5c8a47",
+        "2810aeaacf9898dd5da915b796ebf81d449dd719791e18c6af24bccfaf8398b8"
       ]
     },
     {
@@ -6064,16 +6066,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        96,
+        72
       ],
       "footprintCells": [
-        6,
-        4
+        12,
+        7
       ],
       "anchorPx": [
-        24,
-        32
+        48,
+        72
       ],
       "platform": "STONE",
       "estimates": [
@@ -6088,7 +6090,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -6101,9 +6103,9 @@
         "ai-authored/building-stage-study/commercial-cinema-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d41be739f8e1d949c0306f731c80d0a79224cab2c9b40c8036d143342e8a2b64",
-        "77c1758dc5e0380606b62cd1f3ea908b2bdf56af5cdbe2bc60e854b3b8c83815",
-        "4b21b3b14d24f6c1cc647b8dafdd8b60da92c1b2c07248d82d844f2bef9054b4"
+        "2b7784d7a587caa25dc1be099a4718b2aa33c1d96d11a827b56e594b91de062f",
+        "df72c2576c9460c33c90f33006cdc9445c816d2ca797f6ddf36b8163c8763c9d",
+        "ed676a5d575b8cbf7894f8deb4754be43ba6a90b70ddf68e2d74543515cd9901"
       ]
     },
     {
@@ -6112,16 +6114,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        96,
+        64
       ],
       "footprintCells": [
-        6,
-        4
+        12,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        48,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -6136,7 +6138,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -6149,9 +6151,9 @@
         "ai-authored/building-stage-study/commercial-bowling-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "8b81f209f22cf01bd7ecd145830c63cd56bc414da4aeaa18007dbbeae9ed5ec2",
-        "dd5d70119af8910947c1012dbc0ec80d70c5ea04ed8bf8b3c8c43b4c03fd6334",
-        "eb972cd408116f1e1e04546adac3a7d88f04f84730638764acdbbbe61a0190d6"
+        "182d666545e1df150b46f6df3fcbb12f2c3ae5d873e8b6f20490e1bf7f33f5ab",
+        "8a896d05b79ee7860ac0e0e77ef6fde8676074c43ea47e42e60830c177f4d925",
+        "dfe4e46c4eb68003cfff18a3b2193db9486b35c3587a8ff46aa2e19e836d4df6"
       ]
     },
     {
@@ -6160,454 +6162,20 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        40,
-        32
+        72,
+        64
       ],
       "footprintCells": [
-        5,
-        4
+        9,
+        6
       ],
       "anchorPx": [
-        20,
-        32
+        36,
+        64
       ],
       "platform": "STONE",
       "estimates": [
         3,
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-gym-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-gym-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-gym-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "92fa330e9efa37fc791a1fdd774f9f9532addba1e8600377e0227ced5be80afb",
-        "eb1e98c16f45551f9a26254caba25678b0d51e23bf6fcb2fab92f8a62d5ac952",
-        "73ae7339208f90c53b58c7097aee67c3e1b8d71e0e0bd9401ea12632f47c1035"
-      ]
-    },
-    {
-      "key": "commercial-bank-branch",
-      "label": "Банковское отделение",
-      "category": "COMMERCIAL",
-      "rarity": "COMMON",
-      "spriteSize": [
-        40,
-        32
-      ],
-      "footprintCells": [
-        5,
-        4
-      ],
-      "anchorPx": [
-        20,
-        32
-      ],
-      "platform": "STONE",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-bank-branch-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-bank-branch-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-bank-branch-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "ebc7ee93cd914e490ed8aa6555c2aedaef8bf4922566c2d82c0e346027821456",
-        "0497e09f0db2a17e441baf8485517cea5d30cfb3768126204555d51b1280829a",
-        "8200c8445e72b81c26a302a649d139a05457c9f6516aba14fc94bdd4cd551450"
-      ]
-    },
-    {
-      "key": "commercial-coworking",
-      "label": "Коворкинг",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        40,
-        40
-      ],
-      "footprintCells": [
-        5,
-        4
-      ],
-      "anchorPx": [
-        20,
-        40
-      ],
-      "platform": "STONE",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-coworking-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-coworking-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-coworking-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "705b83b76acb9fc07fde750186ae21b9c9c3caabfe837b63d7f22b570247ffa7",
-        "7b876713ea60e79888128a0c16395aef8a0e7dc8d13f82bdf1371b717a66f36d",
-        "9fe99ccfc54d06df879beb4d34d105e130aedb251d6c6a5b679a3a3f9389441c"
-      ]
-    },
-    {
-      "key": "commercial-tech-workshop",
-      "label": "Технологическая мастерская",
-      "category": "COMMERCIAL",
-      "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        32
-      ],
-      "footprintCells": [
-        6,
-        4
-      ],
-      "anchorPx": [
-        24,
-        32
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-tech-workshop-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-tech-workshop-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-tech-workshop-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "c5bfd8a57f0ab44c7a9ffca2ed7fc3cf727968a1d7bb8cf92a7df0c17f9d5681",
-        "60bfee83754cb1e10dcb0fcebdc06e9f0f3c0cfedeb542c3a5ed2e9da0f55872",
-        "8c4709878b2d285f9fe042d8fefad89fc8abc335fad0595e01ee1ac67c856a83"
-      ]
-    },
-    {
-      "key": "commercial-car-dealership",
-      "label": "Автосалон",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        32
-      ],
-      "footprintCells": [
-        7,
-        4
-      ],
-      "anchorPx": [
-        28,
-        32
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-car-dealership-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-car-dealership-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-car-dealership-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "68c215c4bfc1130c078e1f21719ead5a00c53ce0c00f11fbe7c4f09c792eabeb",
-        "585d500a6b924ee435b8a71fd5ea89dfd7953869ccab5f8f826934d35d522844",
-        "b8ed5e27d423b7669bcd3735ec4a746fdd62b1f17dab6aa8c388968ddd444eff"
-      ]
-    },
-    {
-      "key": "commercial-garden-center",
-      "label": "Садовый центр",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        32
-      ],
-      "footprintCells": [
-        7,
-        4
-      ],
-      "anchorPx": [
-        28,
-        32
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-garden-center-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-garden-center-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-garden-center-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "c012f34bae37da4ccd756d72b3f4d81b6d9793f9234b87f7ffb600c46ed21808",
-        "79724530ba1b57ae6307f87cdba65ef9140fbfacdee7c6ed3fac143987fdec7a",
-        "bfc1d69d23646532880b1a42573048c8058044ed138b4613d42b0164448cdcd8"
-      ]
-    },
-    {
-      "key": "commercial-night-market",
-      "label": "Ночной рынок",
-      "category": "COMMERCIAL",
-      "rarity": "RARE",
-      "spriteSize": [
-        56,
-        32
-      ],
-      "footprintCells": [
-        7,
-        4
-      ],
-      "anchorPx": [
-        28,
-        32
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-night-market-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-night-market-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-night-market-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "5f2114e02371e310c757d8d96893c55ec4bff3211686469758aa10745e7a9178",
-        "d198bbecba890e6c85d8330f6c8a4d0399c81e608f5123ffbd5ee794517fc22e",
-        "9008e69906e5224fe247a52366e9cb193dbd6f115e30c2fdb3ec4ce96a7fc57a"
-      ]
-    },
-    {
-      "key": "commercial-department-store",
-      "label": "Универмаг",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        40
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        40
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-department-store-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-department-store-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-department-store-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "c2654c7ce5a79ef7f7afb322388b30670ee002aecf20c65573e089015b2cdcf2",
-        "e5f7491facaea9663bc69ae69e77b5a2dbf021cf2b3d08351bb8ad14bd03c821",
-        "027b59e97f8f0a50786717705ddac72f435c3d111809e2b8928389e391791779"
-      ]
-    },
-    {
-      "key": "commercial-office-courtyard",
-      "label": "Офисы с внутренним двором",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        40
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        40
-      ],
-      "platform": "STONE",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-office-courtyard-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-office-courtyard-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-office-courtyard-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "7a26f65c7777eb85545bd38fdbcd9e11476e0d08a36ec00ea8c5f204512f73f0",
-        "7f325e3643da200cde6f750ae029e82f26927576354840f113ac371d2fe880c6",
-        "49491d6488937c52311f7d8c1af6b2aaa28ff03a3542b5f0c545b2034b94888c"
-      ]
-    },
-    {
-      "key": "commercial-logistics-hub",
-      "label": "Логистический терминал",
-      "category": "COMMERCIAL",
-      "rarity": "RARE",
-      "spriteSize": [
-        64,
-        40
-      ],
-      "footprintCells": [
-        8,
-        5
-      ],
-      "anchorPx": [
-        32,
-        40
-      ],
-      "platform": "STONE",
-      "estimates": [
         6
       ],
       "tags": [
@@ -6627,32 +6195,130 @@
       "serviceRole": null,
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-logistics-hub-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-logistics-hub-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-logistics-hub-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-gym-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gym-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gym-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "664107b3bf293f5bb254b9c8e8db9a52dee11f5b0fe6f6d0901a5cb758682c76",
-        "0f309d76733f3a2d8f6b5b458712b77ec9982809441ca6c8a49dc4461c7e28d3",
-        "fd1afdaa82955d2ab1f46194d821ac7f3f3a64975f7e0164fa317cb23de92b4e"
+        "a0aa637a402fa3ce6397de3d6497522c4edfc94c67ca8bd1d023fd3e57a0a8c9",
+        "7d355dd46751b2e4af9f9d6966ee43e85b8096f0f01c6ec11955f7944ada37f3",
+        "e28b87c200d91a1eb14fdea319cf188c38ff4815769d926e7ece17828c2924a3"
       ]
     },
     {
-      "key": "commercial-cold-storage",
-      "label": "Холодильный склад",
+      "key": "commercial-bank-branch",
+      "label": "Банковское отделение",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        6
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-bank-branch-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-bank-branch-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-bank-branch-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "56a63429e637604ea510a8c83813eec9315cfee27a14dcb08caea200482fd431",
+        "10375646662bda752c39d8fef797960eed69753e0b3436c5953441363ce25ffb",
+        "cebbb96df9eac84962058f7461bb930c3a53041f18a47b8395be1dc2a1a97a25"
+      ]
+    },
+    {
+      "key": "commercial-coworking",
+      "label": "Коворкинг",
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        32
+        72,
+        72
       ],
       "footprintCells": [
-        6,
-        4
+        9,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        36,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-coworking-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-coworking-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-coworking-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "cd0006a46861c7adecdca75c8d781de5dce11259c012ade38bfae0e6e4175e99",
+        "859986ab19e92f8a78b3ebe25bc50436fd1166bd04edd5ab6ec3ea63b844a1d6",
+        "ed2f26d4424f8927f696260c824bf3f2928cc623d289d18b1033ea4c42d54d17"
+      ]
+    },
+    {
+      "key": "commercial-tech-workshop",
+      "label": "Технологическая мастерская",
+      "category": "COMMERCIAL",
+      "rarity": "COMMON",
+      "spriteSize": [
+        80,
+        64
+      ],
+      "footprintCells": [
+        10,
+        6
+      ],
+      "anchorPx": [
+        40,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -6667,7 +6333,343 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-tech-workshop-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-tech-workshop-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-tech-workshop-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "c51141e25a34e5f26cd279832b09961aba41ce5979ca06b90ba12967aa083378",
+        "069fa9f0de147e16a9e21bac69c4275f56829adae9a8943467f9877989f29e9e",
+        "f855544fe6d23ccce0fc8ace067fe30f3518207aa29b6761a68dee948d15189c"
+      ]
+    },
+    {
+      "key": "commercial-car-dealership",
+      "label": "Автосалон",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        112,
+        64
+      ],
+      "footprintCells": [
+        14,
+        6
+      ],
+      "anchorPx": [
+        56,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-car-dealership-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-car-dealership-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-car-dealership-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "c5df1c1aa3aac03f40cbb93c9286d68a77f4ad7073e78b33d2bd58a2c8794ac4",
+        "e4c39a6607d54f58843db12406646c010fe8770552e1fa460dfbad4ebce25f86",
+        "a438bd6c93143c9f39ccd5d950dbebe423524ef2552eebc11fd40bba90970d31"
+      ]
+    },
+    {
+      "key": "commercial-garden-center",
+      "label": "Садовый центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        96,
+        72
+      ],
+      "footprintCells": [
+        12,
+        7
+      ],
+      "anchorPx": [
+        48,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-garden-center-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-garden-center-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-garden-center-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "14646578b321116e1341805d31bf2a178ad403f2e44745f1d7e5182ddafedacf",
+        "268209a8a741fd308a1e0787bd67a829dab457e22078a5171de6dcc14fc9c6d0",
+        "7b4fbbe84086d887ef4047a59bdef55227071e19a5673c6aa05a00066655d26b"
+      ]
+    },
+    {
+      "key": "commercial-night-market",
+      "label": "Ночной рынок",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        112,
+        64
+      ],
+      "footprintCells": [
+        14,
+        6
+      ],
+      "anchorPx": [
+        56,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-night-market-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-night-market-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-night-market-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "48a78cf5d7b0d6dc1ab376d1184f86824e453ae954f933e630da5aeb4111df6e",
+        "3ff7699a8910f83b02e5e011def211048fde009d17d81cd20ee2e91d338c2028",
+        "6f6549d73613680ff55725eda7da468231c0b3f7f8710f8a87dbcbf4ca291d8b"
+      ]
+    },
+    {
+      "key": "commercial-department-store",
+      "label": "Универмаг",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        80,
+        80
+      ],
+      "footprintCells": [
+        10,
+        7
+      ],
+      "anchorPx": [
+        40,
+        80
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 5
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-department-store-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-department-store-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-department-store-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "f83c12215c80386b200b819d357dab6773e32f1e04fe5bc79511d3922bdbc9c4",
+        "93f2fb644bb868b58d23c6b1f73dfe64c59b04ee04df409f12c709545b535229",
+        "42953f840a0de2ba606f43769ebe5f0ff23e0ebec5b79d2086d197b052f16a71"
+      ]
+    },
+    {
+      "key": "commercial-office-courtyard",
+      "label": "Офисы с внутренним двором",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        96,
+        80
+      ],
+      "footprintCells": [
+        12,
+        8
+      ],
+      "anchorPx": [
+        48,
+        80
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-office-courtyard-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-office-courtyard-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-office-courtyard-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "a6773b4130f0b991cd020630f2fe334b5c2231463a063bf8a7b02c8ce7190f63",
+        "e1a6cb99990c3e98ff73f002ed338f53d1b54ddc5b7cdcc5c5dca87ad088bf61",
+        "ae6e32227710345570f792cc71becf8c5e0e254c5bcf1c6bff60051fe0d7d634"
+      ]
+    },
+    {
+      "key": "commercial-logistics-hub",
+      "label": "Логистический терминал",
+      "category": "COMMERCIAL",
+      "rarity": "RARE",
+      "spriteSize": [
+        128,
+        72
+      ],
+      "footprintCells": [
+        16,
+        7
+      ],
+      "anchorPx": [
+        64,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 8
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-logistics-hub-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-logistics-hub-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-logistics-hub-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "f3d046b13a00f35d03614a1a8aa8ca222ffaaa2152caffa7033445657ef9692a",
+        "dcd097edf6362bdaf90db2f6989740d3ab1453207acad587192e51427d20fc95",
+        "f1baf1e2fb387724caf849dd10968c91d4c56d66e78d6766dc8a663a3c293eb4"
+      ]
+    },
+    {
+      "key": "commercial-cold-storage",
+      "label": "Холодильный склад",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        96,
+        72
+      ],
+      "footprintCells": [
+        12,
+        7
+      ],
+      "anchorPx": [
+        48,
+        72
+      ],
+      "platform": "STONE",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -6680,9 +6682,9 @@
         "ai-authored/building-stage-study/commercial-cold-storage-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "58e831398cd3ed24f46cd9c1a1918df0e71fc5cf9a2bc00ac0f274d9d7e20ed3",
-        "d5d19c34bcb93bb1c30bd5c059ce02aea434b6723ffa8f1d0f944cfe88ed54db",
-        "17b3339f914dfe140f0e6a94bb6d001dd00995224ac2fbba08c5ad418f1844ad"
+        "f1f016fd85e9728b70d241e80c7c247fc09eeda945581791891166ff4e347571",
+        "7fd5016654599844a3dbbd1b4f4f2bad3aba988cb59f890aaf7674e233f63549",
+        "5919608886f0f15e147130b15807d372e801190b04184cef82e405907008d158"
       ]
     },
     {
@@ -6691,16 +6693,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        56,
-        32
+        112,
+        72
       ],
       "footprintCells": [
-        7,
-        4
+        14,
+        7
       ],
       "anchorPx": [
-        28,
-        32
+        56,
+        72
       ],
       "platform": "STONE",
       "estimates": [
@@ -6715,7 +6717,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -6728,9 +6730,9 @@
         "ai-authored/building-stage-study/commercial-maker-market-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "19f451e81651dae0862bc4059561fa9475cd30b8c634ca7e4ff0569afb1b6a60",
-        "df63a1a9ddaebd3ad4ba5147b0a93e9a168744bfd1bb7fe5323800b82a2bb721",
-        "705c72c95a2535d9d3056cb8a98a99aaf6be5f3ffd843be7b0cf402047a6d70f"
+        "57fbad26b05a5804d0994b7f08f722d69e2dc25201c83df882eed4ed3a48d6c9",
+        "2891877a43f06b6dafd7e816ecee8a90b01f09766910a494ff1c0628e4dd8dbe",
+        "5327a9f28d9ad7f5aa5b8de63dfec8564cf1fbd4a6efa6fd792c8ca572c5f381"
       ]
     },
     {
@@ -6739,16 +6741,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        40,
-        40
+        80,
+        96
       ],
       "footprintCells": [
-        5,
-        4
+        10,
+        8
       ],
       "anchorPx": [
-        20,
-        40
+        40,
+        96
       ],
       "platform": "STONE",
       "estimates": [
@@ -6764,7 +6766,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -6777,9 +6779,9 @@
         "ai-authored/building-stage-study/commercial-rooftop-restaurant-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "4d89a2bac1d2e71a0ddbf46dbbfecb1368160aad0a90c5df57b663e29ab6c18c",
-        "0835fac7886684217082901ec7e5ca86cbe15bf15d8c2733675408d28595a240",
-        "cad264827eecba83f2f4e6e1944e326eeea5d9e78ddc6900afef9e919707ae09"
+        "042f995c935b984cc45714154603e91dcfbbeaaede4227d890595a8e721bf757",
+        "ddcbc2f59af8939d6ad32a49c0f6526ab8eb22f34e331f0bccc168314c81f3d1",
+        "52957780277270ff9170073b4c9e40ff735cfc53f8e8614a5d1618fdfa11681d"
       ]
     },
     {
@@ -6788,16 +6790,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        32
+        80,
+        80
       ],
       "footprintCells": [
-        5,
-        4
+        10,
+        7
       ],
       "anchorPx": [
-        20,
-        32
+        40,
+        80
       ],
       "platform": "STONE",
       "estimates": [
@@ -6813,7 +6815,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -6826,9 +6828,9 @@
         "ai-authored/building-stage-study/commercial-marina-office-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "31a289ec8676583e8d336abc6e23f49d0b4ec549ce0f8a72ac295410f08aa5a7",
-        "c32bf1eb0f589b5a5ac672f2fbde665bbbc8f0cba3a84eecd6a47a0fe9e5cf94",
-        "bb6f1f68ba3537aa4878d995860a16acb4aa520a276e21ea0686d72eb89feed9"
+        "cd65609ca556cd88cbd0cfd2c95915456372871458fbe1ac2efb41ef65e9bd2b",
+        "9e59a51f5ac39b00062309c71138880dc777ced1d107f2e9c94579c469d26a7b",
+        "229a0e12019b4631bcab73d50f1da7372424395a98dce0a2b75ed116ba0ba150"
       ]
     },
     {
@@ -6837,16 +6839,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        48,
-        32
+        112,
+        64
       ],
       "footprintCells": [
-        6,
-        4
+        14,
+        6
       ],
       "anchorPx": [
-        24,
-        32
+        56,
+        64
       ],
       "platform": "STONE",
       "estimates": [
@@ -6861,7 +6863,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -6874,9 +6876,9 @@
         "ai-authored/building-stage-study/commercial-farmers-market-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "c4b3401545823b7838a01c2ff73d474e91a726c2705e0632f007aeb8c406c6d2",
-        "e7fa2a60205f1bb6272c2154c6b56cda8c6d272c1f0cb94fbccf5502ee796714",
-        "d29efca0278fdf5189ad1ee2babfa3713094f0cda3d9a9b7dbff6f8b0eef8743"
+        "cb03107fb498492aae963c1fbe2011745a37bd2eaee936c8f8d3eb7e9bade66c",
+        "31e8a817a2d56f6e8f36c84b2607587f091947f935b322d654c1cb7baccd012b",
+        "67056e7eacf552c2fa07cb1126d8e6e932c0830c98a58baba6d52730e3073f8a"
       ]
     },
     {
@@ -6885,16 +6887,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        40,
-        40
+        80,
+        96
       ],
       "footprintCells": [
-        5,
-        4
+        10,
+        8
       ],
       "anchorPx": [
-        20,
-        40
+        40,
+        96
       ],
       "platform": "STONE",
       "estimates": [
@@ -6910,7 +6912,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 2
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -6923,9 +6925,9 @@
         "ai-authored/building-stage-study/commercial-hotel-boutique-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "946f87b66c6d8157a631432d42ed1c17296788cfc98fac59f59b6ed359c92f17",
-        "1d160ee4a6d84fe7024f161181dcd3c613173c10c81ba0434b8a9689743a8937",
-        "2d46af7134a07306a858a29ff00ca637fe4a989368805a40e40208beaa269c75"
+        "dd0ad06f0b612cff4a2ace58570093f89472b8ab21832bff2a655a1cfa4cb9c1",
+        "f25065cab7da87396d87007bed9bf1d89089019b32e7bf58270aa43465d654bf",
+        "3845e1515a83387cde26dc5b6e958c55d8c7955c380f1a3c62d9cbe998b31731"
       ]
     },
     {
@@ -7170,9 +7172,9 @@
         "ai-authored/building-stage-study/civic-public-library-modern-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "a7f79d68b5fea8a542631062d6873a26acd7aafcdf78e6258daa8d1039185c04",
-        "ab886ba2b953335cb29aca75602963ada7ad7c80e7899271d20c460bb46a2d46",
-        "0b7e18898ad57486f219978f91024ed8d3bb6fe6c57ac5ee4028987c53c78a03"
+        "cfb4a6a2ef11df30149916345af8d76e35529f324c5f346ee15dd8a7873e1d56",
+        "8e02f5f2e79cfa70af36186e66e4ea3c53e4115c37ffee72d2d33c92e8bfc930",
+        "defa996ae93607e849f89656ff88e6ffab54d51a66964d010824780960fb542b"
       ]
     },
     {
@@ -7219,9 +7221,9 @@
         "ai-authored/building-stage-study/civic-health-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0574d37f049794994c2e27ea5bb7883d3043f314a03a8fda7610820f379ce28b",
-        "a0e8d4197df7fb283559e9907c00bfe0c2d358595ad6ae779c01c8e9167a2765",
-        "41aa7743ebc8f635a093d726a8ff573b9905a759e78d62d648e8385b1f128480"
+        "7ddf3daf897de9baeaf9a8cf85687da1118ad2e8eac8a38f4629ac1990ecbc2a",
+        "aea0872d2ffac0b1a48b4a28bbbc1d1e16887edab80d58e68f929edf696ba65d",
+        "d487eadebfff15d5dfbce9e53df2d3b40aa5faeb5b28a1d943e3c628dc9a4e8f"
       ]
     },
     {
@@ -7268,9 +7270,9 @@
         "ai-authored/building-stage-study/civic-emergency-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "eb15eb786bc0df7000d96bb5ad8c1e30add88100a611a4cc2072fa42d8fd615e",
-        "55d480fdde4ba034ebec5b99044840b1117e24a343584e6c284b552ed693ceef",
-        "5052a28de132f6017db5fd1ef28a645edfefa22e2a1d7801ce08b42969019837"
+        "5ab0ff283a93684d0218510d33081ed4a30d80588a9ba098377050cb80458700",
+        "4858801d5e1d634018f1360ce2588d0921f20419160103444c6fc8d56ca86e27",
+        "b5b56b626d559c87b11ab0354d8039217ee6fb561948eb4ab07073f3e4d3ee57"
       ]
     },
     {
@@ -7318,9 +7320,9 @@
         "ai-authored/building-stage-study/civic-fire-station-large-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "e4468d20fe40ccfdd929236fb15bc18d12dac0d88efb106f4cde70cc7409df9c",
-        "6cf9a608fa97feeac36ea7377cb8b7b159d9effdafeb14e3a1439936ae420208",
-        "b5cfe22d35ed30d8181d1bd36a2e426c3e46ef6af9d973cb62ffd34c36be11ad"
+        "8bee2ad8b5ad764adaa17e3b4cef02a344d7d58323d4fe1b2053bc22d66f0367",
+        "e9336a47857782464ecf2d44d9b79110b69251155a2926854bc9959868accf6f",
+        "d52dd3cce937a988ef72c36b300d09923b90215d3c34eeabfe91952629c37537"
       ]
     },
     {
@@ -7368,9 +7370,9 @@
         "ai-authored/building-stage-study/civic-police-headquarters-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "77fcfed64f9da2b06025e266daf124b45d78f7c61739e25cf2a0ac6c6bd04aad",
-        "87bed1e6e5c923a34e8a0518fd7ab17ecaef91998bc63799827cba1f5d48ce30",
-        "3942924fb2783ed018a48effe34317d18f83a310088c3acdbf706c6a24645480"
+        "3d525be4ccc59df924ab37fc58f904f1704a17c1edfe93e1bd9c2983f14152c4",
+        "e982118f959f8d04a89d6f7020356876da6c3472878e5bbe6ea9ae6676e1600b",
+        "bc3b3860c0353e38f0664ea2f41c4be4497cfd87d7c97322c4ed46e17432fdb2"
       ]
     },
     {
@@ -7379,16 +7381,16 @@
       "category": "CIVIC",
       "rarity": "RARE",
       "spriteSize": [
-        48,
-        40
+        96,
+        80
       ],
       "footprintCells": [
-        6,
-        5
+        12,
+        8
       ],
       "anchorPx": [
-        24,
-        40
+        48,
+        80
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7404,7 +7406,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 6
         }
       ],
       "maxPerCity": null,
@@ -7417,9 +7419,9 @@
         "ai-authored/building-stage-study/civic-civil-defense-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "21473b6a38a176ec7f435640eeb339f836a06668f13fdf32eaecbf37323f20ee",
-        "d2f9d3dee8158ab4b651320d9270dbd2c08147c26154edee2d235aaa024724d4",
-        "7cd48bd04d8d47f00996ce143919aa0e81f1bedd9765af8cb084b5a1a26b2478"
+        "5b4f164051334da4c67edb0c7c1d6c9289338b8ed6f47cd216abfdfc5e143373",
+        "f79ec9b1425987cdab5b0c40195b7301a84f159f64074817f6bedb27a46e8c41",
+        "b18248144ef43e871dedca464ff798b8f297130b7fa5fe34734409fe9d107006"
       ]
     },
     {
@@ -7477,16 +7479,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        64,
-        40
+        144,
+        72
       ],
       "footprintCells": [
-        8,
-        5
+        18,
+        8
       ],
       "anchorPx": [
-        32,
-        40
+        72,
+        72
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7502,7 +7504,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -7515,9 +7517,9 @@
         "ai-authored/building-stage-study/civic-bus-terminal-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "89d2baedbbee1667a20854fa7772a7e76363be01823df52afcfb489add7dfbb2",
-        "c76c54ce4be9943594645781649b0de1a44f4f4b4777e20254f4cbeebbaf6136",
-        "7db238086c2921840fcd240897a608988ed0fcaaf4131ccd27b92e3144795464"
+        "354046c615fd0917eb72bd6e463ac73f4b658f0e1fc7612e3a073612ef65da8b",
+        "8a2193c338f7be74294c8d9928234acf9a21830c59975ecdeb6f3db62a4a7d24",
+        "f8e358ac862e2744b43671784c8ffabbcd5191bc4f2fc69d6ce7727e4e40a434"
       ]
     },
     {
@@ -7565,9 +7567,9 @@
         "ai-authored/building-stage-study/civic-metro-entrance-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ff5a6fa05b86fca446216618d1621c8389294551307ccdb8d5888a683f85f9f0",
-        "b142597f33bb3b3317ea3e30d526ca2ceb62c644f4b5120ce2add9995ab25b62",
-        "f3398ad235e9fa4cfff552b8681db9b1cf2737ada636862825af358b02348f30"
+        "c51c793dd74969ceae04e0f20eddb13089db13d8a440374f23c39c98110e11e9",
+        "4f219c965279eb6c9d4b9f6a17f826f5765a537130498a258fb2fd2784329cf5",
+        "c76eddd5aa0308c96ed66793cacad0c79d423f49f5ce4322806f3a056bc78b43"
       ]
     },
     {
@@ -7614,9 +7616,9 @@
         "ai-authored/building-stage-study/civic-waterworks-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d43c48c25abfc4f05809087501a4d9f2c7317e1773a59f936df710c5415d26a2",
-        "358f03686ea857791c12cbb9593512a7e2660ec6ad1899937f6d69322d989d2f",
-        "89b14063ab1e0688ce57a8c679d24f792b0e265d6b10b3dd68149bad8307747a"
+        "587c0934fe341bc95332154b13faa9ed58681dcc378bfc0d526166e090db3d70",
+        "497ac2c669d0b5d095c931d293dc25dec25a001579a3352106b1e14286432fb8",
+        "b4fa0c0ba1f2ed597aad8077e033b14933f4a80ee918bccfb275b03d938cabac"
       ]
     },
     {
@@ -7663,9 +7665,9 @@
         "ai-authored/building-stage-study/civic-recycling-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "31d906cb3b0f9d3cbb7f3cf4a19d5a5ce547234c8f0706a61d1277f15dec329c",
-        "c7a5931f96ac55391e46767cd2bea671f98e37fcf371faa2a4d283474ed98bd5",
-        "8305c80ca051dbc336e850af64886148fa46384074123caae27246d9e969cb8a"
+        "945449aba5c7925edd59a3916c89f9d10cd2371c3ac6d69df34d1ba42067b729",
+        "880fb6700467d2f11f0c6bb11ab510d0afe2ad1f0d2b70cfb630163209f95c3f",
+        "1cb4a3ded3275e7cd5bb98471a64d7793c56157078821e7f3b00964a534817f9"
       ]
     },
     {
@@ -7674,16 +7676,16 @@
       "category": "CIVIC",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        48,
-        40
+        80,
+        80
       ],
       "footprintCells": [
-        6,
-        5
+        10,
+        7
       ],
       "anchorPx": [
-        24,
-        40
+        40,
+        80
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -7699,7 +7701,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+          "offset": 5
         }
       ],
       "maxPerCity": null,
@@ -7712,9 +7714,9 @@
         "ai-authored/building-stage-study/civic-court-annex-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "1b9f609a546e00e9940d5f7cda8017eb54d8d067e4d1e9e9dbf089cf5380a46e",
-        "d7623bedcce3c2ac367aadc3b6b1467fa09daf20456f1f976b88474a4167acd5",
-        "d63901f7d1357551d144d47d9da5ff5e4119f92f824cea6c5d58f27b24c5a4f0"
+        "97e96e0c0c6ad0105ca20dcb8f3b7f9dfcc4d4ded687ab53e68b8d897aa4e080",
+        "47869f98664ebe5d9bae8d79a26f05e8b710c184e0dc7d3e9c5934049648124c",
+        "c619d3075522de305086431c411c52b93a3d627a3d97da4277ad47cf468c8088"
       ]
     },
     {
@@ -7722,18 +7724,18 @@
       "label": "Административный центр",
       "category": "CIVIC",
       "rarity": "RARE",
-      "spriteSize": [
-        56,
-        48
-      ],
-      "footprintCells": [
-        7,
-        6
-      ],
-      "anchorPx": [
-        28,
-        48
-      ],
+    "spriteSize": [
+      112,
+      96
+    ],
+    "footprintCells": [
+      14,
+      9
+    ],
+    "anchorPx": [
+      56,
+      96
+    ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7748,7 +7750,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+        "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -7761,9 +7763,9 @@
         "ai-authored/building-stage-study/civic-administration-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "a8ae744286f87eca1d1b6c844e3e7172b9d339338cc2be905c0715386e968888",
-        "7c7d7eb8c997d9eccc97629a823999551892434012f3a4786078bd4903d51285",
-        "7cfa88a1610be2770b3e60e058c4c3b5b4970d982ed9a265ffbb9baca4d07777"
+      "9e9e9af3d2fc6f155267759ce9fd8588e9487673cecccd0606090c7cb5769cd8",
+      "917326bf3f01f86ecc95113027d0ec0c7073bd3b8e7bdaf3493c17b15c09d861",
+      "8c079325dd26a0d06dda1284b6acdb2520fa78630d9dd5d67811bd16cee9a808"
       ]
     },
     {
@@ -7820,18 +7822,18 @@
       "label": "Школа искусств",
       "category": "CIVIC",
       "rarity": "UNCOMMON",
-      "spriteSize": [
-        48,
-        40
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        40
-      ],
+    "spriteSize": [
+      96,
+      80
+    ],
+    "footprintCells": [
+      12,
+      7
+    ],
+    "anchorPx": [
+      48,
+      80
+    ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7847,7 +7849,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+        "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -7860,9 +7862,9 @@
         "ai-authored/building-stage-study/civic-arts-school-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "df32b3d0cf92c4537dbc990d327b1b07034e3adb53862b108ce666d98b46569a",
-        "e95db6fade64c8d0106233de7fe25ba4cd5bf944f9c05f6caf8d0c0c6c9a5db4",
-        "7880961dbcd78d71f229fbcff998a80215a16db4ccf0e76f5e0e5a631a3ead41"
+      "cc609e0f6486b6cb0926b8f2df046852b50a6113b955a1c47c54a5a42e287a02",
+      "52dff4dfa3b2d5462d3391cfd29f06fb9688dad0d40ec16fc8e2b706449f713d",
+      "141103c7d9e4482fdb173711cbd962ccbb38dae76c6c294746d093a63849c96c"
       ]
     },
     {
@@ -7870,18 +7872,18 @@
       "label": "Приют для животных",
       "category": "CIVIC",
       "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        32
-      ],
-      "footprintCells": [
-        6,
-        4
-      ],
-      "anchorPx": [
-        24,
-        32
-      ],
+    "spriteSize": [
+      112,
+      64
+    ],
+    "footprintCells": [
+      14,
+      7
+    ],
+    "anchorPx": [
+      56,
+      64
+    ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7896,7 +7898,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+        "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -7909,9 +7911,9 @@
         "ai-authored/building-stage-study/civic-animal-shelter-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d4325fbfa73b8399d3469119e852eebea0f67214bcd3159e6d9d999018f7b5a1",
-        "9d067aaa6d01641c43e999bec242dfc0d3e80017d6d992b4b812cfdf75a30e81",
-        "0863541df3bef63c44d899b845bd75f0d690aee651a31875604f7f0516ab8982"
+      "d8835f9505987084e669e2933ffa49273e9e8721841dd4fdb52514e8e5796ec3",
+      "f03ebe92421fcfee3b1b21b9690093c6f63a30169ffa28cb1794930b435e641b",
+      "c6a38928cdc7766be5dba284f045caa2718540b9a3e77728762ef1a3959bad9f"
       ]
     },
     {
@@ -8943,16 +8945,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNIQUE",
       "spriteSize": [
-        72,
-        48
+        144,
+        96
       ],
       "footprintCells": [
-        9,
-        6
+        18,
+        12
       ],
       "anchorPx": [
-        36,
-        48
+        72,
+        96
       ],
       "platform": "STONE",
       "estimates": [
@@ -8970,7 +8972,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 9
         }
       ],
       "maxPerCity": 1,
@@ -8983,9 +8985,9 @@
         "ai-authored/building-stage-study/landmark-stadium-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "7825472614587e6af1580f09e8a932b3fdc2c2d6276ad5fb2b379f515c6a99c0",
-        "a698156f86103e463bd5141315fc70beecc630da0ef95e16a4d3d2f90cd02049",
-        "6d0a5fde60fdd9df944c6ea9149c35ffea5daa21721b9f7264058b09dcaa51bb"
+        "d8b74a082ddc4aa2a7b24d939e3daf9e49295556458dc54c35add7eaa5a0288b",
+        "14dcb0364d9576aad1963e230274cf3569d67c0e93d68e655b91fb017668d358",
+        "e190c1b5a8818e49f0129e2cdc7a13e4f8e533b4e4a19d45b347d476858a2838"
       ]
     },
     {
@@ -8993,18 +8995,18 @@
       "label": "Обсерватория",
       "category": "CIVIC",
       "rarity": "UNIQUE",
-      "spriteSize": [
-        48,
-        48
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        48
-      ],
+    "spriteSize": [
+      96,
+      88
+    ],
+    "footprintCells": [
+      12,
+      8
+    ],
+    "anchorPx": [
+      48,
+      88
+    ],
       "platform": "STONE",
       "estimates": [
         6
@@ -9022,7 +9024,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 3
+        "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -9035,9 +9037,9 @@
         "ai-authored/building-stage-study/landmark-observatory-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "583fe8406d2c0423fcfed85c65564d6fd41c03caee572afa9dd46e3331a2e4fb",
-        "1527e4997d9c44d5b41061f40e2e807f91bbe42641efbb3a761c962959e4a640",
-        "200707f7ae260f35d41fca5643f34f2e3e9b434fe46f57b64a81bb3946919eb3"
+      "5f97910ce12174ad890662b75cfa4cd7fcb0b59213e00a3b45c7e33cac97490d",
+      "7fa8eaaf5e91660f362dc69d733db126f168eedf33c8109d2dbda92a07ada4a9",
+      "69398acc2bfb334d8437bfb7d23c71ed7ec21e93274a521c0c3789791c2f7063"
       ]
     },
     {
@@ -9087,9 +9089,9 @@
         "ai-authored/building-stage-study/landmark-concert-hall-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "df67b1d75565ace8a99227db38d5756b4c9d6cdb050632fe7c2b5bbbe74c24d6",
-        "20ae517e006914f7ac4ebfd7733b3b348629bfae283f5a3c15f277a2ae524b5b",
-        "8eef40f6b945d36627faa401e154a5c0852da1f79cf61bd3c83d191a8d7ee365"
+        "6cb364ab4ce79044f5828248293fdc7070d11063840d1cd2da3efd49e84df5eb",
+        "03f43cbb03d415f9bb2fcf2e73e20b8ed45eac32c2f67337ea0ea0ed2af0d042",
+        "12b555810b91617d2291e507ff9eca0d2e604ca4c1edccfe47b384f274aa8cc4"
       ]
     },
     {
@@ -9098,16 +9100,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNIQUE",
       "spriteSize": [
-        64,
-        48
+        112,
+        88
       ],
       "footprintCells": [
-        8,
-        5
+        14,
+        10
       ],
       "anchorPx": [
-        32,
-        48
+        56,
+        88
       ],
       "platform": "STONE",
       "estimates": [
@@ -9125,7 +9127,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 7
         }
       ],
       "maxPerCity": 1,
@@ -9138,9 +9140,9 @@
         "ai-authored/building-stage-study/landmark-aquarium-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "8beca77a84f27e265dfc598c7ed557b97fb00ba7501adc6f78ecf9958f71aae7",
-        "6a0ce86f6820a0373f3ce8a6055d45b89863b79f9f3742cf4d5f1594ed7a4308",
-        "0d41485e95c03029d580cbf8edf833887fa37e502665511020bcb0a2fdde7364"
+        "dbad377745feb4a715d6182adde03db93eca5cdc5785d477c1abcc946d35f470",
+        "3da526d85302141d28784e5cf38d136689dcaa682936bc171c6c9391eeb0a88d",
+        "ff3feeee44e39190c98a578008891031322a7c4a605f2c2278278599be074720"
       ]
     },
     {
@@ -9242,9 +9244,9 @@
         "ai-authored/building-stage-study/landmark-space-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "96469541101b943a4ab440162c1573559cf69269d49230dff77fcbe55faddc8c",
-        "6ea092edbf5481ecb548e9017fcb3e65fdfcde42707d3e1b5cfed34a2a36ef27",
-        "e50f5840cfd59d7dce748faf81ae8edac69a7d2c0e91f3157a33d223b139f8aa"
+        "cc86e4b7fd3343f66692b3ec6994fb650a60ed46cafe2b1801d36a282748d805",
+        "5765c3211c2cba9f3bfdb8288366495f6377ebc5a95cac4ed256186eede22366",
+        "0c401d62ebf192765e78de86a1b992ec3bbe09589d693b233dc6780341ef6212"
       ]
     },
     {
@@ -9294,9 +9296,9 @@
         "ai-authored/building-stage-study/landmark-grand-station-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "5f147795b1b56003b4397c4248e69471e95e06d2af025eb3d443f0f8528336c7",
-        "0671470197e5d19580319131e42a0aa6188ac9146ea0d6fd6b1b8649d252884a",
-        "5e6d00c04264d1a4226251198a8237afd844928bb0d2d25ca2955ecb4805aa16"
+        "a29ab2de6318fea7e682f682d43f457b609d45643b32f899860b7f3dc52f4548",
+        "b7b0e793d09de6625b5ec8e2a6850a3e09a2dc52b5046cd87702efe49b8dd133",
+        "8c89041063b34a6359db5a7551b07ce0d58fc5e80ed7ed1effa25bc0f82fb065"
       ]
     },
     {
@@ -9346,9 +9348,9 @@
         "ai-authored/building-stage-study/landmark-civic-arch-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "408124468e423ff0e0333f718344a12045a70a1cb08bb5a6d475284b729c4b6a",
-        "103f9b10fbef1f22117e8446b8628b2a6652558d5b1bbf90ddc4f748cafdd7df",
-        "88f7639b4dca76991812d04fe79e4116a740e29430c95b3e7f86584ee0a1917b"
+        "0b225d817e949d5645620a45fcb4edd000d2ebfd14782c4ca1f4c5633ae6a073",
+        "c3a1b0c7e7af1f54d2fa83d04cde195929416ff104118077fcbe29bcc51a715d",
+        "6be6990031e1f754efb34e18d84f68575dc720132c3d0e6cac7388ee0841b7c3"
       ]
     },
     {
@@ -9502,9 +9504,9 @@
         "ai-authored/building-stage-study/state-archive-core-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "424b54b6c1b1880d1a46ad36c11c59ac28a23cb1c8c23613bdcfd0e98cb621d2",
-        "ab97f08dd493559f72fa24cf0e72c123966f7064b9dde9df08278c6c4aff6ade",
-        "b529bf134e8419a2e25bedb8925c88450f6f833708fb0edc031c8833ca4384db"
+        "cef14f038f6fa0cc8bddbe2c5dc8df5db91df77e5af9451ece86e68ad0df5e7e",
+        "d73aad4bfa12dca259a25cf5ec24d65ae05a3ed118bed23b7d598cd6a37847ba",
+        "e5afc1fc3b0c06f53ec529b64008a36530e91d23bea702c772f5ce02b5635151"
       ]
     },
     {
@@ -9552,9 +9554,9 @@
         "ai-authored/building-stage-study/state-archive-wing-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0a1a52e6c163e4935f607a0cd91e39c5005690d2edaa95d2173a172385595369",
-        "b8bffc1a4b0d2cf081f678c40ac9d0fccd5f575ced52058a4273b4f15e909f7c",
-        "616445460e248b3b5795c408b7fe0ed89ffd5f837d6891f3e1c034369380beca"
+        "aea92ef4cadca5c02a36be730237fdf3d1d89e86057430e9810157d631f0614d",
+        "54ed3c3b1911e050c763a5d9ec0e689543e71bd5400922a402dcd396b9f43801",
+        "85cf97dc8ad0d47d7547ac44174d9d8bb782f9949e3a4616d365656c3fded110"
       ]
     },
     {
@@ -9602,9 +9604,9 @@
         "ai-authored/building-stage-study/state-archive-vault-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "bb4a2b8187508f8deb89295c9ab77ab567e8c2fc83abc65b54455107b3e5eb15",
-        "97e19bcfa35753538ec112f2efe14e6f85a3c97fdcd1436585b542dc6750ce0b",
-        "2dba1bf412c90ebaad2575e818083d90f2787f30de44db8ab8fa3b1a3ed35d77"
+        "72d1c1868646ae99ce819aeb42d7c5425c35422cd9d43c600759c261fc8fbed1",
+        "075b8e58a870d31417716142a9517b32d41320f7b62a7bf42ffdc347ee9c049f",
+        "dfd99423786abf51f0b62506bfd8863d71cd805a4d9f52bded2e639a1eaa9063"
       ]
     },
     {
@@ -9652,9 +9654,9 @@
         "ai-authored/building-stage-study/state-archive-tower-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "9a2f0d150e69042d0afafd9150ae12949ec7035e1d8cbb78039ddbd6e0a406c8",
-        "e2d14411735ad552a9f9f7ac6cf61dc9423b035ad5a6dbd492f0ae7e8f58894b",
-        "07fe3d694a8ce62c3c1bb9c8c21a6b1d2f1e6966fe7607aa78db3eadf8e02648"
+        "6dde2fd2bf5466a438b18df7dcd80b9bbc951a6804e963e82b6f8de10fee15af",
+        "4e58493856e745984f79f16014d673c568c5b848a04e3fef4f056d8542ce74f7",
+        "374eab1641c9cfe214da0b1aa49b44245396e7dc6f33414c6cf2b2318721ea10"
       ]
     }
   ]

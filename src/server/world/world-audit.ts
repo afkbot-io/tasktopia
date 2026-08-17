@@ -5,6 +5,7 @@ import { CHUNK_SIZE, type AppService } from "../app-service";
 import type { Db } from "../db";
 import { GRID_DIRECTIONS, cellKey, connected, contains, floorDiv, intersects, manhattan, neighbors4 } from "./grid";
 import { isWater, terrainAt } from "../../shared/world-terrain";
+import { bridgeComponentsWithoutTwoLandPortals } from "./road-geometry";
 import {
   buildingZoningRole,
   primaryZoningRole,
@@ -373,39 +374,8 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
     }
   }
 
-  const unvisitedBridges = new Set(roads.filter((road) => road.structure === "BRIDGE").map(cellKey));
-  while (unvisitedBridges.size > 0) {
-    const start = unvisitedBridges.values().next().value as string;
-    unvisitedBridges.delete(start);
-    const queue = [roadMap.get(start)!];
-    const landPortals = new Set<string>();
-    for (let index = 0; index < queue.length; index += 1) {
-      const current = queue[index]!;
-      for (const neighborCell of neighbors4(current)) {
-        const neighbor = roadMap.get(cellKey(neighborCell));
-        if (!neighbor) continue;
-        const neighborKey = cellKey(neighbor);
-        if (neighbor.structure === "ROAD") landPortals.add(neighborKey);
-        else if (unvisitedBridges.delete(neighborKey)) queue.push(neighbor);
-      }
-    }
-    let portalComponents = 0;
-    while (landPortals.size > 0) {
-      portalComponents += 1;
-      const portalStart = landPortals.values().next().value as string;
-      landPortals.delete(portalStart);
-      const portalQueue = [roadMap.get(portalStart)!];
-      for (let index = 0; index < portalQueue.length; index += 1) {
-        for (const neighbor of neighbors4(portalQueue[index]!)) {
-          const neighborKey = cellKey(neighbor);
-          if (!landPortals.delete(neighborKey)) continue;
-          portalQueue.push(roadMap.get(neighborKey)!);
-        }
-      }
-    }
-    if (portalComponents < 2) {
-      addViolation(violations, "BRIDGE_WITHOUT_LAND_PORTALS", `Мост ${start} не имеет двух опорных выходов на сушу`);
-    }
+  for (const component of bridgeComponentsWithoutTwoLandPortals(roads)) {
+    addViolation(violations, "BRIDGE_WITHOUT_LAND_PORTALS", `Мост ${component.values().next().value} не имеет двух опорных выходов на сушу`);
   }
 
   const taskStages = Object.fromEntries([1, 2, 3, 4, 5].map((stage) => [String(stage), tasks.filter((task) => task.stage === stage).length]));

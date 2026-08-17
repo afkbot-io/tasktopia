@@ -42,6 +42,21 @@ describe("V10 complex planner", () => {
       .toEqual([expect.objectContaining({ id: "lot", width: 5, taskId: "task", slotIndex: 0, slotCount: 1 })]);
   });
 
+  it("keeps a visual north setback reserved after placing a tall facade", () => {
+    const lot = {
+      id: "lot", origin: { x: 0, y: 0 }, width: 12, height: 28, taskId: null,
+      layoutVersion: "block-v3" as const, groupId: "group", role: "PRIMARY" as const,
+    };
+    expect(compactLotsAfterPlacement(
+      [lot],
+      lot.id,
+      { origin: { x: 0, y: 18 }, width: 12, height: 10, northSetback: 18 },
+      "tower",
+    )).toEqual([
+      expect.objectContaining({ id: "lot", origin: { x: 0, y: 0 }, width: 12, height: 28, taskId: "tower" }),
+    ]);
+  });
+
   it("reserves a lot large enough for the building that triggered growth", () => {
     const rect = { minX: 0, minY: 0, maxX: 35, maxY: 23 };
     const plan = planComplex({

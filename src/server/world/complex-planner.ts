@@ -67,7 +67,7 @@ const MIN_REUSABLE_LOT_WIDTH = 3;
 export function compactLotsAfterPlacement(
   lots: PlannedLotDto[],
   selectedLotId: string,
-  placement: { origin: Cell; width: number; height: number },
+  placement: { origin: Cell; width: number; height: number; northSetback?: number },
   taskId: string,
 ): PlannedLotDto[] {
   const next: PlannedLotDto[] = [];
@@ -84,9 +84,9 @@ export function compactLotsAfterPlacement(
     }
     next.push({
       ...lot,
-      origin: placement.origin,
+      origin: placement.northSetback ? { x: placement.origin.x, y: placement.origin.y - placement.northSetback } : placement.origin,
       width: placement.width,
-      height: placement.height,
+      height: placement.height + (placement.northSetback ?? 0),
       taskId,
       vacant: false,
     });

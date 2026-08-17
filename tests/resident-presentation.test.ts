@@ -7,24 +7,24 @@ import {
 } from "../src/client/resident-presentation";
 
 describe("resident presentation", () => {
-  it("cycles through three authored stride frames without rotating the resident sprite", () => {
+  it("returns through the passing pose between opposite foot contacts", () => {
     expect(residentWalkPresentation({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.10, 0)).toEqual({
       key: "walker-east-a",
       scaleX: 1,
       scaleY: 1,
     });
-    expect(residentWalkPresentation({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.40, 0)).toEqual({
+    expect(residentWalkPresentation({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.30, 0)).toEqual({
       key: "walker-east-b",
       scaleX: 1,
       scaleY: 1,
     });
-    expect(residentWalkPresentation({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.72, 0)).toEqual({
+    expect(residentWalkPresentation({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.55, 0)).toEqual({
       key: "walker-east-c",
       scaleX: 1,
       scaleY: 1,
     });
-    expect(residentWalkPresentation({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.72, 0)).toEqual({
-      key: "walker-west-c",
+    expect(residentWalkPresentation({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.80, 0)).toEqual({
+      key: "walker-west-b",
       scaleX: 1,
       scaleY: 1,
     });

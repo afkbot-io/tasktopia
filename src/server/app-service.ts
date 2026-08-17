@@ -74,7 +74,7 @@ import {
 } from "./world/grid";
 import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "../shared/world-terrain";
 import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
-import { roadCorridorBlockers, stampRoadCorridor } from "./world/road-geometry";
+import { bridgeComponentsWithoutTwoLandPortals, roadCorridorBlockers, stampRoadCorridor } from "./world/road-geometry";
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
 import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
 import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
@@ -84,6 +84,8 @@ import { projectCountryAtlas } from "./world/country-atlas";
 import {
   ROAD_WIDTH,
   archetypeAffinity,
+  buildingLotDepthCells,
+  buildingVisualSetbackCells,
   buildingZoningRole,
   buildSurfaceMap,
   buildingApronCells,
@@ -187,18 +189,25 @@ export function districtGrowthThicknesses(entry: BuildingCatalogEntry): number[]
 }
 
 export function complexMinimumRect(entry: BuildingCatalogEntry, targetLots: number): { width: number; height: number } {
+  const lotDepth = buildingLotDepthCells(entry);
   if (!entry.tags.includes("new-build")) {
-    return { width: Math.max(14, entry.footprint.width + 6), height: Math.max(12, entry.footprint.height + 6) };
+    return { width: Math.max(14, entry.footprint.width + 6), height: Math.max(12, lotDepth + 6) };
   }
   // A three/four-lot retry is a genuine point complex: one frontage row plus
   // the street and its margins. Keeping the two-tier dimensions here made the
   // documented 10 → 6 → 3 retry sequence retry the same oversized rectangle.
   if (targetLots <= 4) {
-    return { width: Math.max(14, entry.footprint.width + 8), height: Math.max(12, entry.footprint.height + 7) };
+    return { width: Math.max(14, entry.footprint.width + 8), height: Math.max(12, lotDepth + 7) };
+  }
+  if (buildingVisualSetbackCells(entry) > 0) {
+    return {
+      width: Math.max(14, Math.min(44, entry.footprint.width * 2 + 8)),
+      height: Math.max(12, lotDepth + 7),
+    };
   }
   return {
     width: Math.max(14, Math.min(44, entry.footprint.width * 2 + 8)),
-    height: Math.max(12, Math.min(34, entry.footprint.height * 2 + 9)),
+    height: Math.max(12, Math.min(54, lotDepth * 2 + 9)),
   };
 }
 
@@ -297,15 +306,26 @@ function taskDto(row: Row): TaskDto {
   };
 }
 
-/** Temporary construction fencing occupies one cell beyond unfinished work. */
+/** Protect authored screen mass as well as temporary construction fencing. */
 function taskOccupiedCells(task: TaskDto): Cell[] {
-  if (task.stage >= 5 || task.footprint.length === 0) return task.footprint;
+  if (task.footprint.length === 0) return task.footprint;
+  const entry = getBuilding(task.buildingType);
+  const northSetback = task.visualKind === "BUILDING" ? buildingVisualSetbackCells(entry) : 0;
+  const visual = task.visualKind === "BUILDING"
+    ? rectangleFootprint(
+        { x: task.origin.x, y: task.origin.y - northSetback },
+        entry.footprint.width,
+        entry.footprint.height + northSetback,
+      )
+    : task.footprint;
+  if (task.stage >= 5) return visual;
   const bounds = expandRect(boundsOf(task.footprint), 1);
-  return rectangleFootprint(
+  const construction = rectangleFootprint(
     { x: bounds.minX, y: bounds.minY },
     bounds.maxX - bounds.minX + 1,
     bounds.maxY - bounds.minY + 1,
   );
+  return [...new Map([...visual, ...construction].map((cell) => [cellKey(cell), cell])).values()];
 }
 
 function archiveStage(recordCount: number): CountryArchiveDto["stage"] {
@@ -1757,6 +1777,23 @@ export class AppService {
     this.surfaceCache.delete(countryId);
   }
 
+  /** Removes bridge caps that remain one-sided after a complete growth batch. */
+  async repairDanglingBridges(countryId: string): Promise<number> {
+    const roads = await this.roadCells(countryId);
+    const invalidKeys = new Set(bridgeComponentsWithoutTwoLandPortals(roads.values()).flatMap((component) => [...component]));
+    if (invalidKeys.size === 0) {
+      await this.recalculateRoadMasks(countryId);
+      return 0;
+    }
+    const removed = [...invalidKeys].map((key) => roads.get(key)).filter((road): road is RoadCellDto => Boolean(road));
+    const remove = this.db.prepare("DELETE FROM roads_v3 WHERE country_id = ? AND x = ? AND y = ?");
+    await Promise.all(removed.map((road) => remove.run(countryId, road.x, road.y)));
+    for (const key of invalidKeys) roads.delete(key);
+    await this.recalculateRoadMasks(countryId, removed.flatMap((road) => [road, ...neighbors4(road)]));
+    this.surfaceCache.delete(countryId);
+    return removed.length;
+  }
+
   private async recalculateRoadMasks(countryId: string, affected?: Iterable<Cell>): Promise<void> {
     const roads = await this.roadCells(countryId);
     const update = this.db.prepare("UPDATE roads_v3 SET mask = ? WHERE country_id = ? AND x = ? AND y = ?");
@@ -2968,11 +3005,12 @@ export class AppService {
       // discovering that every vacant bay is two cells too narrow and opening
       // a second road. Explicit statement buildings wider/deeper than the
       // common family still raise the envelope to their real footprint.
+      const lotDepth = buildingLotDepthCells(entry);
       const frontageMinimumLot = district.archetype === "PRIVATE"
-        ? { width: Math.max(8, entry.footprint.width), height: Math.max(5, entry.footprint.height) }
+        ? { width: Math.max(8, entry.footprint.width), height: Math.max(5, lotDepth) }
         : district.archetype === "NEW_BUILD"
-          ? { width: Math.max(14, entry.footprint.width), height: Math.max(12, entry.footprint.height) }
-          : entry.footprint;
+          ? { width: Math.max(14, entry.footprint.width), height: Math.max(12, lotDepth) }
+          : { width: entry.footprint.width, height: lotDepth };
       const planned = planComplex({
         districtId: district.id,
         complexIndex,
@@ -2983,6 +3021,7 @@ export class AppService {
         minimumLot: frontageMinimumLot,
         seed,
         denseGrid,
+        shape: buildingVisualSetbackCells(entry) > 0 ? "COMPLEX_ROW" : undefined,
         reserveSupport: !district.lots.some((lot) => lot.role === "SUPPORT"),
       });
       const plan = {
@@ -3004,7 +3043,7 @@ export class AppService {
       // but a service building may occupy a regular lot when no service slot
       // fits it — zoning guides placement, it never deadlocks growth.
       const fitsEntry = (lots: PlannedLotDto[]) => {
-        const fittingLots = lots.filter((lot) => entry.footprint.width <= lot.width && entry.footprint.height <= lot.height);
+        const fittingLots = lots.filter((lot) => entry.footprint.width <= lot.width && buildingLotDepthCells(entry) <= lot.height);
         const roleFitting = fittingLots.filter((lot) => lot.role === expectedRole);
         return strictRoles && expectedRole === "PRIMARY" ? roleFitting.length > 0 : fittingLots.length > 0;
       };
@@ -3770,8 +3809,11 @@ export class AppService {
     surfaces: Map<string, SurfaceCellDto>,
     occupied: Set<string>,
     districtCells?: Set<string>,
+    reserveVisualSetback = true,
   ): Promise<{ origin: Cell; footprint: Cell[]; entrance: Cell; accessPath: Cell[]; accessKind: TaskDto["accessKind"] } | null> {
-    if (lot.taskId || entry.footprint.width > lot.width || entry.footprint.height > lot.height) return null;
+    const northSetback = reserveVisualSetback ? buildingVisualSetbackCells(entry) : 0;
+    const requiredDepth = entry.footprint.height + northSetback;
+    if (lot.taskId || entry.footprint.width > lot.width || requiredDepth > lot.height) return null;
     const seed = Number((await this.countryRow(countryId)).seed);
     // The courtyard skeleton of a block-v3 lot is published lazily (only with a
     // committed building). Project it into a local surface copy so the access
@@ -3791,9 +3833,16 @@ export class AppService {
     for (let offsetY = 0; offsetY <= lot.height - entry.footprint.height; offsetY += 1) {
       for (let offsetX = 0; offsetX <= lot.width - entry.footprint.width; offsetX += 1) {
         const origin = { x: lot.origin.x + offsetX, y: lot.origin.y + offsetY };
+        if (offsetY < northSetback) continue;
         const footprint = rectangleFootprint(origin, entry.footprint.width, entry.footprint.height);
+        const visualReservation = rectangleFootprint(
+          { x: origin.x, y: origin.y - northSetback },
+          entry.footprint.width,
+          requiredDepth,
+        );
         const footprintKeys = new Set(footprint.map(cellKey));
-        if (footprint.some((cell) => roads.has(cellKey(cell)) || projected.has(cellKey(cell)) || occupied.has(cellKey(cell)))) continue;
+        if (visualReservation.some((cell) => occupied.has(cellKey(cell)))
+          || footprint.some((cell) => roads.has(cellKey(cell)) || projected.has(cellKey(cell)))) continue;
         const access = findAccessPlan({
           entry,
           origin,
@@ -3843,6 +3892,7 @@ export class AppService {
     surfaces: Map<string, SurfaceCellDto>,
     occupied: Set<string>,
     districtCells: Set<string>,
+    reserveVisualSetback = true,
   ): Promise<Array<{
                                 lot: PlannedLotDto;
                                 lots: PlannedLotDto[];
@@ -3852,7 +3902,8 @@ export class AppService {
     const expectedRole = this.lotRoleForEntry(district.archetype, entry);
     const occupiedPerGroup = new Map<string, number>();
     for (const lot of district.lots) if (lot.taskId && lot.groupId) occupiedPerGroup.set(lot.groupId, (occupiedPerGroup.get(lot.groupId) ?? 0) + 1);
-    const fitting = district.lots.filter((lot) => !lot.taskId && entry.footprint.width <= lot.width && entry.footprint.height <= lot.height);
+    const requiredDepth = entry.footprint.height + (reserveVisualSetback ? buildingVisualSetbackCells(entry) : 0);
+    const fitting = district.lots.filter((lot) => !lot.taskId && entry.footprint.width <= lot.width && requiredDepth <= lot.height);
     const roleCandidates = fitting.filter((lot) => lot.role === expectedRole);
     // Residential identity is a hard boundary for housing: a residential task
     // never consumes the few service slots of a strict district. A service
@@ -3876,7 +3927,7 @@ export class AppService {
       });
     const options: Awaited<ReturnType<AppService["taskPlacementOptions"]>> = [];
     for (let index = 0; index < candidates.length; index += 1) {
-      const placement = await this.placementInLot(countryId, candidates[index]!, entry, roads, surfaces, occupied, districtCells);
+      const placement = await this.placementInLot(countryId, candidates[index]!, entry, roads, surfaces, occupied, districtCells, reserveVisualSetback);
       if (placement) options.push({ lot: candidates[index]!, lots: district.lots, placement, order: index });
     }
     return options;
@@ -3960,7 +4011,7 @@ export class AppService {
                       // made dense blocks lose roughly a quarter of their lots.
                       // Roads and world features still use taskOccupiedCells(),
                       // so they cannot cut through an active construction site.
-                      const occupiedTasks = new Set((await this.listTasks(countryId)).flatMap((task) => task.footprint).map(cellKey));
+                      const occupiedTasks = new Set((await this.listTasks(countryId)).flatMap(taskOccupiedCells).map(cellKey));
                       // Walk the ranked candidates until one actually fits the
                       // ground. The favourite may be a tower with no lot wide
                       // enough; the next house down the list keeps growth alive
@@ -3997,6 +4048,7 @@ export class AppService {
                             surfaces,
                             occupiedTasks,
                             districtCellKeys,
+                            visualKind === "BUILDING",
                           );
                           if (options.length === 0) continue;
                           return {
@@ -4060,6 +4112,7 @@ export class AppService {
                           origin: selected.placement.origin,
                           width: entry.footprint.width,
                           height: entry.footprint.height,
+                          northSetback: visualKind === "BUILDING" ? buildingVisualSetbackCells(entry) : 0,
                         },
                         id,
                       );

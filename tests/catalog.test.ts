@@ -142,7 +142,7 @@ describe("active building catalog", () => {
       }
     }
     for (const key of ["fisher-north", "fisher-east", "fisher-south", "fisher-west", "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"]) {
-      expect(PROP_CATALOG[key]?.size, key).toEqual({ width: 8, height: 16 });
+      expect(PROP_CATALOG[key]?.size, key).toEqual({ width: 16, height: 24 });
       expect(PROP_CATALOG[key]?.footprint, key).toEqual({ width: 1, height: 1 });
     }
     expect(PROP_CATALOG["boat-horizontal-a"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
@@ -152,9 +152,9 @@ describe("active building catalog", () => {
   it("registers three authored animation frames for each bicycle and scooter view", () => {
     for (const family of ["cyclist", "scooter"] as const) {
       for (const frame of ["a", "b", "c"] as const) {
-        expect(PROP_CATALOG[`${family}-horizontal-${frame}`]).toMatchObject({ size: { width: 16, height: 16 }, footprint: { width: 2, height: 1 } });
-        expect(PROP_CATALOG[`${family}-north-${frame}`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
-        expect(PROP_CATALOG[`${family}-south-${frame}`]).toMatchObject({ size: { width: 8, height: 16 }, footprint: { width: 1, height: 1 } });
+        expect(PROP_CATALOG[`${family}-horizontal-${frame}`]).toMatchObject({ size: { width: 24, height: 24 }, footprint: { width: 2, height: 1 } });
+        expect(PROP_CATALOG[`${family}-north-${frame}`]).toMatchObject({ size: { width: 16, height: 24 }, footprint: { width: 1, height: 1 } });
+        expect(PROP_CATALOG[`${family}-south-${frame}`]).toMatchObject({ size: { width: 16, height: 24 }, footprint: { width: 1, height: 1 } });
       }
     }
   });

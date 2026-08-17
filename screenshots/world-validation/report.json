@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T09:25:34.092Z",
+  "generatedAt": "2026-08-14T10:22:42.601Z",
   "login": {
     "email": "world-validation@tasktopia.local"
   },
@@ -9,7 +9,7 @@
   "cities": [
     {
       "index": 1,
-      "id": "cc8693d5-4d6b-4687-ac4b-e48ecc41f438",
+      "id": "57dd8075-81ef-471d-b609-1cc3d4b0379f",
       "name": "Янтарный Берег",
       "morphology": "BALANCED",
       "districts": 2,
@@ -29,12 +29,12 @@
         "ARTERIAL": 138,
         "HIGHWAY": 197
       },
-      "generationMs": 11402,
+      "generationMs": 5710,
       "violations": []
     },
     {
       "index": 2,
-      "id": "4b2f60a4-ad12-430d-bebf-f15c6ee9d111",
+      "id": "926e4f6a-d2ed-4762-b330-afaa63e158d1",
       "name": "Северные Ворота",
       "morphology": "DENSE_CORE",
       "districts": 2,
@@ -54,12 +54,12 @@
         "ARTERIAL": 435,
         "HIGHWAY": 1737
       },
-      "generationMs": 11109,
+      "generationMs": 10512,
       "violations": []
     },
     {
       "index": 3,
-      "id": "29c2863b-10b5-4512-ac90-b2817657c2f9",
+      "id": "824c4a82-d4f7-435d-9fc4-0d75a2914b75",
       "name": "Озероград",
       "morphology": "GARDEN_CITY",
       "districts": 2,
@@ -79,12 +79,12 @@
         "ARTERIAL": 773,
         "HIGHWAY": 2962
       },
-      "generationMs": 13728,
+      "generationMs": 12724,
       "violations": []
     },
     {
       "index": 4,
-      "id": "ad15fd8a-48d9-47e2-9ab5-ef4ce376b21b",
+      "id": "848ab04e-2810-44fd-8e24-b3bf35260104",
       "name": "Каменный Мост",
       "morphology": "POLYCENTRIC",
       "districts": 2,
@@ -104,12 +104,12 @@
         "ARTERIAL": 920,
         "HIGHWAY": 3352
       },
-      "generationMs": 6965,
+      "generationMs": 6626,
       "violations": []
     },
     {
       "index": 5,
-      "id": "4cae13b4-bd3b-4be2-bfdd-2bee10eaa642",
+      "id": "befcc5b3-6d09-42f4-a8cd-d489ef3d59e3",
       "name": "Лазурная Долина",
       "morphology": "GARDEN_CITY",
       "districts": 2,
@@ -129,12 +129,12 @@
         "ARTERIAL": 1118,
         "HIGHWAY": 4037
       },
-      "generationMs": 10493,
+      "generationMs": 9906,
       "violations": []
     },
     {
       "index": 6,
-      "id": "827b634b-d24d-464a-ab7d-6eb54d059f50",
+      "id": "0a502355-92ed-4b4a-a1b8-940228ceafa0",
       "name": "Новый Горизонт",
       "morphology": "DENSE_CORE",
       "districts": 2,
@@ -154,12 +154,12 @@
         "ARTERIAL": 1256,
         "HIGHWAY": 4905
       },
-      "generationMs": 10090,
+      "generationMs": 9599,
       "violations": []
     },
     {
       "index": 7,
-      "id": "0c3d9390-5a29-42f0-b6b5-6845a6097b1f",
+      "id": "7391841f-c31e-4897-a281-a043a3fa77ef",
       "name": "Речной Порт",
       "morphology": "BALANCED",
       "districts": 2,
@@ -179,12 +179,12 @@
         "ARTERIAL": 1624,
         "HIGHWAY": 5500
       },
-      "generationMs": 10067,
+      "generationMs": 9420,
       "violations": []
     },
     {
       "index": 8,
-      "id": "b85b260f-e2f8-426d-81a9-4804560ea185",
+      "id": "9f058319-969a-4c13-9804-c523f84a40eb",
       "name": "Зелёный Квартал",
       "morphology": "GARDEN_CITY",
       "districts": 2,
@@ -204,12 +204,12 @@
         "ARTERIAL": 1759,
         "HIGHWAY": 7315
       },
-      "generationMs": 12478,
+      "generationMs": 11363,
       "violations": []
     },
     {
       "index": 9,
-      "id": "86c226a8-6e7f-43f5-b48d-67a5d884ae7d",
+      "id": "01924339-53ae-4780-b62b-d85cd424417e",
       "name": "Стальные Башни",
       "morphology": "POLYCENTRIC",
       "districts": 2,
@@ -229,12 +229,12 @@
         "ARTERIAL": 1900,
         "HIGHWAY": 9277
       },
-      "generationMs": 15529,
+      "generationMs": 14723,
       "violations": []
     },
     {
       "index": 10,
-      "id": "a1ecf779-210f-46bf-ac16-6bcad5dd13ea",
+      "id": "b5c48a82-64de-4ed4-8a1e-bc6a3b20f9c5",
       "name": "Город Будущего",
       "morphology": "DENSE_CORE",
       "districts": 4,
@@ -254,13 +254,13 @@
         "ARTERIAL": 2399,
         "HIGHWAY": 9765
       },
-      "generationMs": 22985,
+      "generationMs": 21810,
       "violations": []
     }
   ],
   "finalCity": {
     "index": 10,
-    "id": "a1ecf779-210f-46bf-ac16-6bcad5dd13ea",
+    "id": "b5c48a82-64de-4ed4-8a1e-bc6a3b20f9c5",
     "name": "Город Будущего",
     "morphology": "DENSE_CORE",
     "districts": [
@@ -310,7 +310,7 @@
       "ARTERIAL": 2399,
       "HIGHWAY": 9765
     },
-    "generationMs": 22985,
+    "generationMs": 21810,
     "violations": []
   }
 }

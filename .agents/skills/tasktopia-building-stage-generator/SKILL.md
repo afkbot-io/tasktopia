@@ -58,12 +58,18 @@ Generate in this order: `5 → 4 → 3`. If stage 5 is already approved, derive 
 
 ## Enforce stage meaning
 
-- Stage 4: retain 90–100% of final massing; expose unfinished panels and close scaffolding without changing the silhouette.
-- Stage 3: retain the same structural bay grid; show columns, floor slabs and core at 50–75% of final height.
+- Stage 4: target 90–100% of final occupied height and width. Preserve the
+  final extrema of integral masts, spires, antennae, towers and crowns; show
+  unfinished surfaces and close scaffolding without shortening the silhouette.
+  The verifier's 85–105% band is a hard tolerance, not an authoring target.
+- Stage 3: retain the same structural bay grid, but target 55–65% of final
+  occupied height. For a low-rise this normally means one structural storey
+  plus short rebar, not a nearly complete second storey. The verifier's
+  45–80% band is a hard tolerance, not an authoring target.
 - Before requesting stage 3, read the verifier's `authoringFrameNormalized`
   from the accepted stage 5. State the finished top and bottom fractions in the
   prompt and require stage 3 to share the exact finished bottom fraction while
-  starting lower in the canvas. A reliable target is `65%` of the finished
+  starting lower in the canvas. A reliable target is `60%` of the finished
   occupied height. Empty magenta/transparent margin must remain above the
   partial frame; asking only for a "half-built house" is not precise enough.
 - If the first generated frame is too tall or too short, edit that authored
@@ -79,6 +85,11 @@ Generate in this order: `5 → 4 → 3`. If stage 5 is already approved, derive 
 ## Verify after every request
 
 Run `$tasktopia-building-stage-verifier` immediately after each image. Reject and regenerate instead of repairing geometry with stretching, procedural repainting or manual perspective edits.
+
+Read `generationGuidance` and the per-stage ratios from `report.json` after
+every run. Name the failed invariant and measured percentage in the next edit
+prompt. Never loosen the geometry contract to accept a draft. Keep rejected
+drafts outside the repository.
 
 Do not accept a stage when:
 

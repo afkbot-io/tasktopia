@@ -4,6 +4,7 @@ import type { CityDto, DistrictDto, RoadCellDto, TaskDto, WorldFeatureDto } from
 import { greenAreaDevelopmentStage } from "../src/shared/green-area";
 import {
   archetypeAffinity,
+  buildingVisualSetbackCells,
   buildingCompatibleWithArchetype,
   buildingZoningRole,
   buildSurfaceMap,
@@ -44,6 +45,12 @@ function placedTask(id: string, origin: { x: number; y: number }, width: number,
 }
 
 describe("V6 city morphology and access planning", () => {
+  it("derives a north-side lot setback from the finished opaque facade", () => {
+    expect(buildingVisualSetbackCells(getBuilding("highrise-glass"))).toBe(18);
+    expect(buildingVisualSetbackCells(getBuilding("civic-library"))).toBe(6);
+    expect(buildingVisualSetbackCells(getBuilding("house-cottage"))).toBe(0);
+  });
+
   it("paves only free orthogonal apron cells around task buildings", () => {
     const task = placedTask("building", { x: 2, y: 2 }, 3, 2);
     const blocked = new Set(task.footprint.map((cell) => `${cell.x},${cell.y}`));

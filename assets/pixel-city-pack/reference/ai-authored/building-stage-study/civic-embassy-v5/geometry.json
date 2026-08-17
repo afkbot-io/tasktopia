@@ -9,5 +9,9 @@
   "constructionClearanceCells": 1,
   "entrance": { "side": "S", "offset": 6 },
   "doorSizePx": [16, 16],
+  "doorLeafSizePx": [12, 14],
+  "doorBottomInsetPx": 0,
+  "finishedOccupiedWidthPxRange": [88, 96],
+  "finishedOccupiedHeightPxRange": [72, 88],
   "sitePreviewCells": [16, 16]
 }

@@ -61,12 +61,16 @@ export function expandRect(rect: Rect, amount: number): Rect {
 
 export function boundsOf(cells: Cell[]): Rect {
   if (cells.length === 0) throw new Error("Cannot calculate bounds of empty cells");
-  return {
-    minX: Math.min(...cells.map((cell) => cell.x)),
-    minY: Math.min(...cells.map((cell) => cell.y)),
-    maxX: Math.max(...cells.map((cell) => cell.x)),
-    maxY: Math.max(...cells.map((cell) => cell.y)),
-  };
+  const first = cells[0]!;
+  const bounds = { minX: first.x, minY: first.y, maxX: first.x, maxY: first.y };
+  for (let index = 1; index < cells.length; index += 1) {
+    const cell = cells[index]!;
+    if (cell.x < bounds.minX) bounds.minX = cell.x;
+    if (cell.y < bounds.minY) bounds.minY = cell.y;
+    if (cell.x > bounds.maxX) bounds.maxX = cell.x;
+    if (cell.y > bounds.maxY) bounds.maxY = cell.y;
+  }
+  return bounds;
 }
 
 export function connected(cells: Cell[]): boolean {

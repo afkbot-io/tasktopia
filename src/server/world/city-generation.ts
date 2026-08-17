@@ -23,6 +23,23 @@ export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
   HIGHWAY: 3,
 };
 
+/**
+ * Screen-space facades rise north from their south ground anchor. Reserve the
+ * opaque height that is not already represented by the physical lot depth so
+ * another frontage or street cannot be planned underneath the artwork.
+ */
+export function buildingVisualSetbackCells(entry: BuildingCatalogEntry): number {
+  const finished = entry.stageOpaqueBounds[4]!;
+  const opaqueHeight = Math.max(0, finished.bottom - finished.top);
+  const projected = Math.max(0, Math.ceil((opaqueHeight - entry.footprint.height * 8) / 8));
+  if (entry.category === "HIGHRISE" || entry.category === "CIVIC" || entry.spriteSize.height >= 200) return projected;
+  return 0;
+}
+
+export function buildingLotDepthCells(entry: BuildingCatalogEntry): number {
+  return entry.footprint.height + buildingVisualSetbackCells(entry);
+}
+
 export function findAreaAccessPath(input: {
   allowed: ReadonlySet<string>;
   footprint: Cell[];

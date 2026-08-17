@@ -75,3 +75,24 @@ npm run test:db:stop
 
 Подробный контракт, телеметрия и принятые показатели описаны в
 [`docs/qa/WORLD-VALIDATION.md`](qa/WORLD-VALIDATION.md).
+
+## Визуальная проверка мегаполиса
+
+Сценарий мегаполиса создаёт один плотный город из 100 задач в трёх районах,
+обязательно размещает все 52 типа жилых домов и сохраняет машинный отчёт и два
+браузерных скриншота в `screenshots/megacity-validation/`:
+
+```bash
+npm run test:db:start
+npm run seed:megacity-validation
+MEGACITY_VALIDATION_SCREENSHOT_DIR=screenshots/megacity-validation \
+E2E_BASE_URL=http://127.0.0.1:5197 E2E_SEED_COMMAND=true \
+npx playwright test tests/e2e/megacity-validation.spec.ts --project=chromium --workers=1
+npm run test:db:stop
+```
+
+Серверный отчёт должен содержать `tasks: 100`,
+`allHouseTypesCovered: true`, пустые `blockingVisualBuildingOverlaps` и
+`violations`. На скриншотах отдельно проверить, что высокие и общественные
+фасады не накрывают соседний ряд зданий или дорогу, а стадии 3–5 сохраняют одну
+фронтально-верхнюю проекцию.

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Cell } from "../src/shared/contracts";
+import type { Cell, RoadCellDto } from "../src/shared/contracts";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
 import { roadBandRole, roadClassSupportsVehicle } from "../src/shared/road-profile";
-import { centeredRoadOffsets, roadCorridorBlockers, stampRoadCorridor } from "../src/server/world/road-geometry";
+import { bridgeComponentsWithoutTwoLandPortals, centeredRoadOffsets, roadCorridorBlockers, stampRoadCorridor } from "../src/server/world/road-geometry";
 import { cellKey, orthogonalPath } from "../src/server/world/grid";
 
 function keys(cells: Cell[]): Set<string> {
@@ -10,6 +10,18 @@ function keys(cells: Cell[]): Set<string> {
 }
 
 describe("canonical road geometry", () => {
+  it("detects a multi-lane bridge cap with only one land portal", () => {
+    const road = (x: number, y: number, structure: RoadCellDto["structure"]): RoadCellDto => ({
+      x, y, structure, roadClass: "COLLECTOR", mask: 0,
+    });
+    const westBank = [-1, 0, 1].map((y) => road(0, y, "ROAD"));
+    const bridge = [1, 2, 3].flatMap((x) => [-1, 0, 1].map((y) => road(x, y, "BRIDGE")));
+
+    expect(bridgeComponentsWithoutTwoLandPortals([...westBank, ...bridge])).toEqual([new Set(bridge.map(cellKey))]);
+    const eastBank = [-1, 0, 1].map((y) => road(4, y, "ROAD"));
+    expect(bridgeComponentsWithoutTwoLandPortals([...westBank, ...bridge, ...eastBank])).toEqual([]);
+  });
+
   it("uses two travel cells locally and a marked median in larger streets", () => {
     expect(ROAD_WIDTH.LOCAL).toBe(2);
     expect(ROAD_WIDTH.COLLECTOR).toBe(3);

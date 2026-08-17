@@ -23,7 +23,9 @@ export function residentWalkPresentation(
   phase: number,
 ): { key: ResidentWalkKey; scaleX: number; scaleY: number } {
   const normalized = ((progress + phase) % 1 + 1) % 1;
-  const frame = (["a", "b", "c"] as const)[Math.min(2, Math.floor(normalized * 3))]!;
+  // A complete gait returns through the passing pose. Jumping directly from
+  // opposite contact C back to contact A makes both legs snap at once.
+  const frame = (["a", "b", "c", "b"] as const)[Math.min(3, Math.floor(normalized * 4))]!;
   return {
     key: `walker-${residentDirection(current, next)}-${frame}`,
     scaleX: 1,

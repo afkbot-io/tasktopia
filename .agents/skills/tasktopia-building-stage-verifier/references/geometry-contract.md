@@ -109,6 +109,11 @@ Compare normalized opaque bounds against stage 5:
 | 4 | 85–110% of final | 85–105% of final | final silhouette retained under scaffolding |
 | 5 | category target | 94–100% for high-rise | finished, no construction remnants |
 
+The table contains rejection limits. Image prompts must leave margin for
+raster rounding: target 55–65% final height for stage 3 and 90–100% for stage
+4. Stage 4 must preserve silhouette-defining masts, spires, antennae, towers
+and crowns even when their materials remain unfinished.
+
 Across all stages require horizontal-centre drift ≤8 px and baseline drift ≤1 px. The structure layer must not include the external fence or pavement.
 
 Stage 5 owns the immutable normalized authoring window. Record its source-space

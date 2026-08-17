@@ -49,6 +49,10 @@ catalog work must use the shared construction-layout tests instead. The verifier
 - For compact/private houses, require building-specific
   `finishedOccupiedWidthPxRange` and `finishedOccupiedHeightPxRange`. Reject a
   materially mismatched source and regenerate it instead of scaling one axis.
+- Treat 45–80% (stage 3) and 85–105% (stage 4) as hard rejection bands.
+  Author toward the safer 55–65% and 90–100% bands respectively. Read the
+  exact measured ratios and `generationGuidance` from `report.json` before a
+  targeted regeneration; never change the contract to fit a failed draft.
 
 ## Review every stage separately
 
@@ -82,3 +86,8 @@ Do not approve from a combined sheet. Review and report each stage as an indepen
 ## Finish
 
 Report exact occupied bounds, centre drift, baseline drift, stage coverage, construction envelope, projected-depth ratio and all remaining manual checks. An asset is accepted only when both automated and visual gates pass.
+
+When integrating a batch, run `npm run assets:build` to completion and only
+then run `npm run assets:verify`. Never execute the builder and verifier in
+parallel: the builder rewrites runtime files and a concurrent audit can report
+transient missing assets.

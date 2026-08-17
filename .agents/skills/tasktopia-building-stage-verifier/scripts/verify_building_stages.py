@@ -488,20 +488,50 @@ def validate_stages(geometry: Geometry, metrics: dict[int, dict[str, Any]]) -> t
 
     stage4 = metrics.get(4)
     if stage4 and not (0.85 * final_width <= stage4["opaqueWidthPx"] <= 1.10 * final_width):
-        errors.append("stage 4: occupied width must remain within 85–110% of final")
+        ratio = float(stage4["opaqueWidthPx"]) / final_width
+        errors.append(
+            f"stage 4: occupied width is {ratio:.1%} of final; must remain within 85–110%"
+        )
     # One pixel is an intentional raster tolerance: at compact-house scale a
     # scaffold cap cannot be expressed as a fractional 5% allowance.
     if stage4 and not (0.85 * final_height <= stage4["opaqueHeightPx"] <= 1.05 * final_height + 1):
-        errors.append("stage 4: occupied height must remain within 85–105% of final")
+        ratio = float(stage4["opaqueHeightPx"]) / final_height
+        errors.append(
+            f"stage 4: occupied height is {ratio:.1%} of final; must remain within 85–105%"
+        )
+    if stage4:
+        width_ratio = float(stage4["opaqueWidthPx"]) / final_width
+        height_ratio = float(stage4["opaqueHeightPx"]) / final_height
+        if not 0.90 <= width_ratio <= 1.00:
+            warnings.append(
+                f"stage 4: occupied width is {width_ratio:.1%} of final; "
+                "the preferred authoring target is 90–100%"
+            )
+        if not 0.90 <= height_ratio <= 1.00:
+            warnings.append(
+                f"stage 4: occupied height is {height_ratio:.1%} of final; "
+                "the preferred authoring target is 90–100%; keep scaffolds and poles inside the final extrema"
+            )
 
     stage3 = metrics.get(3)
     if stage3 and not (0.60 * final_width <= stage3["opaqueWidthPx"] <= 1.10 * final_width):
-        errors.append("stage 3: occupied width must remain within 60–110% of final")
+        ratio = float(stage3["opaqueWidthPx"]) / final_width
+        errors.append(
+            f"stage 3: occupied width is {ratio:.1%} of final; must remain within 60–110%"
+        )
     stage3_max_height_ratio = 0.80
     if stage3 and not (0.45 * final_height <= stage3["opaqueHeightPx"] <= stage3_max_height_ratio * final_height):
+        ratio = float(stage3["opaqueHeightPx"]) / final_height
         errors.append(
-            "stage 3: occupied height must remain within 45–80% of final"
+            f"stage 3: occupied height is {ratio:.1%} of final; must remain within 45–80%"
         )
+    if stage3:
+        ratio = float(stage3["opaqueHeightPx"]) / final_height
+        if not 0.55 <= ratio <= 0.65:
+            warnings.append(
+                f"stage 3: occupied height is {ratio:.1%} of final; "
+                "the preferred authoring target is 55–65%; do not use long rebar to fake structural height"
+            )
 
     stage2 = metrics.get(2)
     if stage2 and not (0.90 * final_width <= stage2["opaqueWidthPx"] <= 1.10 * final_width):
@@ -515,6 +545,41 @@ def validate_stages(geometry: Geometry, metrics: dict[int, dict[str, Any]]) -> t
     if stage1 and stage1["opaqueHeightPx"] > 0.35 * final_height:
         errors.append("stage 1: prepared site is taller than 35% of the final building")
     return errors, warnings
+
+
+def generation_guidance(metrics: dict[int, dict[str, Any]]) -> dict[str, Any]:
+    """Expose authoring targets separately from hard verifier tolerances."""
+    final = metrics.get(5)
+    ratios: dict[str, dict[str, float]] = {}
+    if final is not None:
+        final_width = float(final["opaqueWidthPx"])
+        final_height = float(final["opaqueHeightPx"])
+        for stage in (3, 4):
+            current = metrics.get(stage)
+            if current is None:
+                continue
+            ratios[str(stage)] = {
+                "widthToFinal": round(float(current["opaqueWidthPx"]) / final_width, 4),
+                "heightToFinal": round(float(current["opaqueHeightPx"]) / final_height, 4),
+            }
+    return {
+        "recommendedAuthoringTargets": {
+            "stage3HeightToFinal": [0.55, 0.65],
+            "stage4HeightToFinal": [0.90, 1.00],
+            "stage4WidthToFinal": [0.90, 1.00],
+        },
+        "hardVerifierBands": {
+            "stage3HeightToFinal": [0.45, 0.80],
+            "stage3WidthToFinal": [0.60, 1.10],
+            "stage4HeightToFinal": [0.85, 1.05],
+            "stage4WidthToFinal": [0.85, 1.10],
+        },
+        "measuredRatios": ratios,
+        "retryRule": (
+            "Regenerate the authored stage using its measured ratio and failed invariant; "
+            "never stretch, crop, translate, or loosen the geometry contract."
+        ),
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -609,6 +674,7 @@ def main() -> None:
         "outputs": {str(stage): output for stage, output in sorted(outputs.items())},
         "errors": errors,
         "warnings": warnings,
+        "generationGuidance": generation_guidance(metrics),
         "manualChecks": [
             "strict frontal-top projection; no side or isometric facade",
             "roof, porch, steps, canopy, balconies, podium, setbacks and crown share one compressed top-plane direction",

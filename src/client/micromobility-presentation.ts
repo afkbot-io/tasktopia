@@ -13,7 +13,9 @@ export function micromobilityPresentation(kind: MicromobilityKind, current: Cell
   scaleX: number;
   scaleY: number;
 } {
-  const direction = vehiclePresentation(current, next, 0.85);
+  // Rider sprites are authored against the same 18 px adult scale as walkers.
+  // Runtime shrinking made riders look like children next to pedestrians.
+  const direction = vehiclePresentation(current, next, 1);
   const frame = (["a", "b", "c"] as const)[Math.abs(Math.floor(animationFrame)) % 3]!;
   return {
     key: `${kind}-${direction.view}-${frame}`,
