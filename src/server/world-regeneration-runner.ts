@@ -23,8 +23,9 @@ export async function reconcileWorldRegeneration<T>(
   maxAttempts: number,
   operation: (attempt: number) => Promise<T>,
   onRetry: (attempt: number, error: Error) => void = () => undefined,
+  force = false,
 ): Promise<{ status: "preserved" } | { status: "regenerated"; attempt: number; value: T }> {
-  if (violationsBefore.length === 0) return { status: "preserved" };
+  if (!force && violationsBefore.length === 0) return { status: "preserved" };
   const regenerated = await retryWorldRegeneration(maxAttempts, operation, onRetry);
   return { status: "regenerated", ...regenerated };
 }

@@ -15,6 +15,11 @@ async function main(): Promise<void> {
   if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10) {
     throw new Error("REGENERATION_MAX_ATTEMPTS must be an integer from 1 to 10");
   }
+  const forceValue = process.env.REGENERATION_FORCE?.trim() ?? "0";
+  if (forceValue !== "0" && forceValue !== "1") {
+    throw new Error("REGENERATION_FORCE must be 0 or 1");
+  }
+  const force = forceValue === "1";
 
   const db = await createDb(config.databaseUrl);
   const service = new AppService(db);
@@ -51,7 +56,7 @@ async function main(): Promise<void> {
             maxAttempts,
             error: error.message,
           }));
-        });
+        }, force);
         if (reconciliation.status === "preserved") {
           console.log(JSON.stringify({
             event: "world-regeneration.preserved",

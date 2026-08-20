@@ -169,7 +169,8 @@ runtime и proxy-маршрут с таймаутом 15 минут. Полны�
 
 ```bash
 REGENERATION_RUN_ID="release-$(git rev-parse --short HEAD)" \
-docker compose run --rm -e REGENERATION_RUN_ID world npm run worlds:regenerate
+REGENERATION_FORCE=1 \
+docker compose run --rm -e REGENERATION_RUN_ID -e REGENERATION_FORCE world npm run worlds:regenerate
 ```
 
 Команда обрабатывает страны по одной: audit-clean миры сохраняет, а некорректные

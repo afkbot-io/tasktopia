@@ -24,4 +24,15 @@ describe("world regeneration runner", () => {
     await expect(reconcileWorldRegeneration([], 3, operation)).resolves.toEqual({ status: "preserved" });
     expect(operation).not.toHaveBeenCalled();
   });
+
+  it("regenerates an audit-clean world when a release migration forces replay", async () => {
+    const operation = vi.fn(async () => ({ seed: 84 }));
+
+    await expect(reconcileWorldRegeneration([], 3, operation, undefined, true)).resolves.toEqual({
+      status: "regenerated",
+      attempt: 1,
+      value: { seed: 84 },
+    });
+    expect(operation).toHaveBeenCalledOnce();
+  });
 });
