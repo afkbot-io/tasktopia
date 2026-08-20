@@ -263,4 +263,21 @@ describe("country atlas projection", () => {
     const byAtlasX = [...atlas.cities].sort((left, right) => left.atlasCenter.x - right.atlasCenter.x).map((entry) => entry.id);
     expect(byAtlasX).toEqual(bySourceX);
   });
+
+  it("projects districts with production-scale cell collections without overflowing the call stack", () => {
+    const repeatedCells = Array.from({ length: 200_000 }, (_, index) => ({
+      x: index % 2,
+      y: index % 3,
+    }));
+
+    const atlas = projectCountryAtlas({
+      cities: [{
+        ...city("large-district", { x: 0, y: 0 }, { width: 1024, height: 1024 }),
+        districts: [{ id: "dense", cells: repeatedCells }],
+      }],
+    });
+
+    expect(atlas.cities).toHaveLength(1);
+    expect(atlas.cities[0]!.districts).toMatchObject([{ id: "dense" }]);
+  });
 });

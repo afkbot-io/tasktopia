@@ -143,12 +143,17 @@ function compareCells(left: Cell, right: Cell): number {
 }
 
 function cellsBounds(cells: Cell[]): Rect {
-  return {
-    minX: Math.min(...cells.map((cell) => cell.x)),
-    minY: Math.min(...cells.map((cell) => cell.y)),
-    maxX: Math.max(...cells.map((cell) => cell.x)),
-    maxY: Math.max(...cells.map((cell) => cell.y)),
-  };
+  const first = cells[0];
+  if (!first) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+  const bounds = { minX: first.x, minY: first.y, maxX: first.x, maxY: first.y };
+  for (let index = 1; index < cells.length; index += 1) {
+    const cell = cells[index]!;
+    if (cell.x < bounds.minX) bounds.minX = cell.x;
+    if (cell.y < bounds.minY) bounds.minY = cell.y;
+    if (cell.x > bounds.maxX) bounds.maxX = cell.x;
+    if (cell.y > bounds.maxY) bounds.maxY = cell.y;
+  }
+  return bounds;
 }
 
 function bufferedCutout(cells: Cell[]): Cell[] {
