@@ -49,6 +49,7 @@
 2. Запустить долгий MCP mutation и одновременно открыть `/health`, `/api/bootstrap` и существующий viewport: web должен отвечать независимо от загрузки MCP event loop.
 3. После MCP mutation убедиться, что web получает realtime event через PostgreSQL relay и обновляет только затронутую страну.
 4. Остановить контейнер `mcp`: web-карта и Socket.IO должны продолжить работу. Остановить `world`: обычный API и MCP должны продолжить работу; недоступна только полная перегенерация.
+5. На копии production-БД запустить batch replay с `REGENERATION_MAX_ATTEMPTS=3`: failed layout должен дать `world-regeneration.retrying`, успешная страна — `completed` с числом `attempts`, а audit после commit — 0 нарушений.
 
 Автоматические браузерные проверки находятся в `tests/e2e/chunk-pipeline.spec.ts` и `tests/e2e/map-streaming.spec.ts`.
 

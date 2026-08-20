@@ -165,6 +165,17 @@ runtime и proxy-маршрут с таймаутом 15 минут. Полны�
 страны может занимать несколько минут; не заменяйте этот маршрут общим
 75-секундным лимитом API.
 
+Для release-wide replay запускайте CLI внутри отдельного одноразового world-контейнера:
+
+```bash
+REGENERATION_RUN_ID="release-$(git rev-parse --short HEAD)" \
+docker compose run --rm -e REGENERATION_RUN_ID world npm run worlds:regenerate
+```
+
+Команда обрабатывает страны по одной, валидирует новую геометрию до commit и по
+умолчанию повторяет failed layout до трёх раз. При необходимости передайте
+`-e REGENERATION_MAX_ATTEMPTS=5`; не запускайте два batch replay одновременно.
+
 Bootstrap-конфиг нужен только до первого выпуска сертификата. После него
 финальный конфиг использует сертификат из `/etc/letsencrypt/live/tasktopia.online`,
 перенаправляет HTTP на HTTPS, а системный timer Certbot продлевает сертификат.
