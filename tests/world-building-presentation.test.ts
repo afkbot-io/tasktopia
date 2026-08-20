@@ -4,6 +4,7 @@ import {
   buildingInteractiveBounds,
   buildingPlatformPresentation,
   taskPlatformCellPresentation,
+  taskPlatformCells,
   taskPlatformPresentation,
 } from "../src/client/world-building-presentation";
 import { getBuilding } from "../src/shared/catalog";
@@ -47,6 +48,23 @@ describe("building interactive bounds", () => {
 });
 
 describe("building platform presentation", () => {
+  it("keeps an unfinished construction platform as shallow as its visible site", () => {
+    const footprint = Array.from({ length: 12 }, (_, row) =>
+      Array.from({ length: 16 }, (_unused, column) => ({ x: 10 + column, y: 20 + row })),
+    ).flat();
+
+    const cells = taskPlatformCells(footprint, 1);
+    expect(new Set(cells.map((cell) => cell.y))).toEqual(new Set([27, 28, 29, 30, 31]));
+    expect(cells).toHaveLength(16 * 5);
+  });
+
+  it("keeps the complete physical platform after the facade appears", () => {
+    const footprint = Array.from({ length: 6 }, (_, row) =>
+      Array.from({ length: 10 }, (_unused, column) => ({ x: column, y: row })),
+    ).flat();
+    expect(taskPlatformCells(footprint, 3)).toEqual(footprint);
+  });
+
   it("keeps world buildings on the platform declared by their catalog entry", () => {
     expect(buildingPlatformPresentation("YARD")).toEqual({ family: "terrain", key: "GRASS", variant: 1 });
     expect(buildingPlatformPresentation("STONE")).toEqual({ family: "tile", key: "pavement" });

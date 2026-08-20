@@ -1,5 +1,5 @@
 import type { Cell, Rect, TerrainKind } from "../../shared/contracts";
-import { COUNTRY_ATLAS_HEX_RADIUS_CELLS } from "../../shared/country-atlas-contract";
+import { COUNTRY_ATLAS_TERRAIN_TILE_CELLS } from "../../shared/country-atlas-contract";
 import { aStarPath, cellKey, intersects } from "./grid";
 
 const CELL_SIZE_PX = 8;
@@ -13,8 +13,8 @@ const LABEL_GAP_CELLS = 1;
 const DISTANCE_COMPRESSION = 0.12;
 const DISTRICT_DISTANCE_COMPRESSION = 0.55;
 const DISTRICT_GAP_CELLS = 1;
-// The collision boxes and labels add proportionally more height than width.
-// Aim wider than the final viewport so the settled atlas lands near 16:10.
+// Labels and collision reservations add much more height than the source
+// constellation. This correction target settles to a normal landscape atlas.
 const TARGET_ATLAS_ASPECT = 5.5;
 const SCALE_TIERS = [0.5, 0.375, 0.25, 0.125, 0.0625] as const;
 const CITY_CUTOUT_BUFFER_CELLS = 2;
@@ -66,8 +66,9 @@ export type ProjectedAtlasTerrainCell = {
 
 export type ProjectedAtlasMacroTerrain = {
   id: string;
-  q: number;
-  r: number;
+  atlasOrigin: Cell;
+  widthCells: number;
+  heightCells: number;
   atlasCenter: { x: number; y: number };
   sourceCenter: Cell;
   terrain: TerrainKind;
@@ -206,17 +207,15 @@ function macroTerrain(
     x: atlasSpan.x > 0 ? sourceSpan.x / atlasSpan.x : 1 / DISTANCE_COMPRESSION,
     y: atlasSpan.y > 0 ? sourceSpan.y / atlasSpan.y : 1 / DISTANCE_COMPRESSION,
   };
-  const radius = COUNTRY_ATLAS_HEX_RADIUS_CELLS;
-  const horizontalStep = radius * 1.5;
-  const verticalStep = Math.sqrt(3) * radius;
-  const columns = Math.ceil((bounds.maxX - bounds.minX + radius * 2) / horizontalStep) + 1;
-  const rows = Math.ceil((bounds.maxY - bounds.minY + radius * 2) / verticalStep) + 1;
+  const tileSize = COUNTRY_ATLAS_TERRAIN_TILE_CELLS;
   const result: ProjectedAtlasMacroTerrain[] = [];
-  for (let q = 0; q < columns; q += 1) {
-    for (let r = 0; r < rows; r += 1) {
+  for (let y = bounds.minY; y <= bounds.maxY; y += tileSize) {
+    for (let x = bounds.minX; x <= bounds.maxX; x += tileSize) {
+      const widthCells = Math.min(tileSize, bounds.maxX - x + 1);
+      const heightCells = Math.min(tileSize, bounds.maxY - y + 1);
       const atlasCenter = {
-        x: bounds.minX - radius + q * horizontalStep,
-        y: bounds.minY - radius + r * verticalStep + (q % 2) * verticalStep / 2,
+        x: x + widthCells / 2,
+        y: y + heightCells / 2,
       };
       let totalWeight = 0;
       let residualX = 0;
@@ -232,7 +231,15 @@ function macroTerrain(
         x: Math.round(atlasCenter.x * sourcePerAtlas.x + residualX / totalWeight),
         y: Math.round(atlasCenter.y * sourcePerAtlas.y + residualY / totalWeight),
       };
-      result.push({ id: `${q}:${r}`, q, r, atlasCenter, sourceCenter, ...sampler(sourceCenter) });
+      result.push({
+        id: `${x}:${y}`,
+        atlasOrigin: { x, y },
+        widthCells,
+        heightCells,
+        atlasCenter,
+        sourceCenter,
+        ...sampler(sourceCenter),
+      });
     }
   }
   return result;

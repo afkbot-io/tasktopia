@@ -172,12 +172,12 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .world-empty .primary-button { margin-top: 4px; pointer-events: auto; }
 
 /* ── Compressed country atlas ─────────────────────────────── */
-.country-atlas { position: absolute; inset: 0; overflow: hidden; background: #152b2b; }
+.country-atlas { position: absolute; inset: 0; overflow: hidden; background-color: #557148; background-image: linear-gradient(45deg, #5e784b 25%, transparent 25%, transparent 75%, #5e784b 75%), linear-gradient(45deg, #5e784b 25%, #526d45 25%, #526d45 75%, #5e784b 75%); background-position: 0 0, 16px 16px; background-size: 32px 32px; }
 .country-atlas svg { display: block; width: 100%; height: 100%; touch-action: none; }
 .atlas-pixel { image-rendering: pixelated; }
 .atlas-ground { fill: #29463d; }
-.atlas-macro-terrain polygon { stroke: #102a29; stroke-width: .45px; stroke-opacity: .1; vector-effect: non-scaling-stroke; }
-.atlas-macro-terrain polygon[data-terrain="DEEP_WATER"], .atlas-macro-terrain polygon[data-terrain="SHALLOW_WATER"] { stroke: #b5d4ca; stroke-opacity: .12; }
+.atlas-macro-terrain rect { stroke: #102a29; stroke-width: .35px; stroke-opacity: .12; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
+.atlas-macro-terrain rect[data-terrain="DEEP_WATER"], .atlas-macro-terrain rect[data-terrain="SHALLOW_WATER"] { stroke: #b5d4ca; stroke-opacity: .14; }
 .atlas-city { cursor: pointer; }
 .atlas-city-cutout-shadow rect { fill: #071719; opacity: .72; }
 .atlas-city-cutout-fallback { fill: #557148; }
@@ -198,8 +198,15 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-district[data-status="ACTIVE"] .atlas-district-state-outline { filter: brightness(1.18) saturate(1.12); opacity: 1; }
 .atlas-district[data-hovered="true"] .atlas-district-state-outline { filter: brightness(1.32) saturate(1.08); opacity: 1; }
 .atlas-local-infrastructure { pointer-events: none; }
+.atlas-park-cell { fill: #6d9251; stroke: #c0ae78; stroke-width: .45px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
+.atlas-grove-cell { fill: #3f6f45; stroke: #765f43; stroke-width: .45px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
+.atlas-road-cell { fill: #3f4d55; stroke: #879398; stroke-width: .45px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
+.atlas-surface-cell { fill: #a4aca4; shape-rendering: crispEdges; }
+.atlas-surface-path { fill: #a48f73; }
+.atlas-surface-crosswalk { fill: #d7d4c8; }
+.atlas-surface-driveway { fill: #555f62; }
 .atlas-city:hover .atlas-building, .atlas-city:hover .atlas-feature { filter: brightness(1.09); }
-.atlas-building { image-rendering: pixelated; outline: none; transition: filter .12s; }
+.atlas-building { outline: none; transition: filter .12s; cursor: pointer; shape-rendering: crispEdges; }
 .atlas-building:focus { filter: drop-shadow(0 0 3px #f2c84b); }
 .atlas-city-label { outline: none; cursor: pointer; }
 .atlas-city-label rect { fill: #0a1b1e; stroke: #b6aa79; stroke-width: 1.8px; vector-effect: non-scaling-stroke; }

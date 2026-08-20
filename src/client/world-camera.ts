@@ -12,6 +12,18 @@ export type ProgressiveChunkPlan = { critical: ChunkCoordinate[]; background: Ch
 // retains recently crossed chunks for smooth reverse pans.
 export const PREFETCH_VIEWPORT_RATIO = 0;
 
+/** Keep city entry readable; the country atlas remains the all-city view. */
+export function cityDetailFocusBounds(center: { x: number; y: number }, bounds: Rect): Rect {
+  const width = bounds.maxX - bounds.minX + 1;
+  const height = bounds.maxY - bounds.minY + 1;
+  if (width <= 120 && height <= 80) return bounds;
+  const targetWidth = Math.min(120, width);
+  const targetHeight = Math.min(80, height);
+  const minX = Math.max(bounds.minX, Math.min(bounds.maxX - targetWidth + 1, center.x - Math.floor(targetWidth / 2)));
+  const minY = Math.max(bounds.minY, Math.min(bounds.maxY - targetHeight + 1, center.y - Math.floor(targetHeight / 2)));
+  return { minX, minY, maxX: minX + targetWidth - 1, maxY: minY + targetHeight - 1 };
+}
+
 export function minimumCameraScale(screen: ScreenSize, bounds: Rect, cellSize: number, configuredMinimum = 0.8): number {
   const width = (bounds.maxX - bounds.minX + 1) * cellSize;
   const height = (bounds.maxY - bounds.minY + 1) * cellSize;

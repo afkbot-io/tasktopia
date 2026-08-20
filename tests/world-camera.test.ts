@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   chunkRangeForViewport,
+  cityDetailFocusBounds,
   clampCameraPosition,
   fitCameraScale,
   minimumCameraScale,
@@ -8,6 +9,17 @@ import {
 } from "../src/client/world-camera";
 
 describe("world camera geometry", () => {
+  it("opens a huge city at a readable neighbourhood scale", () => {
+    expect(cityDetailFocusBounds(
+      { x: 200, y: 140 },
+      { minX: -40, minY: -80, maxX: 520, maxY: 420 },
+    )).toEqual({ minX: 140, minY: 100, maxX: 259, maxY: 179 });
+    expect(cityDetailFocusBounds(
+      { x: 20, y: 20 },
+      { minX: 0, minY: 0, maxX: 49, maxY: 39 },
+    )).toEqual({ minX: 0, minY: 0, maxX: 49, maxY: 39 });
+  });
+
   it("requests only chunks intersecting the visible viewport", () => {
     const range = chunkRangeForViewport(
       { x: 720, y: 450 }, 0.8, { width: 1440, height: 900 },

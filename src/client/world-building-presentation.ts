@@ -2,6 +2,7 @@ import type { PlatformKind } from "../shared/contracts";
 import type { Cell } from "../shared/contracts";
 import type { BuildingCatalogEntry } from "../shared/catalog";
 import { taskBuildingPlatform } from "../shared/catalog";
+import { constructionPadDepth } from "../shared/construction-stage";
 
 const BUILDING_STAGE_COLORS = [0x9b72d2, 0xd6a13d, 0xf2c84b, 0x4fa5d7, 0x69ad67] as const;
 
@@ -72,6 +73,21 @@ export function taskPlatformPresentation(entry: BuildingCatalogEntry): BuildingP
     return { family: "tile", key: "pavement" };
   }
   return buildingPlatformPresentation(taskBuildingPlatform(entry));
+}
+
+/**
+ * During planning/foundation stages only the authored shallow construction
+ * pad is surfaced. The full collision lot remains reserved by the server but
+ * stays ordinary terrain, so a narrow facade does not sit on a huge plaza.
+ */
+export function taskPlatformCells(footprint: Cell[], stage: number): Cell[] {
+  if (stage > 2 || footprint.length === 0) return footprint;
+  const minX = Math.min(...footprint.map((cell) => cell.x));
+  const maxX = Math.max(...footprint.map((cell) => cell.x));
+  const minY = Math.min(...footprint.map((cell) => cell.y));
+  const maxY = Math.max(...footprint.map((cell) => cell.y));
+  const depth = constructionPadDepth({ width: maxX - minX + 1, height: maxY - minY + 1 });
+  return footprint.filter((cell) => cell.y > maxY - depth);
 }
 
 function yardVariant(x: number, y: number, seed: number): 0 | 1 | 2 {

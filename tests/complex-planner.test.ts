@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compactLotsAfterPlacement, organicComplexLotTarget, planComplex } from "../src/server/world/complex-planner";
+import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "../src/server/world/complex-planner";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
 import { cellKey, connected, rectangleFootprint } from "../src/server/world/grid";
 import { stampRoadCorridor } from "../src/server/world/road-geometry";
@@ -18,6 +18,29 @@ function corridors(streets: { x: number; y: number }[][]): Set<string> {
 }
 
 describe("V10 complex planner", () => {
+  it("shrinks blocked growth through the supported three-lot floor", () => {
+    expect(nextOrganicComplexLotTarget(8)).toBe(4);
+    expect(nextOrganicComplexLotTarget(4)).toBe(3);
+    expect(nextOrganicComplexLotTarget(3)).toBeNull();
+  });
+
+  it("turns later deep new-build growth into several connected street rows", () => {
+    const rect = { minX: 0, minY: 0, maxX: 55, maxY: 43 };
+    const plan = planComplex({
+      ...BASE,
+      complexIndex: 2,
+      rect,
+      cells: rectangleFootprint({ x: 0, y: 0 }, 56, 44),
+      targetLots: 12,
+      minimumLot: { width: 14, height: 12 },
+      denseGrid: true,
+    });
+
+    expect(plan.shape).not.toBe("COMPLEX_ROW");
+    expect(new Set(plan.lots.map((lot) => lot.origin.y)).size).toBeGreaterThan(1);
+    expect(plan.streets.some((street) => new Set(street.map((cell) => cell.x)).size === 1)).toBe(true);
+  });
+
   it("reuses the remaining street frontage after placing a smaller building", () => {
     const lot = {
       id: "district:complex:000:lot:00", origin: { x: 10, y: 10 }, width: 8, height: 5,

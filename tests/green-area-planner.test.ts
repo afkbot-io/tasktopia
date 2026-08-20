@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates, greenAreaTarget } from "../src/server/green-area-planner";
+import { generatedGreenAreaProfile, greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates, greenAreaTarget } from "../src/server/green-area-planner";
 
 describe("green area planning", () => {
+  it("starts every district with a recognisable public park before adding groves", () => {
+    expect(generatedGreenAreaProfile(0)).toEqual({ kind: "PARK", assetKey: "urban-park" });
+    expect(generatedGreenAreaProfile(1)).toEqual({ kind: "GROVE", assetKey: "urban-grove" });
+    expect(generatedGreenAreaProfile(2)).toEqual({ kind: "PARK", assetKey: "urban-park" });
+  });
+
   it("adds another green area for roughly every six occupied task lots", () => {
     expect(greenAreaTarget(0)).toBe(1);
     expect(greenAreaTarget(5)).toBe(1);

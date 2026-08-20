@@ -123,6 +123,10 @@ describe("active building catalog", () => {
     for (const species of ["fox", "deer", "rabbit", "boar"]) for (const frame of ["a", "b", "c"]) {
       expect(PROP_CATALOG[`animal-${species}-east-${frame}`]).toBeDefined();
     }
+    expect(PROP_CATALOG["animal-fox-north-a"]?.size).toEqual({ width: 16, height: 16 });
+    expect(PROP_CATALOG["animal-fox-east-a"]?.size).toEqual({ width: 24, height: 16 });
+    expect(PROP_CATALOG["animal-deer-north-a"]?.size).toEqual({ width: 16, height: 24 });
+    expect(PROP_CATALOG["animal-deer-east-a"]?.size).toEqual({ width: 24, height: 24 });
   });
 
   it("registers crisp incident-response sprites on the same pixel grid", () => {

@@ -15554,16 +15554,16 @@
       "label": "Лиса — север A",
       "path": "props/animal-fox-north-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15574,16 +15574,16 @@
       "label": "Лиса — север B",
       "path": "props/animal-fox-north-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15594,16 +15594,16 @@
       "label": "Лиса — север C",
       "path": "props/animal-fox-north-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15614,16 +15614,16 @@
       "label": "Лиса — восток A",
       "path": "props/animal-fox-east-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15634,16 +15634,16 @@
       "label": "Лиса — восток B",
       "path": "props/animal-fox-east-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15654,16 +15654,16 @@
       "label": "Лиса — восток C",
       "path": "props/animal-fox-east-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15674,16 +15674,16 @@
       "label": "Лиса — юг A",
       "path": "props/animal-fox-south-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15694,16 +15694,16 @@
       "label": "Лиса — юг B",
       "path": "props/animal-fox-south-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15714,16 +15714,16 @@
       "label": "Лиса — юг C",
       "path": "props/animal-fox-south-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15734,16 +15734,16 @@
       "label": "Лиса — запад A",
       "path": "props/animal-fox-west-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15754,16 +15754,16 @@
       "label": "Лиса — запад B",
       "path": "props/animal-fox-west-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15774,16 +15774,16 @@
       "label": "Лиса — запад C",
       "path": "props/animal-fox-west-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
@@ -15794,16 +15794,16 @@
       "label": "Олень — север A",
       "path": "props/animal-deer-north-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15814,16 +15814,16 @@
       "label": "Олень — север B",
       "path": "props/animal-deer-north-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15834,16 +15834,16 @@
       "label": "Олень — север C",
       "path": "props/animal-deer-north-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15854,16 +15854,16 @@
       "label": "Олень — восток A",
       "path": "props/animal-deer-east-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15874,16 +15874,16 @@
       "label": "Олень — восток B",
       "path": "props/animal-deer-east-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15894,16 +15894,16 @@
       "label": "Олень — восток C",
       "path": "props/animal-deer-east-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15914,16 +15914,16 @@
       "label": "Олень — юг A",
       "path": "props/animal-deer-south-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15934,16 +15934,16 @@
       "label": "Олень — юг B",
       "path": "props/animal-deer-south-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15954,16 +15954,16 @@
       "label": "Олень — юг C",
       "path": "props/animal-deer-south-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15974,16 +15974,16 @@
       "label": "Олень — запад A",
       "path": "props/animal-deer-west-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -15994,16 +15994,16 @@
       "label": "Олень — запад B",
       "path": "props/animal-deer-west-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -16014,16 +16014,16 @@
       "label": "Олень — запад C",
       "path": "props/animal-deer-west-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
@@ -16034,16 +16034,16 @@
       "label": "Кролик — север A",
       "path": "props/animal-rabbit-north-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16054,16 +16054,16 @@
       "label": "Кролик — север B",
       "path": "props/animal-rabbit-north-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16074,16 +16074,16 @@
       "label": "Кролик — север C",
       "path": "props/animal-rabbit-north-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16094,16 +16094,16 @@
       "label": "Кролик — восток A",
       "path": "props/animal-rabbit-east-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16114,16 +16114,16 @@
       "label": "Кролик — восток B",
       "path": "props/animal-rabbit-east-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16134,16 +16134,16 @@
       "label": "Кролик — восток C",
       "path": "props/animal-rabbit-east-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16154,16 +16154,16 @@
       "label": "Кролик — юг A",
       "path": "props/animal-rabbit-south-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16174,16 +16174,16 @@
       "label": "Кролик — юг B",
       "path": "props/animal-rabbit-south-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16194,16 +16194,16 @@
       "label": "Кролик — юг C",
       "path": "props/animal-rabbit-south-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16214,16 +16214,16 @@
       "label": "Кролик — запад A",
       "path": "props/animal-rabbit-west-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16234,16 +16234,16 @@
       "label": "Кролик — запад B",
       "path": "props/animal-rabbit-west-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16254,16 +16254,16 @@
       "label": "Кролик — запад C",
       "path": "props/animal-rabbit-west-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
@@ -16274,16 +16274,16 @@
       "label": "Кабан — север A",
       "path": "props/animal-boar-north-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16294,16 +16294,16 @@
       "label": "Кабан — север B",
       "path": "props/animal-boar-north-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16314,16 +16314,16 @@
       "label": "Кабан — север C",
       "path": "props/animal-boar-north-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16334,16 +16334,16 @@
       "label": "Кабан — восток A",
       "path": "props/animal-boar-east-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16354,16 +16354,16 @@
       "label": "Кабан — восток B",
       "path": "props/animal-boar-east-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16374,16 +16374,16 @@
       "label": "Кабан — восток C",
       "path": "props/animal-boar-east-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16394,16 +16394,16 @@
       "label": "Кабан — юг A",
       "path": "props/animal-boar-south-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16414,16 +16414,16 @@
       "label": "Кабан — юг B",
       "path": "props/animal-boar-south-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16434,16 +16434,16 @@
       "label": "Кабан — юг C",
       "path": "props/animal-boar-south-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16454,16 +16454,16 @@
       "label": "Кабан — запад A",
       "path": "props/animal-boar-west-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16474,16 +16474,16 @@
       "label": "Кабан — запад B",
       "path": "props/animal-boar-west-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16494,16 +16494,16 @@
       "label": "Кабан — запад C",
       "path": "props/animal-boar-west-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
@@ -16514,16 +16514,16 @@
       "label": "Утка — север A",
       "path": "props/animal-duck-north-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16534,16 +16534,16 @@
       "label": "Утка — север B",
       "path": "props/animal-duck-north-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16554,16 +16554,16 @@
       "label": "Утка — север C",
       "path": "props/animal-duck-north-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16574,16 +16574,16 @@
       "label": "Утка — восток A",
       "path": "props/animal-duck-east-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16594,16 +16594,16 @@
       "label": "Утка — восток B",
       "path": "props/animal-duck-east-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16614,16 +16614,16 @@
       "label": "Утка — восток C",
       "path": "props/animal-duck-east-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16634,16 +16634,16 @@
       "label": "Утка — юг A",
       "path": "props/animal-duck-south-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16654,16 +16654,16 @@
       "label": "Утка — юг B",
       "path": "props/animal-duck-south-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16674,16 +16674,16 @@
       "label": "Утка — юг C",
       "path": "props/animal-duck-south-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16694,16 +16694,16 @@
       "label": "Утка — запад A",
       "path": "props/animal-duck-west-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16714,16 +16714,16 @@
       "label": "Утка — запад B",
       "path": "props/animal-duck-west-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16734,16 +16734,16 @@
       "label": "Утка — запад C",
       "path": "props/animal-duck-west-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
@@ -16754,16 +16754,16 @@
       "label": "Овца — север A",
       "path": "props/animal-sheep-north-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16774,16 +16774,16 @@
       "label": "Овца — север B",
       "path": "props/animal-sheep-north-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16794,16 +16794,16 @@
       "label": "Овца — север C",
       "path": "props/animal-sheep-north-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16814,16 +16814,16 @@
       "label": "Овца — восток A",
       "path": "props/animal-sheep-east-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16834,16 +16834,16 @@
       "label": "Овца — восток B",
       "path": "props/animal-sheep-east-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16854,16 +16854,16 @@
       "label": "Овца — восток C",
       "path": "props/animal-sheep-east-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16874,16 +16874,16 @@
       "label": "Овца — юг A",
       "path": "props/animal-sheep-south-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16894,16 +16894,16 @@
       "label": "Овца — юг B",
       "path": "props/animal-sheep-south-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16914,16 +16914,16 @@
       "label": "Овца — юг C",
       "path": "props/animal-sheep-south-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16934,16 +16934,16 @@
       "label": "Овца — запад A",
       "path": "props/animal-sheep-west-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16954,16 +16954,16 @@
       "label": "Овца — запад B",
       "path": "props/animal-sheep-west-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16974,16 +16974,16 @@
       "label": "Овца — запад C",
       "path": "props/animal-sheep-west-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
@@ -16994,16 +16994,16 @@
       "label": "Собака — север A",
       "path": "props/animal-dog-north-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17014,16 +17014,16 @@
       "label": "Собака — север B",
       "path": "props/animal-dog-north-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17034,16 +17034,16 @@
       "label": "Собака — север C",
       "path": "props/animal-dog-north-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17054,16 +17054,16 @@
       "label": "Собака — восток A",
       "path": "props/animal-dog-east-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17074,16 +17074,16 @@
       "label": "Собака — восток B",
       "path": "props/animal-dog-east-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17094,16 +17094,16 @@
       "label": "Собака — восток C",
       "path": "props/animal-dog-east-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17114,16 +17114,16 @@
       "label": "Собака — юг A",
       "path": "props/animal-dog-south-a.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17134,16 +17134,16 @@
       "label": "Собака — юг B",
       "path": "props/animal-dog-south-b.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17154,16 +17154,16 @@
       "label": "Собака — юг C",
       "path": "props/animal-dog-south-c.png",
       "size": [
-        8,
-        16
+        16,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        16
+        8,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17174,16 +17174,16 @@
       "label": "Собака — запад A",
       "path": "props/animal-dog-west-a.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17194,16 +17194,16 @@
       "label": "Собака — запад B",
       "path": "props/animal-dog-west-b.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17214,16 +17214,16 @@
       "label": "Собака — запад C",
       "path": "props/animal-dog-west-c.png",
       "size": [
-        16,
-        16
+        24,
+        24
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        16
+        12,
+        24
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
@@ -17234,16 +17234,16 @@
       "label": "Кошка — север A",
       "path": "props/animal-cat-north-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17254,16 +17254,16 @@
       "label": "Кошка — север B",
       "path": "props/animal-cat-north-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17274,16 +17274,16 @@
       "label": "Кошка — север C",
       "path": "props/animal-cat-north-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17294,16 +17294,16 @@
       "label": "Кошка — восток A",
       "path": "props/animal-cat-east-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17314,16 +17314,16 @@
       "label": "Кошка — восток B",
       "path": "props/animal-cat-east-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17334,16 +17334,16 @@
       "label": "Кошка — восток C",
       "path": "props/animal-cat-east-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17354,16 +17354,16 @@
       "label": "Кошка — юг A",
       "path": "props/animal-cat-south-a.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17374,16 +17374,16 @@
       "label": "Кошка — юг B",
       "path": "props/animal-cat-south-b.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17394,16 +17394,16 @@
       "label": "Кошка — юг C",
       "path": "props/animal-cat-south-c.png",
       "size": [
-        8,
-        8
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        4,
-        8
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17414,16 +17414,16 @@
       "label": "Кошка — запад A",
       "path": "props/animal-cat-west-a.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17434,16 +17434,16 @@
       "label": "Кошка — запад B",
       "path": "props/animal-cat-west-b.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -17454,16 +17454,16 @@
       "label": "Кошка — запад C",
       "path": "props/animal-cat-west-c.png",
       "size": [
-        16,
-        8
+        24,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        8,
-        8
+        12,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
@@ -19218,5 +19218,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "ee121b2fb57580e3"
+  "assetRevision": "d628385488bc5971"
 }

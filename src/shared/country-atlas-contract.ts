@@ -12,7 +12,7 @@ import type {
   WorkItemType,
 } from "./contracts";
 
-export const COUNTRY_ATLAS_HEX_RADIUS_CELLS = 5;
+export const COUNTRY_ATLAS_TERRAIN_TILE_CELLS = 4;
 
 export type CountryAtlasScale = 0.5 | 0.375 | 0.25 | 0.125 | 0.0625;
 
@@ -81,8 +81,9 @@ export type CountryAtlasTerrainCellDto = {
 
 export type CountryAtlasMacroTerrainDto = {
   id: string;
-  q: number;
-  r: number;
+  atlasOrigin: Cell;
+  widthCells: number;
+  heightCells: number;
   atlasCenter: { x: number; y: number };
   sourceCenter: Cell;
   terrain: TerrainKind;
@@ -102,7 +103,6 @@ export type CountryAtlasCityDto = {
   miniatureSizePx: { width: number; height: number };
   atlasMask: Cell[];
   cutoutMask: Cell[];
-  cutoutTerrain: CountryAtlasTerrainCellDto[];
   districts: CountryAtlasDistrictDto[];
   buildings: CountryAtlasBuildingDto[];
   roads: CountryAtlasRoadDto[];
@@ -111,10 +111,10 @@ export type CountryAtlasCityDto = {
 };
 
 export type CountryAtlasDto = {
-  schemaVersion: 2;
+  schemaVersion: 4;
   worldVersion: number;
+  terrainSeed: number;
   bounds: Rect;
-  macroTerrain: CountryAtlasMacroTerrainDto[];
   cities: CountryAtlasCityDto[];
   connections: Array<{ fromCityId: string; toCityId: string; path: Cell[] }>;
 };

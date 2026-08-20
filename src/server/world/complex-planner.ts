@@ -140,6 +140,13 @@ export function organicComplexLotTarget(capacitySp: number): number {
   return Math.max(3, Math.min(8, Math.ceil(Math.sqrt(Math.max(1, capacitySp)) * 1.4)));
 }
 
+/** Shrink a blocked complex all the way to the supported three-lot floor. */
+export function nextOrganicComplexLotTarget(currentTarget: number): number | null {
+  if (currentTarget <= 3) return null;
+  const nextTarget = Math.max(3, Math.floor(currentTarget * 0.6));
+  return nextTarget < currentTarget ? nextTarget : null;
+}
+
 function horizontalLine(fromX: number, toX: number, y: number): Cell[] {
   return Array.from({ length: Math.max(0, toX - fromX + 1) }, (_, index) => ({ x: fromX + index, y }));
 }

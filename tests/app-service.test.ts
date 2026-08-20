@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
-import { AppService, complexMinimumRect, connectReplayDistrictSegments, connectorCorridorBlocked, districtGrowthThicknesses, DomainError } from "../src/server/app-service";
+import { AppService, complexMinimumRect, connectReplayDistrictSegments, connectorCorridorBlocked, districtAvailableLotBounds, districtGreenSearchBounds, districtGrowthThicknesses, DomainError, initialResidentialFrontageWidth, rectOccupancyCounter, spatialRoadAnchors } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { getBuilding } from "../src/shared/catalog";
@@ -61,6 +61,56 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
   it("lets an established compact district annex a full new frontage instead of stopping at 32 cells", () => {
     const compactHouse = getBuilding("house-lowrise-gallery");
     expect(districtGrowthThicknesses(compactHouse)).toEqual([24, 28, 32, 36, 40, 48]);
+  });
+
+  it("distributes intercity route probes across road segments", () => {
+    const sameSegment = Array.from({ length: 64 }, (_, x) => ({ x, y: 0 }));
+    const remoteSegments = [{ x: -80, y: 40 }, { x: 160, y: -40 }];
+    const anchors = spatialRoadAnchors([...sameSegment, ...remoteSegments], 8, 256);
+    expect(anchors).toEqual([
+      { x: 0, y: 0 }, { x: 8, y: 0 }, { x: 16, y: 0 }, { x: 24, y: 0 },
+      { x: 32, y: 0 }, { x: 40, y: 0 }, { x: 48, y: 0 }, { x: 56, y: 0 },
+      ...remoteSegments,
+    ]);
+  });
+
+  it("counts occupied district cells inside candidate rectangles", () => {
+    const occupiedIn = rectOccupancyCounter(
+      [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 8, y: 8 }],
+      { minX: 0, minY: 0, maxX: 9, maxY: 9 },
+    );
+    expect(occupiedIn({ minX: 0, minY: 0, maxX: 2, maxY: 2 })).toBe(2);
+    expect(occupiedIn({ minX: 2, minY: 2, maxX: 8, maxY: 8 })).toBe(2);
+    expect(occupiedIn({ minX: -5, minY: -5, maxX: 0, maxY: 0 })).toBe(0);
+  });
+
+  it("starts a legacy private district with three readable apartment fronts", () => {
+    expect(initialResidentialFrontageWidth("PRIVATE", 0, 12)).toBe(44);
+    expect(initialResidentialFrontageWidth("NEW_BUILD", 0, 12)).toBe(56);
+    expect(initialResidentialFrontageWidth("PRIVATE", 1, 12)).toBe(44);
+    expect(initialResidentialFrontageWidth("NEW_BUILD", 1, 12)).toBe(0);
+  });
+
+  it("limits placement surfaces to unoccupied lots", () => {
+    const bounds = districtAvailableLotBounds({
+      id: "district", cityId: "city", name: "District", description: "", goal: "", createdAt: "2026-01-01",
+      deadline: null, status: "ACTIVE", archetype: "PRIVATE", capacitySp: 10,
+      color: "#fff", growthDirection: "E", cells: [{ x: 0, y: 0 }],
+      lots: [
+        { id: "used", origin: { x: -100, y: -100 }, width: 10, height: 10, taskId: "task" },
+        { id: "free", origin: { x: 20, y: 30 }, width: 4, height: 5, taskId: null },
+      ],
+    });
+    expect(bounds).toEqual({ minX: 12, minY: 22, maxX: 31, maxY: 42 });
+  });
+
+  it("searches for a generated park around the newest complex", () => {
+    const districtCells = Array.from({ length: 200 * 80 }, (_, index) => ({ x: index % 200, y: Math.floor(index / 200) }));
+    const bounds = districtGreenSearchBounds(districtCells, [
+      { id: "old", origin: { x: 10, y: 10 }, width: 6, height: 5, taskId: "task-1", groupId: "district:complex:001" },
+      { id: "new", origin: { x: 150, y: 50 }, width: 8, height: 6, taskId: null, groupId: "district:complex:009" },
+    ]);
+    expect(bounds).toEqual({ minX: 134, minY: 34, maxX: 173, maxY: 71 });
   });
 
   it("creates an idempotent city with reciprocal square-road masks", async () => {
@@ -387,7 +437,7 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const chunkCell = service.chunkForCell(park.origin);
     const chunkPark = (await service.getChunk(countryId, chunkCell.chunkX, chunkCell.chunkY)).tasks.find((task) => task.id === park.id);
     expect(chunkPark).toMatchObject({ taskNumber: park.taskNumber, visualKind: "PARK", visualAssetKey: "urban-formal", stage: 5 });
-    expect((await service.listWorldFeatures(countryId)).some((feature) => feature.kind === "PARK")).toBe(false);
+    expect((await service.listWorldFeatures(countryId)).some((feature) => feature.assetKey === "urban-formal")).toBe(false);
   }, 20_000);
 
   it("infers a task-backed park when an agent names a park but omits visualKind", async () => {

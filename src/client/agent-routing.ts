@@ -559,7 +559,10 @@ export function detectTrafficJunctions(graph: ReadonlyMap<string, Cell>): Traffi
 
 export function trafficSignalPhase(junction: TrafficJunction, elapsedMs: number): TrafficSignalPhase {
   const cycleMs = 8_000;
-  const offset = Math.abs((junction.bounds.minX * 73_856_093) ^ (junction.bounds.minY * 19_349_663)) % cycleMs;
+  // Adjacent intersections receive a short, spatially coherent wave instead
+  // of unrelated hash phases. A vehicle moving through a street grid now sees
+  // successive greens rather than a random red wall at every next block.
+  const offset = Math.abs(junction.bounds.minX + junction.bounds.minY) % 8 * 250;
   const phase = (elapsedMs + offset) % cycleMs;
   if (phase < 3_400) return { horizontal: "GREEN", vertical: "RED" };
   if (phase < 4_000) return { horizontal: "RED", vertical: "RED" };

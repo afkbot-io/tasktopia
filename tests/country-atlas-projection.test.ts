@@ -130,6 +130,14 @@ describe("country atlas projection", () => {
       expect(tile.terrain).toBe(tile.sourceCenter.x < 0 ? "DEEP_WATER" : "FOREST");
       expect(tile.variant).toBe(Math.abs(tile.sourceCenter.x + tile.sourceCenter.y) % 3);
     }
+    const tileOrigins = new Set(atlas.macroTerrain.map((tile) => `${tile.atlasOrigin.x}:${tile.atlasOrigin.y}`));
+    expect(tileOrigins.size).toBe(atlas.macroTerrain.length);
+    expect(atlas.macroTerrain.every((tile) => tile.widthCells > 0 && tile.widthCells <= 4)).toBe(true);
+    expect(atlas.macroTerrain.every((tile) => tile.heightCells > 0 && tile.heightCells <= 4)).toBe(true);
+    expect(Math.min(...atlas.macroTerrain.map((tile) => tile.atlasOrigin.x))).toBe(atlas.bounds.minX);
+    expect(Math.min(...atlas.macroTerrain.map((tile) => tile.atlasOrigin.y))).toBe(atlas.bounds.minY);
+    expect(Math.max(...atlas.macroTerrain.map((tile) => tile.atlasOrigin.x + tile.widthCells - 1))).toBe(atlas.bounds.maxX);
+    expect(Math.max(...atlas.macroTerrain.map((tile) => tile.atlasOrigin.y + tile.heightCells - 1))).toBe(atlas.bounds.maxY);
   });
 
   it("compresses empty space between rigid districts without changing their internal geometry", () => {

@@ -5,9 +5,13 @@ test.skip(process.env.E2E_ATLAS_FIXTURE !== "true", "Run against the dedicated f
 
 test("all atlas cities hover safely and drive the compact header", async ({ page }) => {
   const browserErrors: string[] = [];
+  const fullBuildingRequests: string[] = [];
   page.on("pageerror", (error) => browserErrors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error") browserErrors.push(message.text());
+  });
+  page.on("request", (request) => {
+    if (request.url().includes("/game-assets/v5/buildings/")) fullBuildingRequests.push(request.url());
   });
 
   await page.goto("/");
@@ -24,6 +28,7 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
 
   const cities = page.locator(".atlas-city");
   await expect(cities).toHaveCount(10);
+  expect(fullBuildingRequests).toEqual([]);
   for (let index = 0; index < 10; index += 1) {
     const city = cities.nth(index);
     const name = await city.locator(".atlas-city-label text").first().textContent();
@@ -33,7 +38,7 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   }
   await page.locator(".country-atlas").hover({ position: { x: 2, y: 2 } });
   await expect(page.locator(".header-city")).toHaveCount(0);
-  // Buildings intentionally sit above their owning district and intercept
+  // Building markers intentionally sit above their owning district and intercept
   // pointer input so they can open the exact district. Exercise the district's
   // equivalent keyboard-focus contract instead of forcing a pointer through a
   // valid interactive child.
@@ -66,7 +71,7 @@ test("a city miniature click opens the exact district instead of a task card", a
     throw new Error("The atlas fixture has no district building");
   });
 
-  // Atlas sprites are painted in depth order and may overlap within one
+  // Atlas markers are painted in depth order and may overlap within one
   // district. Click its topmost painted sprite so the test exercises the same
   // real hit target a user can reach instead of waiting on an occluded image.
   await page.locator(`.atlas-building[data-district-id="${target.district.id}"]`).last().click();

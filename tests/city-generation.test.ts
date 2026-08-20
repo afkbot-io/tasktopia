@@ -12,9 +12,11 @@ import {
   buildingApronCells,
   buildingGapPaths,
   chooseDistrictArchetype,
+  districtAnnexSearchBounds,
   entranceOutside,
   findAreaAccessPath,
   findAccessPlan,
+  isCompactNewBuildBuilding,
 } from "../src/server/world/city-generation";
 import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 
@@ -50,6 +52,17 @@ describe("V6 city morphology and access planning", () => {
     expect(buildingVisualSetbackCells(getBuilding("highrise-glass"))).toBe(18);
     expect(buildingVisualSetbackCells(getBuilding("civic-library"))).toBe(6);
     expect(buildingVisualSetbackCells(getBuilding("house-lowrise-gallery"))).toBe(0);
+  });
+
+  it("does not classify a small-footprint tower as compact infill", () => {
+    expect(getBuilding("highrise-glass").footprint).toEqual({ width: 12, height: 10 });
+    expect(isCompactNewBuildBuilding(getBuilding("highrise-glass"))).toBe(false);
+    expect(isCompactNewBuildBuilding(getBuilding("house-small-apartments"))).toBe(true);
+  });
+
+  it("bounds annex search around fresh land instead of the complete old district", () => {
+    expect(districtAnnexSearchBounds({ minX: 360, minY: 10, maxX: 424, maxY: 80 }))
+      .toEqual({ minX: 336, minY: -14, maxX: 448, maxY: 104 });
   });
 
   it("reserves the complete north-projecting facade above a building footprint", () => {

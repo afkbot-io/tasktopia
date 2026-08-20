@@ -5,13 +5,14 @@ import type {
   CityMorphology,
   DistrictArchetype,
   DistrictDto,
+  Rect,
   RoadCellDto,
   SurfaceCellDto,
   TaskDto,
   WorldFeatureDto,
 } from "../../shared/contracts";
 import { greenAreaPathCells } from "../../shared/green-area";
-import { cellKey, contains, neighbors4, rectangleFootprint } from "./grid";
+import { cellKey, contains, expandRect, neighbors4, rectangleFootprint } from "./grid";
 
 export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
   // A local street has one 8 px travel cell in each direction. Larger roads
@@ -22,6 +23,11 @@ export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
   ARTERIAL: 3,
   HIGHWAY: 3,
 };
+
+/** Keep annex site search near fresh land instead of rescanning the whole old district. */
+export function districtAnnexSearchBounds(patchBounds: Rect): Rect {
+  return expandRect(patchBounds, 24);
+}
 
 /**
  * Screen-space facades rise north from their south ground anchor. Reserve the
@@ -38,6 +44,11 @@ export function buildingVisualSetbackCells(entry: BuildingCatalogEntry): number 
 
 export function buildingLotDepthCells(entry: BuildingCatalogEntry): number {
   return entry.footprint.height + buildingVisualSetbackCells(entry);
+}
+
+/** A compact infill facade must be compact in screen space, not only on the ground. */
+export function isCompactNewBuildBuilding(entry: BuildingCatalogEntry): boolean {
+  return entry.footprint.width <= 14 && buildingLotDepthCells(entry) <= 12;
 }
 
 export function buildingVisualReservationCells(entry: BuildingCatalogEntry, origin: Cell): Cell[] {

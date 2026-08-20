@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-08-17T18:49:42.185Z",
+  "generatedAt": "2026-08-20T23:29:33.210Z",
   "login": {
     "email": "world-validation@tasktopia.local"
   },
-  "countryId": "adf73d9c-28af-43d0-9f35-fc1d47cb4e6c",
+  "countryId": "24209919-b380-45be-903e-d3365db3b1ab",
   "country": "Федерация Новостроек",
-  "newBuildCatalogSize": 95,
+  "newBuildCatalogSize": 69,
   "cities": [
     {
       "index": 1,
-      "id": "6e1bbab0-0ced-4d34-84a3-d3d387dd5dd0",
+      "id": "138d30b3-471d-4c3d-bad0-9bf4f9371a5b",
       "name": "Янтарный Берег",
       "morphology": "BALANCED",
       "districts": 2,
@@ -22,19 +22,19 @@
         "5": 0
       },
       "uniqueBuildingTypes": 8,
-      "roads": 1633,
+      "roads": 1591,
       "roadClasses": {
-        "LOCAL": 1009,
-        "COLLECTOR": 289,
+        "LOCAL": 882,
+        "COLLECTOR": 374,
         "ARTERIAL": 138,
         "HIGHWAY": 197
       },
-      "generationMs": 8273,
+      "generationMs": 7902,
       "violations": []
     },
     {
       "index": 2,
-      "id": "d9ff4700-0bd4-4356-a70e-3201beddefa8",
+      "id": "7e813716-271a-4c6a-b562-a088fdfab52e",
       "name": "Северные Ворота",
       "morphology": "DENSE_CORE",
       "districts": 2,
@@ -47,19 +47,19 @@
         "5": 1
       },
       "uniqueBuildingTypes": 8,
-      "roads": 5384,
+      "roads": 5303,
       "roadClasses": {
-        "LOCAL": 2719,
-        "COLLECTOR": 493,
-        "ARTERIAL": 627,
-        "HIGHWAY": 1545
+        "LOCAL": 2215,
+        "COLLECTOR": 878,
+        "ARTERIAL": 461,
+        "HIGHWAY": 1749
       },
-      "generationMs": 13426,
+      "generationMs": 14783,
       "violations": []
     },
     {
       "index": 3,
-      "id": "31f79000-937b-47de-ba68-6ba6747c2bd7",
+      "id": "7c2eac79-2b60-43ca-9569-0902e032e005",
       "name": "Озероград",
       "morphology": "GARDEN_CITY",
       "districts": 2,
@@ -72,19 +72,19 @@
         "5": 1
       },
       "uniqueBuildingTypes": 8,
-      "roads": 7781,
+      "roads": 8065,
       "roadClasses": {
-        "LOCAL": 3288,
-        "COLLECTOR": 622,
-        "ARTERIAL": 1074,
-        "HIGHWAY": 2797
+        "LOCAL": 2787,
+        "COLLECTOR": 1042,
+        "ARTERIAL": 1018,
+        "HIGHWAY": 3218
       },
-      "generationMs": 15139,
+      "generationMs": 16405,
       "violations": []
     },
     {
       "index": 4,
-      "id": "ed138382-8850-4f88-9983-4cf7595105f6",
+      "id": "640cd9cd-5760-469c-a134-f27293ca45ae",
       "name": "Каменный Мост",
       "morphology": "POLYCENTRIC",
       "districts": 2,
@@ -97,19 +97,19 @@
         "5": 0
       },
       "uniqueBuildingTypes": 8,
-      "roads": 9784,
+      "roads": 10557,
       "roadClasses": {
-        "LOCAL": 3823,
-        "COLLECTOR": 794,
-        "ARTERIAL": 1277,
-        "HIGHWAY": 3890
+        "LOCAL": 3481,
+        "COLLECTOR": 1335,
+        "ARTERIAL": 1775,
+        "HIGHWAY": 3966
       },
-      "generationMs": 8991,
+      "generationMs": 11889,
       "violations": []
     },
     {
       "index": 5,
-      "id": "0862b8bc-ad84-4264-9c6f-3569021c2ceb",
+      "id": "7b58aeac-2216-4850-80bc-47bb060c38e6",
       "name": "Лазурная Долина",
       "morphology": "GARDEN_CITY",
       "districts": 2,
@@ -122,19 +122,19 @@
         "5": 1
       },
       "uniqueBuildingTypes": 8,
-      "roads": 11955,
+      "roads": 12964,
       "roadClasses": {
-        "LOCAL": 4467,
-        "COLLECTOR": 942,
-        "ARTERIAL": 1831,
-        "HIGHWAY": 4715
+        "LOCAL": 4186,
+        "COLLECTOR": 1637,
+        "ARTERIAL": 2188,
+        "HIGHWAY": 4953
       },
-      "generationMs": 20932,
+      "generationMs": 14260,
       "violations": []
     },
     {
       "index": 6,
-      "id": "54226d5f-9cc8-4e44-9d1c-948b2512bf37",
+      "id": "7e9443e3-def2-46be-8769-47f4b5011a8e",
       "name": "Новый Горизонт",
       "morphology": "DENSE_CORE",
       "districts": 2,
@@ -147,19 +147,19 @@
         "5": 1
       },
       "uniqueBuildingTypes": 8,
-      "roads": 13438,
+      "roads": 14466,
       "roadClasses": {
-        "LOCAL": 4974,
-        "COLLECTOR": 1249,
-        "ARTERIAL": 2130,
-        "HIGHWAY": 5085
+        "LOCAL": 4591,
+        "COLLECTOR": 2086,
+        "ARTERIAL": 2703,
+        "HIGHWAY": 5086
       },
-      "generationMs": 21679,
+      "generationMs": 18617,
       "violations": []
     },
     {
       "index": 7,
-      "id": "7bfca5bc-ab61-4f0e-bc4a-deec929c83ce",
+      "id": "70500580-0f25-440f-b2ef-8553cf85f03b",
       "name": "Речной Порт",
       "morphology": "BALANCED",
       "districts": 2,
@@ -172,19 +172,19 @@
         "5": 0
       },
       "uniqueBuildingTypes": 8,
-      "roads": 15630,
+      "roads": 15724,
       "roadClasses": {
-        "LOCAL": 5520,
-        "COLLECTOR": 1527,
-        "ARTERIAL": 2325,
-        "HIGHWAY": 6258
+        "LOCAL": 5021,
+        "COLLECTOR": 2262,
+        "ARTERIAL": 3123,
+        "HIGHWAY": 5318
       },
-      "generationMs": 13042,
+      "generationMs": 9144,
       "violations": []
     },
     {
       "index": 8,
-      "id": "ada91c4a-f899-467f-85a1-309a0bae9687",
+      "id": "e04276f4-f323-4124-bd84-443a0a4d0bf1",
       "name": "Зелёный Квартал",
       "morphology": "GARDEN_CITY",
       "districts": 2,
@@ -197,19 +197,19 @@
         "5": 1
       },
       "uniqueBuildingTypes": 8,
-      "roads": 18416,
+      "roads": 18889,
       "roadClasses": {
-        "LOCAL": 6098,
-        "COLLECTOR": 1663,
-        "ARTERIAL": 2460,
-        "HIGHWAY": 8195
+        "LOCAL": 5761,
+        "COLLECTOR": 2510,
+        "ARTERIAL": 3258,
+        "HIGHWAY": 7360
       },
-      "generationMs": 14091,
+      "generationMs": 14332,
       "violations": []
     },
     {
       "index": 9,
-      "id": "51a7c5cb-9ce9-4afc-8ee3-a8a88ff2560f",
+      "id": "4d57cc29-84e5-402b-98da-877998e2d6a2",
       "name": "Стальные Башни",
       "morphology": "POLYCENTRIC",
       "districts": 2,
@@ -222,19 +222,19 @@
         "5": 1
       },
       "uniqueBuildingTypes": 8,
-      "roads": 21398,
+      "roads": 21544,
       "roadClasses": {
-        "LOCAL": 6957,
-        "COLLECTOR": 1910,
-        "ARTERIAL": 2601,
-        "HIGHWAY": 9930
+        "LOCAL": 6385,
+        "COLLECTOR": 2817,
+        "ARTERIAL": 3410,
+        "HIGHWAY": 8932
       },
-      "generationMs": 21004,
+      "generationMs": 18511,
       "violations": []
     },
     {
       "index": 10,
-      "id": "1629608e-fc5f-49f6-afac-0f25dbcdda61",
+      "id": "79153f50-4c52-4b39-b77e-35a950aa73cb",
       "name": "Город Будущего",
       "morphology": "DENSE_CORE",
       "districts": 4,
@@ -246,21 +246,21 @@
         "4": 0,
         "5": 10
       },
-      "uniqueBuildingTypes": 13,
-      "roads": 24687,
+      "uniqueBuildingTypes": 14,
+      "roads": 24550,
       "roadClasses": {
-        "LOCAL": 8007,
-        "COLLECTOR": 2694,
-        "ARTERIAL": 3629,
-        "HIGHWAY": 10357
+        "LOCAL": 7137,
+        "COLLECTOR": 3721,
+        "ARTERIAL": 3829,
+        "HIGHWAY": 9863
       },
-      "generationMs": 35442,
+      "generationMs": 31704,
       "violations": []
     }
   ],
   "finalCity": {
     "index": 10,
-    "id": "1629608e-fc5f-49f6-afac-0f25dbcdda61",
+    "id": "79153f50-4c52-4b39-b77e-35a950aa73cb",
     "name": "Город Будущего",
     "morphology": "DENSE_CORE",
     "districts": [
@@ -302,15 +302,15 @@
       "4": 0,
       "5": 10
     },
-    "uniqueBuildingTypes": 13,
-    "roads": 24687,
+    "uniqueBuildingTypes": 14,
+    "roads": 24550,
     "roadClasses": {
-      "LOCAL": 8007,
-      "COLLECTOR": 2694,
-      "ARTERIAL": 3629,
-      "HIGHWAY": 10357
+      "LOCAL": 7137,
+      "COLLECTOR": 3721,
+      "ARTERIAL": 3829,
+      "HIGHWAY": 9863
     },
-    "generationMs": 35442,
+    "generationMs": 31704,
     "violations": []
   }
 }

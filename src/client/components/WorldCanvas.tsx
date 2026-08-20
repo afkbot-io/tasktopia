@@ -41,6 +41,7 @@ import {
   progressiveChunkPlan,
   clampCameraPosition,
   fitCameraScale,
+  cityDetailFocusBounds,
   minimumCameraScale,
 } from "../world-camera";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
@@ -49,6 +50,7 @@ import {
   buildingInteractiveBounds,
   buildingPlatformPresentation,
   taskPlatformCellPresentation,
+  taskPlatformCells,
 } from "../world-building-presentation";
 import { micromobilityOccupancy, micromobilityPresentation } from "../micromobility-presentation";
 import { residentActivityPosition, residentActivityVisualKey, residentGroundPosition, residentWalkPresentation } from "../resident-presentation";
@@ -322,7 +324,7 @@ function drawPlatform(task: ChunkTaskDto): Container {
     return group;
   }
   const entry = getBuilding(task.buildingType);
-  for (const cell of task.footprint) {
+  for (const cell of taskPlatformCells(task.footprint, task.stage)) {
     const p = position(cell);
     const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
     const tile = presentation.family === "tile"
@@ -812,7 +814,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const showDistrictsRef = useRef(showDistricts);
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
-    return { point: focusCity.center, bounds: focusCity.bounds };
+    return { point: focusCity.center, bounds: cityDetailFocusBounds(focusCity.center, focusCity.bounds) };
   }, [focusCity]);
   const focusX = focusArea?.point.x;
   const focusY = focusArea?.point.y;
@@ -1073,6 +1075,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       const orientRoadUser = (agent: MovingAgent): void => {
         if (agent.kind === "CAR" || agent.kind === "BUS") {
           const presentation = vehiclePresentation(agent.current, agent.next, agent.kind === "BUS" ? 1 : 1.2);
+          agent.view.scale.set(presentation.scaleX, presentation.scaleY);
+        } else if (agent.kind === "WALKER") {
+          const presentation = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase);
           agent.view.scale.set(presentation.scaleX, presentation.scaleY);
         } else if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
           const presentation = micromobilityPresentation(agent.kind === "CYCLIST" ? "cyclist" : "scooter", agent.current, agent.next, agent.steps);

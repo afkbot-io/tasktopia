@@ -11,6 +11,16 @@ export function greenAreaTarget(taskLotCount: number): number {
   return Math.min(4, 1 + Math.floor(taskLotCount / 6));
 }
 
+/** Alternate legible civic parks with denser tree groves as a district grows. */
+export function generatedGreenAreaProfile(existingAreaCount: number): {
+  kind: "PARK" | "GROVE";
+  assetKey: "urban-park" | "urban-grove";
+} {
+  return existingAreaCount % 2 === 0
+    ? { kind: "PARK", assetKey: "urban-park" }
+    : { kind: "GROVE", assetKey: "urban-grove" };
+}
+
 const GREEN_AREA_SIZES: Readonly<Record<string, readonly (readonly [number, number])[]>> = {
   "urban-formal": [[18, 10], [16, 9], [14, 8]],
   "urban-community": [[16, 10], [14, 9], [12, 8]],

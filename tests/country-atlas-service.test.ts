@@ -40,7 +40,8 @@ describe("country atlas read model", () => {
     const atlas = await service.getCountryAtlas(countryId);
     const sourceFeatures = (await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id);
 
-    expect(atlas).toMatchObject({ schemaVersion: 2, cities: [{ id: city.id, name: "Riverside" }] });
+    expect(atlas).toMatchObject({ schemaVersion: 4, cities: [{ id: city.id, name: "Riverside" }] });
+    expect(Number.isInteger(atlas.terrainSeed)).toBe(true);
     expect(atlas.cities[0]!.districts).toHaveLength(3);
     for (const district of atlas.cities[0]!.districts) {
       expect(district.sourceBounds.minX).toBeLessThanOrEqual(district.sourceCenter.x);
@@ -51,9 +52,13 @@ describe("country atlas read model", () => {
     expect(atlas.cities[0]!.buildings.map((building) => building.id).sort()).toEqual(tasks.map((task) => task.id).sort());
     expect(atlas.cities[0]!.roads.length).toBeGreaterThan(0);
     expect(atlas.cities[0]!.surfaces.length).toBeGreaterThan(0);
-    expect(atlas.macroTerrain.length).toBeGreaterThan(0);
+    expect(new Set(atlas.cities[0]!.roads.map((road) => `${road.atlasCell.x}:${road.atlasCell.y}`)).size)
+      .toBe(atlas.cities[0]!.roads.length);
+    expect(new Set(atlas.cities[0]!.surfaces.map((surface) => `${surface.atlasCell.x}:${surface.atlasCell.y}:${surface.kind}`)).size)
+      .toBe(atlas.cities[0]!.surfaces.length);
+    expect("macroTerrain" in atlas).toBe(false);
     expect(atlas.cities[0]!.cutoutMask.length).toBeGreaterThan(atlas.cities[0]!.atlasMask.length);
-    expect(atlas.cities[0]!.cutoutTerrain).toHaveLength(atlas.cities[0]!.cutoutMask.length);
+    expect("cutoutTerrain" in atlas.cities[0]!).toBe(false);
     expect(atlas.cities[0]!.districts.flatMap((district) => district.displayCells)).toHaveLength(atlas.cities[0]!.cutoutMask.length);
     expect(atlas.cities[0]!.features.map((feature) => feature.id).sort()).toEqual(sourceFeatures.map((feature) => feature.id).sort());
     for (const building of atlas.cities[0]!.buildings) {

@@ -5,6 +5,8 @@ export type ResidentWalkFrame = "a" | "b" | "c";
 export type ResidentWalkKey = `walker-${ResidentDirection}-${ResidentWalkFrame}`;
 export type ResidentActivity = "NONE" | "THINK" | "CHAT";
 
+export const RESIDENT_RENDER_SCALE = 0.8;
+
 function residentDirection(current: Cell, next: Cell): ResidentDirection {
   if (next.x > current.x) return "east";
   if (next.x < current.x) return "west";
@@ -28,8 +30,8 @@ export function residentWalkPresentation(
   const frame = (["a", "b", "c", "b"] as const)[Math.min(3, Math.floor(normalized * 4))]!;
   return {
     key: `walker-${residentDirection(current, next)}-${frame}`,
-    scaleX: 1,
-    scaleY: 1,
+    scaleX: RESIDENT_RENDER_SCALE,
+    scaleY: RESIDENT_RENDER_SCALE,
   };
 }
 
