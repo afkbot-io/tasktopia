@@ -2,7 +2,7 @@ import { AppService } from "./app-service";
 import { config } from "./config";
 import { createDb, transaction } from "./db";
 import { auditWorld } from "./world/world-audit";
-import { retryWorldRegeneration } from "./world-regeneration-runner";
+import { reconcileWorldRegeneration } from "./world-regeneration-runner";
 
 type CountryRow = { id: string; name: string; seed: number };
 
@@ -26,7 +26,7 @@ async function main(): Promise<void> {
     for (const [index, country] of countries.entries()) {
       try {
         const before = await auditWorld(db, service, country.id);
-        const { attempt, value: { result, after } } = await retryWorldRegeneration(maxAttempts, async (candidateAttempt) => (
+        const reconciliation = await reconcileWorldRegeneration(before.violations, maxAttempts, async (candidateAttempt) => (
           await transaction(db, async () => {
             const regenerated = await service.regenerateCountry(country.id, {
               confirmName: country.name,
@@ -52,6 +52,19 @@ async function main(): Promise<void> {
             error: error.message,
           }));
         });
+        if (reconciliation.status === "preserved") {
+          console.log(JSON.stringify({
+            event: "world-regeneration.preserved",
+            index: index + 1,
+            total: countries.length,
+            country: country.name,
+            seed: country.seed,
+            violationsBefore: 0,
+            reason: "existing-world-valid",
+          }));
+          continue;
+        }
+        const { attempt, value: { result, after } } = reconciliation;
         console.log(JSON.stringify({
           event: "world-regeneration.completed",
           index: index + 1,

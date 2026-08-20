@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { retryWorldRegeneration } from "../src/server/world-regeneration-runner";
+import { reconcileWorldRegeneration, retryWorldRegeneration } from "../src/server/world-regeneration-runner";
 
 describe("world regeneration runner", () => {
   it("retries a rolled-back layout with a fresh deterministic attempt", async () => {
@@ -16,5 +16,12 @@ describe("world regeneration runner", () => {
     expect(operation).toHaveBeenCalledTimes(3);
     expect(onRetry).toHaveBeenNthCalledWith(1, 1, expect.objectContaining({ message: "layout blocked" }));
     expect(onRetry).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({ message: "layout blocked" }));
+  });
+
+  it("preserves an already valid world without risking a replacement layout", async () => {
+    const operation = vi.fn(async () => ({ seed: 42 }));
+
+    await expect(reconcileWorldRegeneration([], 3, operation)).resolves.toEqual({ status: "preserved" });
+    expect(operation).not.toHaveBeenCalled();
   });
 });

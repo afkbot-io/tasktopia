@@ -17,3 +17,14 @@ export async function retryWorldRegeneration<T>(
 
   throw new Error("World regeneration exhausted without an attempt");
 }
+
+export async function reconcileWorldRegeneration<T>(
+  violationsBefore: readonly unknown[],
+  maxAttempts: number,
+  operation: (attempt: number) => Promise<T>,
+  onRetry: (attempt: number, error: Error) => void = () => undefined,
+): Promise<{ status: "preserved" } | { status: "regenerated"; attempt: number; value: T }> {
+  if (violationsBefore.length === 0) return { status: "preserved" };
+  const regenerated = await retryWorldRegeneration(maxAttempts, operation, onRetry);
+  return { status: "regenerated", ...regenerated };
+}
