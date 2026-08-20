@@ -64,6 +64,7 @@ import {
   aStarPathToAny,
   boundsOf,
   cellKey,
+  connected,
   contains,
   expandRect,
   floorDiv,
@@ -152,6 +153,40 @@ export class DomainError extends Error {
   constructor(public readonly code: string, message: string) {
     super(message);
   }
+}
+
+export function connectReplayDistrictSegments(
+  segments: readonly (readonly Cell[])[],
+  cityBounds: Rect,
+  foreignDistrictCells: ReadonlySet<string>,
+): Cell[] {
+  const first = segments[0];
+  if (!first || first.length === 0) return [];
+  const merged = new Map(first.map((cell) => [cellKey(cell), cell]));
+  for (const segment of segments.slice(1)) {
+    if (segment.length === 0) continue;
+    const segmentKeys = new Set(segment.map(cellKey));
+    const start = segment.reduce((best, cell) => {
+      const bestDistance = Math.min(...[...merged.values()].slice(0, 64).map((target) => manhattan(best, target)));
+      const cellDistance = Math.min(...[...merged.values()].slice(0, 64).map((target) => manhattan(cell, target)));
+      return cellDistance < bestDistance ? cell : best;
+    });
+    const end = [...merged.values()].reduce((best, cell) => manhattan(cell, start) < manhattan(best, start) ? cell : best);
+    const costAt = (cell: Cell) => {
+      if (!contains(cityBounds, cell)) return Number.POSITIVE_INFINITY;
+      const key = cellKey(cell);
+      if (foreignDistrictCells.has(key) && !merged.has(key) && !segmentKeys.has(key)) return Number.POSITIVE_INFINITY;
+      return merged.has(key) || segmentKeys.has(key) ? 0.05 : 1;
+    };
+    const corridor = [24, 64, 128]
+      .map((margin) => aStarPath(start, end, costAt, margin, 0.2, false))
+      .find((candidate) => candidate.length > 0);
+    if (!corridor) throw new DomainError("REGENERATION_FAILED", "Не удалось соединить территории района-продолжения");
+    for (const cell of [...segment, ...corridor]) merged.set(cellKey(cell), cell);
+  }
+  const cells = [...merged.values()];
+  if (!connected(cells)) throw new DomainError("REGENERATION_FAILED", "Территория replay-района осталась несвязной");
+  return cells;
 }
 
 class StaleChunkBuildError extends Error {}
@@ -774,6 +809,8 @@ export class AppService {
       const generator = new AppService(this.db);
       const cityMap = new Map<string, string>();
       const districtMap = new Map<string, string>();
+      const districtSegments = new Map<string, string[]>();
+      const sourceDistrictByGenerated = new Map<string, string>();
       const taskMap = new Map<string, string>();
       const districtsByCity = new Map<string, DistrictDto[]>();
       const tasksByDistrict = new Map<string, TaskDto[]>();
@@ -794,17 +831,43 @@ export class AppService {
             idempotencyKey: `regenerate-district:${district.id}`,
           });
           districtMap.set(district.id, generatedDistrict.id);
+          districtSegments.set(district.id, [generatedDistrict.id]);
+          sourceDistrictByGenerated.set(generatedDistrict.id, district.id);
+          let currentGeneratedDistrict = generatedDistrict;
+          let continuation = 0;
           for (const task of tasksByDistrict.get(district.id) ?? []) {
-            const generatedTask = await generator.createTask(temporaryCountryId, {
-              cityId: generated.id, districtId: generatedDistrict.id, title: task.title,
-              description: task.description, workItemType: task.workItemType, acceptanceCriteria: task.acceptanceCriteria,
-              systemAnalysis: task.systemAnalysis, architecture: task.architecture, designSystem: task.designSystem,
-              implementationPlan: task.implementationPlan, estimate: task.estimate, priority: task.priority,
-              dueAt: task.dueAt ?? undefined,
-              visualKind: task.visualKind,
-              parkVariant: task.visualKind === "PARK" ? task.visualAssetKey : undefined,
-              idempotencyKey: `regenerate-task:${task.id}`,
-            });
+            const createGeneratedTask = () => generator.createTask(temporaryCountryId, {
+                cityId: generated.id, districtId: currentGeneratedDistrict.id, title: task.title,
+                description: task.description, workItemType: task.workItemType, acceptanceCriteria: task.acceptanceCriteria,
+                systemAnalysis: task.systemAnalysis, architecture: task.architecture, designSystem: task.designSystem,
+                implementationPlan: task.implementationPlan, estimate: task.estimate, priority: task.priority,
+                dueAt: task.dueAt ?? undefined,
+                visualKind: task.visualKind,
+                parkVariant: task.visualKind === "PARK" ? task.visualAssetKey : undefined,
+                idempotencyKey: `regenerate-task:${task.id}`,
+              });
+            let generatedTask: TaskDto | undefined;
+            while (!generatedTask) {
+              try {
+                generatedTask = await createGeneratedTask();
+              } catch (error) {
+                if (!(error instanceof DomainError) || error.code !== "PLACEMENT_BLOCKED" || continuation >= 8) throw error;
+                continuation += 1;
+                currentGeneratedDistrict = await generator.createDistrict(temporaryCountryId, {
+                  cityId: generated.id,
+                  name: `${district.name} · продолжение ${continuation}`,
+                  goal: district.goal,
+                  description: district.description,
+                  deadline: district.deadline ?? undefined,
+                  capacitySp: district.capacitySp,
+                  activate: false,
+                  archetype: district.archetype,
+                  idempotencyKey: `regenerate-district:${district.id}:continuation:${continuation}`,
+                });
+                districtSegments.get(district.id)!.push(currentGeneratedDistrict.id);
+                sourceDistrictByGenerated.set(currentGeneratedDistrict.id, district.id);
+              }
+            }
             taskMap.set(task.id, generatedTask.id);
           }
         }
@@ -815,7 +878,7 @@ export class AppService {
       const generatedTasks = new Map((await generator.listTasks(temporaryCountryId)).map((task) => [task.id, task]));
       const reverseTaskMap = new Map([...taskMap].map(([original, generated]) => [generated, original]));
       const originalCityByGenerated = new Map([...cityMap].map(([original, generated]) => [generated, original]));
-      const originalDistrictByGenerated = new Map([...districtMap].map(([original, generated]) => [generated, original]));
+      const originalDistrictByGenerated = new Map([...sourceDistrictByGenerated].map(([generated, original]) => [generated, original]));
       for (const city of cities) {
         const generated = generatedCities.get(cityMap.get(city.id)!);
         if (!generated) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию города");
@@ -823,11 +886,22 @@ export class AppService {
           .run(generated.center.x, generated.center.y, JSON.stringify(generated.bounds), generated.styleId, city.id);
       }
       for (const district of districts.filter((item) => item.status !== "ABANDONED")) {
-        const generated = generatedDistricts.get(districtMap.get(district.id)!);
-        if (!generated) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию района");
-        const lots = generated.lots.map((lot) => ({ ...lot, taskId: lot.taskId ? reverseTaskMap.get(lot.taskId) ?? null : null }));
+        const segments = (districtSegments.get(district.id) ?? []).map((id) => generatedDistricts.get(id)).filter((item): item is DistrictDto => Boolean(item));
+        const generated = segments[0];
+        if (!generated || segments.length !== districtSegments.get(district.id)?.length) {
+          throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить геометрию района");
+        }
+        const foreignDistrictCells = new Set([...generatedDistricts.values()]
+          .filter((candidate) => !segments.some((segment) => segment.id === candidate.id))
+          .flatMap((candidate) => candidate.cells)
+          .map(cellKey));
+        const generatedCity = generatedCities.get(cityMap.get(district.cityId)!);
+        if (!generatedCity) throw new DomainError("REGENERATION_FAILED", "Не удалось восстановить город района");
+        const cells = connectReplayDistrictSegments(segments.map((segment) => segment.cells), generatedCity.bounds, foreignDistrictCells);
+        const lots = segments.flatMap((segment) => segment.lots)
+          .map((lot) => ({ ...lot, taskId: lot.taskId ? reverseTaskMap.get(lot.taskId) ?? null : null }));
         await this.db.prepare(`UPDATE districts_v3 SET cells_json = ?, lots_json = ?, growth_direction = ?, color = ? WHERE id = ?`)
-          .run(JSON.stringify(generated.cells), JSON.stringify(lots), generated.growthDirection, generated.color, district.id);
+          .run(JSON.stringify(cells), JSON.stringify(lots), generated.growthDirection, generated.color, district.id);
       }
       for (const task of tasks) {
         const generated = generatedTasks.get(taskMap.get(task.id)!);
@@ -835,8 +909,11 @@ export class AppService {
         // Geometry AND identity come from the fresh build: the replay picks
         // buildings under the new seed, so the visible model must follow the
         // re-pick instead of freezing the pre-regeneration type.
-        await this.db.prepare(`UPDATE tasks_v3 SET building_type = ?, visual_kind = ?, visual_asset_key = ?, platform_type = ?, origin_x = ?, origin_y = ?, footprint_json = ?,
+        const originalDistrictId = originalDistrictByGenerated.get(generated.districtId);
+        if (!originalDistrictId) throw new DomainError("REGENERATION_FAILED", "Не удалось сопоставить район задачи");
+        await this.db.prepare(`UPDATE tasks_v3 SET district_id = ?, building_type = ?, visual_kind = ?, visual_asset_key = ?, platform_type = ?, origin_x = ?, origin_y = ?, footprint_json = ?,
           entrance_x = ?, entrance_y = ?, access_json = ?, access_kind = ? WHERE id = ?`).run(
+          originalDistrictId,
           generated.buildingType, generated.visualKind, generated.visualAssetKey, generated.platformType, generated.origin.x, generated.origin.y, JSON.stringify(generated.footprint),
           generated.entrance.x, generated.entrance.y, JSON.stringify(generated.accessPath), generated.accessKind, task.id,
         );

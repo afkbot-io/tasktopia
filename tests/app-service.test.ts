@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
-import { AppService, complexMinimumRect, connectorCorridorBlocked, districtGrowthThicknesses, DomainError } from "../src/server/app-service";
+import { AppService, complexMinimumRect, connectReplayDistrictSegments, connectorCorridorBlocked, districtGrowthThicknesses, DomainError } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { getBuilding } from "../src/shared/catalog";
@@ -20,6 +20,22 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
   });
 
   afterEach(async () => await db?.close());
+
+  it("joins replay continuation territories without claiming a foreign district", () => {
+    const primary = Array.from({ length: 9 }, (_, index) => ({ x: index % 3, y: Math.floor(index / 3) }));
+    const continuation = Array.from({ length: 9 }, (_, index) => ({ x: 10 + index % 3, y: Math.floor(index / 3) }));
+    const foreign = new Set(Array.from({ length: 6 }, (_, y) => cellKey({ x: 6, y })));
+
+    const merged = connectReplayDistrictSegments(
+      [primary, continuation],
+      { minX: -2, minY: -2, maxX: 14, maxY: 8 },
+      foreign,
+    );
+
+    expect(connected(merged)).toBe(true);
+    expect(merged.some((cell) => foreign.has(cellKey(cell)))).toBe(false);
+    expect(continuation.every((cell) => merged.some((candidate) => cellKey(candidate) === cellKey(cell)))).toBe(true);
+  });
 
   it("reuses a completed district boundary road without opening its sealed land", () => {
     const occupied = new Set<string>();
@@ -206,12 +222,24 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const seedBefore = Number((await db.prepare("SELECT seed FROM countries WHERE id = ?").get(countryId) as { seed: number }).seed);
     const geometryBefore = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
 
+    const createTask = AppService.prototype.createTask;
+    let replayBlockedOnce = false;
+    const createTaskSpy = vi.spyOn(AppService.prototype, "createTask").mockImplementation(function (this: AppService, replayCountryId, input) {
+      if (!replayBlockedOnce && input.idempotencyKey.startsWith("regenerate-task:")) {
+        replayBlockedOnce = true;
+        return Promise.reject(new DomainError("PLACEMENT_BLOCKED", "synthetic full replay district"));
+      }
+      return createTask.call(this, replayCountryId, input);
+    });
     const result = await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world" });
+    createTaskSpy.mockRestore();
+    expect(replayBlockedOnce).toBe(true);
     expect(await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world" })).toEqual(result);
     expect(result).toMatchObject({ regenerated: true, countryId, cities: 1, districts: 1, tasks: 1 });
     expect(result.seed).not.toBe(seedBefore);
     expect((await service.listCities(countryId))[0]?.id).toBe(city.id);
     expect((await service.listDistricts(countryId))[0]?.id).toBe(district.id);
+    expect(connected((await service.listDistricts(countryId))[0]!.cells)).toBe(true);
     const preserved = await service.getTask(countryId, task.id);
     expect(preserved.buildingType).not.toBe("house-cottage");
     expect(() => getBuilding(preserved.buildingType)).not.toThrow();
