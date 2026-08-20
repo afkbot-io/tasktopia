@@ -20,7 +20,7 @@ export function materializeChunkPayload(payload: ChunkPayloadDto): ChunkDto {
     ...payload.tasks.flatMap((task) => task.footprint).map(key),
     ...payload.worldFeatures.flatMap((feature) => feature.footprint).map(key),
   ]);
-  const decorations = payload.lod === "DETAIL"
+  const decorations = payload.lod === "DETAIL" && !payload.baseLayerOnly
     ? generateWorldDecorations(
       payload.terrainSeed,
       terrain,

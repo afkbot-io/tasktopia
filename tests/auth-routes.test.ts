@@ -63,11 +63,22 @@ describe("authentication HTTP boundary", () => {
     const bootstrap = await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } });
     expect(bootstrap.statusCode).toBe(200);
     expect(bootstrap.json()).toMatchObject({ user: { email: "mayor@example.test" }, countryRole: "OWNER" });
+    expect(bootstrap.json().worldManifest).toMatchObject({
+      terrainSeed: expect.any(Number),
+      generatorVersion: "square-v7",
+      worldRevision: bootstrap.json().country.worldVersion,
+      chunkSize: 64,
+      viewBounds: bootstrap.json().viewBounds,
+    });
+    expect(bootstrap.json().worldManifest.assetRevision).toMatch(/^[a-f0-9]{16}$/);
     expect(bootstrap.json()).not.toHaveProperty("districts");
     expect(bootstrap.json()).not.toHaveProperty("tasks");
     expect(bootstrap.json().stats).toEqual({ cities: 1, districts: 0, tasks: 0, activeDistricts: 0, unfinishedBuildings: 0 });
 
     const countryId = bootstrap.json().country.id as string;
+    const manifest = await app.inject({ method: "GET", url: "/api/world-manifest", headers: { cookie } });
+    expect(manifest.statusCode).toBe(200);
+    expect(manifest.json()).toEqual(bootstrap.json().worldManifest);
     const city = await service.createCity(countryId, { name: "Scoped City", idempotencyKey: "http-city" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Scoped District", activate: true, idempotencyKey: "http-district" });
     const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Scoped task", estimate: 1, idempotencyKey: "http-task" });

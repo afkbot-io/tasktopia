@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Карта получает seed-first manifest в bootstrap и рисует временный terrain-only ground в отдельном browser Worker параллельно запросу чанка; первый рельеф больше не ждёт PostgreSQL или MCP, а authoritative дороги, тротуары и сущности атомарно заменяют его после загрузки.
+- Районная геометрия получила `world_chunk_district_cells_v1`: chunk-read больше не десериализует целый `districts_v3.cells_json`, а каждая проекция ограничена одним чанкoм и 4096 клетками.
+- Production разделён на `web`, `mcp` и `world` runtime с независимыми Node event loop, лимитами и пулами PostgreSQL; nginx направляет MCP на 3002, полный replay на 3003, а durable realtime между процессами передаётся через PostgreSQL `NOTIFY`.
+
 ## 1.16.6 — 2026-08-20
 
 - Атлас страны вычисляет границы крупных районов потоковым проходом и больше

@@ -3,12 +3,13 @@ import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadBandRole, roadClassSupportsVehicle } from "../../shared/road-profile";
-import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto } from "../../shared/contracts";
+import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
 import { apiWithMetrics } from "../api";
 import { ChunkMaterializer } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
 import { loadGameAssets } from "../game-asset-loader";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
+import { seedWorldChunkPayload } from "../seed-world-chunk";
 import {
   agentCellKey,
   buildDirectedCarEdges,
@@ -789,9 +790,10 @@ function ambientDetailAssets(): string[] {
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
+export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
   countryId: string;
   chunkSize: number;
+  worldManifest: WorldManifestDto;
   viewBounds: Rect;
   focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
   focusTask?: { origin: Cell; token: number } | null;
@@ -888,6 +890,9 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
     const groundContainers = new Map<string, { view: Sprite; lod: MapLod; usedAt: number }>();
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
+    // Base terrain has its own single worker so a large initial viewport can
+    // never queue seed work ahead of authoritative overlay materialization.
+    const seedMaterializer = new ChunkMaterializer(1);
     const chunkPayloadMetric = new RollingPerformanceMetric();
     const chunkRequestMetric = new RollingPerformanceMetric();
     const chunkParseMetric = new RollingPerformanceMetric();
@@ -895,6 +900,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
     const groundBakeMetric = new RollingPerformanceMetric();
     const latestTaskStatusPatches = new Map<string, ChunkTaskStatusPatch>();
     const invalidatedGroundKeys = new Set<string>();
+    const seedGroundKeys = new Set<string>();
+    const pendingSeedGrounds = new Map<string, Promise<void>>();
     const groundFades: Array<{ containers: Container[]; elapsed: number; duration: number }> = [];
     const initialFocus = initialFocusRef.current;
 
@@ -1513,6 +1520,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       }
 
       function removeGround(cacheKey: string): void {
+        seedGroundKeys.delete(cacheKey);
         const record = groundContainers.get(cacheKey);
         if (!record) return;
         destroyGroundView(record.view);
@@ -1602,6 +1610,36 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         host!.dataset.staticGroundViews = String(groundContainers.size);
         updateGroundLodDiagnostics();
       }
+
+      const primeSeedGround = (chunkX: number, chunkY: number, lod: MapLod, generation: number): Promise<void> => {
+        const cacheKey = chunkKey(chunkX, chunkY);
+        if (groundContainers.has(cacheKey)) return Promise.resolve();
+        const existing = pendingSeedGrounds.get(cacheKey);
+        if (existing) return existing;
+        const promise = (async () => {
+          const chunk = await seedMaterializer.materialize(seedWorldChunkPayload(worldManifest, chunkX, chunkY, lod));
+          await withAssetSlot(() => loadTextureAssets(requiredGroundAssets([chunk], lod)));
+          if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey) || groundContainers.has(cacheKey)) return;
+          const prepared = await scheduleGroundBake(
+            `${generation}:${lod}:${cacheKey}:seed`,
+            () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey) && !groundContainers.has(cacheKey),
+            () => createGroundView(chunk, lod),
+          );
+          if (!prepared) return;
+          if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey) || groundContainers.has(cacheKey)) {
+            destroyGroundView(prepared);
+            return;
+          }
+          installGround(cacheKey, prepared, lod);
+          seedGroundKeys.add(cacheKey);
+          host!.dataset.seedFirstFrame = "true";
+          setFirstFrameReady(true);
+          paintedFrame = true;
+          if (reducedMotion) app.render();
+        })().finally(() => pendingSeedGrounds.delete(cacheKey));
+        pendingSeedGrounds.set(cacheKey, promise);
+        return promise;
+      };
 
       function renderEntities(rebuildMovement: boolean): void {
         const districts = new Map<string, ChunkDistrictDto>();
@@ -2225,7 +2263,8 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         if (!deferEntityRender) publishEntityChunk(cacheKey, chunk, lod);
         const ground = groundContainers.get(cacheKey);
         const wasInvalidated = invalidatedGroundKeys.delete(cacheKey);
-        const rebuildGround = wasInvalidated || ground?.lod !== lod;
+        const wasSeedGround = seedGroundKeys.delete(cacheKey);
+        const rebuildGround = wasInvalidated || wasSeedGround || ground?.lod !== lod;
         if (!rebuildGround && ground) ground.usedAt = performance.now();
         else if (preparedGround) installGround(cacheKey, preparedGround, lod, wasInvalidated);
         else throw new Error(`Ground ${cacheKey}:${lod} was committed before its queued bake completed`);
@@ -2286,6 +2325,10 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
               await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
                 if (disposed || generation !== loadGeneration) return;
                 const cacheKey = chunkKey(chunkX, chunkY);
+                // Start deterministic terrain immediately and overlap it with
+                // the authoritative overlay request. The first visible frame
+                // no longer waits for PostgreSQL, MCP work or network latency.
+                void primeSeedGround(chunkX, chunkY, lod, generation).catch(() => undefined);
                 if (!lodTransition
                   && chunks.has(cacheKey)
                   && chunkLods.get(cacheKey) === lod
@@ -2305,7 +2348,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
                 await withAssetSlot(() => loadTextureAssets(requiredGroundAssets([chunk], lod)));
                 if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) return;
                 const ground = groundContainers.get(cacheKey);
-                if (invalidatedGroundKeys.has(cacheKey) || ground?.lod !== lod) {
+                if (invalidatedGroundKeys.has(cacheKey) || seedGroundKeys.has(cacheKey) || ground?.lod !== lod) {
                   const prepared = await scheduleGroundBake(
                     `${generation}:${lod}:${cacheKey}`,
                     () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey),
@@ -2702,6 +2745,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
         pendingChunks.clear();
         for (const cacheKey of [...groundContainers.keys()]) removeGround(cacheKey);
         chunkMaterializer.destroy();
+        seedMaterializer.destroy();
         canvas.removeEventListener("wheel", wheel); document.removeEventListener("visibilitychange", visibility);
       };
     })();
@@ -2711,7 +2755,7 @@ export function WorldCanvas({ countryId, chunkSize, viewBounds, focusCity, focus
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap?.();
       if (app.renderer) app.destroy({ removeView: true }, { children: true });
     };
-  }, [chunkSize, countryId, onArchiveSelect, onTaskSelect]);
+  }, [chunkSize, countryId, onArchiveSelect, onTaskSelect, worldManifest]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />

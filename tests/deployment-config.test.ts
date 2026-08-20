@@ -14,6 +14,7 @@ describe("production reverse proxy", () => {
   const viteConfig = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
   const clientMain = readFileSync(new URL("../src/client/main.tsx", import.meta.url), "utf8");
   const serverConfig = readFileSync(new URL("../src/server/config.ts", import.meta.url), "utf8");
+  const serverIndex = readFileSync(new URL("../src/server/index.ts", import.meta.url), "utf8");
   const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   const dockerfile = readFileSync(new URL("../Dockerfile", import.meta.url), "utf8");
   const dockerignore = readFileSync(new URL("../.dockerignore", import.meta.url), "utf8");
@@ -534,6 +535,23 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
     expect(developmentCompose).toContain("DATABASE_URL: postgres://tasktopia:tasktopia@postgres:5432/tasktopia");
     expect(developmentEnv).toContain("DATABASE_URL=postgres://tasktopia:tasktopia@127.0.0.1:5432/tasktopia");
     expect(serverConfig).toContain('process.loadEnvFile(".env")');
+  });
+
+  it("isolates MCP traffic in its own runtime and database pool", () => {
+    expect(compose).toMatch(/\n {2}mcp:\n/);
+    expect(compose).toMatch(/\n {2}world:\n/);
+    expect(compose).toContain("RUNTIME_ROLE: web");
+    expect(compose).toContain("RUNTIME_ROLE: mcp");
+    expect(compose).toContain("RUNTIME_ROLE: world");
+    expect(compose).toContain("DATABASE_POOL_MAX: 4");
+    expect(compose).toContain('"127.0.0.1:${MCP_PORT:-3002}:3000"');
+    const mcpLocation = nginx.match(/location \/mcp \{([\s\S]*?)\n\s*\}/)?.[1];
+    expect(mcpLocation, "dedicated MCP proxy route").toBeDefined();
+    expect(mcpLocation).toContain("proxy_pass http://127.0.0.1:3002");
+    const regenerationLocation = nginx.match(/location ~ \^\/api\/countries\/\[0-9a-f-\]\+\/regenerate\$ \{([\s\S]*?)\n\s*\}/)?.[1];
+    expect(regenerationLocation).toContain("proxy_pass http://127.0.0.1:3003");
+    expect(serverIndex).toContain('worldOperationsEnabled: config.runtimeRole === "combined"');
+    expect(serverIndex).toContain("worldOperationsEnabled: true");
   });
 
   it("keeps local browser tests on the seeded test database", () => {

@@ -53,6 +53,7 @@ import {
   type WorldFeatureDto,
 } from "../shared/contracts";
 import { materializeChunkPayload } from "../shared/world-chunk-payload";
+import { ASSET_REVISION } from "../shared/catalog";
 import { config } from "./config";
 import type { Db } from "./db";
 import { now, onTransactionCommit, onTransactionRollback, transaction } from "./db";
@@ -653,9 +654,19 @@ export class AppService {
         maxX: Number(published.max_x) + COUNTRY_VIEW_MARGIN,
         maxY: Number(published.max_y) + COUNTRY_VIEW_MARGIN,
       };
+    const country = await this.getCountry(user.countryId);
+    const countryRow = await this.countryRow(user.countryId);
+    const worldManifest: BootstrapDto["worldManifest"] = {
+      terrainSeed: Number(countryRow.seed),
+      generatorVersion: country.generatorVersion,
+      assetRevision: ASSET_REVISION,
+      worldRevision: country.worldVersion,
+      chunkSize: CHUNK_SIZE,
+      viewBounds,
+    };
     return {
       user: { id: user.id, email: user.email, name: user.name },
-      country: await this.getCountry(user.countryId),
+      country,
       countries: await Promise.all((await listAccessibleCountries(this.db, user.id)).map(async (access) => ({
                                 ...await this.getCountry(access.id), role: access.role, memberCount: access.memberCount,
                               }))),
@@ -663,12 +674,39 @@ export class AppService {
       archive: await this.getArchive(user.countryId),
       initialCity: initialCityRow ? cityDto(initialCityRow) : null,
       viewBounds,
+      worldManifest,
       stats: {
         cities: Number(stats.cities), districts: Number(stats.districts), tasks: Number(stats.tasks),
         activeDistricts: Number(stats.active_districts), unfinishedBuildings: Number(stats.unfinished_buildings),
       },
       chunkSize: CHUNK_SIZE,
       assetVersion: 4,
+    };
+  }
+
+  async getWorldManifest(user: AuthUser): Promise<BootstrapDto["worldManifest"]> {
+    const [country, row, published] = await Promise.all([
+      this.getCountry(user.countryId),
+      this.countryRow(user.countryId),
+      this.db.prepare(`SELECT
+        MIN((bounds_json->>'minX')::integer) AS min_x,
+        MIN((bounds_json->>'minY')::integer) AS min_y,
+        MAX((bounds_json->>'maxX')::integer) AS max_x,
+        MAX((bounds_json->>'maxY')::integer) AS max_y
+        FROM cities_v3 WHERE country_id = ?`).get(user.countryId) as Promise<Row>,
+    ]);
+    const viewBounds = published.min_x == null
+      ? { minX: -COUNTRY_VIEW_MARGIN, minY: -COUNTRY_VIEW_MARGIN, maxX: COUNTRY_VIEW_MARGIN - 1, maxY: COUNTRY_VIEW_MARGIN - 1 }
+      : {
+        minX: Number(published.min_x) - COUNTRY_VIEW_MARGIN,
+        minY: Number(published.min_y) - COUNTRY_VIEW_MARGIN,
+        maxX: Number(published.max_x) + COUNTRY_VIEW_MARGIN,
+        maxY: Number(published.max_y) + COUNTRY_VIEW_MARGIN,
+      };
+    return {
+      terrainSeed: Number(row.seed), generatorVersion: country.generatorVersion,
+      assetRevision: ASSET_REVISION, worldRevision: country.worldVersion,
+      chunkSize: CHUNK_SIZE, viewBounds,
     };
   }
 
@@ -1126,15 +1164,27 @@ export class AppService {
   }
 
   private async districtsInBounds(countryId: string, bounds: Rect): Promise<DistrictDto[]> {
-    const rows = await this.db.prepare(`SELECT DISTINCT d.* FROM world_chunk_entities_v11 chunk
-      JOIN districts_v3 d ON d.id = chunk.entity_id
-      WHERE chunk.country_id = ? AND chunk.entity_kind = 'DISTRICT'
-        AND chunk.chunk_x BETWEEN ? AND ? AND chunk.chunk_y BETWEEN ? AND ?
-      ORDER BY d.created_at`).all(
+    const rows = await this.db.prepare(`SELECT d.id, d.city_id, d.name, d.goal, d.description, d.deadline,
+      d.status, d.capacity_sp, d.lots_json, d.growth_direction, d.archetype, d.color, d.created_at,
+      projection.cells_json
+      FROM world_chunk_district_cells_v1 projection
+      JOIN districts_v3 d ON d.id = projection.district_id
+      WHERE projection.country_id = ?
+        AND projection.chunk_x BETWEEN ? AND ? AND projection.chunk_y BETWEEN ? AND ?
+      ORDER BY d.created_at, d.id, projection.chunk_y, projection.chunk_x`).all(
                       countryId, floorDiv(bounds.minX, CHUNK_SIZE), floorDiv(bounds.maxX, CHUNK_SIZE),
                       floorDiv(bounds.minY, CHUNK_SIZE), floorDiv(bounds.maxY, CHUNK_SIZE),
                     ) as Row[];
-    return rows.map(districtDto).filter((district) => district.cells.some((cell) => contains(bounds, cell)));
+    const districts = new Map<string, DistrictDto>();
+    for (const row of rows) {
+      const cells = json<Cell[]>(row.cells_json).filter((cell) => contains(bounds, cell));
+      if (cells.length === 0) continue;
+      const id = String(row.id);
+      const existing = districts.get(id);
+      if (existing) existing.cells.push(...cells);
+      else districts.set(id, districtDto({ ...row, cells_json: cells }));
+    }
+    return [...districts.values()];
   }
 
   private async tasksInBounds(countryId: string, bounds: Rect, includeAccess = false): Promise<TaskDto[]> {

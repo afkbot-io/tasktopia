@@ -116,9 +116,12 @@ deployment_committed="false"
 previous_static_target=""
 
 wait_for_app_health() {
-  curl --fail --silent --show-error \
-    --retry 30 --retry-delay 2 --retry-connrefused --retry-all-errors \
-    http://127.0.0.1:3000/health
+  local port
+  for port in 3000 3002 3003; do
+    curl --fail --silent --show-error \
+      --retry 30 --retry-delay 2 --retry-connrefused --retry-all-errors \
+      "http://127.0.0.1:${port}/health"
+  done
 }
 
 refresh_self_host_nginx_static_config() {
@@ -190,12 +193,12 @@ cleanup_deployment() {
       && -n "$previous_app_image_id" ]]; then
       echo "Deployment failed; restoring previous app image $previous_app_image_id" >&2
       docker tag "$previous_app_image_id" "$app_image_ref"
-      docker compose up -d --remove-orphans --force-recreate app
+      docker compose up -d --remove-orphans --force-recreate app mcp world
       if ! wait_for_app_health; then
         echo "Rollback app image failed its health check" >&2
       fi
     elif [[ "$app_replaced" == "true" ]]; then
-      docker compose rm -sf app
+      docker compose rm -sf app mcp world
     fi
     if [[ -n "$previous_static_target" && -f "$prepublish_journal" ]]; then
       if [[ "$app_replaced" == "true" ]]; then
@@ -276,7 +279,7 @@ if [[ -z "$current_static_dir" ]]; then
 fi
 
 app_replaced="true"
-docker compose up -d --remove-orphans app
+docker compose up -d --remove-orphans app mcp world
 docker compose ps
 wait_for_app_health
 

@@ -1,7 +1,8 @@
 # Self-hosting и production deployment
 
-Tasktopia поставляется как два контейнера: приложение и PostgreSQL 16. По
-умолчанию HTTP-порт приложения привязан к `127.0.0.1:3000`, поэтому наружу его
+Tasktopia поставляется как четыре runtime-контейнера: web API/Socket.IO, MCP,
+world replay и PostgreSQL 16. Порты Node-процессов привязаны только к loopback:
+`127.0.0.1:3000`, `:3002` и `:3003`, поэтому наружу их
 следует публиковать только через nginx, Caddy, Traefik или другой TLS-proxy.
 
 ## Быстрый запуск Docker Compose
@@ -19,6 +20,8 @@ openssl rand -hex 32
 docker compose up -d --build
 docker compose ps
 curl -fsS http://127.0.0.1:3000/health
+curl -fsS http://127.0.0.1:3002/health
+curl -fsS http://127.0.0.1:3003/health
 ```
 
 Публичная регистрация в self-hosted production закрыта по умолчанию. Создайте
@@ -113,7 +116,7 @@ sudo /srv/tasktopia/app/deploy/update-server.sh
 
 ## Официальный production: nginx + Docker
 
-Production-схема: системный nginx принимает `80/443`, приложение работает непривилегированным пользователем внутри Docker и доступно только на `127.0.0.1:3000`. PostgreSQL 16 хранит данные в named volume `tasktopia_postgres` и должен пройти healthcheck до запуска приложения.
+Production-схема: системный nginx принимает `80/443`; web работает на `127.0.0.1:3000`, `/mcp` направляется в отдельный runtime `127.0.0.1:3002`, а полный replay `/api/countries/:id/regenerate` — в `127.0.0.1:3003`. У процессов отдельные Node event loop и пулы PostgreSQL 10/4/4, поэтому CPU-stall MCP не блокирует карту и health web. PostgreSQL 16 хранит данные в named volume `tasktopia_postgres` и должен пройти healthcheck до запуска runtime.
 
 Хешированные JS/CSS и versioned game assets после успешного healthcheck
 копируются в `/srv/tasktopia/static/releases/<release>` и атомарно публикуются
@@ -134,8 +137,10 @@ cd /srv/tasktopia/app
 cp deploy/.env.production.example .env
 chmod 0600 .env
 
-docker compose up -d --build app
+docker compose up -d --build app mcp world
 curl -fsS http://127.0.0.1:3000/health
+curl -fsS http://127.0.0.1:3002/health
+curl -fsS http://127.0.0.1:3003/health
 
 release_dir="/srv/tasktopia/static/releases/bootstrap-$(date +%Y%m%d%H%M%S)"
 install -d -m 0755 "$release_dir"
@@ -156,7 +161,7 @@ curl -fsS https://tasktopia.online/health
 ```
 
 Конфигурация выделяет `POST /api/countries/:countryId/regenerate` в отдельный
-proxy-маршрут с таймаутом 15 минут. Полный детерминированный replay большой
+runtime и proxy-маршрут с таймаутом 15 минут. Полный детерминированный replay большой
 страны может занимать несколько минут; не заменяйте этот маршрут общим
 75-секундным лимитом API.
 
@@ -238,7 +243,8 @@ git -C /srv/tasktopia/app pull --ff-only origin main
 fast-forward `git pull` и перезапускает себя, если между командами появился
 новый commit. Затем он проверяет свободное место,
 создаёт dump, сохраняет последние `BACKUP_RETENTION_COUNT` копий, пересобирает
-один сервис и до его переключения экспортирует новый public tree. Новые
+общий image и атомарно пересоздаёт `app`, `mcp`, `world`; до их переключения
+экспортируется новый public tree. Новые
 content-addressed JS/CSS и текущая игровая ревизия сначала материализуются в
 отдельном контейнере без production volumes, после чего сохранённые ревизии
 ограниченно объединяются с новым деревом. Версия package входит в browser
@@ -258,9 +264,9 @@ check полный каталог статики переключается ат
 обновления. Установки без static release автоматически создают его из
 работающего app-контейнера; nginx-конфигурация установок, созданных штатным
 self-host installer, автоматически переводится на этот каталог до замены app.
-Порт 3000 наружу не публикуется.
+Порты 3000, 3002 и 3003 наружу не публикуются.
 
-Compose ограничивает Tasktopia отдельно от соседних проектов: приложение — 2 CPU, 1,5 GiB RAM и 160 процессов; PostgreSQL — 1 CPU, 1 GiB RAM и 100 процессов. Это верхние границы, а не резервирование: неиспользованные CPU остаются доступны другим контейнерам. После изменения бюджетов проверяйте `docker inspect`, `docker stats --no-stream` и флаг `OOMKilled`; не снимайте лимиты соседнего проекта для ускорения Tasktopia.
+Compose ограничивает Tasktopia отдельно от соседних проектов: web — 2 CPU/1,5 GiB, MCP — 1 CPU/768 MiB, world replay — 2 CPU/1,5 GiB, PostgreSQL — 1 CPU/1 GiB. Это верхние границы, а не резервирование: неиспользованные CPU остаются доступны другим контейнерам. После изменения бюджетов проверяйте `docker inspect`, `docker stats --no-stream` и флаг `OOMKilled`; не снимайте лимиты соседнего проекта для ускорения Tasktopia.
 
 ## Резервная копия
 
@@ -280,7 +286,10 @@ docker compose exec -T postgres pg_dump -U tasktopia -d tasktopia -Fc \
 ```bash
 docker compose ps
 docker compose logs --tail=100 app
+docker compose logs --tail=100 mcp world
 curl -fsS http://127.0.0.1:3000/health
+curl -fsS http://127.0.0.1:3002/health
+curl -fsS http://127.0.0.1:3003/health
 curl -fsS https://tasktopia.online/health
 curl -fsS https://tasktopia.online/ai.md | head
 nginx -t
@@ -288,4 +297,4 @@ certbot renew --dry-run
 ss -lntp
 ```
 
-Ожидаемые публичные порты: только `22`, `80`, `443`. Порт приложения `3000` должен слушать исключительно `127.0.0.1`, а PostgreSQL не публикуется наружу. Для нескольких app replicas требуется общий Socket.IO broker.
+Ожидаемые публичные порты: только `22`, `80`, `443`. Runtime-порты `3000`, `3002`, `3003` должны слушать исключительно `127.0.0.1`, а PostgreSQL не публикуется наружу. Межпроцессные доменные события передаются bounded PostgreSQL `NOTIFY` с последующим чтением durable `events`; Socket.IO остаётся только в web runtime.

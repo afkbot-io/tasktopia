@@ -34,13 +34,21 @@
 
 ## Chunk Streaming V2
 
-1. В DevTools задержать один фоновый `/api/chunks/*` на 3 секунды: центральный чанк и первый frame должны появиться до завершения задержки.
+1. В DevTools задержать все `/api/chunks/*` на 3 секунды: terrain должен появиться до первого ответа, а `.world-canvas` получить `data-seed-first-frame="true"`; дорог и зданий до authoritative overlay быть не должно.
 2. Перезагрузить тот же viewport: ответ хранится в приватном HTTP-кэше и перепроверяется content-hash ETag; комментарий к задаче не должен менять ETag.
 3. Изменить status обычного здания: после загрузки stage asset растёт `data-entity-rebuilds`, но chunk HTTP-запрос отсутствует и `data-ground-rebuilds` не меняется.
 4. Задержать один building PNG: ground должен появиться до ответа; после ответа растут `data-entity-ready-publishes` и `data-entity-rebuilds`, то есть ранний reconcile соседа не оставил здание пустым.
 5. Один раз оборвать building PNG после realtime status: клиент должен повторить только entity-assets, сохранить готовый ground и опубликовать новую стадию.
 6. Проверить `.world-canvas`: `data-static-ground-views` равно числу GPU ground entries, `data-chunk-data-cache <= 48`, `data-chunk-payload-cache <= 160`, `data-ground-cache <= max(96, data-resident-chunks)`, все resident/видимые ground сохранены после завершения загрузки, `data-ground-bakes-per-frame-max = 1`; `data-ground-texture-resolution` равно `1` в detail и `0.5` в overview.
 7. Зафиксировать `data-chunk-payload-p50-bytes`, `data-chunk-payload-p95-bytes`, `data-chunk-payload-p99-bytes`; аналогичные `p50/p95/p99` атрибуты для `chunk-request`, `chunk-parse`, `chunk-materialize` и `ground-bake` заканчиваются на `-ms`. Сравнить cold/warm viewport; worker/CSP/Pixi errors недопустимы.
+8. На районе больше одного чанка проверить, что `world_chunk_district_cells_v1` содержит не более 4096 клеток в строке, а chunk response не возвращает клетки за пределами requested bounds.
+
+## Изоляция runtime
+
+1. Проверить health `3000`, `3002`, `3003`; nginx `/mcp` должен идти на 3002, regenerate — на 3003.
+2. Запустить долгий MCP mutation и одновременно открыть `/health`, `/api/bootstrap` и существующий viewport: web должен отвечать независимо от загрузки MCP event loop.
+3. После MCP mutation убедиться, что web получает realtime event через PostgreSQL relay и обновляет только затронутую страну.
+4. Остановить контейнер `mcp`: web-карта и Socket.IO должны продолжить работу. Остановить `world`: обычный API и MCP должны продолжить работу; недоступна только полная перегенерация.
 
 Автоматические браузерные проверки находятся в `tests/e2e/chunk-pipeline.spec.ts` и `tests/e2e/map-streaming.spec.ts`.
 

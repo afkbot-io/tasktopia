@@ -125,6 +125,7 @@ export type RouteRuntimeHooks = {
   onCountryAccessRevoked?: (countryId: string, userId: string) => Promise<void> | void;
   onUserSessionRevoked?: (userId: string) => Promise<void> | void;
   registrationEnabled?: boolean;
+  worldOperationsEnabled?: boolean;
 };
 
 export async function registerRoutes(app: FastifyInstance, db: Db, service: AppService, hooks: RouteRuntimeHooks = {}): Promise<void> {
@@ -219,6 +220,11 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             return user ? await service.getBootstrap(user) : reply;
           });
 
+  app.get("/api/world-manifest", async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            return user ? await service.getWorldManifest(user) : reply;
+          });
+
   app.get("/api/country-atlas", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
@@ -305,7 +311,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     });
   });
 
-  app.post("/api/countries/:countryId/regenerate", { config: { rateLimit: { max: 2, timeWindow: "1 hour" } } }, async (request, reply) => {
+  if (hooks.worldOperationsEnabled !== false) app.post("/api/countries/:countryId/regenerate", { config: { rateLimit: { max: 2, timeWindow: "1 hour" } } }, async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
     const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);

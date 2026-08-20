@@ -17,6 +17,7 @@ describe("PostgreSQL migrations", () => {
       "0009_country_archive.sql", "0010_task_linked_landmarks.sql", "0011_task_documents_checklist.sql",
       "0012_staged_green_areas.sql", "0013_task_visual_kind.sql", "0014_published_chunk_payloads.sql",
       "0015_published_chunk_retention.sql",
+      "0016_chunk_local_district_cells.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
   });
@@ -33,6 +34,38 @@ describe("PostgreSQL migrations", () => {
     const indexes = await db.prepare(`SELECT indexname FROM pg_indexes
       WHERE schemaname = current_schema() AND tablename = 'world_chunk_payloads_v1'`).all<{ indexname: string }>();
     expect(indexes.map((index) => index.indexname)).toContain("world_chunk_payloads_v1_published_idx");
+  });
+
+  it("projects district geometry into bounded chunk-local rows", async () => {
+    const registered = await registerUser(db, { email: "district-projection@tasktopia.local", name: "Projection", password: "migration-password" });
+    const cityId = randomUUID();
+    const districtId = randomUUID();
+    const timestamp = new Date().toISOString();
+    await db.prepare(`INSERT INTO cities_v3
+      (id,country_id,name,status,center_x,center_y,bounds_json,style_id,created_at)
+      VALUES (?,?,'Projection city','ACTIVE',0,0,?::jsonb,'test',?)`)
+      .run(cityId, registered.user.countryId, JSON.stringify({ minX: -64, minY: -64, maxX: 127, maxY: 127 }), timestamp);
+    const cells = Array.from({ length: 64 * 64 + 2 }, (_, index) => ({ x: index % 64, y: Math.floor(index / 64) }));
+    await db.prepare(`INSERT INTO districts_v3
+      (id,city_id,name,status,cells_json,lots_json,growth_direction,color,created_at)
+      VALUES (?,?,'Projected district','ACTIVE',?::jsonb,'[]'::jsonb,'E','#fff',?)`)
+      .run(districtId, cityId, JSON.stringify(cells), timestamp);
+
+    const rows = await db.prepare(`SELECT chunk_x, chunk_y, jsonb_array_length(cells_json) AS cell_count
+      FROM world_chunk_district_cells_v1 WHERE district_id = ? ORDER BY chunk_y, chunk_x`).all(districtId);
+    expect(rows).toEqual([
+      { chunk_x: 0, chunk_y: 0, cell_count: 4096 },
+      { chunk_x: 0, chunk_y: 1, cell_count: 2 },
+    ]);
+    expect(await db.prepare(`SELECT MAX(jsonb_array_length(cells_json)) AS max_cells
+      FROM world_chunk_district_cells_v1 WHERE district_id = ?`).get(districtId)).toEqual({ max_cells: 4096 });
+
+    await db.prepare("UPDATE districts_v3 SET cells_json=?::jsonb WHERE id=?")
+      .run(JSON.stringify([{ x: -1, y: -1 }]), districtId);
+    expect(await db.prepare(`SELECT chunk_x, chunk_y, cells_json FROM world_chunk_district_cells_v1
+      WHERE district_id=?`).all(districtId)).toEqual([{ chunk_x: -1, chunk_y: -1, cells_json: [{ x: -1, y: -1 }] }]);
+    await db.prepare("DELETE FROM districts_v3 WHERE id=?").run(districtId);
+    expect(await db.prepare("SELECT 1 FROM world_chunk_district_cells_v1 WHERE district_id=?").all(districtId)).toEqual([]);
   });
 
   it("creates a singleton country archive and stores tags as jsonb", async () => {

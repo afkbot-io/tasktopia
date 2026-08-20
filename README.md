@@ -216,19 +216,23 @@ sudo /srv/tasktopia/app/deploy/update-server.sh
 ```mermaid
 flowchart LR
     Team["Команда"] --> Web["React + PixiJS"]
-    Agent["AI-агент"] --> MCP["MCP Streamable HTTP"]
-    Web --> API["Fastify API"]
-    MCP --> API
+    Agent["AI-агент"] --> MCP["MCP runtime :3002"]
+    Web --> API["Web API + Socket.IO :3000"]
+    Operator["Полный replay"] --> World["World runtime :3003"]
     API --> DB[("PostgreSQL 16")]
-    API --> Events["Socket.IO"]
-    Events --> Web
+    MCP --> DB
+    World --> DB
+    DB --> Events["Durable events + NOTIFY"]
+    Events --> API
+    API --> Socket["Socket.IO"]
+    Socket --> Web
     CDN["CDN статики"] --> Web
 ```
 
 - **PostgreSQL** хранит рабочие сущности и геометрию мира.
-- **Fastify** обслуживает авторизацию, API, MCP и генерацию карты.
+- **Fastify** запускается отдельными web, MCP и world-процессами с независимыми CPU/event loop и пулами БД.
 - **React** отвечает за управление проектом и карточки задач.
-- **PixiJS** отрисовывает карту, анимацию и потоковую загрузку чанков.
+- **PixiJS** сразу рисует seed-рельеф в браузере, затем накладывает серверные дороги, поверхности и сущности из чанков.
 - **Socket.IO** доставляет изменения только в затронутые области города.
 
 Подробнее: [архитектура](docs/ARCHITECTURE.md), [генерация мира](docs/WORLD-GENERATION.md), [здания](docs/BUILDINGS.md), [страны и доступ](docs/COUNTRIES-AND-ACCESS.md).

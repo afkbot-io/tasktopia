@@ -10,6 +10,8 @@ const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   HOST: z.string().default("127.0.0.1"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  RUNTIME_ROLE: z.enum(["combined", "web", "mcp", "world"]).default("combined"),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
   DATABASE_URL: z.string().url().default("postgres://tasktopia:tasktopia@127.0.0.1:5432/tasktopia"),
   APP_ORIGIN: z.string().url().default("http://localhost:5173"),
   STATIC_ORIGIN: z.preprocess((value) => value === "" ? undefined : value, z.string().url().optional()),
@@ -27,6 +29,8 @@ const raw = schema.parse(process.env);
 export const config = {
   ...raw,
   databaseUrl: raw.DATABASE_URL,
+  runtimeRole: raw.RUNTIME_ROLE,
+  databasePoolMax: raw.DATABASE_POOL_MAX,
   secureCookie: raw.SESSION_COOKIE_SECURE === "true" || (raw.SESSION_COOKIE_SECURE === undefined && raw.NODE_ENV === "production"),
   trustProxy: raw.TRUST_PROXY === "true",
   uploadDir: raw.UPLOAD_DIR,

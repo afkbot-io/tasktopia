@@ -33,11 +33,21 @@ describe("world chunk spatial read model", () => {
     const memberships = async () => await db.prepare(`SELECT chunk_x, chunk_y FROM world_chunk_entities_v11
       WHERE entity_kind = 'TASK' AND entity_id = ? ORDER BY chunk_x, chunk_y`).all(taskId);
     expect(await memberships()).toEqual([{ chunk_x: -2, chunk_y: -1 }, { chunk_x: -1, chunk_y: -1 }]);
+    expect(await db.prepare(`SELECT chunk_x, chunk_y, cells_json FROM world_chunk_district_cells_v1
+      WHERE district_id = ? ORDER BY chunk_x, chunk_y`).all(districtId)).toEqual([
+      { chunk_x: -2, chunk_y: -1, cells_json: [{ x: -65, y: -1 }] },
+      { chunk_x: -1, chunk_y: 0, cells_json: [{ x: -64, y: 0 }] },
+    ]);
 
     await db.prepare("UPDATE tasks_v3 SET origin_x = 128, origin_y = 128, footprint_json = ?, access_json = ? WHERE id = ?")
                               .run(JSON.stringify([{ x: 128, y: 128 }]), JSON.stringify([{ x: 129, y: 128 }]), taskId);
     expect(await memberships()).toEqual([{ chunk_x: 2, chunk_y: 2 }]);
     expect((await new AppService(db).getChunk(countryId, 2, 2)).tasks.map((task) => task.id)).toContain(taskId);
+
+    await db.prepare("UPDATE districts_v3 SET cells_json = ? WHERE id = ?")
+      .run(JSON.stringify([{ x: 128, y: 128 }]), districtId);
+    expect(await db.prepare(`SELECT chunk_x, chunk_y FROM world_chunk_district_cells_v1
+      WHERE district_id = ?`).all(districtId)).toEqual([{ chunk_x: 2, chunk_y: 2 }]);
 
     await db.prepare("DELETE FROM tasks_v3 WHERE id = ?").run(taskId);
     expect(await memberships()).toEqual([]);

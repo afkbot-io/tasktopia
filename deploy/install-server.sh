@@ -78,6 +78,10 @@ chmod 0600 .env
 docker compose up -d --build
 curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-connrefused \
   http://127.0.0.1:3000/health >/dev/null
+curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-connrefused \
+  http://127.0.0.1:3002/health >/dev/null
+curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-connrefused \
+  http://127.0.0.1:3003/health >/dev/null
 
 # Initialize the static release pointer used by subsequent zero-gap updates.
 # Older installations are migrated by update-server.sh from the running app.

@@ -84,10 +84,9 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
   const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
   const firstFrame = page.getByText("Готовим карту…", { exact: true });
   await expect(canvas).toBeVisible();
-  await expect(firstFrame).toBeVisible();
-  await expect(firstFrame).toBeHidden({ timeout: 90_000 });
-
   const host = page.locator(".world-canvas");
+  await expect(host).toHaveAttribute("data-seed-first-frame", "true");
+  await expect(firstFrame).toBeHidden({ timeout: 90_000 });
   await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
   await expect.poll(async () => await host.getAttribute("data-loading")).toBe("false");
   chunkRequests.length = 0;

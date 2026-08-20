@@ -1,7 +1,5 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCompress from "@fastify/compress";
 import fastifyHelmet from "@fastify/helmet";
@@ -15,9 +13,11 @@ import { isAssetRevision, synchronizeAssetRevision } from "./asset-revisions";
 import { getSessionUser, SESSION_COOKIE } from "./auth";
 import { config } from "./config";
 import { createDb } from "./db";
-import { createTasktopiaMcpHandler, getMcpAuthentication } from "./mcp";
+import { registerMcpHttp } from "./mcp-http";
 import { registerRoutes } from "./routes";
 import { isStaticAssetRequest } from "./static-path";
+import { publishWorldEvent, subscribeToWorldEvents } from "./world-event-relay";
+import type { RealtimeEvent } from "../shared/contracts";
 
 const app = Fastify({
   logger: {
@@ -27,8 +27,11 @@ const app = Fastify({
   bodyLimit: 20_000_000,
   trustProxy: config.trustProxy,
 });
-const db = await createDb(config.databaseUrl);
+const db = await createDb(config.databaseUrl, { maxConnections: config.databasePoolMax });
 const staticOrigin = config.STATIC_ORIGIN ?? config.APP_ORIGIN;
+const servesWeb = config.runtimeRole === "combined" || config.runtimeRole === "web";
+const servesApiRoutes = config.runtimeRole !== "mcp";
+const servesMcp = config.runtimeRole === "combined" || config.runtimeRole === "mcp";
 
 await app.register(fastifyCookie);
 await app.register(fastifyCompress, { global: true, threshold: 1024 });
@@ -52,17 +55,17 @@ await app.register(fastifyHelmet, {
 // groups below, so raising this does not weaken authentication or mutations.
 await app.register(fastifyRateLimit, { max: 5_000, timeWindow: "1 minute" });
 
-const io = new SocketServer(app.server, {
+const io = servesWeb ? new SocketServer(app.server, {
   path: "/socket.io",
   cors: { origin: config.APP_ORIGIN, credentials: true },
   connectionStateRecovery: { maxDisconnectionDuration: 2 * 60_000, skipMiddlewares: false },
-});
+}) : undefined;
 
 function cookieValue(header: string | undefined, name: string): string | undefined {
   return header?.split(";").map((part) => part.trim().split("=")).find(([key]) => key === name)?.[1];
 }
 
-io.use(async (socket, next) => {
+io?.use(async (socket, next) => {
   const sessionToken = cookieValue(socket.handshake.headers.cookie, SESSION_COOKIE);
   const user = await getSessionUser(db, sessionToken);
   if (!user) return next(new Error("unauthorized"));
@@ -71,7 +74,7 @@ io.use(async (socket, next) => {
   return next();
 });
 
-io.on("connection", (socket) => {
+io?.on("connection", (socket) => {
   const user = socket.data.user as { countryId: string };
   void socket.join(`country:${user.countryId}`);
   // Long-lived sockets must not outlive their session or keep a stale active
@@ -95,16 +98,38 @@ io.on("connection", (socket) => {
 });
 
 const service = new AppService(db, (event) => {
-  io.to(`country:${event.countryId}`).emit("world:event", event);
+  if (config.runtimeRole === "combined") io?.to(`country:${event.countryId}`).emit("world:event", event);
+  else void publishWorldEvent(db, event).catch((error) => app.log.error({ err: error, eventId: event.id }, "World event publish failed"));
 });
-const upgradedArchives = await service.upgradeCountryArchiveInfrastructure();
-if (upgradedArchives > 0) app.log.info({ countries: upgradedArchives }, "State archive infrastructure synchronized");
-const mcpHandler = createTasktopiaMcpHandler(db, service, (error) => app.log.error({ err: error }, "MCP handler error"));
+const worldEventSubscription = config.runtimeRole === "web"
+  ? await subscribeToWorldEvents(config.databaseUrl, async (eventId) => {
+      try {
+        const row = await db.prepare(`SELECT id, country_id, type, world_version, payload_json, created_at
+          FROM events WHERE id = ?`).get(eventId);
+        if (!row) return;
+        const event: RealtimeEvent = {
+          id: Number(row.id), countryId: String(row.country_id), type: String(row.type),
+          worldVersion: Number(row.world_version),
+          payload: (typeof row.payload_json === "string" ? JSON.parse(row.payload_json) : row.payload_json) as Record<string, unknown>,
+          createdAt: String(row.created_at),
+        };
+        io?.to(`country:${event.countryId}`).emit("world:event", event);
+      } catch (error) {
+        app.log.error({ err: error, eventId }, "World event relay failed");
+      }
+    })
+  : undefined;
+if (servesWeb) {
+  const upgradedArchives = await service.upgradeCountryArchiveInfrastructure();
+  if (upgradedArchives > 0) app.log.info({ countries: upgradedArchives }, "State archive infrastructure synchronized");
+}
+const mcpHandler = servesMcp ? registerMcpHttp(app, db, service, config.APP_ORIGIN) : undefined;
 
-await registerRoutes(app, db, service, {
+if (servesApiRoutes) await registerRoutes(app, db, service, servesWeb ? {
   registrationEnabled: config.registrationEnabled,
+  worldOperationsEnabled: config.runtimeRole === "combined",
   async onCountryAccessRevoked(countryId, userId) {
-    const sockets = await io.in(`country:${countryId}`).fetchSockets();
+    const sockets = await io!.in(`country:${countryId}`).fetchSockets();
     for (const socket of sockets) {
       const connectedUser = socket.data.user as { id?: string } | undefined;
       if (connectedUser?.id !== userId) continue;
@@ -113,61 +138,21 @@ await registerRoutes(app, db, service, {
     }
   },
   async onUserSessionRevoked(userId) {
-    const sockets = await io.fetchSockets();
+    const sockets = await io!.fetchSockets();
     for (const socket of sockets) {
       const connectedUser = socket.data.user as { id?: string } | undefined;
       if (connectedUser?.id === userId) socket.disconnect(true);
     }
   },
-});
+} : { registrationEnabled: false, worldOperationsEnabled: true });
 
-app.route({
-  method: ["GET", "POST", "DELETE"],
-  url: "/mcp",
-  config: { rateLimit: { max: 90, timeWindow: "1 minute" } },
-  handler: async (request, reply) => {
-  const origin = request.headers.origin;
-  if (origin && origin !== config.APP_ORIGIN) return reply.code(403).send({ error: "INVALID_ORIGIN" });
-  const authentication = await getMcpAuthentication(db, request.headers);
-  if (!authentication) {
-    return reply.header("WWW-Authenticate", 'Bearer realm="tasktopia"').code(401)
-      .send({ error: "UNAUTHENTICATED", message: "Передайте персональный ключ как Authorization: Bearer <token>" });
-  }
-  const headers = new Headers();
-  for (const [name, value] of Object.entries(request.headers)) {
-    if (Array.isArray(value)) for (const item of value) headers.append(name, item);
-    else if (value !== undefined) headers.set(name, String(value));
-  }
-  const abortController = new AbortController();
-  const abort = () => abortController.abort();
-  const abortDisconnectedResponse = () => { if (!reply.raw.writableEnded) abort(); };
-  request.raw.once("aborted", abort);
-  const webRequest = new Request(new URL(request.url, config.APP_ORIGIN), {
-    method: request.method,
-    headers,
-    signal: abortController.signal,
-  });
-  try {
-    const response = await mcpHandler.fetch(webRequest, { authInfo: authentication.authInfo, parsedBody: request.body });
-    reply.hijack();
-    reply.raw.statusCode = response.status;
-    response.headers.forEach((value, name) => reply.raw.setHeader(name, value));
-    reply.raw.once("close", abortDisconnectedResponse);
-    if (!response.body) reply.raw.end();
-    else try {
-        await pipeline(Readable.fromWeb(response.body as import("node:stream/web").ReadableStream), reply.raw);
-      } catch (error) {
-        if (!abortController.signal.aborted) throw error;
-      }
-  } finally {
-    request.raw.off("aborted", abort);
-    reply.raw.off("close", abortDisconnectedResponse);
-  }
-  },
+if (!servesApiRoutes) app.get("/health", async () => {
+  await db.prepare("SELECT 1").get();
+  return { status: "ok", role: "mcp", uptime: Math.round(process.uptime()) };
 });
 
 const publicRoot = join(process.cwd(), "dist/public");
-if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
+if (servesWeb && config.NODE_ENV === "production" && existsSync(publicRoot)) {
   const gameAssetRoot = join(publicRoot, "game-assets/v5");
   const revisionRoot = join(gameAssetRoot, "revisions");
   await synchronizeAssetRevision(gameAssetRoot, revisionRoot, ASSET_REVISION);
@@ -217,8 +202,9 @@ if (config.NODE_ENV === "production" && existsSync(publicRoot)) {
 }
 
 const close = async () => {
-  io.close();
-  await mcpHandler.close();
+  io?.close();
+  await mcpHandler?.close();
+  await worldEventSubscription?.close();
   await app.close();
   await db.close();
 };

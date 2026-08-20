@@ -31,6 +31,8 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
+      RUNTIME_ROLE: web
+      DATABASE_POOL_MAX: 10
       DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
       STATIC_ORIGIN: ${STATIC_ORIGIN:-}
@@ -61,6 +63,93 @@ services:
     mem_limit: ${APP_MEMORY_LIMIT:-1536m}
     cpus: ${APP_CPU_LIMIT:-2.00}
     cpu_shares: 1024
+    init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  mcp:
+    image: ${APP_IMAGE:-${COMPOSE_PROJECT_NAME:-tasktopia}-app:latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      RUNTIME_ROLE: mcp
+      DATABASE_POOL_MAX: 4
+      DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      TRUST_PROXY: "true"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - tasktopia_uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${MCP_PORT:-3002}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 96
+    mem_limit: ${MCP_MEMORY_LIMIT:-768m}
+    cpus: ${MCP_CPU_LIMIT:-1.00}
+    cpu_shares: 512
+    init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  world:
+    image: ${APP_IMAGE:-${COMPOSE_PROJECT_NAME:-tasktopia}-app:latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      RUNTIME_ROLE: world
+      DATABASE_POOL_MAX: 4
+      DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      REGISTRATION_ENABLED: "false"
+      TRUST_PROXY: "true"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - tasktopia_uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WORLD_PORT:-3003}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 160
+    mem_limit: ${WORLD_MEMORY_LIMIT:-1536m}
+    cpus: ${WORLD_CPU_LIMIT:-2.00}
+    cpu_shares: 768
     init: true
     logging:
       driver: json-file

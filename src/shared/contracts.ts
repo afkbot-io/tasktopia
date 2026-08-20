@@ -43,6 +43,15 @@ export type CountryAccessDto = CountryDto & {
   memberCount: number;
 };
 
+export type WorldManifestDto = {
+  terrainSeed: number;
+  generatorVersion: CountryDto["generatorVersion"];
+  assetRevision: string;
+  worldRevision: number;
+  chunkSize: number;
+  viewBounds: Rect;
+};
+
 export type CountryMemberDto = {
   userId: string;
   email: string;
@@ -340,6 +349,8 @@ export type ChunkPayloadDto = Omit<ChunkDto, "terrain" | "decorations" | "worldV
   terrainSeed: number;
   publishedVersion: number;
   lod: ChunkLod;
+  /** Client-only fast path used before authoritative overlays arrive. */
+  baseLayerOnly?: true;
   decorationContext: {
     cityBounds: Rect[];
     // One-cell ownership halo prevents clipped district boundaries from
@@ -359,6 +370,7 @@ export type BootstrapDto = {
   archive: CountryArchiveDto;
   initialCity: CityDto | null;
   viewBounds: Rect;
+  worldManifest: WorldManifestDto;
   stats: { cities: number; districts: number; tasks: number; activeDistricts: number; unfinishedBuildings: number };
   chunkSize: number;
   assetVersion: 4;
