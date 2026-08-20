@@ -29,7 +29,7 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
     await service.createDistrict(registered.user.countryId, {
                               cityId: city.id,
                               name: `District ${districtIndex + 1}`,
-                              // The opt-in scale workload uses ordinary homes so catalog uniqueness
+                              // The opt-in scale workload uses low-rise apartments so catalog uniqueness
                               // limits do not become an accidental performance-test dependency.
                               archetype: districtIndex === 0 ? "PRIVATE" : undefined,
                               capacitySp: 26,
@@ -43,7 +43,7 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
       task = await service.createTask(registered.user.countryId, {
                               cityId: city.id,
                               title: `Home task ${taskIndex + 1}`,
-                              buildingHint: taskIndex === 0 ? "house-cottage" : undefined,
+                              buildingHint: taskIndex === 0 ? "house-lowrise-gallery" : undefined,
                               estimate: 1,
                               idempotencyKey: `scale-task-${cityIndex}-${taskIndex}`,
                             });

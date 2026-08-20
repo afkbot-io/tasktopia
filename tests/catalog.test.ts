@@ -23,9 +23,10 @@ describe("active building catalog", () => {
     const residential = BUILDING_CATALOG.filter((entry) => entry.category === "HOUSE");
     expect(TASK_BUILDING_CATALOG).toEqual(expect.arrayContaining(residential));
     expect(TASK_BUILDING_CATALOG.every((entry) => entry.stages.length === 5)).toBe(true);
-    expect(TASK_BUILDING_CATALOG.some((entry) => entry.key === "house-cottage")).toBe(true);
+    expect(TASK_BUILDING_CATALOG.some((entry) => entry.key === "house-lowrise-gallery")).toBe(true);
     expect(TASK_BUILDING_CATALOG.some((entry) => entry.tags.includes("archive"))).toBe(false);
-    expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.key === "house-cottage")!)).toBe("YARD");
+    expect(TASK_BUILDING_CATALOG.some((entry) => entry.tags.includes("private-residential"))).toBe(false);
+    expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.key === "house-lowrise-gallery")!)).toBe("STONE");
     expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.tags.includes("new-build"))!)).toBe("STONE");
   });
 

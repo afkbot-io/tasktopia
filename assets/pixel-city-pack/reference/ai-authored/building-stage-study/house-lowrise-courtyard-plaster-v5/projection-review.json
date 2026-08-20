@@ -1,0 +1,69 @@
+{
+  "key": "house-lowrise-courtyard-plaster",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        46
+      ],
+      [
+        3,
+        110
+      ]
+    ],
+    [
+      [
+        108,
+        46
+      ],
+      [
+        108,
+        110
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        88
+      ],
+      [
+        108,
+        88
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [
+        [
+          8,
+          28
+        ],
+        [
+          103,
+          28
+        ]
+      ],
+      "frontEdge": [
+        [
+          2,
+          46
+        ],
+        [
+          109,
+          46
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

@@ -105,7 +105,7 @@ describe("V10 complex planner", () => {
     expect(plan.streets).toHaveLength(1);
   });
 
-  it("plans at least four private houses along one shared frontage street", () => {
+  it("plans low-rise apartment lots along one shared frontage street", () => {
     const rect = { minX: 0, minY: 0, maxX: 51, maxY: 19 };
     const plan = planComplex({
       ...BASE,
@@ -113,15 +113,15 @@ describe("V10 complex planner", () => {
       rect,
       cells: rectangleFootprint({ x: 0, y: 0 }, 52, 20),
       targetLots: 6,
-      minimumLot: { width: 8, height: 5 },
+      minimumLot: { width: 12, height: 9 },
     });
 
     expect(plan.shape).toBe("COMPLEX_ROW");
     expect(plan.streets).toHaveLength(1);
-    expect(plan.lots.length).toBeGreaterThanOrEqual(5);
-    expect(plan.lots.length).toBeLessThanOrEqual(6);
+    expect(plan.lots.length).toBeGreaterThanOrEqual(3);
+    expect(plan.lots.length).toBeLessThanOrEqual(4);
     expect(new Set(plan.lots.map((lot) => lot.origin.y)).size).toBe(1);
-    expect(plan.lots.every((lot) => lot.width >= 8 && lot.height >= 5)).toBe(true);
+    expect(plan.lots.every((lot) => lot.width >= 12 && lot.height >= 9)).toBe(true);
     const sorted = [...plan.lots].sort((left, right) => left.origin.x - right.origin.x);
     expect(sorted.slice(1).every((lot, index) => lot.origin.x === sorted[index]!.origin.x + sorted[index]!.width)).toBe(true);
   });

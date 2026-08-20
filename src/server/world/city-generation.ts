@@ -131,23 +131,29 @@ export function chooseDistrictArchetype(input: {
   return order[(input.existing.length + offset) % order.length]!;
 }
 
-export type BuildingZoningRole = "PRIVATE_RESIDENTIAL" | "DENSE_RESIDENTIAL" | "COMMERCIAL" | "CIVIC";
+export type BuildingZoningRole =
+  | "LOW_RISE_RESIDENTIAL"
+  | "MID_RISE_RESIDENTIAL"
+  | "HIGH_RISE_RESIDENTIAL"
+  | "COMMERCIAL"
+  | "CIVIC";
 
 export function buildingZoningRole(entry: BuildingCatalogEntry): BuildingZoningRole {
   const tags = new Set(entry.tags);
   if (entry.category === "CIVIC") return "CIVIC";
   if (entry.category === "COMMERCIAL") return "COMMERCIAL";
-  if (entry.category === "HIGHRISE" || tags.has("new-build") || tags.has("mixed-use")) return "DENSE_RESIDENTIAL";
-  return "PRIVATE_RESIDENTIAL";
+  if (entry.category === "HIGHRISE" || tags.has("high-rise-residential")) return "HIGH_RISE_RESIDENTIAL";
+  if (tags.has("mid-rise-residential") || tags.has("new-build") || tags.has("mixed-use")) return "MID_RISE_RESIDENTIAL";
+  return "LOW_RISE_RESIDENTIAL";
 }
 
 export function buildingCompatibleWithArchetype(entry: BuildingCatalogEntry, archetype: DistrictArchetype): boolean {
   const role = buildingZoningRole(entry);
   if (entry.serviceRole) return true;
-  if (archetype === "PRIVATE") return role === "PRIVATE_RESIDENTIAL" || role === "COMMERCIAL" || role === "CIVIC";
+  if (archetype === "PRIVATE") return role === "LOW_RISE_RESIDENTIAL" || role === "MID_RISE_RESIDENTIAL" || role === "COMMERCIAL" || role === "CIVIC";
   if (archetype === "NEW_BUILD") {
     const longSupport = role === "COMMERCIAL" && (entry.footprint.width >= 5 || entry.key === "commercial-parking-lot");
-    return role === "DENSE_RESIDENTIAL" || longSupport || role === "CIVIC";
+    return role === "MID_RISE_RESIDENTIAL" || role === "HIGH_RISE_RESIDENTIAL" || longSupport || role === "CIVIC";
   }
   if (archetype === "COMMERCIAL") return role === "COMMERCIAL" || role === "CIVIC" || entry.tags.includes("mixed-use");
   if (archetype === "CIVIC") return role === "CIVIC" || role === "COMMERCIAL";
@@ -168,8 +174,8 @@ export function taskBuildingCompatibleWithArchetype(entry: BuildingCatalogEntry,
 }
 
 export function primaryZoningRole(archetype: DistrictArchetype, role: BuildingZoningRole): boolean {
-  if (archetype === "PRIVATE") return role === "PRIVATE_RESIDENTIAL";
-  if (archetype === "NEW_BUILD") return role === "DENSE_RESIDENTIAL";
+  if (archetype === "PRIVATE") return role === "LOW_RISE_RESIDENTIAL" || role === "MID_RISE_RESIDENTIAL";
+  if (archetype === "NEW_BUILD") return role === "MID_RISE_RESIDENTIAL" || role === "HIGH_RISE_RESIDENTIAL";
   if (archetype === "COMMERCIAL") return role === "COMMERCIAL";
   if (archetype === "CIVIC") return role === "CIVIC";
   return true;
@@ -177,16 +183,18 @@ export function primaryZoningRole(archetype: DistrictArchetype, role: BuildingZo
 
 export function archetypeAffinity(entry: BuildingCatalogEntry, archetype: DistrictArchetype): number {
   const tags = new Set(entry.tags);
-  const isNewBuild = tags.has("new-build") || entry.category === "HIGHRISE";
-  const isPrivate = tags.has("private-residential");
+  const role = buildingZoningRole(entry);
+  const isLowRise = role === "LOW_RISE_RESIDENTIAL";
+  const isMidRise = role === "MID_RISE_RESIDENTIAL";
+  const isHighRise = role === "HIGH_RISE_RESIDENTIAL";
   const isMixed = tags.has("mixed-use");
   const isCommercial = entry.category === "COMMERCIAL" || tags.has("commercial");
   const isCivic = entry.category === "CIVIC" || tags.has("civic");
-  if (archetype === "NEW_BUILD") return isNewBuild || isMixed ? 13 : isCommercial ? 5 : isCivic ? 2 : isPrivate ? -9 : 0;
-  if (archetype === "PRIVATE") return isPrivate ? 13 : isCommercial ? 4 : isCivic ? 2 : isNewBuild ? -11 : 0;
-  if (archetype === "MIXED_URBAN") return isMixed ? 14 : isNewBuild ? 9 : isCommercial || isCivic ? 6 : isPrivate ? -3 : 0;
-  if (archetype === "COMMERCIAL") return isCommercial ? 14 : isMixed ? 7 : isCivic ? 3 : isPrivate ? -7 : 0;
-  return isCivic ? 16 : isMixed || isCommercial ? 5 : isPrivate ? -3 : 0;
+  if (archetype === "NEW_BUILD") return isHighRise ? 14 : isMidRise || isMixed ? 11 : isCommercial ? 5 : isCivic ? 2 : isLowRise ? -11 : 0;
+  if (archetype === "PRIVATE") return isLowRise ? 14 : isMidRise ? 10 : isCommercial ? 4 : isCivic ? 2 : isHighRise ? -11 : 0;
+  if (archetype === "MIXED_URBAN") return isMixed ? 14 : isMidRise || isHighRise ? 9 : isCommercial || isCivic ? 6 : isLowRise ? 2 : 0;
+  if (archetype === "COMMERCIAL") return isCommercial ? 14 : isMixed ? 7 : isCivic ? 3 : isLowRise ? -7 : 0;
+  return isCivic ? 16 : isMixed || isCommercial ? 5 : isLowRise ? -3 : 0;
 }
 
 export function entranceOutside(origin: Cell, entry: BuildingCatalogEntry, side: EntranceSide, offset: number): Cell {

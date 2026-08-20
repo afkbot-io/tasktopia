@@ -96,10 +96,10 @@ describe("procedural decoration footprints", () => {
     expect(first.every((item) => cellKey(item.origin) !== cellKey(task.accessPath[0]!))).toBe(true);
   });
 
-  it("decorates a compact private house without overlapping furniture footprints", () => {
-    const footprint = rectangleFootprint({ x: 20, y: 20 }, 6, 5);
-    const surfaces: SurfaceCellDto[] = Array.from({ length: 8 }, (_, index) => ({
-      x: 19 + index, y: 25, kind: "PATH" as const, finish: "PAVERS" as const,
+  it("decorates a low-rise apartment frontage without overlapping furniture footprints", () => {
+    const footprint = rectangleFootprint({ x: 20, y: 20 }, 12, 9);
+    const surfaces: SurfaceCellDto[] = Array.from({ length: 14 }, (_, index) => ({
+      x: 19 + index, y: 29, kind: "PATH" as const, finish: "PAVERS" as const,
     }));
     const terrain: TerrainCellDto[] = rectangleFootprint({ x: 16, y: 16 }, 16, 16)
       .map((cell) => ({ ...cell, terrain: "GRASS" as const, variant: 0 }));
@@ -107,13 +107,13 @@ describe("procedural decoration footprints", () => {
       id: "house", taskNumber: 38, cityId: "city", districtId: "district", title: "Дом", description: "", workItemType: "TASK",
       acceptanceCriteria: "", systemAnalysis: "", architecture: "", designSystem: "", implementationPlan: "",
       estimate: 2, priority: "NORMAL", status: "COMPLETED", progress: 100, dueAt: null,
-      buildingType: "house-woodland-home", visualKind: "BUILDING", visualAssetKey: "house-woodland-home", platformType: "YARD",
-      origin: { x: 20, y: 20 }, footprint, entrance: { x: 23, y: 25 }, accessPath: [{ x: 23, y: 25 }], accessKind: "PATH", stage: 5,
+      buildingType: "house-lowrise-gallery", visualKind: "BUILDING", visualAssetKey: "house-lowrise-gallery", platformType: "STONE",
+      origin: { x: 20, y: 20 }, footprint, entrance: { x: 26, y: 29 }, accessPath: [{ x: 26, y: 29 }], accessKind: "PATH", stage: 5,
       createdAt: "now", updatedAt: "now", mergeRequests: [],
     };
     const decorations = generateWorldDecorations(88113, terrain, new Set(footprint.map(cellKey)), surfaces, [], [], [task])
       .filter((item) => item.id.startsWith("frontage:"));
-    expect(decorations).toHaveLength(2);
+    expect(decorations).toHaveLength(3);
     const occupied = new Set<string>();
     for (const decoration of decorations) {
       const prop = PROP_CATALOG[decoration.kind]!;

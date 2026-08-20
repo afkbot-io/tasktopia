@@ -1465,8 +1465,6 @@ def draw_series_building(image: Image.Image, spec: HouseSpec, scaffold: bool) ->
         if spec.key == "commercial-marina-office":
             draw.line((width - 3, max(1, body_top - 8), width - 3, body_top + 2), fill=rgba(spec.dark))
             draw.polygon([(width - 2, body_top - 8), (width - 2, body_top - 4), (width + 2, body_top - 6)], fill=rgba(spec.accent))
-        elif spec.key == "house-canalside-terrace":
-            draw.rectangle((1, max(1, body_top - 7), 4, body_top + 1), fill=rgba(spec.dark), outline=rgba(OUTLINE))
     if scaffold:
         draw_frame(draw, width, max(2, top - 2), bottom)
         # Keep stage 4 visibly unfinished even on compact, already outlined
@@ -1624,7 +1622,7 @@ def building_metadata(key: str, raw: dict) -> dict:
     max_per_district = None
     service_role = None
     if category == "HIGHRISE":
-        platform = "STONE"; tags += ["dense", "residential", "new-build"]
+        platform = "STONE"; tags += ["dense", "residential", "new-build", "high-rise-residential"]
     elif category == "COMMERCIAL":
         tags += ["commercial"]
     elif category == "CIVIC":
@@ -1654,9 +1652,6 @@ def building_metadata(key: str, raw: dict) -> dict:
             service_role = "office-service"; tags += ["office"]
     if "parking" in key: estimates = [1, 2, 3]
     if key == "house-small-apartments": estimates = [1, 2, 3]
-    if key in {"house-rowhomes", "house-garden-villa"}: estimates = [2, 3, 6]
-    if any(token in key for token in ("cottage", "duplex", "rowhome", "townhouse", "woodland", "private", "suburban")):
-        tags += ["residential", "private-residential"]
     # These are urban multi-unit forms even when their product name does not
     # literally contain "apartment". Classifying them as private housing puts
     # 6x5/7x5 sprites into the compact private-lot family, where they cannot be
@@ -1666,7 +1661,7 @@ def building_metadata(key: str, raw: dict) -> dict:
         "residence", "senior-living", "social-housing", "tenement",
         "mediterranean-courtyard", "warehouse-lofts",
     )):
-        tags += ["residential", "new-build"]
+        tags += ["residential", "new-build", "mid-rise-residential"]
     if "mixed-use" in key:
         tags += ["residential", "commercial", "new-build", "mixed-use"]
     for token, role in (
@@ -1697,9 +1692,16 @@ def building_metadata(key: str, raw: dict) -> dict:
 
 
 def remove_ai_chroma_key(source: Image.Image) -> Image.Image:
-    """Remove the connected magenta studio backdrop from an authored segment."""
+    """Remove generated studio backdrops without erasing facade darks.
+
+    New transparent generations can still contain an opaque neutral-black
+    matte connected to the canvas edge.  Only flood-filled edge pixels are
+    removed, so enclosed windows, outlines and deep construction openings
+    remain authored pixels.
+    """
     image = source.convert("RGBA")
     pixels = image.load()
+    matte_pixels: set[tuple[int, int]] = set()
     for y in range(image.height):
         for x in range(image.width):
             red, green, blue, alpha = pixels[x, y]
@@ -1712,6 +1714,27 @@ def remove_ai_chroma_key(source: Image.Image) -> Image.Image:
                 and red - green >= 55 and blue - green >= 45
             )
             if is_magenta or alpha < 80:
+                pixels[x, y] = (0, 0, 0, 0)
+            elif (
+                (max(red, green, blue) <= 48 or min(red, green, blue) >= 235)
+                and max(red, green, blue) - min(red, green, blue) <= 18
+            ):
+                matte_pixels.add((x, y))
+
+    minimum_matte_area = max(256, round(image.width * image.height * 0.10))
+    while matte_pixels:
+        seed = matte_pixels.pop()
+        component = [seed]
+        component_pending = [seed]
+        while component_pending:
+            x, y = component_pending.pop()
+            for neighbour in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if neighbour in matte_pixels:
+                    matte_pixels.remove(neighbour)
+                    component.append(neighbour)
+                    component_pending.append(neighbour)
+        if len(component) >= minimum_matte_area:
+            for x, y in component:
                 pixels[x, y] = (0, 0, 0, 0)
     return image
 
@@ -2331,7 +2354,7 @@ def contact_sheet(manifest: dict, specs: list[HouseSpec]) -> None:
 def gas_station_style_sheet(manifest: dict) -> None:
     """Render a nearest-neighbour comparison against representative houses."""
     keys = (
-        "house-cottage", "house-gabled", "house-modern-lowrise", "house-corner-apartments",
+        "house-lowrise-courtyard-brick", "house-lowrise-gallery", "house-lowrise-green-roof", "house-corner-apartments",
         "commercial-gas-station-compact", "commercial-gas-station", "commercial-highway-service-plaza",
         "commercial-gas-station-electric", "commercial-gas-station-truck",
         "commercial-gas-station-cafe", "commercial-gas-station-wash",
@@ -2387,8 +2410,8 @@ def material_style_sheet(manifest: dict) -> None:
 def projection_style_sheet(manifest: dict) -> None:
     """Focused native-pixel review of accepted reference families."""
     keys = (
-        "house-cottage", "commercial-corner-cafe", "highrise-glass",
-        "house-worker-tenements", "house-coastal-cottage", "commercial-cinema",
+        "house-lowrise-courtyard-brick", "commercial-corner-cafe", "highrise-glass",
+        "house-worker-tenements", "house-lowrise-terrace", "commercial-cinema",
         "civic-hospital", "highrise-office", "highrise-twin-towers",
         "landmark-observatory", "landmark-aquarium", "landmark-sky-tower",
     )

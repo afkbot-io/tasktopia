@@ -40,7 +40,14 @@
 - The finished visible silhouette should occupy roughly 45–95% of canvas width and 45–95% of height. Roadside compositions may use wider negative space, but their canopy/sign/shop must remain readable at `1x`.
 - Human scale is fixed before facade detail: a normal single door is `8×16 px`, a double entrance is `16×16 px`, and a foreground adult resident occupies up to `12×20 px` inside a `16×24 px` canvas. The extra resident height represents perspective and readable motion, not a larger doorway; feet stay on the cell anchor. Do not resize doors independently between buildings or construction stages.
 - Windows are normally 2–6 px wide; do not represent each window with single noisy pixels on large buildings.
-- Roof plane is shallow: normally 2–8 px. A landmark may exceed this when the roof is its defining silhouette.
+- The dominant roof plane of every newly generated or visually regenerated
+  building must read clearly at native scale and expose at least `6 px` of
+  compressed depth. Ordinary buildings normally use `8–16 px`; a defining
+  pitched roof may use up to `24 px` when its geometry contract reserves that
+  depth. Supporting planes such as porch roofs, balconies and setbacks may
+  use `2–6 px`, but must share the same depth direction. A
+  ridge, cornice, parapet cap or thin decorative strip never substitutes for
+  the dominant roof surface.
 - A detached house must expose both the main roof plane and the top plane of any porch/landing that projects toward the street. The porch projection is normally `2–4 px`, remains centred on the declared entrance and never reveals a side facade. A high-rise with stepped massing must expose a consistent `2–6 px` top strip on every setback; alternating flat and top-visible ledges inside one sprite is a projection failure.
 - Use one strong identity cue per building and at most two supporting cues. Too many one-pixel details become noise.
 - A detached one-storey private house normally occupies 6–9 cells in width,

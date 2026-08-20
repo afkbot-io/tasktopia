@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
-import { AppService } from "../src/server/app-service";
+import { AppService, DomainError } from "../src/server/app-service";
 import { loginUser, registerUser, type AuthUser } from "../src/server/auth";
 import { createDb, transaction } from "../src/server/db";
 import { auditWorld } from "../src/server/world/world-audit";
@@ -22,9 +22,8 @@ export const MEGACITY_VALIDATION_LOGIN = {
 
 const CITY_NAME = "Большой Атлас";
 const DISTRICTS: Array<{ name: string; archetype: DistrictArchetype }> = [
-  { name: "Северные усадьбы", archetype: "PRIVATE" },
-  { name: "Южные кварталы", archetype: "PRIVATE" },
-  { name: "Новый центр", archetype: "NEW_BUILD" },
+  ...Array.from({ length: 10 }, (_, index) => ({ name: `Малоэтажный квартал ${index + 1}`, archetype: "PRIVATE" as const })),
+  ...Array.from({ length: 10 }, (_, index) => ({ name: `Средне-высотный квартал ${index + 1}`, archetype: "NEW_BUILD" as const })),
 ];
 
 const STATUS_PATHS: Record<Exclude<TaskStatus, "PLANNING">, TaskStatus[]> = {
@@ -51,25 +50,43 @@ function buildDistrictQueues(): Array<Array<BuildingCatalogEntry | undefined>> {
     right.footprint.width * right.footprint.height - left.footprint.width * left.footprint.height
     || right.footprint.width - left.footprint.width
     || left.key.localeCompare(right.key);
-  const privateHouses = legal
-    .filter((entry) => entry.category === "HOUSE" && taskBuildingCompatibleWithArchetype(entry, "PRIVATE"))
+  const lowRise = legal
+    .filter((entry) => entry.tags.includes("low-rise-residential") && taskBuildingCompatibleWithArchetype(entry, "PRIVATE"))
     .sort(byLargestFootprint);
-  const denseHouses = legal.filter((entry) => entry.category === "HOUSE" && !privateHouses.includes(entry))
-    .sort((left, right) => right.footprint.width * right.footprint.height - left.footprint.width * left.footprint.height
+  const midRise = legal
+    .filter((entry) => entry.tags.includes("mid-rise-residential") && !entry.serviceRole)
+    .sort(byLargestFootprint);
+  const highRises = legal.filter((entry) => entry.category === "HIGHRISE" && !entry.serviceRole)
+    .sort((left, right) => right.spriteSize.height - left.spriteSize.height
+      || right.footprint.width * right.footprint.height - left.footprint.width * left.footprint.height
       || left.key.localeCompare(right.key));
-  const compactHighrises = legal.filter((entry) => entry.category === "HIGHRISE" && !entry.serviceRole)
-    .sort((left, right) => left.footprint.width * left.footprint.height - right.footprint.width * right.footprint.height
-      || left.key.localeCompare(right.key));
-  if (legal.length !== 89 || privateHouses.length !== 36 || denseHouses.length !== 16) {
-    throw new Error(`Unexpected task catalog shape: ${JSON.stringify({ legal: legal.length, privateHouses: privateHouses.length, denseHouses: denseHouses.length })}`);
+  if (legal.length !== 63 || lowRise.length !== 10 || midRise.length !== 16 || highRises.length !== 32) {
+    throw new Error(`Unexpected task catalog shape: ${JSON.stringify({ legal: legal.length, lowRise: lowRise.length, midRise: midRise.length, highRises: highRises.length })}`);
   }
+  const compactMidRise = [...midRise].sort((left, right) =>
+    left.footprint.width * left.footprint.height - right.footprint.width * right.footprint.height
+    || left.key.localeCompare(right.key));
 
-  const queues: Array<Array<BuildingCatalogEntry | undefined>> = [
-    privateHouses.slice(0, 18),
-    privateHouses.slice(18),
-    [...denseHouses, ...compactHighrises.slice(0, 4)],
-  ];
-  while (queues[2]!.length < 64) queues[2]!.push(undefined);
+  const privateQueues: Array<Array<BuildingCatalogEntry | undefined>> = Array.from({ length: 10 }, () => []);
+  lowRise.forEach((entry, index) => privateQueues[index % privateQueues.length]!.push(entry));
+  const denseQueues: Array<Array<BuildingCatalogEntry | undefined>> = Array.from({ length: 10 }, () => []);
+  const appendToShortestQueue = (entry: BuildingCatalogEntry) => {
+    const shortestQueue = denseQueues.reduce((shortest, queue) => queue.length < shortest.length ? queue : shortest);
+    shortestQueue.push(entry);
+  };
+  // Place the tallest screen-space reservations first while each base
+  // district is still empty. Compact mid-rises then fill the remaining slots;
+  // otherwise a 256px tower can arrive behind two blocks and exhaust several
+  // continuation districts despite being valid on a fresh frontage.
+  highRises.forEach(appendToShortestQueue);
+  compactMidRise.forEach(appendToShortestQueue);
+  const queues = [...privateQueues, ...denseQueues];
+  for (const queue of queues) while (queue.length < 5) queue.push(undefined);
+  (["health-service", "fire-service", "police-service"] as const).forEach((serviceRole, index) => {
+    const serviceEntry = legal.find((entry) => entry.serviceRole === serviceRole);
+    if (!serviceEntry) throw new Error(`Missing required ${serviceRole} building`);
+    queues[index]![queues[index]!.length - 1] = serviceEntry;
+  });
   if (queues.reduce((sum, queue) => sum + queue.length, 0) !== 100) throw new Error("Megacity task queue must contain exactly 100 items");
   return queues;
 }
@@ -125,78 +142,99 @@ await transaction(db, async () => {
 const startedAt = performance.now();
 const city = await service.createCity(user.countryId, {
   name: CITY_NAME,
-  description: "Большой проверочный город: 100 задач, три района и максимальное законное покрытие каталога зданий задач.",
+  description: "Большой проверочный город: 100 задач, двадцать базовых компактных кварталов с автоматическими продолжениями и полное покрытие мало-/среднеэтажного каталога.",
   morphology: "DENSE_CORE",
   idempotencyKey: "megacity-validation-city",
 });
 
 const queues = buildDistrictQueues();
 const districts: DistrictDto[] = [];
-const createValidationDistrict = async (districtIndex: number): Promise<DistrictDto> => {
+const createValidationDistrict = async (districtIndex: number, continuation = 0): Promise<DistrictDto> => {
   const spec = DISTRICTS[districtIndex]!;
   return service.createDistrict(user.countryId, {
     cityId: city.id,
-    name: spec.name,
+    name: continuation === 0 ? spec.name : `${spec.name} · продолжение ${continuation}`,
     description: "Район визуальной проверки полного каталога зданий задач.",
     goal: `Проверить геометрию, наклон и стадии зданий архетипа ${spec.archetype}.`,
     archetype: spec.archetype,
     capacitySp: 100,
     activate: false,
-    idempotencyKey: `megacity-validation-district-${districtIndex}`,
+    idempotencyKey: `megacity-validation-district-${districtIndex}-${continuation}`,
   });
 };
 
-for (let districtIndex = 0; districtIndex < 3; districtIndex += 1) {
-  districts.push(await createValidationDistrict(districtIndex));
-}
 let globalTaskIndex = 0;
-const fillValidationDistrict = async (districtIndex: number): Promise<void> => {
-  const district = districts[districtIndex]!;
+const finalizeValidationDistrict = async (district: DistrictDto): Promise<void> => {
+  const districtTasks = (await service.listTasks(user.countryId)).filter((task) => task.districtId === district.id);
+  for (const task of districtTasks) {
+    await advanceTask(service, user.countryId, task, "COMPLETED", `megacity-validation-finalize-${task.id}`);
+  }
+  await service.completeDistrict(user.countryId, district.id, `megacity-validation-complete-${district.id}`);
+};
+
+const fillValidationDistrict = async (districtIndex: number, initialDistrict: DistrictDto): Promise<DistrictDto> => {
+  let district = initialDistrict;
+  let continuation = 0;
   await service.activateDistrict(user.countryId, district.id, `megacity-validation-activate-${districtIndex}`);
   for (let localIndex = 0; localIndex < queues[districtIndex]!.length; localIndex += 1) {
     const entry = queues[districtIndex]![localIndex];
-    // The final ten tasks exercise the task-driven park lifecycle instead of
-    // forcing a 60th tower frontage into one already representative centre.
-    // All 52 house families and the critical mixed-height rows are present by
-    // this point; parks keep the requested 100-task world realistic and bound
-    // the validation runtime.
-    const validationPark = globalTaskIndex >= 90;
+    // Every explicit queue slot is one unique active HOUSE family. Remaining
+    // tasks exercise the task-driven park lifecycle instead of filling the
+    // validation city with duplicate facades; this keeps the requested
+    // 100-task world realistic and bounds the geometry gate runtime.
+    const validationPark = !entry;
     const prefix = `megacity-validation-task-${globalTaskIndex}`;
-    let task = await service.createTask(user.countryId, {
-      cityId: city.id,
-      districtId: district.id,
-      title: entry
-        ? `${String(globalTaskIndex + 1).padStart(3, "0")} · ${entry.label}`
-        : `${String(globalTaskIndex + 1).padStart(3, "0")} · Новый городской корпус`,
-      description: entry
-        ? `Визуальная проверка типа ${entry.key}: пропорции, перспектива, вход и все стадии строительства.`
-        : "Штатно подобранный городской корпус для проверки плотной застройки и разнообразия фасадов.",
-      estimate: ([1, 2, 3, 6] as const)[globalTaskIndex % 4]!,
-      buildingHint: validationPark ? "park:urban-central" : entry?.key,
-      visualKind: validationPark ? "PARK" : undefined,
-      parkVariant: validationPark ? "urban-central" : undefined,
-      idempotencyKey: prefix,
-    });
+    const createTask = () => service.createTask(user.countryId, {
+        cityId: city.id,
+        districtId: district.id,
+        title: entry
+          ? `${String(globalTaskIndex + 1).padStart(3, "0")} · ${entry.label}`
+          : `${String(globalTaskIndex + 1).padStart(3, "0")} · Новый городской корпус`,
+        description: entry
+          ? `Визуальная проверка типа ${entry.key}: пропорции, перспектива, вход и все стадии строительства.`
+          : "Штатно подобранный городской корпус для проверки плотной застройки и разнообразия фасадов.",
+        estimate: ([1, 2, 3, 6] as const)[globalTaskIndex % 4]!,
+        buildingHint: validationPark ? "park:urban-central" : entry?.key,
+        visualKind: validationPark ? "PARK" as const : "BUILDING" as const,
+        parkVariant: validationPark ? "urban-central" : undefined,
+        idempotencyKey: prefix,
+      });
+    let task: TaskDto | undefined;
+    while (!task) {
+      try {
+        task = await createTask();
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== "PLACEMENT_BLOCKED" || continuation >= 8) throw error;
+        await finalizeValidationDistrict(district);
+        continuation += 1;
+        district = await createValidationDistrict(districtIndex, continuation);
+        districts.push(district);
+        await service.activateDistrict(user.countryId, district.id, `megacity-validation-activate-${districtIndex}-${continuation}`);
+      }
+    }
     const targetStatus = TARGET_STATUSES[globalTaskIndex % TARGET_STATUSES.length]!;
     task = await advanceTask(service, user.countryId, task, targetStatus, prefix);
     globalTaskIndex += 1;
     console.log(`[${globalTaskIndex}/100] ${DISTRICTS[districtIndex]!.name}: ${task.buildingType} -> stage ${task.stage}`);
   }
+  return district;
 };
-for (let districtIndex = 0; districtIndex < 3; districtIndex += 1) {
-  await fillValidationDistrict(districtIndex);
-}
-
-for (let districtIndex = 0; districtIndex < 2; districtIndex += 1) {
-  const district = districts[districtIndex]!;
-  await service.activateDistrict(user.countryId, district.id, `megacity-validation-finalize-activate-${districtIndex}`);
-  const districtTasks = (await service.listTasks(user.countryId)).filter((task) => task.districtId === district.id);
-  for (const task of districtTasks) {
-    await advanceTask(service, user.countryId, task, "COMPLETED", `megacity-validation-finalize-${task.id}`);
+// Build the height-sensitive half first, before planned low-rise territories
+// can box in the road network. Districts are created just in time instead of
+// reserving all twenty territories up front; compact low-rise blocks remain
+// easy to place after the tower skyline is established.
+const districtFillOrder = [
+  ...Array.from({ length: 10 }, (_, index) => index + 10),
+  ...Array.from({ length: 10 }, (_, index) => index),
+];
+for (const [fillIndex, districtIndex] of districtFillOrder.entries()) {
+  const initialDistrict = await createValidationDistrict(districtIndex);
+  districts.push(initialDistrict);
+  const finalDistrict = await fillValidationDistrict(districtIndex, initialDistrict);
+  if (fillIndex < districtFillOrder.length - 1) {
+    await finalizeValidationDistrict(finalDistrict);
   }
-  await service.completeDistrict(user.countryId, district.id, `megacity-validation-complete-${districtIndex}`);
 }
-await service.activateDistrict(user.countryId, districts[2]!.id, "megacity-validation-reactivate-center");
 const repairedBridgeCells = await service.repairDanglingBridges(user.countryId);
 
 const cityTasks = (await service.listTasks(user.countryId)).filter((task) => task.cityId === city.id);
@@ -214,6 +252,11 @@ const categoryCoverage = Object.fromEntries((["HOUSE", "HIGHRISE", "COMMERCIAL",
   catalog: TASK_BUILDING_CATALOG.filter((entry) => entry.category === category).length,
 }]));
 const missingHouseTypes = TASK_BUILDING_CATALOG.filter((entry) => entry.category === "HOUSE" && !represented.has(entry.key)).map((entry) => entry.key);
+const missingResidentialTypes = TASK_BUILDING_CATALOG.filter((entry) => (
+  !entry.serviceRole
+  && entry.tags.some((tag) => ["low-rise-residential", "mid-rise-residential", "high-rise-residential"].includes(tag))
+  && !represented.has(entry.key)
+)).map((entry) => entry.key);
 const visualRects = cityTasks.filter((task) => task.visualKind === "BUILDING" && task.stage >= 3).map((task) => {
   const entry = TASK_BUILDING_CATALOG.find((candidate) => candidate.key === task.buildingType)!;
   const opaque = entry.stageOpaqueBounds[task.stage - 1]!;
@@ -256,6 +299,8 @@ const output = {
   categoryCoverage,
   allHouseTypesCovered: missingHouseTypes.length === 0,
   missingHouseTypes,
+  allResidentialTypesCovered: missingResidentialTypes.length === 0,
+  missingResidentialTypes,
   visualBuildingOverlaps,
   blockingVisualBuildingOverlaps,
   missingLegal,
@@ -268,6 +313,7 @@ const output = {
 
 if (cityTasks.length !== 100) throw new Error(`Expected 100 tasks, received ${cityTasks.length}`);
 if (missingHouseTypes.length > 0) throw new Error(`House coverage failed: ${JSON.stringify(missingHouseTypes)}`);
+if (missingResidentialTypes.length > 0) throw new Error(`Residential coverage failed: ${JSON.stringify(missingResidentialTypes)}`);
 if (blockingVisualBuildingOverlaps.length > 0) throw new Error(`Blocking visual building overlap failed:\n${JSON.stringify(blockingVisualBuildingOverlaps, null, 2)}`);
 if (audit.violations.length > 0) throw new Error(`World audit failed:\n${JSON.stringify(audit.violations, null, 2)}`);
 await mkdir("screenshots/megacity-validation", { recursive: true });

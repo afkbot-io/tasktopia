@@ -62,16 +62,16 @@ describe("building platform presentation", () => {
       .toEqual({ family: "tile", key: "pavement" });
   });
 
-  it("keeps dense residential blocks urban while ordinary houses receive yards", () => {
+  it("keeps both low- and mid-rise residential complexes on pavement", () => {
     expect(taskPlatformPresentation(getBuilding("house-small-apartments")))
       .toEqual({ family: "tile", key: "pavement" });
-    expect(taskPlatformPresentation(getBuilding("house-cottage")))
-      .toEqual({ family: "terrain", key: "GRASS", variant: 1 });
+    expect(taskPlatformPresentation(getBuilding("house-lowrise-gallery")))
+      .toEqual({ family: "tile", key: "pavement" });
   });
 
-  it("turns an ordinary house footprint into a deterministic residential yard", () => {
+  it("paves every low-rise residential footprint cell", () => {
     const entry = {
-      ...getBuilding("house-cottage"),
+      ...getBuilding("house-lowrise-gallery"),
       footprint: { width: 6, height: 5 },
       entrances: [{ side: "S" as const, offset: 3 }],
     };
@@ -87,12 +87,7 @@ describe("building platform presentation", () => {
       3,
     ));
 
-    expect(taskPlatformCellPresentation(entry, footprint, { x: 13, y: 24 }, 17, 3))
-      .toEqual({ family: "tile", key: "path-brown" });
-    expect(taskPlatformCellPresentation(entry, footprint, { x: 13, y: 23 }, 17, 3))
-      .toEqual({ family: "tile", key: "path-brown" });
-    expect(presentations).not.toContainEqual({ family: "tile", key: "pavement" });
-    expect(new Set(presentations.map((presentation) => JSON.stringify(presentation))).size).toBeGreaterThanOrEqual(3);
+    expect(presentations).toEqual(footprint.map(() => ({ family: "tile", key: "pavement" })));
     expect(footprint.map((cell) => taskPlatformCellPresentation(entry, footprint, cell, 17, 3)))
       .toEqual(presentations);
   });

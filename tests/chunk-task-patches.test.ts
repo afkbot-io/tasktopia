@@ -6,7 +6,7 @@ function task(): ChunkTaskDto {
   return {
     id: "task-1", taskNumber: 1, cityId: "city-1", districtId: "district-1", title: "Task",
     workItemType: "TASK", status: "PLANNING", progress: 0, stage: 1,
-    buildingType: "HOUSE", visualKind: "BUILDING", visualAssetKey: "house-bungalow",
+    buildingType: "HOUSE", visualKind: "BUILDING", visualAssetKey: "house-lowrise-gallery",
     platformType: "YARD", origin: { x: 1, y: 1 }, footprint: [{ x: 1, y: 1 }], accessPath: [],
   };
 }

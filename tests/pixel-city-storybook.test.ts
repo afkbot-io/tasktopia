@@ -15,7 +15,7 @@ describe("Pixel City asset Storybook", () => {
     };
 
     expect(report.variants).toEqual(["A", "B", "C"]);
-    expect(report.counts.buildings).toBeGreaterThanOrEqual(193);
+    expect(report.counts.buildings).toBeGreaterThanOrEqual(167);
     expect(report.counts.stages).toBe(report.counts.buildings * 5);
     expect(report.counts.props).toBeGreaterThanOrEqual(177);
     expect(report.counts.vehicles).toBeGreaterThanOrEqual(8);

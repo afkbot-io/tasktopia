@@ -94,9 +94,10 @@ const CORE_CITY_SERVICE_ROLES = new Set(["health-service", "fire-service", "poli
 
 /** Task-backed city catalog.
  *
- * Large new-builds remain the vocabulary of NEW_BUILD districts, while the
- * reviewed HOUSE families restore compact yards and continuous street rows in
- * PRIVATE districts. Reviewed health, fire and police facades stay in the same
+ * Residential families are tiered as low-, mid- and high-rise apartment
+ * complexes. The legacy PRIVATE district code selects low+mid rise, while
+ * NEW_BUILD selects mid+high rise; detached private houses are not active.
+ * Reviewed health, fire and police facades stay in the same
  * selector because the city audit requires them at 10/20/30 tasks. The compact
  * parking service is also task-backed so an explicitly named parking task does
  * not have to grow a residential superblock. Other categories remain
@@ -111,7 +112,7 @@ export function isTaskBuilding(entry: BuildingCatalogEntry): boolean {
   return TASK_BUILDING_CATALOG.some((candidate) => candidate.key === entry.key);
 }
 
-/** Dense new-builds use a paved apron; ordinary homes keep their catalog yard. */
+/** Every apartment family uses its catalog pavement platform. */
 export function taskBuildingPlatform(entry: BuildingCatalogEntry): PlatformKind {
   return entry.tags.includes("new-build") ? "STONE" : entry.platform;
 }

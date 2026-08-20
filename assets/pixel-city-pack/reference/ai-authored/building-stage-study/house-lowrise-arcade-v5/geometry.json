@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "key": "house-lowrise-arcade",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [
+    16,
+    18
+  ],
+  "physicalFootprintCells": [
+    16,
+    10
+  ],
+  "projectedRoofDepthCells": 3,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": {
+    "side": "S",
+    "offset": 8
+  },
+  "doorSizePx": [
+    16,
+    16
+  ],
+  "doorLeafSizePx": [
+    12,
+    14
+  ],
+  "doorBottomInsetPx": 0,
+  "sitePreviewCells": [
+    20,
+    18
+  ]
+}

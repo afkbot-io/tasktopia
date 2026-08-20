@@ -27,6 +27,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -79,6 +80,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -131,6 +133,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -183,6 +186,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -234,6 +238,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -263,208 +268,6 @@
       ]
     },
     {
-      "key": "house-cottage",
-      "label": "Коттедж",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        64
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        1,
-        2
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-cottage-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-cottage-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-cottage-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "da19e80844e717105e7132497a598a7dfa097eda55221d14b095d6003e779614",
-        "5b70015dc31b9c83e0233c3f3919912eec56d03e2de6fd20912e391a329356d6",
-        "58f5577d5b7ee719ee7416f7855a2940bde18a49fe5887b258992d4d4cb3c9d7"
-      ]
-    },
-    {
-      "key": "house-townhouse",
-      "label": "Узкий таунхаус",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        32,
-        72
-      ],
-      "footprintCells": [
-        4,
-        5
-      ],
-      "anchorPx": [
-        16,
-        72
-      ],
-      "platform": "YARD",
-      "estimates": [
-        1,
-        2
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-townhouse-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-townhouse-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-townhouse-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "9e9b3707032ceffd5260cec8b7827a074d002a3b67326e95f5a4a1f9c8f2f235",
-        "9c5ac3f2ac342823a5da4a94f897efeb61a36b9013561c9b103c93b2c8a67387",
-        "4452ebb0a27cf4a6454c9b117fd116ea9a57f8dc1ac6d1895e915e302ae09601"
-      ]
-    },
-    {
-      "key": "house-gabled",
-      "label": "Дом с фронтоном",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        64
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        1,
-        2
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-gabled-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-gabled-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-gabled-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "4237ac1d3080343ae63f0ce78e2f8d7011cf84faadcb56e08cb55867302c5b55",
-        "3c4283e6f7271deec0c3feb7df5f3b6e6aad88b70083787032bed28dab21dc28",
-        "d537d1da5b1f8f1e303517e127ee62ecf22a27942bc6ea62910cd2233d9a8ec2"
-      ]
-    },
-    {
-      "key": "house-duplex",
-      "label": "Дуплекс",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        72,
-        72
-      ],
-      "footprintCells": [
-        9,
-        6
-      ],
-      "anchorPx": [
-        36,
-        72
-      ],
-      "platform": "YARD",
-      "estimates": [
-        1,
-        2
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-duplex-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-duplex-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-duplex-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "82dc1b1304f49a65836fcbcf4e6d84dffac6860d48abd200ae8bf92a46655f74",
-        "fb69950afe283fad1e993c41febd2161dea4213b122d19bea78d45935ed5cca4",
-        "953c0f8652a3ef60ee26a07c1b5ceb2a0acb18519b46b8f7c8e71666142b5d58"
-      ]
-    },
-    {
       "key": "house-small-apartments",
       "label": "Малый жилой дом",
       "category": "HOUSE",
@@ -481,7 +284,7 @@
         48,
         144
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         1,
         2,
@@ -489,6 +292,7 @@
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -1315,256 +1119,6 @@
       ]
     },
     {
-      "key": "house-bungalow",
-      "label": "Пригородное бунгало",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        64,
-        48
-      ],
-      "footprintCells": [
-        8,
-        5
-      ],
-      "anchorPx": [
-        32,
-        48
-      ],
-      "platform": "YARD",
-      "estimates": [
-        1,
-        2
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-bungalow-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-bungalow-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-bungalow-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "fe47bba3431e81eeb03130b7130a9981d1e976af5c580d643ea455b3ecf13bae",
-        "7d152b79abe64eae0778e10cc22a271a34b458d3e770ffb7cfef5d8ed9a4dc74",
-        "b7700bf773a676e99996c26c47c059957819b3371154d619d1e76fca822a6cc9"
-      ]
-    },
-    {
-      "key": "house-suburban-narrow",
-      "label": "Узкий частный дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        64
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 3
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-suburban-narrow-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-suburban-narrow-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-suburban-narrow-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "22539c8d034304419127f64b261b643c8e219b7ef24bce36bc2047b3fbfc1ec9",
-        "b7fdd3bec06b86439e638fa791406a11d471e84ebfd3b471397e887ea4afbc1d",
-        "b3246105d826694d4bbda8a2f067b098e73b8e173e1b81d151313bd8d7cfecda"
-      ]
-    },
-    {
-      "key": "house-garden-villa",
-      "label": "Садовая вилла",
-      "category": "HOUSE",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        64
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-garden-villa-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-garden-villa-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-garden-villa-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "0a247e6595d5dfd574fcc81b3a106b49ebe8f61ef9eea49e8eec33c0188b6d0c",
-        "e3655079b090d94cd5d6ea2f64b4a75624d57615dd1ec78507310a3f29d1f51b",
-        "0c7616baf873de992c04d04384bed33fd140b9a29dd1616e1e6c451988cc68c8"
-      ]
-    },
-    {
-      "key": "house-modern-compact",
-      "label": "Современный частный дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        56
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-modern-compact-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-modern-compact-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-modern-compact-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "533ddfc30027db393b0936e6c34c8bd58271a3fd7f6dc9a71cf3ef30e614080b",
-        "3bce4b3ef7726a6069d278d7fb21c71496f275d3a7e25230aa5b8ef80317aa53",
-        "e41e0384dd5faa0c5fdd8869b0ea2329cab45dd2574f1dfa79e9de773d6ecf7a"
-      ]
-    },
-    {
-      "key": "house-rustic-cottage",
-      "label": "Деревянный коттедж",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        56
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-rustic-cottage-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-rustic-cottage-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-rustic-cottage-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "76ddf4d06771d99f7899c2b2c8403c7d2bd8a7d135f8f7911151c9e86bc91621",
-        "98cb15774ce21196c0d04774d7e09c8777575048c6fb2a9c035cae1fe2585371",
-        "7c112ffaf29d5b3f421dc05eaa023d5e2c631e8e3582901015c598ba2b1fcd89"
-      ]
-    },
-    {
       "key": "civic-post-office",
       "label": "Городская почта",
       "category": "CIVIC",
@@ -1616,109 +1170,6 @@
       ]
     },
     {
-      "key": "house-rowhomes",
-      "label": "Рядные дома",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        56
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3,
-        6
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-rowhomes-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-rowhomes-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-rowhomes-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "f140641b79e18f4910d845fda12aeb5a867bfd13ae5282870b41862e08f39a26",
-        "fdbec578a5cbc05df6b2f1d9673e5054a5f31759ddae139545c2cdb0cbd06311",
-        "e3572f9592c6622571f75e424a3b7f75b0837d7134ff27461ec166e8d1d459ea"
-      ]
-    },
-    {
-      "key": "house-brick-duplex",
-      "label": "Кирпичный дуплекс",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        64
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-brick-duplex-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-brick-duplex-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-brick-duplex-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "2a70251e795efc8ff46cdf463060ba68e6ec54249ac638e7cfea1b91a984f0c0",
-        "167e71835b4dca8f4f26fb919b1d82f783f095554f53e23c3d978e7ff79c5252",
-        "a3768d39fc4e08f0485b474f7ffbcf3bc6bfba64881680f2196611dc71c40c62"
-      ]
-    },
-    {
       "key": "house-courtyard-apartments",
       "label": "Дом с внутренним двором",
       "category": "HOUSE",
@@ -1735,12 +1186,13 @@
         64,
         144
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -1769,106 +1221,6 @@
       ]
     },
     {
-      "key": "house-modern-lowrise",
-      "label": "Современный малоэтажный дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        56
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-modern-lowrise-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-modern-lowrise-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-modern-lowrise-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "561d502e74a18aa1988ad67e3af157b610f7b41ff38fa4d3d5d7f067a5b12279",
-        "8078df1f5634dfac69e59f41d7dac36f00b4cca7746bb6852243557ea47b847e",
-        "5a021ceb58aa7441ad20d86ba31b8704f06486e7c7ccf536e7f6437ad079ec38"
-      ]
-    },
-    {
-      "key": "house-woodland-home",
-      "label": "Деревянный пригородный дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        72,
-        64
-      ],
-      "footprintCells": [
-        9,
-        6
-      ],
-      "anchorPx": [
-        36,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-woodland-home-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-woodland-home-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-woodland-home-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "a9867e876a19d67042225e53039ce9c562f66e99d842b63ee101acdf24a2ff43",
-        "9b937885132b5905fc47924d943314ff5f49ba8b2d2182ccf0a46fcaadb84610",
-        "5af6fabc194beb2eea0b70fe3058f9e622df6295b257c6da5b9bcde2f60de1ae"
-      ]
-    },
-    {
       "key": "house-corner-apartments",
       "label": "Угловой жилой дом",
       "category": "HOUSE",
@@ -1885,13 +1237,14 @@
         56,
         144
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         3,
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -2246,6 +1599,7 @@
       "tags": [
         "commercial",
         "dense",
+        "high-rise-residential",
         "highrise",
         "mixed-use",
         "new-build",
@@ -2326,304 +1680,6 @@
       ]
     },
     {
-      "key": "house-colonial",
-      "label": "Колониальный дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        80
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        80
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-colonial-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-colonial-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-colonial-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "8082a00835659907481187d3d982d86279747bc0aa10a27fbfa31ec4ceca6219",
-        "82983470650fd3b1bea1dd9fc0fbdeafe1017f718f673d8f20e5c0d40b0b7ca2",
-        "d2494ad1cc38fa4f6ab8330a64e5cd76c15bfd2b27348a106ee261ae78b7936b"
-      ]
-    },
-    {
-      "key": "house-craftsman",
-      "label": "Крафтсман-коттедж",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        56
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-craftsman-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-craftsman-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-craftsman-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "ad5d187edf783fe96f7474824cd0752097ff895d6db2c814e5990c98076a9c30",
-        "7455ba70f5a0ba3ce6ddecd68bc9c5f7da018719ed0159aa2ecfaf585a6b92dc",
-        "2bfe9b5ae61d85ec053b2901b727826a69a484b11588dd0c8097e20f2b897fb8"
-      ]
-    },
-    {
-      "key": "house-ranch",
-      "label": "Ранчо",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        64,
-        48
-      ],
-      "footprintCells": [
-        8,
-        5
-      ],
-      "anchorPx": [
-        32,
-        48
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-ranch-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-ranch-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-ranch-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "1ada3e98b09c3c094ac469784a1d21c3bfbd8692975bc4de6fdfdd5df7d79c31",
-        "a9aa71767a66bf541ce57a1a06ab65b7eb960ce2bb64a70eea66b7ea9b686820",
-        "8b12b3f10cad410febe7f66778645eca617524277c65c3fc8518059b723251da"
-      ]
-    },
-    {
-      "key": "house-split-level",
-      "label": "Сплит-левел",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        48
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        48
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-split-level-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-split-level-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-split-level-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "1fc6547e897feb9cfb5af9e3e766bda8ec526dbf06c1a5c4fadd1199a7be53e3",
-        "730b73c077a000a2836a02ec39772560fae63637798b55cc10a12647d1733dc8",
-        "26994953822924f89f3b449ccf9f2fc0b924a12c9e723e623c8664dfe52d8f46"
-      ]
-    },
-    {
-      "key": "house-townhouse-brick",
-      "label": "Кирпичный таунхаус",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        80
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        80
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-townhouse-brick-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-townhouse-brick-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-townhouse-brick-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "313eee65f9687db27b3b7923f922f54aea4a7610ae4356c7cd942fe37bec78f4",
-        "3830f1da1373e96ee4a88d5be728fe6111a1150d8055aa96819a3642ad5d1f3a",
-        "fbd78892a8621f607680262d4824e4acab53b31ef0d595fa5341de74cac2f171"
-      ]
-    },
-    {
-      "key": "house-townhouse-stone",
-      "label": "Каменный таунхаус",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        72
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        72
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-townhouse-stone-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-townhouse-stone-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-townhouse-stone-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "65ef9541aac2fd6372b2edecefca81a555ba3afe4e0c6b28a7dfcd4aaa437155",
-        "d5042cd9e49c32ca96c352631b6e9e4c136a0a5c636230396f1af7b4838383ec",
-        "2077a12afea934dfee212c6ec4e812021ede88ca76ece38e1fe3612f04278ce9"
-      ]
-    },
-    {
       "key": "house-garden-apartment",
       "label": "Садовый жилой комплекс",
       "category": "HOUSE",
@@ -2640,12 +1696,13 @@
         64,
         144
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -2674,405 +1731,6 @@
       ]
     },
     {
-      "key": "house-eco-cottage",
-      "label": "Эко-коттедж",
-      "category": "HOUSE",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        48,
-        56
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-eco-cottage-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-eco-cottage-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-eco-cottage-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "a40f1365530ece47cac8c3041e36ee488a4d3bcbcf21d2fe2ca3ebc15efa298f",
-        "75883ee8ed0d379932b26340e0f85c8ae4c67943d4f603656207cd5decb227eb",
-        "9a67c8a4398aff96d62b5cc433c8f136e874140b3e8fdcdc2939b8789509bc11"
-      ]
-    },
-    {
-      "key": "house-narrow-shotgun",
-      "label": "Узкий дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        32,
-        56
-      ],
-      "footprintCells": [
-        4,
-        5
-      ],
-      "anchorPx": [
-        16,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        1,
-        2
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-narrow-shotgun-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-narrow-shotgun-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-narrow-shotgun-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "53e939d5fedd22df0ba4e044c09adff439135744f6cfc70450e2c7b4748b8684",
-        "1ccc3d8371a382d6b2dd14df4ba38f98ad99ed1431434336015106ae29361bb3",
-        "33b0075da7215fb6a287d99023338aef9fe26f98aa0be05e528ee345c2e38e8e"
-      ]
-    },
-    {
-      "key": "house-courtyard-block",
-      "label": "Дворовый жилой блок",
-      "category": "HOUSE",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        80,
-        96
-      ],
-      "footprintCells": [
-        10,
-        7
-      ],
-      "anchorPx": [
-        40,
-        96
-      ],
-      "platform": "YARD",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-courtyard-block-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-courtyard-block-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-courtyard-block-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "1d860e7c8231455ae9f8462c6f24471bd9a9ba67b5a59d21ce04bb08b7c437e0",
-        "e5da9ae2a9be3078ffbf6a6a501e6ae9da8d372da0bfe96a80662656066922eb",
-        "1fd9ab0e8f814a7b314e86515ab176ea5f3a0e65e432844469bc52ca976e1c3f"
-      ]
-    },
-    {
-      "key": "house-modern-villa",
-      "label": "Современная вилла",
-      "category": "HOUSE",
-      "rarity": "RARE",
-      "spriteSize": [
-        64,
-        56
-      ],
-      "footprintCells": [
-        8,
-        6
-      ],
-      "anchorPx": [
-        32,
-        56
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-modern-villa-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-modern-villa-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-modern-villa-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "2845a5514ab8144fed5821a69a4ab299268eaa0f08696dc496c148cd819b7270",
-        "5d1a344c8487c28a17a7e744c9a1eea27212672bfd5937bd7f50dece57995d9c",
-        "7d5369dca9a9675a55926445a1d49c237dd6d84fe2a0b733b98e6c44f31c29f4"
-      ]
-    },
-    {
-      "key": "house-duplex-brick",
-      "label": "Кирпичный дуплекс",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        48,
-        72
-      ],
-      "footprintCells": [
-        6,
-        5
-      ],
-      "anchorPx": [
-        24,
-        72
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 2
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-duplex-brick-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-duplex-brick-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-duplex-brick-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "be62121a762133d212467714fed21ea5ba3dec75d39a7458478efc072c83eb61",
-        "2cde186c06487cc2c8b1a76213b6ea29c566062a2b07cfefe1eb58b8d19f5f53",
-        "1c3d4acfe1753050a696bb7997ea246f69b338fa0a6c46b897ebc63e10732559"
-      ]
-    },
-    {
-      "key": "house-studio-loft",
-      "label": "Жилой лофт",
-      "category": "HOUSE",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        56,
-        96
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        96
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-studio-loft-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-studio-loft-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-studio-loft-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "01e362ddf635418178c7ba7564abb364d6cb549eb267db67d699e70db17eda45",
-        "f5a0ca4200b4ba479e0a04876bc7ec8ae472ea4478a1dcac780ed76223aedccf",
-        "55e3c358669dd1be67c1d3707b9daac2355fa28417154526c0495a0d9f9be0c6"
-      ]
-    },
-    {
-      "key": "house-rowhouse-corner",
-      "label": "Угловой рядный дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        64,
-        96
-      ],
-      "footprintCells": [
-        8,
-        6
-      ],
-      "anchorPx": [
-        32,
-        96
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-rowhouse-corner-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-rowhouse-corner-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-rowhouse-corner-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "c11cae773d804f5900e31da048518021dc3b0bdd512564c7409466c1a345d71f",
-        "394f62e4baaefeb223c85bbd2dd8393595e3665630041452332c9ebc2820e31a",
-        "951109a8e411f57d0e85b9306d232a80d99cd9e6550220da380b8dd0a42a26ec"
-      ]
-    },
-    {
-      "key": "house-suburban-brick",
-      "label": "Пригородный кирпичный дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        88
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        88
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-suburban-brick-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-suburban-brick-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-suburban-brick-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "7f09a6321f928214b16d60aabece762c9cf4272be416b29ecd8a6e52e692e84d",
-        "0e6d423e8eff495ec56bae6929b8153e51a8ffd4936645650df0099ef4c7562c",
-        "a8caca13465e5866efc527e30691ffc8d14a3054742895abe863fcc642bad393"
-      ]
-    },
-    {
       "key": "house-apartment-walkup",
       "label": "Малоэтажный дом с лестницей",
       "category": "HOUSE",
@@ -3089,13 +1747,14 @@
         48,
         160
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         3,
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -4526,6 +3185,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -4543,14 +3203,14 @@
       "maxPerDistrict": 1,
       "serviceRole": null,
       "stageSources": [
-      "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-3.png",
-      "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-4.png",
-      "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/highrise-residential-tower-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-      "f3d5d32c36ed9e3c00d3024128c1ae0f2947a1de221344ff3603ba6f503bce8e",
-      "55197eb10984f24682e2e27303a1024bd253325ea6bb99b0f8bd736044634821",
-      "ad1930872f8f46e32153b17ca6ff7708b7d3fdd4eb3d9c2c23d8f01b72bbcc6d"
+        "f3d5d32c36ed9e3c00d3024128c1ae0f2947a1de221344ff3603ba6f503bce8e",
+        "55197eb10984f24682e2e27303a1024bd253325ea6bb99b0f8bd736044634821",
+        "ad1930872f8f46e32153b17ca6ff7708b7d3fdd4eb3d9c2c23d8f01b72bbcc6d"
       ],
       "reviewed": true
     },
@@ -4578,6 +3238,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -4630,6 +3291,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -4682,6 +3344,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -4733,6 +3396,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -4785,6 +3449,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -4887,6 +3552,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "landmark",
         "new-build",
@@ -4923,18 +3589,18 @@
       "label": "Городской памятник",
       "category": "CIVIC",
       "rarity": "RARE",
-    "spriteSize": [
-      64,
-      96
-    ],
-    "footprintCells": [
-      8,
-      7
-    ],
-    "anchorPx": [
-      32,
-      96
-    ],
+      "spriteSize": [
+        64,
+        96
+      ],
+      "footprintCells": [
+        8,
+        7
+      ],
+      "anchorPx": [
+        32,
+        96
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -4952,7 +3618,7 @@
       "entrances": [
         {
           "side": "S",
-        "offset": 4
+          "offset": 4
         }
       ],
       "maxPerCity": 1,
@@ -4965,255 +3631,9 @@
         "ai-authored/building-stage-study/landmark-monument-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-      "eddb1c67cbfc6640be67333c415cb62afd6c06362b4ad14a0c9cb0680d779485",
-      "7d95d6e654e0310fc08d47ea35ed495105bf6728fb1ddc4541341b328c4d69b6",
-      "f57d9f5ac4e6aba333f9bb5cd593c09ad943b4d8a918105dede58bde27a057f0"
-      ]
-    },
-    {
-      "key": "house-canalside-terrace",
-      "label": "Террасы у канала",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        64,
-        88
-      ],
-      "footprintCells": [
-        8,
-        6
-      ],
-      "anchorPx": [
-        32,
-        88
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-canalside-terrace-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-canalside-terrace-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-canalside-terrace-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "f9677be83a7527d9afb8edc39615444bb389240ea1d356b58f9ced8083454e40",
-        "79c60d7fa0c55e1b755a8feb135e53068c8bc44a12fac94589b1c9d6268a4db4",
-        "4b61836d7558a9aec9bbf414105bef62bbae7ee2ad3f055b0baa1a14ebf56958"
-      ]
-    },
-    {
-      "key": "house-alpine-chalet",
-      "label": "Альпийское шале",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        64
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-alpine-chalet-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-alpine-chalet-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-alpine-chalet-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "bef4a02d9b018bca8c685a2ef6be2ab2c09faa785c406d30f736a2c85b049385",
-        "940c062de79deb409199c420b8b042eeb0e56c9a90e4bde83c64394f789edd94",
-        "7fcf915b3be962f3e03fc00e7bb7589c1dc75c1e2d87f2038dbef70ffb3bb969"
-      ]
-    },
-    {
-      "key": "house-coastal-cottage",
-      "label": "Береговой коттедж",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        56,
-        72
-      ],
-      "footprintCells": [
-        7,
-        5
-      ],
-      "anchorPx": [
-        28,
-        72
-      ],
-      "platform": "YARD",
-      "estimates": [
-        2,
-        3
-      ],
-      "tags": [
-        "house",
-        "private-residential",
-        "residential"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-coastal-cottage-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-coastal-cottage-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-coastal-cottage-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "687493675c86c0a825fd57e37c3be586c9a2c32cef4cb09af890275f186e2db4",
-        "1b32eb170e3a99aedc0ede43a379e7ece7e56da7dac82c03501cb10bfac8d767",
-        "85780e9fb11b5141b088d9faba2572a8dd1d04611fb83623680d81d760b72467"
-      ]
-    },
-    {
-      "key": "house-farmstead",
-      "label": "Фермерская усадьба",
-      "category": "HOUSE",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        72,
-        64
-      ],
-      "footprintCells": [
-        9,
-        6
-      ],
-      "anchorPx": [
-        36,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 5
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-farmstead-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-farmstead-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-farmstead-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "8c6337a26c3bf4c30d7be1579dc071ca0cc5cd62bf127ee1ab03487e4d97c5da",
-        "1303a4b6996096e68316faac52548369cd6ae03e3782d6154ba36e5f37d36b7e",
-        "7d94a07571576de461975cb06a67bdecebfa835f44baa8d765d5a2fb70b80710"
-      ]
-    },
-    {
-      "key": "house-live-work",
-      "label": "Дом с мастерской",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        64,
-        88
-      ],
-      "footprintCells": [
-        8,
-        6
-      ],
-      "anchorPx": [
-        32,
-        88
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-live-work-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-live-work-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-live-work-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "ffa188fc05b7fccc6ed0aa6921cbdda8e50a656febb9aa9236ab626e3a9ddc74",
-        "e10c1504b3f933bd3220e0006153e6714d1b2b8d3be7572aea2ed2a127254a11",
-        "11583e3d69de1019116443e15c0dd9a1ebaad17f7649663dc5dcd37b2a0d21c7"
+        "eddb1c67cbfc6640be67333c415cb62afd6c06362b4ad14a0c9cb0680d779485",
+        "7d95d6e654e0310fc08d47ea35ed495105bf6728fb1ddc4541341b328c4d69b6",
+        "f57d9f5ac4e6aba333f9bb5cd593c09ad943b4d8a918105dede58bde27a057f0"
       ]
     },
     {
@@ -5233,13 +3653,14 @@
         48,
         144
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         3,
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5284,12 +3705,13 @@
         64,
         176
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5334,12 +3756,13 @@
         64,
         128
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5384,12 +3807,13 @@
         80,
         128
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5418,55 +3842,6 @@
       ]
     },
     {
-      "key": "house-prefab-modular",
-      "label": "Модульный жилой дом",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        64,
-        64
-      ],
-      "footprintCells": [
-        8,
-        6
-      ],
-      "anchorPx": [
-        32,
-        64
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-prefab-modular-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-prefab-modular-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-prefab-modular-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "5849339884539a117649c99df5cb3f6689408d03d9c0739364162f3b18522421",
-        "82c66280f6c5cf4a09a89cd6c14e463b1ac523eb1c9c7aa62de2cd08bdd22a50",
-        "fb053e5bf1a04e3f1c76dcb0663334efb8b27690afb5f851d03bda5e6939647b"
-      ]
-    },
-    {
       "key": "house-art-deco-apartments",
       "label": "Апартаменты ар-деко",
       "category": "HOUSE",
@@ -5483,12 +3858,13 @@
         56,
         176
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5533,12 +3909,13 @@
         80,
         176
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5567,54 +3944,6 @@
       ]
     },
     {
-      "key": "house-brownstone-row",
-      "label": "Ряд браунстоунов",
-      "category": "HOUSE",
-      "rarity": "COMMON",
-      "spriteSize": [
-        72,
-        96
-      ],
-      "footprintCells": [
-        9,
-        6
-      ],
-      "anchorPx": [
-        36,
-        96
-      ],
-      "platform": "YARD",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 5
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-brownstone-row-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-brownstone-row-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-brownstone-row-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "c1ff28c1a1cead9e0a4de27a2766a098311e639b2d5e19fa20650f918de63087",
-        "fe5a8ff467100fccb3965ee93e06c3a15d75697b273e9d0a34fa3bdfc8acc132",
-        "feac6dbb3bf47a19f1c9401d0de40a5daa203511399181a7e517cb32679334a5"
-      ]
-    },
-    {
       "key": "house-mediterranean-courtyard",
       "label": "Средиземноморский двор",
       "category": "HOUSE",
@@ -5631,12 +3960,13 @@
         96,
         128
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5681,12 +4011,13 @@
         88,
         120
       ],
-      "platform": "ASPHALT",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5732,12 +4063,13 @@
         88,
         176
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5766,104 +4098,6 @@
       ]
     },
     {
-      "key": "house-rooftop-garden",
-      "label": "Дом с садом на крыше",
-      "category": "HOUSE",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        64,
-        72
-      ],
-      "footprintCells": [
-        8,
-        6
-      ],
-      "anchorPx": [
-        32,
-        72
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-rooftop-garden-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-rooftop-garden-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-rooftop-garden-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "a6c5a3eb69eea5a487b2e4ec09c77003885ff481a3da8bf4cbc91e9e436c2697",
-        "bb9a4b1beb376773c0eb1d34a60f27be5a50ade631615fc3d9da08698b9a093d",
-        "1b1088f44b4ce9b7e35a825ae39e5108221428f28967a085b35b91aa9ac8eac0"
-      ]
-    },
-    {
-      "key": "house-stilt-riverside",
-      "label": "Дом на прибрежных сваях",
-      "category": "HOUSE",
-      "rarity": "RARE",
-      "spriteSize": [
-        64,
-        72
-      ],
-      "footprintCells": [
-        8,
-        6
-      ],
-      "anchorPx": [
-        32,
-        72
-      ],
-      "platform": "YARD",
-      "estimates": [
-        3,
-        6
-      ],
-      "tags": [
-        "house"
-      ],
-      "ruleIds": [
-        "STANDARD"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 4
-        }
-      ],
-      "maxPerCity": null,
-      "maxPerDistrict": null,
-      "serviceRole": null,
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/house-stilt-riverside-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-stilt-riverside-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-stilt-riverside-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "d5ee84f302d6f804b64f41ec0d97b3c5b3c82742a46d3e93dd300296e951aa7c",
-        "7f11a51163f4712b20137bb6dbf36fb57e04f334bed6fc0701a13dfabdc9c9b9",
-        "6cfeb2996bd326c7f72df09e8f2f20fd0238f7e28e92087bd74ad865ffeea905"
-      ]
-    },
-    {
       "key": "house-arcade-apartments",
       "label": "Дом с жилой аркадой",
       "category": "HOUSE",
@@ -5880,12 +4114,13 @@
         88,
         144
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -5930,12 +4165,13 @@
         80,
         176
       ],
-      "platform": "YARD",
+      "platform": "STONE",
       "estimates": [
         6
       ],
       "tags": [
         "house",
+        "mid-rise-residential",
         "new-build",
         "residential"
       ],
@@ -7724,18 +5960,18 @@
       "label": "Административный центр",
       "category": "CIVIC",
       "rarity": "RARE",
-    "spriteSize": [
-      112,
-      96
-    ],
-    "footprintCells": [
-      14,
-      9
-    ],
-    "anchorPx": [
-      56,
-      96
-    ],
+      "spriteSize": [
+        112,
+        96
+      ],
+      "footprintCells": [
+        14,
+        9
+      ],
+      "anchorPx": [
+        56,
+        96
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7750,7 +5986,7 @@
       "entrances": [
         {
           "side": "S",
-        "offset": 7
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -7763,9 +5999,9 @@
         "ai-authored/building-stage-study/civic-administration-center-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-      "9e9e9af3d2fc6f155267759ce9fd8588e9487673cecccd0606090c7cb5769cd8",
-      "917326bf3f01f86ecc95113027d0ec0c7073bd3b8e7bdaf3493c17b15c09d861",
-      "8c079325dd26a0d06dda1284b6acdb2520fa78630d9dd5d67811bd16cee9a808"
+        "9e9e9af3d2fc6f155267759ce9fd8588e9487673cecccd0606090c7cb5769cd8",
+        "917326bf3f01f86ecc95113027d0ec0c7073bd3b8e7bdaf3493c17b15c09d861",
+        "8c079325dd26a0d06dda1284b6acdb2520fa78630d9dd5d67811bd16cee9a808"
       ]
     },
     {
@@ -7822,18 +6058,18 @@
       "label": "Школа искусств",
       "category": "CIVIC",
       "rarity": "UNCOMMON",
-    "spriteSize": [
-      96,
-      80
-    ],
-    "footprintCells": [
-      12,
-      7
-    ],
-    "anchorPx": [
-      48,
-      80
-    ],
+      "spriteSize": [
+        96,
+        80
+      ],
+      "footprintCells": [
+        12,
+        7
+      ],
+      "anchorPx": [
+        48,
+        80
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7849,7 +6085,7 @@
       "entrances": [
         {
           "side": "S",
-        "offset": 6
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -7862,9 +6098,9 @@
         "ai-authored/building-stage-study/civic-arts-school-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-      "cc609e0f6486b6cb0926b8f2df046852b50a6113b955a1c47c54a5a42e287a02",
-      "52dff4dfa3b2d5462d3391cfd29f06fb9688dad0d40ec16fc8e2b706449f713d",
-      "141103c7d9e4482fdb173711cbd962ccbb38dae76c6c294746d093a63849c96c"
+        "cc609e0f6486b6cb0926b8f2df046852b50a6113b955a1c47c54a5a42e287a02",
+        "52dff4dfa3b2d5462d3391cfd29f06fb9688dad0d40ec16fc8e2b706449f713d",
+        "141103c7d9e4482fdb173711cbd962ccbb38dae76c6c294746d093a63849c96c"
       ]
     },
     {
@@ -7872,18 +6108,18 @@
       "label": "Приют для животных",
       "category": "CIVIC",
       "rarity": "COMMON",
-    "spriteSize": [
-      112,
-      64
-    ],
-    "footprintCells": [
-      14,
-      7
-    ],
-    "anchorPx": [
-      56,
-      64
-    ],
+      "spriteSize": [
+        112,
+        64
+      ],
+      "footprintCells": [
+        14,
+        7
+      ],
+      "anchorPx": [
+        56,
+        64
+      ],
       "platform": "SERVICE",
       "estimates": [
         6
@@ -7898,7 +6134,7 @@
       "entrances": [
         {
           "side": "S",
-        "offset": 7
+          "offset": 7
         }
       ],
       "maxPerCity": null,
@@ -7911,9 +6147,9 @@
         "ai-authored/building-stage-study/civic-animal-shelter-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-      "d8835f9505987084e669e2933ffa49273e9e8721841dd4fdb52514e8e5796ec3",
-      "f03ebe92421fcfee3b1b21b9690093c6f63a30169ffa28cb1794930b435e641b",
-      "c6a38928cdc7766be5dba284f045caa2718540b9a3e77728762ef1a3959bad9f"
+        "d8835f9505987084e669e2933ffa49273e9e8721841dd4fdb52514e8e5796ec3",
+        "f03ebe92421fcfee3b1b21b9690093c6f63a30169ffa28cb1794930b435e641b",
+        "c6a38928cdc7766be5dba284f045caa2718540b9a3e77728762ef1a3959bad9f"
       ]
     },
     {
@@ -7939,6 +6175,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -7990,6 +6227,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8041,6 +6279,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8092,6 +6331,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8143,6 +6383,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8194,6 +6435,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8245,6 +6487,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8296,6 +6539,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8347,6 +6591,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8398,6 +6643,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8450,6 +6696,7 @@
       "tags": [
         "commercial",
         "dense",
+        "high-rise-residential",
         "highrise",
         "mixed-use",
         "new-build",
@@ -8502,6 +6749,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8553,6 +6801,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8604,6 +6853,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8656,6 +6906,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8707,6 +6958,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8758,6 +7010,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8809,6 +7062,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8860,6 +7114,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8911,6 +7166,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "new-build",
         "residential"
@@ -8995,18 +7251,18 @@
       "label": "Обсерватория",
       "category": "CIVIC",
       "rarity": "UNIQUE",
-    "spriteSize": [
-      96,
-      88
-    ],
-    "footprintCells": [
-      12,
-      8
-    ],
-    "anchorPx": [
-      48,
-      88
-    ],
+      "spriteSize": [
+        96,
+        88
+      ],
+      "footprintCells": [
+        12,
+        8
+      ],
+      "anchorPx": [
+        48,
+        88
+      ],
       "platform": "STONE",
       "estimates": [
         6
@@ -9024,7 +7280,7 @@
       "entrances": [
         {
           "side": "S",
-        "offset": 6
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -9037,9 +7293,9 @@
         "ai-authored/building-stage-study/landmark-observatory-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-      "5f97910ce12174ad890662b75cfa4cd7fcb0b59213e00a3b45c7e33cac97490d",
-      "7fa8eaaf5e91660f362dc69d733db126f168eedf33c8109d2dbda92a07ada4a9",
-      "69398acc2bfb334d8437bfb7d23c71ed7ec21e93274a521c0c3789791c2f7063"
+        "5f97910ce12174ad890662b75cfa4cd7fcb0b59213e00a3b45c7e33cac97490d",
+        "7fa8eaaf5e91660f362dc69d733db126f168eedf33c8109d2dbda92a07ada4a9",
+        "69398acc2bfb334d8437bfb7d23c71ed7ec21e93274a521c0c3789791c2f7063"
       ]
     },
     {
@@ -9428,6 +7684,7 @@
       ],
       "tags": [
         "dense",
+        "high-rise-residential",
         "highrise",
         "landmark",
         "new-build",
@@ -9658,6 +7915,536 @@
         "4e58493856e745984f79f16014d673c568c5b848a04e3fef4f056d8542ce74f7",
         "374eab1641c9cfe214da0b1aa49b44245396e7dc6f33414c6cf2b2318721ea10"
       ]
+    },
+    {
+      "key": "house-lowrise-courtyard-brick",
+      "label": "Кирпичный малоэтажный ЖК",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        128,
+        120
+      ],
+      "footprintCells": [
+        16,
+        10
+      ],
+      "anchorPx": [
+        64,
+        120
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 8
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-courtyard-brick-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-courtyard-brick-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-courtyard-brick-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "174ab4790510559e9a503d347f9f764bf9bb7e9a859c1c3d6965bf9d7aa37b8f",
+        "cc36113260a0cf7920342dd4b1bff72b8016b6e96e8f3408cca3d42eddd2e0da",
+        "4945f4ef03fca272d48bcb982416bfbb1a520446849b6046ac45c6891fc587f4"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-courtyard-plaster",
+      "label": "Светлый малоэтажный ЖК",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        112,
+        112
+      ],
+      "footprintCells": [
+        14,
+        10
+      ],
+      "anchorPx": [
+        56,
+        112
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "4ee5191ae3d3b4b08a54d9735bec70b3fd86c149547b507a446c988785b97bcd",
+        "94738770d36cb8c6d0e7581b401a7479355cc3ec072dcf28063b98f5cf461f33",
+        "e67b0c9727c94553ce114eff1e29e6a47fd3778a0443b66939679db438bfbb66"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-gallery",
+      "label": "Галерейный жилой дом",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        96,
+        88
+      ],
+      "footprintCells": [
+        12,
+        9
+      ],
+      "anchorPx": [
+        48,
+        88
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-gallery-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-gallery-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-gallery-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "aa55dab59965d860c981ec70eb1a8eedc1477a2abb90ab9be8676ff07f8fb251",
+        "232d946ddcaa171664ad3cca0048fa1a419c6b29eb82de63a6f6a4b92801c2d8",
+        "05583e77782896284fe8066f075acacb81f392adb895f5ab2500d0decb61e667"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-terrace",
+      "label": "Террасный малоэтажный ЖК",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        112,
+        144
+      ],
+      "footprintCells": [
+        14,
+        10
+      ],
+      "anchorPx": [
+        56,
+        144
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-terrace-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-terrace-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-terrace-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "8d75ce76133f44cb9a20732cfacecac67bfa45d3f6eb85ad18029f466de93d00",
+        "ca5fd31f8e20b7e291fb349624e322ecbd64fbf8f12235de873c003cfc8454bf",
+        "c226f2a53c0bb0ec699ca7b3c9523101765b32c580b8762b4a6a8fc5abae465d"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-corner",
+      "label": "Угловой малоэтажный ЖК",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        112,
+        136
+      ],
+      "footprintCells": [
+        14,
+        10
+      ],
+      "anchorPx": [
+        56,
+        136
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-corner-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-corner-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-corner-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "1159f411b64d0bd58c91701f5b5cf4bba25a64d5fd99ff11ca26e504f720d478",
+        "25b969e786e06533ba22bfcd88f6c2514b9f96e8e078abe6b6bad952d39e3d89",
+        "9c9b23fe1e8a5347ae2d2b3b359661697529259cc90c3c85398a3d8a86bd432e"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-stepped",
+      "label": "Ступенчатый малоэтажный ЖК",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        128,
+        152
+      ],
+      "footprintCells": [
+        16,
+        10
+      ],
+      "anchorPx": [
+        64,
+        152
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 8
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-stepped-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-stepped-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-stepped-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "8056ebc7562dbf8840d7983e2c473fe75cac2a58bc404772bd1930005fb8403c",
+        "d35c7f75bfd6f8870101a1a2302eb074d115ad70c9d67f59c04e029458efe964",
+        "f939daa3558a481994a62c0eb357ba829e4f394b9cff7cac21fa3fd038bc5596"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-green-roof",
+      "label": "Жилой дом с зелёной крышей",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        112,
+        136
+      ],
+      "footprintCells": [
+        14,
+        10
+      ],
+      "anchorPx": [
+        56,
+        136
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-green-roof-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-green-roof-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-green-roof-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "acabfd9b10c0b183095863e3076423e17031ee66edb07ba4753702939da88240",
+        "3fe6b8c404041f22044f0688ba4d8384c5aeb93e4b5e04f0c083153b29141876",
+        "ca5ea72a6c8e04717c2768cddf320603ef79ad8eae3eae7fcea728c62e54be38"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-loft",
+      "label": "Малоэтажные лофт-апартаменты",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        96,
+        136
+      ],
+      "footprintCells": [
+        12,
+        9
+      ],
+      "anchorPx": [
+        48,
+        136
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-loft-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-loft-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-loft-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "3bf9b4dfac59a82f3d36b72c993f60615fedb4c1a6d645be9938f0b1ce2e141f",
+        "931b229a539175c57c3d510e73d6000fdc90de3bb21a2cef75fa6e15b1e2555d",
+        "669fdfb5e983e7127202c93fd7f0dda2831b6a24414823a2eb9d005ecbf9a37f"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-arcade",
+      "label": "Жилой дом с аркадой",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        128,
+        144
+      ],
+      "footprintCells": [
+        16,
+        10
+      ],
+      "anchorPx": [
+        64,
+        144
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 8
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-arcade-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-arcade-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-arcade-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "22896d9c29fdaec73603987d0b31f6385df1a63b9db5b8bf9d8236fef7f88da8",
+        "ab529f9b753e299d8ae980bd924950e2bdf460f7692957131fdfb309716dca67",
+        "f02e9cf89c1484cb705718c82a80c757f6503842ded22cbffc5260338dcdecfe"
+      ],
+      "reviewed": true
+    },
+    {
+      "key": "house-lowrise-modular",
+      "label": "Модульный малоэтажный ЖК",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        96,
+        128
+      ],
+      "footprintCells": [
+        12,
+        9
+      ],
+      "anchorPx": [
+        48,
+        128
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "house",
+        "low-rise-residential",
+        "residential"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/building-stage-study/house-lowrise-modular-v5/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-modular-v5/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-modular-v5/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "4bff020ce7eaeb5a6e03cae8cae832ca77b392f58395fed1b7d651728a4fb19a",
+        "eab50e584f053a7dc23fe1c6640c00c5136d8a64aeffb98dd0ca0a2a9f80f3b2",
+        "b5a2c0cedabb440cdff8d26c88c50a7a4d1d5572ea3647285c89b48f6768fa0f"
+      ],
+      "reviewed": true
     }
   ]
 }

@@ -20,7 +20,7 @@ Read all of these before generating:
 
 1. Inspect stage 5 at original resolution.
 2. Require explicit `widthCells`, `depthCells`, `heightCells`, `projectedRoofDepthCells`, entrance and one-cell construction clearance.
-3. Run the verifier against stage 5 before generating. Stop if stage 5 fails canvas, coverage or projection checks.
+3. Run the verifier against stage 5 before generating. Stop if stage 5 fails canvas, coverage or projection checks. For newly generated or visually regenerated buildings, require a dominant primary roof plane of at least `6 px`, normally `8–16 px` and up to `24 px` for a defining pitched roof whose geometry reserves that depth; do not count a ridge, cornice or parapet cap as that plane.
 4. Treat physical depth and screen depth separately. Never draw a `depthCells × 8`-pixel roof plane. Use `projectedRoofDepthCells × 8` for the principal roof and preserve that same compressed depth direction on every secondary horizontal plane. Porches, landings, canopies, balconies, podiums, setbacks, terraces and crowns must expose a shallow top surface; none may become a flat facade stripe or introduce a receding side wall.
 5. Treat the outside fence, stage-1 site and stage-2 foundation as shared tile composition. Do not bake them or pavement into the structure image.
 6. Classify scale before drawing. A private one-storey house is not a shortened

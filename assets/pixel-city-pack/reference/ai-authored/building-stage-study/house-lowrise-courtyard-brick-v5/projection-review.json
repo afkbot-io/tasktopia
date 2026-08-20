@@ -1,0 +1,69 @@
+{
+  "key": "house-lowrise-courtyard-brick",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        53
+      ],
+      [
+        3,
+        118
+      ]
+    ],
+    [
+      [
+        124,
+        53
+      ],
+      [
+        124,
+        118
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        96
+      ],
+      [
+        124,
+        96
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [
+        [
+          10,
+          33
+        ],
+        [
+          117,
+          33
+        ]
+      ],
+      "frontEdge": [
+        [
+          2,
+          53
+        ],
+        [
+          125,
+          53
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

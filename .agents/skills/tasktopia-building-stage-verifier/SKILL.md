@@ -40,6 +40,21 @@ catalog work must use the shared construction-layout tests instead. The verifier
 - one geometry-overlay preview per stage;
 - `report.json` with measurements, errors, warnings and manual gates.
 
+For any newly generated or visually regenerated family, also pass
+`--projection-review <projection-review.json> --require-projection-review`.
+The review records semantic facade/top-plane segments on the normalized stage-5
+grid. The verifier measures their orientation, visible depth and side-facade
+width, requires the dominant primary roof to expose at least `6 px` and span
+at least half the canvas, then writes `stage-5-projection.png` and
+`stage-5-projection-4x.png`. The review must explicitly confirm that the
+primary annotation traces the dominant surface and that its front edge is the
+real facade eave, not a ridge, cornice or parapet cap.
+Inspect that overlay to confirm the annotations trace real pixels; the numeric
+gate and overlay review are both blocking.
+Segmented pitched roofs must use separate real-pixel planes joined by one
+`primaryRoofGroup`; the verifier accepts parallel sloped edges and measures
+their union, not a fictitious rectangular envelope through roof gaps.
+
 ## Treat failures correctly
 
 - Block on wrong cell multiples, empty art, invalid geometry, hard constraint violations, stage centre drift over one cell, baseline drift, an out-of-range stage silhouette, or a source with no transparent pixels after chroma removal. This last gate rejects baked checkerboards and opaque presentation backgrounds before catalog integration.

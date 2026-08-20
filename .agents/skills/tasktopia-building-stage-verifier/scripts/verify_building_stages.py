@@ -153,6 +153,222 @@ def load_geometry(path: Path) -> Geometry:
     return geometry
 
 
+def _projection_segment(value: Any, label: str, errors: list[str]) -> tuple[tuple[int, int], tuple[int, int]] | None:
+    if (
+        not isinstance(value, list)
+        or len(value) != 2
+        or any(not isinstance(point, list) or len(point) != 2 for point in value)
+    ):
+        errors.append(f"projection review: {label} must contain two [x,y] points")
+        return None
+    try:
+        return tuple(int(coordinate) for coordinate in value[0]), tuple(int(coordinate) for coordinate in value[1])
+    except (TypeError, ValueError):
+        errors.append(f"projection review: {label} coordinates must be integers")
+        return None
+
+
+def validate_projection_review(raw: dict[str, Any], geometry: Geometry) -> tuple[dict[str, Any], list[str]]:
+    """Validate authored projection evidence on the normalized runtime grid.
+
+    Pixel analysis cannot reliably decide which cluster is a roof or a facade.
+    The authored review therefore records semantic line segments, while this
+    function verifies their measurable orientation, depth and side-wall limit.
+    A generated overlay keeps the semantic annotation visually auditable.
+    """
+    errors: list[str] = []
+    if raw.get("key") != geometry.key:
+        errors.append("projection review: key must match the geometry contract")
+    if raw.get("stage") != 5:
+        errors.append("projection review: stage must be 5")
+
+    width, height = geometry.sprite_size
+    vertical_drifts: list[int] = []
+    verticals = raw.get("facadeVerticals")
+    if not isinstance(verticals, list) or len(verticals) < 2:
+        errors.append("projection review: at least two facadeVerticals are required")
+        verticals = []
+    for index, value in enumerate(verticals):
+        segment = _projection_segment(value, f"facadeVerticals[{index}]", errors)
+        if segment is None:
+            continue
+        (x1, y1), (x2, y2) = segment
+        vertical_drifts.append(abs(x2 - x1))
+        if y1 == y2:
+            errors.append(f"projection review: facadeVerticals[{index}] has zero height")
+
+    floor_drifts: list[int] = []
+    floors = raw.get("floorHorizontals")
+    if not isinstance(floors, list) or not floors:
+        errors.append("projection review: at least one floorHorizontal is required")
+        floors = []
+    for index, value in enumerate(floors):
+        segment = _projection_segment(value, f"floorHorizontals[{index}]", errors)
+        if segment is None:
+            continue
+        (x1, y1), (x2, y2) = segment
+        floor_drifts.append(abs(y2 - y1))
+        if x1 == x2:
+            errors.append(f"projection review: floorHorizontals[{index}] has zero width")
+
+    plane_depths: list[int] = []
+    plane_edge_drifts: list[int] = []
+    primary_roof_depths: list[int] = []
+    primary_roof_spans: list[int] = []
+    primary_roof_groups: dict[str, list[tuple[int, int]]] = {}
+    top_planes = raw.get("topPlanes")
+    if not isinstance(top_planes, list) or not top_planes:
+        errors.append("projection review: at least one visible topPlane is required")
+        top_planes = []
+    for index, plane in enumerate(top_planes):
+        if not isinstance(plane, dict) or not str(plane.get("name", "")).strip():
+            errors.append(f"projection review: topPlanes[{index}] requires a name")
+            continue
+        back = _projection_segment(plane.get("backEdge"), f"topPlanes[{index}].backEdge", errors)
+        front = _projection_segment(plane.get("frontEdge"), f"topPlanes[{index}].frontEdge", errors)
+        if back is None or front is None:
+            continue
+        back_y = round((back[0][1] + back[1][1]) / 2)
+        front_y = round((front[0][1] + front[1][1]) / 2)
+        depth = front_y - back_y
+        plane_depths.append(depth)
+        back_slope = back[1][1] - back[0][1]
+        front_slope = front[1][1] - front[0][1]
+        if plane.get("edgeProfile") == "parallel-pitched":
+            plane_edge_drifts.append(abs(back_slope - front_slope))
+        else:
+            plane_edge_drifts.extend((abs(back_slope), abs(front_slope)))
+        if plane.get("role") == "primary-roof":
+            primary_roof_depths.append(depth)
+            span = min(abs(back[1][0] - back[0][0]), abs(front[1][0] - front[0][0]))
+            primary_roof_spans.append(span)
+            group = str(plane.get("primaryRoofGroup") or plane.get("name"))
+            left = max(min(back[0][0], back[1][0]), min(front[0][0], front[1][0]))
+            right = min(max(back[0][0], back[1][0]), max(front[0][0], front[1][0]))
+            primary_roof_groups.setdefault(group, []).append((left, right))
+
+    side_width = raw.get("sideFacadeWidthPx")
+    if not isinstance(side_width, int) or side_width < 0:
+        errors.append("projection review: sideFacadeWidthPx must be a non-negative integer")
+        side_width = 0
+    max_side_width = max(2, round(width * 0.08))
+
+    for drift in vertical_drifts:
+        if drift > 1:
+            errors.append(f"projection review: facade vertical drifts {drift}px; maximum is 1px")
+    for drift in floor_drifts:
+        if drift > 1:
+            errors.append(f"projection review: floor edge drifts {drift}px; maximum is 1px")
+    for drift in plane_edge_drifts:
+        if drift > 1:
+            errors.append(f"projection review: top-plane edge drifts {drift}px; maximum is 1px")
+    for depth in plane_depths:
+        if not 2 <= depth <= geometry.projected_depth_px:
+            errors.append(
+                f"projection review: visible top-plane depth is {depth}px; expected 2–{geometry.projected_depth_px}px"
+            )
+    minimum_primary_roof_depth = 6
+    for depth in primary_roof_depths:
+        if depth < minimum_primary_roof_depth:
+            errors.append(
+                "projection review: primary roof depth is "
+                f"{depth}px; expected at least {minimum_primary_roof_depth}px"
+            )
+    minimum_primary_roof_span = max(4, round(width * 0.50))
+    primary_roof_group_coverages: dict[str, int] = {}
+    for group, intervals in primary_roof_groups.items():
+        coverage = 0
+        current_left: int | None = None
+        current_right: int | None = None
+        for left, right in sorted(intervals):
+            if current_left is None:
+                current_left, current_right = left, right
+            elif left <= current_right:
+                current_right = max(current_right, right)
+            else:
+                coverage += current_right - current_left
+                current_left, current_right = left, right
+        if current_left is not None and current_right is not None:
+            coverage += current_right - current_left
+        primary_roof_group_coverages[group] = coverage
+    primary_roof_coverage = max(primary_roof_group_coverages.values(), default=0)
+    if not primary_roof_spans:
+        errors.append("projection review: a topPlane with role=primary-roof is required")
+    elif primary_roof_coverage < minimum_primary_roof_span:
+        errors.append(
+            "projection review: primary roof evidence is too narrow; "
+            f"expected at least {minimum_primary_roof_span}px"
+        )
+    if side_width > max_side_width:
+        errors.append(
+            f"projection review: side facade is {side_width}px wide; maximum is {max_side_width}px"
+        )
+    if raw.get("annotationsMatchVisiblePixels") is not True:
+        errors.append("projection review: annotationsMatchVisiblePixels must be visually confirmed")
+    if raw.get("primaryRoofIsDominantSurface") is not True:
+        errors.append("projection review: primary-roof evidence must trace the dominant roof surface")
+    if raw.get("primaryRoofFrontEdgeMatchesEave") is not True:
+        errors.append("projection review: primary roof front edge must trace the facade eave")
+    if raw.get("sameCameraAcrossStages") is not True:
+        errors.append("projection review: sameCameraAcrossStages must be visually confirmed")
+
+    for label, segments in (("facadeVerticals", verticals), ("floorHorizontals", floors)):
+        for index, value in enumerate(segments):
+            segment = _projection_segment(value, f"{label}[{index}]", [])
+            if segment and any(not (0 <= x < width and 0 <= y < height) for x, y in segment):
+                errors.append(f"projection review: {label}[{index}] lies outside the runtime canvas")
+    for index, plane in enumerate(top_planes):
+        if not isinstance(plane, dict):
+            continue
+        for edge_name in ("backEdge", "frontEdge"):
+            segment = _projection_segment(plane.get(edge_name), f"topPlanes[{index}].{edge_name}", [])
+            if segment and any(not (0 <= x < width and 0 <= y < height) for x, y in segment):
+                errors.append(f"projection review: topPlanes[{index}].{edge_name} lies outside the runtime canvas")
+
+    metrics = {
+        "maxFacadeVerticalDriftPx": max(vertical_drifts, default=None),
+        "maxFloorHorizontalDriftPx": max(floor_drifts, default=None),
+        "maxTopPlaneEdgeDriftPx": max(plane_edge_drifts, default=None),
+        "topPlaneDepthsPx": plane_depths,
+        "primaryRoofDepthsPx": primary_roof_depths,
+        "minimumPrimaryRoofDepthPx": minimum_primary_roof_depth,
+        "primaryRoofSpansPx": primary_roof_spans,
+        "primaryRoofGroupCoveragesPx": primary_roof_group_coverages,
+        "primaryRoofCoveragePx": primary_roof_coverage,
+        "minimumPrimaryRoofSpanPx": minimum_primary_roof_span,
+        "sideFacadeWidthPx": side_width,
+        "maxSideFacadeWidthPx": max_side_width,
+        "requiredTopPlaneDepthPx": [2, geometry.projected_depth_px],
+    }
+    return metrics, errors
+
+
+def render_projection_overlay(image: Image.Image, raw: dict[str, Any]) -> Image.Image:
+    overlay = image.copy().convert("RGBA")
+    draw = ImageDraw.Draw(overlay)
+    for value in raw.get("facadeVerticals", []):
+        segment = _projection_segment(value, "facadeVertical", [])
+        if segment:
+            draw.line((*segment[0], *segment[1]), fill=(61, 211, 255, 255), width=1)
+    for value in raw.get("floorHorizontals", []):
+        segment = _projection_segment(value, "floorHorizontal", [])
+        if segment:
+            draw.line((*segment[0], *segment[1]), fill=(255, 214, 64, 255), width=1)
+    for plane in raw.get("topPlanes", []):
+        if not isinstance(plane, dict):
+            continue
+        back = _projection_segment(plane.get("backEdge"), "backEdge", [])
+        front = _projection_segment(plane.get("frontEdge"), "frontEdge", [])
+        if back:
+            draw.line((*back[0], *back[1]), fill=(93, 224, 117, 255), width=1)
+        if front:
+            draw.line((*front[0], *front[1]), fill=(255, 105, 180, 255), width=1)
+        if back and front:
+            draw.line((*back[0], *front[0]), fill=(255, 148, 61, 255), width=1)
+            draw.line((*back[1], *front[1]), fill=(255, 148, 61, 255), width=1)
+    return overlay
+
+
 def remove_chroma(image: Image.Image) -> Image.Image:
     rgba = image.convert("RGBA")
     pixels = rgba.load()
@@ -589,6 +805,8 @@ def parse_args() -> argparse.Namespace:
         parser.add_argument(f"--stage-{stage}", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--preview-scale", type=int, default=4)
+    parser.add_argument("--projection-review", type=Path)
+    parser.add_argument("--require-projection-review", action="store_true")
     return parser.parse_args()
 
 
@@ -646,6 +864,35 @@ def main() -> None:
         }
 
     errors, warnings = validate_stages(geometry, metrics)
+    projection_review: dict[str, Any] | None = None
+    projection_metrics: dict[str, Any] | None = None
+    projection_outputs: dict[str, str] | None = None
+    if args.projection_review is not None:
+        projection_review = json.loads(args.projection_review.read_text(encoding="utf-8"))
+        projection_metrics, projection_errors = validate_projection_review(projection_review, geometry)
+        errors.extend(projection_errors)
+        if 5 not in outputs:
+            errors.append("projection review: stage 5 image is required")
+        else:
+            projection_path = output_dir / "stage-5-projection.png"
+            projection_4x_path = output_dir / "stage-5-projection-4x.png"
+            projection_overlay = render_projection_overlay(
+                Image.open(outputs[5]["normalized"]), projection_review
+            )
+            projection_overlay.save(projection_path, optimize=True)
+            projection_overlay.resize(
+                (
+                    projection_overlay.width * args.preview_scale,
+                    projection_overlay.height * args.preview_scale,
+                ),
+                Image.Resampling.NEAREST,
+            ).save(projection_4x_path, optimize=True)
+            projection_outputs = {
+                "overlay": str(projection_path),
+                "overlay4x": str(projection_4x_path),
+            }
+    elif args.require_projection_review:
+        errors.append("projection review: --projection-review is required for acceptance")
     report = {
         "key": geometry.key,
         "geometry": {
@@ -675,6 +922,16 @@ def main() -> None:
         "errors": errors,
         "warnings": warnings,
         "generationGuidance": generation_guidance(metrics),
+        "projectionReview": {
+            "source": str(args.projection_review) if args.projection_review else None,
+            "metrics": projection_metrics,
+            "outputs": projection_outputs,
+            "visuallyConfirmed": bool(
+                projection_review
+                and projection_review.get("annotationsMatchVisiblePixels") is True
+                and projection_review.get("sameCameraAcrossStages") is True
+            ),
+        },
         "manualChecks": [
             "strict frontal-top projection; no side or isometric facade",
             "roof, porch, steps, canopy, balconies, podium, setbacks and crown share one compressed top-plane direction",

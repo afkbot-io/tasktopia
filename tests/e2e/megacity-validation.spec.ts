@@ -76,8 +76,8 @@ test("opens and captures the 100-task megacity", async ({ page }) => {
       fullPage: true,
     });
   };
-  await captureFocusedTask(20, "megacity-house-20.png");
-  await captureFocusedTask(78, "megacity-towers-78-79.png");
+  await captureFocusedTask(51, "megacity-lowrise-51.png");
+  await captureFocusedTask(1, "megacity-highrise-1.png");
 
   const metric = async (name: string): Promise<number> => Number(await host.getAttribute(`data-${name}`) ?? 0);
   const browserReport = {

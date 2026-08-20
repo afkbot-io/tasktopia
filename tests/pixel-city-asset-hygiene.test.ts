@@ -23,11 +23,11 @@ describe("Pixel City source hygiene", () => {
     expect(existsSync(resolve(reference, "rejected"))).toBe(false);
   });
 
-  it("keeps only canonical sources and optional geometry in each building study", () => {
+  it("keeps only canonical sources, geometry, and projection evidence in each building study", () => {
     const study = resolve(reference, "ai-authored/building-stage-study");
     const unexpected = readdirSync(study).flatMap((family) =>
       readdirSync(resolve(study, family))
-        .filter((name) => name !== "sources" && name !== "geometry.json")
+        .filter((name) => name !== "sources" && name !== "geometry.json" && name !== "projection-review.json")
         .map((name) => `${family}/${name}`));
     expect(unexpected).toEqual([]);
   });

@@ -4,7 +4,7 @@ Authoring source of truth — `assets/pixel-city-pack/catalog/buildings.json`.
 Runtime source of truth — `assets/pixel-city-pack/manifest.json`.
 `src/shared/catalog.ts` только типизирует manifest и предоставляет его одинаково серверу и PixiJS-клиенту.
 
-Сейчас каталог содержит 193 семейства и пять стадий каждого. Вариант описывает:
+Сейчас активный каталог содержит 167 семейств и пять стадий каждого. Жилой набор состоит из 10 низкоэтажных, 16 среднеэтажных и 32 обычных высотных многоквартирных семейств; ещё две уникальные высотные башни являются служебными landmarks. Отдельные частные дома удалены из runtime. Вариант описывает:
 
 - стабильный `key`, русское название и category;
 - `spriteSize` в пикселях, кратный 8;
@@ -72,12 +72,14 @@ Runtime source of truth — `assets/pixel-city-pack/manifest.json`.
 }
 ```
 
-4. Выполните `npm run assets:build && npm run assets:verify`.
+4. Для новой low-rise партии сначала выполните
+   `npm run assets:residential:geometry && npm run assets:residential:migrate`,
+   затем для всего pack — `npm run assets:build && npm run assets:verify`.
 
 Builder проверяет digest каждого исходника, нормализует стадии 3–5 без
 дорисовки геометрии, компонует общие стадии 1–2 и обновляет runtime/public pack
 и contact sheets. Combined sheets и import fallback не поддерживаются.
-Read-only audit проверяет 193 здания / 965 стадий: уникальность стадий, сетку и
+Read-only audit проверяет 167 зданий / 835 стадий: уникальность стадий, сетку и
 footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, потерянные
 ссылки и лишние файлы. Runtime manifest не содержит сведений о происхождении
 building art.

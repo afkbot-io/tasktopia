@@ -48,7 +48,11 @@ Coverage alone is insufficient. Reject a subject that technically fills the canv
 ## Projection gate
 
 - Accept only a facade parallel to the screen with vertical verticals and horizontal floors.
-- Accept a shallow roof/top plane.
+- Accept a dominant main roof surface with at least `6 px` compressed depth;
+  ordinary buildings normally use `8–16 px`, while a defining pitched roof may
+  use up to `24 px` when the geometry contract reserves that depth.
+  Supporting planes may use `2–6 px` in the same direction. Reject a ridge,
+  cornice, parapet cap or decorative strip presented as the main roof.
 - Reject any receding side facade wider than `max(2 px, 8% of runtime width)`.
 - Reject an isometric diamond, side elevation, rotated base, diagonal floor lines, or inconsistent camera between stages.
 

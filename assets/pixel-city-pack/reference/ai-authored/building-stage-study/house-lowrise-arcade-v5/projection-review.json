@@ -1,0 +1,69 @@
+{
+  "key": "house-lowrise-arcade",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        45
+      ],
+      [
+        3,
+        142
+      ]
+    ],
+    [
+      [
+        124,
+        45
+      ],
+      [
+        124,
+        142
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        120
+      ],
+      [
+        124,
+        120
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [
+        [
+          8,
+          26
+        ],
+        [
+          119,
+          26
+        ]
+      ],
+      "frontEdge": [
+        [
+          2,
+          45
+        ],
+        [
+          125,
+          45
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

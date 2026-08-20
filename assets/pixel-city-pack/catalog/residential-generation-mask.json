@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "profile": "TASKTOPIA_RESIDENTIAL_LOW_MID_HIGH_2026",
+  "activeResidentialTiers": [
+    "low-rise-residential",
+    "mid-rise-residential",
+    "high-rise-residential"
+  ],
+  "districtComposition": {
+    "PRIVATE": ["low-rise-residential", "mid-rise-residential"],
+    "NEW_BUILD": ["mid-rise-residential", "high-rise-residential"]
+  },
+  "forbiddenTags": ["private-residential"],
+  "forbiddenForms": ["detached-house", "cottage", "villa", "bungalow", "ranch", "farmstead", "duplex"],
+  "sourceMask": {
+    "hardAlphaAfterNormalization": true,
+    "connectedNeutralMatteMaximumCanvasShare": 0.1,
+    "externalFenceIsSeparate": true
+  },
+  "projectionMask": {
+    "camera": "FRONTAL_TOP",
+    "primaryRoofMinimumDepthPx": 6,
+    "primaryRoofMinimumWidthShare": 0.5,
+    "maximumSideFacadeWidthShare": 0.08,
+    "maximumVerticalDriftPx": 1,
+    "maximumFloorDriftPx": 1,
+    "sameCameraForAllHorizontalPlanes": true
+  },
+  "humanScaleMask": {
+    "doubleDoorFramePx": [16, 16],
+    "doubleDoorLeavesPx": [12, 14],
+    "doorBottomInsetPx": 0
+  },
+  "stageMask": {
+    "stage3TargetHeightShare": [0.55, 0.65],
+    "stage4TargetHeightShare": [0.9, 1],
+    "stage1And2": "SHARED_TILES_ONLY"
+  }
+}

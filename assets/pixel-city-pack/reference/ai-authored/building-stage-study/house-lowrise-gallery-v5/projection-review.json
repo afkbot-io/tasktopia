@@ -1,0 +1,69 @@
+{
+  "key": "house-lowrise-gallery",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        36
+      ],
+      [
+        3,
+        86
+      ]
+    ],
+    [
+      [
+        92,
+        36
+      ],
+      [
+        92,
+        86
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        64
+      ],
+      [
+        92,
+        64
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [
+        [
+          7,
+          24
+        ],
+        [
+          88,
+          24
+        ]
+      ],
+      "frontEdge": [
+        [
+          2,
+          36
+        ],
+        [
+          93,
+          36
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

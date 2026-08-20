@@ -1,0 +1,123 @@
+{
+  "key": "house-lowrise-stepped",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        60
+      ],
+      [
+        3,
+        150
+      ]
+    ],
+    [
+      [
+        124,
+        60
+      ],
+      [
+        124,
+        150
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        128
+      ],
+      [
+        124,
+        128
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof-section-1",
+      "role": "primary-roof",
+      "primaryRoofGroup": "main-roof",
+      "edgeProfile": "parallel-pitched",
+      "backEdge": [
+        [
+          4,
+          45
+        ],
+        [
+          38,
+          45
+        ]
+      ],
+      "frontEdge": [
+        [
+          3,
+          60
+        ],
+        [
+          39,
+          60
+        ]
+      ]
+    },
+    {
+      "name": "main-roof-section-2",
+      "role": "primary-roof",
+      "primaryRoofGroup": "main-roof",
+      "edgeProfile": "parallel-pitched",
+      "backEdge": [
+        [
+          40,
+          24
+        ],
+        [
+          88,
+          24
+        ]
+      ],
+      "frontEdge": [
+        [
+          39,
+          39
+        ],
+        [
+          89,
+          39
+        ]
+      ]
+    },
+    {
+      "name": "main-roof-section-3",
+      "role": "primary-roof",
+      "primaryRoofGroup": "main-roof",
+      "edgeProfile": "parallel-pitched",
+      "backEdge": [
+        [
+          90,
+          45
+        ],
+        [
+          124,
+          45
+        ]
+      ],
+      "frontEdge": [
+        [
+          89,
+          60
+        ],
+        [
+          125,
+          60
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

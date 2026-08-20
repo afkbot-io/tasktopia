@@ -1,57 +1,246 @@
 {
-  "generatedAt": "2026-08-17T18:07:04.146Z",
-  "generationMs": 1966018,
+  "generatedAt": "2026-08-20T12:40:22.881Z",
+  "generationMs": 606541,
   "login": {
     "email": "megacity-validation@tasktopia.local"
   },
-  "countryId": "fabaf03d-4be8-4a75-9dc9-a81d1b931537",
+  "countryId": "34d6bd52-b42c-48c2-ac2f-5c089bbf7bd1",
   "country": "Республика Атлас",
   "city": {
-    "id": "042fc0a1-c8ab-4219-bd82-fd71ffd5cff1",
+    "id": "4b96cd78-4a35-4c4d-90bf-5672dfab0968",
     "name": "Большой Атлас",
     "morphology": "DENSE_CORE"
   },
   "districts": [
     {
-      "id": "5bed81d2-5a12-4ab6-bf1b-6fd89ca3a5ec",
-      "name": "Северные усадьбы",
-      "archetype": "PRIVATE",
-      "status": "COMPLETED",
-      "tasks": 18
-    },
-    {
-      "id": "67a4f1db-d1c2-444b-9741-18af806e9ed7",
-      "name": "Южные кварталы",
-      "archetype": "PRIVATE",
-      "status": "COMPLETED",
-      "tasks": 18
-    },
-    {
-      "id": "8f296306-4362-41fa-ab64-f6c6b808c596",
-      "name": "Новый центр",
+      "id": "ebc71258-9e61-42ec-a3c2-ac96c2fac3e4",
+      "name": "Средне-высотный квартал 1",
       "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "14e451ad-c7df-4d97-bc19-39d48f900fea",
+      "name": "Средне-высотный квартал 2",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 2
+    },
+    {
+      "id": "d707203c-58ba-4fd4-926d-15d28df35d1b",
+      "name": "Средне-высотный квартал 2 · продолжение 1",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 3
+    },
+    {
+      "id": "63c99ff3-6fa1-480d-844f-994397b740d6",
+      "name": "Средне-высотный квартал 3",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "ffc3ca57-2ac7-440a-98f1-72b87596630d",
+      "name": "Средне-высотный квартал 4",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 0
+    },
+    {
+      "id": "c1307dd6-0b90-403c-8556-8edeb72e059b",
+      "name": "Средне-высотный квартал 4 · продолжение 1",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "6b4624e0-84b0-425c-9bb0-90777ab99c1a",
+      "name": "Средне-высотный квартал 5",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "107b28fe-0b52-4a8e-9d25-6cb3725d75c2",
+      "name": "Средне-высотный квартал 6",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "9f0ba74f-4901-421a-ab2d-2c8b30d5a477",
+      "name": "Средне-высотный квартал 7",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 1
+    },
+    {
+      "id": "fe9103b9-dfaa-4bad-a65b-03217a555d36",
+      "name": "Средне-высотный квартал 7 · продолжение 1",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 4
+    },
+    {
+      "id": "b06bae1e-b00c-4430-9143-335ab24d28b5",
+      "name": "Средне-высотный квартал 8",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "e9e5e863-de1c-4df6-8fb6-65a04d8e716b",
+      "name": "Средне-высотный квартал 9",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 1
+    },
+    {
+      "id": "c6efb02e-e06b-438c-b5e7-ce943a327dc2",
+      "name": "Средне-высотный квартал 9 · продолжение 1",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 4
+    },
+    {
+      "id": "038ff630-dca9-4d2c-9998-b161573ba667",
+      "name": "Средне-высотный квартал 10",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 1
+    },
+    {
+      "id": "eced575f-1a0a-4180-a994-bda124c8458a",
+      "name": "Средне-высотный квартал 10 · продолжение 1",
+      "archetype": "NEW_BUILD",
+      "status": "COMPLETED",
+      "tasks": 4
+    },
+    {
+      "id": "90811b1c-40e3-4d29-afd8-fa1d8837f95c",
+      "name": "Малоэтажный квартал 1",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 4
+    },
+    {
+      "id": "9eaca88a-13c2-4f2f-8e0b-69b6216ae5e0",
+      "name": "Малоэтажный квартал 1 · продолжение 1",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 1
+    },
+    {
+      "id": "394e171c-cf8a-48ad-aa9b-a7776be05fab",
+      "name": "Малоэтажный квартал 2",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "59a30436-8316-464c-a1e5-41cac15d8312",
+      "name": "Малоэтажный квартал 3",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 3
+    },
+    {
+      "id": "b8017533-d041-4e62-b1ea-37585bae8ab9",
+      "name": "Малоэтажный квартал 3 · продолжение 1",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 2
+    },
+    {
+      "id": "2791eae0-d54a-4651-aa0e-8e7561deb6da",
+      "name": "Малоэтажный квартал 4",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "d84e92fa-642f-4827-b783-547cd2feb613",
+      "name": "Малоэтажный квартал 5",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "cdaa0e86-9742-49b4-a606-1edbcc9753a4",
+      "name": "Малоэтажный квартал 6",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "260c658d-78c5-4307-97aa-d932a806a1c3",
+      "name": "Малоэтажный квартал 7",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "4173cff6-3c43-4051-806c-bb262592287b",
+      "name": "Малоэтажный квартал 8",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 5
+    },
+    {
+      "id": "1d906308-9033-4b2e-a5d3-99c883491b73",
+      "name": "Малоэтажный квартал 9",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 4
+    },
+    {
+      "id": "16cf2527-2090-48b2-9d48-44b76eeebe6d",
+      "name": "Малоэтажный квартал 9 · продолжение 1",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 1
+    },
+    {
+      "id": "333f099a-3030-43ce-aa3a-07dff5500242",
+      "name": "Малоэтажный квартал 10",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 3
+    },
+    {
+      "id": "a4719059-1fbe-4c7b-8f73-f1c220733d2b",
+      "name": "Малоэтажный квартал 10 · продолжение 1",
+      "archetype": "PRIVATE",
+      "status": "COMPLETED",
+      "tasks": 0
+    },
+    {
+      "id": "169cb94d-3ae7-4c4d-ba65-e7abee95960f",
+      "name": "Малоэтажный квартал 10 · продолжение 2",
+      "archetype": "PRIVATE",
       "status": "ACTIVE",
-      "tasks": 64
+      "tasks": 2
     }
   ],
   "tasks": 100,
   "taskStages": {
-    "1": 12,
-    "2": 13,
-    "3": 13,
-    "4": 13,
-    "5": 49
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 1,
+    "5": 99
   },
-  "uniqueBuildingTypes": 73,
-  "maximumLegalUniqueTypes": 89,
-  "taskCatalogSize": 95,
+  "uniqueBuildingTypes": 61,
+  "maximumLegalUniqueTypes": 63,
+  "taskCatalogSize": 69,
   "categoryCoverage": {
     "HOUSE": {
-      "represented": 52,
-      "catalog": 52
+      "represented": 26,
+      "catalog": 26
     },
     "HIGHRISE": {
-      "represented": 18,
+      "represented": 32,
       "catalog": 34
     },
     "COMMERCIAL": {
@@ -65,86 +254,70 @@
   },
   "allHouseTypesCovered": true,
   "missingHouseTypes": [],
+  "allResidentialTypesCovered": true,
+  "missingResidentialTypes": [],
   "visualBuildingOverlaps": [
     {
-      "left": 2,
-      "leftKey": "house-brownstone-row",
-      "right": 4,
-      "rightKey": "house-farmstead",
-      "width": 48,
-      "height": 16
+      "left": 21,
+      "leftKey": "highrise-art-deco",
+      "right": 24,
+      "rightKey": "house-small-apartments",
+      "width": 25,
+      "height": 24
     },
     {
-      "left": 6,
-      "leftKey": "house-canalside-terrace",
-      "right": 7,
-      "rightKey": "house-live-work",
-      "width": 64,
-      "height": 7
-    },
-    {
-      "left": 25,
-      "leftKey": "house-studio-loft",
-      "right": 26,
-      "rightKey": "house-suburban-brick",
-      "width": 56,
-      "height": 23
-    },
-    {
-      "left": 27,
-      "leftKey": "house-townhouse-brick",
-      "right": 28,
-      "rightKey": "house-townhouse-stone",
-      "width": 56,
-      "height": 5
-    },
-    {
-      "left": 44,
-      "leftKey": "house-student-residence",
-      "right": 45,
-      "rightKey": "house-art-deco-apartments",
+      "left": 22,
+      "leftKey": "highrise-observation",
+      "right": 24,
+      "rightKey": "house-small-apartments",
       "width": 43,
+      "height": 24
+    },
+    {
+      "left": 34,
+      "leftKey": "house-courtyard-apartments",
+      "right": 35,
+      "rightKey": "house-worker-tenements",
+      "width": 101,
       "height": 32
     },
     {
-      "left": 49,
-      "leftKey": "house-corner-apartments",
-      "right": 50,
-      "rightKey": "house-apartment-walkup",
-      "width": 80,
+      "left": 37,
+      "leftKey": "highrise-tech-campus-tower",
+      "right": 39,
+      "rightKey": "house-garden-apartment",
+      "width": 56,
+      "height": 24
+    },
+    {
+      "left": 38,
+      "leftKey": "highrise-mixed-use-market",
+      "right": 39,
+      "rightKey": "house-garden-apartment",
+      "width": 22,
+      "height": 24
+    },
+    {
+      "left": 39,
+      "leftKey": "house-garden-apartment",
+      "right": 40,
+      "rightKey": "house-social-housing",
+      "width": 93,
       "height": 24
     }
   ],
   "blockingVisualBuildingOverlaps": [],
   "missingLegal": [
-    "civic-clinic",
-    "civic-fire-station",
-    "civic-police",
     "commercial-parking-lot",
-    "highrise-brutalist",
-    "highrise-courtyard-tower",
-    "highrise-green-terraces",
-    "highrise-landmark",
-    "highrise-medical-tower",
-    "highrise-mixed-use-hotel",
-    "highrise-podium-office",
-    "highrise-podium-residential",
-    "highrise-residential-tower",
-    "highrise-skybridge",
-    "highrise-stepped",
-    "highrise-tech-campus-tower",
-    "highrise-transit-oriented",
-    "highrise-twin-towers",
-    "highrise-waterfront",
     "landmark-megatall-tower"
   ],
   "excludedAlternatives": [
     {
-      "key": "civic-clinic",
+      "key": "civic-clinic-neighborhood",
       "serviceRole": "health-service"
     },
     {
-      "key": "civic-fire-station",
+      "key": "civic-fire-station-compact",
       "serviceRole": "fire-service"
     },
     {
@@ -152,11 +325,11 @@
       "serviceRole": "fire-service"
     },
     {
-      "key": "civic-police",
+      "key": "civic-police-headquarters",
       "serviceRole": "police-service"
     },
     {
-      "key": "civic-police-headquarters",
+      "key": "civic-police-neighborhood",
       "serviceRole": "police-service"
     },
     {
@@ -164,77 +337,21 @@
       "serviceRole": "parking-service"
     },
     {
-      "key": "highrise-brutalist",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-courtyard-tower",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-green-terraces",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-landmark",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-medical-tower",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-mixed-use-hotel",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-podium-office",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-podium-residential",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-residential-tower",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-skybridge",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-stepped",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-tech-campus-tower",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-transit-oriented",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-twin-towers",
-      "serviceRole": null
-    },
-    {
-      "key": "highrise-waterfront",
-      "serviceRole": null
-    },
-    {
       "key": "landmark-megatall-tower",
+      "serviceRole": "office-service"
+    },
+    {
+      "key": "landmark-sky-tower",
       "serviceRole": "office-service"
     }
   ],
-  "roads": 6862,
-  "repairedBridgeCells": 6,
+  "roads": 15790,
+  "repairedBridgeCells": 0,
   "roadClasses": {
-    "LOCAL": 6163,
-    "COLLECTOR": 334,
-    "ARTERIAL": 332,
-    "HIGHWAY": 33
+    "LOCAL": 6178,
+    "COLLECTOR": 9247,
+    "ARTERIAL": 365,
+    "HIGHWAY": 0
   },
   "violations": []
 }

@@ -9,12 +9,13 @@ Use case: precise-object-edit
 Asset type: one Tasktopia Pixel City construction-stage source
 Input images: Image 1 is the immutable finished-building identity, palette, scale and camera authority; Image 2, when supplied, is continuity guidance only
 Scene/backdrop: perfectly flat solid #ff00ff chroma background, no ground plane, no pavement, no shadow
-Style/medium: detailed crisp pixel art; strict frontal-top city-builder projection; facade parallel to screen; verticals vertical; floors horizontal; shallow visible top planes; dark blue-grey one-pixel outline; muted palette; light from upper-left
+Style/medium: detailed crisp pixel art; strict frontal-top city-builder projection; facade parallel to screen; verticals vertical; floors horizontal; dominant main roof surface visibly exposes at least 6 runtime pixels of compressed depth, normally 8–16 and up to 24 for a defining pitched roof whose geometry reserves it; supporting top planes expose 2–6 runtime pixels in the same direction; dark blue-grey one-pixel outline; muted palette; light from upper-left
 Geometry: 8 px cell; target canvas <widthCells>×<heightCells> cells (<widthPx>×<heightPx> px after normalization); physical footprint <widthCells>×<depthCells> cells; projected horizontal-plane depth <projectedRoofDepthCells> cells; bottom-centre anchor <anchorX>,<anchorY>; entrance south at offset <entranceOffset>
 Source-canvas lock: preserve Image 1's exact source canvas aspect ratio and its subject margins; do not switch between square, portrait and landscape canvases because the whole canvas is normalized to the target grid
 Identity lock: preserve the exact horizontal centre, roof outline, bay count, entrance centre, main materials and characteristic facade rhythm of Image 1
 Structure-layer rule: isolate only the structure/construction contents; do not draw the external perimeter fence, pavement, road, grass, people, vehicles, text, labels, UI or watermark
 Avoid: side view, three-quarter view, isometric diamond, receding facade, rotated base, diagonal floors, a different building, stretched proportions, soft blur, smooth vector art, gradients
+Semantic roof rule: the far roof edge, roof surface and street-facing eave must all be distinct; never substitute a ridge, cornice, parapet cap or thin decorative strip for the main roof plane
 ```
 
 ## Stage 4 — nearly finished

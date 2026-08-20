@@ -1,0 +1,149 @@
+{
+  "key": "house-lowrise-loft",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        68
+      ],
+      [
+        3,
+        134
+      ]
+    ],
+    [
+      [
+        92,
+        68
+      ],
+      [
+        92,
+        134
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        112
+      ],
+      [
+        92,
+        112
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof-section-1",
+      "role": "primary-roof",
+      "primaryRoofGroup": "main-roof",
+      "edgeProfile": "parallel-pitched",
+      "backEdge": [
+        [
+          5,
+          52
+        ],
+        [
+          25,
+          40
+        ]
+      ],
+      "frontEdge": [
+        [
+          5,
+          68
+        ],
+        [
+          25,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "main-roof-section-2",
+      "role": "primary-roof",
+      "primaryRoofGroup": "main-roof",
+      "edgeProfile": "parallel-pitched",
+      "backEdge": [
+        [
+          27,
+          52
+        ],
+        [
+          47,
+          40
+        ]
+      ],
+      "frontEdge": [
+        [
+          27,
+          68
+        ],
+        [
+          47,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "main-roof-section-3",
+      "role": "primary-roof",
+      "primaryRoofGroup": "main-roof",
+      "edgeProfile": "parallel-pitched",
+      "backEdge": [
+        [
+          49,
+          52
+        ],
+        [
+          69,
+          40
+        ]
+      ],
+      "frontEdge": [
+        [
+          49,
+          68
+        ],
+        [
+          69,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "main-roof-section-4",
+      "role": "primary-roof",
+      "primaryRoofGroup": "main-roof",
+      "edgeProfile": "parallel-pitched",
+      "backEdge": [
+        [
+          71,
+          52
+        ],
+        [
+          91,
+          40
+        ]
+      ],
+      "frontEdge": [
+        [
+          71,
+          68
+        ],
+        [
+          91,
+          56
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

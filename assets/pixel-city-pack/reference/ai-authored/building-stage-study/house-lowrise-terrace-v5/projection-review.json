@@ -1,0 +1,69 @@
+{
+  "key": "house-lowrise-terrace",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        31
+      ],
+      [
+        3,
+        142
+      ]
+    ],
+    [
+      [
+        108,
+        31
+      ],
+      [
+        108,
+        142
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        120
+      ],
+      [
+        108,
+        120
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [
+        [
+          7,
+          15
+        ],
+        [
+          104,
+          15
+        ]
+      ],
+      "frontEdge": [
+        [
+          2,
+          31
+        ],
+        [
+          109,
+          31
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

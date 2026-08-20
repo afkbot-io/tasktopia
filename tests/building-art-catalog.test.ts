@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import catalog from "../assets/pixel-city-pack/catalog/buildings.json";
 import manifest from "../assets/pixel-city-pack/manifest.json";
+import residentialMask from "../assets/pixel-city-pack/catalog/residential-generation-mask.json";
 
 type CatalogBuilding = {
   key: string;
@@ -50,7 +51,7 @@ const frozenFields = [
 describe("unified building art catalog", () => {
   it("tracks every runtime building key exactly once", () => {
     const catalogKeys = catalogBuildings.map((building) => building.key);
-    expect(catalogKeys).toHaveLength(193);
+    expect(catalogKeys).toHaveLength(167);
     expect(new Set(catalogKeys).size).toBe(catalogKeys.length);
     expect([...catalogKeys].sort()).toEqual(Object.keys(manifestBuildings).sort());
   });
@@ -87,10 +88,10 @@ describe("unified building art catalog", () => {
     expect(serialized).not.toMatch(/artSource|sourceKind|procedural|imported|sheet/i);
   });
 
-  it("publishes all 193 families through the reviewed V5 contract", () => {
+  it("publishes all active families through the reviewed V5 contract", () => {
     const reviewed = catalogBuildings.filter((building) => building.reviewed).length;
     const pending = catalogBuildings.filter((building) => !building.reviewed).length;
-    expect(reviewed).toBe(193);
+    expect(reviewed).toBe(167);
     expect(pending).toBe(0);
   });
 
@@ -107,32 +108,40 @@ describe("unified building art catalog", () => {
     }
   });
 
-  it("locks the corrected bungalow canvas, footprint and human-scale entrance", () => {
-    const bungalow = catalogBuildings.find((building) => building.key === "house-bungalow");
-    expect(bungalow).toMatchObject({
-      spriteSize: [64, 48],
-      footprintCells: [8, 5],
-      anchorPx: [32, 48],
-      entrances: [{ side: "S", offset: 4 }],
+  it("replaces private houses with ten low-rise apartment families", () => {
+    expect(catalogBuildings.filter((building) => building.tags.includes("private-residential"))).toHaveLength(0);
+    const lowRise = catalogBuildings.filter((building) => building.tags.includes("low-rise-residential"));
+    expect(lowRise).toHaveLength(10);
+    expect(lowRise.every((building) => building.category === "HOUSE" && building.platform === "STONE")).toBe(true);
+    expect(lowRise.every((building) => building.entrances[0]?.side === "S")).toBe(true);
+    expect(lowRise.every((building) => building.stageSources?.length === 3)).toBe(true);
+  });
+
+  it("enforces the residential generation mask in the active catalog", () => {
+    expect(residentialMask.districtComposition).toEqual({
+      PRIVATE: ["low-rise-residential", "mid-rise-residential"],
+      NEW_BUILD: ["mid-rise-residential", "high-rise-residential"],
     });
-    const contract = JSON.parse(
-      readFileSync(
-        resolve(
-          "assets/pixel-city-pack/reference/ai-authored/building-stage-study/house-bungalow-v5/geometry.json",
-        ),
-        "utf8",
-      ),
-    );
-    expect(contract).toMatchObject({
-      spriteCanvasCells: [8, 6],
-      physicalFootprintCells: [8, 5],
-      projectedRoofDepthCells: 2,
-      entrance: { side: "S", offset: 4 },
-      doorSizePx: [8, 16],
-      doorLeafSizePx: [6, 14],
-      finishedOccupiedWidthPxRange: [58, 64],
-      finishedOccupiedHeightPxRange: [34, 42],
-    });
+    const residential = catalogBuildings.filter((building) => (
+      residentialMask.activeResidentialTiers.some((tier) => building.tags.includes(tier))
+    ));
+    expect(residential).toHaveLength(60);
+    expect(residential.every((building) => building.platform === "STONE")).toBe(true);
+    expect(residential.every((building) => (
+      residentialMask.forbiddenTags.every((tag) => !building.tags.includes(tag))
+    ))).toBe(true);
+
+    for (const building of residential.filter((entry) => entry.tags.includes("low-rise-residential"))) {
+      const studyDir = resolve(referenceRoot, building.stageSources![0]!, "..", "..");
+      const geometry = JSON.parse(readFileSync(resolve(studyDir, "geometry.json"), "utf8")) as {
+        doorSizePx: number[];
+        doorLeafSizePx: number[];
+        doorBottomInsetPx: number;
+      };
+      expect(geometry.doorSizePx, building.key).toEqual(residentialMask.humanScaleMask.doubleDoorFramePx);
+      expect(geometry.doorLeafSizePx, building.key).toEqual(residentialMask.humanScaleMask.doubleDoorLeavesPx);
+      expect(geometry.doorBottomInsetPx, building.key).toBe(residentialMask.humanScaleMask.doorBottomInsetPx);
+    }
   });
 
   it("does not mark a replacement ready without a complete reviewed source", () => {

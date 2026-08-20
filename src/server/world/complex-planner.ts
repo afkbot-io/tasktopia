@@ -116,11 +116,9 @@ type ArchetypeProfile = { baseW: number; minW: number; maxW: number; depth: numb
 
 const PROFILE: Record<DistrictArchetype, ArchetypeProfile> = {
   NEW_BUILD: { baseW: 6, minW: 5, maxW: 8, depth: 5 },
-  // Current ordinary private houses span 4–9 cells and are intentionally much
-  // smaller than new-build towers. Seven/eight-cell bays produce five/six-
-  // house frontage rows while seeded widths keep neighbouring quarters from
-  // becoming clones. Oversized villas raise minimumLot explicitly.
-  PRIVATE: { baseW: 8, minW: 7, maxW: 9, depth: 5 },
+  // Legacy PRIVATE now denotes low+mid-rise apartment districts. Lots match
+  // the 12–16-cell low-rise ЖК family; detached-house bays no longer exist.
+  PRIVATE: { baseW: 14, minW: 12, maxW: 16, depth: 9 },
   // Mixed-use catalog entries include 5-cell-deep podiums and towers. A
   // four-cell lot made those valid buildings impossible to place and forced
   // speculative district growth before falling back to an unrelated model.

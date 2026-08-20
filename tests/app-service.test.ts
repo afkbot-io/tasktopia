@@ -43,7 +43,7 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
   });
 
   it("lets an established compact district annex a full new frontage instead of stopping at 32 cells", () => {
-    const compactHouse = getBuilding("house-cottage");
+    const compactHouse = getBuilding("house-lowrise-gallery");
     expect(districtGrowthThicknesses(compactHouse)).toEqual([24, 28, 32, 36, 40, 48]);
   });
 
@@ -183,7 +183,7 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
       cityId: city.id, districtId: district.id, title: "Preserved work", description: "Keep this", workItemType: "HOTFIX",
       acceptanceCriteria: "Regression is covered", systemAnalysis: "Impact is bounded", architecture: "Patch service boundary",
       designSystem: "Use existing tokens", implementationPlan: "Test, patch, verify", estimate: 1, dueAt: deadline,
-      buildingHint: "house-cottage", idempotencyKey: "regen-task",
+      buildingHint: "house-lowrise-gallery", idempotencyKey: "regen-task",
     });
     // Green areas appear together with the first streets of the first complex.
     const greenFeatures = await service.listWorldFeatures(countryId);
@@ -198,6 +198,11 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
       .rejects.toThrowError(/не могут быть пустыми/);
     await service.updateTaskDefect(countryId, { defectId: defect.id, status: "FIXED", idempotencyKey: "regen-defect-fixed" });
     await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", comment: "History survives", actor: "Tester", idempotencyKey: "regen-start" });
+    // Simulate a pre-migration production row. Regeneration must not resolve
+    // the removed key through the active catalog; it re-picks a current
+    // low/mid-rise family while preserving the task and its history.
+    await db.prepare("UPDATE tasks_v3 SET building_type = ?, visual_asset_key = ?, platform_type = ? WHERE id = ?")
+      .run("house-cottage", "house-cottage", "YARD", task.id);
     const seedBefore = Number((await db.prepare("SELECT seed FROM countries WHERE id = ?").get(countryId) as { seed: number }).seed);
     const geometryBefore = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
 
@@ -208,6 +213,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect((await service.listCities(countryId))[0]?.id).toBe(city.id);
     expect((await service.listDistricts(countryId))[0]?.id).toBe(district.id);
     const preserved = await service.getTask(countryId, task.id);
+    expect(preserved.buildingType).not.toBe("house-cottage");
+    expect(() => getBuilding(preserved.buildingType)).not.toThrow();
     expect(await service.getCountry(countryId)).toMatchObject({ goal: "Release safely", productContext: "AI delivery" });
     expect((await service.listCities(countryId))[0]).toMatchObject({ id: city.id, goal: "Ship epic", acceptanceCriteria: "Users can finish", deadline });
     expect((await service.listDistricts(countryId))[0]).toMatchObject({ id: district.id, description: "Two-week iteration", deadline });
@@ -287,9 +294,10 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     });
 
     // A dense district starts with one coherent frontage sized for reviewed
-    // 12–24-cell apartment facades, not an obsolete cottage parcel.
-    expect(district.cells.length).toBeGreaterThanOrEqual(1_400);
-    expect(district.cells.length).toBeLessThanOrEqual(1_900);
+    // 12–24-cell apartment facades and the northern projection of the tallest
+    // 280px residential tower, not an obsolete cottage parcel.
+    expect(district.cells.length).toBeGreaterThanOrEqual(2_700);
+    expect(district.cells.length).toBeLessThanOrEqual(3_000);
     const territory = boundsOf(district.cells);
     expect(district.cells).toHaveLength(
       (territory.maxX - territory.minX + 1) * (territory.maxY - territory.minY + 1),
@@ -435,11 +443,11 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const dense = await service.createDistrict(countryId, { cityId: city.id, name: "Новые высотки", archetype: "NEW_BUILD", activate: true, idempotencyKey: "zoned-district" });
     await expect(service.createTask(countryId, {
                       cityId: city.id, districtId: dense.id, title: "Частный дом внутри высоток", estimate: 2,
-                      buildingHint: "house-cottage", idempotencyKey: "zoned-conflict",
+                      buildingHint: "house-lowrise-gallery", idempotencyKey: "zoned-conflict",
                     })).rejects.toThrowError(/архитектур|район/);
   });
 
-  it("fills a private residential row before opening another road complex", async () => {
+  it("groups low-rise tasks into paved apartment complexes", async () => {
     // This seed used to rank a facade whose first growth site could not be
     // published, even though a compatible compact house fitted the same
     // district. Keep the terrain/candidate interaction deterministic.
@@ -460,10 +468,13 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const developed = (await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)!;
     const taskLots = developed.lots.filter((lot) => lot.taskId && tasks.some((task) => task.id === lot.taskId));
     expect(taskLots).toHaveLength(5);
-    expect(new Set(taskLots.map((lot) => lot.groupId)).size).toBe(1);
-    expect(new Set(taskLots.map((lot) => lot.origin.y + lot.height)).size).toBe(1);
-    expect(tasks.every((task) => getBuilding(task.buildingType).tags.includes("private-residential")), tasks.map((task) => task.buildingType).join(", ")).toBe(true);
-    expect(tasks.every((task) => task.platformType === "YARD")).toBe(true);
+    expect(new Set(taskLots.map((lot) => lot.groupId)).size).toBeLessThanOrEqual(3);
+    expect(taskLots.every((lot) => lot.width >= 12 && lot.height >= 9)).toBe(true);
+    expect(tasks.every((task) => {
+      const tags = getBuilding(task.buildingType).tags;
+      return tags.includes("low-rise-residential") || tags.includes("mid-rise-residential");
+    }), tasks.map((task) => task.buildingType).join(", ")).toBe(true);
+    expect(tasks.every((task) => task.platformType === "STONE")).toBe(true);
   }, 20_000);
 
   it("treats district SP capacity as an advisory target and still enforces status transitions", async () => {

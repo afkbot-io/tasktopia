@@ -236,7 +236,14 @@ describe("authentication HTTP boundary", () => {
     const countryId = bootstrap.country.id as string;
     const city = await service.createCity(countryId, { name: "Disposable City", idempotencyKey: "http-delete-city-create" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Disposable District", activate: true, idempotencyKey: "http-delete-district-create" });
-    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Disposable Task", estimate: 1, idempotencyKey: "http-delete-task-create" });
+    const task = await service.createTask(countryId, {
+      cityId: city.id,
+      districtId: district.id,
+      title: "Disposable Task",
+      estimate: 1,
+      buildingHint: "house-small-apartments",
+      idempotencyKey: "http-delete-task-create",
+    });
     const wrong = await app.inject({ method: "DELETE", url: `/api/tasks/${task.id}`, headers: { cookie }, payload: { confirmTitle: "wrong", idempotencyKey: "http-delete-task-wrong" } });
     expect(wrong.statusCode).toBe(400);
     expect((await app.inject({ method: "DELETE", url: `/api/tasks/${task.id}`, headers: { cookie }, payload: { confirmTitle: task.title, idempotencyKey: "http-delete-task" } })).statusCode).toBe(200);

@@ -15,11 +15,7 @@ const buildings = manifest.buildings as Record<string, {
 
 const expansionKeys = [
   "landmark-ferris-wheel", "landmark-megatall-tower", "landmark-monument",
-  "house-colonial", "house-craftsman", "house-ranch", "house-split-level",
-  "house-townhouse-brick", "house-townhouse-stone", "house-garden-apartment",
-  "house-eco-cottage", "house-narrow-shotgun", "house-courtyard-block",
-  "house-modern-villa", "house-duplex-brick", "house-studio-loft",
-  "house-rowhouse-corner", "house-suburban-brick", "house-apartment-walkup",
+  "house-garden-apartment", "house-apartment-walkup",
   "shop-cafe", "shop-butcher", "shop-electronics", "shop-furniture", "shop-bookstore",
   "shop-clothing", "shop-restaurant", "shop-bar", "office-small", "hotel-small",
   "commercial-market-stalls", "commercial-storage", "commercial-gas-station-electric",
@@ -31,15 +27,14 @@ const expansionKeys = [
   "highrise-medical-tower", "highrise-luxury-tower", "highrise-sustainable-tower",
 ] as const;
 
-const authoredBatch50 = [
+const retainedAuthoredBatch = [
   "shop-bakery-long", "shop-warehouse", "commercial-shopping-plaza", "commercial-corner-cafe",
-  "commercial-pharmacy", "commercial-auto-repair", "house-modern-lowrise", "house-woodland-home",
+  "commercial-pharmacy", "commercial-auto-repair",
   "commercial-gas-station-compact", "commercial-highway-service-plaza", "commercial-gas-station-electric",
   "commercial-gas-station-truck", "commercial-gas-station-cafe", "commercial-gas-station-wash",
-  "landmark-ferris-wheel", "house-canalside-terrace", "house-alpine-chalet", "house-farmstead",
-  "house-live-work", "house-student-residence", "house-senior-living", "house-prefab-modular",
+  "landmark-ferris-wheel", "house-student-residence", "house-senior-living",
   "house-mediterranean-courtyard", "house-warehouse-lofts", "house-social-housing",
-  "house-rooftop-garden", "house-stilt-riverside", "commercial-food-hall", "commercial-bowling",
+  "commercial-food-hall", "commercial-bowling",
   "commercial-bank-branch", "commercial-coworking", "commercial-tech-workshop",
   "commercial-car-dealership", "commercial-garden-center", "commercial-night-market",
   "commercial-department-store", "commercial-office-courtyard", "commercial-logistics-hub",
@@ -49,10 +44,9 @@ const authoredBatch50 = [
 ] as const;
 
 describe("Pixel City active asset contract", () => {
-  it("keeps the historical 50-family batch pinned to independent authored stages", () => {
-    expect(authoredBatch50).toHaveLength(50);
+  it("keeps retained families from the historical authored batch pinned to independent stages", () => {
     const catalog = new Map(buildingCatalog.buildings.map((building) => [building.key, building]));
-    for (const key of authoredBatch50) {
+    for (const key of retainedAuthoredBatch) {
       const building = catalog.get(key);
       expect(building, key).toMatchObject({ reviewed: true });
       expect(building, key).not.toHaveProperty("sheet");

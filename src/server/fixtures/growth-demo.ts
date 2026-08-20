@@ -30,7 +30,7 @@ type GrowthTaskTemplate = { title: string; description: string; estimate: Estima
 
 const BASE_TASKS: GrowthTaskTemplate[] = [
   { title: "Благоустроить небольшую парковку", description: "Карманная парковка для жителей и посетителей.", estimate: 1 },
-  { title: "Построить частный жилой дом", description: "Малоэтажное жильё с отдельным входом.", estimate: 1 },
+  { title: "Построить малоэтажный жилой корпус", description: "Небольшой многоквартирный корпус с общим входом.", estimate: 1 },
   { title: "Открыть угловое кафе", description: "Небольшое кафе у пешеходного маршрута.", estimate: 2 },
   { title: "Построить ряд городских домов", description: "Компактная жилая застройка квартала.", estimate: 2 },
   { title: "Открыть районную аптеку", description: "Повседневный сервис для жителей.", estimate: 2 },

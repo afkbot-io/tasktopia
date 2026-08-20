@@ -1,0 +1,69 @@
+{
+  "key": "house-lowrise-corner",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        52
+      ],
+      [
+        3,
+        134
+      ]
+    ],
+    [
+      [
+        108,
+        52
+      ],
+      [
+        108,
+        134
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        112
+      ],
+      [
+        108,
+        112
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [
+        [
+          8,
+          34
+        ],
+        [
+          103,
+          34
+        ]
+      ],
+      "frontEdge": [
+        [
+          3,
+          52
+        ],
+        [
+          108,
+          52
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 6,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

@@ -1,0 +1,69 @@
+{
+  "key": "house-lowrise-modular",
+  "stage": 5,
+  "facadeVerticals": [
+    [
+      [
+        3,
+        32
+      ],
+      [
+        3,
+        126
+      ]
+    ],
+    [
+      [
+        92,
+        32
+      ],
+      [
+        92,
+        126
+      ]
+    ]
+  ],
+  "floorHorizontals": [
+    [
+      [
+        3,
+        104
+      ],
+      [
+        92,
+        104
+      ]
+    ]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [
+        [
+          6,
+          9
+        ],
+        [
+          89,
+          9
+        ]
+      ],
+      "frontEdge": [
+        [
+          2,
+          32
+        ],
+        [
+          93,
+          32
+        ]
+      ]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

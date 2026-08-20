@@ -311,9 +311,13 @@ function taskDto(row: Row): TaskDto {
 /** Protect authored screen mass as well as temporary construction fencing. */
 function taskOccupiedCells(task: TaskDto): Cell[] {
   if (task.footprint.length === 0) return task.footprint;
-  const entry = getBuilding(task.buildingType);
-  const northSetback = task.visualKind === "BUILDING" ? buildingVisualSetbackCells(entry) : 0;
-  const visual = task.visualKind === "BUILDING"
+  // A release may remove an authored family before the one-time world replay
+  // rewrites stored task rows. Preserve the saved physical footprint during
+  // that narrow migration window; strict catalog lookup here would prevent
+  // both the server and the regeneration CLI from starting at all.
+  const entry = BUILDING_CATALOG.find((candidate) => candidate.key === task.buildingType);
+  const northSetback = task.visualKind === "BUILDING" && entry ? buildingVisualSetbackCells(entry) : 0;
+  const visual = task.visualKind === "BUILDING" && entry
     ? rectangleFootprint(
         { x: task.origin.x, y: task.origin.y - northSetback },
         entry.footprint.width,
@@ -2971,16 +2975,14 @@ export class AppService {
     // pocket park and later infill always have land left.
     const boundsWidth = searchBounds.maxX - searchBounds.minX + 1;
     const boundsHeight = searchBounds.maxY - searchBounds.minY + 1;
-    const v5TaskBuilding = entry.tags.includes("new-build");
+    const residentialComplex = entry.tags.some((tag) =>
+      tag === "low-rise-residential" || tag === "mid-rise-residential" || tag === "high-rise-residential");
     const minimumRect = complexMinimumRect(entry, targetLots);
-    // A private neighbourhood opens with a compact five/six-house frontage on
-    // one shared street. Private V5 houses are deliberately much smaller than
-    // new-build towers, so reserving the old universal nine-cell bays made a
-    // cottage district look like four isolated villas. A genuinely large
-    // villa still raises its own minimum lot below, but ordinary houses first
-    // fill this continuous row before another road complex may open.
+    // The legacy PRIVATE code now means a low+mid-rise apartment district.
+    // Its first frontage must fit several 12–16-cell ЖК corps rather than the
+    // removed row of compact detached houses.
     const privateFrontageWidth = district.archetype === "PRIVATE" && complexIndex === 0
-      ? Math.max(52, Math.min(9, entry.footprint.width) * 5 + 6)
+      ? Math.min(72, Math.max(12, entry.footprint.width) * 4 + 8)
       : 0;
     const newBuildFrontageWidth = district.archetype === "NEW_BUILD" && complexIndex === 0
       ? Math.min(72, Math.max(12, entry.footprint.width) * 4 + 8)
@@ -2991,11 +2993,11 @@ export class AppService {
     const territoryCap = complexIndex === 0
       ? Math.min(
         allowed.size,
-        Math.max(v5TaskBuilding ? 1_250 : 240, Math.floor(allowed.size * (denseGrid ? 0.82 : 0.8))),
+        Math.max(residentialComplex ? 1_250 : 240, Math.floor(allowed.size * (denseGrid ? 0.82 : 0.8))),
       )
       : Number.POSITIVE_INFINITY;
     const area = Math.min(
-      v5TaskBuilding ? Math.max(targetLots * 120, minimumRectWidth * minimumRectHeight) : targetLots * (denseGrid ? 68 : 60),
+      residentialComplex ? Math.max(targetLots * 120, minimumRectWidth * minimumRectHeight) : targetLots * (denseGrid ? 68 : 60),
       territoryCap,
     );
     // Dense cores need enough north/south depth for three shared frontage
@@ -3003,7 +3005,7 @@ export class AppService {
     const aspect = denseGrid
       ? 0.78 + hashCoordinate(seed, searchBounds.minX, searchBounds.minY, 941 + complexIndex) * 0.16
       : 0.7 + hashCoordinate(seed, searchBounds.minX, searchBounds.minY, 941 + complexIndex) * 0.9;
-    const rectWidth = Math.max(minimumRectWidth, Math.min(v5TaskBuilding ? 72 : 40, boundsWidth - 2, Math.round(Math.sqrt(area * aspect))));
+    const rectWidth = Math.max(minimumRectWidth, Math.min(residentialComplex ? 72 : 40, boundsWidth - 2, Math.round(Math.sqrt(area * aspect))));
     const rectHeight = Math.max(minimumRectHeight, Math.min(34, boundsHeight - 2, Math.round(area / rectWidth)));
 
     const searchCenter = {
@@ -3453,11 +3455,12 @@ export class AppService {
                           ? 48
                         : Math.max(42, Math.min(48, Math.round(Math.sqrt(area * aspect))));
                       const height = archetype === "NEW_BUILD"
-                        // The V5 first complex needs a one-cell planner margin
-                        // around a 29-cell two-tier envelope. A 27-cell initial
-                        // territory could be selected successfully but could
-                        // never publish its first road/building on rough seeds.
-                        ? Math.max(31, Math.min(34, Math.round(area / width)))
+                        // The tallest ordinary residential tower has 280px of
+                        // opaque screen mass over a 16-cell physical depth. Its
+                        // 19-cell northern visual setback produces a 42-cell
+                        // minimum complex; keep planner margins around that
+                        // real envelope instead of shrinking or clipping it.
+                        ? 48
                         : Math.max(35, Math.min(42, Math.round(area / width)));
                       const id = randomUUID();
                       const existingRoads = await this.roadCells(countryId);
@@ -4071,7 +4074,7 @@ export class AppService {
                       const preferredCandidates = ranked.slice(0, 8);
                       // A varied large-building catalog must not deadlock a
                       // nearly full block. Keep a few compact fallbacks after
-                      // the semantic favourites instead of scanning all 193
+                      // the semantic favourites instead of scanning the full catalog
                       // entries (and repeatedly growing the district).
                       const compactFallbacks = ranked
                         .filter((candidate) => candidate.footprint.width <= 14

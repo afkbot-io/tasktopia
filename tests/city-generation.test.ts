@@ -39,7 +39,7 @@ function placedTask(id: string, origin: { x: number; y: number }, width: number,
     id, taskNumber: 1, cityId: "city", districtId: "dense", title: id, description: "", workItemType: "TASK",
     acceptanceCriteria: "", systemAnalysis: "", architecture: "", designSystem: "", implementationPlan: "",
     estimate: 1, priority: "NORMAL", status: "PLANNING", progress: 0, dueAt: null,
-    buildingType: "house-cottage", visualKind: "BUILDING", visualAssetKey: "house-cottage", platformType: "YARD", origin, footprint,
+    buildingType: "house-lowrise-gallery", visualKind: "BUILDING", visualAssetKey: "house-lowrise-gallery", platformType: "STONE", origin, footprint,
     entrance: { x: origin.x, y: origin.y + height }, accessPath: [], accessKind: "PATH", stage: 1,
     createdAt: "now", updatedAt: "now", mergeRequests: [],
   };
@@ -49,7 +49,7 @@ describe("V6 city morphology and access planning", () => {
   it("derives a north-side lot setback from the finished opaque facade", () => {
     expect(buildingVisualSetbackCells(getBuilding("highrise-glass"))).toBe(18);
     expect(buildingVisualSetbackCells(getBuilding("civic-library"))).toBe(6);
-    expect(buildingVisualSetbackCells(getBuilding("house-cottage"))).toBe(0);
+    expect(buildingVisualSetbackCells(getBuilding("house-lowrise-gallery"))).toBe(0);
   });
 
   it("reserves the complete north-projecting facade above a building footprint", () => {
@@ -99,7 +99,7 @@ describe("V6 city morphology and access planning", () => {
 
   it("strongly prefers compatible residential families without banning local commerce", () => {
     const mixed = getBuilding("highrise-mixed-use-market");
-    const privateHome = getBuilding("house-brick-duplex");
+    const privateHome = getBuilding("house-lowrise-gallery");
     const gas = getBuilding("commercial-gas-station-compact");
     expect(archetypeAffinity(mixed, "NEW_BUILD")).toBeGreaterThan(archetypeAffinity(privateHome, "NEW_BUILD"));
     expect(archetypeAffinity(privateHome, "PRIVATE")).toBeGreaterThan(archetypeAffinity(mixed, "PRIVATE"));
@@ -110,18 +110,35 @@ describe("V6 city morphology and access planning", () => {
     const highrise = getBuilding("highrise-glass");
     const brutalistBlock = getBuilding("house-brutalist-block");
     const cohousingCluster = getBuilding("house-cohousing-cluster");
-    const privateHome = getBuilding("house-brick-duplex");
+    const privateHome = getBuilding("house-lowrise-gallery");
     const longShop = getBuilding("shop-bakery-long");
-    expect(buildingZoningRole(highrise)).toBe("DENSE_RESIDENTIAL");
-    expect(buildingZoningRole(brutalistBlock)).toBe("DENSE_RESIDENTIAL");
-    expect(buildingZoningRole(cohousingCluster)).toBe("DENSE_RESIDENTIAL");
+    expect(buildingZoningRole(highrise)).toBe("HIGH_RISE_RESIDENTIAL");
+    expect(buildingZoningRole(brutalistBlock)).toBe("MID_RISE_RESIDENTIAL");
+    expect(buildingZoningRole(cohousingCluster)).toBe("MID_RISE_RESIDENTIAL");
     expect(buildingCompatibleWithArchetype(brutalistBlock, "NEW_BUILD")).toBe(true);
     expect(buildingCompatibleWithArchetype(cohousingCluster, "NEW_BUILD")).toBe(true);
-    expect(buildingZoningRole(privateHome)).toBe("PRIVATE_RESIDENTIAL");
+    expect(buildingZoningRole(privateHome)).toBe("LOW_RISE_RESIDENTIAL");
     expect(buildingCompatibleWithArchetype(highrise, "PRIVATE")).toBe(false);
     expect(buildingCompatibleWithArchetype(privateHome, "NEW_BUILD")).toBe(false);
     expect(buildingCompatibleWithArchetype(privateHome, "COMMERCIAL")).toBe(false);
     expect(buildingCompatibleWithArchetype(longShop, "NEW_BUILD")).toBe(true);
+  });
+
+  it("models residential districts as low+mid and mid+high without private houses", () => {
+    const template = getBuilding("house-small-apartments");
+    const low = { ...template, key: "low", tags: ["house", "residential", "low-rise-residential"] };
+    const mid = { ...template, key: "mid", tags: ["house", "residential", "mid-rise-residential"] };
+    const high = { ...template, key: "high", category: "HIGHRISE" as const, tags: ["highrise", "residential", "high-rise-residential"] };
+
+    expect(buildingZoningRole(low)).toBe("LOW_RISE_RESIDENTIAL");
+    expect(buildingZoningRole(mid)).toBe("MID_RISE_RESIDENTIAL");
+    expect(buildingZoningRole(high)).toBe("HIGH_RISE_RESIDENTIAL");
+    expect(buildingCompatibleWithArchetype(low, "PRIVATE")).toBe(true);
+    expect(buildingCompatibleWithArchetype(mid, "PRIVATE")).toBe(true);
+    expect(buildingCompatibleWithArchetype(high, "PRIVATE")).toBe(false);
+    expect(buildingCompatibleWithArchetype(low, "NEW_BUILD")).toBe(false);
+    expect(buildingCompatibleWithArchetype(mid, "NEW_BUILD")).toBe(true);
+    expect(buildingCompatibleWithArchetype(high, "NEW_BUILD")).toBe(true);
   });
 
   it("publishes sidewalks around city streets but does not leak new sidewalk into a completed district", () => {
@@ -183,7 +200,7 @@ describe("V6 city morphology and access planning", () => {
   });
 
   it("finds a short entrance-to-sidewalk path inside the lot", () => {
-    const entry = getBuilding("house-brick-duplex");
+    const entry = getBuilding("house-lowrise-gallery");
     const origin = { x: 1, y: 1 };
     const footprint = rectangleFootprint(origin, entry.footprint.width, entry.footprint.height);
     const entrance = entranceOutside(origin, entry, "S", entry.entrances[0]!.offset);

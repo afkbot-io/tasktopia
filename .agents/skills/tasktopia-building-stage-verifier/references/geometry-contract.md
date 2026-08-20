@@ -137,3 +137,60 @@ Automate exact canvas, alpha, palette, occupied bounds, centre, baseline, stage 
 - no baked site surface, outside fence, UI or watermark.
 
 Code can reject measurable failures; it cannot prove perspective or identity on its own.
+
+## Projection-review evidence
+
+For a newly generated or visually regenerated family, accompany the geometry
+run with a `projection-review.json` and pass both `--projection-review` and
+`--require-projection-review`. Coordinates are measured on the normalized
+runtime stage-5 canvas, not on the large generator source:
+
+```json
+{
+  "key": "house-example",
+  "stage": 5,
+  "facadeVerticals": [
+    [[8, 20], [8, 55]],
+    [[47, 20], [47, 55]]
+  ],
+  "floorHorizontals": [
+    [[8, 40], [47, 40]]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [[14, 8], [41, 8]],
+      "frontEdge": [[8, 14], [47, 14]]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}
+```
+
+The verifier requires facade vertical drift, floor drift and top-plane edge
+drift to stay within `1 px`. Supporting annotated planes may expose `2 px` up
+to the building-specific `projectedRoofDepthPx`; a zero-depth stripe is a flat
+elevation failure. At least one plane must be the actual dominant main roof
+(`role: primary-roof`), expose at least `6 px`, and span at least 50% of the
+sprite width, so a ridge, cornice, parapet cap or tiny canopy cannot make a
+flat building pass. The review also explicitly confirms that the primary
+plane traces the dominant surface and that its front edge follows the real
+facade eave. `sideFacadeWidthPx` may not exceed
+`max(2 px, 8% of sprite width)`. The generated cyan/yellow/green/magenta
+projection overlay must still be inspected: annotation is semantic evidence,
+and code cannot prove that a line claimed as a roof edge actually traces the
+roof. A reviewer sets the two boolean confirmations only after checking the
+overlay against stage 5 and the stage 4→3 row.
+
+For a genuinely segmented roof such as a sawtooth profile, annotate every
+visible section independently. Give the sections the same
+`primaryRoofGroup` and set `edgeProfile: "parallel-pitched"` only when each
+section's back and front edges are visibly parallel. The verifier measures
+their non-overlapping combined horizontal coverage against the 50% gate.
+Never draw one rectangular evidence envelope through valleys or transparent
+gaps merely to satisfy the span threshold.
