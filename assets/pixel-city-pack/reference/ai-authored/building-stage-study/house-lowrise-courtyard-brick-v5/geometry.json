@@ -27,6 +27,8 @@
     14
   ],
   "doorBottomInsetPx": 0,
+  "finishedOccupiedWidthPxRange": [118, 128],
+  "finishedOccupiedHeightPxRange": [104, 120],
   "sitePreviewCells": [
     20,
     18

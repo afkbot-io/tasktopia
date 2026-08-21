@@ -11,6 +11,12 @@ export type VehiclePresentation = {
   scaleY: number;
 };
 
+export type VehicleMotionPresentation = {
+  /** Stable four-phase motion contract; zero is also the stopped frame. */
+  frame: 0 | 1 | 2 | 3;
+  suspensionYPx: number;
+};
+
 export type TrafficVehicleSnapshot = {
   id: string;
   kind: "CAR" | "BUS";
@@ -448,6 +454,24 @@ export function vehiclePresentation(current: Cell, next: Cell, scale = 1.2): Veh
     scaleX: horizontal && next.x < current.x ? -scale : scale,
     scaleY: scale,
   };
+}
+
+/**
+ * Animate suspension without deforming or rotating pixel art. Cars use one
+ * crisp compression pixel; buses traverse the same four phases more slowly.
+ * A blocked vehicle settles on frame zero so queues do not visibly vibrate.
+ */
+export function vehicleMotionPresentation(
+  kind: "CAR" | "BUS",
+  progress: number,
+  completedCells: number,
+  moving = true,
+): VehicleMotionPresentation {
+  if (!moving) return { frame: 0, suspensionYPx: 0 };
+  const distancePhase = Math.max(0, completedCells) + Math.max(0, Math.min(0.999_999, progress));
+  const multiplier = kind === "BUS" ? 2 : 4;
+  const frame = Math.floor(distancePhase * multiplier) % 4 as 0 | 1 | 2 | 3;
+  return { frame, suspensionYPx: frame === 1 ? -1 : 0 };
 }
 
 /** Pixel position on the exact centre of the assigned travel cell. */

@@ -1,0 +1,24 @@
+{
+  "key": "commercial-parking-lot",
+  "stage": 5,
+  "facadeVerticals": [
+    [[1, 27], [1, 62]],
+    [[78, 27], [78, 62]]
+  ],
+  "floorHorizontals": [
+    [[1, 43], [78, 43]]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof-deck",
+      "role": "primary-roof",
+      "backEdge": [[4, 16], [75, 16]],
+      "frontEdge": [[1, 26], [78, 26]]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

@@ -1,0 +1,24 @@
+{
+  "key": "civic-police-neighborhood",
+  "stage": 5,
+  "facadeVerticals": [
+    [[2, 25], [2, 78]],
+    [[77, 25], [77, 78]]
+  ],
+  "floorHorizontals": [
+    [[2, 56], [77, 56]]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [[5, 6], [74, 6]],
+      "frontEdge": [[1, 24], [78, 24]]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

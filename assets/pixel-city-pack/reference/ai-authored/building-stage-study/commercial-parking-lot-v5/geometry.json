@@ -12,6 +12,6 @@
   "doorLeafSizePx": [6, 14],
   "doorBottomInsetPx": 0,
   "finishedOccupiedWidthPxRange": [72, 80],
-  "finishedOccupiedHeightPxRange": [42, 52],
+  "finishedOccupiedHeightPxRange": [48, 64],
   "sitePreviewCells": [14, 10]
 }

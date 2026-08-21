@@ -3,6 +3,7 @@ import { greenAreaPathCells } from "../../shared/green-area";
 import type { Cell, CityDto, RoadCellDto, SurfaceCellDto, TaskDto } from "../../shared/contracts";
 import { CHUNK_SIZE, type AppService } from "../app-service";
 import type { Db } from "../db";
+import { greenAreaTarget } from "../green-area-planner";
 import { GRID_DIRECTIONS, cellKey, connected, contains, floorDiv, intersects, manhattan, neighbors4 } from "./grid";
 import { isWater, terrainAt } from "../../shared/world-terrain";
 import { bridgeComponentsWithoutTwoLandPortals } from "./road-geometry";
@@ -240,6 +241,15 @@ export async function auditWorld(db: Db, service: AppService, countryId: string)
 
   const greenAreas = worldFeatures.filter((feature) => feature.kind === "PARK" || feature.kind === "GROVE");
   const parkDecor = worldFeatures.filter((feature) => feature.kind === "PARK_DECOR");
+  for (const district of districts.filter((item) => item.status !== "ABANDONED")) {
+    const districtTaskCount = tasks.filter((task) => task.districtId === district.id).length;
+    if (districtTaskCount === 0) continue;
+    const actual = greenAreas.filter((feature) => feature.districtId === district.id).length;
+    const expected = greenAreaTarget(districtTaskCount);
+    if (actual < expected) {
+      addViolation(violations, "GREEN_AREA_TARGET_MISSING", `${district.name}: зелёных зон ${actual}, требуется ${expected}`);
+    }
+  }
   for (const area of greenAreas) {
     const city = area.cityId ? cityById.get(area.cityId) : undefined;
     if (!city) {

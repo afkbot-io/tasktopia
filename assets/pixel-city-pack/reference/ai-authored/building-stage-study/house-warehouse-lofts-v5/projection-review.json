@@ -1,0 +1,24 @@
+{
+  "key": "house-warehouse-lofts",
+  "stage": 5,
+  "facadeVerticals": [
+    [[3, 23], [3, 118]],
+    [[172, 23], [172, 118]]
+  ],
+  "floorHorizontals": [
+    [[3, 79], [172, 79]]
+  ],
+  "topPlanes": [
+    {
+      "name": "main-roof",
+      "role": "primary-roof",
+      "backEdge": [[7, 4], [168, 4]],
+      "frontEdge": [[2, 22], [173, 22]]
+    }
+  ],
+  "sideFacadeWidthPx": 0,
+  "primaryRoofIsDominantSurface": true,
+  "primaryRoofFrontEdgeMatchesEave": true,
+  "annotationsMatchVisiblePixels": true,
+  "sameCameraAcrossStages": true
+}

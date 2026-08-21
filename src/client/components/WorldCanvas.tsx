@@ -23,6 +23,7 @@ import {
   planVehicleFrame,
   vehicleUnsafePairCount,
   vehicleCruiseSpeed,
+  vehicleMotionPresentation,
   vehiclePresentation,
   mustYieldAtCrosswalk,
   mustYieldForBlockedJunctionExit,
@@ -1128,6 +1129,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       });
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
+      host.dataset.vehicleAnimationFrames = "4";
       app.ticker.add(() => {
         if (reducedMotion) return;
         const elapsed = Math.min(50, app.ticker.deltaMS);
@@ -1256,7 +1258,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             }
           }
           const motion = ambientMotionPresentation(agent.kind, agent.current, agent.next, agent.progress, agent.previous, CELL_SIZE);
-          agent.view.position.set(motion.x, motion.y);
+          const motorDecision = agent.kind === "CAR" || agent.kind === "BUS" ? vehicleFrame.get(agent.id) : undefined;
+          const vehicleMotion = agent.kind === "CAR" || agent.kind === "BUS"
+            ? vehicleMotionPresentation(agent.kind, agent.progress, agent.steps, (motorDecision?.advance ?? 0) > 0)
+            : undefined;
+          agent.view.position.set(motion.x, motion.y + (vehicleMotion?.suspensionYPx ?? 0));
           agent.view.rotation = motion.rotation;
           if (agent.activityView) {
             const bubble = residentActivityPosition(

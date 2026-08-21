@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
-import { AppService, complexMinimumRect, connectReplayDistrictSegments, connectorCorridorBlocked, districtAvailableLotBounds, districtGreenSearchBounds, districtGrowthThicknesses, DomainError, initialResidentialFrontageWidth, rectOccupancyCounter, spatialRoadAnchors } from "../src/server/app-service";
+import { AppService, complexMinimumRect, connectReplayDistrictSegments, connectorCorridorBlocked, districtAvailableLotBounds, districtGreenSearchBounds, districtGrowthThicknesses, DomainError, initialResidentialFrontageWidth, plannedLocalStreetCorridorsValid, rectOccupancyCounter, spatialRoadAnchors, spatialRoadAnchorTiers } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { getBuilding } from "../src/shared/catalog";
 import type { Cell, RoadCellDto } from "../src/shared/contracts";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
-import { isWater, terrainAt } from "../src/shared/world-terrain";
+import { isBuildableTerrain, isWater, terrainAt } from "../src/shared/world-terrain";
 
 describe("Tasktopia square-world application service", { timeout: 20_000 }, () => {
   let db: Db;
@@ -72,6 +72,27 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
       { x: 32, y: 0 }, { x: 40, y: 0 }, { x: 48, y: 0 }, { x: 56, y: 0 },
       ...remoteSegments,
     ]);
+  });
+
+  it("keeps fallback road anchors after a full highway probe budget", () => {
+    const highways = Array.from({ length: 300 }, (_, index) => ({ x: index * 8, y: 0 }));
+    const fallback = [{ x: 9_999, y: 16 }];
+    const tiers = spatialRoadAnchorTiers(highways, fallback);
+    expect(tiers[0]).toHaveLength(256);
+    expect(tiers[1]).toEqual(fallback);
+  });
+
+  it("rejects a local street profile that escapes its district", () => {
+    const seed = 424_242;
+    const streetY = Array.from({ length: 201 }, (_, index) => index - 100).find((y) =>
+      Array.from({ length: 12 }, (_, x) => [terrainAt(seed, x, y).terrain, terrainAt(seed, x, y - 1).terrain])
+        .flat().every(isBuildableTerrain))!;
+    const street = Array.from({ length: 12 }, (_, x) => ({ x, y: streetY }));
+    const fullDistrict = new Set(Array.from({ length: 12 * 4 }, (_, index) =>
+      cellKey({ x: index % 12, y: streetY - 2 + Math.floor(index / 12) })));
+    expect(plannedLocalStreetCorridorsValid([street], fullDistrict, seed, new Map())).toBe(true);
+    const clipped = new Set([...fullDistrict].filter((key) => key !== `5,${streetY}` && key !== `5,${streetY - 1}`));
+    expect(plannedLocalStreetCorridorsValid([street], clipped, seed, new Map())).toBe(false);
   });
 
   it("counts occupied district cells inside candidate rectangles", () => {

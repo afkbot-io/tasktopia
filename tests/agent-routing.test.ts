@@ -15,6 +15,7 @@ import {
   planAgentRoute,
   shortestAgentRoute,
   vehiclePresentation,
+  vehicleMotionPresentation,
   vehicleLanePosition,
   planVehicleFrame,
   vehicleCruiseSpeed,
@@ -25,8 +26,8 @@ import {
 } from "../src/client/agent-routing";
 
 const TEST_VEHICLE_BODY = {
-  CAR: { length: 1.575, width: 0.675 },
-  BUS: { length: 5.175, width: 1.6875 },
+  CAR: { length: 2.1, width: 0.9 },
+  BUS: { length: 5.75, width: 1.875 },
 } as const;
 
 function independentlyOverlaps(left: TrafficVehicleSnapshot, right: TrafficVehicleSnapshot): boolean {
@@ -177,6 +178,14 @@ describe("living city agent routing", () => {
     expect(vehiclePresentation({ x: 2, y: 1 }, { x: 1, y: 1 })).toEqual({ view: "horizontal", scaleX: -1.2, scaleY: 1.2 });
     expect(vehiclePresentation({ x: 1, y: 1 }, { x: 1, y: 2 })).toEqual({ view: "south", scaleX: 1.2, scaleY: 1.2 });
     expect(vehiclePresentation({ x: 1, y: 2 }, { x: 1, y: 1 })).toEqual({ view: "north", scaleX: 1.2, scaleY: 1.2 });
+  });
+
+  it("animates suspension by travelled distance and settles blocked queues", () => {
+    expect(vehicleMotionPresentation("CAR", 0, 0)).toEqual({ frame: 0, suspensionYPx: 0 });
+    expect(vehicleMotionPresentation("CAR", 0.25, 0)).toEqual({ frame: 1, suspensionYPx: -1 });
+    expect(vehicleMotionPresentation("CAR", 0.5, 0)).toEqual({ frame: 2, suspensionYPx: 0 });
+    expect(vehicleMotionPresentation("BUS", 0.5, 0)).toEqual({ frame: 1, suspensionYPx: -1 });
+    expect(vehicleMotionPresentation("BUS", 0.75, 12, false)).toEqual({ frame: 0, suspensionYPx: 0 });
   });
 
   it("keeps vehicles inset toward the centre of their carriageway through turns", () => {
