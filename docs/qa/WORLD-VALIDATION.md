@@ -100,6 +100,23 @@ target-scale. Все
 scale fixture: `11 875 ms` генерации, `178 ms` холодный viewport, `41 ms`
 повторный viewport, `414 MB` process RSS и `82%` сокращения compact wire.
 
+## Production rollout 2026-08-22
+
+- Fast-forward release `ecb1334` опубликован в `main` и развёрнут штатным
+  `deploy/update-server.sh` на `5.42.199.122`.
+- Перед заменой runtime создан проверенный PostgreSQL custom dump
+  `backups/pre-update-2026-08-21-222753.dump` размером `8 995 466` байт.
+- Миграция `0019_seeded_area_decor.sql` применена; строк `PARK_DECOR` после
+  миграции — `0`.
+- Отдельные `app`, `mcp` и `world` контейнеры прошли health; в их логах за
+  rollout нет `error`, `fatal`, `panic` или `unhandled`.
+- Принудительный replay `release-ecb1334` обработал `7/7` стран с первой
+  попытки. Каждый transaction-local audit завершился с `violationsAfter: 0`;
+  старый Атуталенд исправил семь найденных нарушений.
+- В durable generation queue после replay находятся только `7 COMPLETED`
+  jobs. Публичные health, manifest, новый wheat prop и новый vehicle PNG
+  отвечают HTTP `200`.
+
 Результат записывается в `screenshots/world-validation/browser-report.json`, а
 кадры — в `city-01.png` … `city-10.png`. Отдельный широкий кадр
 `final-four-district-city.png` показывает четыре состояния финального города.
