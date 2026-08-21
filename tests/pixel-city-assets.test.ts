@@ -134,7 +134,7 @@ describe("Pixel City active asset contract", () => {
       expect(props[authored.key], authored.key).toMatchObject({
         size: authored.size,
         footprintCells: authored.footprintCells,
-        artSource: "AI_AUTHORED",
+        artSource: "artSource" in authored ? authored.artSource : "AI_AUTHORED",
         sourceSheet: authored.sheet,
         visualProfile: authored.visualProfile,
         ...("baseFacing" in authored ? { baseFacing: authored.baseFacing } : {}),
@@ -239,8 +239,14 @@ describe("Pixel City active asset contract", () => {
   });
 
   it("publishes four incident animation frames, three engine silhouettes, and eight animal species", () => {
-    const props = manifest.props as Record<string, { footprintCells: number[] }>;
-    for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) expect(props[key], key).toBeDefined();
+    const props = manifest.props as Record<string, { footprintCells: number[]; artSource?: string; sourceSheet?: string }>;
+    for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) {
+      expect(props[key], key).toMatchObject({
+        footprintCells: [4, 1],
+        artSource: "HAND_AUTHORED_NATIVE",
+        sourceSheet: "hand-authored/ambient/fire-engines-v3.png",
+      });
+    }
     for (const prefix of ["incident-flame", "incident-smoke"]) {
       for (const suffix of ["a", "b", "c", "d"]) expect(props[`${prefix}-${suffix}`], `${prefix}-${suffix}`).toBeDefined();
     }

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { MAX_INCIDENT_ENGINES, incidentMode, incidentVisualLayout, incidentVisualProfile, planIncidentEngines } from "../src/client/task-incidents";
+import {
+  MAX_INCIDENT_ENGINES,
+  incidentMode,
+  incidentVisualLayout,
+  incidentVisualProfile,
+  incidentWaterJetFrame,
+  planIncidentEngines,
+} from "../src/client/task-incidents";
 import type { ChunkTaskDto } from "../src/shared/contracts";
 
 function task(overrides: Partial<ChunkTaskDto> = {}): ChunkTaskDto {
@@ -86,19 +93,22 @@ describe("incidentVisualProfile", () => {
 });
 
 describe("incidentVisualLayout", () => {
-  it("spreads a serious fire across a wide facade instead of stacking it in one spot", () => {
+  it("spreads a serious fire across the width and floors of the opaque facade", () => {
     const layout = incidentVisualLayout(144, 280, {
       activeDefects: 8,
       smokeStrength: 6,
       plumeCount: 3,
       burning: true,
-    });
+    }, { left: 18, top: 16, right: 126, bottom: 276 });
 
-    expect(layout.flameAnchors).toHaveLength(4);
+    expect(layout.flameAnchors).toHaveLength(6);
     expect(layout.flameAnchors[0]!.x).toBeLessThan(-30);
     expect(layout.flameAnchors.at(-1)!.x).toBeGreaterThan(30);
+    expect(new Set(layout.flameAnchors.map(({ y }) => y)).size).toBeGreaterThanOrEqual(4);
+    expect(new Set(layout.flameAnchors.map(({ scale }) => scale)).size).toBeGreaterThanOrEqual(3);
+    expect(layout.flameAnchors.every(({ x, y }) => x >= -50 && x <= 50 && y >= -256 && y <= -12)).toBe(true);
     expect(layout.smokeAnchors).toHaveLength(3);
-    expect(layout.smokeAnchors.map(({ x }) => x)).toEqual([-68, 0, 68]);
+    expect(layout.smokeAnchors.every(({ x, y }) => x >= -50 && x <= 50 && y >= -264 && y <= -12)).toBe(true);
   });
 
   it("keeps smoke and flames inside a narrow building silhouette", () => {
@@ -111,6 +121,7 @@ describe("incidentVisualLayout", () => {
 
     expect(layout.flameAnchors).toHaveLength(1);
     expect(layout.flameAnchors[0]!.x).toBe(0);
+    expect(layout.flameAnchors[0]!.scale).toBeLessThan(1);
     expect(layout.smokeAnchors.every(({ x }) => Math.abs(x) <= 8)).toBe(true);
   });
 
@@ -124,6 +135,30 @@ describe("incidentVisualLayout", () => {
 
     expect(layout.flameAnchors).toEqual([]);
     expect(layout.smokeAnchors).toHaveLength(2);
+  });
+});
+
+describe("incidentWaterJetFrame", () => {
+  it("draws a continuous pixel stream from the engine nozzle to the selected facade fire", () => {
+    const frame = incidentWaterJetFrame({ x: 52, y: -7 }, { x: -18, y: -126 }, 0, 31);
+
+    expect(frame.core.length).toBeGreaterThan(50);
+    expect(frame.core[0]).toMatchObject({ x: 52, y: -7 });
+    expect(frame.core.at(-1)!.x).toBeCloseTo(-18, 0);
+    expect(frame.core.at(-1)!.y).toBeCloseTo(-126, 0);
+    expect(frame.spray.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("moves highlights and impact spray between animation frames without moving the endpoints", () => {
+    const start = { x: 48, y: -6 };
+    const target = { x: 12, y: -88 };
+    const first = incidentWaterJetFrame(start, target, 0, 9);
+    const second = incidentWaterJetFrame(start, target, 140, 9);
+
+    expect(second.core[0]).toEqual(first.core[0]);
+    expect(second.core.at(-1)).toEqual(first.core.at(-1));
+    expect(second.highlights).not.toEqual(first.highlights);
+    expect(second.spray).not.toEqual(first.spray);
   });
 });
 

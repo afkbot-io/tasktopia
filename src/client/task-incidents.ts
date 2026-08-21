@@ -10,17 +10,51 @@ export type IncidentVisualProfile = {
 };
 
 export type IncidentVisualLayout = {
-  flameAnchors: Array<{ x: number; y: number }>;
-  smokeAnchors: Array<{ x: number; y: number }>;
+  flameAnchors: IncidentEffectAnchor[];
+  smokeAnchors: IncidentEffectAnchor[];
 };
 
-function distributedAnchors(count: number, halfWidth: number, y: number): Array<{ x: number; y: number }> {
+export type IncidentEffectAnchor = { x: number; y: number; scale: number; phaseMs: number };
+export type IncidentSurfaceBounds = { left: number; top: number; right: number; bottom: number };
+export type IncidentWaterPixel = { x: number; y: number; size: number };
+export type IncidentWaterJetFrame = {
+  core: IncidentWaterPixel[];
+  highlights: IncidentWaterPixel[];
+  spray: IncidentWaterPixel[];
+};
+
+const FIRE_X_FRACTIONS = [0, 1, 0.2, 0.8, 0.4, 0.6] as const;
+const FIRE_Y_FRACTIONS = [0.72, 0.34, 0.5, 0.82, 0.22, 0.61] as const;
+const FIRE_SCALE_FACTORS = [0.82, 1.12, 0.94, 1.18, 0.88, 1.04] as const;
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
+function effectAnchors(
+  count: number,
+  spriteWidth: number,
+  spriteHeight: number,
+  surface: IncidentSurfaceBounds,
+): IncidentEffectAnchor[] {
   if (count <= 0) return [];
-  if (count === 1) return [{ x: 0, y }];
-  return Array.from({ length: count }, (_, index) => ({
-    x: Math.round(-halfWidth + 2 * halfWidth * index / (count - 1)),
-    y: y - index % 2 * 2,
+  const width = Math.max(1, surface.right - surface.left);
+  const height = Math.max(1, surface.bottom - surface.top);
+  const insetX = Math.min(4, Math.floor(width / 2));
+  const insetTop = Math.min(8, Math.floor(height * 0.18));
+  const insetBottom = Math.min(10, Math.floor(height * 0.22));
+  const left = surface.left + insetX - spriteWidth / 2;
+  const right = surface.right - insetX - spriteWidth / 2;
+  const top = surface.top + insetTop - spriteHeight;
+  const bottom = surface.bottom - insetBottom - spriteHeight;
+  const baseScale = clamp(0.68 + Math.sqrt(width * height) / 560, 0.7, 1.05);
+  const anchors = Array.from({ length: count }, (_, index) => ({
+    x: Math.round(left + (right - left) * (count === 1 ? 0.5 : FIRE_X_FRACTIONS[index]!)),
+    y: Math.round(top + (bottom - top) * FIRE_Y_FRACTIONS[index]!),
+    scale: Math.round(clamp(baseScale * FIRE_SCALE_FACTORS[index]!, 0.64, 1.24) * 100) / 100,
+    phaseMs: index * 137,
   }));
+  return anchors.sort((first, second) => first.x - second.x);
 }
 
 /**
@@ -32,14 +66,75 @@ export function incidentVisualLayout(
   spriteWidth: number,
   spriteHeight: number,
   profile: IncidentVisualProfile,
+  opaqueBounds: IncidentSurfaceBounds = { left: 0, top: 0, right: spriteWidth, bottom: spriteHeight },
 ): IncidentVisualLayout {
-  const halfWidth = Math.max(0, Math.floor(spriteWidth / 2) - 4);
-  const facadeY = -Math.max(12, Math.round(spriteHeight * 0.58));
-  const flameCount = profile.burning ? Math.max(1, Math.min(4, Math.floor(spriteWidth / 32))) : 0;
-  return {
-    flameAnchors: distributedAnchors(flameCount, halfWidth, facadeY),
-    smokeAnchors: distributedAnchors(profile.plumeCount, halfWidth, facadeY - 5),
+  const surface = {
+    left: clamp(opaqueBounds.left, 0, spriteWidth),
+    top: clamp(opaqueBounds.top, 0, spriteHeight),
+    right: clamp(opaqueBounds.right, 0, spriteWidth),
+    bottom: clamp(opaqueBounds.bottom, 0, spriteHeight),
   };
+  const surfaceWidth = Math.max(1, surface.right - surface.left);
+  const surfaceHeight = Math.max(1, surface.bottom - surface.top);
+  const flameCount = profile.burning
+    ? clamp(Math.ceil(surfaceWidth / 40) + (surfaceHeight >= 96 ? Math.ceil(surfaceHeight / 120) : 0), 1, 6)
+    : 0;
+  const flames = effectAnchors(flameCount, spriteWidth, spriteHeight, surface);
+  const smokeBase = profile.plumeCount <= 0
+    ? []
+    : flames.length > 0
+    ? flames.filter((_, index) => index % Math.max(1, Math.floor(flames.length / profile.plumeCount)) === 0).slice(0, profile.plumeCount)
+    : effectAnchors(profile.plumeCount, spriteWidth, spriteHeight, surface);
+  return {
+    flameAnchors: flames,
+    smokeAnchors: smokeBase.map((anchor, index) => ({
+      ...anchor,
+      y: Math.max(surface.top - spriteHeight, anchor.y - 6),
+      scale: Math.min(1.24, Math.round((anchor.scale + 0.08 + index * 0.04) * 100) / 100),
+      phaseMs: anchor.phaseMs + 73,
+    })),
+  };
+}
+
+/**
+ * Build a crisp, continuously connected hose stream plus moving highlights
+ * and impact spray. Only the small highlight/spray layers move; both hose and
+ * facade contact points remain stable between animation frames.
+ */
+export function incidentWaterJetFrame(
+  source: { x: number; y: number },
+  target: { x: number; y: number },
+  timeMs: number,
+  phaseMs = 0,
+): IncidentWaterJetFrame {
+  const distance = Math.hypot(target.x - source.x, target.y - source.y);
+  const steps = Math.max(2, Math.ceil(distance / 1.7));
+  const arcHeight = Math.min(14, distance * 0.08);
+  const pointAt = (index: number): IncidentWaterPixel => {
+    const ratio = index / steps;
+    return {
+      x: Math.round(source.x + (target.x - source.x) * ratio),
+      y: Math.round(source.y + (target.y - source.y) * ratio - Math.sin(Math.PI * ratio) * arcHeight),
+      size: 2,
+    };
+  };
+  const core = Array.from({ length: steps + 1 }, (_, index) => pointAt(index));
+  const animationStep = Math.floor((timeMs + phaseMs * 17) / 70);
+  const highlights: IncidentWaterPixel[] = [];
+  for (let index = ((animationStep % 7) + 7) % 7; index <= steps; index += 7) {
+    const point = pointAt(index);
+    highlights.push({ ...point, size: 1 });
+  }
+  const sprayPattern = [
+    [-4, -2], [-2, -5], [1, -4], [4, -1], [-3, 2], [2, 2],
+  ] as const;
+  const sprayFrame = ((Math.floor((timeMs + phaseMs * 11) / 90) % 4) + 4) % 4;
+  const spray = sprayPattern.map(([x, y], index) => ({
+    x: target.x + x + (index % 2 === 0 ? sprayFrame - 1 : 1 - sprayFrame),
+    y: target.y + y + (index % 3 === 0 ? sprayFrame - 1 : 0),
+    size: index < 2 ? 2 : 1,
+  }));
+  return { core, highlights, spray };
 }
 
 export function incidentMode(task: Pick<ChunkTaskDto, "workItemType" | "status" | "defectSummary">): IncidentMode {

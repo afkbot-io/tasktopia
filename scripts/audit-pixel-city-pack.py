@@ -196,7 +196,7 @@ def audit() -> dict[str, Any]:
         if prop is None:
             violations.append(f"props/{key}: reviewed AI-authored asset is absent from manifest")
             continue
-        if prop.get("artSource") != "AI_AUTHORED" or prop.get("sourceSheet") != authored.get("sheet"):
+        if prop.get("artSource") != authored.get("artSource", "AI_AUTHORED") or prop.get("sourceSheet") != authored.get("sheet"):
             violations.append(f"props/{key}: approved source provenance was lost")
         if prop.get("visualProfile") != authored.get("visualProfile"):
             violations.append(f"props/{key}: wrong or missing strict visual profile")

@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -40,7 +40,7 @@
     "assets:residential:migrate": "node scripts/migrate-residential-catalog.mjs",
     "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack.py",
     "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack.py && .venv-assets/bin/python .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py --manifest assets/pixel-city-pack/manifest.json --runtime assets/pixel-city-pack/runtime --report tmp/pixel-city-style-audit.json",
-    "assets:storybook": "python3 scripts/render-pixel-city-storybook.py"
+    "assets:storybook": ".venv-assets/bin/python scripts/render-pixel-city-storybook.py"
   },
   "dependencies": {
     "@fastify/compress": "^9.1.1",

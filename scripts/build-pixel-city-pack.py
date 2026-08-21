@@ -2143,7 +2143,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             strict_occupied_bounds=bool(authored.get("strictOccupiedBounds")),
         )
         ai_prop_metadata[authored["key"]] = {
-            "artSource": "AI_AUTHORED",
+            "artSource": authored.get("artSource", "AI_AUTHORED"),
             "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
             "visualProfile": authored.get("visualProfile", "TASKTOPIA_V5_AMBIENT"),
             **({"baseFacing": authored["baseFacing"]} if authored.get("baseFacing") else {}),

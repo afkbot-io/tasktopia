@@ -15042,8 +15042,8 @@
         16,
         8
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
+      "artSource": "HAND_AUTHORED_NATIVE",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -15062,8 +15062,8 @@
         16,
         8
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
+      "artSource": "HAND_AUTHORED_NATIVE",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -15082,8 +15082,8 @@
         16,
         8
       ],
-      "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
+      "artSource": "HAND_AUTHORED_NATIVE",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -19218,5 +19218,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "91d3e72c6a75cad7"
+  "assetRevision": "0e97f484ac78a58d"
 }

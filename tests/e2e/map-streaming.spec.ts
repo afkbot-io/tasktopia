@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 
 const isWorldPayloadRequest = (url: string) => url.includes("/api/chunks/") || url.includes("/api/world/viewport");
+const incidentScreenshotPath = process.env.INCIDENT_SCREENSHOT_PATH;
 
 function worldRequestChunkKeys(requestUrl: string): string[] {
   const url = new URL(requestUrl);
@@ -498,6 +499,10 @@ test("realtime task status patches its entity without refetching or rebaking sta
     await expect.poll(async () => Number(await host.getAttribute("data-incident-smoke-strength")), { timeout: 30_000 }).toBe(6);
     await expect.poll(async () => Number(await host.getAttribute("data-incident-fires")), { timeout: 30_000 }).toBe(1);
     await expect.poll(async () => Number(await host.getAttribute("data-incident-water-jets")), { timeout: 30_000 }).toBe(1);
+    if (incidentScreenshotPath) {
+      await page.waitForTimeout(420);
+      await page.screenshot({ path: incidentScreenshotPath, fullPage: true });
+    }
     const updateDefect = async (defectId: string, status: "IN_PROGRESS" | "VERIFYING" | "FIXED") => {
       await page.evaluate(async ({ defectId: targetId, status: nextStatus }) => {
         const response = await fetch(`/api/defects/${targetId}`, {

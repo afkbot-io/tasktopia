@@ -35,7 +35,7 @@ import {
   type TrafficJunction,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
-import { incidentMode, incidentVisualLayout, incidentVisualProfile, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
+import { incidentMode, incidentVisualLayout, incidentVisualProfile, incidentWaterJetFrame, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
 import { ambientMotionPresentation } from "../ambient-motion";
 import { animalPresentation } from "../animal-presentation";
 import {
@@ -104,6 +104,7 @@ type IncidentView = {
   smokePlumes: Array<{ frameA: Sprite; frameB: Sprite; alpha: number }>;
   beacon: Graphics;
   water: Graphics;
+  waterJet: { source: { x: number; y: number }; target: { x: number; y: number } };
   phaseMs: number;
 };
 type WorldRuntime = {
@@ -619,6 +620,23 @@ const SMOKE_KEYS = ["incident-smoke-a", "incident-smoke-b", "incident-smoke-c", 
 const INCIDENT_ASSET_KEYS = [...FIRE_ENGINE_KEYS, ...FLAME_KEYS, ...SMOKE_KEYS] as const;
 const ANIMAL_SPECIES = ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"] as const;
 
+function drawIncidentWaterJet(
+  graphics: Graphics,
+  source: { x: number; y: number },
+  target: { x: number; y: number },
+  timeMs: number,
+  phaseMs: number,
+): void {
+  const frame = incidentWaterJetFrame(source, target, timeMs, phaseMs);
+  graphics.clear();
+  for (const pixel of frame.core) graphics.rect(pixel.x, pixel.y, pixel.size, pixel.size);
+  graphics.fill({ color: 0x4b9fb9, alpha: 0.94 });
+  for (const pixel of frame.highlights) graphics.rect(pixel.x, pixel.y, pixel.size, pixel.size);
+  graphics.fill({ color: 0xc3f2f5, alpha: 1 });
+  for (const pixel of frame.spray) graphics.rect(pixel.x, pixel.y, pixel.size, pixel.size);
+  graphics.fill({ color: 0x77cddd, alpha: 0.92 });
+}
+
 function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE">, signature: string, fullResponse: boolean): IncidentView {
   const entry = getBuilding(task.buildingType);
   const profile = incidentVisualProfile(task);
@@ -634,7 +652,8 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const engine = sprite(PROP_SPRITES[FIRE_ENGINE_KEYS[visualSeed % FIRE_ENGINE_KEYS.length]!]!, engineX, 2);
   engine.anchor.set(0.5, 1);
 
-  const layout = incidentVisualLayout(entry.spriteSize.width, entry.spriteSize.height, profile);
+  const stageBounds = entry.stageOpaqueBounds[Math.max(0, Math.min(4, task.stage - 1))]!;
+  const layout = incidentVisualLayout(entry.spriteSize.width, entry.spriteSize.height, profile, stageBounds);
   const alarmAnchor = layout.flameAnchors[0] ?? layout.smokeAnchors[0] ?? { x: 0, y: -Math.max(12, entry.spriteSize.height * 0.58) };
 
   // Full response parks an engine with a flashing beacon at the curb. The
@@ -649,6 +668,8 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
     const frameA = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
     const frameB = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index + 1) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
     frameA.anchor.set(0.5, 1); frameB.anchor.set(0.5, 1);
+    const responseScale = mode === "HOTFIX_ACTIVE" ? 1.12 : 0.96;
+    frameA.scale.set(anchor.scale * responseScale); frameB.scale.set(anchor.scale * responseScale);
     return { frameA, frameB };
   });
 
@@ -658,7 +679,7 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
     const frameA = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index) % SMOKE_KEYS.length]!]!, anchor.x, anchor.y);
     const frameB = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index + 1) % SMOKE_KEYS.length]!]!, anchor.x, anchor.y);
     frameA.anchor.set(0.5, 1); frameB.anchor.set(0.5, 1);
-    const scale = smokeScale * (1 - index * 0.06);
+    const scale = smokeScale * anchor.scale * (1 - index * 0.04);
     frameA.scale.set(scale); frameB.scale.set(scale);
     frameA.alpha = frameB.alpha = smokeAlpha;
     frameA.visible = true; frameB.visible = false;
@@ -669,33 +690,18 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const waterTarget = layout.flameAnchors[Math.floor(layout.flameAnchors.length / 2)] ?? alarmAnchor;
   const targetX = waterTarget.x + 3;
   const targetY = waterTarget.y - 2;
-  const sourceX = engineX - 10;
-  const sourceY = -5;
-  for (let step = 0; step < 9; step += 1) {
-    const ratio = step / 8;
-    water.rect(
-      Math.round(sourceX + (targetX - sourceX) * ratio),
-      Math.round(sourceY + (targetY - sourceY) * ratio),
-      2,
-      2,
-    );
-  }
-  water.fill({ color: 0x8bd7e8, alpha: 0.88 });
+  const waterJet = { source: { x: engineX - 4, y: -8 }, target: { x: targetX, y: targetY } };
+  drawIncidentWaterJet(water, waterJet.source, waterJet.target, 0, visualSeed % 700);
 
   const hasFlame = profile.burning;
   const hasWater = fullResponse && (profile.burning || mode === "DEFECT_REPAIRING");
   for (const flame of flames) { flame.frameA.visible = hasFlame; flame.frameB.visible = false; }
   water.visible = hasWater;
   engine.visible = fullResponse;
-  if (mode === "HOTFIX_ACTIVE") {
-    for (const flame of flames) { flame.frameA.scale.set(1.18); flame.frameB.scale.set(1.18); }
-  } else if (profile.burning) {
-    for (const flame of flames) { flame.frameA.scale.set(0.92); flame.frameB.scale.set(0.92); }
-  }
   if (mode === "DEFECT_REPORTED") engine.alpha = 0.9;
   container.addChild(water, ...smokePlumes.flatMap((plume) => [plume.frameA, plume.frameB]), ...flames.flatMap((flame) => [flame.frameA, flame.frameB]), engine, beacon);
   const phaseMs = visualSeed % 700;
-  return { signature, container, mode, profile, fullResponse, flames, smokePlumes, beacon, water, phaseMs };
+  return { signature, container, mode, profile, fullResponse, flames, smokePlumes, beacon, water, waterJet, phaseMs };
 }
 
 function requiredGroundAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
@@ -1346,7 +1352,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             plume.frameA.alpha = plume.frameB.alpha = plume.alpha + Math.sin(time * 0.004 + index) * 0.08;
           });
           incident.beacon.alpha = Math.floor(time / 160) % 2 ? 1 : 0.28;
-          incident.water.alpha = 0.7 + Math.sin(time * 0.018) * 0.22;
+          if (incident.water.visible) drawIncidentWaterJet(incident.water, incident.waterJet.source, incident.waterJet.target, time, incident.phaseMs);
         }
         if (!airplane) {
           nextFlybyMs -= elapsed;
