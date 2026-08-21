@@ -4,6 +4,8 @@ import { registerUser } from "../src/server/auth";
 import { AppService } from "../src/server/app-service";
 import { createTestDb } from "../src/server/db";
 import { cellKey, connected, intersects } from "../src/server/world/grid";
+import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
+import { expandCellRuns } from "../src/shared/world-cell-runs";
 
 const cityCount = Number(process.env.SCALE_CITIES ?? 1);
 const districtsPerCity = Number(process.env.SCALE_DISTRICTS ?? 10);
@@ -16,16 +18,22 @@ const registered = await registerUser(db, { email: "scale@tasktopia.local", name
 await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, registered.user.countryId);
 const service = new AppService(db);
 const startedAt = performance.now();
+let cityGenerationMs = 0;
+let districtGenerationMs = 0;
+let taskGenerationMs = 0;
 
 const cities = [];
 const committedTaskFootprints = new Map<string, string>();
 for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
+  const cityStartedAt = performance.now();
   const city = await service.createCity(registered.user.countryId, {
             name: `Scale City ${cityIndex + 1}`,
             idempotencyKey: `scale-city-${cityIndex}`,
           });
+  cityGenerationMs += performance.now() - cityStartedAt;
   cities.push(city);
   for (let districtIndex = 0; districtIndex < districtsPerCity; districtIndex += 1) {
+    const districtStartedAt = performance.now();
     await service.createDistrict(registered.user.countryId, {
                               cityId: city.id,
                               name: `District ${districtIndex + 1}`,
@@ -36,8 +44,10 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
                               activate: districtIndex === 0,
                               idempotencyKey: `scale-district-${cityIndex}-${districtIndex}`,
                             });
+    districtGenerationMs += performance.now() - districtStartedAt;
   }
   for (let taskIndex = 0; taskIndex < tasksPerCity; taskIndex += 1) {
+    const taskStartedAt = performance.now();
     let task;
     try {
       task = await service.createTask(registered.user.countryId, {
@@ -64,6 +74,7 @@ for (let cityIndex = 0; cityIndex < cityCount; cityIndex += 1) {
       }, null, 2));
       throw error;
     }
+    taskGenerationMs += performance.now() - taskStartedAt;
     if (taskIndex === 0) committedTaskFootprints.set(task.id, JSON.stringify(task.footprint));
   }
 }
@@ -131,15 +142,55 @@ for (const city of cities) {
 const cachedChunkMs = performance.now() - cachedChunksStartedAt;
 const memory = process.memoryUsage();
 const rssMb = Math.round(memory.rss / 1024 / 1024);
+// Compare equivalent v1/v2 wire representations after the runtime memory
+// snapshot. Expanding and stringifying the synthetic legacy payload is a
+// benchmark-only allocation and must not pollute the server RSS gate.
+let compactWireBytes = 0;
+let legacyWireBytes = 0;
+for (const city of cities) {
+  const center = await service.chunkForCell(city.center);
+  for (let chunkY = center.chunkY - 1; chunkY <= center.chunkY + 1; chunkY += 1) {
+    for (let chunkX = center.chunkX - 1; chunkX <= center.chunkX + 1; chunkX += 1) {
+      const payload = await service.getChunkPayload(registered.user.countryId, chunkX, chunkY);
+      const materialized = materializeChunkPayload(payload);
+      compactWireBytes += Buffer.byteLength(JSON.stringify(payload));
+      const { terrain: _terrain, decorations: _decorations, worldVersion: _worldVersion, ...legacyWorld } = materialized;
+      void _terrain; void _decorations; void _worldVersion;
+      const decorationDistricts = payload.payloadVersion === 2
+        ? payload.decorationContext.districts.map(({ cellRuns, ...district }) => ({ ...district, cells: expandCellRuns(cellRuns) }))
+        : payload.decorationContext.districts;
+      legacyWireBytes += Buffer.byteLength(JSON.stringify({
+        ...legacyWorld,
+        payloadVersion: 1,
+        generatorVersion: "square-v7",
+        contentHash: payload.contentHash,
+        terrainSeed: payload.terrainSeed,
+        publishedVersion: payload.publishedVersion,
+        lod: payload.lod,
+        decorationContext: { ...payload.decorationContext, districts: decorationDistricts },
+      }));
+    }
+  }
+}
 const report = {
   seed: 424_242,
   cities: cities.length,
   districts: districts.length,
   tasks: tasks.length,
+  buildingTypes: Object.fromEntries(Object.entries(tasks.reduce<Record<string, number>>((counts, task) => {
+    counts[task.buildingType] = (counts[task.buildingType] ?? 0) + 1;
+    return counts;
+  }, {})).sort(([left], [right]) => left.localeCompare(right))),
   roads: roads.length,
   chunks: cities.length * 9,
   terrainCells,
+  compactWireBytes,
+  legacyWireBytes,
+  wireReductionPercent: Number(((1 - compactWireBytes / legacyWireBytes) * 100).toFixed(1)),
   generationMs: Math.round(generationMs),
+  cityGenerationMs: Math.round(cityGenerationMs),
+  districtGenerationMs: Math.round(districtGenerationMs),
+  taskGenerationMs: Math.round(taskGenerationMs),
   generationBudgetMs,
   chunkMs: Math.round(chunkMs),
   cachedChunkMs: Math.round(cachedChunkMs),

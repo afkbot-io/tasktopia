@@ -1,4 +1,4 @@
-import type { ChunkLod, ChunkPayloadDto, WorldManifestDto } from "../shared/contracts";
+import type { ChunkLod, ChunkPayloadV1Dto, WorldManifestDto } from "../shared/contracts";
 
 /**
  * Creates the deterministic, network-free base layer. Server-owned roads,
@@ -9,7 +9,7 @@ export function seedWorldChunkPayload(
   chunkX: number,
   chunkY: number,
   lod: ChunkLod,
-): ChunkPayloadDto {
+): ChunkPayloadV1Dto {
   return {
     payloadVersion: 1,
     contentHash: `seed:${manifest.generatorVersion}:${manifest.terrainSeed}:${chunkX}:${chunkY}:${lod}`,

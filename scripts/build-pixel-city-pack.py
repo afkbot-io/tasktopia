@@ -1716,8 +1716,8 @@ def remove_ai_chroma_key(source: Image.Image) -> Image.Image:
             if is_magenta or alpha < 80:
                 pixels[x, y] = (0, 0, 0, 0)
             elif (
-                (max(red, green, blue) <= 48 or min(red, green, blue) >= 235)
-                and max(red, green, blue) - min(red, green, blue) <= 18
+                (max(red, green, blue) <= 48 or min(red, green, blue) >= 220)
+                and max(red, green, blue) - min(red, green, blue) <= 22
             ):
                 matte_pixels.add((x, y))
 
@@ -1856,6 +1856,7 @@ def normalize_ai_authored_ambient(
     canvas_size: tuple[int, int],
     *,
     occupied_size: tuple[int, int] | None = None,
+    strict_occupied_bounds: bool = False,
 ) -> Image.Image:
     """Normalize approved ambient art without repainting its authored geometry."""
     source = remove_ai_chroma_key(source)
@@ -1877,6 +1878,18 @@ def normalize_ai_authored_ambient(
         content_size = occupied_size
     reduced = cropped.resize(content_size, Image.Resampling.BOX)
     alpha = reduced.getchannel("A").point(lambda value: 255 if value >= 72 else 0)
+    if strict_occupied_bounds:
+        # Animation frames are compared by their runtime silhouette, not by
+        # their large generated source cell. BOX filtering can erase one or
+        # two edge pixels from a passing pose and make the rider/animal appear
+        # to squash. Re-fit the thresholded subject to the declared immutable
+        # box with nearest-neighbour sampling before palette reduction.
+        reduced.putalpha(alpha)
+        hard_bounds = alpha.getbbox()
+        if hard_bounds is None:
+            raise RuntimeError("Empty strict animation frame after alpha threshold")
+        reduced = reduced.crop(hard_bounds).resize(content_size, Image.Resampling.NEAREST)
+        alpha = reduced.getchannel("A").point(lambda value: 255 if value >= 1 else 0)
     reduced = reduced.quantize(
         colors=28,
         method=Image.Quantize.FASTOCTREE,
@@ -2127,6 +2140,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             source_segment,
             tuple(authored["size"]),
             occupied_size=tuple(authored["occupiedSize"]) if authored.get("occupiedSize") else None,
+            strict_occupied_bounds=bool(authored.get("strictOccupiedBounds")),
         )
         ai_prop_metadata[authored["key"]] = {
             "artSource": "AI_AUTHORED",
@@ -2134,6 +2148,15 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "visualProfile": authored.get("visualProfile", "TASKTOPIA_V5_AMBIENT"),
             **({"baseFacing": authored["baseFacing"]} if authored.get("baseFacing") else {}),
         }
+    # West-facing pedestrians and animals are a runtime mirror contract, not
+    # another AI projection. Mirroring the already normalized east frame here
+    # guarantees identical mass, palette, baseline and sampling quality.
+    for prefix in ("walker", *(f"animal-{species}" for species in ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"))):
+        for frame in "abc":
+            east_key = f"{prefix}-east-{frame}"
+            west_key = f"{prefix}-west-{frame}"
+            if east_key in generated_props and west_key in generated_props:
+                generated_props[west_key] = generated_props[east_key].transpose(Image.Transpose.FLIP_LEFT_RIGHT)
     prop_dir = RUNTIME / "props"
     prop_dir.mkdir(parents=True, exist_ok=True)
     prop_manifest: dict[str, dict] = {}

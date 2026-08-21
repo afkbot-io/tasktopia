@@ -8,6 +8,7 @@ import {
   buildingVisualSetbackCells,
   buildingCompatibleWithArchetype,
   buildingZoningRole,
+  buildingLotPlacementScore,
   buildSurfaceMap,
   buildingApronCells,
   buildingGapPaths,
@@ -117,6 +118,15 @@ describe("V6 city morphology and access planning", () => {
     expect(archetypeAffinity(mixed, "NEW_BUILD")).toBeGreaterThan(archetypeAffinity(privateHome, "NEW_BUILD"));
     expect(archetypeAffinity(privateHome, "PRIVATE")).toBeGreaterThan(archetypeAffinity(mixed, "PRIVATE"));
     expect(archetypeAffinity(gas, "PRIVATE")).toBeGreaterThan(0);
+  });
+
+  it("centers fuel stations inside a road-bounded service lot", () => {
+    const gas = getBuilding("commercial-gas-station");
+    const lot = { origin: { x: 10, y: 20 }, width: 20, height: 13 };
+    const centered = { x: 13, y: 23 };
+    const edge = { x: 10, y: 20 };
+    expect(buildingLotPlacementScore({ entry: gas, lot, origin: centered, accessDistance: 3, bottomGap: 3, partyBonus: 0 }))
+      .toBeLessThan(buildingLotPlacementScore({ entry: gas, lot, origin: edge, accessDistance: 3, bottomGap: 6, partyBonus: 0 }));
   });
 
   it("uses hard residential massing boundaries between district archetypes", () => {

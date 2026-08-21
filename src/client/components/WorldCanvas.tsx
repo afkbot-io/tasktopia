@@ -3,13 +3,13 @@ import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadBandRole, roadClassSupportsVehicle } from "../../shared/road-profile";
-import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
+import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
+import { terrainAt } from "../../shared/world-terrain";
 import { apiWithMetrics } from "../api";
 import { ChunkMaterializer } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
 import { loadGameAssets } from "../game-asset-loader";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
-import { seedWorldChunkPayload } from "../seed-world-chunk";
 import {
   agentCellKey,
   buildDirectedCarEdges,
@@ -37,6 +37,7 @@ import {
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
 import { incidentMode, incidentVisualLayout, incidentVisualProfile, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
 import { ambientMotionPresentation } from "../ambient-motion";
+import { animalPresentation } from "../animal-presentation";
 import {
   chunkRangeForViewport,
   progressiveChunkPlan,
@@ -813,6 +814,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const districtTooltipLayerRef = useRef<Container | null>(null);
   const runtimeRef = useRef<WorldRuntime | null>(null);
   const showDistrictsRef = useRef(showDistricts);
+  const onTaskSelectRef = useRef(onTaskSelect);
+  const onArchiveSelectRef = useRef(onArchiveSelect);
+  const terrainSeed = worldManifest.terrainSeed;
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
     return { point: focusCity.center, bounds: cityDetailFocusBounds(focusCity.center, focusCity.bounds) };
@@ -832,6 +836,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     if (districtLayerRef.current) districtLayerRef.current.visible = showDistricts;
     if (districtTooltipLayerRef.current) districtTooltipLayerRef.current.visible = showDistricts;
   }, [showDistricts]);
+
+  useEffect(() => {
+    onTaskSelectRef.current = onTaskSelect;
+    onArchiveSelectRef.current = onArchiveSelect;
+  }, [onArchiveSelect, onTaskSelect]);
 
   useEffect(() => {
     if (focusX == null || focusY == null || focusMinX == null || focusMinY == null || focusMaxX == null || focusMaxY == null) return;
@@ -893,9 +902,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const groundContainers = new Map<string, { view: Sprite; lod: MapLod; usedAt: number }>();
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
-    // Base terrain has its own single worker so a large initial viewport can
-    // never queue seed work ahead of authoritative overlay materialization.
-    const seedMaterializer = new ChunkMaterializer(1);
     const chunkPayloadMetric = new RollingPerformanceMetric();
     const chunkRequestMetric = new RollingPerformanceMetric();
     const chunkParseMetric = new RollingPerformanceMetric();
@@ -1083,13 +1089,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         } else if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
           const presentation = micromobilityPresentation(agent.kind === "CYCLIST" ? "cyclist" : "scooter", agent.current, agent.next, agent.steps);
           agent.view.scale.set(presentation.scaleX, presentation.scaleY);
+        } else if (agent.kind === "ANIMAL") {
+          const presentation = animalPresentation(agent.variant, agent.current, agent.next, agent.steps + Math.floor(agent.progress * 3));
+          agent.view.scale.set(presentation.scaleX, presentation.scaleY);
         }
       };
 
       const movingAgentSpriteUrl = (agent: Pick<MovingAgent, "kind" | "variant" | "current" | "next"> & Partial<Pick<MovingAgent, "progress" | "phase" | "steps">>): string => {
         const presentation = vehiclePresentation(agent.current, agent.next);
-        const horizontal = presentation.view === "horizontal";
-        const direction = horizontal ? agent.next.x > agent.current.x ? "east" : "west" : presentation.view;
         if (agent.kind === "CAR") return VEHICLE_SPRITES[agent.variant]![presentation.view];
         if (agent.kind === "BUS") return PROP_SPRITES[`city-bus-${presentation.view}`]!;
         if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
@@ -1102,8 +1109,13 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           return PROP_SPRITES[micro.key]!;
         }
         if (agent.kind === "ANIMAL") {
-          const frame = (["a", "b", "c"] as const)[Math.abs((agent.steps ?? 0) + Math.floor((agent.progress ?? 0) * 3)) % 3]!;
-          return PROP_SPRITES[`animal-${agent.variant}-${direction}-${frame}`]!;
+          const animal = animalPresentation(
+            agent.variant,
+            agent.current,
+            agent.next,
+            (agent.steps ?? 0) + Math.floor((agent.progress ?? 0) * 3),
+          );
+          return PROP_SPRITES[animal.key]!;
         }
         return PROP_SPRITES[residentWalkPresentation(agent.current, agent.next, agent.progress ?? 0, agent.phase ?? 0).key]!;
       };
@@ -1530,10 +1542,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         texture.destroy(true);
       }
 
-      function removeGround(cacheKey: string): void {
+      function removeGround(cacheKey: string, reason: "replace" | "prune" | "dispose" = "dispose"): void {
         seedGroundKeys.delete(cacheKey);
         const record = groundContainers.get(cacheKey);
         if (!record) return;
+        const metric = `groundRemove${reason[0]!.toUpperCase()}${reason.slice(1)}`;
+        host!.dataset[metric] = String(Number(host!.dataset[metric] ?? 0) + 1);
         destroyGroundView(record.view);
         groundContainers.delete(cacheKey);
         host!.dataset.staticGroundViews = String(groundContainers.size);
@@ -1606,8 +1620,35 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         return view;
       }
 
+      /** Synchronous seed terrain: no request, worker, PNG decode or asset wait. */
+      function createImmediateSeedGroundView(chunkX: number, chunkY: number, lod: MapLod): Sprite {
+        const step = lod === "OVERVIEW" ? 4 : 1;
+        const originX = chunkX * chunkSize;
+        const originY = chunkY * chunkSize;
+        const graphics = new Graphics();
+        for (let y = originY; y < originY + chunkSize; y += step) {
+          for (let x = originX; x < originX + chunkSize; x += step) {
+            const terrain = terrainAt(terrainSeed, x, y).terrain;
+            graphics.rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE * step, CELL_SIZE * step)
+              .fill(TERRAIN_COLORS[terrain] ?? TERRAIN_COLORS.GRASS);
+          }
+        }
+        const texture = app.renderer.textureGenerator.generateTexture({
+          target: graphics,
+          frame: new Rectangle(originX * CELL_SIZE, originY * CELL_SIZE, chunkSize * CELL_SIZE, chunkSize * CELL_SIZE),
+          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
+          antialias: false,
+        });
+        texture.source.scaleMode = "nearest";
+        graphics.destroy();
+        const view = new Sprite(texture);
+        view.position.set(originX * CELL_SIZE, originY * CELL_SIZE);
+        view.eventMode = "none";
+        return view;
+      }
+
       function installGround(cacheKey: string, view: Sprite, lod: MapLod, animate = false): void {
-        removeGround(cacheKey);
+        removeGround(cacheKey, "replace");
         terrainLayer.addChild(view);
         if (animate && !reducedMotion) {
           view.alpha = 0;
@@ -1627,27 +1668,17 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (groundContainers.has(cacheKey)) return Promise.resolve();
         const existing = pendingSeedGrounds.get(cacheKey);
         if (existing) return existing;
-        const promise = (async () => {
-          const chunk = await seedMaterializer.materialize(seedWorldChunkPayload(worldManifest, chunkX, chunkY, lod));
-          await withAssetSlot(() => loadTextureAssets(requiredGroundAssets([chunk], lod)));
+        const promise = Promise.resolve().then(() => {
           if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey) || groundContainers.has(cacheKey)) return;
-          const prepared = await scheduleGroundBake(
-            `${generation}:${lod}:${cacheKey}:seed`,
-            () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey) && !groundContainers.has(cacheKey),
-            () => createGroundView(chunk, lod),
-          );
-          if (!prepared) return;
-          if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey) || groundContainers.has(cacheKey)) {
-            destroyGroundView(prepared);
-            return;
-          }
-          installGround(cacheKey, prepared, lod);
+          installGround(cacheKey, createImmediateSeedGroundView(chunkX, chunkY, lod), lod);
           seedGroundKeys.add(cacheKey);
+          host!.dataset.seedGroundPrimes = String(Number(host!.dataset.seedGroundPrimes ?? 0) + 1);
           host!.dataset.seedFirstFrame = "true";
+          host!.dataset.seedFirstFrameMode = "synchronous";
           setFirstFrameReady(true);
           paintedFrame = true;
           if (reducedMotion) app.render();
-        })().finally(() => pendingSeedGrounds.delete(cacheKey));
+        }).finally(() => pendingSeedGrounds.delete(cacheKey));
         pendingSeedGrounds.set(cacheKey, promise);
         return promise;
       };
@@ -1712,7 +1743,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           tasks,
           taskBuildingViews,
           worldObjectLayer,
-          (task) => currentLod === "DETAIL" ? drawBuilding(task, onTaskSelect, buildingTooltipLayer) : drawOverviewBuilding(task, onTaskSelect),
+          (task) => currentLod === "DETAIL"
+            ? drawBuilding(task, (taskId) => onTaskSelectRef.current(taskId), buildingTooltipLayer)
+            : drawOverviewBuilding(task, (taskId) => onTaskSelectRef.current(taskId)),
           (task) => `${currentLod}:${JSON.stringify(task)}`,
           "BUILDING",
         );
@@ -1795,7 +1828,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             current.visual?.removeFromParent(); current.visual?.destroy({ children: true });
           }
           const parent = feature.parentFeatureId ? features.get(feature.parentFeatureId) : undefined;
-          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", onArchiveSelect, parent);
+          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", () => onArchiveSelectRef.current(), parent);
           if (!drawn) { featureViews.delete(id); continue; }
           if (drawn.platform && currentLod === "DETAIL") featurePlatformLayer.addChild(drawn.platform);
           else if (drawn.platform) drawn.platform.destroy({ children: true });
@@ -2115,6 +2148,28 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         chunkPayloadCache.set(key, cached);
         return cached;
       };
+      const preloadViewportPayloads = async (wanted: Array<[number, number]>, lod: MapLod): Promise<void> => {
+        const missing = wanted.filter(([chunkX, chunkY]) => !cachedChunkPayload(chunkKey(chunkX, chunkY), lod));
+        if (missing.length < 2) return;
+        const minChunkX = Math.min(...missing.map(([chunkX]) => chunkX));
+        const maxChunkX = Math.max(...missing.map(([chunkX]) => chunkX));
+        const minChunkY = Math.min(...missing.map(([, chunkY]) => chunkY));
+        const maxChunkY = Math.max(...missing.map(([, chunkY]) => chunkY));
+        if ((maxChunkX - minChunkX + 1) * (maxChunkY - minChunkY + 1) > 100) return;
+        const params = new URLSearchParams({
+          minChunkX: String(minChunkX), minChunkY: String(minChunkY),
+          maxChunkX: String(maxChunkX), maxChunkY: String(maxChunkY), lod: lod.toLowerCase(),
+        });
+        const response = await apiWithMetrics<ViewportPayloadDto>(`/api/world/viewport?${params}`, {
+          cache: "no-cache",
+          headers: { accept: "application/vnd.tasktopia.chunk-payload+json; version=2" },
+        });
+        for (const payload of response.data.chunks) storeChunkPayload(chunkKey(payload.chunkX, payload.chunkY), lod, payload);
+        exposeRollingMetric(host!, "viewportPayload", chunkPayloadMetric, response.metrics.decodedBytes, "Bytes");
+        exposeRollingMetric(host!, "viewportRequest", chunkRequestMetric, response.metrics.requestMs);
+        exposeRollingMetric(host!, "viewportParse", chunkParseMetric, response.metrics.parseMs);
+        host!.dataset.viewportBatchChunks = String(response.data.chunks.length);
+      };
       const crossesDecorationStage = (before: ChunkPayloadDto, after: ChunkPayloadDto): boolean => {
         const previousStages = new Map(before.decorationContext.tasks.map((task) => [task.id, task.stage]));
         return after.decorationContext.tasks.some((task) => {
@@ -2276,6 +2331,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const wasInvalidated = invalidatedGroundKeys.delete(cacheKey);
         const wasSeedGround = seedGroundKeys.delete(cacheKey);
         const rebuildGround = wasInvalidated || wasSeedGround || ground?.lod !== lod;
+        if (rebuildGround) {
+          const reason = wasInvalidated ? "invalidated" : wasSeedGround ? "seed" : "lod";
+          const datasetKey = `groundRebuild${reason[0]!.toUpperCase()}${reason.slice(1)}` as keyof DOMStringMap;
+          host!.dataset[datasetKey] = String(Number(host!.dataset[datasetKey] ?? 0) + 1);
+        }
         if (!rebuildGround && ground) ground.usedAt = performance.now();
         else if (preparedGround) installGround(cacheKey, preparedGround, lod, wasInvalidated);
         else throw new Error(`Ground ${cacheKey}:${lod} was committed before its queued bake completed`);
@@ -2299,7 +2359,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         let removedEntitySource = false;
         for (const [cacheKey] of candidates) {
           if (groundContainers.size <= effectiveLimit) break;
-          removeGround(cacheKey);
+          removeGround(cacheKey, "prune");
           chunks.delete(cacheKey);
           chunkLods.delete(cacheKey);
           entityChunks.delete(cacheKey);
@@ -2333,13 +2393,21 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               // -> assets -> paint independently. One slow background response
               // can no longer hold the first visible chunk behind a viewport
               // sized Promise.all barrier.
+              for (const [chunkX, chunkY] of wanted) void primeSeedGround(chunkX, chunkY, lod, generation).catch(() => undefined);
+              try {
+                await preloadViewportPayloads(wanted, lod);
+                host!.dataset.viewportBatch = "ready";
+              } catch {
+                // Rolling deploy / transient batch failure: individual chunk
+                // requests below remain the compatibility fallback.
+                host!.dataset.viewportBatch = "fallback";
+              }
               await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
                 if (disposed || generation !== loadGeneration) return;
                 const cacheKey = chunkKey(chunkX, chunkY);
                 // Start deterministic terrain immediately and overlap it with
                 // the authoritative overlay request. The first visible frame
                 // no longer waits for PostgreSQL, MCP work or network latency.
-                void primeSeedGround(chunkX, chunkY, lod, generation).catch(() => undefined);
                 if (!lodTransition
                   && chunks.has(cacheKey)
                   && chunkLods.get(cacheKey) === lod
@@ -2754,9 +2822,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         intersectionObserver.disconnect();
         for (const pending of pendingChunks.values()) pending.controller.abort();
         pendingChunks.clear();
-        for (const cacheKey of [...groundContainers.keys()]) removeGround(cacheKey);
+        for (const cacheKey of [...groundContainers.keys()]) removeGround(cacheKey, "dispose");
         chunkMaterializer.destroy();
-        seedMaterializer.destroy();
         canvas.removeEventListener("wheel", wheel); document.removeEventListener("visibilitychange", visibility);
       };
     })();
@@ -2766,7 +2833,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap?.();
       if (app.renderer) app.destroy({ removeView: true }, { children: true });
     };
-  }, [chunkSize, countryId, onArchiveSelect, onTaskSelect, worldManifest]);
+  }, [chunkSize, countryId, terrainSeed]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />

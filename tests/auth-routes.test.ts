@@ -7,6 +7,7 @@ import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
 import { APP_VERSION } from "../src/server/version";
 import type { SurfaceCellDto } from "../src/shared/contracts";
+import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
 
 describe("authentication HTTP boundary", () => {
   let db: Db;
@@ -119,22 +120,32 @@ describe("authentication HTTP boundary", () => {
     expect(overviewResponse.headers["x-world-version"]).toBe(String(overviewChunk.publishedVersion));
     const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: compactHeaders })).json();
     expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
-    expect(overviewChunk).toMatchObject({ payloadVersion: 1, generatorVersion: "square-v7", lod: "OVERVIEW" });
+    expect(overviewChunk).toMatchObject({ payloadVersion: 2, generatorVersion: "square-v8", lod: "OVERVIEW" });
     expect(overviewChunk.contentHash).toMatch(/^[a-f0-9]{64}$/);
     expect(overviewChunk).not.toHaveProperty("terrain");
     expect(overviewChunk).not.toHaveProperty("decorations");
     // V10: the overview pedestrian layer contains SIDEWALK cells along every
     // street plus PATH cells where a lot needed an extra footpath.
-    expect(overviewChunk.surfaces.length).toBeLessThan(400);
-    expect(overviewChunk.surfaces.every((surface: SurfaceCellDto) => surface.kind === "PATH" || surface.kind === "SIDEWALK")).toBe(true);
+    const overviewMaterialized = materializeChunkPayload(overviewChunk);
+    expect(overviewChunk.surfaceRuns.length).toBeLessThan(overviewMaterialized.surfaces.length);
+    expect(overviewMaterialized.surfaces.length).toBeLessThan(400);
+    expect(overviewMaterialized.surfaces.every((surface: SurfaceCellDto) => surface.kind === "PATH" || surface.kind === "SIDEWALK")).toBe(true);
     expect(overviewChunk.worldFeatures).toEqual([]);
-    expect(detailChunk).toMatchObject({ payloadVersion: 1, generatorVersion: "square-v7", lod: "DETAIL" });
+    expect(detailChunk).toMatchObject({ payloadVersion: 2, generatorVersion: "square-v8", lod: "DETAIL" });
     expect(detailChunk).not.toHaveProperty("terrain");
     expect(detailChunk).not.toHaveProperty("decorations");
     // A task footprint may legally straddle a chunk whose access surface is in
     // the adjacent chunk. The detail contract guarantees the collection, not
     // that every task-containing chunk has a surface cell of its own.
-    expect(detailChunk.surfaces).toEqual(expect.any(Array));
+    expect(detailChunk.surfaceRuns).toEqual(expect.any(Array));
+
+    const viewportResponse = await app.inject({
+      method: "GET",
+      url: `/api/world/viewport?minChunkX=${taskChunk.chunkX}&minChunkY=${taskChunk.chunkY}&maxChunkX=${taskChunk.chunkX + 1}&maxChunkY=${taskChunk.chunkY}&lod=detail`,
+      headers: compactHeaders,
+    });
+    expect(viewportResponse.statusCode).toBe(200);
+    expect(viewportResponse.json()).toMatchObject({ payloadVersion: 1, lod: "DETAIL", chunks: [{ payloadVersion: 2 }, { payloadVersion: 2 }] });
     const legacyResponse = await app.inject({
       method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie },
     });

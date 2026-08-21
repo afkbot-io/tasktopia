@@ -5,7 +5,10 @@ export type ResidentWalkFrame = "a" | "b" | "c";
 export type ResidentWalkKey = `walker-${ResidentDirection}-${ResidentWalkFrame}`;
 export type ResidentActivity = "NONE" | "THINK" | "CHAT";
 
-export const RESIDENT_RENDER_SCALE = 0.8;
+// Runtime scaling must stay integer for pixel art. The source normalizer owns
+// the human/vehicle proportion; fractional scaling made otherwise identical
+// gait frames alternate between sharp and blurred sampling footprints.
+export const RESIDENT_RENDER_SCALE = 1;
 
 function residentDirection(current: Cell, next: Cell): ResidentDirection {
   if (next.x > current.x) return "east";

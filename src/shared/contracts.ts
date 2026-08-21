@@ -338,11 +338,15 @@ export type ChunkDto = {
 
 export type ChunkLod = "DETAIL" | "OVERVIEW";
 
+export type CellRunDto = { start: Cell; end: Cell };
+export type RoadRunDto = CellRunDto & Pick<RoadCellDto, "mask" | "structure" | "roadClass">;
+export type SurfaceRunDto = CellRunDto & Pick<SurfaceCellDto, "kind" | "finish">;
+
 /**
  * Compact persisted/wire representation. Deterministic environment arrays are
  * reconstructed in a browser worker instead of crossing the network.
  */
-export type ChunkPayloadDto = Omit<ChunkDto, "terrain" | "decorations" | "worldVersion"> & {
+export type ChunkPayloadV1Dto = Omit<ChunkDto, "terrain" | "decorations" | "worldVersion"> & {
   payloadVersion: 1;
   contentHash: string;
   generatorVersion: "square-v7";
@@ -360,6 +364,42 @@ export type ChunkPayloadDto = Omit<ChunkDto, "terrain" | "decorations" | "worldV
     // task footprint itself belongs to the adjacent chunk.
     tasks: Array<Pick<ChunkTaskDto, "id" | "taskNumber" | "visualKind" | "stage" | "footprint" | "accessPath">>;
   };
+};
+
+export type CompactChunkDistrictDto = Omit<ChunkDistrictDto, "cells"> & { cellRuns: CellRunDto[] };
+export type CompactDecorationDistrictDto = Omit<
+  Pick<ChunkDistrictDto, "id" | "status" | "archetype" | "cells">,
+  "cells"
+> & { cellRuns: CellRunDto[] };
+
+/**
+ * Endpoint-based read model. Canonical editing and generation may keep cells,
+ * but the browser receives linear geometry once and expands it in its worker.
+ */
+export type ChunkPayloadV2Dto = Pick<ChunkDto, "chunkX" | "chunkY" | "size" | "tasks" | "worldFeatures"> & {
+  payloadVersion: 2;
+  contentHash: string;
+  generatorVersion: "square-v8";
+  terrainSeed: number;
+  publishedVersion: number;
+  lod: ChunkLod;
+  baseLayerOnly?: true;
+  roadRuns: RoadRunDto[];
+  surfaceRuns: SurfaceRunDto[];
+  districts: CompactChunkDistrictDto[];
+  decorationContext: {
+    cityBounds: Rect[];
+    districts: CompactDecorationDistrictDto[];
+    tasks: Array<Pick<ChunkTaskDto, "id" | "taskNumber" | "visualKind" | "stage" | "footprint" | "accessPath">>;
+  };
+};
+
+export type ChunkPayloadDto = ChunkPayloadV1Dto | ChunkPayloadV2Dto;
+
+export type ViewportPayloadDto = {
+  payloadVersion: 1;
+  lod: ChunkLod;
+  chunks: ChunkPayloadDto[];
 };
 
 export type BootstrapDto = {

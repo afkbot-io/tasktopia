@@ -36,6 +36,8 @@ export type ComplexPlanInput = {
   rect: Rect;
   /** Allowed district cells — lots outside them are dropped. */
   cells: Cell[];
+  /** Pre-indexed form of `cells` for bounded candidate loops. */
+  allowedCellKeys?: ReadonlySet<string>;
   archetype: DistrictArchetype;
   /** Demand hint: the complex is sized to host roughly this many buildings. */
   targetLots: number;
@@ -235,7 +237,7 @@ export function planComplex(input: ComplexPlanInput): ComplexPlan {
   const shape = input.shape ?? (input.denseGrid ? chooseDenseShape(input, fit) : chooseShape(input, fit));
   const groupId = `${input.districtId}:complex:${String(input.complexIndex).padStart(3, "0")}`;
   const facadeFamily = `${input.archetype.toLowerCase()}-${Math.floor(hashCoordinate(input.seed, input.rect.minX, input.rect.minY, 613 + input.complexIndex) * 5)}`;
-  const allowed = new Set(input.cells.map(cellKey));
+  const allowed = input.allowedCellKeys ?? new Set(input.cells.map(cellKey));
 
   const depth = profile.depth;
   const pitch = depth + 4;

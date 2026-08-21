@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
-import type { ChunkPayloadDto } from "../src/shared/contracts";
+import type { ChunkPayloadV1Dto } from "../src/shared/contracts";
 import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
 import { terrainAt } from "../src/shared/world-terrain";
 
-function payload(lod: "DETAIL" | "OVERVIEW"): ChunkPayloadDto {
+function payload(lod: "DETAIL" | "OVERVIEW"): ChunkPayloadV1Dto {
   return {
     payloadVersion: 1,
     contentHash: "test-content-hash",

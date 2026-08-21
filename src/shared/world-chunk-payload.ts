@@ -1,6 +1,7 @@
 import type { Cell, ChunkDto, ChunkPayloadDto, TerrainCellDto } from "./contracts";
 import { generateWorldDecorations } from "./world-decorations";
 import { terrainAt } from "./world-terrain";
+import { expandCellRuns, expandRoadRuns, expandSurfaceRuns } from "./world-cell-runs";
 
 function key(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
@@ -14,9 +15,17 @@ export function materializeChunkPayload(payload: ChunkPayloadDto): ChunkDto {
       terrain.push({ x, y, ...terrainAt(payload.terrainSeed, x, y) });
     }
   }
+  const roads = payload.payloadVersion === 2 ? expandRoadRuns(payload.roadRuns) : payload.roads;
+  const surfaces = payload.payloadVersion === 2 ? expandSurfaceRuns(payload.surfaceRuns) : payload.surfaces;
+  const districts = payload.payloadVersion === 2
+    ? payload.districts.map(({ cellRuns, ...district }) => ({ ...district, cells: expandCellRuns(cellRuns) }))
+    : payload.districts;
+  const decorationDistricts = payload.payloadVersion === 2
+    ? payload.decorationContext.districts.map(({ cellRuns, ...district }) => ({ ...district, cells: expandCellRuns(cellRuns) }))
+    : payload.decorationContext.districts;
   const blocked = new Set<string>([
-    ...payload.roads.map(key),
-    ...payload.surfaces.map(key),
+    ...roads.map(key),
+    ...surfaces.map(key),
     ...payload.tasks.flatMap((task) => task.footprint).map(key),
     ...payload.worldFeatures.flatMap((feature) => feature.footprint).map(key),
   ]);
@@ -25,8 +34,8 @@ export function materializeChunkPayload(payload: ChunkPayloadDto): ChunkDto {
       payload.terrainSeed,
       terrain,
       blocked,
-      payload.surfaces,
-      payload.decorationContext.districts,
+      surfaces,
+      decorationDistricts,
       payload.decorationContext.cityBounds,
       payload.decorationContext.tasks,
     )
@@ -36,9 +45,9 @@ export function materializeChunkPayload(payload: ChunkPayloadDto): ChunkDto {
     chunkY: payload.chunkY,
     size: payload.size,
     terrain,
-    roads: payload.roads,
-    surfaces: payload.surfaces,
-    districts: payload.districts,
+    roads,
+    surfaces,
+    districts,
     tasks: payload.tasks,
     worldFeatures: payload.worldFeatures,
     decorations,

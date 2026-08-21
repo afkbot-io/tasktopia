@@ -158,6 +158,28 @@ export function buildingZoningRole(entry: BuildingCatalogEntry): BuildingZoningR
   return "LOW_RISE_RESIDENTIAL";
 }
 
+/** Gas stations belong inside a road-bounded service court, not on a facade row. */
+export function buildingLotPlacementScore(input: {
+  entry: BuildingCatalogEntry;
+  lot: { origin: Cell; width: number; height: number };
+  origin: Cell;
+  accessDistance: number;
+  bottomGap: number;
+  partyBonus: number;
+}): number {
+  const { entry, lot, origin, accessDistance, bottomGap, partyBonus } = input;
+  if (entry.serviceRole === "fuel-service") {
+    const lotCenterX = lot.origin.x + lot.width / 2;
+    const lotCenterY = lot.origin.y + lot.height / 2;
+    const buildingCenterX = origin.x + entry.footprint.width / 2;
+    const buildingCenterY = origin.y + entry.footprint.height / 2;
+    const centerOffset = Math.abs(buildingCenterX - lotCenterX) + Math.abs(buildingCenterY - lotCenterY);
+    return accessDistance * 100 + centerOffset * 24;
+  }
+  const edgePenalty = (origin.x - lot.origin.x) * 2;
+  return accessDistance * 100 + bottomGap * 30 + partyBonus + edgePenalty;
+}
+
 export function buildingCompatibleWithArchetype(entry: BuildingCatalogEntry, archetype: DistrictArchetype): boolean {
   const role = buildingZoningRole(entry);
   if (entry.serviceRole) return true;

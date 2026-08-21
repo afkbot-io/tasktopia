@@ -824,16 +824,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        80,
-        64
+        112,
+        72
       ],
       "footprintCells": [
-        10,
-        6
+        14,
+        7
       ],
       "anchorPx": [
-        40,
-        64
+        56,
+        72
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -851,7 +851,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 5
+          "offset": 7
         }
       ],
       "maxPerCity": 1,
@@ -864,9 +864,9 @@
         "ai-authored/building-stage-study/commercial-gas-station-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "4031f76c41d31000f3472d4310d1e8d328d0be4cda2fc0f916aa23f72bf0c399",
-        "fc5259f274b967ade78e7c9de7a6bddd00b72accdcf06c1460946a2347e38f54",
-        "f3d0042d4fd692ec8db91538e2517e315b157f22e0551957b8503b4785392d6f"
+        "d4ea02d64fdd114b7c10c160d95267e48282838419e443ff9a3de24f6cd9e344",
+        "ab08b1c1ab03a7356bc7c2deda09c6ba2b42c1513b4772b9ff365bd287be45e3",
+        "cf81ab9b25cfd8dafa2d06529f593cba0653fab48dd5ba10cb50f52bfff34dd2"
       ]
     },
     {
@@ -2626,7 +2626,7 @@
       "rarity": "UNIQUE",
       "spriteSize": [
         112,
-        96
+        112
       ],
       "footprintCells": [
         14,
@@ -2634,7 +2634,7 @@
       ],
       "anchorPx": [
         56,
-        96
+        112
       ],
       "platform": "SERVICE",
       "estimates": [
@@ -2663,9 +2663,9 @@
         "ai-authored/building-stage-study/civic-hospital-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "6a8e6bfef96ad7e5fb10bc659ee6aae3a6fdf69329c9ded22bf0e6a37fb4786b",
-        "a525011f98a914c880240ee0686ebca997713fb0ac13304c729f5a1e56684468",
-        "15b273c7c4f23d970e74eb3ecf186eb3e61840429b94df85b87004696f0bca6d"
+        "c74113ff909281db62d621dd7fe633d29cc90ab44b78bc6c708c343d751ceab7",
+        "3636a6e2630f898980b859a5352bb64c1b206ed87eb0befcc1787136c993b5b3",
+        "a7ddba5f2231402d0461ec0239155f4b0e21a134fae1e9b18c8958e0a2212783"
       ]
     },
     {
@@ -7761,9 +7761,9 @@
         "ai-authored/building-stage-study/state-archive-core-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "cef14f038f6fa0cc8bddbe2c5dc8df5db91df77e5af9451ece86e68ad0df5e7e",
-        "d73aad4bfa12dca259a25cf5ec24d65ae05a3ed118bed23b7d598cd6a37847ba",
-        "e5afc1fc3b0c06f53ec529b64008a36530e91d23bea702c772f5ce02b5635151"
+        "a5f5c9172bc9ba9d548005820fd37aef896666be08f870ddf714817f17c8378c",
+        "8f522aa60c817ccd917d0d5a736f3be3d4a0e619166626d92c1de84cf1e0f889",
+        "92dffa9cee1a8accbc44f1786783af4acd80895fa337369e1cea7e4ee022d820"
       ]
     },
     {

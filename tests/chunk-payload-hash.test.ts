@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { chunkPayloadContentHash } from "../src/server/world/chunk-payload-hash";
-import type { ChunkPayloadDto } from "../src/shared/contracts";
+import type { ChunkPayloadV1Dto } from "../src/shared/contracts";
 
-function content(publishedVersion: number): Omit<ChunkPayloadDto, "contentHash"> {
+function content(publishedVersion: number): Omit<ChunkPayloadV1Dto, "contentHash"> {
   return {
     payloadVersion: 1,
     generatorVersion: "square-v7",

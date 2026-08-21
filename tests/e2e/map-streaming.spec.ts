@@ -1,6 +1,22 @@
 import { expect, test } from "@playwright/test";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 
+const isWorldPayloadRequest = (url: string) => url.includes("/api/chunks/") || url.includes("/api/world/viewport");
+
+function worldRequestChunkKeys(requestUrl: string): string[] {
+  const url = new URL(requestUrl);
+  const chunkMatch = url.pathname.match(/\/api\/chunks\/(-?\d+)\/(-?\d+)/);
+  if (chunkMatch) return [`${chunkMatch[1]},${chunkMatch[2]}`];
+  if (url.pathname !== "/api/world/viewport") return [];
+  const minX = Number(url.searchParams.get("minChunkX"));
+  const maxX = Number(url.searchParams.get("maxChunkX"));
+  const minY = Number(url.searchParams.get("minChunkY"));
+  const maxY = Number(url.searchParams.get("maxChunkY"));
+  const keys: string[] = [];
+  for (let y = minY; y <= maxY; y += 1) for (let x = minX; x <= maxX; x += 1) keys.push(`${x},${y}`);
+  return keys;
+}
+
 async function openDemoMap(page: import("@playwright/test").Page) {
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
@@ -61,12 +77,12 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
   test.setTimeout(120_000);
   const chunkRequests: string[] = [];
   const consoleProblems: string[] = [];
-  await page.route("**/api/chunks/**", async (route) => {
+  await page.route(/\/api\/(?:chunks\/|world\/viewport)/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 600));
     await route.continue();
   });
   page.on("request", (request) => {
-    if (request.url().includes("/api/chunks/")) {
+    if (isWorldPayloadRequest(request.url())) {
       const url = new URL(request.url());
       chunkRequests.push(`${url.pathname}${url.search}`);
     }
@@ -93,12 +109,15 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
 
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
-  await page.mouse.move(box!.x + box!.width * 0.75, box!.y + box!.height * 0.5);
+  await page.mouse.move(box!.x + box!.width * 0.9, box!.y + box!.height * 0.5);
   await page.mouse.down();
-  for (let step = 0; step < 18; step += 1) {
-    await page.mouse.move(box!.x + box!.width * 0.75 - step * 45, box!.y + box!.height * 0.5, { steps: 1 });
+  for (let step = 0; step < 24; step += 1) {
+    await page.mouse.move(box!.x + box!.width * 0.9 - step * 50, box!.y + box!.height * 0.5, { steps: 1 });
   }
   await page.mouse.up();
+  // A drag may finish over a building on a dense generated city. Close the
+  // incidental task card so it cannot capture the following zoom gesture.
+  await page.keyboard.press("Escape");
   const currentLod = await host.getAttribute("data-map-lod");
   await canvas.hover();
   for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, currentLod === "overview" ? -800 : 800);
@@ -108,9 +127,8 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
 
   const requestCounts = new Map<string, number>();
   for (const request of chunkRequests) requestCounts.set(request, (requestCounts.get(request) ?? 0) + 1);
-  // A 64-cell chunk is roughly half a desktop viewport. Pan plus one LOD
-  // transition must stay inside a bounded visible-only request budget instead
-  // of expanding to the former 30+ request prefetch ring.
+  // The visible rectangle is normally delivered by one request. Compatibility
+  // fallback may use individual chunks, but still stays inside a bounded budget.
   expect(chunkRequests.length).toBeLessThanOrEqual(20);
   expect(Math.max(0, ...requestCounts.values())).toBeLessThanOrEqual(1);
   expect(Number(await host.getAttribute("data-ground-cache"))).toBeGreaterThanOrEqual(Number(await host.getAttribute("data-resident-chunks")));
@@ -118,11 +136,11 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
   expect(Number(await host.getAttribute("data-chunk-data-cache"))).toBeLessThanOrEqual(48);
   expect(Number(await host.getAttribute("data-chunk-payload-cache"))).toBeLessThanOrEqual(160);
   expect(Number(await host.getAttribute("data-ground-bakes-per-frame-max"))).toBe(1);
-  await expect(host).toHaveAttribute("data-chunk-request-p95-ms", /\d/);
-  await expect(host).toHaveAttribute("data-chunk-parse-p95-ms", /\d/);
+  await expect(host).toHaveAttribute("data-viewport-request-p95-ms", /\d/);
+  await expect(host).toHaveAttribute("data-viewport-parse-p95-ms", /\d/);
   await expect(host).toHaveAttribute("data-chunk-materialize-p95-ms", /\d/);
   await expect(host).toHaveAttribute("data-ground-bake-p95-ms", /\d/);
-  await expect(host).toHaveAttribute("data-chunk-payload-p95-bytes", /\d/);
+  await expect(host).toHaveAttribute("data-viewport-payload-p95-bytes", /\d/);
   expect(consoleProblems).toEqual([]);
 });
 
@@ -156,6 +174,11 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   await expect(canvas).toBeVisible();
   await expect(host).toHaveAttribute("data-input-ready", "true");
   await expect(host).toHaveAttribute("data-loading", "true");
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
+  await canvas.hover();
+  for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "overview"; step += 1) {
+    await page.mouse.wheel(0, 800);
+  }
   await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", "overview");
@@ -209,6 +232,9 @@ test("recovers a failed chunk and paints a static map with reduced motion", asyn
   test.setTimeout(120_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
   let failedOnce = false;
+  await page.route("**/api/world/viewport**", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });
+  });
   await page.route("**/api/chunks/**", async (route) => {
     if (!failedOnce) {
       failedOnce = true;
@@ -236,6 +262,13 @@ test("recovers a failed chunk and paints a static map with reduced motion", asyn
 test("shows a recoverable error after retries and keeps rendered ground", async ({ page }) => {
   test.setTimeout(120_000);
   let failChunks = false;
+  await page.route("**/api/world/viewport**", async (route) => {
+    if (failChunks) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });
+      return;
+    }
+    await route.continue();
+  });
   await page.route("**/api/chunks/**", async (route) => {
     if (failChunks) {
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });
@@ -275,7 +308,7 @@ test("keeps the rendered LOD coherent and recovers a rapid zoom reversal", async
   const slowOverviewGate = new Promise<void>((resolve) => {
     releaseSlowOverview = resolve;
   });
-  await page.route("**/api/chunks/**", async (route) => {
+  await page.route(/\/api\/(?:chunks\/|world\/viewport)/, async (route) => {
     const isSlowLod = armed && new URL(route.request().url()).searchParams.get("lod") === slowLod;
     if (isSlowLod && !slowOverviewStarted) {
       slowOverviewStarted = true;
@@ -362,8 +395,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
   test.setTimeout(120_000);
   const requestedChunks = new Set<string>();
   page.on("request", (request) => {
-    const match = new URL(request.url()).pathname.match(/\/api\/chunks\/(-?\d+)\/(-?\d+)/);
-    if (match) requestedChunks.add(`${match[1]},${match[2]}`);
+    for (const key of worldRequestChunkKeys(request.url())) requestedChunks.add(key);
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
@@ -377,6 +409,15 @@ test("realtime task status patches its entity without refetching or rebaking sta
   for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "detail"; step += 1) await page.mouse.wheel(0, -800);
   await expect(host).toHaveAttribute("data-map-lod", "detail", { timeout: 90_000 });
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");
+  const visibleRange = await host.getAttribute("data-chunk-range");
+  expect(visibleRange).not.toBeNull();
+  const [visibleMin, visibleMax] = visibleRange!.split(":").map((point) => point.split(",").map(Number));
+  const visibleChunkKeys: string[] = [];
+  for (let chunkY = visibleMin![1]!; chunkY <= visibleMax![1]!; chunkY += 1) {
+    for (let chunkX = visibleMin![0]!; chunkX <= visibleMax![0]!; chunkX += 1) {
+      visibleChunkKeys.push(`${chunkX},${chunkY}`);
+    }
+  }
 
   const integration = await page.evaluate(async (visibleChunkKeys) => {
     const cities = await fetch("/api/plan/cities").then((response) => response.json()) as Array<{ id: string }>;
@@ -400,7 +441,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
       }
     }
     throw new Error("No visible planning task found");
-  }, [...requestedChunks]);
+  }, visibleChunkKeys);
 
   const beforeRebuilds = Number(await host.getAttribute("data-ground-rebuilds"));
   const beforeEntityRebuilds = Number(await host.getAttribute("data-entity-rebuilds"));
@@ -419,7 +460,16 @@ test("realtime task status patches its entity without refetching or rebaking sta
     });
     expect(result.isError, JSON.stringify(result.content)).not.toBe(true);
     await expect.poll(async () => Number(await host.getAttribute("data-entity-rebuilds")), { timeout: 30_000 }).toBeGreaterThan(beforeEntityRebuilds);
-    expect(Number(await host.getAttribute("data-ground-rebuilds"))).toBe(beforeRebuilds);
+    const groundRebuildsAfterRetry = Number(await host.getAttribute("data-ground-rebuilds"));
+    const rebuildDiagnostics = await host.evaluate((element) => ({
+      invalidated: element.getAttribute("data-ground-rebuild-invalidated"),
+      seed: element.getAttribute("data-ground-rebuild-seed"),
+      lod: element.getAttribute("data-ground-rebuild-lod"),
+      primes: element.getAttribute("data-seed-ground-primes"),
+      replaced: element.getAttribute("data-ground-remove-replace"),
+      pruned: element.getAttribute("data-ground-remove-prune"),
+    }));
+    expect(groundRebuildsAfterRetry, JSON.stringify(rebuildDiagnostics)).toBe(beforeRebuilds);
     expect(requestedChunks.has(integration.chunkKey)).toBe(false);
     expect(Number(await host.getAttribute("data-movement-rebuilds"))).toBe(beforeMovementRebuilds);
     expect(await host.getAttribute("data-realtime-decorations")).toBeNull();
@@ -473,10 +523,10 @@ test("realtime task status patches its entity without refetching or rebaking sta
     const chunkRefreshGate = new Promise<void>((resolve) => {
       releaseChunkRefresh = resolve;
     });
-    await page.route("**/api/chunks/**", async (route) => {
-      const match = new URL(route.request().url()).pathname.match(/\/api\/chunks\/(-?\d+)\/(-?\d+)/);
-      if (holdChunkRefresh && !delayedChunkRefreshStarted && match
-        && `${match[1]},${match[2]}` === integration.chunkKey) {
+    const refreshRoute = /\/api\/(?:chunks\/|world\/viewport)/;
+    await page.route(refreshRoute, async (route) => {
+      if (holdChunkRefresh && !delayedChunkRefreshStarted
+        && worldRequestChunkKeys(route.request().url()).includes(integration.chunkKey)) {
         const response = await route.fetch();
         delayedChunkRefreshStarted = true;
         await chunkRefreshGate;
@@ -526,10 +576,19 @@ test("realtime task status patches its entity without refetching or rebaking sta
     }).toBe(true);
     await expect.poll(async () => Number(await host.getAttribute("data-entity-rebuilds")), { timeout: 30_000 })
       .toBeGreaterThan(entityRebuildsBeforeRetry);
+    const finalGroundRebuilds = Number(await host.getAttribute("data-ground-rebuilds"));
+    const finalRebuildDiagnostics = await host.evaluate((element) => ({
+      invalidated: element.getAttribute("data-ground-rebuild-invalidated"),
+      seed: element.getAttribute("data-ground-rebuild-seed"),
+      lod: element.getAttribute("data-ground-rebuild-lod"),
+      primes: element.getAttribute("data-seed-ground-primes"),
+      replaced: element.getAttribute("data-ground-remove-replace"),
+      pruned: element.getAttribute("data-ground-remove-prune"),
+    }));
+    expect(finalGroundRebuilds, JSON.stringify(finalRebuildDiagnostics)).toBe(beforeRebuilds);
     await expect(host).toHaveAttribute("data-realtime-decorations", "rematerialized", { timeout: 30_000 });
-    expect(Number(await host.getAttribute("data-ground-rebuilds"))).toBe(beforeRebuilds);
     expect(requestedChunks.has(integration.chunkKey)).toBe(false);
-    await page.unroute("**/api/chunks/**");
+    await page.unroute(refreshRoute);
     await page.unroute("**/game-assets/**");
     for (const [status, progress] of [["TESTING", 90], ["COMPLETED", 100]] as const) {
       const result = await client.callTool({

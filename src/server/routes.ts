@@ -22,7 +22,7 @@ import {
   updateAccountName,
 } from "./auth";
 import { BUILDING_CATALOG } from "../shared/catalog";
-import { MCP_SCOPES, type McpScope } from "../shared/contracts";
+import { MCP_SCOPES, type McpScope, type ViewportPayloadDto } from "../shared/contracts";
 import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
 import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { config } from "./config";
@@ -377,6 +377,37 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
   // One camera action legitimately fetches dozens of immutable/read-only
   // chunks. Keep their budget separate so ordinary panning cannot lock out
   // bootstrap, token and task requests, while still bounding abusive traffic.
+  app.get("/api/world/viewport", {
+    config: { rateLimit: { max: 120, timeWindow: "1 minute", groupId: "world-viewport" } },
+  }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const query = request.query as Record<string, string | undefined>;
+    const minChunkX = Number(query.minChunkX);
+    const minChunkY = Number(query.minChunkY);
+    const maxChunkX = Number(query.maxChunkX);
+    const maxChunkY = Number(query.maxChunkY);
+    const coordinates = [minChunkX, minChunkY, maxChunkX, maxChunkY];
+    const width = maxChunkX - minChunkX + 1;
+    const height = maxChunkY - minChunkY + 1;
+    if (coordinates.some((value) => !Number.isInteger(value) || Math.abs(value) > 10000)
+      || width < 1 || height < 1 || width > 12 || height > 12 || width * height > 100) {
+      throw new DomainError("INVALID_INPUT", "Некорректная область карты");
+    }
+    const lod = parse(z.enum(["detail", "overview"]).default("detail"), query.lod);
+    const chunkLod = lod === "overview" ? "OVERVIEW" : "DETAIL";
+    const chunks = await Promise.all(Array.from({ length: width * height }, (_, index) => {
+      const chunkX = minChunkX + index % width;
+      const chunkY = minChunkY + Math.floor(index / width);
+      return service.getChunkPayload(user.countryId, chunkX, chunkY, chunkLod);
+    }));
+    const result: ViewportPayloadDto = { payloadVersion: 1, lod: chunkLod, chunks };
+    reply.header("Cache-Control", "private, no-cache, must-revalidate")
+      .header("Vary", "Accept")
+      .header("X-World-Version", String(Math.max(0, ...chunks.map((chunk) => chunk.publishedVersion))));
+    return result;
+  });
+
   app.get("/api/chunks/:chunkX/:chunkY", {
             config: { rateLimit: { max: 600, timeWindow: "1 minute", groupId: "world-chunks" } },
           }, async (request, reply) => {

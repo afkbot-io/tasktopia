@@ -19,6 +19,7 @@ import {
   type ChunkDto,
   type ChunkLod,
   type ChunkPayloadDto,
+  type ChunkPayloadV2Dto,
   type ChunkTaskDto,
   type CityDto,
   type CityMorphology,
@@ -53,6 +54,7 @@ import {
   type WorldFeatureDto,
 } from "../shared/contracts";
 import { materializeChunkPayload } from "../shared/world-chunk-payload";
+import { compactCellRuns, compactRoadRuns, compactSurfaceRuns } from "../shared/world-cell-runs";
 import { ASSET_REVISION } from "../shared/catalog";
 import { config } from "./config";
 import type { Db } from "./db";
@@ -90,6 +92,7 @@ import {
   buildingVisualReservationCells,
   buildingVisualSetbackCells,
   buildingZoningRole,
+  buildingLotPlacementScore,
   buildSurfaceMap,
   buildingApronCells,
   buildingGapPaths,
@@ -116,7 +119,7 @@ const COUNTRY_ATLAS_DISTRICT_COLORS = [
   "#c37e95", "#6fbfcb", "#d6a66b", "#978fd0", "#75b777", "#c684c3", "#6ba3b3", "#cf8e55",
 ] as const;
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
-const ARCHIVE_COMPOUND = { width: 18, height: 12 } as const;
+const ARCHIVE_COMPOUND = { width: 42, height: 28 } as const;
 const ARCHIVE_CITY_CLEARANCE = 24;
 
 function roadReachable(roads: ReadonlyMap<string, Cell>, start: Cell, target: Cell): boolean {
@@ -141,12 +144,31 @@ function compareCellsByDistance(target: Cell): (left: Cell, right: Cell) => numb
     || left.y - right.y
     || left.x - right.x;
 }
-const ARCHIVE_BUILDINGS = [
-  { assetKey: "state-archive-core", offset: { x: 5, y: 6 }, width: 8, height: 5 },
-  { assetKey: "state-archive-wing", offset: { x: 0, y: 1 }, width: 8, height: 4 },
-  { assetKey: "state-archive-vault", offset: { x: 10, y: 1 }, width: 7, height: 5 },
-  { assetKey: "state-archive-tower", offset: { x: 10, y: 6 }, width: 7, height: 5 },
+const ARCHIVE_BUILDING_LAYOUT = [
+  { assetKey: "state-archive-core", offset: { x: 13, y: 18 } },
+  { assetKey: "state-archive-wing", offset: { x: 1, y: 1 } },
+  { assetKey: "state-archive-vault", offset: { x: 27, y: 1 } },
+  { assetKey: "state-archive-tower", offset: { x: 0, y: 18 } },
 ] as const;
+const ARCHIVE_BUILDINGS = ARCHIVE_BUILDING_LAYOUT.map((building) => {
+  const footprint = getBuilding(building.assetKey).footprint;
+  return { ...building, width: footprint.width, height: footprint.height };
+});
+const ARCHIVE_GATE_CENTER_OFFSET_X = ARCHIVE_BUILDING_LAYOUT[0].offset.x
+  + getBuilding(ARCHIVE_BUILDING_LAYOUT[0].assetKey).entrances[0]!.offset;
+
+function rectanglePerimeterFootprint(origin: Cell, width: number, height: number): Cell[] {
+  const cells: Cell[] = [];
+  for (let x = 0; x < width; x += 1) {
+    cells.push({ x: origin.x + x, y: origin.y });
+    if (height > 1) cells.push({ x: origin.x + x, y: origin.y + height - 1 });
+  }
+  for (let y = 1; y < height - 1; y += 1) {
+    cells.push({ x: origin.x, y: origin.y + y });
+    if (width > 1) cells.push({ x: origin.x + width - 1, y: origin.y + y });
+  }
+  return cells;
+}
 
 type Row = Record<string, unknown>;
 type GrowthDirection = DistrictDto["growthDirection"];
@@ -2601,7 +2623,12 @@ export class AppService {
     const cities = await this.listCities(countryId);
     const cityExclusions = cities.map((city) => expandRect(city.bounds, ARCHIVE_CITY_CLEARANCE));
     let relocatedBounds: Rect | undefined;
-    if (compound && cityExclusions.some((bounds) => intersects(bounds, boundsOf(compound!.footprint)))) {
+    const compoundBounds = compound ? boundsOf(compound.footprint) : undefined;
+    const compoundGeometryOutdated = compoundBounds
+      ? compoundBounds.maxX - compoundBounds.minX + 1 !== ARCHIVE_COMPOUND.width
+        || compoundBounds.maxY - compoundBounds.minY + 1 !== ARCHIVE_COMPOUND.height
+      : false;
+    if (compound && (compoundGeometryOutdated || cityExclusions.some((bounds) => intersects(bounds, compoundBounds!)))) {
       relocatedBounds = boundsOf([...compound.footprint, ...compound.accessPath]);
       const oldCorridor = new Map(this.roadCorridor(compound.accessPath, "LOCAL").map((cell) => [cellKey(cell), cell]));
       const protectedCells = new Set([
@@ -2643,8 +2670,8 @@ export class AppService {
       // The archive is a separate secured national site, not another city
       // block. Keep a visible green belt between its perimeter and every city.
       const preferredCandidates = [
-        { x: -112, y: 12 }, { x: 94, y: 12 }, { x: -12, y: -106 }, { x: -12, y: 94 },
-        { x: -120, y: -34 }, { x: 102, y: -34 }, { x: -42, y: -114 }, { x: 28, y: 102 },
+        { x: -116, y: -34 }, { x: 94, y: 12 }, { x: -12, y: -122 }, { x: -12, y: 110 },
+        { x: -144, y: -34 }, { x: 102, y: -34 }, { x: -42, y: -130 }, { x: 28, y: 118 },
       ];
       const fallbackCandidates: Cell[] = [];
       for (let y = -52; y <= 48; y += 4) for (const x of [-136, -128, -120, -112, -104, -96, 88, 96, 104, 112, 120, 128]) fallbackCandidates.push({ x, y });
@@ -2658,12 +2685,16 @@ export class AppService {
       ]);
       for (const offset of candidates) {
         const origin = { x: anchor.x + offset.x, y: anchor.y + offset.y };
-        const footprint = rectangleFootprint(origin, ARCHIVE_COMPOUND.width, ARCHIVE_COMPOUND.height);
+        // Persist only the campus boundary. The secured rectangle is validated
+        // below, while buildings/fences own their exact cells. Keeping 136
+        // perimeter cells instead of 1,176 interior points prevents an
+        // unrelated national landmark from inflating every city-placement read.
+        const footprint = rectanglePerimeterFootprint(origin, ARCHIVE_COMPOUND.width, ARCHIVE_COMPOUND.height);
         // Reserve the security perimeter and a four-cell south approach from
         // day one. The archive may grow, but its fence and gate must never be
         // forced onto water, an existing road or somebody else's building.
         const securedSite = rectangleFootprint({ x: origin.x - 1, y: origin.y - 1 }, ARCHIVE_COMPOUND.width + 2, ARCHIVE_COMPOUND.height + 2);
-        const approach = rectangleFootprint({ x: origin.x + 9, y: origin.y + ARCHIVE_COMPOUND.height }, 2, 4);
+        const approach = rectangleFootprint({ x: origin.x + ARCHIVE_GATE_CENTER_OFFSET_X - 1, y: origin.y + ARCHIVE_COMPOUND.height }, 2, 4);
         if (![...securedSite, ...approach].every((cell) => !roads.has(cellKey(cell))
           && !occupied.has(cellKey(cell))
           && !cityExclusions.some((bounds) => contains(bounds, cell))
@@ -2680,7 +2711,7 @@ export class AppService {
 
     const seed = Number((await this.countryRow(countryId)).seed);
     if (compound.accessPath.length === 0) {
-      const gateCenter = { x: compound.origin.x + 10, y: compound.origin.y + ARCHIVE_COMPOUND.height };
+      const gateCenter = { x: compound.origin.x + ARCHIVE_GATE_CENTER_OFFSET_X, y: compound.origin.y + ARCHIVE_COMPOUND.height };
       const apron = Array.from({ length: 4 }, (_, index) => ({ x: gateCenter.x, y: gateCenter.y + index }));
       const exclusion = expandRect(boundsOf(compound.footprint), 4);
       const cityAvoid = (await this.listCities(countryId)).map((city) => expandRect(city.bounds, 3));
@@ -2729,7 +2760,8 @@ export class AppService {
     for (let offset = -1; offset <= ARCHIVE_COMPOUND.width - 1; offset += 2) {
       addInfrastructure("archive-fence-horizontal", { x: origin.x + offset, y: origin.y - 1 }, "E", 2, 1);
     }
-    for (const offset of [-1, 1, 3, 5, 7, 11, 13, 15, 17]) {
+    for (let offset = -1; offset <= ARCHIVE_COMPOUND.width - 1; offset += 2) {
+      if (offset === ARCHIVE_GATE_CENTER_OFFSET_X - 1) continue;
       addInfrastructure("archive-fence-horizontal", { x: origin.x + offset, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 2, 1);
     }
     for (const sideX of [origin.x - 1, origin.x + ARCHIVE_COMPOUND.width]) {
@@ -2737,7 +2769,7 @@ export class AppService {
         addInfrastructure("archive-fence-vertical", { x: sideX, y: origin.y + offset }, "S", 1, 2);
       }
     }
-    addInfrastructure("archive-security-barrier", { x: origin.x + 9, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 2, 1);
+    addInfrastructure("archive-security-barrier", { x: origin.x + ARCHIVE_GATE_CENTER_OFFSET_X - 1, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 2, 1);
 
     const infrastructureKeys = new Set(infrastructure.map((item) => `${item.assetKey}:${cellKey(item.origin)}`));
     const existingInfrastructure = (await this.listWorldFeatures(countryId)).filter((feature) =>
@@ -3284,6 +3316,33 @@ export class AppService {
     // pocket park and later infill always have land left.
     const boundsWidth = searchBounds.maxX - searchBounds.minX + 1;
     const boundsHeight = searchBounds.maxY - searchBounds.minY + 1;
+    const prefixStride = boundsWidth + 1;
+    const prefixSize = prefixStride * (boundsHeight + 1);
+    const allowedPrefix = new Int32Array(prefixSize);
+    const unsuitablePrefix = new Int32Array(prefixSize);
+    for (let localY = 1; localY <= boundsHeight; localY += 1) {
+      for (let localX = 1; localX <= boundsWidth; localX += 1) {
+        const cell = { x: searchBounds.minX + localX - 1, y: searchBounds.minY + localY - 1 };
+        const index = localY * prefixStride + localX;
+        const left = index - 1;
+        const above = index - prefixStride;
+        const diagonal = above - 1;
+        allowedPrefix[index] = (allowed.has(cellKey(cell)) ? 1 : 0)
+          + allowedPrefix[left]! + allowedPrefix[above]! - allowedPrefix[diagonal]!;
+        unsuitablePrefix[index] = (!isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain) ? 1 : 0)
+          + unsuitablePrefix[left]! + unsuitablePrefix[above]! - unsuitablePrefix[diagonal]!;
+      }
+    }
+    const prefixRectSum = (prefix: Int32Array, rect: Rect): number => {
+      const left = rect.minX - searchBounds.minX;
+      const top = rect.minY - searchBounds.minY;
+      const right = rect.maxX - searchBounds.minX + 1;
+      const bottom = rect.maxY - searchBounds.minY + 1;
+      return prefix[bottom * prefixStride + right]!
+        - prefix[top * prefixStride + right]!
+        - prefix[bottom * prefixStride + left]!
+        + prefix[top * prefixStride + left]!;
+    };
     const residentialComplex = entry.tags.some((tag) =>
       tag === "low-rise-residential" || tag === "mid-rise-residential" || tag === "high-rise-residential");
     const minimumRect = complexMinimumRect(entry, targetLots);
@@ -3339,18 +3398,18 @@ export class AppService {
     for (let y = searchBounds.minY + 1; y + rectHeight - 1 <= searchBounds.maxY - 1; y += siteStep) {
       for (let x = searchBounds.minX + 1; x + rectWidth - 1 <= searchBounds.maxX - 1; x += siteStep) {
         const rect: Rect = { minX: x, minY: y, maxX: x + rectWidth - 1, maxY: y + rectHeight - 1 };
-        const rectCells = rectangleFootprint({ x, y }, rectWidth, rectHeight);
         // The district silhouette has cut corners, so a complex nearly as big
         // as the territory can never be fully inside it. Accept sites that are
         // mostly inside; the planner drops the few lots that fall outside.
-        const insideCount = rectCells.filter((cell) => allowed.has(cellKey(cell))).length;
-        if (insideCount / rectCells.length < minimumInsideRatio) continue;
+        const cellCount = rectWidth * rectHeight;
+        const insideCount = prefixRectSum(allowedPrefix, rect);
+        if (insideCount / cellCount < minimumInsideRatio) continue;
         // The coarse planning rectangle may cover an existing street or a
         // neighbouring facade; individual lots and road corridors are filtered
         // against those hard obstacles below. Rejecting the whole rectangle
         // here forced one road per building in dense districts.
-        const unsuitable = rectCells.filter((cell) => !isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain)).length;
-        if (unsuitable / rectCells.length > maximumUnsuitableRatio) continue;
+        const unsuitable = prefixRectSum(unsuitablePrefix, rect);
+        if (unsuitable / cellCount > maximumUnsuitableRatio) continue;
         // Organic rule: the next complex grows directly against the existing
         // streets. The first complex of a district anchors to the closest road.
         const adjacency = Math.min(...proximityAnchors.map((road) => {
@@ -3388,6 +3447,7 @@ export class AppService {
         complexIndex,
         rect: candidate.rect,
         cells: district.cells,
+        allowedCellKeys: allowed,
         archetype: district.archetype,
         targetLots,
         minimumLot: frontageMinimumLot,
@@ -4289,10 +4349,9 @@ export class AppService {
         const touchesWest = footprint.some((cell) => occupied.has(cellKey({ x: origin.x - 1, y: cell.y })));
         const touchesEast = footprint.some((cell) => occupied.has(cellKey({ x: origin.x + entry.footprint.width, y: cell.y })));
         const partyBonus = (touchesWest ? -25 : 0) + (touchesEast ? -25 : 0);
-        const edgePenalty = (origin.x - lot.origin.x) * 2;
         candidates.push({
           origin, footprint, entrance: access.entrance, accessPath: access.path,
-          score: access.distance * 100 + bottomGap * 30 + partyBonus + edgePenalty,
+          score: buildingLotPlacementScore({ entry, lot, origin, accessDistance: access.distance, bottomGap, partyBonus }),
         });
       }
     }
@@ -5012,7 +5071,8 @@ export class AppService {
       .get(countryId, chunkX, chunkY, lod) as Row | undefined;
     if (published) {
       const payload = json<ChunkPayloadDto>(published.payload_json);
-      if (payload.payloadVersion === 1 && payload.generatorVersion === "square-v7"
+      if ((payload.payloadVersion === 2 && payload.generatorVersion === "square-v8"
+        || payload.payloadVersion === 1 && payload.generatorVersion === "square-v7")
         && payload.chunkX === chunkX && payload.chunkY === chunkY && payload.lod === lod) {
         return this.storeChunk(cacheKey, payload.publishedVersion === worldVersion
           ? payload
@@ -5180,18 +5240,19 @@ export class AppService {
       isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
     }).values()].filter((surface) => contains(chunkBounds, surface));
 
-    const content: Omit<ChunkPayloadDto, "contentHash"> = {
-      payloadVersion: 1,
-      generatorVersion: "square-v7",
+    const content: Omit<ChunkPayloadV2Dto, "contentHash"> = {
+      payloadVersion: 2,
+      generatorVersion: "square-v8",
       terrainSeed: seed,
       publishedVersion: worldVersion,
       lod,
       chunkX,
       chunkY,
       size: CHUNK_SIZE,
-      roads: [...roads].sort((left, right) => left.y - right.y || left.x - right.x),
-      surfaces: [...surfaces].sort((left, right) => left.y - right.y || left.x - right.x),
-      districts: [...districts].sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
+      roadRuns: compactRoadRuns([...roads].sort((left, right) => left.y - right.y || left.x - right.x)),
+      surfaceRuns: compactSurfaceRuns([...surfaces].sort((left, right) => left.y - right.y || left.x - right.x)),
+      districts: [...districts].sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
+        .map(({ cells, ...district }) => ({ ...district, cellRuns: compactCellRuns(cells) })),
       tasks: chunkTasks.map((task) => ({
         id: task.id, taskNumber: task.taskNumber, cityId: task.cityId, districtId: task.districtId, title: task.title,
         workItemType: task.workItemType,
@@ -5208,8 +5269,8 @@ export class AppService {
           id: district.id,
           status: district.status,
           archetype: district.archetype,
-          cells: district.cells.filter((cell) => contains(expandRect(chunkBounds, 1), cell)),
-        })).filter((district) => district.cells.length > 0)
+          cellRuns: compactCellRuns(district.cells.filter((cell) => contains(expandRect(chunkBounds, 1), cell))),
+        })).filter((district) => district.cellRuns.length > 0)
           .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
         tasks: lod === "DETAIL" ? nearbyTasks.map((task) => ({
           id: task.id,
@@ -5221,7 +5282,7 @@ export class AppService {
         })).sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0) : [],
       },
     };
-    const payload: ChunkPayloadDto = { ...content, contentHash: chunkPayloadContentHash(content) };
+    const payload: ChunkPayloadV2Dto = { ...content, contentHash: chunkPayloadContentHash(content) };
     if ((this.knownWorldVersions.get(countryId) ?? worldVersion) !== worldVersion) throw new StaleChunkBuildError();
     if (!await this.publishChunkPayload(countryId, payload)) throw new StaleChunkBuildError();
     return this.storeChunk(cacheKey, payload);

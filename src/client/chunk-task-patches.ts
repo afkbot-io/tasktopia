@@ -55,10 +55,8 @@ export function patchChunkPayloadTaskStatuses(
     return { ...task, stage: patch.stage };
   });
   if (!changed && publishedVersion === payload.publishedVersion) return payload;
-  return {
-    ...payload,
-    tasks,
-    publishedVersion,
-    decorationContext: { ...payload.decorationContext, tasks: contextTasks },
-  };
+  if (payload.payloadVersion === 1) {
+    return { ...payload, tasks, publishedVersion, decorationContext: { ...payload.decorationContext, tasks: contextTasks } };
+  }
+  return { ...payload, tasks, publishedVersion, decorationContext: { ...payload.decorationContext, tasks: contextTasks } };
 }

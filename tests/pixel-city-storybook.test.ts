@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 describe("Pixel City asset Storybook", () => {
   it("covers the complete manifest and validates every runtime canvas", () => {
     const stdout = execFileSync(
-      "python3",
+      ".venv-assets/bin/python",
       ["scripts/render-pixel-city-storybook.py", "--describe"],
       { encoding: "utf8" },
     );

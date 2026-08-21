@@ -1595,16 +1595,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        80,
-        64
+        112,
+        72
       ],
       "footprintCells": [
-        10,
-        6
+        14,
+        7
       ],
       "anchorPx": [
-        40,
-        64
+        56,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station/stage-1.png",
@@ -1616,33 +1616,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          56,
-          78,
-          64
+          64,
+          110,
+          72
         ],
         [
           2,
-          50,
-          78,
-          63
+          58,
+          110,
+          71
         ],
         [
-          0,
-          26,
-          80,
-          64
-        ],
-        [
-          0,
-          6,
-          80,
-          64
+          2,
+          29,
+          110,
+          72
         ],
         [
           0,
           6,
-          80,
-          64
+          112,
+          72
+        ],
+        [
+          0,
+          7,
+          112,
+          72
         ]
       ],
       "platform": "ASPHALT",
@@ -1661,7 +1661,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 5
+          "offset": 7
         }
       ],
       "maxPerCity": 1,
@@ -4369,7 +4369,7 @@
       "rarity": "UNIQUE",
       "spriteSize": [
         112,
-        96
+        112
       ],
       "footprintCells": [
         14,
@@ -4377,7 +4377,7 @@
       ],
       "anchorPx": [
         56,
-        96
+        112
       ],
       "stages": [
         "buildings/civic/civic-hospital/stage-1.png",
@@ -4389,33 +4389,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          88,
+          104,
           110,
-          96
+          112
         ],
         [
           2,
-          82,
+          98,
           110,
-          95
-        ],
-        [
-          3,
-          21,
-          109,
-          96
+          111
         ],
         [
           0,
-          5,
-          111,
-          96
+          61,
+          112,
+          112
         ],
         [
           0,
-          2,
+          25,
           111,
-          96
+          112
+        ],
+        [
+          0,
+          24,
+          112,
+          112
         ]
       ],
       "platform": "SERVICE",
@@ -12224,20 +12224,20 @@
           103
         ],
         [
-          1,
-          54,
-          142,
+          3,
+          24,
+          140,
           104
         ],
         [
           0,
-          10,
+          3,
           144,
           104
         ],
         [
           0,
-          10,
+          4,
           144,
           104
         ]
@@ -12773,7 +12773,7 @@
         ],
         [
           0,
-          61,
+          62,
           111,
           144
         ],
@@ -13173,7 +13173,7 @@
         ],
         [
           0,
-          66,
+          67,
           127,
           144
         ],
@@ -15566,7 +15566,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -15586,7 +15586,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -15606,7 +15606,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -15614,7 +15614,7 @@
       "label": "Лиса — восток A",
       "path": "props/animal-fox-east-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -15622,11 +15622,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -15634,7 +15634,7 @@
       "label": "Лиса — восток B",
       "path": "props/animal-fox-east-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -15642,11 +15642,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -15654,7 +15654,7 @@
       "label": "Лиса — восток C",
       "path": "props/animal-fox-east-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -15662,11 +15662,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -15686,7 +15686,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -15706,7 +15706,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -15726,7 +15726,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -15734,7 +15734,7 @@
       "label": "Лиса — запад A",
       "path": "props/animal-fox-west-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -15742,11 +15742,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -15754,7 +15754,7 @@
       "label": "Лиса — запад B",
       "path": "props/animal-fox-west-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -15762,11 +15762,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -15774,7 +15774,7 @@
       "label": "Лиса — запад C",
       "path": "props/animal-fox-west-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -15782,11 +15782,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-fox-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -15806,7 +15806,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -15826,7 +15826,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -15846,7 +15846,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -15854,7 +15854,7 @@
       "label": "Олень — восток A",
       "path": "props/animal-deer-east-a.png",
       "size": [
-        24,
+        16,
         24
       ],
       "footprintCells": [
@@ -15862,11 +15862,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -15874,7 +15874,7 @@
       "label": "Олень — восток B",
       "path": "props/animal-deer-east-b.png",
       "size": [
-        24,
+        16,
         24
       ],
       "footprintCells": [
@@ -15882,11 +15882,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -15894,7 +15894,7 @@
       "label": "Олень — восток C",
       "path": "props/animal-deer-east-c.png",
       "size": [
-        24,
+        16,
         24
       ],
       "footprintCells": [
@@ -15902,11 +15902,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -15926,7 +15926,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -15946,7 +15946,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -15966,7 +15966,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -15974,7 +15974,7 @@
       "label": "Олень — запад A",
       "path": "props/animal-deer-west-a.png",
       "size": [
-        24,
+        16,
         24
       ],
       "footprintCells": [
@@ -15982,11 +15982,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -15994,7 +15994,7 @@
       "label": "Олень — запад B",
       "path": "props/animal-deer-west-b.png",
       "size": [
-        24,
+        16,
         24
       ],
       "footprintCells": [
@@ -16002,11 +16002,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16014,7 +16014,7 @@
       "label": "Олень — запад C",
       "path": "props/animal-deer-west-c.png",
       "size": [
-        24,
+        16,
         24
       ],
       "footprintCells": [
@@ -16022,11 +16022,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-deer-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16046,7 +16046,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16066,7 +16066,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16086,7 +16086,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16094,7 +16094,7 @@
       "label": "Кролик — восток A",
       "path": "props/animal-rabbit-east-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16102,11 +16102,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16114,7 +16114,7 @@
       "label": "Кролик — восток B",
       "path": "props/animal-rabbit-east-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16122,11 +16122,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16134,7 +16134,7 @@
       "label": "Кролик — восток C",
       "path": "props/animal-rabbit-east-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16142,11 +16142,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16166,7 +16166,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16186,7 +16186,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16206,7 +16206,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16214,7 +16214,7 @@
       "label": "Кролик — запад A",
       "path": "props/animal-rabbit-west-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16222,11 +16222,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16234,7 +16234,7 @@
       "label": "Кролик — запад B",
       "path": "props/animal-rabbit-west-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16242,11 +16242,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16254,7 +16254,7 @@
       "label": "Кролик — запад C",
       "path": "props/animal-rabbit-west-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16262,11 +16262,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-rabbit-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16275,7 +16275,7 @@
       "path": "props/animal-boar-north-a.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16283,10 +16283,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16295,7 +16295,7 @@
       "path": "props/animal-boar-north-b.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16303,10 +16303,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16315,7 +16315,7 @@
       "path": "props/animal-boar-north-c.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16323,10 +16323,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16334,19 +16334,19 @@
       "label": "Кабан — восток A",
       "path": "props/animal-boar-east-a.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16354,19 +16354,19 @@
       "label": "Кабан — восток B",
       "path": "props/animal-boar-east-b.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16374,19 +16374,19 @@
       "label": "Кабан — восток C",
       "path": "props/animal-boar-east-c.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16395,7 +16395,7 @@
       "path": "props/animal-boar-south-a.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16403,10 +16403,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16415,7 +16415,7 @@
       "path": "props/animal-boar-south-b.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16423,10 +16423,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16435,7 +16435,7 @@
       "path": "props/animal-boar-south-c.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16443,10 +16443,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16454,19 +16454,19 @@
       "label": "Кабан — запад A",
       "path": "props/animal-boar-west-a.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16474,19 +16474,19 @@
       "label": "Кабан — запад B",
       "path": "props/animal-boar-west-b.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16494,19 +16494,19 @@
       "label": "Кабан — запад C",
       "path": "props/animal-boar-west-c.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-boar-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16526,7 +16526,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16546,7 +16546,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16566,7 +16566,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16574,7 +16574,7 @@
       "label": "Утка — восток A",
       "path": "props/animal-duck-east-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16582,11 +16582,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16594,7 +16594,7 @@
       "label": "Утка — восток B",
       "path": "props/animal-duck-east-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16602,11 +16602,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16614,7 +16614,7 @@
       "label": "Утка — восток C",
       "path": "props/animal-duck-east-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16622,11 +16622,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16646,7 +16646,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16666,7 +16666,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16686,7 +16686,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16694,7 +16694,7 @@
       "label": "Утка — запад A",
       "path": "props/animal-duck-west-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16702,11 +16702,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16714,7 +16714,7 @@
       "label": "Утка — запад B",
       "path": "props/animal-duck-west-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16722,11 +16722,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16734,7 +16734,7 @@
       "label": "Утка — запад C",
       "path": "props/animal-duck-west-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -16742,11 +16742,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-duck-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16755,7 +16755,7 @@
       "path": "props/animal-sheep-north-a.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16763,10 +16763,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16775,7 +16775,7 @@
       "path": "props/animal-sheep-north-b.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16783,10 +16783,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16795,7 +16795,7 @@
       "path": "props/animal-sheep-north-c.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16803,10 +16803,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -16814,19 +16814,19 @@
       "label": "Овца — восток A",
       "path": "props/animal-sheep-east-a.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16834,19 +16834,19 @@
       "label": "Овца — восток B",
       "path": "props/animal-sheep-east-b.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16854,19 +16854,19 @@
       "label": "Овца — восток C",
       "path": "props/animal-sheep-east-c.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -16875,7 +16875,7 @@
       "path": "props/animal-sheep-south-a.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16883,10 +16883,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16895,7 +16895,7 @@
       "path": "props/animal-sheep-south-b.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16903,10 +16903,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16915,7 +16915,7 @@
       "path": "props/animal-sheep-south-c.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -16923,10 +16923,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -16934,19 +16934,19 @@
       "label": "Овца — запад A",
       "path": "props/animal-sheep-west-a.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16954,19 +16954,19 @@
       "label": "Овца — запад B",
       "path": "props/animal-sheep-west-b.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16974,19 +16974,19 @@
       "label": "Овца — запад C",
       "path": "props/animal-sheep-west-c.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-sheep-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -16995,7 +16995,7 @@
       "path": "props/animal-dog-north-a.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -17003,10 +17003,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -17015,7 +17015,7 @@
       "path": "props/animal-dog-north-b.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -17023,10 +17023,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -17035,7 +17035,7 @@
       "path": "props/animal-dog-north-c.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -17043,10 +17043,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -17054,19 +17054,19 @@
       "label": "Собака — восток A",
       "path": "props/animal-dog-east-a.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -17074,19 +17074,19 @@
       "label": "Собака — восток B",
       "path": "props/animal-dog-east-b.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -17094,19 +17094,19 @@
       "label": "Собака — восток C",
       "path": "props/animal-dog-east-c.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -17115,7 +17115,7 @@
       "path": "props/animal-dog-south-a.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -17123,10 +17123,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -17135,7 +17135,7 @@
       "path": "props/animal-dog-south-b.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -17143,10 +17143,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -17155,7 +17155,7 @@
       "path": "props/animal-dog-south-c.png",
       "size": [
         16,
-        24
+        16
       ],
       "footprintCells": [
         1,
@@ -17163,10 +17163,10 @@
       ],
       "anchorPx": [
         8,
-        24
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -17174,19 +17174,19 @@
       "label": "Собака — запад A",
       "path": "props/animal-dog-west-a.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -17194,19 +17194,19 @@
       "label": "Собака — запад B",
       "path": "props/animal-dog-west-b.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -17214,19 +17214,19 @@
       "label": "Собака — запад C",
       "path": "props/animal-dog-west-c.png",
       "size": [
-        24,
-        24
+        16,
+        16
       ],
       "footprintCells": [
         1,
         1
       ],
       "anchorPx": [
-        12,
-        24
+        8,
+        16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-dog-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -17246,7 +17246,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -17266,7 +17266,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -17286,7 +17286,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "NORTH"
     },
@@ -17294,7 +17294,7 @@
       "label": "Кошка — восток A",
       "path": "props/animal-cat-east-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -17302,11 +17302,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -17314,7 +17314,7 @@
       "label": "Кошка — восток B",
       "path": "props/animal-cat-east-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -17322,11 +17322,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -17334,7 +17334,7 @@
       "label": "Кошка — восток C",
       "path": "props/animal-cat-east-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -17342,11 +17342,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "EAST"
     },
@@ -17366,7 +17366,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -17386,7 +17386,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -17406,7 +17406,7 @@
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "SOUTH"
     },
@@ -17414,7 +17414,7 @@
       "label": "Кошка — запад A",
       "path": "props/animal-cat-west-a.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -17422,11 +17422,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -17434,7 +17434,7 @@
       "label": "Кошка — запад B",
       "path": "props/animal-cat-west-b.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -17442,11 +17442,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -17454,7 +17454,7 @@
       "label": "Кошка — запад C",
       "path": "props/animal-cat-west-c.png",
       "size": [
-        24,
+        16,
         16
       ],
       "footprintCells": [
@@ -17462,11 +17462,11 @@
         1
       ],
       "anchorPx": [
-        12,
+        8,
         16
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/animal-cat-v2.png",
+      "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
       "baseFacing": "WEST"
     },
@@ -17999,7 +17999,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "NORTH"
     },
@@ -18019,7 +18019,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "NORTH"
     },
@@ -18039,7 +18039,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "NORTH"
     },
@@ -18059,7 +18059,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "EAST"
     },
@@ -18079,7 +18079,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "EAST"
     },
@@ -18099,7 +18099,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "EAST"
     },
@@ -18119,7 +18119,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "SOUTH"
     },
@@ -18139,7 +18139,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "SOUTH"
     },
@@ -18159,7 +18159,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "SOUTH"
     },
@@ -18179,7 +18179,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "WEST"
     },
@@ -18199,7 +18199,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "WEST"
     },
@@ -18219,7 +18219,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/resident-walkers-v4.png",
+      "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
       "baseFacing": "WEST"
     },
@@ -18433,7 +18433,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -18453,7 +18453,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -18473,7 +18473,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -18493,7 +18493,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "NORTH"
     },
@@ -18513,7 +18513,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "NORTH"
     },
@@ -18533,7 +18533,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "NORTH"
     },
@@ -18553,7 +18553,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "SOUTH"
     },
@@ -18573,7 +18573,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "SOUTH"
     },
@@ -18593,7 +18593,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/cyclist-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "SOUTH"
     },
@@ -18613,7 +18613,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -18633,7 +18633,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -18653,7 +18653,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -18673,7 +18673,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "NORTH"
     },
@@ -18693,7 +18693,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "NORTH"
     },
@@ -18713,7 +18713,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "NORTH"
     },
@@ -18733,7 +18733,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "SOUTH"
     },
@@ -18753,7 +18753,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "SOUTH"
     },
@@ -18773,7 +18773,7 @@
         24
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/scooter-views-v2.png",
+      "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
       "baseFacing": "SOUTH"
     },
@@ -19218,5 +19218,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "a329f253b246c201"
+  "assetRevision": "91d3e72c6a75cad7"
 }

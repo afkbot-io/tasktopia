@@ -631,11 +631,13 @@ export function projectCountryAtlas(input: CountryAtlasProjectionInput): Country
       : [];
     return projectedCity;
   });
+  const renderedCells = cities.flatMap((city) => city.cutoutMask);
+  const renderedBounds = cellsBounds(renderedCells);
   const bounds: Rect = {
     minX: 0,
     minY: 0,
-    maxX: Math.max(...cities.flatMap((city) => [city.atlasBounds.maxX, city.labelBounds.maxX])) + ATLAS_MARGIN_CELLS,
-    maxY: Math.max(...cities.flatMap((city) => [city.atlasBounds.maxY, city.labelBounds.maxY])) + ATLAS_MARGIN_CELLS,
+    maxX: Math.max(renderedBounds.maxX, ...cities.flatMap((city) => [city.atlasBounds.maxX, city.labelBounds.maxX])) + ATLAS_MARGIN_CELLS,
+    maxY: Math.max(renderedBounds.maxY, ...cities.flatMap((city) => [city.atlasBounds.maxY, city.labelBounds.maxY])) + ATLAS_MARGIN_CELLS,
   };
   return {
     bounds,

@@ -112,6 +112,27 @@ describe("country atlas projection", () => {
     }
   });
 
+  it("keeps every rendered city cutout inside the published atlas bounds", () => {
+    const atlas = projectCountryAtlas({
+      cities: [{
+        ...city("wide-organic", { x: 0, y: 0 }, { width: 64, height: 64 }),
+        districts: [{
+          id: "edge-district",
+          cells: Array.from({ length: 81 }, (_, index) => ({ x: index, y: index % 3 })),
+        }],
+      }],
+    });
+
+    const projected = atlas.cities[0]!;
+    expect(projected.cutoutMask.length).toBeGreaterThan(0);
+    for (const cell of projected.cutoutMask) {
+      expect(cell.x, `cutout x ${cell.x}`).toBeGreaterThanOrEqual(atlas.bounds.minX);
+      expect(cell.x, `cutout x ${cell.x}`).toBeLessThanOrEqual(atlas.bounds.maxX);
+      expect(cell.y, `cutout y ${cell.y}`).toBeGreaterThanOrEqual(atlas.bounds.minY);
+      expect(cell.y, `cutout y ${cell.y}`).toBeLessThanOrEqual(atlas.bounds.maxY);
+    }
+  });
+
   it("samples macro terrain from the real source geography", () => {
     const atlas = projectCountryAtlas({
       terrainSampler: (cell) => ({

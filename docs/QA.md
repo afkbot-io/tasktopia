@@ -23,6 +23,8 @@
    зависеть от точки ног: объект ниже по экрану рисуется впереди.
 4. Дождаться разговора двух жителей. Белая реплика находится над головой,
    не вращается вместе с телом и остаётся выше зданий и светофоров.
+5. Запустить `python scripts/verify-agent-animations.py --gif-dir tmp/agent-gifs`:
+   отчёт должен содержать `42` семейства, `126` кадров и `valid: true`.
 
 ## Транспорт
 
@@ -47,7 +49,7 @@
 
 ## Chunk Streaming V2
 
-1. В DevTools задержать все `/api/chunks/*` на 3 секунды: terrain должен появиться до первого ответа, а `.world-canvas` получить `data-seed-first-frame="true"`; дорог и зданий до authoritative overlay быть не должно.
+1. В DevTools задержать `/api/world/viewport` и `/api/chunks/*` на 3 секунды: terrain должен появиться синхронно до первого ответа, а `.world-canvas` получить `data-seed-first-frame="true"` и `data-seed-first-frame-mode="synchronous"`; дорог и зданий до authoritative overlay быть не должно.
 2. Перезагрузить тот же viewport: ответ хранится в приватном HTTP-кэше и перепроверяется content-hash ETag; комментарий к задаче не должен менять ETag.
 3. Изменить status обычного здания: после загрузки stage asset растёт `data-entity-rebuilds`, но chunk HTTP-запрос отсутствует и `data-ground-rebuilds` не меняется.
 4. Задержать один building PNG: ground должен появиться до ответа; после ответа растут `data-entity-ready-publishes` и `data-entity-rebuilds`, то есть ранний reconcile соседа не оставил здание пустым.
@@ -55,6 +57,13 @@
 6. Проверить `.world-canvas`: `data-static-ground-views` равно числу GPU ground entries, `data-chunk-data-cache <= 48`, `data-chunk-payload-cache <= 160`, `data-ground-cache <= max(96, data-resident-chunks)`, все resident/видимые ground сохранены после завершения загрузки, `data-ground-bakes-per-frame-max = 1`; `data-ground-texture-resolution` равно `1` в detail и `0.5` в overview.
 7. Зафиксировать `data-chunk-payload-p50-bytes`, `data-chunk-payload-p95-bytes`, `data-chunk-payload-p99-bytes`; аналогичные `p50/p95/p99` атрибуты для `chunk-request`, `chunk-parse`, `chunk-materialize` и `ground-bake` заканчиваются на `-ms`. Сравнить cold/warm viewport; worker/CSP/Pixi errors недопустимы.
 8. На районе больше одного чанка проверить, что `world_chunk_district_cells_v1` содержит не более 4096 клеток в строке, а chunk response не возвращает клетки за пределами requested bounds.
+9. Первый экран должен вызвать один `/api/world/viewport`, а не отдельный HTTP на каждый видимый чанк. В payload должен быть `payloadVersion: 2`, `generatorVersion: square-v8`, `roadRuns`, `surfaceRuns` и районные `cellRuns`; после materialization клетки обязаны совпадать с v1 без потерь.
+
+## Геометрия обновлённых зданий
+
+1. Прогнать `verify_building_stages.py` из навыка `tasktopia-building-stage-verifier` отдельно для `civic-hospital-v5`, `commercial-gas-station-v5` и `state-archive-core-v5`: `acceptedByCode` должен быть `true`.
+2. В DETAIL проверить: больница имеет четыре этажа и двойную дверь человеческого масштаба; АЗС — четыре заправочных места, дверь `8×16`, фронтовую платформу без переданного с backend покрытия; архив — единую проекцию крыши и не выходит за охраняемый участок.
+3. После принудительной перегенерации убедиться, что fuel-service находится ближе к центру своего дорожного блока, все четыре корпуса архива лежат внутри `42×28`, а старые `18×12` архивы отсутствуют.
 
 ## Изоляция runtime
 

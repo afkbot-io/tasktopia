@@ -199,7 +199,7 @@ describe("Pixel City active asset contract", () => {
         expect(props[`walker-${direction}-${frame}`], `${direction}-${frame}`).toMatchObject({
           size: [16, 24],
           footprintCells: [1, 1],
-          sourceSheet: "ai-authored/ambient/resident-walkers-v4.png",
+          sourceSheet: "ai-authored/ambient/resident-walkers-v5.png",
         });
       }
     }

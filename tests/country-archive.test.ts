@@ -86,12 +86,17 @@ describe("Государственный архив", () => {
     const infrastructure = features.filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "PROP");
     const fences = infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"));
     const barriers = infrastructure.filter((feature) => feature.assetKey === "archive-security-barrier");
-    expect(fences).toHaveLength(31);
+    expect(fences).toHaveLength(71);
     expect(barriers).toHaveLength(1);
     expect(compound!.accessPath.length).toBeGreaterThanOrEqual(4);
 
-    const origin = compound!.origin;
-    const gateCells = new Set([cellKey({ x: origin.x + 9, y: origin.y + 12 }), cellKey({ x: origin.x + 10, y: origin.y + 12 })]);
+    const compoundBounds = boundsOf(compound!.footprint);
+    const core = features.find((feature) => feature.parentFeatureId === compound!.id && feature.assetKey === "state-archive-core")!;
+    const gateY = compoundBounds.maxY + 1;
+    const gateCells = new Set([
+      cellKey({ x: core.origin.x + 8, y: gateY }),
+      cellKey({ x: core.origin.x + 9, y: gateY }),
+    ]);
     const fenceCells = new Set(fences.flatMap((feature) => feature.footprint).map(cellKey));
     expect([...gateCells].every((key) => !fenceCells.has(key))).toBe(true);
     expect(new Set(barriers[0]!.footprint.map(cellKey))).toEqual(gateCells);
@@ -105,7 +110,7 @@ describe("Государственный архив", () => {
       for (const road of chunk.roads) roads.add(cellKey(road));
     }
     expect(compound!.accessPath.every((cell) => roads.has(cellKey(cell)))).toBe(true);
-    expect(compound!.accessPath.some((cell) => cell.y > origin.y + 13)).toBe(true);
+    expect(compound!.accessPath.some((cell) => cell.y > compoundBounds.maxY + 1)).toBe(true);
   });
 
   it("пробует доступную дорогу после изолированных ближайших целей", async () => {
@@ -121,7 +126,7 @@ describe("Государственный архив", () => {
       : { x: compound.origin.x - 16 + index % 8 * 5, y: compound.origin.y + direction * (30 + Math.floor(index / 8) * 8) });
     const reachable = horizontal
       ? { x: compound.origin.x + direction * 110, y: compound.origin.y + 6 }
-      : { x: compound.origin.x + 9, y: compound.origin.y + direction * 110 };
+      : { x: compound.origin.x + 22, y: compound.origin.y + direction * 110 };
 
     await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(countryId);
     await db.prepare("DELETE FROM world_features_v6 WHERE parent_feature_id = ? AND asset_kind = 'PROP'").run(compound.id);
@@ -162,7 +167,7 @@ describe("Государственный архив", () => {
     const restoredCompound = restored.find((feature) => feature.id === compound!.id);
     const infrastructure = restored.filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "PROP");
     expect(restoredCompound!.accessPath.length).toBeGreaterThanOrEqual(4);
-    expect(infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"))).toHaveLength(31);
+    expect(infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"))).toHaveLength(71);
     expect(infrastructure.filter((feature) => feature.assetKey === "archive-security-barrier")).toHaveLength(1);
   });
 
@@ -185,6 +190,18 @@ describe("Государственный архив", () => {
       "state-archive-core", "state-archive-tower", "state-archive-vault", "state-archive-wing",
     ]);
     expect(buildings.some((row) => row.asset_key.includes("operations") || row.asset_key.includes("hq"))).toBe(false);
+
+    const features = await service.listWorldFeatures(countryId);
+    const compound = features.find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
+    const children = features.filter((feature) => feature.parentFeatureId === compound.id && feature.assetKind === "BUILDING");
+    expect(compound.footprint).toHaveLength(136);
+    const compoundBounds = boundsOf(compound.footprint);
+    expect(children.every((building) => building.footprint.every((cell) => contains(compoundBounds, cell)))).toBe(true);
+    for (let left = 0; left < children.length; left += 1) {
+      for (let right = left + 1; right < children.length; right += 1) {
+        expect(intersects(boundsOf(children[left]!.footprint), boundsOf(children[right]!.footprint))).toBe(false);
+      }
+    }
   });
 
   it("сохраняет и обновляет jsonb-теги и ссылку записи", async () => {

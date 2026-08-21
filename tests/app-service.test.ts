@@ -674,7 +674,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(affected.minX).toBeLessThanOrEqual(boundsOf(next.cells).minX);
     expect(affected.maxX).toBeGreaterThanOrEqual(boundsOf(next.cells).maxX);
 
-    const roadsBeforeDelete = Number((await db.prepare("SELECT COUNT(*) AS count FROM roads_v3 WHERE country_id = ? AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?").get(countryId, city.bounds.minX, city.bounds.maxX, city.bounds.minY, city.bounds.maxY) as { count: number }).count);
+    const currentCity = (await service.listCities(countryId)).find((item) => item.id === city.id)!;
+    const roadsBeforeDelete = Number((await db.prepare("SELECT COUNT(*) AS count FROM roads_v3 WHERE country_id = ? AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?").get(countryId, currentCity.bounds.minX, currentCity.bounds.maxX, currentCity.bounds.minY, currentCity.bounds.maxY) as { count: number }).count);
     const deletedCity = await service.deleteCity(countryId, { cityId: city.id, confirmName: city.name, idempotencyKey: "delete-city" });
     expect(deletedCity).toMatchObject({ cityId: city.id, districtsDeleted: 2, tasksDeleted: 0 });
     expect(deletedCity.roadsDeleted).toBeGreaterThan(0);
