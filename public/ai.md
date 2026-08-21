@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.18.0
+Version: 1.19.0
 Last updated: 2026-08-21
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -9,10 +9,11 @@ Tasktopia turns work into a living country. Countries contain cities, cities
 contain districts, and every task is represented by a building.
 
 The authenticated browser map requests compact `ChunkPayloadDto` responses with
-the version-2 vendor `Accept` header from the internal
-`/api/chunks/:x/:y?lod=overview|detail` endpoint. Terrain and
-ambient decorations are reconstructed client-side; this endpoint is not an
-MCP resource and external agents should use the tools and resources below.
+the version-2 vendor `Accept` header. The initial visible rectangle uses the
+internal `/api/world/viewport` batch endpoint; `/api/chunks/:x/:y` remains the
+rolling-deploy fallback. Terrain and ambient decorations are reconstructed
+client-side; these endpoints are not MCP resources and external agents should
+use the tools and resources below.
 
 This document is intended for AI agents and developers integrating through the
 Model Context Protocol (MCP).
