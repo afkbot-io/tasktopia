@@ -26,6 +26,7 @@ const transport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
 });
 const expectedTools = [
   "country.get_current", "country.list", "country.select", "country.update_profile",
+  "world_generation.get",
   "archive.get", "archive.record_list", "archive.record_create", "archive.record_update", "archive.record_delete",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
   "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
