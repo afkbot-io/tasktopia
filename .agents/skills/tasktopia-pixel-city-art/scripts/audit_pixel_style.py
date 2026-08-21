@@ -207,6 +207,13 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         footprint = prop.get("footprintCells", [])
         if len(footprint) != 2 or min(footprint, default=0) <= 0:
             errors.append(f"{label}: invalid footprint")
+        if key.startswith("tree-") and footprint == [1, 1]:
+            alpha = image.getchannel("A")
+            contact = [x for y in range(max(0, image.height - 4), image.height)
+                       for x in range(image.width) if alpha.getpixel((x, y)) > 0]
+            anchor_x = image.width / 2 - 0.5
+            if not contact or abs(sum(contact) / len(contact) - anchor_x) > 1.5:
+                errors.append(f"{label}: tree ground contact is not centred on its 8x8 cell")
         bounds = opaque_bounds(image)
         minimum_opaque_bounds = {
             "city-bus-horizontal": (20, 7),
@@ -341,7 +348,7 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         if set(orientations) != {"horizontal", "north", "south"}:
             errors.append(f"vehicles/{variant}: expected exactly horizontal, north and south views")
         for orientation, vehicle in sorted(orientations.items()):
-            expected = (16, 8) if orientation == "horizontal" else (8, 16)
+            expected = (24, 16) if orientation == "horizontal" else (16, 24)
             image = audit_image(str(vehicle.get("path", "")), f"vehicles/{variant}/{orientation}", expected_size=expected)
             if image is None:
                 continue
@@ -350,14 +357,14 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
             bounds = opaque_bounds(image)
             if bounds is not None:
                 width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
-                if orientation == "horizontal" and (width < 13 or height < 6):
+                if orientation == "horizontal" and (width < 21 or height < 12):
                     errors.append(f"vehicles/{variant}/horizontal: model is too small at native scale")
-                if orientation in {"north", "south"} and (width < 6 or height < 13):
+                if orientation in {"north", "south"} and (width < 12 or height < 21):
                     errors.append(f"vehicles/{variant}/{orientation}: model is too small at native scale")
             if vehicle.get("artSource") != "AI_AUTHORED" or not vehicle.get("sourceSheet"):
                 errors.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
-            if vehicle.get("visualProfile") != "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE":
-                errors.append(f"vehicles/{variant}/{orientation}: wrong V5 oblique-road visual profile")
+            if vehicle.get("visualProfile") != "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE":
+                errors.append(f"vehicles/{variant}/{orientation}: wrong V6 native-road visual profile")
         horizontal = orientations.get("horizontal")
         north = orientations.get("north")
         south = orientations.get("south")

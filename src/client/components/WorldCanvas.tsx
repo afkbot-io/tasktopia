@@ -28,7 +28,7 @@ import {
   vehiclePresentation,
   mustYieldAtCrosswalk,
   mustYieldForBlockedJunctionExit,
-  mustYieldAtTrafficSignal,
+  trafficSignalDecision,
   trafficSignalPhase,
   walkerInteractionPairs,
   type AgentEdges,
@@ -46,6 +46,8 @@ import {
   fitCameraScale,
   cityDetailFocusBounds,
   minimumCameraScale,
+  nextCameraTargetScale,
+  pixelPerfectCameraScale,
 } from "../world-camera";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
 import {
@@ -70,9 +72,9 @@ import {
 } from "../../shared/construction-stage";
 
 const CELL_SIZE = 8;
-const DETAIL_LOD_SCALE = 1.12;
-const DETAIL_LOD_ENTER_SCALE = 1.2;
-const DETAIL_LOD_EXIT_SCALE = 1.04;
+const DETAIL_LOD_SCALE = 1;
+const DETAIL_LOD_ENTER_SCALE = 1;
+const DETAIL_LOD_EXIT_SCALE = 1;
 // JSON and PNG decoding are deliberately separate pipelines. Holding a chunk
 // request slot while Pixi downloads sprites made every slow image stall all
 // following chunks in waves of three.
@@ -1030,6 +1032,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         route: Cell[];
         routeIndex: number;
         lastStopKey?: string;
+        signalReservationId?: string;
+        waitMs: number;
         visualKey: string;
       };
       let movingAgents: MovingAgent[] = [];
@@ -1092,7 +1096,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       };
       const orientRoadUser = (agent: MovingAgent): void => {
         if (agent.kind === "CAR" || agent.kind === "BUS") {
-          const presentation = vehiclePresentation(agent.current, agent.next, agent.kind === "BUS" ? 1 : 1.2);
+          const presentation = vehiclePresentation(agent.current, agent.next);
           agent.view.scale.set(presentation.scaleX, presentation.scaleY);
         } else if (agent.kind === "WALKER") {
           const presentation = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase);
@@ -1149,6 +1153,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         cruiseSpeed,
         path: plannedVehiclePath(agent),
         trail: agent.trail,
+        waitMs: agent.waitMs,
       });
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
@@ -1180,13 +1185,29 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         }
         const motorAgents = movingAgents
           .filter((agent): agent is MovingAgent & { kind: "CAR" | "BUS" } => agent.kind === "CAR" || agent.kind === "BUS");
+        const signalDecisions = new Map(motorAgents.map((agent) => {
+          const decision = trafficSignalDecision(
+            agent.current,
+            agent.next,
+            trafficJunctions,
+            simulationTimeMs,
+            agent.kind,
+            agent.signalReservationId,
+          );
+          agent.signalReservationId = decision.reservationId;
+          return [agent.id, decision] as const;
+        }));
         const trafficPositions = motorAgents.map((agent) => vehicleSnapshot(agent));
         const trafficSnapshot = motorAgents.map((agent, index) => vehicleSnapshot(agent, agent.pauseMs > 0
           || mustYieldAtCrosswalk(agent.next, activeCrosswalks, movingWalkers)
-          || mustYieldAtTrafficSignal(agent.current, agent.next, trafficJunctions, simulationTimeMs, agent.progress)
+          || signalDecisions.get(agent.id)?.yield
           || mustYieldForBlockedJunctionExit(trafficPositions[index]!, trafficJunctions, trafficPositions)
           ? 0 : agent.speed));
         const vehicleFrame = planVehicleFrame(trafficSnapshot, elapsed);
+        for (const agent of motorAgents) {
+          const advance = vehicleFrame.get(agent.id)?.advance ?? 0;
+          agent.waitMs = advance > 0.000_001 ? 0 : agent.waitMs + elapsed;
+        }
         nextTrafficTelemetryMs -= elapsed;
         if (nextTrafficTelemetryMs <= 0) {
           host.dataset.trafficBlockedVehicles = String([...vehicleFrame.values()].filter((decision) => decision.blockedBy).length);
@@ -1205,13 +1226,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             activeCrosswalks,
             movingWalkers,
           )) continue;
-          if ((agent.kind === "CAR" || agent.kind === "BUS") && mustYieldAtTrafficSignal(
-            agent.current,
-            agent.next,
-            trafficJunctions,
-            simulationTimeMs,
-            agent.progress,
-          )) continue;
+          if ((agent.kind === "CAR" || agent.kind === "BUS") && signalDecisions.get(agent.id)?.yield) continue;
           const vehicleDecision = agent.kind === "CAR" || agent.kind === "BUS" ? vehicleFrame.get(agent.id) : undefined;
           agent.progress += vehicleDecision?.advance ?? elapsed * agent.speed;
           while (agent.progress >= 1) {
@@ -1409,8 +1424,16 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         ? 1.25
         : fitCameraScale(app.screen, initialFocus.bounds, CELL_SIZE);
       const focus = initialFocus ? position(initialFocus.point) : { x: 0, y: 0 };
-      const appliedInitialScale = Math.max(initialScale, minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE));
+      const appliedInitialScale = pixelPerfectCameraScale(
+        initialScale,
+        minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+      );
+      let cameraTargetScale = Math.max(
+        initialScale,
+        minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+      );
       world.scale.set(appliedInitialScale);
+      host.dataset.renderScale = String(appliedInitialScale);
       currentLod = appliedInitialScale < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
       world.position.set(app.screen.width / 2 - focus.x * appliedInitialScale, app.screen.height / 2 - focus.y * appliedInitialScale);
       if (initialFocus) {
@@ -1507,7 +1530,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let previous = { x: 0, y: 0 };
       const clampCamera = () => {
         const minimumScale = minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
-        if (world.scale.x < minimumScale) world.scale.set(minimumScale);
+        if (world.scale.x < minimumScale) {
+          cameraTargetScale = Math.max(cameraTargetScale, minimumScale);
+          const scale = pixelPerfectCameraScale(minimumScale, minimumScale);
+          world.scale.set(scale);
+          host.dataset.renderScale = String(scale);
+        }
         const clamped = clampCameraPosition(world.position, world.scale.x, app.screen, currentViewBounds, CELL_SIZE);
         world.position.set(clamped.x, clamped.y);
       };
@@ -1995,6 +2023,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               kind, variant, phase, pauseMs: 0, socialCooldownMs: index * 170 % 2_000,
               activity: "NONE", activityView, steps: index % 17,
               randomState: planned.randomState, route: planned.route, routeIndex: 1, trail: [],
+              waitMs: 0,
               visualKey: walkerPresentation?.key ?? url,
             };
             orientRoadUser(agent);
@@ -2170,7 +2199,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
 
       const lodForScale = (scale: number): MapLod => {
         if (currentLod === "DETAIL") return scale < DETAIL_LOD_EXIT_SCALE ? "OVERVIEW" : "DETAIL";
-        return scale > DETAIL_LOD_ENTER_SCALE ? "DETAIL" : "OVERVIEW";
+        return scale >= DETAIL_LOD_ENTER_SCALE ? "DETAIL" : "OVERVIEW";
       };
       const dataKey = (cacheKey: string, lod: MapLod) => `${cacheKey}:${lod}`;
       const storeChunkData = (cacheKey: string, lod: MapLod, chunk: ChunkDto) => {
@@ -2707,9 +2736,17 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           void loadVisible();
         },
         focus(area) {
-          const scale = Math.max(fitCameraScale(app.screen, area.bounds, CELL_SIZE), minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE));
+          const scale = pixelPerfectCameraScale(
+            fitCameraScale(app.screen, area.bounds, CELL_SIZE),
+            minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+          );
+          cameraTargetScale = Math.max(
+            fitCameraScale(app.screen, area.bounds, CELL_SIZE),
+            minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+          );
           const point = position(area.point);
           world.scale.set(scale);
+          host.dataset.renderScale = String(scale);
           world.position.set(app.screen.width / 2 - point.x * scale, app.screen.height / 2 - point.y * scale);
           host.dataset.focusX = String(area.point.x);
           host.dataset.focusY = String(area.point.y);
@@ -2865,12 +2902,16 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       const wheel = (event: WheelEvent) => {
         event.preventDefault();
         const oldScale = world.scale.x;
-        const newScale = Math.max(0.8, Math.min(4, oldScale * (event.deltaY > 0 ? 0.88 : 1.12)));
+        cameraTargetScale = nextCameraTargetScale(cameraTargetScale, event.deltaY);
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };
-        const appliedScale = Math.max(newScale, minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE));
+        const appliedScale = pixelPerfectCameraScale(
+          cameraTargetScale,
+          minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+        );
         world.scale.set(appliedScale);
+        host.dataset.renderScale = String(appliedScale);
         world.position.set(mouse.x - local.x * appliedScale, mouse.y - local.y * appliedScale);
         clampCamera();
         void loadVisible();

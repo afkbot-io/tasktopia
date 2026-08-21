@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Растительность, кусты, камни и поля пшеницы/кукурузы переведены в chunk-stable seed generator без строк backend; park interior выводится из родительской AREA, legacy `PARK_DECOR` удаляется миграцией и запрещён constraint-ом.
+- Дороги получили профили local `3` и collector/arterial/highway `7`; машины пересобраны в нативном `24×16`, автобус — `56×24`. Stateful admission token, длинная all-red очистка и blocked-exit reservation устраняют встречный въезд и циклические пробки.
+- Семь АЗС объединены V6-дизайном с canvas не меньше `96×72`, footprint не меньше `12×7` и полноразмерными дверями; городской паркинг `96×72` больше не выглядит незавершённым каркасом. Silhouette extractor изолирует оптически центрированные варианты общего stage-листа.
+- Detail zoom использует только целочисленный pixel scale, но накапливает непрерывную target-scale, поэтому граница overview/detail не залипает; animated occupied-box фиксирован между кадрами, статичные resident-фигуры удалены, а tree gate измеряет реальный центр контакта с клеткой `8×8`.
 - Видимый прямоугольник карты теперь собирается настоящей server-side batch-операцией: один L2 range read, один bounded spatial snapshot, ограниченная параллельность build, один JSONB UPSERT и один retention pass. Seed terrain остаётся на экране и переиспользуется при приходе инфраструктурного overlay.
 - Геометрическая генерация вынесена в durable PostgreSQL queue отдельного `world` runtime. Длинные jobs обновляют lease, безопасно повторяются по idempotency key и после bounded wait возвращают явный accepted-контракт с HTTP/MCP polling вместо ложной ошибки.
 - Task/district placement использует один command-scoped spatial snapshot; новые road cells и masks записываются set-based операциями. Compact district runs добавлены additive/dual-read миграцией с parity и сохранённым legacy rollback-path.

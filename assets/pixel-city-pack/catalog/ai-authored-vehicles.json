@@ -1,82 +1,10 @@
 [
-  {
-    "key": "compact-blue",
-    "label": "Синий компакт",
-    "sheet": "ai-authored/ambient/vehicle-compact-blue-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  },
-  {
-    "key": "sedan-red",
-    "label": "Красный седан",
-    "sheet": "ai-authored/ambient/vehicle-sedan-red-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  },
-  {
-    "key": "taxi-yellow",
-    "label": "Городское такси",
-    "sheet": "ai-authored/ambient/vehicle-taxi-yellow-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  },
-  {
-    "key": "estate-green",
-    "label": "Зелёный универсал",
-    "sheet": "ai-authored/ambient/vehicle-estate-green-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  },
-  {
-    "key": "electric-teal",
-    "label": "Бирюзовый электромобиль",
-    "sheet": "ai-authored/ambient/vehicle-electric-teal-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  },
-  {
-    "key": "delivery-cream",
-    "label": "Светлый фургон",
-    "sheet": "ai-authored/ambient/vehicle-delivery-cream-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  },
-  {
-    "key": "pickup-orange",
-    "label": "Оранжевый пикап",
-    "sheet": "ai-authored/ambient/vehicle-pickup-orange-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  },
-  {
-    "key": "classic-burgundy",
-    "label": "Бордовый ретро-автомобиль",
-    "sheet": "ai-authored/ambient/vehicle-classic-burgundy-v3.png",
-    "segments": 3,
-    "orientationSegments": { "horizontal": 0, "north": 1, "south": 2 },
-    "size": [16, 8],
-    "footprintCells": [2, 1],
-    "reviewed": true
-  }
+  {"key":"compact-blue","label":"Синий компакт","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":0,"segments":24,"orientationSegments":{"horizontal":0,"north":8,"south":16},"size":[24,16],"footprintCells":[3,2],"reviewed":true},
+  {"key":"sedan-red","label":"Красный седан","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":1,"segments":24,"orientationSegments":{"horizontal":1,"north":9,"south":17},"size":[24,16],"footprintCells":[3,2],"reviewed":true},
+  {"key":"taxi-yellow","label":"Городское такси","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":2,"segments":24,"orientationSegments":{"horizontal":2,"north":10,"south":18},"size":[24,16],"footprintCells":[3,2],"reviewed":true},
+  {"key":"estate-green","label":"Зелёный универсал","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":3,"segments":24,"orientationSegments":{"horizontal":3,"north":11,"south":19},"size":[24,16],"footprintCells":[3,2],"reviewed":true},
+  {"key":"electric-teal","label":"Бирюзовый электромобиль","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":4,"segments":24,"orientationSegments":{"horizontal":4,"north":12,"south":20},"size":[24,16],"footprintCells":[3,2],"reviewed":true},
+  {"key":"delivery-cream","label":"Светлый фургон","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":5,"segments":24,"orientationSegments":{"horizontal":5,"north":13,"south":21},"size":[24,16],"footprintCells":[3,2],"reviewed":true},
+  {"key":"pickup-orange","label":"Оранжевый пикап","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":6,"segments":24,"orientationSegments":{"horizontal":6,"north":14,"south":22},"size":[24,16],"footprintCells":[3,2],"reviewed":true},
+  {"key":"classic-burgundy","label":"Бордовый ретро-автомобиль","sheet":"ai-authored/ambient/vehicles-v4.png","grid":[8,3],"segment":7,"segments":24,"orientationSegments":{"horizontal":7,"north":15,"south":23},"size":[24,16],"footprintCells":[3,2],"reviewed":true}
 ]

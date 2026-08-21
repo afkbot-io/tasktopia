@@ -492,7 +492,7 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     // Green areas appear together with the first streets of the first complex.
     const greenFeatures = await service.listWorldFeatures(countryId);
     expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
-    expect(greenFeatures.some((feature) => feature.kind === "PARK_DECOR")).toBe(true);
+    expect(greenFeatures.some((feature) => feature.kind === "PARK_DECOR")).toBe(false);
     expect(greenFeatures.filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK")).toEqual([]);
     const defect = await service.createTaskDefect(countryId, {
       taskId: task.id, title: "Broken path", reproductionSteps: "Open the map", actualResult: "Path breaks", expectedResult: "Path stays whole",
@@ -854,18 +854,13 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const task = await service.createTask(countryId, { cityId: city.id, districtId: active.id, title: "Disposable Task", estimate: 1, idempotencyKey: "lifecycle-task" });
     await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", comment: "Creates dependent history", idempotencyKey: "lifecycle-start" });
     const areaId = randomUUID();
-    const decorId = randomUUID();
     const featureCell = active.cells[0]!;
     await db.prepare(`INSERT INTO world_features_v6
       (id,country_id,city_id,district_id,parent_feature_id,kind,asset_kind,asset_key,origin_x,origin_y,footprint_json,orientation,access_json,created_at)
       VALUES (?,?,?,?,?,'PARK','AREA','urban-park',?,?,?::jsonb,'S','[]'::jsonb,?)`)
       .run(areaId, countryId, city.id, active.id, null, featureCell.x, featureCell.y, JSON.stringify([featureCell]), new Date().toISOString());
-    await db.prepare(`INSERT INTO world_features_v6
-      (id,country_id,city_id,district_id,parent_feature_id,kind,asset_kind,asset_key,origin_x,origin_y,footprint_json,orientation,access_json,created_at)
-      VALUES (?,?,?,?,?,'PARK_DECOR','PROP','bench-horizontal',?,?,?::jsonb,'S','[]'::jsonb,?)`)
-      .run(decorId, countryId, city.id, active.id, areaId, featureCell.x, featureCell.y, JSON.stringify([featureCell]), new Date().toISOString());
     const ownedFeatures = await db.prepare("SELECT id FROM world_features_v6 WHERE district_id = ?").all(active.id);
-    expect(ownedFeatures.map((row) => row.id)).toEqual(expect.arrayContaining([areaId, decorId]));
+    expect(ownedFeatures.map((row) => row.id)).toEqual(expect.arrayContaining([areaId]));
 
     await expect(service.deleteTask(countryId, { taskId: task.id, confirmTitle: "wrong", idempotencyKey: "delete-task-wrong" }))
       .rejects.toThrowError(/точное текущее название/);
@@ -884,7 +879,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     // parks remain, and the demolished task became a ruin plot.
     expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === active.id)).toMatchObject({ status: "ABANDONED", cells: [], lots: [] });
     const remainingFeatures = await db.prepare("SELECT kind FROM world_features_v6 WHERE district_id = ?").all(active.id);
-    expect(remainingFeatures.map((row) => String(row.kind))).toEqual(expect.arrayContaining(["PARK", "PARK_DECOR", "RUIN"]));
+    expect(remainingFeatures.map((row) => String(row.kind))).toEqual(expect.arrayContaining(["PARK", "RUIN"]));
+    expect(remainingFeatures.map((row) => String(row.kind))).not.toContain("PARK_DECOR");
     expect(await db.prepare("SELECT 1 FROM world_chunk_entities_v11 WHERE entity_kind = 'FEATURE' AND entity_id = ANY(?::text[])").get(ownedFeatures.map((row) => String(row.id)))).not.toBeUndefined();
     const deletionEvent = (await service.listEvents(countryId)).findLast((event) => event.type === "district.deleted");
     const affected = deletionEvent?.payload.affectedBounds as { minX: number; minY: number; maxX: number; maxY: number };

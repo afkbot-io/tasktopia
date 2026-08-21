@@ -15,13 +15,14 @@ import { greenAreaPathCells } from "../../shared/green-area";
 import { cellKey, contains, expandRect, neighbors4, rectangleFootprint } from "./grid";
 
 export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
-  // A local street has one 8 px travel cell in each direction. Larger roads
-  // add one central marking/median cell; the two outer cells remain the only
-  // travel lanes. No canonical road is wider than three cells.
-  LOCAL: 2,
-  COLLECTOR: 3,
-  ARTERIAL: 3,
-  HIGHWAY: 3,
+  // V2 always separates opposing streams. Local streets use two outer travel
+  // cells and one central marking. Bus-capable roads use two-cell-wide median
+  // clearance plus an outer shoulder, so honest 22px buses never need runtime
+  // squeezing and can pass without touching the sidewalk or opposing traffic.
+  LOCAL: 3,
+  COLLECTOR: 7,
+  ARTERIAL: 7,
+  HIGHWAY: 7,
 };
 
 /** Keep annex site search near fresh land instead of rescanning the whole old district. */

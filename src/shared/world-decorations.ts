@@ -36,6 +36,40 @@ function footprint(origin: Cell, width: number, height: number): Cell[] {
   return Array.from({ length: width * height }, (_, index) => ({ x: origin.x + index % width, y: origin.y + Math.floor(index / width) }));
 }
 
+type SeededNaturePatch = "WHEAT" | "CORN" | "SHRUB" | "ROCK";
+
+/**
+ * Macro-cell patches are evaluated from world coordinates, not chunk-local
+ * iteration state. Adjacent chunks therefore reproduce the same field edge.
+ * A patch is a composition rule; the backend never stores its cells.
+ */
+function seededNaturePatch(seed: number, cell: Cell): SeededNaturePatch | undefined {
+  const macroSize = 20;
+  const macroX = Math.floor(cell.x / macroSize);
+  const macroY = Math.floor(cell.y / macroSize);
+  const localX = cell.x - macroX * macroSize;
+  const localY = cell.y - macroY * macroSize;
+  const roll = hashCoordinate(seed, macroX, macroY, 881);
+  const patch: SeededNaturePatch | undefined = roll < 0.18 ? "WHEAT"
+    : roll < 0.34 ? "CORN"
+      : roll < 0.5 ? "SHRUB"
+        : roll < 0.58 ? "ROCK" : undefined;
+  if (!patch) return undefined;
+  const centerX = 7 + Math.floor(hashCoordinate(seed, macroX, macroY, 883) * 6);
+  const centerY = 7 + Math.floor(hashCoordinate(seed, macroX, macroY, 887) * 6);
+  if (patch === "WHEAT" || patch === "CORN") {
+    const halfWidth = 4 + Math.floor(hashCoordinate(seed, macroX, macroY, 907) * 2);
+    const halfHeight = 3 + Math.floor(hashCoordinate(seed, macroX, macroY, 911) * 2);
+    return Math.abs(localX - centerX) <= halfWidth && Math.abs(localY - centerY) <= halfHeight ? patch : undefined;
+  }
+  const dx = localX - centerX;
+  const dy = localY - centerY;
+  const radius = patch === "SHRUB" ? 4 : 3;
+  const inside = dx * dx + dy * dy <= radius * radius;
+  const density = patch === "SHRUB" ? 0.68 : 0.52;
+  return inside && hashCoordinate(seed, cell.x, cell.y, 919) < density ? patch : undefined;
+}
+
 // Keep the deterministic generator independent from the asset manifest. The
 // worker needs geometry only; importing the full catalog duplicated hundreds
 // of kilobytes of sprite metadata in its bundle.
@@ -60,7 +94,7 @@ export function generateWorldDecorations(
   tasks: DecorationTask[],
 ): DecorationDto[] {
   const result: DecorationDto[] = [];
-  const ambientCounts = { boats: 0, fishers: 0, residents: 0 };
+  const ambientCounts = { boats: 0, fishers: 0 };
   const occupied = new Set(blocked);
   const terrainByCell = new Map(terrain.map((cell) => [key(cell), cell]));
   const surfaceKeys = new Set(surfaces.map(key));
@@ -92,18 +126,28 @@ export function generateWorldDecorations(
     let clearance = 0;
     const district = districtByCell.get(key(cell));
     const shoreDirection = (cell.terrain === "SAND" || cell.terrain === "WET_SAND") && closeToCity(cell) ? waterDirection(cell) : undefined;
-    if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && ambientCounts.boats < 3 && chance < 0.0005) {
+    const naturePatch = !district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && !closeToCity(cell, 24)
+      ? seededNaturePatch(seed, cell) : undefined;
+    if (naturePatch === "WHEAT") {
+      kind = hashCoordinate(seed, cell.x, cell.y, 929) < 0.5 ? "crop-wheat-a" : "crop-wheat-b";
+    } else if (naturePatch === "CORN") {
+      kind = hashCoordinate(seed, cell.x, cell.y, 937) < 0.5 ? "crop-corn-a" : "crop-corn-b";
+    } else if (naturePatch === "SHRUB") {
+      const shrubs = ["shrub-hazel", "shrub-fern", "shrub-flowering", "shrub-hedge", "shrub-juniper"];
+      kind = shrubs[Math.floor(hashCoordinate(seed, cell.x, cell.y, 941) * shrubs.length)];
+    } else if (naturePatch === "ROCK") {
+      kind = hashCoordinate(seed, cell.x, cell.y, 947) < 0.72 ? "rock-small" : "rock-cluster";
+    } else if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && ambientCounts.boats < 3 && chance < 0.0005) {
       const horizontal = hashCoordinate(seed, cell.x, cell.y, 719) < 0.5;
       kind = `boat-${horizontal ? "horizontal" : "vertical"}-${hashCoordinate(seed, cell.x, cell.y, 727) < 0.5 ? "a" : "b"}`;
     } else if (shoreDirection && !closeToBlocked(cell, 1) && ambientCounts.fishers < 2 && chance < 0.0028) {
       kind = `fisher-${shoreDirection}`;
-    } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && ambientCounts.residents < 4 && chance < 0.014) {
-      const residents = ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"];
+    } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && chance < 0.01) {
       const lampByArchetype: Record<DistrictArchetype, string> = {
         PRIVATE: "streetlamp-vintage", NEW_BUILD: "streetlamp-modern", MIXED_URBAN: "streetlamp-double",
         CIVIC: "streetlamp-solar", COMMERCIAL: "streetlamp-industrial",
       };
-      kind = chance < 0.01 ? lampByArchetype[district?.archetype ?? "MIXED_URBAN"] : residents[Math.floor(hashCoordinate(seed, cell.x, cell.y, 733) * residents.length)];
+      kind = lampByArchetype[district?.archetype ?? "MIXED_URBAN"];
     } else if (district && district.status !== "ACTIVE" && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.006) {
       const own = districtCellKeys.get(district.id)!;
       const edge = DIRECTIONS.findIndex((direction) => !own.has(key({ x: cell.x + direction.x, y: cell.y + direction.y })));
@@ -116,7 +160,7 @@ export function generateWorldDecorations(
     } else if (cell.terrain === "MOUNTAIN" && chance < 0.075) {
       kind = chance < 0.03 ? "mountain-peak" : chance < 0.052 ? "mountain-ridge" : "rock-cluster";
     } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.016) {
-      const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple", "bush-dark", "bush-light", "bush-berries", "shrub-hazel", "shrub-fern", "shrub-flowering", "shrub-dry", "shrub-juniper", "rock-small"];
+      const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple"];
       kind = variants[Math.floor(hashCoordinate(seed, cell.x, cell.y, 709) * variants.length)];
     } else if (cell.terrain === "STONE" && chance < 0.035) kind = chance < 0.017 ? "rock-small" : "rock-cluster";
     else if (cell.terrain === "SHALLOW_WATER" && chance < 0.02) kind = chance < 0.01 ? "reed-green" : "reed-cattail";
@@ -148,7 +192,6 @@ export function generateWorldDecorations(
     result.push({ id: `${kind}:${cell.x}:${cell.y}`, kind, origin: { x: cell.x, y: cell.y } });
     if (kind.startsWith("boat-")) ambientCounts.boats += 1;
     else if (kind.startsWith("fisher-")) ambientCounts.fishers += 1;
-    else if (kind.startsWith("resident-")) ambientCounts.residents += 1;
     for (const part of parts) for (let dy = -clearance; dy <= clearance; dy += 1) for (let dx = -clearance; dx <= clearance; dx += 1) {
       occupied.add(key({ x: part.x + dx, y: part.y + dy }));
     }

@@ -126,8 +126,8 @@ def load_storybook_data() -> tuple[dict[str, Any], list[str]]:
             "group": classify_prop(key),
             "visualProfile": entry.get("visualProfile"),
         })
-        if entry.get("artSource") == "AI_AUTHORED" and not str(entry.get("visualProfile", "")).startswith("TASKTOPIA_V5_"):
-            errors.append(f"{key}: active authored prop does not use the V5 visual profile")
+        if entry.get("artSource") == "AI_AUTHORED" and not str(entry.get("visualProfile", "")).startswith(("TASKTOPIA_V5_", "TASKTOPIA_V6_")):
+            errors.append(f"{key}: active authored prop does not use a V5/V6 visual profile")
 
     vehicles: list[dict[str, Any]] = []
     for key, entry in sorted(manifest["vehicles"].items()):

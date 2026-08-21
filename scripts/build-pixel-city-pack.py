@@ -1998,7 +1998,13 @@ def load_ai_authored_ambient_catalog(name: str) -> list[dict]:
     return entries
 
 
-def load_ai_authored_stage_files(spec: HouseSpec, sources: list[Path]) -> list[Image.Image]:
+def load_ai_authored_stage_files(
+    spec: HouseSpec,
+    sources: list[Path],
+    source_grid: tuple[int, int] | None = None,
+    source_segment: int | None = None,
+    source_row_counts: tuple[int, ...] | None = None,
+) -> list[Image.Image]:
     """Normalize separately reviewed stages through one immutable frame.
 
     Stage five is the geometry authority.  A three-source family represents
@@ -2010,7 +2016,25 @@ def load_ai_authored_stage_files(spec: HouseSpec, sources: list[Path]) -> list[I
     """
     if len(sources) not in {3, 5}:
         raise ValueError(f"{spec.key}: exactly three (stages 3–5) or five stage sources are required")
-    opened = [Image.open(source).convert("RGBA") for source in sources]
+    def open_source(source: Path) -> Image.Image:
+        if source_row_counts is not None and source_segment is not None:
+            remaining = source_segment
+            for row, count in enumerate(source_row_counts):
+                if remaining < count:
+                    return ai_subject_grid_segment(
+                        source,
+                        row * count + remaining,
+                        count,
+                        len(source_row_counts),
+                    )
+                remaining -= count
+            raise ValueError(f"{spec.key}: stage source segment exceeds row layout")
+        return (
+            ai_grid_segment(source, source_segment, source_grid[0], source_grid[1])
+            if source_grid is not None and source_segment is not None
+            else Image.open(source).convert("RGBA")
+        )
+    opened = [open_source(source) for source in sources]
     # A sheet migration stores the already approved runtime normalization as
     # independent sources. Preserve those exact pixels instead of cropping and
     # scaling them for a second time. Fresh large authored sources continue
@@ -2091,6 +2115,27 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         stage_digests = authored.get("stageSha256")
         if len(stage_sources) != 3 or not isinstance(stage_digests, list) or len(stage_digests) != len(stage_sources):
             raise ValueError(f"{authored['key']}: reviewed separate stages require exactly stages 3–5 and matching digests")
+        source_grid = authored.get("stageSourceGrid")
+        source_segment = authored.get("stageSourceSegment")
+        source_rows = authored.get("stageSourceRowCounts")
+        if source_grid is not None and (
+            not isinstance(source_grid, list)
+            or len(source_grid) != 2
+            or any(not isinstance(value, int) or value <= 0 for value in source_grid)
+            or not isinstance(source_segment, int)
+            or source_segment < 0
+            or source_segment >= source_grid[0] * source_grid[1]
+        ):
+            raise ValueError(f"{authored['key']}: invalid shared stage source grid")
+        if source_rows is not None and (
+            not isinstance(source_rows, list)
+            or not source_rows
+            or any(not isinstance(value, int) or value <= 0 for value in source_rows)
+            or not isinstance(source_segment, int)
+            or source_segment < 0
+            or source_segment >= sum(source_rows)
+        ):
+            raise ValueError(f"{authored['key']}: invalid shared stage source row layout")
         for index, (source, expected_digest) in enumerate(zip(stage_sources, stage_digests, strict=True), 3):
             if not source.resolve().is_relative_to(AI_AUTHORED_ART.resolve()):
                 raise ValueError(f"{authored['key']}: stage {index} leaves reference directory")
@@ -2112,7 +2157,18 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         )
         destination = RUNTIME / "buildings" / spec.category.lower() / spec.key
         destination.mkdir(parents=True, exist_ok=True)
-        authored_stages = [building_stage(spec, 1), building_stage(spec, 2), *load_ai_authored_stage_files(spec, ai_stage_sources[spec.key])]
+        source_grid = authored_contract.get("stageSourceGrid")
+        authored_stages = [
+            building_stage(spec, 1),
+            building_stage(spec, 2),
+            *load_ai_authored_stage_files(
+                spec,
+                ai_stage_sources[spec.key],
+                tuple(source_grid) if source_grid else None,
+                authored_contract.get("stageSourceSegment"),
+                tuple(authored_contract["stageSourceRowCounts"]) if authored_contract.get("stageSourceRowCounts") else None,
+            ),
+        ]
         stages: list[str] = []
         stage_opaque_bounds: list[list[int]] = []
         for stage in range(1, 6):
@@ -2224,6 +2280,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "size": list(image.size),
             "footprintCells": list(authored_entry["footprintCells"]) if authored_entry else footprint,
             "anchorPx": [image.width // 2, image.height],
+            **({"occupiedSize": list(authored_entry["occupiedSize"])} if authored_entry and authored_entry.get("occupiedSize") else {}),
             **ai_prop_metadata.get(key, {}),
         }
 
@@ -2239,23 +2296,35 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             source = AI_AUTHORED_ART / authored["sheet"]
             orientation_segments = authored["orientationSegments"]
             segment_count = int(authored["segments"])
+            grid = authored.get("grid")
             axes: dict[str, dict] = {}
-            for orientation, canvas_size in (("horizontal", (16, 8)), ("north", (8, 16)), ("south", (8, 16))):
+            for orientation, canvas_size, occupied_size in (
+                ("horizontal", (24, 16), (22, 13)),
+                ("north", (16, 24), (13, 22)),
+                ("south", (16, 24), (13, 22)),
+            ):
                 segment_index = int(orientation_segments[orientation])
+                source_segment = (
+                    ai_grid_segment(source, segment_index, int(grid[0]), int(grid[1]))
+                    if grid
+                    else ai_sheet_segment(source, segment_index, segment_count)
+                )
                 image = normalize_ai_authored_ambient(
-                    ai_sheet_segment(source, segment_index, segment_count),
+                    source_segment,
                     canvas_size,
-                    occupied_size=(14, 6) if orientation == "horizontal" else (6, 14),
+                    occupied_size=occupied_size,
+                    strict_occupied_bounds=True,
                 )
                 target = vehicle_dir / f"{authored['key']}-{orientation}.png"
                 image.save(target, optimize=True)
                 axes[orientation] = {
                     "path": str(target.relative_to(RUNTIME)),
                     "size": list(canvas_size),
-                    "footprintCells": [2, 1] if orientation == "horizontal" else [1, 2],
+                    "occupiedSize": list(occupied_size),
+                    "footprintCells": [3, 2] if orientation == "horizontal" else [2, 3],
                     "artSource": "AI_AUTHORED",
                     "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
-                    "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+                    "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
                     "baseFacing": "EAST" if orientation == "horizontal" else orientation.upper(),
                 }
             vehicle_manifest[authored["key"]] = axes
@@ -2353,14 +2422,14 @@ def validate(manifest: dict) -> None:
         horizontal = Image.open(RUNTIME / orientations["horizontal"]["path"]).convert("RGBA")
         north = Image.open(RUNTIME / orientations["north"]["path"]).convert("RGBA")
         south = Image.open(RUNTIME / orientations["south"]["path"]).convert("RGBA")
-        assert horizontal.size == (16, 8), (variant, horizontal.size)
-        assert north.size == (8, 16), (variant, north.size)
-        assert south.size == (8, 16), (variant, south.size)
+        assert horizontal.size == (24, 16), (variant, horizontal.size)
+        assert north.size == (16, 24), (variant, north.size)
+        assert south.size == (16, 24), (variant, south.size)
         for orientation, image in (("north", north), ("south", south)):
             bounds = image.getchannel("A").getbbox()
-            assert bounds is not None and bounds[2] - bounds[0] >= 6 and bounds[3] - bounds[1] >= 13, (variant, bounds, f"{orientation} car must remain readable")
+            assert bounds is not None and bounds[2] - bounds[0] >= 12 and bounds[3] - bounds[1] >= 21, (variant, bounds, f"{orientation} car must remain readable")
         horizontal_bounds = horizontal.getchannel("A").getbbox()
-        assert horizontal_bounds is not None and horizontal_bounds[2] - horizontal_bounds[0] >= 13 and horizontal_bounds[3] - horizontal_bounds[1] >= 6, (variant, horizontal_bounds, "horizontal car must remain readable")
+        assert horizontal_bounds is not None and horizontal_bounds[2] - horizontal_bounds[0] >= 21 and horizontal_bounds[3] - horizontal_bounds[1] >= 12, (variant, horizontal_bounds, "horizontal car must remain readable")
 
 
 def contact_sheet(manifest: dict, specs: list[HouseSpec]) -> None:

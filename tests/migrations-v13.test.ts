@@ -20,8 +20,17 @@ describe("PostgreSQL migrations", () => {
       "0016_chunk_local_district_cells.sql",
       "0017_world_generation_jobs.sql",
       "0018_compact_spatial_indexes.sql",
+      "0019_seeded_area_decor.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("forbids durable rows for seed-derived park interiors", async () => {
+    const constraint = await db.prepare(`SELECT pg_get_constraintdef(oid) AS definition
+      FROM pg_constraint
+      WHERE conrelid = 'world_features_v6'::regclass
+        AND conname = 'world_features_v6_no_derived_park_decor'`).get<{ definition: string }>();
+    expect(constraint?.definition).toContain("kind <> 'PARK_DECOR'");
   });
 
   it("creates a durable idempotent queue for isolated world generation", async () => {

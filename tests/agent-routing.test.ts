@@ -8,6 +8,7 @@ import {
   mustYieldAtCrosswalk,
   detectTrafficJunctions,
   mustYieldAtTrafficSignal,
+  trafficSignalDecision,
   mustYieldForBlockedJunctionExit,
   trafficSignalPhase,
   nextSeededRandom,
@@ -26,8 +27,8 @@ import {
 } from "../src/client/agent-routing";
 
 const TEST_VEHICLE_BODY = {
-  CAR: { length: 2.1, width: 0.9 },
-  BUS: { length: 5.75, width: 1.875 },
+  CAR: { length: 2.75, width: 1.625 },
+  BUS: { length: 6.75, width: 2.75 },
 } as const;
 
 function independentlyOverlaps(left: TrafficVehicleSnapshot, right: TrafficVehicleSnapshot): boolean {
@@ -174,10 +175,67 @@ describe("living city agent routing", () => {
   });
 
   it("maps every travel direction to the matching base sprite and mirror", () => {
-    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 2, y: 1 })).toEqual({ view: "horizontal", scaleX: 1.2, scaleY: 1.2 });
-    expect(vehiclePresentation({ x: 2, y: 1 }, { x: 1, y: 1 })).toEqual({ view: "horizontal", scaleX: -1.2, scaleY: 1.2 });
-    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 1, y: 2 })).toEqual({ view: "south", scaleX: 1.2, scaleY: 1.2 });
-    expect(vehiclePresentation({ x: 1, y: 2 }, { x: 1, y: 1 })).toEqual({ view: "north", scaleX: 1.2, scaleY: 1.2 });
+    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 2, y: 1 })).toEqual({ view: "horizontal", scaleX: 1, scaleY: 1 });
+    expect(vehiclePresentation({ x: 2, y: 1 }, { x: 1, y: 1 })).toEqual({ view: "horizontal", scaleX: -1, scaleY: 1 });
+    expect(vehiclePresentation({ x: 1, y: 1 }, { x: 1, y: 2 })).toEqual({ view: "south", scaleX: 1, scaleY: 1 });
+    expect(vehiclePresentation({ x: 1, y: 2 }, { x: 1, y: 1 })).toEqual({ view: "north", scaleX: 1, scaleY: 1 });
+  });
+
+  it("gives the longest-waiting approach deterministic junction priority", () => {
+    const common = {
+      kind: "CAR" as const,
+      progress: 0.6,
+      cruiseSpeed: 0.0024,
+    };
+    const oldQueue: TrafficVehicleSnapshot = {
+      ...common,
+      id: "z-old",
+      waitMs: 6_000,
+      current: { x: -2, y: 0 }, next: { x: -1, y: 0 },
+      path: [{ x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }],
+    };
+    const newQueue: TrafficVehicleSnapshot = {
+      ...common,
+      id: "a-new",
+      waitMs: 200,
+      current: { x: 0, y: -2 }, next: { x: 0, y: -1 },
+      path: [{ x: 0, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }],
+    };
+    const decisions = planVehicleFrame([oldQueue, newQueue], 50);
+    expect(decisions.get("z-old")!.advance).toBeGreaterThan(decisions.get("a-new")!.advance);
+    expect(decisions.get("a-new")!.blockedBy).toBe("z-old");
+  });
+
+  it("does not let a distant queued follower reserve a junction before its leader", () => {
+    const near: TrafficVehicleSnapshot = {
+      id: "near", kind: "CAR", current: { x: -3, y: 0 }, next: { x: -2, y: 0 },
+      progress: 0.5, cruiseSpeed: 0.0024,
+      path: [{ x: -3, y: 0 }, { x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }],
+    };
+    const remote: TrafficVehicleSnapshot = {
+      id: "remote", kind: "CAR", current: { x: 0, y: -12 }, next: { x: 0, y: -11 },
+      progress: 0.1, cruiseSpeed: 0.0024, waitMs: 20_000,
+      path: Array.from({ length: 14 }, (_, index) => ({ x: 0, y: index - 12 })),
+    };
+
+    expect(planVehicleFrame([near, remote], 50).get("near")?.advance).toBeGreaterThan(0);
+  });
+
+  it("lets a vehicle inside the conflict zone clear before an older approach", () => {
+    const clearing: TrafficVehicleSnapshot = {
+      id: "clearing", kind: "CAR", current: { x: 1, y: 0 }, next: { x: 2, y: 0 },
+      progress: 0.9, cruiseSpeed: 0.0024, waitMs: 0,
+      path: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }],
+    };
+    const approach: TrafficVehicleSnapshot = {
+      id: "approach", kind: "CAR", current: { x: 2, y: 4 }, next: { x: 2, y: 3 },
+      progress: 0.2, cruiseSpeed: 0.0024, waitMs: 8_000,
+      path: [{ x: 2, y: 4 }, { x: 2, y: 3 }, { x: 2, y: 2 }, { x: 2, y: 1 }, { x: 2, y: 0 }],
+    };
+    const decisions = planVehicleFrame([clearing, approach], 50);
+
+    expect(decisions.get("clearing")?.advance).toBeGreaterThan(0);
+    expect(decisions.get("clearing")?.blockedBy).toBeUndefined();
   });
 
   it("animates suspension by travelled distance and settles blocked queues", () => {
@@ -189,13 +247,13 @@ describe("living city agent routing", () => {
   });
 
   it("keeps vehicles inset toward the centre of their carriageway through turns", () => {
-    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 11.5 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 12.5 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 19.5, y: 8 });
+    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 13 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 11 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 21, y: 8 });
     const turnStart = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 0, { x: 0, y: 1 });
     const turnEnd = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 1, { x: 0, y: 1 });
-    expect(turnStart).toEqual({ x: 12, y: 11.5 });
-    expect(turnEnd).toEqual({ x: 11.5, y: 4 });
+    expect(turnStart).toEqual({ x: 12, y: 13 });
+    expect(turnEnd).toEqual({ x: 13, y: 4 });
   });
 
   it("detects real T/X junctions but not an ordinary ninety-degree bend", () => {
@@ -221,11 +279,15 @@ describe("living city agent routing", () => {
     const junction = detectTrafficJunctions(graph)[0]!;
     const horizontalGreenAt = Array.from({ length: 8_000 }, (_, time) => time).find((time) => trafficSignalPhase(junction, time).horizontal === "GREEN")!;
     const horizontalRedAt = Array.from({ length: 8_000 }, (_, time) => time).find((time) => trafficSignalPhase(junction, time).horizontal === "RED")!;
-    const current = { x: -2, y: 0 };
-    const next = { x: -1, y: 0 };
+    const current = { x: -5, y: 0 };
+    const next = { x: -4, y: 0 };
     expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalGreenAt)).toBe(false);
     expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt)).toBe(true);
-    expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt, 0.1)).toBe(false);
+    expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt, 0.1)).toBe(true);
+    expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt, 0.3)).toBe(true);
+    const admitted = trafficSignalDecision(current, next, [junction], horizontalGreenAt, "CAR");
+    expect(admitted.reservationId).toBe(junction.id);
+    expect(trafficSignalDecision(current, next, [junction], horizontalRedAt, "CAR", admitted.reservationId).yield).toBe(false);
   });
 
   it("does not enter an intersection when the exit lane cannot fit the vehicle", () => {
@@ -310,12 +372,12 @@ describe("living city agent routing", () => {
     const westbound: TrafficVehicleSnapshot = {
       id: "westbound",
       kind: "CAR",
-      current: { x: 2, y: -1 },
-      next: { x: 1, y: -1 },
+      current: { x: 2, y: -2 },
+      next: { x: 1, y: -2 },
       progress: 0.98,
       cruiseSpeed: 0.0024,
-      path: Array.from({ length: 8 }, (_, index) => ({ x: 2 - index, y: -1 })),
-      trail: [{ x: 3, y: -1 }],
+      path: Array.from({ length: 8 }, (_, index) => ({ x: 2 - index, y: -2 })),
+      trail: [{ x: 3, y: -2 }],
     };
 
     expect(vehicleUnsafePairCount([eastbound, westbound])).toBe(0);
@@ -329,11 +391,13 @@ describe("living city agent routing", () => {
       trail: { x: number; y: number }[];
       baseSpeed: number;
       stoppedMs: number;
+      waitMs: number;
+      signalReservationId?: string;
     };
     const junction: TrafficJunction = {
       id: "queue-drain",
-      bounds: { minX: -1, minY: -1, maxX: 0, maxY: 0 },
-      cells: [{ x: -1, y: -1 }, { x: 0, y: -1 }, { x: -1, y: 0 }, { x: 0, y: 0 }],
+      bounds: { minX: -3, minY: -3, maxX: 3, maxY: 3 },
+      cells: Array.from({ length: 49 }, (_, index) => ({ x: index % 7 - 3, y: Math.floor(index / 7) - 3 })),
       arms: ["N", "E", "S", "W"],
       signalPosts: [],
     };
@@ -342,10 +406,10 @@ describe("living city agent routing", () => {
       (_, index) => start + Math.sign(end - start) * index,
     );
     const routes = {
-      east: range(-32, 32).map((x) => ({ x, y: 0 })),
-      west: range(32, -32).map((x) => ({ x, y: -1 })),
-      south: range(-32, 32).map((y) => ({ x: -1, y })),
-      north: range(32, -32).map((y) => ({ x: 0, y })),
+      east: range(-32, 32).map((x) => ({ x, y: 2 })),
+      west: range(32, -32).map((x) => ({ x, y: -2 })),
+      south: range(-32, 32).map((y) => ({ x: -2, y })),
+      north: range(32, -32).map((y) => ({ x: 2, y })),
     };
     const vehicles: SimVehicle[] = [];
     for (const [approach, route] of Object.entries(routes)) {
@@ -362,6 +426,7 @@ describe("living city agent routing", () => {
           path,
           trail: [],
           stoppedMs: 0,
+          waitMs: 0,
         });
       }
     }
@@ -370,8 +435,16 @@ describe("living city agent routing", () => {
     let maxStoppedMs = 0;
     while (vehicles.length > 0 && elapsedMs < 120_000) {
       for (const vehicle of vehicles) {
-        vehicle.cruiseSpeed = mustYieldAtTrafficSignal(vehicle.current, vehicle.next, [junction], elapsedMs, vehicle.progress)
-          || mustYieldForBlockedJunctionExit(vehicle, [junction], vehicles)
+        const signal = trafficSignalDecision(
+          vehicle.current,
+          vehicle.next,
+          [junction],
+          elapsedMs,
+          vehicle.kind,
+          vehicle.signalReservationId,
+        );
+        vehicle.signalReservationId = signal.reservationId;
+        vehicle.cruiseSpeed = signal.yield || mustYieldForBlockedJunctionExit(vehicle, [junction], vehicles)
           ? 0
           : vehicle.baseSpeed;
       }
@@ -379,6 +452,7 @@ describe("living city agent routing", () => {
       for (const vehicle of vehicles) {
         const advance = decisions.get(vehicle.id)?.advance ?? 0;
         vehicle.stoppedMs = advance < 0.0001 ? vehicle.stoppedMs + 50 : 0;
+        vehicle.waitMs = advance < 0.0001 ? vehicle.waitMs + 50 : 0;
         maxStoppedMs = Math.max(maxStoppedMs, vehicle.stoppedMs);
         vehicle.progress += advance;
         if (vehicle.progress < 1) continue;
@@ -450,9 +524,9 @@ describe("living city agent routing", () => {
         path: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }], trail: [{ x: -1, y: 0 }],
       },
       {
-        id: "waiting", kind: "CAR" as const, current: { x: 0, y: -2 }, next: { x: 0, y: -1 },
+        id: "waiting", kind: "CAR" as const, current: { x: 0, y: -3 }, next: { x: 0, y: -2 },
         progress: 0.4, cruiseSpeed: 0.0024,
-        path: [{ x: 0, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }],
+        path: [{ x: 0, y: -3 }, { x: 0, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }],
       },
     ];
     const decisions = planVehicleFrame(vehicles, 50);
@@ -543,14 +617,14 @@ describe("living city agent routing", () => {
 
   it("prevents an adjacent turning bus body from sweeping through a car", () => {
     const car = {
-      id: "car", kind: "CAR" as const, current: { x: 1, y: 9 }, next: { x: 1, y: 8 },
+      id: "car", kind: "CAR" as const, current: { x: 2, y: 9 }, next: { x: 2, y: 8 },
       progress: 0.36, cruiseSpeed: 0.0024,
-      path: [{ x: 1, y: 9 }, { x: 1, y: 8 }, { x: 1, y: 7 }], trail: [{ x: 1, y: 10 }],
+      path: [{ x: 2, y: 9 }, { x: 2, y: 8 }, { x: 2, y: 7 }], trail: [{ x: 2, y: 10 }],
     };
     const bus = {
       id: "bus", kind: "BUS" as const, current: { x: -1, y: 8 }, next: { x: -1, y: 9 },
       progress: 0.94, cruiseSpeed: 0.0019,
-      path: [{ x: -1, y: 8 }, { x: -1, y: 9 }, { x: 0, y: 9 }, { x: 1, y: 9 }], trail: [{ x: -1, y: 7 }],
+      path: [{ x: -1, y: 8 }, { x: -1, y: 9 }, { x: 0, y: 9 }, { x: 1, y: 9 }, { x: 2, y: 9 }], trail: [{ x: -1, y: 7 }],
     };
     const decisions = planVehicleFrame([car, bus], 50);
     const project = (vehicle: TrafficVehicleSnapshot, advance: number): TrafficVehicleSnapshot => {
@@ -576,9 +650,9 @@ describe("living city agent routing", () => {
 
   it("checks continuously immediately before a bus changes orientation", () => {
     const bus = {
-      id: "bus", kind: "BUS" as const, current: { x: -1, y: 1 }, next: { x: -1, y: 0 },
+      id: "bus", kind: "BUS" as const, current: { x: -2, y: 1 }, next: { x: -2, y: 0 },
       progress: 0.962146, cruiseSpeed: 0.0019,
-      path: [{ x: -1, y: 1 }, { x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }], trail: [{ x: -1, y: 2 }],
+      path: [{ x: -2, y: 1 }, { x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 }], trail: [{ x: -2, y: 2 }],
     };
     const car = {
       id: "car", kind: "CAR" as const, current: { x: 1, y: -2 }, next: { x: 1, y: -1 },

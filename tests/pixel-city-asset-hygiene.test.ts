@@ -9,9 +9,9 @@ const pack = resolve("assets/pixel-city-pack");
 const reference = resolve(pack, "reference");
 
 describe("Pixel City source hygiene", () => {
-  it("publishes only the active V5 visual contracts", () => {
+  it("publishes only active V5/V6 visual contracts", () => {
     expect(buildings.projectionProfile).toBe("TASKTOPIA_V5_STRICT_FRONTAL_TOP");
-    for (const prop of authoredProps) expect(prop.visualProfile, prop.key).toMatch(/^TASKTOPIA_V5_/);
+    for (const prop of authoredProps) expect(prop.visualProfile, prop.key).toMatch(/^TASKTOPIA_V[56]_/);
   });
 
   it("keeps no replaced ambient source beside the catalog-reachable sheets", () => {

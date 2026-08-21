@@ -109,9 +109,9 @@ describe("active building catalog", () => {
   });
 
   it("registers six-cell buses for three-cell transit roads", () => {
-    expect(PROP_CATALOG["city-bus-horizontal"]).toMatchObject({ size: { width: 48, height: 16 }, footprint: { width: 6, height: 2 } });
-    expect(PROP_CATALOG["city-bus-north"]).toMatchObject({ size: { width: 16, height: 48 }, footprint: { width: 2, height: 6 } });
-    expect(PROP_CATALOG["city-bus-south"]).toMatchObject({ size: { width: 16, height: 48 }, footprint: { width: 2, height: 6 } });
+    expect(PROP_CATALOG["city-bus-horizontal"]).toMatchObject({ size: { width: 56, height: 24 }, footprint: { width: 7, height: 3 } });
+    expect(PROP_CATALOG["city-bus-north"]).toMatchObject({ size: { width: 24, height: 56 }, footprint: { width: 3, height: 7 } });
+    expect(PROP_CATALOG["city-bus-south"]).toMatchObject({ size: { width: 24, height: 56 }, footprint: { width: 3, height: 7 } });
     expect(PROP_CATALOG["city-bus-vertical"]).toBeUndefined();
   });
 

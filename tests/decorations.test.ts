@@ -5,6 +5,22 @@ import { generateWorldDecorations } from "../src/shared/world-decorations";
 import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 
 describe("procedural decoration footprints", () => {
+  it("builds deterministic rural crop and shrub patches instead of isolated confetti", () => {
+    const terrain: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 160, 128)
+      .map((cell) => ({ ...cell, terrain: "MEADOW" as const, variant: 0 }));
+    const first = generateWorldDecorations(20260821, terrain, new Set(), [], [], [], []);
+    const second = generateWorldDecorations(20260821, terrain, new Set(), [], [], [], []);
+    expect(first).toEqual(second);
+    const crops = first.filter((item) => item.kind.startsWith("crop-"));
+    expect(crops.length).toBeGreaterThanOrEqual(12);
+    expect(new Set(crops.map((item) => item.kind)).size).toBeGreaterThanOrEqual(2);
+    expect(crops.some((item) => crops.some((other) => item.id !== other.id
+      && Math.abs(item.origin.x - other.origin.x) + Math.abs(item.origin.y - other.origin.y) === 1))).toBe(true);
+    const tinyNature = first.filter((item) => /^(bush|shrub|rock)-/.test(item.kind));
+    expect(tinyNature.every((item) => tinyNature.some((other) => item.id !== other.id
+      && Math.abs(item.origin.x - other.origin.x) <= 2
+      && Math.abs(item.origin.y - other.origin.y) <= 2))).toBe(true);
+  });
   it("reserves every footprint cell and keeps fences inside their district", () => {
     const terrain: TerrainCellDto[] = [];
     const cells: Cell[] = [];
@@ -29,7 +45,7 @@ describe("procedural decoration footprints", () => {
     }
   });
 
-  it("keeps boats and stationary people sparse around a representative shoreline", () => {
+  it("keeps boats and fishers sparse and never seeds static resident figures", () => {
     const terrain: TerrainCellDto[] = [];
     for (let y = 0; y < 96; y += 1) for (let x = 0; x < 96; x += 1) {
       terrain.push({ x, y, terrain: y < 40 ? "DEEP_WATER" : y < 44 ? "SAND" : "GRASS", variant: 0 });
@@ -46,8 +62,8 @@ describe("procedural decoration footprints", () => {
     const residents = decorations.filter((item) => item.kind.startsWith("resident-"));
     expect(boats.length).toBeLessThanOrEqual(3);
     expect(fishers.length).toBeLessThanOrEqual(2);
-    expect(residents.length).toBeLessThanOrEqual(4);
-    expect(boats.length + fishers.length + residents.length).toBeLessThanOrEqual(9);
+    expect(residents).toHaveLength(0);
+    expect(boats.length + fishers.length).toBeLessThanOrEqual(5);
   });
 
   it("never places fishers next to a road even when the road follows the shore", () => {

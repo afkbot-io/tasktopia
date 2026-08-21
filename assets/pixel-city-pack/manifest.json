@@ -1596,15 +1596,15 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         112,
-        72
+        80
       ],
       "footprintCells": [
         14,
-        7
+        8
       ],
       "anchorPx": [
         56,
-        72
+        80
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station/stage-1.png",
@@ -1616,33 +1616,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          64,
+          72,
           110,
-          72
+          80
         ],
         [
           2,
-          58,
+          66,
           110,
-          71
+          79
         ],
         [
-          2,
-          29,
-          110,
-          72
+          5,
+          3,
+          107,
+          80
         ],
         [
+          5,
+          1,
+          106,
+          80
+        ],
+        [
+          5,
           0,
-          6,
-          112,
-          72
-        ],
-        [
-          0,
-          7,
-          112,
-          72
+          107,
+          80
         ]
       ],
       "platform": "ASPHALT",
@@ -1673,16 +1673,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        80,
-        64
+        96,
+        72
       ],
       "footprintCells": [
-        10,
-        6
+        12,
+        7
       ],
       "anchorPx": [
-        40,
-        64
+        48,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-parking-lot/stage-1.png",
@@ -1694,33 +1694,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          56,
-          78,
-          64
+          64,
+          94,
+          72
         ],
         [
           2,
-          50,
-          78,
-          63
+          58,
+          94,
+          71
         ],
         [
           1,
-          33,
-          79,
-          64
+          6,
+          95,
+          72
         ],
         [
           0,
-          16,
-          80,
-          64
+          6,
+          96,
+          72
         ],
         [
           0,
-          16,
-          80,
-          64
+          6,
+          96,
+          72
         ]
       ],
       "platform": "ASPHALT",
@@ -1741,7 +1741,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 5
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -2679,16 +2679,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        64,
-        64
+        96,
+        72
       ],
       "footprintCells": [
-        8,
-        5
+        12,
+        7
       ],
       "anchorPx": [
-        32,
-        64
+        48,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station-compact/stage-1.png",
@@ -2700,33 +2700,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          56,
-          62,
-          64
+          64,
+          94,
+          72
         ],
         [
           2,
-          50,
-          62,
-          63
+          58,
+          94,
+          71
         ],
         [
+          12,
           4,
-          35,
-          61,
-          64
+          84,
+          72
         ],
         [
-          4,
-          26,
-          60,
-          64
+          11,
+          1,
+          84,
+          72
         ],
         [
+          11,
           0,
-          24,
-          64,
-          64
+          84,
+          72
         ]
       ],
       "platform": "ASPHALT",
@@ -2745,7 +2745,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -2838,16 +2838,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        112,
-        80
+        128,
+        88
       ],
       "footprintCells": [
-        14,
-        8
+        16,
+        9
       ],
       "anchorPx": [
-        56,
-        80
+        64,
+        88
       ],
       "stages": [
         "buildings/commercial/commercial-highway-service-plaza/stage-1.png",
@@ -2859,33 +2859,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          72,
-          110,
-          80
+          80,
+          126,
+          88
         ],
         [
           2,
-          66,
-          110,
-          79
-        ],
-        [
-          2,
-          56,
-          109,
-          80
+          74,
+          126,
+          87
         ],
         [
           0,
-          38,
-          112,
-          80
+          27,
+          128,
+          88
         ],
         [
           0,
-          38,
-          112,
-          80
+          26,
+          128,
+          88
+        ],
+        [
+          0,
+          27,
+          128,
+          88
         ]
       ],
       "platform": "ASPHALT",
@@ -2903,7 +2903,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 8
         }
       ],
       "maxPerCity": 1,
@@ -3983,16 +3983,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        80,
-        64
+        96,
+        72
       ],
       "footprintCells": [
-        10,
-        6
+        12,
+        7
       ],
       "anchorPx": [
-        40,
-        64
+        48,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station-electric/stage-1.png",
@@ -4004,33 +4004,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          56,
-          78,
-          64
+          64,
+          94,
+          72
         ],
         [
           2,
-          50,
-          78,
-          63
+          58,
+          94,
+          71
         ],
         [
-          1,
-          35,
-          80,
-          64
+          5,
+          3,
+          91,
+          72
         ],
         [
+          5,
           0,
-          23,
-          80,
-          64
+          91,
+          72
         ],
         [
+          5,
           0,
-          23,
-          80,
-          64
+          91,
+          72
         ]
       ],
       "platform": "ASPHALT",
@@ -4049,7 +4049,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 5
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -4061,15 +4061,15 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        128,
+        144,
         96
       ],
       "footprintCells": [
-        16,
-        8
+        18,
+        10
       ],
       "anchorPx": [
-        64,
+        72,
         96
       ],
       "stages": [
@@ -4083,31 +4083,31 @@
         [
           2,
           88,
-          126,
+          142,
           96
         ],
         [
           2,
           82,
-          126,
+          142,
           95
         ],
         [
+          21,
           5,
-          57,
           123,
           96
         ],
         [
-          0,
-          37,
-          128,
+          21,
+          5,
+          123,
           96
         ],
         [
+          21,
           0,
-          37,
-          128,
+          123,
           96
         ]
       ],
@@ -4126,7 +4126,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 9
         }
       ],
       "maxPerCity": 1,
@@ -4138,16 +4138,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        88,
-        64
+        104,
+        72
       ],
       "footprintCells": [
-        11,
-        6
+        13,
+        7
       ],
       "anchorPx": [
-        44,
-        64
+        52,
+        72
       ],
       "stages": [
         "buildings/commercial/commercial-gas-station-cafe/stage-1.png",
@@ -4159,110 +4159,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          56,
-          86,
-          64
+          64,
+          102,
+          72
         ],
         [
           2,
-          50,
-          86,
-          63
+          58,
+          102,
+          71
         ],
         [
+          3,
+          4,
+          101,
+          72
+        ],
+        [
+          3,
+          3,
+          101,
+          72
+        ],
+        [
+          3,
           0,
-          27,
-          87,
-          64
-        ],
-        [
-          0,
-          13,
-          88,
-          64
-        ],
-        [
-          0,
-          13,
-          88,
-          64
-        ]
-      ],
-      "platform": "ASPHALT",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD",
-        "REQUIRES_COLLECTOR",
-        "UNIQUE_SERVICE"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 5
-        }
-      ],
-      "maxPerCity": 1,
-      "maxPerDistrict": 1,
-      "serviceRole": "fuel-service"
-    },
-    "commercial-gas-station-wash": {
-      "label": "Заправка с мойкой",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        96,
-        64
-      ],
-      "footprintCells": [
-        12,
-        6
-      ],
-      "anchorPx": [
-        48,
-        64
-      ],
-      "stages": [
-        "buildings/commercial/commercial-gas-station-wash/stage-1.png",
-        "buildings/commercial/commercial-gas-station-wash/stage-2.png",
-        "buildings/commercial/commercial-gas-station-wash/stage-3.png",
-        "buildings/commercial/commercial-gas-station-wash/stage-4.png",
-        "buildings/commercial/commercial-gas-station-wash/stage-5.png"
-      ],
-      "stageOpaqueBounds": [
-        [
-          2,
-          56,
-          94,
-          64
-        ],
-        [
-          2,
-          50,
-          94,
-          63
-        ],
-        [
-          0,
-          47,
-          96,
-          64
-        ],
-        [
-          0,
-          31,
-          96,
-          64
-        ],
-        [
-          0,
-          31,
-          96,
-          64
+          101,
+          72
         ]
       ],
       "platform": "ASPHALT",
@@ -4281,6 +4204,83 @@
         {
           "side": "S",
           "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service"
+    },
+    "commercial-gas-station-wash": {
+      "label": "Заправка с мойкой",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        112,
+        72
+      ],
+      "footprintCells": [
+        14,
+        7
+      ],
+      "anchorPx": [
+        56,
+        72
+      ],
+      "stages": [
+        "buildings/commercial/commercial-gas-station-wash/stage-1.png",
+        "buildings/commercial/commercial-gas-station-wash/stage-2.png",
+        "buildings/commercial/commercial-gas-station-wash/stage-3.png",
+        "buildings/commercial/commercial-gas-station-wash/stage-4.png",
+        "buildings/commercial/commercial-gas-station-wash/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          2,
+          64,
+          110,
+          72
+        ],
+        [
+          2,
+          58,
+          110,
+          71
+        ],
+        [
+          3,
+          7,
+          108,
+          72
+        ],
+        [
+          3,
+          5,
+          108,
+          72
+        ],
+        [
+          3,
+          0,
+          108,
+          72
+        ]
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
         }
       ],
       "maxPerCity": 1,
@@ -13301,46 +13301,58 @@
       "horizontal": {
         "path": "vehicles/compact-blue-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/compact-blue-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/compact-blue-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-compact-blue-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     },
@@ -13348,46 +13360,58 @@
       "horizontal": {
         "path": "vehicles/sedan-red-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/sedan-red-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/sedan-red-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-sedan-red-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     },
@@ -13395,46 +13419,58 @@
       "horizontal": {
         "path": "vehicles/taxi-yellow-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/taxi-yellow-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/taxi-yellow-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-taxi-yellow-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     },
@@ -13442,46 +13478,58 @@
       "horizontal": {
         "path": "vehicles/estate-green-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/estate-green-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/estate-green-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-estate-green-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     },
@@ -13489,46 +13537,58 @@
       "horizontal": {
         "path": "vehicles/electric-teal-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/electric-teal-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/electric-teal-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-electric-teal-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     },
@@ -13536,46 +13596,58 @@
       "horizontal": {
         "path": "vehicles/delivery-cream-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/delivery-cream-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/delivery-cream-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-delivery-cream-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     },
@@ -13583,46 +13655,58 @@
       "horizontal": {
         "path": "vehicles/pickup-orange-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/pickup-orange-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/pickup-orange-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-pickup-orange-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     },
@@ -13630,46 +13714,58 @@
       "horizontal": {
         "path": "vehicles/classic-burgundy-horizontal.png",
         "size": [
-          16,
-          8
+          24,
+          16
+        ],
+        "occupiedSize": [
+          22,
+          13
         ],
         "footprintCells": [
-          2,
-          1
+          3,
+          2
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "EAST"
       },
       "north": {
         "path": "vehicles/classic-burgundy-north.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "NORTH"
       },
       "south": {
         "path": "vehicles/classic-burgundy-south.png",
         "size": [
-          8,
-          16
+          16,
+          24
+        ],
+        "occupiedSize": [
+          13,
+          22
         ],
         "footprintCells": [
-          1,
-          2
+          2,
+          3
         ],
         "artSource": "AI_AUTHORED",
-        "sourceSheet": "ai-authored/ambient/vehicle-classic-burgundy-v3.png",
-        "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+        "sourceSheet": "ai-authored/ambient/vehicles-v4.png",
+        "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
         "baseFacing": "SOUTH"
       }
     }
@@ -13717,60 +13813,72 @@
       "label": "Городской автобус",
       "path": "props/city-bus-horizontal.png",
       "size": [
-        48,
-        16
+        56,
+        24
       ],
       "footprintCells": [
-        6,
-        2
+        7,
+        3
       ],
       "anchorPx": [
-        24,
-        16
+        28,
+        24
+      ],
+      "occupiedSize": [
+        54,
+        22
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/city-bus-v5.png",
-      "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+      "sourceSheet": "ai-authored/ambient/city-bus-v6.png",
+      "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
       "baseFacing": "EAST"
     },
     "city-bus-north": {
       "label": "Городской автобус",
       "path": "props/city-bus-north.png",
       "size": [
-        16,
-        48
+        24,
+        56
       ],
       "footprintCells": [
-        2,
-        6
+        3,
+        7
       ],
       "anchorPx": [
-        8,
-        48
+        12,
+        56
+      ],
+      "occupiedSize": [
+        22,
+        54
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/city-bus-v5.png",
-      "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+      "sourceSheet": "ai-authored/ambient/city-bus-v6.png",
+      "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
       "baseFacing": "NORTH"
     },
     "city-bus-south": {
       "label": "Городской автобус",
       "path": "props/city-bus-south.png",
       "size": [
-        16,
-        48
+        24,
+        56
       ],
       "footprintCells": [
-        2,
-        6
+        3,
+        7
       ],
       "anchorPx": [
-        8,
-        48
+        12,
+        56
+      ],
+      "occupiedSize": [
+        22,
+        54
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/city-bus-v5.png",
-      "visualProfile": "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE",
+      "sourceSheet": "ai-authored/ambient/city-bus-v6.png",
+      "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
       "baseFacing": "SOUTH"
     },
     "bench-horizontal": {
@@ -13787,6 +13895,10 @@
       "anchorPx": [
         8,
         8
+      ],
+      "occupiedSize": [
+        14,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
@@ -13807,6 +13919,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
@@ -13825,6 +13941,10 @@
       "anchorPx": [
         4,
         8
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
@@ -13845,6 +13965,10 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
@@ -13863,6 +13987,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
@@ -13883,6 +14011,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -13901,6 +14033,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
@@ -13921,6 +14057,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -13939,6 +14079,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
@@ -13959,6 +14103,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -13977,6 +14125,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        5,
+        11
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
@@ -13997,6 +14149,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        5,
+        11
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
       "visualProfile": "TASKTOPIA_V5_COMPACT_TRAFFIC_LIGHT"
@@ -14016,9 +14172,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "flower-yellow": {
       "label": "Жёлтые цветы",
@@ -14035,9 +14195,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "flower-red": {
       "label": "Красные цветы",
@@ -14054,9 +14218,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "flower-pink": {
       "label": "Розовые цветы",
@@ -14073,9 +14241,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "flower-purple": {
       "label": "Фиолетовые цветы",
@@ -14092,9 +14264,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "flower-blue": {
       "label": "Синие цветы",
@@ -14111,9 +14287,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "bush-dark": {
       "label": "Тёмный куст",
@@ -14130,9 +14310,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "bush-light": {
       "label": "Светлый куст",
@@ -14149,9 +14333,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "bush-berries": {
       "label": "Ягодный куст",
@@ -14168,9 +14356,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "rock-small": {
       "label": "Небольшой камень",
@@ -14187,9 +14379,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "rock-cluster": {
       "label": "Группа камней",
@@ -14206,9 +14402,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "reed-green": {
       "label": "Зелёный камыш",
@@ -14225,9 +14425,13 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "reed-cattail": {
       "label": "Рогоз",
@@ -14244,9 +14448,13 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "shrub-hazel": {
       "label": "Орешник",
@@ -14263,9 +14471,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "shrub-fern": {
       "label": "Папоротник",
@@ -14282,9 +14494,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "shrub-flowering": {
       "label": "Цветущий куст",
@@ -14301,9 +14517,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "shrub-dry": {
       "label": "Сухой куст",
@@ -14320,9 +14540,105 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
+    },
+    "crop-wheat-a": {
+      "label": "Пшеница A",
+      "path": "props/crop-wheat-a.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "occupiedSize": [
+        6,
+        15
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_CROP"
+    },
+    "crop-wheat-b": {
+      "label": "Пшеница B",
+      "path": "props/crop-wheat-b.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "occupiedSize": [
+        6,
+        15
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_CROP"
+    },
+    "crop-corn-a": {
+      "label": "Кукуруза A",
+      "path": "props/crop-corn-a.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "occupiedSize": [
+        6,
+        15
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_CROP"
+    },
+    "crop-corn-b": {
+      "label": "Кукуруза B",
+      "path": "props/crop-corn-b.png",
+      "size": [
+        8,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        16
+      ],
+      "occupiedSize": [
+        6,
+        15
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_CROP"
     },
     "shrub-hedge": {
       "label": "Стриженая изгородь",
@@ -14339,9 +14655,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "shrub-juniper": {
       "label": "Можжевельник",
@@ -14358,9 +14678,13 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "tree-flowering": {
       "label": "Цветущее деревце",
@@ -14377,9 +14701,13 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/nature-small-v1.png",
-      "visualProfile": "TASKTOPIA_V5_NATURE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/nature-small-v2.png",
+      "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
     },
     "utility-pole": {
       "label": "Городской столб",
@@ -14395,6 +14723,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
@@ -14415,6 +14747,10 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
@@ -14433,6 +14769,10 @@
       "anchorPx": [
         4,
         8
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
@@ -14453,6 +14793,10 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
@@ -14471,6 +14815,10 @@
       "anchorPx": [
         4,
         8
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
@@ -14491,6 +14839,10 @@
         8,
         8
       ],
+      "occupiedSize": [
+        14,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
@@ -14509,6 +14861,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
@@ -14529,6 +14885,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
@@ -14547,6 +14907,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
@@ -14567,6 +14931,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -14585,6 +14953,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
@@ -14605,6 +14977,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -14623,6 +14999,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
@@ -14643,6 +15023,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
@@ -14661,6 +15045,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/civic-details-v1.png",
@@ -14681,6 +15069,10 @@
         20,
         32
       ],
+      "occupiedSize": [
+        38,
+        31
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
@@ -14699,6 +15091,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        14,
+        23
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
@@ -14719,6 +15115,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        14,
+        23
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
@@ -14737,6 +15137,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
@@ -14757,6 +15161,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
@@ -14775,6 +15183,10 @@
       "anchorPx": [
         12,
         24
+      ],
+      "occupiedSize": [
+        22,
+        23
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
@@ -14795,6 +15207,10 @@
         12,
         8
       ],
+      "occupiedSize": [
+        22,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
@@ -14813,6 +15229,10 @@
       "anchorPx": [
         4,
         24
+      ],
+      "occupiedSize": [
+        6,
+        23
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
@@ -14833,6 +15253,10 @@
         12,
         16
       ],
+      "occupiedSize": [
+        22,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
@@ -14851,6 +15275,10 @@
       "anchorPx": [
         16,
         16
+      ],
+      "occupiedSize": [
+        30,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
@@ -14871,6 +15299,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -14889,6 +15321,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
@@ -14909,6 +15345,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -14927,6 +15367,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
@@ -14947,6 +15391,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
@@ -14965,6 +15413,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/street-lamps-night-v1.png",
@@ -14985,6 +15437,10 @@
         12,
         24
       ],
+      "occupiedSize": [
+        22,
+        23
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
@@ -15003,6 +15459,10 @@
       "anchorPx": [
         8,
         8
+      ],
+      "occupiedSize": [
+        14,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
@@ -15023,6 +15483,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/park-details-v1.png",
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
@@ -15041,6 +15505,10 @@
       "anchorPx": [
         20,
         16
+      ],
+      "occupiedSize": [
+        38,
+        12
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
       "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
@@ -15062,6 +15530,10 @@
         20,
         16
       ],
+      "occupiedSize": [
+        38,
+        12
+      ],
       "artSource": "HAND_AUTHORED_NATIVE",
       "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
@@ -15081,6 +15553,10 @@
       "anchorPx": [
         20,
         16
+      ],
+      "occupiedSize": [
+        38,
+        12
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
       "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
@@ -15102,6 +15578,10 @@
         12,
         8
       ],
+      "occupiedSize": [
+        22,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
@@ -15121,6 +15601,10 @@
       "anchorPx": [
         12,
         8
+      ],
+      "occupiedSize": [
+        22,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
@@ -15142,6 +15626,10 @@
         4,
         24
       ],
+      "occupiedSize": [
+        6,
+        23
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
@@ -15161,6 +15649,10 @@
       "anchorPx": [
         4,
         24
+      ],
+      "occupiedSize": [
+        6,
+        23
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
@@ -15182,6 +15674,10 @@
         16,
         16
       ],
+      "occupiedSize": [
+        30,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_WORLD_AIRCRAFT",
@@ -15201,6 +15697,10 @@
       "anchorPx": [
         16,
         16
+      ],
+      "occupiedSize": [
+        30,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
@@ -15222,6 +15722,10 @@
         16,
         16
       ],
+      "occupiedSize": [
+        30,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_WORLD_AIRCRAFT",
@@ -15242,6 +15746,10 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_INCIDENT_ANIMATION"
@@ -15260,6 +15768,10 @@
       "anchorPx": [
         4,
         8
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
@@ -15280,6 +15792,10 @@
         4,
         8
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_INCIDENT_ANIMATION"
@@ -15298,6 +15814,10 @@
       "anchorPx": [
         4,
         8
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
@@ -15318,6 +15838,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_INCIDENT_ANIMATION"
@@ -15336,6 +15860,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
@@ -15356,6 +15884,10 @@
         4,
         16
       ],
+      "occupiedSize": [
+        6,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
       "visualProfile": "TASKTOPIA_V5_INCIDENT_ANIMATION"
@@ -15374,6 +15906,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
@@ -15394,6 +15930,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        15
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
       "visualProfile": "TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"
@@ -15412,6 +15952,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
@@ -15432,6 +15976,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        14,
+        23
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
       "visualProfile": "TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"
@@ -15450,6 +15998,10 @@
       "anchorPx": [
         12,
         16
+      ],
+      "occupiedSize": [
+        22,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
@@ -15470,6 +16022,10 @@
         8,
         8
       ],
+      "occupiedSize": [
+        14,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
       "visualProfile": "TASKTOPIA_V5_FENCE_FRONTAL_TOP"
@@ -15488,6 +16044,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
@@ -15508,6 +16068,10 @@
         8,
         8
       ],
+      "occupiedSize": [
+        14,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
       "visualProfile": "TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"
@@ -15526,6 +16090,10 @@
       "anchorPx": [
         4,
         16
+      ],
+      "occupiedSize": [
+        6,
+        15
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
@@ -15546,6 +16114,10 @@
         8,
         8
       ],
+      "occupiedSize": [
+        14,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/terrain-fences-v1.png",
       "visualProfile": "TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"
@@ -15564,6 +16136,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        8,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
@@ -15585,6 +16161,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        8,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15604,6 +16184,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        8,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
@@ -15625,6 +16209,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15644,6 +16232,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
@@ -15665,6 +16257,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15684,6 +16280,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        8,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
@@ -15705,6 +16305,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        8,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15724,6 +16328,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        8,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
@@ -15745,6 +16353,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15764,6 +16376,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
@@ -15785,6 +16401,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-fox-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15804,6 +16424,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        10,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
@@ -15825,6 +16449,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        16
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15844,6 +16472,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        10,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
@@ -15865,6 +16497,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        14,
+        16
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15884,6 +16520,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        14,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
@@ -15905,6 +16545,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        14,
+        16
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15924,6 +16568,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        10,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
@@ -15945,6 +16593,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        16
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -15964,6 +16616,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        10,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
@@ -15985,6 +16641,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        14,
+        16
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16004,6 +16664,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        14,
+        16
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
@@ -16025,6 +16689,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        14,
+        16
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-deer-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16044,6 +16712,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
@@ -16065,6 +16737,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        7,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16084,6 +16760,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
@@ -16105,6 +16785,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        12,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16124,6 +16808,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        12,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
@@ -16145,6 +16833,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        12,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16164,6 +16856,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
@@ -16185,6 +16881,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        7,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16204,6 +16904,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
@@ -16225,6 +16929,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        12,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16244,6 +16952,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        12,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
@@ -16265,6 +16977,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        12,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-rabbit-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16284,6 +17000,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
@@ -16305,6 +17025,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16324,6 +17048,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
@@ -16345,6 +17073,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16364,6 +17096,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
@@ -16385,6 +17121,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16404,6 +17144,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
@@ -16425,6 +17169,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16444,6 +17192,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
@@ -16465,6 +17217,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16484,6 +17240,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
@@ -16505,6 +17265,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-boar-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16524,6 +17288,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
@@ -16545,6 +17313,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16564,6 +17336,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
@@ -16585,6 +17361,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16604,6 +17384,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
@@ -16625,6 +17409,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16644,6 +17432,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
@@ -16665,6 +17457,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        6,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16684,6 +17480,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        6,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
@@ -16705,6 +17505,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16724,6 +17528,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        7
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
@@ -16745,6 +17553,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        7
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-duck-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16764,6 +17576,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
@@ -16785,6 +17601,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16804,6 +17624,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
@@ -16825,6 +17649,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16844,6 +17672,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
@@ -16865,6 +17697,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16884,6 +17720,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
@@ -16905,6 +17745,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        10,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16924,6 +17768,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        10,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
@@ -16945,6 +17793,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -16964,6 +17816,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        12
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
@@ -16985,6 +17841,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-sheep-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17004,6 +17864,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        9,
+        11
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
@@ -17025,6 +17889,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        9,
+        11
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17044,6 +17912,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        9,
+        11
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
@@ -17065,6 +17937,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        11
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17084,6 +17960,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        11
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
@@ -17105,6 +17985,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        11
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17124,6 +18008,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        9,
+        11
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
@@ -17145,6 +18033,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        9,
+        11
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17164,6 +18056,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        9,
+        11
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
@@ -17185,6 +18081,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        11
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17204,6 +18104,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        14,
+        11
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
@@ -17225,6 +18129,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        14,
+        11
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-dog-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17244,6 +18152,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
@@ -17265,6 +18177,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        7,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17284,6 +18200,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
@@ -17305,6 +18225,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        11,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17324,6 +18248,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        11,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
@@ -17345,6 +18273,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        11,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17364,6 +18296,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
@@ -17385,6 +18321,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        7,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17404,6 +18344,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        7,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
@@ -17425,6 +18369,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        11,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17445,6 +18393,10 @@
         8,
         16
       ],
+      "occupiedSize": [
+        11,
+        8
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
       "visualProfile": "TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED",
@@ -17464,6 +18416,10 @@
       "anchorPx": [
         8,
         16
+      ],
+      "occupiedSize": [
+        11,
+        8
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/animal-cat-v3.png",
@@ -17998,6 +18954,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
@@ -18017,6 +18977,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        10,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
@@ -18038,6 +19002,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
@@ -18057,6 +19025,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        12,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
@@ -18078,6 +19050,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        12,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
@@ -18097,6 +19073,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        12,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
@@ -18118,6 +19098,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
@@ -18137,6 +19121,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        10,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
@@ -18158,6 +19146,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
@@ -18177,6 +19169,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        12,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
@@ -18198,6 +19194,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        12,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME",
@@ -18217,6 +19217,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        12,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-walkers-v5.png",
@@ -18238,6 +19242,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        8,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_ACTIVITY"
@@ -18256,6 +19264,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        8,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -18276,6 +19288,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_ACTIVITY"
@@ -18294,6 +19310,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        8,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
@@ -18314,6 +19334,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        9,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_ACTIVITY"
@@ -18333,6 +19357,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        10,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/resident-actions-v1.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_ACTIVITY"
@@ -18351,6 +19379,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        9,
+        14
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
@@ -18372,6 +19404,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        9,
+        12
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_ACTIVITY",
@@ -18391,6 +19427,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        9,
+        14
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
@@ -18412,6 +19452,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        9,
+        14
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/fisher-views-v1.png",
       "visualProfile": "TASKTOPIA_V5_RESIDENT_ACTIVITY",
@@ -18431,6 +19475,10 @@
       "anchorPx": [
         12,
         24
+      ],
+      "occupiedSize": [
+        17,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
@@ -18452,6 +19500,10 @@
         12,
         24
       ],
+      "occupiedSize": [
+        17,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18471,6 +19523,10 @@
       "anchorPx": [
         12,
         24
+      ],
+      "occupiedSize": [
+        17,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
@@ -18492,6 +19548,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        7,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18511,6 +19571,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        7,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
@@ -18532,6 +19596,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        7,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18551,6 +19619,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        7,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
@@ -18572,6 +19644,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        7,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18591,6 +19667,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        7,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/cyclist-views-v3.png",
@@ -18612,6 +19692,10 @@
         12,
         24
       ],
+      "occupiedSize": [
+        14,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18631,6 +19715,10 @@
       "anchorPx": [
         12,
         24
+      ],
+      "occupiedSize": [
+        14,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
@@ -18652,6 +19740,10 @@
         12,
         24
       ],
+      "occupiedSize": [
+        14,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18671,6 +19763,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        7,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
@@ -18692,6 +19788,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        7,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18711,6 +19811,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        7,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
@@ -18732,6 +19836,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        7,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18752,6 +19860,10 @@
         8,
         24
       ],
+      "occupiedSize": [
+        7,
+        18
+      ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
       "visualProfile": "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP",
@@ -18771,6 +19883,10 @@
       "anchorPx": [
         8,
         24
+      ],
+      "occupiedSize": [
+        7,
+        18
       ],
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/ambient/scooter-views-v3.png",
@@ -19218,5 +20334,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "58a9a83ffaf0215d"
+  "assetRevision": "95026ccdec56aa3d"
 }

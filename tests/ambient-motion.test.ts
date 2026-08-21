@@ -16,8 +16,8 @@ describe("ambientMotionPresentation", () => {
 
   it("uses the inset right-hand traffic lanes for cars and buses without bobbing", () => {
     expect(ambientMotionPresentation("CAR", { x: 0, y: 0 }, { x: 1, y: 0 }, 0.5, undefined, 8))
-      .toEqual({ x: 8, y: 3.5, rotation: 0 });
+      .toEqual({ x: 8, y: 5, rotation: 0 });
     expect(ambientMotionPresentation("BUS", { x: 1, y: 0 }, { x: 0, y: 0 }, 0.5, undefined, 8))
-      .toEqual({ x: 8, y: 4.5, rotation: 0 });
+      .toEqual({ x: 8, y: 2, rotation: 0 });
   });
 });

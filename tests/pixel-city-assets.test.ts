@@ -44,6 +44,35 @@ const retainedAuthoredBatch = [
 ] as const;
 
 describe("Pixel City active asset contract", () => {
+  it("keeps every fuel-service family on the shared V6 grid with a centred full-size entrance", () => {
+    const fuelStations = buildingCatalog.buildings.filter((building) => building.serviceRole === "fuel-service");
+    expect(fuelStations).toHaveLength(7);
+    for (const station of fuelStations) {
+      expect(station.stageSourceGrid, station.key).toEqual([4, 2]);
+      expect(station.stageSourceSegment, station.key).toBeTypeOf("number");
+      expect(station.spriteSize[0], station.key).toBeGreaterThanOrEqual(96);
+      expect(station.spriteSize[1], station.key).toBeGreaterThanOrEqual(72);
+      expect(station.footprintCells[0], station.key).toBeGreaterThanOrEqual(12);
+      expect(station.footprintCells[1], station.key).toBeGreaterThanOrEqual(7);
+      expect(station.anchorPx, station.key).toEqual([station.spriteSize[0] / 2, station.spriteSize[1]]);
+      expect(station.entrances[0], station.key).toEqual({
+        side: "S",
+        offset: Math.floor(station.footprintCells[0] / 2),
+      });
+    }
+  });
+
+  it("publishes the city parking garage as a full-scale finished building", () => {
+    const parking = buildingCatalog.buildings.find((building) => building.key === "commercial-parking-lot");
+    expect(parking).toMatchObject({
+      spriteSize: [96, 72],
+      footprintCells: [12, 7],
+      anchorPx: [48, 72],
+      entrances: [{ side: "S", offset: 6 }],
+      serviceRole: "parking-service",
+    });
+  });
+
   it("keeps retained families from the historical authored batch pinned to independent stages", () => {
     const catalog = new Map(buildingCatalog.buildings.map((building) => [building.key, building]));
     for (const key of retainedAuthoredBatch) {
@@ -163,10 +192,11 @@ describe("Pixel City active asset contract", () => {
       "bush-dark", "bush-light", "bush-berries", "rock-small", "rock-cluster",
       "reed-green", "reed-cattail", "shrub-hazel", "shrub-fern", "shrub-flowering",
       "shrub-dry", "shrub-hedge", "shrub-juniper", "tree-flowering",
+      "crop-wheat-a", "crop-wheat-b", "crop-corn-a", "crop-corn-b",
     ]) {
       expect(props[key], key).toMatchObject({
         artSource: "AI_AUTHORED",
-        sourceSheet: "ai-authored/ambient/nature-small-v1.png",
+        sourceSheet: "ai-authored/ambient/nature-small-v2.png",
         footprintCells: [1, 1],
       });
     }
@@ -227,15 +257,31 @@ describe("Pixel City active asset contract", () => {
     const vehicles = manifest.vehicles as Record<string, Record<"horizontal" | "north" | "south", { size: number[]; artSource?: string; sourceSheet?: string; visualProfile?: string; baseFacing?: string }>>;
     expect(Object.keys(vehicles)).toHaveLength(8);
     for (const [key, orientations] of Object.entries(vehicles)) {
-      expect(orientations.horizontal, key).toMatchObject({ size: [16, 8], artSource: "AI_AUTHORED" });
-      expect(orientations.north, key).toMatchObject({ size: [8, 16], artSource: "AI_AUTHORED" });
-      expect(orientations.south, key).toMatchObject({ size: [8, 16], artSource: "AI_AUTHORED" });
+      expect(orientations.horizontal, key).toMatchObject({ size: [24, 16], artSource: "AI_AUTHORED" });
+      expect(orientations.north, key).toMatchObject({ size: [16, 24], artSource: "AI_AUTHORED" });
+      expect(orientations.south, key).toMatchObject({ size: [16, 24], artSource: "AI_AUTHORED" });
       expect(orientations.horizontal.sourceSheet, key).toBe(orientations.north.sourceSheet);
       expect(orientations.horizontal.sourceSheet, key).toBe(orientations.south.sourceSheet);
-      expect(orientations.horizontal, key).toMatchObject({ visualProfile: "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE", baseFacing: "EAST" });
-      expect(orientations.north, key).toMatchObject({ visualProfile: "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE", baseFacing: "NORTH" });
-      expect(orientations.south, key).toMatchObject({ visualProfile: "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE", baseFacing: "SOUTH" });
+      expect(orientations.horizontal, key).toMatchObject({ visualProfile: "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE", baseFacing: "EAST" });
+      expect(orientations.north, key).toMatchObject({ visualProfile: "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE", baseFacing: "NORTH" });
+      expect(orientations.south, key).toMatchObject({ visualProfile: "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE", baseFacing: "SOUTH" });
     }
+  });
+
+  it("keeps the human, car, bus and door scale hierarchy in native pixels", () => {
+    const props = manifest.props as Record<string, { size: number[]; occupiedSize?: number[] }>;
+    const vehicles = manifest.vehicles as Record<string, Record<"horizontal" | "north" | "south", { size: number[]; occupiedSize?: number[] }>>;
+    for (const orientations of Object.values(vehicles)) {
+      expect(orientations.horizontal.size).toEqual([24, 16]);
+      expect(orientations.horizontal.occupiedSize?.[0]).toBeGreaterThanOrEqual(21);
+      expect(orientations.horizontal.occupiedSize?.[1]).toBeGreaterThanOrEqual(12);
+      expect(orientations.north.size).toEqual([16, 24]);
+      expect(orientations.south.size).toEqual([16, 24]);
+    }
+    expect(props["city-bus-horizontal"]?.size).toEqual([56, 24]);
+    expect(props["city-bus-horizontal"]?.occupiedSize?.[0]).toBeGreaterThanOrEqual(52);
+    expect(props["city-bus-horizontal"]?.occupiedSize?.[1]).toBeGreaterThanOrEqual(20);
+    expect(props["walker-south-a"]?.occupiedSize?.[1]).toBeLessThan(20);
   });
 
   it("publishes four incident animation frames, three engine silhouettes, and eight animal species", () => {

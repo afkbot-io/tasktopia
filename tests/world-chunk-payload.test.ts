@@ -119,6 +119,32 @@ describe("published world chunk payload", () => {
     expect(chunk.decorations.filter((item) => item.id.startsWith("frontage:building:"))).toEqual([]);
   });
 
+  it("derives area interiors from the seed and ignores legacy PARK_DECOR children", () => {
+    const compact = payload("DETAIL");
+    compact.chunkX = 0;
+    compact.chunkY = 0;
+    compact.worldFeatures = [
+      {
+        id: "park", cityId: "city", districtId: "district", parentFeatureId: null,
+        kind: "PARK", assetKind: "AREA", assetKey: "urban-park", origin: { x: 8, y: 8 },
+        footprint: Array.from({ length: 5 * 4 }, (_, index) => ({ x: 8 + index % 5, y: 8 + Math.floor(index / 5) })),
+        orientation: "S", accessPath: [], developmentStage: 5,
+      },
+      {
+        id: "legacy-tree", cityId: "city", districtId: "district", parentFeatureId: "park",
+        kind: "PARK_DECOR", assetKind: "PROP", assetKey: "tree-oak", origin: { x: 8, y: 8 },
+        footprint: [{ x: 8, y: 8 }], orientation: "S", accessPath: [], developmentStage: 5,
+      },
+    ];
+
+    const first = materializeChunkPayload(compact);
+    const second = materializeChunkPayload(compact);
+
+    expect(first.worldFeatures.map((feature) => feature.id)).toEqual(["park"]);
+    expect(first.decorations.some((decoration) => decoration.id.startsWith("area:park:"))).toBe(true);
+    expect(first.decorations).toEqual(second.decorations);
+  });
+
   it("keeps the full decoration output compatible across two adjacent chunks", () => {
     const districtCells = Array.from({ length: 128 * 64 }, (_, index) => ({
       x: index % 128,
@@ -151,6 +177,6 @@ describe("published world chunk payload", () => {
     const fingerprint = createHash("sha256").update(JSON.stringify(decorations)).digest("hex");
 
     expect(decorations.filter((item) => item.kind === "fence-vertical" && (item.origin.x === 63 || item.origin.x === 64))).toEqual([]);
-    expect(fingerprint).toBe("12f7292bb21f2269432c28fe4b4fd06bbaa041a2b94cf8a7f583b3a414329034");
+    expect(fingerprint).toBe("a0c9091f69b9c59948c18ff81bc10102093d41daca390335c5952e3cff6835f7");
   });
 });

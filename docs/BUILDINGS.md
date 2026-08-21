@@ -78,7 +78,11 @@ Runtime source of truth — `assets/pixel-city-pack/manifest.json`.
 
 Builder проверяет digest каждого исходника, нормализует стадии 3–5 без
 дорисовки геометрии, компонует общие стадии 1–2 и обновляет runtime/public pack
-и contact sheets. Combined sheets и import fallback не поддерживаются.
+и contact sheets. Несколько родственных вариантов могут использовать по одному
+общему листу на каждую стадию через `stageSourceRowCounts`/`stageSourceSegment`:
+extractor находит отдельные chroma-separated силуэты в строке, а не режет лист
+на математически равные части. Объединять разные стадии в один файл и включать
+import fallback по-прежнему запрещено.
 Read-only audit проверяет 167 зданий / 835 стадий: уникальность стадий, сетку и
 footprint, bottom-center anchor, hard alpha, палитру до 32 цветов, потерянные
 ссылки и лишние файлы. Runtime manifest не содержит сведений о происхождении

@@ -5,6 +5,8 @@ import {
   clampCameraPosition,
   fitCameraScale,
   minimumCameraScale,
+  nextCameraTargetScale,
+  pixelPerfectCameraScale,
   progressiveChunkPlan,
 } from "../src/client/world-camera";
 
@@ -45,6 +47,24 @@ describe("world camera geometry", () => {
     const tallScale = fitCameraScale(screen, { minX: 0, minY: 0, maxX: 79, maxY: 109 }, 8);
     expect(tallScale).toBeLessThan(1);
     expect(110 * 8 * tallScale).toBeLessThanOrEqual(screen.height - 96);
+  });
+
+  it("uses only integer scales while detailed pixel sprites are visible", () => {
+    expect(pixelPerfectCameraScale(1.25, 0.8)).toBe(1);
+    expect(pixelPerfectCameraScale(1.55, 0.8)).toBe(2);
+    expect(pixelPerfectCameraScale(2.37, 0.8)).toBe(2);
+    expect(pixelPerfectCameraScale(1.25, 1.3)).toBe(2);
+    expect(pixelPerfectCameraScale(0.88, 0.8)).toBeCloseTo(0.88);
+  });
+
+  it("accumulates wheel zoom on an unrounded target so integer scales are not sticky", () => {
+    let target = 2;
+    for (let step = 0; step < 8; step += 1) target = nextCameraTargetScale(target, 800);
+    expect(target).toBe(0.8);
+    expect(pixelPerfectCameraScale(target, 0.8)).toBe(0.8);
+    for (let step = 0; step < 8; step += 1) target = nextCameraTargetScale(target, -800);
+    expect(target).toBeGreaterThan(1);
+    expect(Number.isInteger(pixelPerfectCameraScale(target, 0.8))).toBe(true);
   });
 
   it("loads a center-first critical window and leaves the prefetch ring in background", () => {

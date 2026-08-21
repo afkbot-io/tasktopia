@@ -86,8 +86,9 @@ describe("Государственный архив", () => {
     const infrastructure = features.filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "PROP");
     const fences = infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"));
     const barriers = infrastructure.filter((feature) => feature.assetKey === "archive-security-barrier");
-    expect(fences).toHaveLength(71);
+    expect(fences).toHaveLength(70);
     expect(barriers).toHaveLength(1);
+    expect(barriers[0]!.footprint).toHaveLength(3);
     expect(compound!.accessPath.length).toBeGreaterThanOrEqual(4);
 
     const compoundBounds = boundsOf(compound!.footprint);
@@ -96,6 +97,7 @@ describe("Государственный архив", () => {
     const gateCells = new Set([
       cellKey({ x: core.origin.x + 8, y: gateY }),
       cellKey({ x: core.origin.x + 9, y: gateY }),
+      cellKey({ x: core.origin.x + 10, y: gateY }),
     ]);
     const fenceCells = new Set(fences.flatMap((feature) => feature.footprint).map(cellKey));
     expect([...gateCells].every((key) => !fenceCells.has(key))).toBe(true);
@@ -167,8 +169,10 @@ describe("Государственный архив", () => {
     const restoredCompound = restored.find((feature) => feature.id === compound!.id);
     const infrastructure = restored.filter((feature) => feature.parentFeatureId === compound!.id && feature.assetKind === "PROP");
     expect(restoredCompound!.accessPath.length).toBeGreaterThanOrEqual(4);
-    expect(infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"))).toHaveLength(71);
-    expect(infrastructure.filter((feature) => feature.assetKey === "archive-security-barrier")).toHaveLength(1);
+    expect(infrastructure.filter((feature) => feature.assetKey.startsWith("archive-fence-"))).toHaveLength(70);
+    const barriers = infrastructure.filter((feature) => feature.assetKey === "archive-security-barrier");
+    expect(barriers).toHaveLength(1);
+    expect(barriers[0]!.footprint).toHaveLength(3);
   });
 
   it("добавляет уникальные здания только на порогах роста архива", async () => {

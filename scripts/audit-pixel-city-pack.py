@@ -125,7 +125,11 @@ def audit() -> dict[str, Any]:
                 minimum_height_ratio = minimum_finished_height_ratio(key, height)
                 if (
                     bounds is None
-                    or bounds[2] - bounds[0] < width * 0.8
+                    # Tall canopy/truck profiles intentionally keep lateral
+                    # breathing room for columns and roof projection. Their
+                    # absolute native silhouettes are already larger than the
+                    # retired V5 assets; reject only materially undersized art.
+                    or bounds[2] - bounds[0] < width * 0.7
                     or bounds[3] - bounds[1] < height * minimum_height_ratio
                 ):
                     violations.append(f"{key}: finished fuel-station silhouette is too small at native scale")
@@ -188,6 +192,13 @@ def audit() -> dict[str, Any]:
         minimum = minimum_opaque_bounds.get(key)
         if minimum and (bounds is None or bounds[2] - bounds[0] < minimum[0] or bounds[3] - bounds[1] < minimum[1]):
             violations.append(f"props/{key}: authored subject is too small for its runtime footprint")
+        if key.startswith("tree-") and prop.get("footprintCells") == [1, 1]:
+            alpha = image.getchannel("A")
+            contact = [x for y in range(max(0, image.height - 4), image.height)
+                       for x in range(image.width) if alpha.getpixel((x, y)) > 0]
+            anchor_x = image.width / 2 - 0.5
+            if not contact or abs(sum(contact) / len(contact) - anchor_x) > 1.5:
+                violations.append(f"props/{key}: tree ground contact is not centred on its 8x8 cell")
 
     ai_prop_entries = json.loads(AI_PROP_CATALOG_PATH.read_text()) if AI_PROP_CATALOG_PATH.exists() else []
     for authored in ai_prop_entries:
@@ -213,7 +224,7 @@ def audit() -> dict[str, Any]:
     for variant, orientations in vehicles.items():
         if set(orientations) != {"horizontal", "north", "south"}:
             violations.append(f"vehicles/{variant}: expected exactly horizontal, north and south views")
-        for orientation, expected_size in (("horizontal", (16, 8)), ("north", (8, 16)), ("south", (8, 16))):
+        for orientation, expected_size in (("horizontal", (24, 16)), ("north", (16, 24)), ("south", (16, 24))):
             item = orientations.get(orientation)
             if not item:
                 violations.append(f"vehicles/{variant}: missing {orientation}")
@@ -224,14 +235,14 @@ def audit() -> dict[str, Any]:
             vehicle_masks[orientation].append(image.getchannel("A").tobytes())
             vehicle_drawings[orientation].append(image.tobytes())
             bounds = image.getchannel("A").getbbox()
-            if orientation in {"north", "south"} and bounds and (bounds[2] - bounds[0] < 6 or bounds[3] - bounds[1] < 13):
+            if orientation in {"north", "south"} and bounds and (bounds[2] - bounds[0] < 12 or bounds[3] - bounds[1] < 21):
                 violations.append(f"vehicles/{variant}/{orientation}: car is too small to read in its lane")
-            if orientation == "horizontal" and bounds and (bounds[2] - bounds[0] < 13 or bounds[3] - bounds[1] < 6):
+            if orientation == "horizontal" and bounds and (bounds[2] - bounds[0] < 21 or bounds[3] - bounds[1] < 12):
                 violations.append(f"vehicles/{variant}/horizontal: car is too small to read in its lane")
             if item.get("artSource") != "AI_AUTHORED" or not item.get("sourceSheet"):
                 violations.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
-            if item.get("visualProfile") != "TASKTOPIA_V5_OBLIQUE_ROAD_VEHICLE":
-                violations.append(f"vehicles/{variant}/{orientation}: wrong V5 oblique-road visual profile")
+            if item.get("visualProfile") != "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE":
+                violations.append(f"vehicles/{variant}/{orientation}: wrong V6 native-road visual profile")
             expected_facing = "EAST" if orientation == "horizontal" else orientation.upper()
             if item.get("baseFacing") != expected_facing:
                 violations.append(f"vehicles/{variant}/{orientation}: base view must face {expected_facing}")

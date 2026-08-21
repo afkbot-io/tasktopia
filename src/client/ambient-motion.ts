@@ -20,7 +20,7 @@ export function ambientMotionPresentation(
   cellSize: number,
 ): { x: number; y: number; rotation: 0 } {
   const point = kind === "CAR" || kind === "BUS"
-    ? vehicleLanePosition(current, next, progress, previous, cellSize)
+    ? vehicleLanePosition(current, next, progress, previous, cellSize, kind)
     : residentGroundPosition(current, next, progress, cellSize);
   return { ...point, rotation: 0 };
 }

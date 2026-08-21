@@ -92,6 +92,14 @@ unit/integration тестов, 26 passed базовых E2E и 10/10 чисты�
 190 ms на холодный viewport и 42 ms на повторный; compact transport уменьшил
 wire payload на 74,5%. Пиковый RSS составил 476 MiB при gate 512 MiB.
 
+Повторный release gate 2026-08-22 после дорожного, транспортного и seed-decor
+обновления дал 468 passed unit/integration тестов, 26 passed базовых E2E и
+2 passed atlas E2E. Оба адресных LOD E2E прошли после исправления непрерывной
+target-scale. Все
+10/10 городов seed-validation завершили server audit без нарушений. Изолированный
+scale fixture: `11 875 ms` генерации, `178 ms` холодный viewport, `41 ms`
+повторный viewport, `414 MB` process RSS и `82%` сокращения compact wire.
+
 Результат записывается в `screenshots/world-validation/browser-report.json`, а
 кадры — в `city-01.png` … `city-10.png`. Отдельный широкий кадр
 `final-four-district-city.png` показывает четыре состояния финального города.

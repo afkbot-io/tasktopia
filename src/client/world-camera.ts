@@ -12,6 +12,28 @@ export type ProgressiveChunkPlan = { critical: ChunkCoordinate[]; background: Ch
 // retains recently crossed chunks for smooth reverse pans.
 export const PREFETCH_VIEWPORT_RATIO = 0;
 
+/**
+ * Detailed pixel sprites may only be shown at an integer CSS scale. Nearest
+ * sampling cannot make a 1.25x pixel occupy a stable number of screen pixels:
+ * the raster alternates between one- and two-pixel columns as a sprite moves,
+ * which looks like frame stretching. Overview ground remains free to fit.
+ */
+export function pixelPerfectCameraScale(requested: number, minimum: number, detailThreshold = 1): number {
+  const bounded = Math.max(requested, minimum);
+  if (bounded < detailThreshold && minimum < detailThreshold) return bounded;
+  return Math.max(Math.ceil(minimum), Math.round(bounded), 1);
+}
+
+/**
+ * Wheel zoom must accumulate against its unrounded target. Accumulating from
+ * the integer presentation scale makes 1x and 2x sticky (2 * 0.88 rounds back
+ * to 2 forever), so a user can never cross the detail/overview boundary.
+ */
+export function nextCameraTargetScale(currentTarget: number, deltaY: number, minimum = 0.8, maximum = 4): number {
+  const factor = deltaY > 0 ? 0.88 : 1.12;
+  return Math.max(minimum, Math.min(maximum, currentTarget * factor));
+}
+
 /** Keep city entry readable; the country atlas remains the all-city view. */
 export function cityDetailFocusBounds(center: { x: number; y: number }, bounds: Rect): Rect {
   const width = bounds.maxX - bounds.minX + 1;

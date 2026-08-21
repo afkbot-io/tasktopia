@@ -80,7 +80,7 @@ import { hashCoordinate, isBuildableTerrain, isWater, terrainAt } from "../share
 import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { bridgeComponentsWithoutTwoLandPortals, roadCorridorBlockers, stampRoadCorridor } from "./world/road-geometry";
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
-import { generatedGreenAreaProfile, greenAreaAccentCandidates, greenAreaAccentTarget, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
+import { generatedGreenAreaProfile, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
 import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
 import type { CountryAtlasDto } from "../shared/country-atlas-contract";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
@@ -2455,8 +2455,6 @@ export class AppService {
     districtId: string,
     seed: number,
     districtCells: Cell[],
-    archetype: DistrictArchetype,
-    districtIndex: number,
     reservedLots: PlannedLotDto[] = [],
     snapshot?: GenerationSpatialSnapshot,
   ): Promise<PlannedLotDto[]> {
@@ -2470,7 +2468,6 @@ export class AppService {
     // timing. The first public park is mandatory and another green area is due for roughly
     // every six occupied lots. A due area may retire only speculative empty
     // pads; task-owned and demolition lots remain immutable reservations.
-    const cityIndex = (snapshot?.cities ?? await this.listCities(countryId)).findIndex((candidate) => candidate.id === city.id);
     // Generated parks are public world features; task-owned parks retain their
     // independent lifecycle and badge. Alternating compact parks and groves
     // keeps greenery visible without consuming the whole buildable district.
@@ -2578,88 +2575,10 @@ export class AppService {
     if (snapshot) snapshot.features.push(area);
     await this.clearRuins(countryId, selected.footprint, snapshot);
 
-    const lampByArchetype: Record<DistrictArchetype, string> = {
-      PRIVATE: "streetlamp-vintage", NEW_BUILD: "streetlamp-modern", MIXED_URBAN: "streetlamp-double",
-      CIVIC: "streetlamp-solar", COMMERCIAL: "streetlamp-industrial",
-    };
-    const treeVariants = ["tree-birch", "tree-pine", "tree-willow", "tree-oak", "tree-apple", "tree-cherry", "tree-maple", "tree-cedar", "tree-cypress", "tree-aspen", "tree-magnolia", "tree-redwood", "tree-round", "tree-conifer"] as const;
-    const primaryTree = treeVariants[(cityIndex + districtIndex) % treeVariants.length]!;
-    const secondaryTree = treeVariants[(cityIndex + districtIndex + 3) % treeVariants.length]!;
-    type DecorPlacement = readonly [assetKey: string, offsetX: number, offsetY: number, width: number, height: number];
-    const decorByArea: Record<string, readonly (readonly DecorPlacement[])[]> = {
-      "urban-formal": [
-        [["fountain-large", 7, 3, 4, 4], ["park-bench-double", 3, 4, 3, 1], ["park-bench-double", 12, 5, 3, 1], ["flower-bed-horizontal", 2, 2, 2, 1], ["flower-bed-horizontal", 14, 2, 2, 1], ["flower-bed-horizontal", 2, 7, 2, 1], ["flower-bed-horizontal", 14, 7, 2, 1], [primaryTree, 1, 1, 1, 1], [secondaryTree, 16, 1, 1, 1], [secondaryTree, 1, 8, 1, 1], [primaryTree, 16, 8, 1, 1], [lampByArchetype[archetype], 6, 1, 1, 1], [lampByArchetype[archetype], 11, 8, 1, 1]],
-        [["park-sculpture", 8, 3, 2, 3], ["park-flower-clock", 2, 4, 3, 2], ["park-flower-clock", 13, 4, 3, 2], ["flower-bed-vertical", 5, 1, 1, 2], ["flower-bed-vertical", 12, 7, 1, 2], [primaryTree, 1, 1, 1, 1], [secondaryTree, 16, 1, 1, 1], [secondaryTree, 1, 8, 1, 1], [primaryTree, 16, 8, 1, 1], ["park-bench-double", 3, 5, 3, 1], ["park-bench-double", 12, 4, 3, 1], [lampByArchetype[archetype], 7, 1, 1, 1], [lampByArchetype[archetype], 10, 8, 1, 1]],
-      ],
-      "urban-community": [
-        [["playground-carousel", 2, 2, 3, 3], ["park-pond", 9, 2, 4, 3], ["park-bench-double", 6, 7, 3, 1], [primaryTree, 1, 1, 1, 1], [secondaryTree, 14, 8, 1, 1], [lampByArchetype[archetype], 7, 2, 1, 1]],
-        [["park-bandstand", 6, 2, 4, 3], ["playground-swing", 1, 5, 3, 3], ["picnic-table", 12, 5, 2, 2], [primaryTree, 1, 1, 1, 1], [secondaryTree, 14, 1, 1, 1], ["trash-bin", 10, 7, 1, 1]],
-      ],
-      "urban-central": [
-        [["fountain-large", 2, 1, 4, 4], ["park-bench-double", 0, 5, 3, 1], ["park-sculpture", 6, 3, 2, 3], [lampByArchetype[archetype], 7, 6, 1, 1], [primaryTree, 0, 0, 1, 1]],
-        [["park-bandstand", 2, 1, 4, 3], ["park-flower-clock", 0, 4, 3, 2], ["park-sculpture", 6, 3, 2, 3], ["park-bench-double", 3, 5, 3, 1], [secondaryTree, 7, 0, 1, 1]],
-        [["fountain-large", 0, 1, 4, 4], ["park-bandstand", 4, 0, 4, 3], ["park-flower-clock", 4, 4, 3, 2], [lampByArchetype[archetype], 7, 6, 1, 1], [primaryTree, 0, 0, 1, 1]],
-      ],
-      "urban-botanical": [
-        [["park-pond", 0, 0, 4, 3], ["gazebo", 3, 3, 4, 3], ["topiary-spiral", 1, 4, 1, 1], [secondaryTree, 6, 0, 1, 1], [lampByArchetype[archetype], 0, 4, 1, 1]],
-        [["park-pond", 3, 0, 4, 3], ["park-bandstand", 0, 3, 4, 3], ["park-flower-clock", 4, 4, 3, 2], [primaryTree, 0, 0, 1, 1]],
-        [["gazebo", 0, 0, 4, 3], ["park-flower-clock", 4, 0, 3, 2], ["park-sculpture", 5, 2, 2, 3], ["park-pond", 0, 3, 4, 3], [secondaryTree, 4, 5, 1, 1]],
-      ],
-      "urban-amusement": [
-        [["playground-carousel", 0, 0, 3, 3], ["playground-slide", 4, 0, 3, 2], ["playground-climbing", 4, 2, 3, 3], [lampByArchetype[archetype], 3, 3, 1, 1]],
-        [["playground-small", 0, 0, 3, 2], ["playground-swing", 4, 0, 3, 3], ["playground-carousel", 0, 2, 3, 3], ["trash-bin", 6, 4, 1, 1]],
-        [["playground-slide", 0, 0, 3, 2], ["playground-climbing", 0, 2, 3, 3], ["playground-small", 4, 0, 3, 2], ["playground-swing", 4, 2, 3, 3], [lampByArchetype[archetype], 3, 3, 1, 1]],
-      ],
-      "urban-park": [
-        [["playground-small", 0, 0, 3, 2], ["park-bench-double", 1, 3, 3, 1], [primaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1]],
-        [["playground-carousel", 0, 0, 3, 3], ["park-bench-double", 2, 3, 3, 1], [secondaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1]],
-        [["playground-swing", 0, 0, 3, 3], ["park-bench-double", 2, 3, 3, 1], [primaryTree, 4, 0, 1, 1], [lampByArchetype[archetype], 4, 2, 1, 1], ["trash-bin", 0, 3, 1, 1]],
-      ],
-      "urban-grove": [
-        [["gazebo", 1, 1, 4, 3], [primaryTree, 0, 0, 1, 1], ["tree-pine", 5, 0, 1, 1], [secondaryTree, 5, 3, 1, 1], ["park-bench-double", 0, 4, 3, 1], [lampByArchetype[archetype], 4, 4, 1, 1]],
-        [["park-pond", 0, 0, 4, 3], ["picnic-table", 4, 0, 2, 2], [primaryTree, 0, 4, 1, 1], [secondaryTree, 5, 4, 1, 1], [lampByArchetype[archetype], 4, 3, 1, 1], ["trash-bin", 5, 3, 1, 1]],
-        [["park-bandstand", 2, 0, 4, 3], ["park-flower-clock", 0, 3, 3, 2], [primaryTree, 0, 0, 1, 1], [secondaryTree, 5, 3, 1, 1], [lampByArchetype[archetype], 4, 4, 1, 1]],
-      ],
-    };
-    const variants = decorByArea[assetKey] ?? decorByArea["urban-park"]!;
-    const decor = variants[Math.floor(hashCoordinate(seed, selected.origin.x, selected.origin.y, 829) * variants.length)] ?? variants[0]!;
-    const legacyLayoutSize: Readonly<Record<string, readonly [number, number]>> = {
-      "urban-formal": [18, 10], "urban-community": [16, 10],
-      "urban-central": [8, 7], "urban-botanical": [7, 6], "urban-amusement": [7, 5], "urban-grove": [6, 5], "urban-park": [5, 4],
-    };
-    const [layoutWidth, layoutHeight] = legacyLayoutSize[assetKey] ?? legacyLayoutSize["urban-park"]!;
-    const shiftX = Math.floor((selected.size[0] - layoutWidth) / 2);
-    const shiftY = Math.floor((selected.size[1] - layoutHeight) / 2);
-    const occupiedDecor = new Set<string>();
-    for (const [assetKey, offsetX, offsetY, width, height] of decor) {
-      const origin = { x: selected.origin.x + shiftX + offsetX, y: selected.origin.y + shiftY + offsetY };
-      const footprint = rectangleFootprint(origin, width, height);
-      if (!footprint.every((cell) => selected.footprint.some((areaCell) => cellKey(areaCell) === cellKey(cell)))) continue;
-      for (const cell of footprint) occupiedDecor.add(cellKey(cell));
-      await this.insertWorldFeature(countryId, {
-                                        cityId: city.id, districtId, parentFeatureId: area.id, kind: "PARK_DECOR", assetKind: "PROP", assetKey,
-                                        origin, footprint, orientation: "S", accessPath: [],
-                                      });
-    }
-    const edgeAccents = greenAreaAccentCandidates(selected.size[0], selected.size[1], assetKey)
-      .sort((left, right) => hashCoordinate(seed, selected.origin.x + left.x, selected.origin.y + left.y, 839)
-        - hashCoordinate(seed, selected.origin.x + right.x, selected.origin.y + right.y, 839));
-    const accentTarget = greenAreaAccentTarget(selected.size[0], selected.size[1]);
-    let accentIndex = 0;
-    for (const offset of edgeAccents) {
-      if (accentIndex >= accentTarget) break;
-      const origin = { x: selected.origin.x + offset.x, y: selected.origin.y + offset.y };
-      if (occupiedDecor.has(cellKey(origin))) continue;
-      const accentKey = accentIndex % 3 === 2
-        ? lampByArchetype[archetype]
-        : accentIndex % 2 === 0 ? primaryTree : secondaryTree;
-      await this.insertWorldFeature(countryId, {
-        cityId: city.id, districtId, parentFeatureId: area.id, kind: "PARK_DECOR", assetKind: "PROP", assetKey: accentKey,
-        origin, footprint: [origin], orientation: "S", accessPath: [],
-      });
-      occupiedDecor.add(cellKey(origin));
-      accentIndex += 1;
-    }
+    // Area interiors are a deterministic client materialization of
+    // (terrainSeed, area origin/type/stage). Persisting every tree, lamp and
+    // bench duplicated disposable coordinates in PostgreSQL and inflated
+    // every viewport. Keep only the stateful AREA row.
     return retainedLots;
   }
 
@@ -2871,7 +2790,7 @@ export class AppService {
         // day one. The archive may grow, but its fence and gate must never be
         // forced onto water, an existing road or somebody else's building.
         const securedSite = rectangleFootprint({ x: origin.x - 1, y: origin.y - 1 }, ARCHIVE_COMPOUND.width + 2, ARCHIVE_COMPOUND.height + 2);
-        const approach = rectangleFootprint({ x: origin.x + ARCHIVE_GATE_CENTER_OFFSET_X - 1, y: origin.y + ARCHIVE_COMPOUND.height }, 2, 4);
+        const approach = rectangleFootprint({ x: origin.x + ARCHIVE_GATE_CENTER_OFFSET_X - 1, y: origin.y + ARCHIVE_COMPOUND.height }, 3, 4);
         if (![...securedSite, ...approach].every((cell) => !roads.has(cellKey(cell))
           && !occupied.has(cellKey(cell))
           && !cityExclusions.some((bounds) => contains(bounds, cell))
@@ -2939,7 +2858,11 @@ export class AppService {
       addInfrastructure("archive-fence-horizontal", { x: origin.x + offset, y: origin.y - 1 }, "E", 2, 1);
     }
     for (let offset = -1; offset <= ARCHIVE_COMPOUND.width - 1; offset += 2) {
-      if (offset === ARCHIVE_GATE_CENTER_OFFSET_X - 1) continue;
+      const segmentMin = offset;
+      const segmentMax = offset + 1;
+      const drivewayMin = ARCHIVE_GATE_CENTER_OFFSET_X - 1;
+      const drivewayMax = ARCHIVE_GATE_CENTER_OFFSET_X + 1;
+      if (segmentMin <= drivewayMax && segmentMax >= drivewayMin) continue;
       addInfrastructure("archive-fence-horizontal", { x: origin.x + offset, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 2, 1);
     }
     for (const sideX of [origin.x - 1, origin.x + ARCHIVE_COMPOUND.width]) {
@@ -2947,7 +2870,7 @@ export class AppService {
         addInfrastructure("archive-fence-vertical", { x: sideX, y: origin.y + offset }, "S", 1, 2);
       }
     }
-    addInfrastructure("archive-security-barrier", { x: origin.x + ARCHIVE_GATE_CENTER_OFFSET_X - 1, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 2, 1);
+    addInfrastructure("archive-security-barrier", { x: origin.x + ARCHIVE_GATE_CENTER_OFFSET_X - 1, y: origin.y + ARCHIVE_COMPOUND.height }, "E", 3, 1);
 
     const infrastructureKeys = new Set(infrastructure.map((item) => `${item.assetKey}:${cellKey(item.origin)}`));
     const existingInfrastructure = (snapshot?.features ?? await this.listWorldFeatures(countryId)).filter((feature) =>
@@ -3830,10 +3753,9 @@ export class AppService {
       // Green areas arrive together with the first streets: a pocket park or
       // grove is tucked into the remaining territory, away from planned lots.
       const cityRow = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ?").get(district.cityId) as Row;
-      const districtIndex = snapshot.districts.filter((item) => item.cityId === district.cityId).findIndex((item) => item.id === district.id);
       const city = cityDto(cityRow);
       const greenAdjustedLots = await this.publishDistrictGreenFeature(
-        countryId, city, district.id, seed, expandedDistrictCells, district.archetype, Math.max(0, districtIndex), lots, snapshot,
+        countryId, city, district.id, seed, expandedDistrictCells, lots, snapshot,
       );
       if (greenAdjustedLots.length !== lots.length) {
         await this.db.prepare("UPDATE districts_v3 SET lots_json = ? WHERE id = ?")
@@ -4895,16 +4817,12 @@ export class AppService {
                       // protected and the sixth, twelfth, ... task can publish
                       // its next small or large green area immediately.
                       const taskCity = cityDto(cityRow);
-                      const districtIndex = generationSnapshot.districts.filter((item) => item.cityId === input.cityId)
-                        .findIndex((item) => item.id === district.id);
                       const greenAdjustedLots = await this.publishDistrictGreenFeature(
                         countryId,
                         taskCity,
                         district.id,
                         Number((await this.countryRow(countryId)).seed),
                         district.cells,
-                        district.archetype,
-                        Math.max(0, districtIndex),
                         lots,
                         generationSnapshot,
                       );

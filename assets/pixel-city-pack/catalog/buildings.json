@@ -825,15 +825,15 @@
       "rarity": "UNCOMMON",
       "spriteSize": [
         112,
-        72
+        80
       ],
       "footprintCells": [
         14,
-        7
+        8
       ],
       "anchorPx": [
         56,
-        72
+        80
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -859,15 +859,18 @@
       "serviceRole": "fuel-service",
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-gas-station-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-gas-station-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-gas-station-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d4ea02d64fdd114b7c10c160d95267e48282838419e443ff9a3de24f6cd9e344",
-        "ab08b1c1ab03a7356bc7c2deda09c6ba2b42c1513b4772b9ff365bd287be45e3",
-        "cf81ab9b25cfd8dafa2d06529f593cba0653fab48dd5ba10cb50f52bfff34dd2"
-      ]
+        "8887b26d26b427dca241246f2b2fa82c1b2d059736a5b4f4370a96f1fbc12623",
+        "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
+        "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
+      ],
+      "stageSourceGrid": [4, 2],
+      "stageSourceRowCounts": [4, 3],
+      "stageSourceSegment": 0
     },
     {
       "key": "commercial-parking-lot",
@@ -875,16 +878,16 @@
       "category": "COMMERCIAL",
       "rarity": "COMMON",
       "spriteSize": [
-        80,
-        64
+        96,
+        72
       ],
       "footprintCells": [
-        10,
-        6
+        12,
+        7
       ],
       "anchorPx": [
-        40,
-        64
+        48,
+        72
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -904,7 +907,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 5
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -912,14 +915,14 @@
       "serviceRole": "parking-service",
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-parking-lot-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-parking-lot-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-parking-lot-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-parking-lot-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-parking-lot-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-parking-lot-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "dc57e42dd834ccaa46d9d55f50e314a7cd2fe1db9ccb55e224444cf8345c463e",
-        "0270d496a0da47a48397e0fd7f9e8889841a98d3fafa996ce7fc12e9599f055c",
-        "f2532fae2209194d77d4b45d3fbd46668d20a71d47899bccfded348edadee481"
+        "2e56e0dcae7155887c7b23006860ca06e633106351dc1ece187eae335912e8b9",
+        "8340a38be5124dfd50981e5c3e6b6f96dff8db76a1a44fe8870f5dae48a85fa6",
+        "b08ae67eb320aabb1e59163f3a799ddfa505396197d5497592d1e9c35f99c7d5"
       ]
     },
     {
@@ -1530,16 +1533,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        64,
-        64
+        96,
+        72
       ],
       "footprintCells": [
-        8,
-        5
+        12,
+        7
       ],
       "anchorPx": [
-        32,
-        64
+        48,
+        72
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1557,7 +1560,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 4
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -1565,15 +1568,18 @@
       "serviceRole": "fuel-service",
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-gas-station-compact-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-gas-station-compact-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-gas-station-compact-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "0fa43b3b91fa7e53918286cb0313f955d5ebac0ee92dacc58243c52e4941e6f1",
-        "b65cbbe0c9b064641118b26bc968281a1af908e661b42e72e3a52d7f04474505",
-        "7a8e659c1f2c1487f0b1bb8f899739cfbe6c41d9be4ead91909a0a0088afcf2e"
-      ]
+        "8887b26d26b427dca241246f2b2fa82c1b2d059736a5b4f4370a96f1fbc12623",
+        "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
+        "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
+      ],
+      "stageSourceGrid": [4, 2],
+      "stageSourceRowCounts": [4, 3],
+      "stageSourceSegment": 1
     },
     {
       "key": "highrise-mixed-use-market",
@@ -1635,16 +1641,16 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        112,
-        80
+        128,
+        88
       ],
       "footprintCells": [
-        14,
-        8
+        16,
+        9
       ],
       "anchorPx": [
-        56,
-        80
+        64,
+        88
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -1661,7 +1667,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 8
         }
       ],
       "maxPerCity": 1,
@@ -1669,15 +1675,18 @@
       "serviceRole": "fuel-service",
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-highway-service-plaza-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-highway-service-plaza-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-highway-service-plaza-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "64bf2dacc3fb6b31f890e66ef4bcb5805299c0663367a90b5febf292c0c52838",
-        "0c2f5f2cdc6019191065c4ea89907a6c3fcb61fc347dd239c162f4c5cc1e8fdd",
-        "296e9c5994418d82816de40298feac146ee04b4a05ed924000f38b01dffc5003"
-      ]
+        "8887b26d26b427dca241246f2b2fa82c1b2d059736a5b4f4370a96f1fbc12623",
+        "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
+        "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
+      ],
+      "stageSourceGrid": [4, 2],
+      "stageSourceRowCounts": [4, 3],
+      "stageSourceSegment": 2
     },
     {
       "key": "house-garden-apartment",
@@ -2375,16 +2384,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        80,
-        64
+        96,
+        72
       ],
       "footprintCells": [
-        10,
-        6
+        12,
+        7
       ],
       "anchorPx": [
-        40,
-        64
+        48,
+        72
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -2402,7 +2411,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 5
+          "offset": 6
         }
       ],
       "maxPerCity": 1,
@@ -2410,15 +2419,18 @@
       "serviceRole": "fuel-service",
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-gas-station-electric-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-gas-station-electric-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-gas-station-electric-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "61ae133317a09df2515d2c2317f594da2c3167eca0a3bcfa18c3b51b62186514",
-        "00d428b78a397ef3d67ac7740a7088b212912fe592ff4c066bbe5990687fbc3b",
-        "c4276c5b852c05e29702479dfd20e0e6cc5f99a825159f9a6e34fd6c877c7e9c"
-      ]
+        "8887b26d26b427dca241246f2b2fa82c1b2d059736a5b4f4370a96f1fbc12623",
+        "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
+        "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
+      ],
+      "stageSourceGrid": [4, 2],
+      "stageSourceRowCounts": [4, 3],
+      "stageSourceSegment": 3
     },
     {
       "key": "commercial-gas-station-truck",
@@ -2426,15 +2438,15 @@
       "category": "COMMERCIAL",
       "rarity": "RARE",
       "spriteSize": [
-        128,
+        144,
         96
       ],
       "footprintCells": [
-        16,
-        8
+        18,
+        10
       ],
       "anchorPx": [
-        64,
+        72,
         96
       ],
       "platform": "ASPHALT",
@@ -2452,7 +2464,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 9
         }
       ],
       "maxPerCity": 1,
@@ -2460,15 +2472,18 @@
       "serviceRole": "fuel-service",
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-gas-station-truck-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-gas-station-truck-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-gas-station-truck-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "3264f4f89376b286672454acca76c87ab30f1f29993fa18f5d51dbbcb03fb923",
-        "181695250f9cfcaf44ba0ce23514a1c536f53ae09eca0e9c840aba104f3089c1",
-        "dc72e0bd627cf9c62250e7072e0b2da8acb572527c0634571c25df3948de5f18"
-      ]
+        "8887b26d26b427dca241246f2b2fa82c1b2d059736a5b4f4370a96f1fbc12623",
+        "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
+        "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
+      ],
+      "stageSourceGrid": [4, 2],
+      "stageSourceRowCounts": [4, 3],
+      "stageSourceSegment": 4
     },
     {
       "key": "commercial-gas-station-cafe",
@@ -2476,66 +2491,16 @@
       "category": "COMMERCIAL",
       "rarity": "UNCOMMON",
       "spriteSize": [
-        88,
-        64
+        104,
+        72
       ],
       "footprintCells": [
-        11,
-        6
+        13,
+        7
       ],
       "anchorPx": [
-        44,
-        64
-      ],
-      "platform": "ASPHALT",
-      "estimates": [
-        6
-      ],
-      "tags": [
-        "commercial"
-      ],
-      "ruleIds": [
-        "STANDARD",
-        "REQUIRES_COLLECTOR",
-        "UNIQUE_SERVICE"
-      ],
-      "entrances": [
-        {
-          "side": "S",
-          "offset": 5
-        }
-      ],
-      "maxPerCity": 1,
-      "maxPerDistrict": 1,
-      "serviceRole": "fuel-service",
-      "reviewed": true,
-      "stageSources": [
-        "ai-authored/building-stage-study/commercial-gas-station-cafe-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-gas-station-cafe-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-gas-station-cafe-v5/sources/stage-5.png"
-      ],
-      "stageSha256": [
-        "6ad270a8a468db058412fe8c49610c00a6b6bd262d4e67defc5815eaa40bd8eb",
-        "c3b241dc8c0f1301318452482b3fb95c72de520db20cf2ff13b2473974d376ee",
-        "7a9617d8da7ced7f8406754ea1c4cf63b0ff3e001123c701df3acd8305e80eb0"
-      ]
-    },
-    {
-      "key": "commercial-gas-station-wash",
-      "label": "Заправка с мойкой",
-      "category": "COMMERCIAL",
-      "rarity": "UNCOMMON",
-      "spriteSize": [
-        96,
-        64
-      ],
-      "footprintCells": [
-        12,
-        6
-      ],
-      "anchorPx": [
-        48,
-        64
+        52,
+        72
       ],
       "platform": "ASPHALT",
       "estimates": [
@@ -2560,15 +2525,71 @@
       "serviceRole": "fuel-service",
       "reviewed": true,
       "stageSources": [
-        "ai-authored/building-stage-study/commercial-gas-station-wash-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/commercial-gas-station-wash-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/commercial-gas-station-wash-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "ee861abcd1ab701fdea27e83d3e96f74ed18f8ea79307ed592244c572708765f",
-        "95c50af1033c5cd7a190315dde79e99e9d8fcc785186a05f76cb8fa1083ff3cb",
-        "4e098be40eaa3fcbdab34358569fb36e300c2f9d5e54f77961bf090ea478f71a"
-      ]
+        "8887b26d26b427dca241246f2b2fa82c1b2d059736a5b4f4370a96f1fbc12623",
+        "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
+        "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
+      ],
+      "stageSourceGrid": [4, 2],
+      "stageSourceRowCounts": [4, 3],
+      "stageSourceSegment": 5
+    },
+    {
+      "key": "commercial-gas-station-wash",
+      "label": "Заправка с мойкой",
+      "category": "COMMERCIAL",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        112,
+        72
+      ],
+      "footprintCells": [
+        14,
+        7
+      ],
+      "anchorPx": [
+        56,
+        72
+      ],
+      "platform": "ASPHALT",
+      "estimates": [
+        6
+      ],
+      "tags": [
+        "commercial"
+      ],
+      "ruleIds": [
+        "STANDARD",
+        "REQUIRES_COLLECTOR",
+        "UNIQUE_SERVICE"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 7
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": 1,
+      "serviceRole": "fuel-service",
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/commercial-gas-station-family-v6/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "8887b26d26b427dca241246f2b2fa82c1b2d059736a5b4f4370a96f1fbc12623",
+        "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
+        "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
+      ],
+      "stageSourceGrid": [4, 2],
+      "stageSourceRowCounts": [4, 3],
+      "stageSourceSegment": 6
     },
     {
       "key": "civic-museum",

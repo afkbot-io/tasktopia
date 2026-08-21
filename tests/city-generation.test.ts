@@ -178,7 +178,7 @@ describe("V6 city morphology and access planning", () => {
 
   it("connects opposite sidewalks with sparse oriented crosswalk cells", () => {
     const roads = new Map<string, RoadCellDto>();
-    for (let x = -8; x <= 8; x += 1) for (let y = -1; y <= 0; y += 1) {
+    for (let x = -8; x <= 8; x += 1) for (let y = -1; y <= 1; y += 1) {
       roads.set(`${x},${y}`, { x, y, mask: 0, structure: "ROAD", roadClass: "LOCAL" });
     }
     const surfaces = buildSurfaceMap({ roads, cities: [city()], districts: [], tasks: [], features: [], isSurfaceTerrain: () => true });
@@ -187,7 +187,7 @@ describe("V6 city morphology and access planning", () => {
     expect(crossings.every((surface) => surface.orientation === "V")).toBe(true);
     const crossingX = crossings[0]!.x;
     expect(surfaces.get(`${crossingX},-2`)?.kind).toBe("SIDEWALK");
-    expect(surfaces.get(`${crossingX},1`)?.kind).toBe("SIDEWALK");
+    expect(surfaces.get(`${crossingX},2`)?.kind).toBe("SIDEWALK");
   });
 
   it("publishes park navigation only after its path-construction stage", () => {
