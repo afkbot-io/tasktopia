@@ -62,20 +62,54 @@ function districtSeparatorBoundary(districts: CountryAtlasDistrictDto[]): string
   return lines.join("");
 }
 
-function AtlasBuildingGlyph({ entry, groundX, groundY }: {
+function AtlasBuildingGlyph({ entry, identity, scale, groundX, groundY }: {
   entry: BuildingCatalogEntry;
+  identity: string;
+  scale: CountryAtlasCityDto["scale"];
   groundX: number;
   groundY: number;
 }) {
-  const marker = atlasBuildingPresentation(entry.category, entry.spriteSize);
+  const marker = atlasBuildingPresentation(entry.category, entry.spriteSize, {
+    identity,
+    assetKey: entry.key,
+    projectedFootprint: {
+      width: entry.footprint.width * CELL * scale,
+      height: entry.footprint.height * CELL * scale,
+    },
+  });
   const left = groundX - marker.width / 2;
   const top = groundY - marker.height;
-  return <>
-    <rect x={left} y={top + marker.roofDepth} width={marker.width} height={marker.height - marker.roofDepth} fill={marker.facade} stroke="#22383b" strokeWidth="1" />
-    <path d={`M${left - marker.sideDepth} ${top + marker.roofDepth}L${left + 2} ${top}H${left + marker.width - 2}L${left + marker.width + marker.sideDepth} ${top + marker.roofDepth}Z`} fill={marker.roof} stroke="#22383b" strokeWidth="1" />
-    <rect x={groundX - marker.doorWidth / 2} y={groundY - 6} width={marker.doorWidth} height={6} fill="#17333a" />
-    <path d={`M${left + 3} ${top + 8}H${left + marker.width - 3}M${left + 3} ${top + 12}H${left + marker.width - 3}`} stroke={marker.accent} strokeWidth="1.5" strokeDasharray="3 2" />
-  </>;
+  const bodyTop = top + marker.roofDepth;
+  const bodyHeight = marker.height - marker.roofDepth;
+  const detailTop = bodyTop + Math.max(2.5, bodyHeight * 0.32);
+  const windowCount = Math.max(2, Math.min(4, Math.floor(marker.width / 3.2)));
+  const windowGap = marker.width / (windowCount + 1);
+  const body = marker.profile === "courtyard"
+    ? <path d={`M${left} ${bodyTop}H${left + marker.width * 0.36}V${bodyTop + 2}H${left + marker.width * 0.64}V${bodyTop}H${left + marker.width}V${groundY}H${left}Z`} fill={marker.facade} stroke={marker.outline} strokeWidth=".75" />
+    : <rect x={left} y={bodyTop} width={marker.width} height={bodyHeight} fill={marker.facade} stroke={marker.outline} strokeWidth=".75" />;
+  const roof = marker.profile === "gable"
+    ? <path d={`M${left - marker.sideDepth} ${bodyTop}L${groundX} ${top - 0.5}L${left + marker.width + marker.sideDepth} ${bodyTop}Z`} fill={marker.roof} stroke={marker.outline} strokeWidth=".75" />
+    : marker.profile === "stepped"
+      ? <><rect x={left - marker.sideDepth} y={bodyTop - 1.25} width={marker.width + marker.sideDepth * 2} height="1.5" fill={marker.roof} stroke={marker.outline} strokeWidth=".65" /><rect x={left + marker.width * 0.23} y={top - 0.5} width={marker.width * 0.54} height={marker.roofDepth} fill={marker.roof} stroke={marker.outline} strokeWidth=".65" /></>
+      : marker.profile === "courtyard"
+        ? <path d={`M${left - marker.sideDepth} ${bodyTop}V${top}H${left + marker.width * 0.38}V${top + 1.5}H${left + marker.width * 0.62}V${top}H${left + marker.width + marker.sideDepth}V${bodyTop}Z`} fill={marker.roof} stroke={marker.outline} strokeWidth=".75" />
+        : <rect x={left - marker.sideDepth} y={top} width={marker.width + marker.sideDepth * 2} height={marker.roofDepth} fill={marker.roof} stroke={marker.outline} strokeWidth=".75" />;
+
+  return <g data-atlas-profile={marker.profile} opacity=".9">
+    <rect x={left + 1} y={groundY} width={marker.width} height="1.25" fill="#173432" opacity=".28" />
+    {body}
+    {roof}
+    {Array.from({ length: windowCount }, (_, index) => <rect
+      key={index}
+      x={left + windowGap * (index + 1) - 0.6}
+      y={detailTop}
+      width="1.2"
+      height={entry.category === "HIGHRISE" ? Math.max(2, bodyHeight * 0.42) : 2}
+      fill={marker.window}
+    />)}
+    {entry.category !== "HIGHRISE" && bodyHeight >= 8 && <path d={`M${left + 1.5} ${groundY - 4}H${left + marker.width - 1.5}`} stroke={marker.accent} strokeWidth=".7" opacity=".7" />}
+    <rect x={groundX - marker.doorWidth / 2} y={groundY - 3.5} width={marker.doorWidth} height="3.5" fill="#29494b" />
+  </g>;
 }
 
 export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCitySelect, onDistrictSelect, onCityHover }: {
@@ -281,7 +315,7 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
               onClick={(event) => { event.stopPropagation(); if (district) onDistrictSelect(city, district); else onCitySelect(city); }}
               onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (district) onDistrictSelect(city, district); else onCitySelect(city); } }}
             >
-              <AtlasBuildingGlyph entry={entry} groundX={groundX} groundY={groundY} />
+              <AtlasBuildingGlyph entry={entry} identity={building.id} scale={scale} groundX={groundX} groundY={groundY} />
             </g>;
           })}
           {city.features.filter((feature) => feature.assetKind !== "AREA").sort((left, right) => left.atlasOrigin.y - right.atlasOrigin.y).map((feature) => {
@@ -302,7 +336,7 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
             return <g key={feature.id} className="atlas-building atlas-feature" aria-hidden="true"
               onPointerEnter={() => { if (feature.districtId) scheduleDistrictHover({ cityId: city.id, districtId: feature.districtId }); }}
               onClick={(event) => { if (!district) return; event.stopPropagation(); onDistrictSelect(city, district); }}>
-              <AtlasBuildingGlyph entry={entry} groundX={groundX} groundY={groundY} />
+              <AtlasBuildingGlyph entry={entry} identity={feature.id} scale={city.scale} groundX={groundX} groundY={groundY} />
             </g>;
           })}
         </g>

@@ -28,6 +28,10 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
 
   const cities = page.locator(".atlas-city");
   await expect(cities).toHaveCount(10);
+  const buildingProfiles = await page.locator("[data-atlas-profile]").evaluateAll((nodes) =>
+    [...new Set(nodes.map((node) => node.getAttribute("data-atlas-profile")))].sort(),
+  );
+  expect(buildingProfiles).toEqual(["courtyard", "flat", "gable", "stepped"]);
   expect(fullBuildingRequests).toEqual([]);
   for (let index = 0; index < 10; index += 1) {
     const city = cities.nth(index);
