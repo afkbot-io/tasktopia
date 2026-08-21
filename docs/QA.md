@@ -77,10 +77,10 @@
 
 ## Изоляция runtime
 
-1. Проверить health `3000`, `3002`, `3003`; nginx `/mcp` должен идти на 3002, regenerate — на 3003.
+1. Проверить health `3000`, `3002`, `3003`; nginx `/mcp` должен идти на 3002, а HTTP regenerate — приниматься web на 3000 и ставить durable job для worker на 3003.
 2. Запустить долгий MCP mutation и одновременно открыть `/health`, `/api/bootstrap` и существующий viewport: web должен отвечать независимо от загрузки MCP event loop.
 3. После MCP mutation убедиться, что web получает realtime event через PostgreSQL relay и обновляет только затронутую страну.
-4. Остановить контейнер `mcp`: web-карта и Socket.IO должны продолжить работу. Остановить `world`: обычный API и MCP должны продолжить работу; недоступна только полная перегенерация.
+4. Остановить контейнер `mcp`: web-карта и Socket.IO должны продолжить работу. Остановить `world`: чтение карты, обычный API и MCP read-команды должны продолжить работу; generation jobs остаются в очереди и возобновляются после возврата worker.
 5. На копии production-БД запустить batch reconcile с `REGENERATION_MAX_ATTEMPTS=3`: исходный audit-clean мир должен дать `world-regeneration.preserved` без смены seed, failed layout — `retrying`, успешная перестройка — `completed` с числом `attempts`, а audit после commit — 0 нарушений.
 
 Автоматические браузерные проверки находятся в `tests/e2e/chunk-pipeline.spec.ts` и `tests/e2e/map-streaming.spec.ts`.

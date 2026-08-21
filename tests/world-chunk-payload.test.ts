@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import type { ChunkPayloadV1Dto } from "../src/shared/contracts";
-import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
+import { encodeTerrainSample, materializeChunkPayload } from "../src/shared/world-chunk-payload";
 import { terrainAt } from "../src/shared/world-terrain";
 
 function payload(lod: "DETAIL" | "OVERVIEW"): ChunkPayloadV1Dto {
@@ -38,6 +38,20 @@ describe("published world chunk payload", () => {
     expect(first).toEqual(second);
     expect(first.worldVersion).toBe(7);
     expect(JSON.stringify(compact).length * 10).toBeLessThan(JSON.stringify(first).length);
+  });
+
+  it("reuses compact first-frame terrain samples without changing the materialized chunk", () => {
+    const compact = payload("DETAIL");
+    const samples = new Uint8Array(compact.size * compact.size);
+    let index = 0;
+    for (let y = compact.chunkY * compact.size; y < (compact.chunkY + 1) * compact.size; y += 1) {
+      for (let x = compact.chunkX * compact.size; x < (compact.chunkX + 1) * compact.size; x += 1) {
+        samples[index++] = encodeTerrainSample(terrainAt(compact.terrainSeed, x, y));
+      }
+    }
+
+    expect(materializeChunkPayload(compact, samples)).toEqual(materializeChunkPayload(compact));
+    expect(samples.byteLength).toBe(4096);
   });
 
   it("reconstructs the 4x overview sampling grid", () => {

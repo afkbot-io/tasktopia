@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Видимый прямоугольник карты теперь собирается настоящей server-side batch-операцией: один L2 range read, один bounded spatial snapshot, ограниченная параллельность build, один JSONB UPSERT и один retention pass. Seed terrain остаётся на экране и переиспользуется при приходе инфраструктурного overlay.
+- Геометрическая генерация вынесена в durable PostgreSQL queue отдельного `world` runtime. Длинные jobs обновляют lease, безопасно повторяются по idempotency key и после bounded wait возвращают явный accepted-контракт с HTTP/MCP polling вместо ложной ошибки.
+- Task/district placement использует один command-scoped spatial snapshot; новые road cells и masks записываются set-based операциями. Compact district runs добавлены additive/dual-read миграцией с parity и сохранённым legacy rollback-path.
+- Опциональный Redis хранит content-addressed chunk blobs и versioned locators, объединяет cold build между replicas через expiring lease и fail-open откатывается к PostgreSQL при любой недоступности.
+- Realtime relay восстанавливает пропущенные durable events после reconnect, а version-tagged road/surface caches инвалидируются одинаково для локальных и внешних событий. Traffic arbitration устраняет циклическое ожидание, не блокирует уже вошедший в перекрёсток транспорт и учитывает исправленный размер кузова.
+- Release-wide world replay уважает `DATABASE_POOL_MAX` и защищён глобальным PostgreSQL advisory lock; документация описывает additive rollout, rollback, Redis, queue и production parity gates.
+
 ## 1.19.3 — 2026-08-21
 
 - У ходящих жителей удалён запечённый зелёный chroma-фон. Импорт animated

@@ -27,6 +27,7 @@ import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
 import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { config } from "./config";
 import { APP_VERSION } from "./version";
+import { GenerationPendingError, getWorldGenerationJob } from "./world-generation-jobs";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -110,6 +111,7 @@ export function requestErrorStatus(error: unknown): number {
   const uniqueConflict = (error as { code?: string }).code === "23505";
   const middlewareStatus = Number((error as { statusCode?: number }).statusCode);
   if (error instanceof DomainError) {
+    if (error.code === "GENERATION_PENDING") return 202;
     if (error.code === "NOT_FOUND") return 404;
     if (error.code === "CONFLICT") return 409;
     if (error.code === "UNAUTHENTICATED") return 401;
@@ -143,6 +145,9 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
   });
 
   app.setErrorHandler((error, request, reply) => {
+    if (error instanceof GenerationPendingError) {
+      return reply.code(202).send({ status: "accepted", job: error.job });
+    }
     const uniqueConflict = (error as { code?: string }).code === "23505";
     const status = requestErrorStatus(error);
     const message = error instanceof DomainError ? error.message
@@ -321,6 +326,15 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     return await service.regenerateCountry(countryId, parse(regenerateCountrySchema, request.body));
   });
 
+  app.get("/api/world-generation-jobs/:jobId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const jobId = parse(z.string().uuid(), (request.params as { jobId: string }).jobId);
+    const job = await getWorldGenerationJob(db, jobId);
+    if (!job || !await countryRole(db, user.id, job.countryId)) throw new DomainError("NOT_FOUND", "Операция генерации не найдена");
+    return job;
+  });
+
   app.delete("/api/countries/:countryId", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
@@ -396,11 +410,9 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     }
     const lod = parse(z.enum(["detail", "overview"]).default("detail"), query.lod);
     const chunkLod = lod === "overview" ? "OVERVIEW" : "DETAIL";
-    const chunks = await Promise.all(Array.from({ length: width * height }, (_, index) => {
-      const chunkX = minChunkX + index % width;
-      const chunkY = minChunkY + Math.floor(index / width);
-      return service.getChunkPayload(user.countryId, chunkX, chunkY, chunkLod);
-    }));
+    const chunks = await service.getViewportPayloads(
+      user.countryId, minChunkX, minChunkY, maxChunkX, maxChunkY, chunkLod,
+    );
     const result: ViewportPayloadDto = { payloadVersion: 1, lod: chunkLod, chunks };
     reply.header("Cache-Control", "private, no-cache, must-revalidate")
       .header("Vary", "Accept")

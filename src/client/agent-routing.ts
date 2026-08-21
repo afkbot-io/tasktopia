@@ -41,7 +41,12 @@ export type VehicleFrameDecision = {
 // runtime render scale: cars are about 17x7 px at 1.2; long buses keep their
 // authored 1.0 scale so opposing buses still fit a canonical three-cell road.
 const VEHICLE_BODY_CELLS = {
-  CAR: { length: 2.1, width: 0.9 },
+  // The authored car body is seven pixels wide on an eight-pixel cell. Two
+  // opposing local-road lanes are one cell apart and are both inset by half a
+  // pixel, leaving exactly seven pixels between their rendered centre lines.
+  // Treating that body as 0.9 cells made the projected collision envelopes
+  // overlap and caused both streams to stop forever before passing each other.
+  CAR: { length: 2.1, width: 0.875 },
   BUS: { length: 5.75, width: 1.875 },
 } as const;
 const VEHICLE_SAFETY_GAP_CELLS = 0.16;
@@ -191,12 +196,16 @@ function firstRouteConflict(
 function winnerAtConflict(
   left: TrafficVehicleSnapshot,
   right: TrafficVehicleSnapshot,
-  conflict: { leftIndex: number; rightIndex: number },
+  priorityDistance: ReadonlyMap<string, number>,
 ): TrafficVehicleSnapshot {
   if (left.cruiseSpeed <= 0 && right.cruiseSpeed > 0) return right;
   if (right.cruiseSpeed <= 0 && left.cruiseSpeed > 0) return left;
-  const leftDistance = conflict.leftIndex - left.progress;
-  const rightDistance = conflict.rightIndex - right.progress;
+  // Pair-specific distance can produce a priority cycle at a four-arm
+  // junction (A beats B, B beats C, C beats A), leaving every decision capped
+  // at zero. Rank each vehicle by its nearest conflict across the whole frame
+  // so every pair observes the same total order.
+  const leftDistance = priorityDistance.get(left.id) ?? Number.POSITIVE_INFINITY;
+  const rightDistance = priorityDistance.get(right.id) ?? Number.POSITIVE_INFINITY;
   if (Math.abs(leftDistance - rightDistance) > EPSILON) return leftDistance < rightDistance ? left : right;
   return left.id.localeCompare(right.id) <= 0 ? left : right;
 }
@@ -410,13 +419,31 @@ export function planVehicleFrame(
     }
   }
 
+  const conflicts: Array<{
+    left: TrafficVehicleSnapshot;
+    right: TrafficVehicleSnapshot;
+    conflict: { leftIndex: number; rightIndex: number };
+  }> = [];
+  const priorityDistance = new Map<string, number>();
   for (let leftIndex = 0; leftIndex < vehicles.length; leftIndex += 1) {
     const left = vehicles[leftIndex]!;
     for (let rightIndex = leftIndex + 1; rightIndex < vehicles.length; rightIndex += 1) {
       const right = vehicles[rightIndex]!;
       const conflict = firstRouteConflict(left, right);
       if (!conflict) continue;
-      const winner = winnerAtConflict(left, right, conflict);
+      conflicts.push({ left, right, conflict });
+      priorityDistance.set(left.id, Math.min(
+        priorityDistance.get(left.id) ?? Number.POSITIVE_INFINITY,
+        conflict.leftIndex - left.progress,
+      ));
+      priorityDistance.set(right.id, Math.min(
+        priorityDistance.get(right.id) ?? Number.POSITIVE_INFINITY,
+        conflict.rightIndex - right.progress,
+      ));
+    }
+  }
+  for (const { left, right, conflict } of conflicts) {
+      const winner = winnerAtConflict(left, right, priorityDistance);
       const waiting = winner === left ? right : left;
       const waitingIndex = winner === left ? conflict.rightIndex : conflict.leftIndex;
       const clearance = mergeClearance(waiting, winner, winner === left
@@ -428,7 +455,6 @@ export function planVehicleFrame(
         winner,
         waitingIndex - clearance - waiting.progress,
       );
-    }
   }
 
   for (const waiting of vehicles) {
@@ -599,6 +625,7 @@ export function mustYieldAtTrafficSignal(
   next: Cell,
   junctions: readonly TrafficJunction[],
   elapsedMs: number,
+  progress = 0,
 ): boolean {
   const junction = junctions.find((candidate) => {
     const insideCurrent = current.x >= candidate.bounds.minX && current.x <= candidate.bounds.maxX
@@ -608,6 +635,10 @@ export function mustYieldAtTrafficSignal(
     return !insideCurrent && insideNext;
   });
   if (!junction) return false;
+  // A signal controls entry at the stop line. Once a vehicle has started the
+  // entry segment it must clear the conflict area even if the phase changes;
+  // stopping its long body halfway through that segment blocks every arm.
+  if (progress > EPSILON) return false;
   const axis = next.x !== current.x ? "horizontal" : "vertical";
   return trafficSignalPhase(junction, elapsedMs)[axis] === "RED";
 }

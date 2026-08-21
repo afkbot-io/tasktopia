@@ -24,6 +24,8 @@ curl -fsS http://127.0.0.1:3002/health
 curl -fsS http://127.0.0.1:3003/health
 ```
 
+Redis не обязателен. Для общей versioned cache и distributed cold-build lease задайте `REDIS_URL=redis://redis:6379` и поднимайте профиль `docker compose --profile cache up -d --build`. Без профиля или при недоступном Redis каждый runtime автоматически использует PostgreSQL; Redis не содержит канонических данных и работает без persistence.
+
 Публичная регистрация в self-hosted production закрыта по умолчанию. Создайте
 первого владельца после успешного healthcheck:
 
@@ -116,7 +118,7 @@ sudo /srv/tasktopia/app/deploy/update-server.sh
 
 ## Официальный production: nginx + Docker
 
-Production-схема: системный nginx принимает `80/443`; web работает на `127.0.0.1:3000`, `/mcp` направляется в отдельный runtime `127.0.0.1:3002`, а полный replay `/api/countries/:id/regenerate` — в `127.0.0.1:3003`. У процессов отдельные Node event loop и пулы PostgreSQL 10/4/4, поэтому CPU-stall MCP не блокирует карту и health web. PostgreSQL 16 хранит данные в named volume `tasktopia_postgres` и должен пройти healthcheck до запуска runtime.
+Production-схема: системный nginx принимает `80/443`; web работает на `127.0.0.1:3000`, `/mcp` направляется в отдельный runtime `127.0.0.1:3002`, а `world` worker — на `127.0.0.1:3003`. HTTP replay принимается web runtime как короткая durable command и возвращает результат либо `202`; тяжёлую геометрию всегда исполняет world worker через PostgreSQL queue. У процессов отдельные Node event loop и пулы PostgreSQL 10/4/4, поэтому CPU-stall MCP или генерации не блокирует карту и health web. PostgreSQL 16 хранит данные в named volume `tasktopia_postgres` и должен пройти healthcheck до запуска runtime.
 
 Хешированные JS/CSS и versioned game assets после успешного healthcheck
 копируются в `/srv/tasktopia/static/releases/<release>` и атомарно публикуются
@@ -160,10 +162,10 @@ systemctl reload nginx
 curl -fsS https://tasktopia.online/health
 ```
 
-Конфигурация выделяет `POST /api/countries/:countryId/regenerate` в отдельный
-runtime и proxy-маршрут с таймаутом 15 минут. Полный детерминированный replay большой
-страны может занимать несколько минут; не заменяйте этот маршрут общим
-75-секундным лимитом API.
+Конфигурация выделяет `POST /api/countries/:countryId/regenerate` в явный
+proxy-маршрут web runtime. Web только создаёт durable job и ограниченно ждёт;
+полный детерминированный replay выполняет отдельный world worker, а после
+`GENERATION_WAIT_MS` клиент получает `202` и продолжает polling.
 
 Для release-wide replay запускайте CLI внутри отдельного одноразового world-контейнера:
 
@@ -173,10 +175,23 @@ REGENERATION_FORCE=1 \
 docker compose run --rm -e REGENERATION_RUN_ID -e REGENERATION_FORCE world npm run worlds:regenerate
 ```
 
+CLI берёт глобальный PostgreSQL advisory lock и немедленно завершается, если другой release replay уже запущен. Пул ограничивается `DATABASE_POOL_MAX` world-runtime, а не внутренним значением по умолчанию.
+
 Команда обрабатывает страны по одной: audit-clean миры сохраняет, а некорректные
 перестраивает и валидирует до commit. Failed layout по умолчанию повторяется до
 трёх раз. При необходимости передайте
 `-e REGENERATION_MAX_ATTEMPTS=5`; не запускайте два batch replay одновременно.
+
+Публичный onboarding является отдельным атомарным bootstrap-путём: account,
+country, session и первый city фиксируются одной транзакцией без generation job.
+Это не переносит обычную генерацию в web runtime — все последующие create/replay
+команды по-прежнему выполняет изолированный `world` worker.
+
+### Release gate для compact geometry и generation queue
+
+Миграции `0017` и `0018` additive: очередь и `cell_runs_json` создаются до переключения runtime, legacy DISTRICT membership не удаляется. После миграции до replay обязательна точная двусторонняя parity-проверка координат: разверните каждый run через `generate_series(start.x, end.x)` и выполните `(legacy EXCEPT compact) UNION ALL (compact EXCEPT legacy)` по `(district_id, chunk_x, chunk_y, x, y)`. Ненулевое число строк запрещает релиз; одной проверки количества недостаточно, потому что сдвинутый run может иметь ту же длину. Затем проверьте один принятый job через HTTP `202`/`GET /api/world-generation-jobs/:jobId` и MCP `world_generation.get`. Rollback приложения безопасен: старая проекция продолжает обновляться trigger'ом. Cleanup legacy projection не входит в этот релиз.
+
+После healthcheck прогрейте один detail viewport, повторите запрос и сравните `X-World-Version`, `contentHash`, latency и количество spatial SQL reads. При включённом Redis повтор на другой web replica должен вернуть тот же content hash; остановка Redis не должна менять HTTP body или статус.
 
 Bootstrap-конфиг нужен только до первого выпуска сертификата. После него
 финальный конфиг использует сертификат из `/etc/letsencrypt/live/tasktopia.online`,

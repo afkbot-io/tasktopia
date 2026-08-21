@@ -106,6 +106,8 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
   await expect(firstFrame).toBeHidden({ timeout: 90_000 });
   await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
   await expect.poll(async () => await host.getAttribute("data-loading")).toBe("false");
+  await expect(host).toHaveAttribute("data-seed-ground-retained", "true");
+  await expect(host).toHaveAttribute("data-seed-terrain-reused", "true");
   chunkRequests.length = 0;
 
   const box = await canvas.boundingBox();

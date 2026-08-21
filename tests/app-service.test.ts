@@ -4,7 +4,7 @@ import { AppService, complexMinimumRect, connectReplayDistrictSegments, connecto
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { getBuilding } from "../src/shared/catalog";
-import type { Cell, RoadCellDto } from "../src/shared/contracts";
+import type { Cell, Rect, RoadCellDto } from "../src/shared/contracts";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
 import { isBuildableTerrain, isWater, terrainAt } from "../src/shared/world-terrain";
 
@@ -158,6 +158,73 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     }
   });
 
+  it("publishes road corridors and mask changes with set-based statements", async () => {
+    const counts = { inserts: 0, masks: 0 };
+    const countedDb: Db = {
+      prepare: (query) => {
+        const statement = db.prepare(query);
+        const count = () => {
+          if (query.includes("INSERT INTO roads_v3")) counts.inserts += 1;
+          if (query.includes("UPDATE roads_v3 SET mask")) counts.masks += 1;
+        };
+        return {
+          all: async (...parameters) => { count(); return statement.all(...parameters); },
+          get: async (...parameters) => { count(); return statement.get(...parameters); },
+          run: async (...parameters) => { count(); return statement.run(...parameters); },
+        };
+      },
+      exec: (query) => db.exec(query), close: async () => undefined,
+      transaction: (callback) => db.transaction(callback),
+    };
+    const setBasedService = new AppService(countedDb);
+
+    await setBasedService.createCity(countryId, { name: "Set road city", idempotencyKey: "set-road-city" });
+
+    expect(counts.inserts).toBeLessThanOrEqual(8);
+    expect(counts.masks).toBeLessThanOrEqual(8);
+  });
+
+  it("reuses one spatial snapshot across rejected city connector anchors", async () => {
+    await service.createCity(countryId, { name: "Existing city", idempotencyKey: "existing-city" });
+    const unboundedReads: string[] = [];
+    const countedDb: Db = {
+      prepare: (query) => {
+        const statement = db.prepare(query);
+        const count = () => {
+          if (/FROM roads_v3 WHERE country_id = \?$/.test(query.trim())
+            || /FROM districts_v3 d JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
+            || /FROM tasks_v3 t JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
+            || /FROM world_features_v6 WHERE country_id = \? ORDER BY/.test(query)) unboundedReads.push(query);
+        };
+        return {
+          all: async (...parameters) => { count(); return statement.all(...parameters); },
+          get: async (...parameters) => { count(); return statement.get(...parameters); },
+          run: async (...parameters) => { count(); return statement.run(...parameters); },
+        };
+      },
+      exec: (query) => db.exec(query), close: async () => undefined,
+      transaction: (callback) => db.transaction(callback),
+    };
+    const cityService = new AppService(countedDb);
+    type RouteMethod = (
+      country: string, seed: number, start: Cell, end: Cell | readonly Cell[], avoid?: Rect[],
+      reserved?: Cell[], radius?: number, reuseUrbanRoads?: boolean, snapshot?: unknown,
+    ) => Promise<Cell[]>;
+    const internals = cityService as unknown as { route: RouteMethod };
+    const originalRoute = internals.route.bind(cityService);
+    let attempts = 0;
+    vi.spyOn(internals, "route").mockImplementation(async (...parameters) => {
+      attempts += 1;
+      if (attempts <= 2) throw new DomainError("ROUTE_BLOCKED", "synthetic rejected anchor");
+      return originalRoute(...parameters);
+    });
+
+    await cityService.createCity(countryId, { name: "Snapshot city", idempotencyKey: "snapshot-city" });
+
+    expect(attempts).toBeGreaterThanOrEqual(3);
+    expect(unboundedReads).toEqual([]);
+  }, 30_000);
+
   it("does not serve a warm L1 chunk after another app replica invalidates its projection", async () => {
     const city = await service.createCity(countryId, { name: "Replica City", idempotencyKey: "replica-city" });
     const district = await service.createDistrict(countryId, {
@@ -179,6 +246,156 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(after.contentHash).not.toBe(before.contentHash);
     expect(after.tasks.find((candidate) => candidate.id === task.id)).toMatchObject({ status: "STARTED", stage: 2 });
   }, 20_000);
+
+  it("invalidates warm geometry caches when an external runtime delivers the committed event", async () => {
+    let externalEvent: import("../src/shared/contracts").RealtimeEvent | undefined;
+    const writer = new AppService(db, (event) => { externalEvent = event; });
+    await writer.createCity(countryId, { name: "First replica city", idempotencyKey: "replica-geometry-1" });
+    const reader = new AppService(db);
+    type GeometryReader = { roadCells(country: string): Promise<Map<string, RoadCellDto>> };
+    const cachedGeometry = reader as unknown as GeometryReader;
+    const firstRoadCount = (await cachedGeometry.roadCells(countryId)).size;
+
+    await writer.createCity(countryId, { name: "Second replica city", idempotencyKey: "replica-geometry-2" });
+    expect((await cachedGeometry.roadCells(countryId)).size).toBe(firstRoadCount);
+    expect(externalEvent).toBeDefined();
+
+    reader.acceptExternalEvent(externalEvent!);
+
+    expect((await cachedGeometry.roadCells(countryId)).size).toBeGreaterThan(firstRoadCount);
+  }, 20_000);
+
+  it("batch-reads published viewport chunks instead of issuing one L2 lookup per coordinate", async () => {
+    let publishedPayloadReads = 0;
+    let publishedPayloadWrites = 0;
+    let publishedRetentionRuns = 0;
+    const spatialReads = { roads: 0, districts: 0, cities: 0, tasks: 0, features: 0 };
+    const countedDb: Db = {
+      prepare: (query) => {
+        const statement = db.prepare(query);
+        const count = () => {
+          if (query.includes("SELECT payload_json") && query.includes("FROM world_chunk_payloads_v1")) publishedPayloadReads += 1;
+          if (query.includes("INSERT INTO world_chunk_payloads_v1")) publishedPayloadWrites += 1;
+          if (query.includes("WITH stale AS")) publishedRetentionRuns += 1;
+          if (query.includes("FROM roads_v3 WHERE country_id") && query.includes("mask, structure, road_class")) spatialReads.roads += 1;
+          if (query.includes("FROM world_chunk_district_cells_v1 projection")) spatialReads.districts += 1;
+          if (query.includes("SELECT * FROM cities_v3 WHERE country_id") && query.includes("bounds_json")) spatialReads.cities += 1;
+          if (query.includes("chunk.entity_kind = 'TASK'")) spatialReads.tasks += 1;
+          if (query.includes("chunk.entity_kind = 'FEATURE'")) spatialReads.features += 1;
+        };
+        return {
+          all: async (...parameters) => { count(); return statement.all(...parameters); },
+          get: async (...parameters) => { count(); return statement.get(...parameters); },
+          run: async (...parameters) => { count(); return statement.run(...parameters); },
+        };
+      },
+      exec: (query) => db.exec(query),
+      close: async () => undefined,
+      transaction: (callback) => db.transaction(callback),
+    };
+    const batchService = new AppService(countedDb);
+
+    const chunks = await batchService.getViewportPayloads(countryId, 100, 100, 104, 103, "DETAIL");
+
+    expect(chunks).toHaveLength(20);
+    expect(publishedPayloadReads).toBe(1);
+    expect(publishedPayloadWrites).toBe(1);
+    expect(publishedRetentionRuns).toBe(1);
+    expect(spatialReads).toEqual({ roads: 1, districts: 1, cities: 1, tasks: 1, features: 1 });
+  });
+
+  it("plans one task from a bounded command snapshot without whole-country spatial reads", async () => {
+    const city = await service.createCity(countryId, { name: "Bounded city", idempotencyKey: "bounded-city" });
+    const district = await service.createDistrict(countryId, {
+      cityId: city.id, name: "Bounded district", activate: true, idempotencyKey: "bounded-district",
+    });
+    const unboundedReads: string[] = [];
+    const countedDb: Db = {
+      prepare: (query) => {
+        const statement = db.prepare(query);
+        const count = () => {
+          if (/FROM roads_v3 WHERE country_id = \?$/.test(query.trim())
+            || /FROM cities_v3 WHERE country_id = \? ORDER BY/.test(query)
+            || /FROM districts_v3 d JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
+            || /FROM tasks_v3 t JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
+            || /FROM world_features_v6 WHERE country_id = \? ORDER BY/.test(query)) unboundedReads.push(query);
+        };
+        return {
+          all: async (...parameters) => { count(); return statement.all(...parameters); },
+          get: async (...parameters) => { count(); return statement.get(...parameters); },
+          run: async (...parameters) => { count(); return statement.run(...parameters); },
+        };
+      },
+      exec: (query) => db.exec(query), close: async () => undefined,
+      transaction: (callback) => db.transaction(callback),
+    };
+
+    await new AppService(countedDb).createTask(countryId, {
+      cityId: city.id, districtId: district.id, title: "Bounded placement", estimate: 1, idempotencyKey: "bounded-task",
+    });
+
+    expect(unboundedReads).toEqual([]);
+  }, 20_000);
+
+  it("uses optional Redis as a versioned cache while PostgreSQL remains canonical", async () => {
+    const shared = new Map<string, import("../src/shared/contracts").ChunkPayloadDto>();
+    const cache = {
+      getChunk: async (key: string) => shared.get(key),
+      setChunk: async (key: string, payload: import("../src/shared/contracts").ChunkPayloadDto) => { shared.set(key, payload); },
+      close: async () => undefined,
+    };
+    const publisher = new AppService(db, undefined, "data/uploads", undefined, cache);
+    const first = await publisher.getChunkPayload(countryId, 7, 9, "OVERVIEW");
+    await vi.waitFor(() => expect(shared.size).toBe(1));
+    await db.prepare("DELETE FROM world_chunk_payloads_v1 WHERE country_id=?").run(countryId);
+    let spatialReads = 0;
+    const countedDb: Db = {
+      prepare: (query) => {
+        const statement = db.prepare(query);
+        const count = () => { if (query.includes("FROM roads_v3") && query.includes("BETWEEN")) spatialReads += 1; };
+        return {
+          all: async (...parameters) => { count(); return statement.all(...parameters); },
+          get: async (...parameters) => { count(); return statement.get(...parameters); },
+          run: async (...parameters) => { count(); return statement.run(...parameters); },
+        };
+      },
+      exec: (query) => db.exec(query), close: async () => undefined,
+      transaction: (callback) => db.transaction(callback),
+    };
+    const reader = new AppService(countedDb, undefined, "data/uploads", undefined, cache);
+
+    const second = await reader.getChunkPayload(countryId, 7, 9, "OVERVIEW");
+
+    expect(second).toEqual(first);
+    expect(spatialReads).toBe(0);
+  });
+
+  it("rejects a shared singleflight payload when the canonical world advances during its build", async () => {
+    let calls = 0;
+    const cache = {
+      getChunk: async () => undefined,
+      setChunk: async () => undefined,
+      getOrBuildChunk: async (_key: string, build: () => Promise<import("../src/shared/contracts").ChunkPayloadDto>) => {
+        const payload = await build();
+        calls += 1;
+        if (calls === 1) {
+          await transaction(db, async () => {
+            await db.prepare("UPDATE countries SET world_version = world_version + 1 WHERE id = ?").run(countryId);
+            await db.prepare("DELETE FROM world_chunk_payloads_v1 WHERE country_id = ?").run(countryId);
+          });
+          return { payload, built: false };
+        }
+        return { payload, built: true };
+      },
+      close: async () => undefined,
+    };
+    const reader = new AppService(db, undefined, "data/uploads", undefined, cache);
+
+    const result = await reader.getViewportPayloads(countryId, 4, 4, 4, 4, "OVERVIEW");
+
+    expect(calls).toBe(2);
+    expect(result[0]?.publishedVersion).toBe(2);
+  });
 
   it("rebuilds against the current world version when publication loses a mutation race", async () => {
     type ChunkPublisher = {
@@ -695,6 +912,7 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
   }, 20_000);
 
   it("invalidates both districts when active ownership switches", async () => {
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
     const city = await service.createCity(countryId, { name: "Switch City", idempotencyKey: "switch-city" });
     const previous = await service.createDistrict(countryId, {
       cityId: city.id, name: "Previous Active", activate: true, idempotencyKey: "switch-previous",

@@ -114,7 +114,10 @@ test("login, map and MCP token management", async ({ page, context }) => {
 
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 800);
-  await expect(mapHost).toHaveAttribute("data-map-lod", "overview");
+  // Camera scale changes immediately, while the previous coherent detail
+  // frame remains visible until every authoritative overview overlay arrives.
+  // Large fixtures can legitimately need more than Playwright's default 5s.
+  await expect(mapHost).toHaveAttribute("data-map-lod", "overview", mapWarmup);
   await expect.poll(async () => Number(await mapHost.getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);
   await expect(mapHost).toHaveAttribute("data-cars", "0");
   await expect(mapHost).toHaveAttribute("data-walkers", "0");

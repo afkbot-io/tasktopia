@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestDb, type Db } from "../src/server/db";
-import { publishWorldEvent, subscribeToWorldEvents } from "../src/server/world-event-relay";
+import { registerUser } from "../src/server/auth";
+import { consumeDurableWorldEvents, publishWorldEvent, subscribeToWorldEvents } from "../src/server/world-event-relay";
 
 describe("cross-runtime world event relay", () => {
   let db: Db;
@@ -30,5 +31,30 @@ describe("cross-runtime world event relay", () => {
     ]);
     if (timeout) clearTimeout(timeout);
     expect(result).toBe(77);
+  });
+
+  it("replays every durable row when a notification gap skips an event id", async () => {
+    const countryId = (await registerUser(db, {
+      email: "relay@example.com", name: "Relay", password: "password123",
+    })).user.countryId;
+    const received: number[] = [];
+    subscription = await consumeDurableWorldEvents(
+      db,
+      process.env.TEST_DATABASE_URL ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test",
+      (event) => { received.push(event.id); },
+      60_000,
+    );
+    const createdAt = new Date().toISOString();
+    const first = await db.prepare(`INSERT INTO events (country_id, type, world_version, payload_json, created_at)
+      VALUES (?, ?, ?, ?, ?) RETURNING id`).run(countryId, "task.created", 1, "{}", createdAt);
+    const second = await db.prepare(`INSERT INTO events (country_id, type, world_version, payload_json, created_at)
+      VALUES (?, ?, ?, ?, ?) RETURNING id`).run(countryId, "task.status_changed", 2, "{}", createdAt);
+    const firstId = Number(first.rows[0]?.id);
+    const secondId = Number(second.rows[0]?.id);
+
+    await publishWorldEvent(db, {
+      id: secondId, countryId, type: "task.status_changed", worldVersion: 2, payload: {}, createdAt,
+    });
+    await vi.waitFor(() => expect(received).toEqual([firstId, secondId]), { timeout: 2_000 });
   });
 });

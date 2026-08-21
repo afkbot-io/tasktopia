@@ -25,14 +25,17 @@ describe("production reverse proxy", () => {
     scripts: Record<string, string>;
   };
 
-  it("keeps full country regeneration alive beyond the ordinary API timeout", () => {
+  it("accepts country regeneration through the bounded web command boundary", () => {
     const location = nginx.match(/location ~ \^\/api\/countries\/\[0-9a-f-\]\+\/regenerate\$ \{([\s\S]*?)\n\s*\}/)?.[1];
     expect(location, "dedicated country regeneration location").toBeDefined();
 
     const readTimeout = Number(location!.match(/proxy_read_timeout\s+(\d+)s;/)?.[1]);
     const sendTimeout = Number(location!.match(/proxy_send_timeout\s+(\d+)s;/)?.[1]);
-    expect(readTimeout).toBeGreaterThanOrEqual(900);
-    expect(sendTimeout).toBeGreaterThanOrEqual(900);
+    expect(readTimeout).toBeGreaterThanOrEqual(30);
+    expect(readTimeout).toBeLessThanOrEqual(120);
+    expect(sendTimeout).toBeGreaterThanOrEqual(30);
+    expect(sendTimeout).toBeLessThanOrEqual(120);
+    expect(location).toContain("proxy_pass http://127.0.0.1:3000");
     expect(location).toContain("proxy_buffering off;");
   });
 
@@ -549,9 +552,9 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
     expect(mcpLocation, "dedicated MCP proxy route").toBeDefined();
     expect(mcpLocation).toContain("proxy_pass http://127.0.0.1:3002");
     const regenerationLocation = nginx.match(/location ~ \^\/api\/countries\/\[0-9a-f-\]\+\/regenerate\$ \{([\s\S]*?)\n\s*\}/)?.[1];
-    expect(regenerationLocation).toContain("proxy_pass http://127.0.0.1:3003");
-    expect(serverIndex).toContain('worldOperationsEnabled: config.runtimeRole === "combined"');
+    expect(regenerationLocation).toContain("proxy_pass http://127.0.0.1:3000");
     expect(serverIndex).toContain("worldOperationsEnabled: true");
+    expect(serverIndex).toContain("worldOperationsEnabled: false");
   });
 
   it("keeps local browser tests on the seeded test database", () => {

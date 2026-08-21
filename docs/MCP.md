@@ -46,11 +46,25 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 - `city.list`, `city.get`, `city.create`, `city.update`, `city.rename`, `city.delete`
 - `district.list`, `district.create`, `district.update`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
 - `task.list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.delete`
+- `world_generation.get` — состояние принятой фоновой генерации по `jobId`
 - `task.defect_create`, `task.defect_update`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
 - `task.document_list`, `task.document_upsert`, `task.document_delete`
 - `task.checklist_replace`, `task.checklist_item_update`
 - `task.activity`, `task.dependency_add`, `task.dependency_remove`, `task.link_add`, `task.link_remove`, `task.attachment_add`, `task.attachment_list`
+
+## Фоновая генерация
+
+`city.create`, `district.create`, `task.create` и `country.regenerate` сначала сохраняют durable job с уникальным `(country, operation, idempotencyKey)`. MCP ограниченно ждёт результат. Если геометрия успела построиться, контракт не меняется; если ожидание превысило `GENERATION_WAIT_MS`, вызов остаётся успешным и возвращает:
+
+```json
+{
+  "status": "accepted",
+  "job": { "id": "<uuid>", "operation": "task.create", "status": "PENDING" }
+}
+```
+
+Это не ошибка и не повод повторять write с новым ключом. Опрашивайте `world_generation.get` с тем же `job.id`; `COMPLETED` содержит `result`, окончательный `FAILED` — безопасные `error.code/message`. Повтор исходной команды с тем же idempotency key и тем же payload возвращает тот же job/result; другой payload даёт `CONFLICT`.
 
 ## Минимальный сценарий
 

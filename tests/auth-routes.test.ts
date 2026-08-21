@@ -5,6 +5,7 @@ import { AppService } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
+import { enqueueWorldGenerationJob, PostgresWorldGenerationDispatcher, processNextWorldGenerationJob } from "../src/server/world-generation-jobs";
 import { APP_VERSION } from "../src/server/version";
 import type { SurfaceCellDto } from "../src/shared/contracts";
 import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
@@ -64,6 +65,8 @@ describe("authentication HTTP boundary", () => {
     const bootstrap = await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } });
     expect(bootstrap.statusCode).toBe(200);
     expect(bootstrap.json()).toMatchObject({ user: { email: "mayor@example.test" }, countryRole: "OWNER" });
+    expect(bootstrap.json().eventCursor).toEqual(expect.any(Number));
+    const initialEventCursor = bootstrap.json().eventCursor as number;
     expect(bootstrap.json().worldManifest).toMatchObject({
       terrainSeed: expect.any(Number),
       generatorVersion: "square-v7",
@@ -85,6 +88,10 @@ describe("authentication HTTP boundary", () => {
     const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Scoped task", estimate: 1, idempotencyKey: "http-task" });
 
     const populatedBootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie } })).json();
+    expect(populatedBootstrap.eventCursor).toBeGreaterThan(initialEventCursor);
+    expect(populatedBootstrap.eventCursor).toBe(Number((await db.prepare(
+      "SELECT COALESCE(MAX(id), 0) AS cursor FROM events WHERE country_id = ?",
+    ).get<{ cursor: number }>(countryId))?.cursor));
     expect(populatedBootstrap.stats).toEqual({ cities: 2, districts: 1, tasks: 1, activeDistricts: 1, unfinishedBuildings: 1 });
     expect(JSON.stringify(populatedBootstrap)).not.toContain("footprint");
     const planCities = await app.inject({ method: "GET", url: "/api/plan/cities", headers: { cookie } });
@@ -139,6 +146,8 @@ describe("authentication HTTP boundary", () => {
     // that every task-containing chunk has a surface cell of its own.
     expect(detailChunk.surfaceRuns).toEqual(expect.any(Array));
 
+    const viewportBatch = vi.spyOn(service, "getViewportPayloads");
+    const viewportSingleChunk = vi.spyOn(service, "getChunkPayload");
     const viewportResponse = await app.inject({
       method: "GET",
       url: `/api/world/viewport?minChunkX=${taskChunk.chunkX}&minChunkY=${taskChunk.chunkY}&maxChunkX=${taskChunk.chunkX + 1}&maxChunkY=${taskChunk.chunkY}&lod=detail`,
@@ -146,6 +155,11 @@ describe("authentication HTTP boundary", () => {
     });
     expect(viewportResponse.statusCode).toBe(200);
     expect(viewportResponse.json()).toMatchObject({ payloadVersion: 1, lod: "DETAIL", chunks: [{ payloadVersion: 2 }, { payloadVersion: 2 }] });
+    expect(viewportResponse.json().chunks[0].contentHash).toBe(detailChunk.contentHash);
+    expect(viewportBatch).toHaveBeenCalledTimes(1);
+    expect(viewportSingleChunk).not.toHaveBeenCalled();
+    viewportBatch.mockRestore();
+    viewportSingleChunk.mockRestore();
     const legacyResponse = await app.inject({
       method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie },
     });
@@ -200,6 +214,114 @@ describe("authentication HTTP boundary", () => {
     expect(loggedIn.statusCode).toBe(200);
     expect(loggedIn.headers["set-cookie"]).toBeDefined();
   }, 30_000);
+
+  it("polls generation jobs only inside the authenticated country", async () => {
+    const owner = await registerUser(db, {
+      email: "job-owner@example.test", name: "Job Owner", password: "safe-password-123",
+    });
+    const foreign = await registerUser(db, {
+      email: "job-foreign@example.test", name: "Foreign Owner", password: "safe-password-123",
+    });
+    const cookie = `tasktopia_session=${owner.session}`;
+    const pending = await enqueueWorldGenerationJob(db, owner.user.countryId, "city.create", "http-job", {
+      name: "HTTP queued city", idempotencyKey: "http-job",
+    });
+
+    const pendingResponse = await app.inject({
+      method: "GET", url: `/api/world-generation-jobs/${pending.id}`, headers: { cookie },
+    });
+    expect(pendingResponse.statusCode).toBe(200);
+    expect(pendingResponse.json()).toMatchObject({ id: pending.id, countryId: owner.user.countryId, status: "PENDING" });
+
+    await processNextWorldGenerationJob(db, service, "http-boundary-worker");
+    const completedResponse = await app.inject({
+      method: "GET", url: `/api/world-generation-jobs/${pending.id}`, headers: { cookie },
+    });
+    expect(completedResponse.statusCode).toBe(200);
+    expect(completedResponse.json()).toMatchObject({ id: pending.id, status: "COMPLETED", result: { name: "HTTP queued city" } });
+    const foreignJob = await enqueueWorldGenerationJob(db, foreign.user.countryId, "city.create", "foreign-job", {
+      name: "Foreign queued city", idempotencyKey: "foreign-job",
+    });
+    expect((await app.inject({
+      method: "GET", url: `/api/world-generation-jobs/${foreignJob.id}`, headers: { cookie },
+    })).statusCode).toBe(404);
+    expect((await app.inject({
+      method: "GET", url: `/api/world-generation-jobs/${crypto.randomUUID()}`, headers: { cookie },
+    })).statusCode).toBe(404);
+  }, 20_000);
+
+  it("accepts HTTP regeneration on the web boundary and polls the world-worker result", async () => {
+    const owner = await registerUser(db, {
+      email: "http-regeneration@example.test", name: "HTTP Regeneration", password: "safe-password-123",
+      countryName: "Queued HTTP Country",
+    });
+    const cookie = `tasktopia_session=${owner.session}`;
+    const webApp = Fastify();
+    await webApp.register(fastifyCookie);
+    await registerRoutes(
+      webApp,
+      db,
+      new AppService(db, undefined, "data/uploads", new PostgresWorldGenerationDispatcher(db, 0, 1)),
+      { worldOperationsEnabled: true },
+    );
+    await webApp.ready();
+    try {
+      const accepted = await webApp.inject({
+        method: "POST",
+        url: `/api/countries/${owner.user.countryId}/regenerate`,
+        headers: { cookie },
+        payload: { confirmName: "Queued HTTP Country", idempotencyKey: "http-regeneration-boundary" },
+      });
+      expect(accepted.statusCode).toBe(202);
+      const jobId = accepted.json().job.id as string;
+
+      const pending = await webApp.inject({
+        method: "GET", url: `/api/world-generation-jobs/${jobId}`, headers: { cookie },
+      });
+      expect(pending.statusCode).toBe(200);
+      expect(pending.json()).toMatchObject({ id: jobId, status: "PENDING", operation: "country.regenerate" });
+
+      await processNextWorldGenerationJob(db, service, "http-regeneration-worker");
+      const completed = await webApp.inject({
+        method: "GET", url: `/api/world-generation-jobs/${jobId}`, headers: { cookie },
+      });
+      expect(completed.statusCode).toBe(200);
+      expect(completed.json()).toMatchObject({ id: jobId, status: "COMPLETED" });
+    } finally {
+      await webApp.close();
+    }
+  }, 30_000);
+
+  it("keeps registration and its first city atomic when the web dispatcher is enabled", async () => {
+    const queuedApp = Fastify();
+    await queuedApp.register(fastifyCookie);
+    const webService = new AppService(
+      db, undefined, "data/uploads", new PostgresWorldGenerationDispatcher(db, 0, 1),
+    );
+    await registerRoutes(queuedApp, db, webService);
+    await queuedApp.ready();
+    try {
+      const response = await queuedApp.inject({
+        method: "POST",
+        url: "/api/auth/register",
+        payload: {
+          email: "atomic-onboarding@example.test", name: "Atomic Mayor",
+          password: "safe-password-123", passwordConfirmation: "safe-password-123",
+          countryName: "Atomic Country", cityName: "Atomic City",
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.headers["set-cookie"]).toContain("tasktopia_session=");
+      const registeredUserId = response.json().user.id as string;
+      expect(await db.prepare(`SELECT c.name FROM cities_v3 c JOIN countries country ON country.id = c.country_id
+        WHERE country.user_id = ?`).get(registeredUserId)).toEqual({ name: "Atomic City" });
+      expect(await db.prepare("SELECT COUNT(*)::integer AS count FROM world_generation_jobs_v1").get())
+        .toEqual({ count: 0 });
+    } finally {
+      await queuedApp.close();
+    }
+  }, 20_000);
 
   it("creates the named country and first city during onboarding", async () => {
     const registered = await app.inject({

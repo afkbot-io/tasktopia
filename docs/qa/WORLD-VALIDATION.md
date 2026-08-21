@@ -12,8 +12,10 @@ PixiJS-клиент поверх PostgreSQL и серверного генера
   морфологией;
 - 22 района и 88 задач;
 - задачи используют только 95 принятых элементов `TASK_BUILDING_CATALOG`, включая 50 V5-новостроек, жилые и городские сервисы;
-- под каждой задачей используется каменная городская платформа; на первых двух
-  стадиях видима только рабочая полоса глубиной `3–5` клеток у фасада;
+- платформа каждой задачи совпадает с catalog contract: жилые новостройки используют
+  каменную городскую плитку, а обязательные городские службы — свою компактную
+  service-площадку; на первых двух стадиях видима только рабочая полоса глубиной
+  `3–5` клеток у фасада;
 - локальные дороги имеют ширину 2 клетки, коллекторы, магистрали и highway —
   3 клетки;
 - после каждого города выполняется `auditWorld`; любой violation завершает seed
@@ -58,6 +60,37 @@ Playwright последовательно открывает каждый гор
 - корректная глубина зданий, жителей, деревьев и светофоров;
 - движение жителей строго между центрами клеток;
 - отсутствие ошибок в browser console.
+
+## Архитектурные release-gates
+
+- viewport `1×20` делает ровно один L2 range read, по одному bounded read дорог/районов/городов/задач/features, один batch UPSERT и один retention pass;
+- задержанный HTTP overlay не скрывает уже нарисованный seed terrain и не вызывает повторный terrain materialization;
+- создание задачи не выполняет unbounded country-wide spatial SELECT внутри placement/growth;
+- `cells_json` и развёрнутый `cell_runs_json` имеют точную двустороннюю parity координат через SQL `EXCEPT` в обе стороны (равенства количества недостаточно), legacy DISTRICT membership остаётся доступным для rollback;
+- два worker одновременно claim'ят только одну idempotent command; длинная command обновляет heartbeat и не reclaim'ится;
+- bounded timeout возвращает accepted job (`202` HTTP, успешный MCP result), который доступен через оба polling-контракта;
+- два Redis-клиента на холодном locator вызывают один builder; timeout, eviction и остановленный Redis дают PostgreSQL fallback;
+- регулируемый четырёхсторонний поток из 24 машин имеет ноль unsafe pairs и ни одна машина не ждёт больше 60 секунд; въехавший на красном хвост освобождает узел.
+
+Команды перед production rollout:
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run test:e2e
+npm run test:scale
+npm run test:world-validation
+```
+
+Сырые логи и итоговый proof-summary сохраняются в активном `.agent/plans/.../proof/`; показатели accepted release ниже обновляются только после полного прогона и production smoke.
+
+Для архитектурного релиза 2026-08-21 полный локальный прогон дал 455 passed
+unit/integration тестов, 26 passed базовых E2E и 10/10 чистых world-validation
+городов. Scale fixture уложился в 9 017 ms на генерацию при бюджете 15 000 ms,
+190 ms на холодный viewport и 42 ms на повторный; compact transport уменьшил
+wire payload на 74,5%. Пиковый RSS составил 476 MiB при gate 512 MiB.
 
 Результат записывается в `screenshots/world-validation/browser-report.json`, а
 кадры — в `city-01.png` … `city-10.png`. Отдельный широкий кадр

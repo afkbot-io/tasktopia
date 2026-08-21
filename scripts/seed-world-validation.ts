@@ -5,7 +5,7 @@ import { loginUser, registerUser, type AuthUser } from "../src/server/auth";
 import { createDb, transaction } from "../src/server/db";
 import { auditWorld } from "../src/server/world/world-audit";
 import { taskBuildingCompatibleWithArchetype } from "../src/server/world/city-generation";
-import { TASK_BUILDING_CATALOG } from "../src/shared/catalog";
+import { TASK_BUILDING_CATALOG, taskBuildingPlatform } from "../src/shared/catalog";
 import type { CityMorphology, DistrictDto, TaskDto, TaskStatus } from "../src/shared/contracts";
 
 const databaseUrl = process.env.DATABASE_URL
@@ -231,9 +231,12 @@ for (let cityIndex = 0; cityIndex < CITY_SPECS.length; cityIndex += 1) {
   const cityTasks = (await service.listTasks(user.countryId)).filter((task) => task.cityId === city.id);
   const cityDistricts = await service.listDistricts(user.countryId, city.id);
   const unexpectedBuildings = cityTasks.filter((task) => !TASK_BUILDING_CATALOG.some((entry) => entry.key === task.buildingType));
-  const wrongPlatforms = cityTasks.filter((task) => task.platformType !== "STONE");
+  const wrongPlatforms = cityTasks.filter((task) => {
+    const building = TASK_BUILDING_CATALOG.find((entry) => entry.key === task.buildingType);
+    return !building || task.platformType !== taskBuildingPlatform(building);
+  });
   if (unexpectedBuildings.length > 0) throw new Error(`${spec.name}: non-new-build task building detected`);
-  if (wrongPlatforms.length > 0) throw new Error(`${spec.name}: task without STONE platform detected`);
+  if (wrongPlatforms.length > 0) throw new Error(`${spec.name}: task platform does not match the catalog contract`);
   if (cityDistricts.some((district) => district.archetype !== "NEW_BUILD")) throw new Error(`${spec.name}: non-new-build district detected`);
 
   const audit = await auditWorld(db, service, user.countryId);

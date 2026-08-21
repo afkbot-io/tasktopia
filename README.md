@@ -76,7 +76,7 @@ Tasktopia не превращает управление проектом в и�
 | Модели транспорта | 8 |
 | Terrain families | 12 |
 | Все runtime PNG | 1 220 |
-| Зарегистрированные MCP tools | 46 |
+| Зарегистрированные MCP tools | 47 |
 
 ### Работать вместе с AI
 
@@ -222,6 +222,11 @@ flowchart LR
     API --> DB[("PostgreSQL 16")]
     MCP --> DB
     World --> DB
+    API --> Jobs["Durable generation jobs"]
+    MCP --> Jobs
+    Jobs --> World
+    API -. optional .-> Redis[("Redis chunk cache")]
+    MCP -. optional .-> Redis
     DB --> Events["Durable events + NOTIFY"]
     Events --> API
     API --> Socket["Socket.IO"]
@@ -231,6 +236,8 @@ flowchart LR
 
 - **PostgreSQL** хранит рабочие сущности и геометрию мира.
 - **Fastify** запускается отдельными web, MCP и world-процессами с независимыми CPU/event loop и пулами БД.
+- **Durable generation jobs** изолируют CPU/geometry work от карты и MCP; bounded timeout возвращает polling ID, не теряя принятую команду.
+- **Redis** необязателен и используется только как fail-open content-addressed cache/singleflight; PostgreSQL остаётся источником истины.
 - **React** отвечает за управление проектом и карточки задач.
 - **PixiJS** сразу рисует seed-рельеф в браузере, затем накладывает серверные дороги, поверхности и сущности из чанков.
 - **Socket.IO** доставляет изменения только в затронутые области города.

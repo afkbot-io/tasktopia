@@ -20,6 +20,24 @@ services:
     cpus: ${POSTGRES_CPU_LIMIT:-1.00}
     cpu_shares: 512
 
+  redis:
+    image: redis:8-alpine
+    profiles: ["cache"]
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "${REDIS_MEMORY_LIMIT:-256mb}", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: ${REDIS_CONTAINER_MEMORY_LIMIT:-320m}
+    cpus: ${REDIS_CPU_LIMIT:-0.50}
+
   app:
     image: ${APP_IMAGE:-${COMPOSE_PROJECT_NAME:-tasktopia}-app:latest}
     build:
@@ -33,6 +51,10 @@ services:
       PORT: 3000
       RUNTIME_ROLE: web
       DATABASE_POOL_MAX: 10
+      GENERATION_WAIT_MS: ${GENERATION_WAIT_MS:-55000}
+      REDIS_URL: ${REDIS_URL:-}
+      REDIS_CHUNK_TTL_SECONDS: ${REDIS_CHUNK_TTL_SECONDS:-300}
+      REDIS_OPERATION_TIMEOUT_MS: ${REDIS_OPERATION_TIMEOUT_MS:-40}
       DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
       STATIC_ORIGIN: ${STATIC_ORIGIN:-}
@@ -79,6 +101,10 @@ services:
       PORT: 3000
       RUNTIME_ROLE: mcp
       DATABASE_POOL_MAX: 4
+      GENERATION_WAIT_MS: ${GENERATION_WAIT_MS:-55000}
+      REDIS_URL: ${REDIS_URL:-}
+      REDIS_CHUNK_TTL_SECONDS: ${REDIS_CHUNK_TTL_SECONDS:-300}
+      REDIS_OPERATION_TIMEOUT_MS: ${REDIS_OPERATION_TIMEOUT_MS:-40}
       DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
@@ -122,6 +148,9 @@ services:
       PORT: 3000
       RUNTIME_ROLE: world
       DATABASE_POOL_MAX: 4
+      REDIS_URL: ${REDIS_URL:-}
+      REDIS_CHUNK_TTL_SECONDS: ${REDIS_CHUNK_TTL_SECONDS:-300}
+      REDIS_OPERATION_TIMEOUT_MS: ${REDIS_OPERATION_TIMEOUT_MS:-40}
       DATABASE_URL: postgres://tasktopia:${POSTGRES_PASSWORD:-change-me}@postgres:5432/tasktopia
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}

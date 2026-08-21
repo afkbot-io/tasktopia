@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.19.2
+Version: 1.19.3
 Last updated: 2026-08-21
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -190,7 +190,25 @@ text, comments, logs, or tool arguments.
 
 ## Tools
 
-The server exposes 46 tools.
+World-changing creates are isolated from the MCP process. `city.create`,
+`district.create`, and `task.create` normally return their existing result, but
+may return `{ "status": "accepted", "job": { ... } }` when generation exceeds
+the bounded wait. This is a successful durable acceptance, not a tool error.
+Keep the same idempotency key and poll `world_generation.get` with `job.id`;
+do not submit a second command with a new key.
+
+#### `world_generation.get`
+
+Reads one accepted generation operation in the selected country.
+
+```json
+{ "jobId": "<job-uuid>" }
+```
+
+`PENDING` and `RUNNING` are transient. `COMPLETED` includes `result`; final
+`FAILED` includes a safe error object. Required scope: `country:read`.
+
+The server exposes 47 tools.
 
 ### Countries
 

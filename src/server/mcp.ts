@@ -9,6 +9,7 @@ import { authenticateMcpToken, listAccessibleCountries, setActiveCountry } from 
 import type { CountryRole, McpScope, TaskDto } from "../shared/contracts";
 import { config } from "./config";
 import { APP_VERSION } from "./version";
+import { GenerationPendingError, getWorldGenerationJob } from "./world-generation-jobs";
 
 export type McpIdentity = { userId: string; countryId: string; countryRole: CountryRole; tokenId: string; scopes: McpScope[] };
 export type McpAuthentication = { identity: McpIdentity; authInfo: AuthInfo };
@@ -23,6 +24,7 @@ function response(data: unknown) {
 }
 
 function failure(error: unknown) {
+  if (error instanceof GenerationPendingError) return response({ status: "accepted", job: error.job });
   const code = error instanceof DomainError ? error.code : "INTERNAL_ERROR";
   const message = error instanceof DomainError ? error.message : "Внутренняя ошибка MCP";
   return { isError: true, content: [{ type: "text" as const, text: JSON.stringify({ code, message }) }] };
@@ -95,6 +97,19 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     try {
       requireScope(identity, "country:read");
       return response({ country: await service.getCountry(identity.countryId), archive: await service.getArchive(identity.countryId), cities: await service.listCities(identity.countryId) });
+    } catch (error) { return failure(error); }
+  });
+
+  server.registerTool("world_generation.get", {
+    description: "Получить состояние принятой фоновой операции генерации по jobId.",
+    inputSchema: z.object({ jobId: z.string().uuid() }),
+    annotations: { readOnlyHint: true },
+  }, async ({ jobId }) => {
+    try {
+      requireScope(identity, "country:read");
+      const job = await getWorldGenerationJob(db, jobId);
+      if (!job || job.countryId !== identity.countryId) throw new DomainError("NOT_FOUND", "Операция генерации не найдена");
+      return response(job);
     } catch (error) { return failure(error); }
   });
 

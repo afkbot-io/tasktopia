@@ -411,6 +411,8 @@ export type BootstrapDto = {
   initialCity: CityDto | null;
   viewBounds: Rect;
   worldManifest: WorldManifestDto;
+  /** Durable events at or below this id are already reflected in bootstrap. */
+  eventCursor: number;
   stats: { cities: number; districts: number; tasks: number; activeDistricts: number; unfinishedBuildings: number };
   chunkSize: number;
   assetVersion: 4;

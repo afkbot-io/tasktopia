@@ -18,8 +18,20 @@ describe("PostgreSQL migrations", () => {
       "0012_staged_green_areas.sql", "0013_task_visual_kind.sql", "0014_published_chunk_payloads.sql",
       "0015_published_chunk_retention.sql",
       "0016_chunk_local_district_cells.sql",
+      "0017_world_generation_jobs.sql",
+      "0018_compact_spatial_indexes.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("creates a durable idempotent queue for isolated world generation", async () => {
+    expect(await db.prepare("SELECT to_regclass('world_generation_jobs_v1') AS table_name").get())
+      .toMatchObject({ table_name: "world_generation_jobs_v1" });
+    const indexes = await db.prepare(`SELECT indexname FROM pg_indexes
+      WHERE schemaname = current_schema() AND tablename = 'world_generation_jobs_v1'`).all<{ indexname: string }>();
+    expect(indexes.map((index) => index.indexname)).toEqual(expect.arrayContaining([
+      "world_generation_jobs_v1_claim_idx", "world_generation_jobs_v1_country_idx",
+    ]));
   });
 
   it("stores disposable published chunk payloads separately from canonical world state", async () => {
@@ -59,6 +71,47 @@ describe("PostgreSQL migrations", () => {
     ]);
     expect(await db.prepare(`SELECT MAX(jsonb_array_length(cells_json)) AS max_cells
       FROM world_chunk_district_cells_v1 WHERE district_id = ?`).get(districtId)).toEqual({ max_cells: 4096 });
+    expect(await db.prepare(`SELECT MAX(jsonb_array_length(cell_runs_json)) AS max_runs
+      FROM world_chunk_district_cells_v1 WHERE district_id = ?`).get(districtId)).toEqual({ max_runs: 64 });
+    expect(await db.prepare(`SELECT COUNT(*)::integer AS mismatches
+      FROM world_chunk_district_cells_v1 projection
+      WHERE projection.district_id = ?
+        AND (SELECT COUNT(*) FROM jsonb_array_elements(projection.cells_json)) <>
+            (SELECT COALESCE(SUM((run->'end'->>'x')::integer - (run->'start'->>'x')::integer + 1), 0)
+             FROM jsonb_array_elements(projection.cell_runs_json) AS run)`).get(districtId))
+      .toEqual({ mismatches: 0 });
+    const exactParity = async () => await db.prepare(`WITH legacy AS (
+        SELECT projection.district_id, projection.chunk_x, projection.chunk_y,
+          (cell->>'x')::integer AS x, (cell->>'y')::integer AS y
+        FROM world_chunk_district_cells_v1 projection
+        CROSS JOIN LATERAL jsonb_array_elements(projection.cells_json) cell
+        WHERE projection.district_id = ?
+      ), compact AS (
+        SELECT projection.district_id, projection.chunk_x, projection.chunk_y,
+          generated_x AS x, (run->'start'->>'y')::integer AS y
+        FROM world_chunk_district_cells_v1 projection
+        CROSS JOIN LATERAL jsonb_array_elements(projection.cell_runs_json) run
+        CROSS JOIN LATERAL generate_series(
+          (run->'start'->>'x')::integer,
+          (run->'end'->>'x')::integer
+        ) generated_x
+        WHERE projection.district_id = ?
+      ), differences AS (
+        (SELECT * FROM legacy EXCEPT SELECT * FROM compact)
+        UNION ALL
+        (SELECT * FROM compact EXCEPT SELECT * FROM legacy)
+      )
+      SELECT COUNT(*)::integer AS mismatches FROM differences`).get(districtId, districtId);
+    expect(await exactParity()).toEqual({ mismatches: 0 });
+    await db.prepare(`UPDATE world_chunk_district_cells_v1 SET cell_runs_json = jsonb_set(
+      cell_runs_json, '{0,start,x}', to_jsonb(((cell_runs_json->0->'start'->>'x')::integer + 1)))
+      WHERE district_id = ? AND chunk_x = 0 AND chunk_y = 0`).run(districtId);
+    expect(await exactParity()).not.toEqual({ mismatches: 0 });
+    await db.prepare("UPDATE districts_v3 SET cells_json=cells_json WHERE id=?").run(districtId);
+    expect(await exactParity()).toEqual({ mismatches: 0 });
+    expect(await db.prepare(`SELECT COUNT(*)::integer AS legacy_rows FROM world_chunk_entities_v11
+      WHERE entity_kind='DISTRICT' AND entity_id=?`).get(districtId))
+      .toEqual({ legacy_rows: 2 });
 
     await db.prepare("UPDATE districts_v3 SET cells_json=?::jsonb WHERE id=?")
       .run(JSON.stringify([{ x: -1, y: -1 }]), districtId);

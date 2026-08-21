@@ -5,6 +5,7 @@ import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRI
 import { roadBandRole, roadClassSupportsVehicle } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
 import { terrainAt } from "../../shared/world-terrain";
+import { encodeTerrainSample } from "../../shared/world-chunk-payload";
 import { apiWithMetrics } from "../api";
 import { ChunkMaterializer } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
@@ -903,9 +904,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const chunkLods = new Map<string, MapLod>();
     const chunkDataCache = new Map<string, ChunkDto>();
     const chunkPayloadCache = new Map<string, ChunkPayloadDto>();
-    // Static terrain, surfaces and roads are baked into one GPU texture per
-    // chunk. This replaces thousands of live display objects with one sprite.
-    const groundContainers = new Map<string, { view: Sprite; lod: MapLod; usedAt: number }>();
+    // Seed terrain is immutable for a (seed, chunk, LOD) tuple. Infrastructure
+    // is a separate transparent overlay, so an API response never destroys and
+    // re-bakes the already visible first-frame terrain texture.
+    type GroundRecord = { terrainView: Sprite; overlayView?: Sprite; lod: MapLod; usedAt: number };
+    type PreparedGround = { terrainView?: Sprite; overlayView: Sprite };
+    const groundContainers = new Map<string, GroundRecord>();
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
     const chunkPayloadMetric = new RollingPerformanceMetric();
@@ -916,6 +920,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const latestTaskStatusPatches = new Map<string, ChunkTaskStatusPatch>();
     const invalidatedGroundKeys = new Set<string>();
     const seedGroundKeys = new Set<string>();
+    const seedTerrainSamples = new Map<string, Uint8Array>();
     const pendingSeedGrounds = new Map<string, Promise<void>>();
     const groundFades: Array<{ containers: Container[]; elapsed: number; duration: number }> = [];
     const initialFocus = initialFocusRef.current;
@@ -1178,7 +1183,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const trafficPositions = motorAgents.map((agent) => vehicleSnapshot(agent));
         const trafficSnapshot = motorAgents.map((agent, index) => vehicleSnapshot(agent, agent.pauseMs > 0
           || mustYieldAtCrosswalk(agent.next, activeCrosswalks, movingWalkers)
-          || mustYieldAtTrafficSignal(agent.current, agent.next, trafficJunctions, simulationTimeMs)
+          || mustYieldAtTrafficSignal(agent.current, agent.next, trafficJunctions, simulationTimeMs, agent.progress)
           || mustYieldForBlockedJunctionExit(trafficPositions[index]!, trafficJunctions, trafficPositions)
           ? 0 : agent.speed));
         const vehicleFrame = planVehicleFrame(trafficSnapshot, elapsed);
@@ -1205,6 +1210,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             agent.next,
             trafficJunctions,
             simulationTimeMs,
+            agent.progress,
           )) continue;
           const vehicleDecision = agent.kind === "CAR" || agent.kind === "BUS" ? vehicleFrame.get(agent.id) : undefined;
           agent.progress += vehicleDecision?.advance ?? elapsed * agent.speed;
@@ -1429,12 +1435,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       type GroundBakeRequest = {
         key: string;
         valid: () => boolean;
-        task: () => Sprite;
-        resolve: (view: Sprite | undefined) => void;
+        task: () => PreparedGround;
+        resolve: (view: PreparedGround | undefined) => void;
         reject: (error: unknown) => void;
       };
       const groundBakeQueue: GroundBakeRequest[] = [];
-      const pendingGroundBakes = new Map<string, Promise<Sprite | undefined>>();
+      const pendingGroundBakes = new Map<string, Promise<PreparedGround | undefined>>();
       let groundBakeFrame = 0;
       let lastGroundBakeFrameTime = -1;
       let groundBakesThisFrame = 0;
@@ -1465,10 +1471,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           pumpGroundBakes();
         });
       };
-      const scheduleGroundBake = (requestKey: string, valid: () => boolean, task: () => Sprite): Promise<Sprite | undefined> => {
+      const scheduleGroundBake = (requestKey: string, valid: () => boolean, task: () => PreparedGround): Promise<PreparedGround | undefined> => {
         const pending = pendingGroundBakes.get(requestKey);
         if (pending) return pending;
-        const promise = new Promise<Sprite | undefined>((resolve, reject) => {
+        const promise = new Promise<PreparedGround | undefined>((resolve, reject) => {
           groundBakeQueue.push({ key: requestKey, valid, task, resolve, reject });
           host.dataset.groundBakeQueueMax = String(Math.max(
             Number(host.dataset.groundBakeQueueMax ?? 0),
@@ -1552,11 +1558,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         seedGroundKeys.delete(cacheKey);
         const record = groundContainers.get(cacheKey);
         if (!record) return;
+        seedTerrainSamples.delete(`${cacheKey}:${record.lod}`);
         const metric = `groundRemove${reason[0]!.toUpperCase()}${reason.slice(1)}`;
         host!.dataset[metric] = String(Number(host!.dataset[metric] ?? 0) + 1);
-        destroyGroundView(record.view);
+        destroyGroundView(record.terrainView);
+        if (record.overlayView) destroyGroundView(record.overlayView);
         groundContainers.delete(cacheKey);
         host!.dataset.staticGroundViews = String(groundContainers.size);
+        host!.dataset.infrastructureOverlayViews = String([...groundContainers.values()].filter((item) => item.overlayView).length);
       }
 
       const updateGroundLodDiagnostics = (): void => {
@@ -1569,20 +1578,33 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host!.dataset.mixedGroundLods = String(activeLods.size > 1);
       };
 
-      function createGroundView(chunk: ChunkDto, lod: MapLod): Sprite {
+      function bakeGroundTexture(source: Container | Graphics, chunkX: number, chunkY: number, size: number, lod: MapLod): Sprite {
         const bakeStartedAt = performance.now();
+        const originX = chunkX * size * CELL_SIZE;
+        const originY = chunkY * size * CELL_SIZE;
+        const texture = app.renderer.textureGenerator.generateTexture({
+          target: source,
+          frame: new Rectangle(originX, originY, size * CELL_SIZE, size * CELL_SIZE),
+          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
+          antialias: false,
+        });
+        host!.dataset.groundTextureResolution = String(texture.source.resolution);
+        texture.source.scaleMode = "nearest";
+        source.destroy({ children: true });
+        const view = new Sprite(texture);
+        view.position.set(originX, originY);
+        view.eventMode = "none";
+        exposeRollingMetric(host!, "groundBake", groundBakeMetric, performance.now() - bakeStartedAt);
+        return view;
+      }
+
+      function createTerrainView(chunk: ChunkDto, lod: MapLod): Sprite {
         const source = new Container();
         source.eventMode = "none";
         if (lod === "DETAIL") {
           const terrain = new Container();
-          const surfaces = new Container();
-          const roads = new Container();
           for (const cell of chunk.terrain) terrain.addChild(terrainSprite(cell));
-          const surfaceMap = new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
-          for (const surface of chunk.surfaces) surfaces.addChild(drawSurface(surface));
-          const roadMap = new Map(chunk.roads.map((road) => [key(road), road]));
-          for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap, roadMap));
-          source.addChild(terrain, surfaces, roads);
+          source.addChild(terrain);
         } else {
           const terrainGraphics = new Graphics();
           for (const cell of chunk.terrain) {
@@ -1592,6 +1614,23 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             terrainGraphics.rect(cell.x * CELL_SIZE, cell.y * CELL_SIZE, CELL_SIZE * 4, CELL_SIZE * 4)
               .fill(TERRAIN_COLORS[cell.terrain] ?? TERRAIN_COLORS.GRASS);
           }
+          source.addChild(terrainGraphics);
+        }
+        return bakeGroundTexture(source, chunk.chunkX, chunk.chunkY, chunk.size, lod);
+      }
+
+      function createInfrastructureOverlayView(chunk: ChunkDto, lod: MapLod): Sprite {
+        const source = new Container();
+        source.eventMode = "none";
+        if (lod === "DETAIL") {
+          const surfaces = new Container();
+          const roads = new Container();
+          const surfaceMap = new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
+          for (const surface of chunk.surfaces) surfaces.addChild(drawSurface(surface));
+          const roadMap = new Map(chunk.roads.map((road) => [key(road), road]));
+          for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap, roadMap));
+          source.addChild(surfaces, roads);
+        } else {
           const surfaceGraphics = new Graphics();
           for (const surface of chunk.surfaces) {
             const color = surface.finish === "ASPHALT" ? 0x59636c : surface.finish === "PAVERS" ? 0x8d8f87 : 0x8b6949;
@@ -1604,39 +1643,25 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               : road.roadClass === "COLLECTOR" ? 0x3e4e58 : 0x4b5a61;
             roadGraphics.rect(road.x * CELL_SIZE, road.y * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(color);
           }
-          source.addChild(terrainGraphics, surfaceGraphics, roadGraphics);
+          source.addChild(surfaceGraphics, roadGraphics);
         }
-
-        const originX = chunk.chunkX * chunk.size * CELL_SIZE;
-        const originY = chunk.chunkY * chunk.size * CELL_SIZE;
-        const texture = app.renderer.textureGenerator.generateTexture({
-          target: source,
-          frame: new Rectangle(originX, originY, chunk.size * CELL_SIZE, chunk.size * CELL_SIZE),
-          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
-          antialias: false,
-        });
-        host!.dataset.groundTextureResolution = String(texture.source.resolution);
-        texture.source.scaleMode = "nearest";
-        source.destroy({ children: true });
-        const view = new Sprite(texture);
-        view.position.set(originX, originY);
-        view.eventMode = "none";
-        const bakeDuration = performance.now() - bakeStartedAt;
-        exposeRollingMetric(host!, "groundBake", groundBakeMetric, bakeDuration);
-        return view;
+        return bakeGroundTexture(source, chunk.chunkX, chunk.chunkY, chunk.size, lod);
       }
 
       /** Synchronous seed terrain: no request, worker, PNG decode or asset wait. */
-      function createImmediateSeedGroundView(chunkX: number, chunkY: number, lod: MapLod): Sprite {
+      function createImmediateSeedGroundView(chunkX: number, chunkY: number, lod: MapLod): { view: Sprite; samples: Uint8Array } {
         const step = lod === "OVERVIEW" ? 4 : 1;
         const originX = chunkX * chunkSize;
         const originY = chunkY * chunkSize;
         const graphics = new Graphics();
+        const samples = new Uint8Array((chunkSize / step) ** 2);
+        let sampleIndex = 0;
         for (let y = originY; y < originY + chunkSize; y += step) {
           for (let x = originX; x < originX + chunkSize; x += step) {
-            const terrain = terrainAt(terrainSeed, x, y).terrain;
+            const terrain = terrainAt(terrainSeed, x, y);
+            samples[sampleIndex++] = encodeTerrainSample(terrain);
             graphics.rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE * step, CELL_SIZE * step)
-              .fill(TERRAIN_COLORS[terrain] ?? TERRAIN_COLORS.GRASS);
+              .fill(TERRAIN_COLORS[terrain.terrain] ?? TERRAIN_COLORS.GRASS);
           }
         }
         const texture = app.renderer.textureGenerator.generateTexture({
@@ -1650,22 +1675,47 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const view = new Sprite(texture);
         view.position.set(originX * CELL_SIZE, originY * CELL_SIZE);
         view.eventMode = "none";
-        return view;
+        return { view, samples };
       }
 
-      function installGround(cacheKey: string, view: Sprite, lod: MapLod, animate = false): void {
-        removeGround(cacheKey, "replace");
-        terrainLayer.addChild(view);
-        if (animate && !reducedMotion) {
-          view.alpha = 0;
-          groundFades.push({ containers: [view], elapsed: 0, duration: 360 });
+      function installSeedTerrain(cacheKey: string, view: Sprite, lod: MapLod): void {
+        const existing = groundContainers.get(cacheKey);
+        if (existing?.lod === lod) {
+          destroyGroundView(view);
+          return;
         }
-        groundContainers.set(cacheKey, { view, lod, usedAt: performance.now() });
+        if (existing) removeGround(cacheKey, "replace");
+        terrainLayer.addChild(view);
+        groundContainers.set(cacheKey, { terrainView: view, lod, usedAt: performance.now() });
+        host!.dataset.staticGroundViews = String(groundContainers.size);
+        updateGroundLodDiagnostics();
+      }
+
+      function installGround(cacheKey: string, prepared: PreparedGround, lod: MapLod, animate = false): void {
+        let record = groundContainers.get(cacheKey);
+        if (!record || record.lod !== lod) {
+          if (!prepared.terrainView) throw new Error(`Terrain ${cacheKey}:${lod} is missing for a new ground record`);
+          if (record) removeGround(cacheKey, "replace");
+          terrainLayer.addChild(prepared.terrainView);
+          record = { terrainView: prepared.terrainView, lod, usedAt: performance.now() };
+          groundContainers.set(cacheKey, record);
+        } else if (prepared.terrainView) {
+          destroyGroundView(prepared.terrainView);
+        }
+        if (record.overlayView) destroyGroundView(record.overlayView);
+        surfaceLayer.addChild(prepared.overlayView);
+        if (animate && !reducedMotion) {
+          prepared.overlayView.alpha = 0;
+          groundFades.push({ containers: [prepared.overlayView], elapsed: 0, duration: 360 });
+        }
+        record.overlayView = prepared.overlayView;
+        record.usedAt = performance.now();
         // Stale/failed generations can install partial ground and never reach
         // the end-of-generation pruning pass. Enforce the GPU bound at the
         // ownership point so rapid pan/LOD churn cannot accumulate textures.
         pruneGroundCache(desiredKeys);
         host!.dataset.staticGroundViews = String(groundContainers.size);
+        host!.dataset.infrastructureOverlayViews = String([...groundContainers.values()].filter((item) => item.overlayView).length);
         updateGroundLodDiagnostics();
       }
 
@@ -1676,7 +1726,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (existing) return existing;
         const promise = Promise.resolve().then(() => {
           if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey) || groundContainers.has(cacheKey)) return;
-          installGround(cacheKey, createImmediateSeedGroundView(chunkX, chunkY, lod), lod);
+          const immediate = createImmediateSeedGroundView(chunkX, chunkY, lod);
+          installSeedTerrain(cacheKey, immediate.view, lod);
+          seedTerrainSamples.set(`${cacheKey}:${lod}`, immediate.samples);
           seedGroundKeys.add(cacheKey);
           host!.dataset.seedGroundPrimes = String(Number(host!.dataset.seedGroundPrimes ?? 0) + 1);
           host!.dataset.seedFirstFrame = "true";
@@ -2085,12 +2137,15 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
           host!.dataset.agentChanges = String(Math.abs(before - movingAgents.length));
         }
-        host!.dataset.cars = String(movingAgents.filter((agent) => agent.kind === "CAR").length);
-        host!.dataset.buses = String(movingAgents.filter((agent) => agent.kind === "BUS").length);
-        host!.dataset.walkers = String(movingWalkers.length);
-        host!.dataset.cyclists = String(movingAgents.filter((agent) => agent.kind === "CYCLIST").length);
-        host!.dataset.scooters = String(movingAgents.filter((agent) => agent.kind === "SCOOTER").length);
-        host!.dataset.animals = String(movingAgents.filter((agent) => agent.kind === "ANIMAL").length);
+        // Diagnostics describe visible simulation state. Resident agents are
+        // retained across overview for a seamless detail return, but hidden
+        // sprites must not be reported as active/visible agents.
+        host!.dataset.cars = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "CAR").length : 0);
+        host!.dataset.buses = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "BUS").length : 0);
+        host!.dataset.walkers = String(agentsVisible ? movingWalkers.length : 0);
+        host!.dataset.cyclists = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "CYCLIST").length : 0);
+        host!.dataset.scooters = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "SCOOTER").length : 0);
+        host!.dataset.animals = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "ANIMAL").length : 0);
         host!.dataset.wrongWayCars = String(movingAgents.filter((agent) => agent.kind === "CAR"
           && key(agent.current) !== key(agent.next)
           && !agent.outgoing?.get(key(agent.current))?.some((candidate) => key(candidate) === key(agent.next))).length);
@@ -2183,13 +2238,13 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           return previousStage !== undefined && (previousStage >= 3) !== (task.stage >= 3);
         });
       };
-      const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal): Promise<ChunkDto> => {
+      const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal, terrainSamples?: Uint8Array): Promise<ChunkDto> => {
         const materializeStartedAt = performance.now();
         let candidate = patchChunkPayloadTaskStatuses(payload, latestTaskStatusPatches);
         let realtimeDecorationsRematerialized = crossesDecorationStage(payload, candidate);
         let materialized: ChunkDto;
         while (true) {
-          materialized = await chunkMaterializer.materialize(candidate, signal);
+          materialized = await chunkMaterializer.materialize(candidate, signal, terrainSamples);
           const latest = patchChunkPayloadTaskStatuses(candidate, latestTaskStatusPatches);
           if (latest === candidate) break;
           // A status event can cross the stage-3 frontage-decoration threshold
@@ -2245,7 +2300,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                   : response.data;
                 storeChunkPayload(cacheKey, lod, payload);
               }
-              return materializePayload(payload, controller.signal);
+              const terrainSampleKey = dataKey(cacheKey, lod);
+              const terrainSamples = seedTerrainSamples.get(terrainSampleKey);
+              const materialized = await materializePayload(payload, controller.signal, terrainSamples);
+              if (terrainSamples) {
+                seedTerrainSamples.delete(terrainSampleKey);
+                host!.dataset.seedTerrainReused = "true";
+              }
+              return materialized;
             })();
             pending = { controller, promise };
             pendingChunks.set(key, pending);
@@ -2328,7 +2390,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         rebuildMovement: boolean,
         deferStaticRender = false,
         deferEntityRender = false,
-        preparedGround?: Sprite,
+        preparedGround?: PreparedGround,
       ) => {
         chunks.set(cacheKey, chunk);
         chunkLods.set(cacheKey, lod);
@@ -2336,14 +2398,18 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const ground = groundContainers.get(cacheKey);
         const wasInvalidated = invalidatedGroundKeys.delete(cacheKey);
         const wasSeedGround = seedGroundKeys.delete(cacheKey);
-        const rebuildGround = wasInvalidated || wasSeedGround || ground?.lod !== lod;
+        const rebuildGround = wasInvalidated || wasSeedGround || ground?.lod !== lod || !ground.overlayView;
         if (rebuildGround) {
           const reason = wasInvalidated ? "invalidated" : wasSeedGround ? "seed" : "lod";
           const datasetKey = `groundRebuild${reason[0]!.toUpperCase()}${reason.slice(1)}` as keyof DOMStringMap;
           host!.dataset[datasetKey] = String(Number(host!.dataset[datasetKey] ?? 0) + 1);
         }
         if (!rebuildGround && ground) ground.usedAt = performance.now();
-        else if (preparedGround) installGround(cacheKey, preparedGround, lod, wasInvalidated);
+        else if (preparedGround) {
+          const retainedSeedTerrain = wasSeedGround && ground?.lod === lod && preparedGround.terrainView === undefined;
+          installGround(cacheKey, preparedGround, lod, wasInvalidated);
+          if (retainedSeedTerrain) host!.dataset.seedGroundRetained = "true";
+        }
         else throw new Error(`Ground ${cacheKey}:${lod} was committed before its queued bake completed`);
         if (!deferEntityRender) scheduleEntityReconcile(rebuildMovement);
         host!.dataset.groundRebuilds = String(Number(host!.dataset.groundRebuilds ?? 0) + (rebuildGround ? 1 : 0));
@@ -2386,9 +2452,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             const active = new Set(desiredKeys);
             const rebuildMovement = pendingMovementRebuild;
             const lodTransition = lod !== currentLod;
-            const preparedGrounds = new Map<string, Sprite>();
+            const preparedGrounds = new Map<string, PreparedGround>();
             const discardPreparedGrounds = () => {
-              for (const view of preparedGrounds.values()) destroyGroundView(view);
+              for (const prepared of preparedGrounds.values()) {
+                if (prepared.terrainView) destroyGroundView(prepared.terrainView);
+                destroyGroundView(prepared.overlayView);
+              }
               preparedGrounds.clear();
             };
             try {
@@ -2433,15 +2502,19 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 await withAssetSlot(() => loadTextureAssets(requiredGroundAssets([chunk], lod)));
                 if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) return;
                 const ground = groundContainers.get(cacheKey);
-                if (invalidatedGroundKeys.has(cacheKey) || seedGroundKeys.has(cacheKey) || ground?.lod !== lod) {
+                if (invalidatedGroundKeys.has(cacheKey) || seedGroundKeys.has(cacheKey) || ground?.lod !== lod || !ground.overlayView) {
                   const prepared = await scheduleGroundBake(
                     `${generation}:${lod}:${cacheKey}`,
                     () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey),
-                    () => createGroundView(chunk, lod),
+                    () => ({
+                      terrainView: ground?.lod === lod ? undefined : createTerrainView(chunk, lod),
+                      overlayView: createInfrastructureOverlayView(chunk, lod),
+                    }),
                   );
                   if (!prepared) return;
                   if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) {
-                    destroyGroundView(prepared);
+                    if (prepared.terrainView) destroyGroundView(prepared.terrainView);
+                    destroyGroundView(prepared.overlayView);
                     return;
                   }
                   preparedGrounds.set(cacheKey, prepared);

@@ -77,6 +77,8 @@ export function App() {
   const [hoveredAtlasCity, setHoveredAtlasCity] = useState<CityFocus | null>(null);
   const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
   const deepLinkHandledRef = useRef(false);
+  const eventCountryRef = useRef<string | undefined>(undefined);
+  const lastWorldEventIdRef = useRef(0);
   const [revision, setRevision] = useState(0);
   const [mapInvalidation, setMapInvalidation] = useState<MapInvalidation>();
   const [online, setOnline] = useState(true);
@@ -107,6 +109,10 @@ export function App() {
   }, []);
 
   const applyBootstrap = useCallback((next: BootstrapDto) => {
+    if (eventCountryRef.current !== next.country.id) {
+      eventCountryRef.current = next.country.id;
+      lastWorldEventIdRef.current = next.eventCursor;
+    }
     setBootstrap(next);
     setFocusCity(next.initialCity);
     setHoveredAtlasCity(null);
@@ -120,6 +126,10 @@ export function App() {
     setSessionState((current) => current === "AUTHENTICATED" ? current : "INITIALIZING");
     try {
       const next = await api<BootstrapDto>("/api/bootstrap");
+      if (eventCountryRef.current !== next.country.id) {
+        eventCountryRef.current = next.country.id;
+        lastWorldEventIdRef.current = next.eventCursor;
+      }
       setBootstrap(next);
       setFocusCity((current) => current ?? next.initialCity);
       setSessionState("AUTHENTICATED");
@@ -169,6 +179,30 @@ export function App() {
     setFocusTask({ origin: result.origin, token: Date.now() });
     setSelectedTask(result.id);
   }, []);
+  const applyRealtimeEvent = useCallback((event: RealtimeEvent) => {
+    if (event.countryId !== countryId || event.id <= lastWorldEventIdRef.current) return;
+    lastWorldEventIdRef.current = event.id;
+    setMapInvalidation(eventInvalidation(event));
+    const completed = event.type === "task.status_changed" && event.payload.status === "COMPLETED";
+    if (event.type.startsWith("task.") && event.type !== "task.comment_added") {
+      const notice: RealtimeNotice = {
+        id: event.id,
+        text: completed ? "Здание завершено — город обновлён" : event.type === "task.created" ? "Новое здание добавлено на карту" : "Задача обновлена на карте",
+        tone: completed ? "success" : "info",
+      };
+      setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));
+      window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), completed ? 8_000 : 5_000);
+      if (completed) playCompletionChime();
+    }
+    if (event.type === "task.comment_added" || event.type === "task.status_changed") {
+      setBootstrap((current) => current
+        ? { ...current, country: { ...current.country, worldVersion: event.worldVersion }, eventCursor: event.id }
+        : current);
+      setRevision((value) => value + 1);
+      return;
+    }
+    void load().then(() => setRevision((value) => value + 1)).catch(() => setOnline(false));
+  }, [countryId, load]);
   useEffect(() => {
     if (!countryId) return;
     let active = true;
@@ -177,35 +211,43 @@ export function App() {
       if (!active) return;
       const socket = io({ path: "/socket.io", withCredentials: true });
       disconnect = () => socket.disconnect();
-      socket.on("connect", () => setOnline(true));
-      socket.on("disconnect", () => setOnline(false));
-      socket.on("world:event", (event: RealtimeEvent) => {
+      let replaying = true;
+      let buffered: RealtimeEvent[] = [];
+      const receive = (event: RealtimeEvent) => {
         if (event.countryId !== countryId) return;
-        setMapInvalidation(eventInvalidation(event));
-        const completed = event.type === "task.status_changed" && event.payload.status === "COMPLETED";
-        if (event.type.startsWith("task.") && event.type !== "task.comment_added") {
-          const notice: RealtimeNotice = {
-            id: event.id,
-            text: completed ? "Здание завершено — город обновлён" : event.type === "task.created" ? "Новое здание добавлено на карту" : "Задача обновлена на карте",
-            tone: completed ? "success" : "info",
-          };
-          setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));
-          window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), completed ? 8_000 : 5_000);
-          if (completed) playCompletionChime();
-        }
-        if (event.type === "task.comment_added" || event.type === "task.status_changed") {
-          setBootstrap((current) => {
-            if (!current) return current;
-            return { ...current, country: { ...current.country, worldVersion: event.worldVersion } };
-          });
-          setRevision((value) => value + 1);
-          return;
-        }
-        void load().then(() => setRevision((value) => value + 1)).catch(() => setOnline(false));
+        if (replaying) buffered.push(event);
+        else applyRealtimeEvent(event);
+      };
+      socket.on("connect", () => {
+        setOnline(true);
+        replaying = true;
+        void (async () => {
+          const replayed: RealtimeEvent[] = [];
+          let cursor = lastWorldEventIdRef.current;
+          while (active && socket.connected) {
+            const page = await api<RealtimeEvent[]>(`/api/events?after=${cursor}`);
+            replayed.push(...page);
+            if (page.length < 500) break;
+            cursor = page.at(-1)!.id;
+          }
+          if (!active || !socket.connected) return;
+          const pending = [...replayed, ...buffered].sort((left, right) => left.id - right.id);
+          buffered = [];
+          replaying = false;
+          for (const event of pending) applyRealtimeEvent(event);
+        })().catch(() => {
+          replaying = false;
+          const pending = buffered.sort((left, right) => left.id - right.id);
+          buffered = [];
+          for (const event of pending) applyRealtimeEvent(event);
+          setOnline(false);
+        });
       });
+      socket.on("disconnect", () => setOnline(false));
+      socket.on("world:event", receive);
     });
     return () => { active = false; disconnect?.(); };
-  }, [countryId, load]);
+  }, [applyRealtimeEvent, countryId]);
 
   if (sessionState === "INITIALIZING" && !bootstrap) return <div className="app-loading" role="status"><div className="loader-square" /><span>Открываем страну…</span></div>;
   if (sessionState === "ANONYMOUS" || sessionState === "RECOVERABLE_ERROR" || !bootstrap) {

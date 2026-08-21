@@ -225,6 +225,7 @@ describe("living city agent routing", () => {
     const next = { x: -1, y: 0 };
     expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalGreenAt)).toBe(false);
     expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt)).toBe(true);
+    expect(mustYieldAtTrafficSignal(current, next, [junction], horizontalRedAt, 0.1)).toBe(false);
   });
 
   it("does not enter an intersection when the exit lane cannot fit the vehicle", () => {
@@ -293,6 +294,110 @@ describe("living city agent routing", () => {
     expect(vehicleCruiseSpeed("BUS", 0)).toBeCloseTo(0.00155);
     expect(vehicleCruiseSpeed("BUS", 1)).toBeCloseTo(0.0019);
     expect(vehicleCruiseSpeed("CAR", 0.42)).toBe(vehicleCruiseSpeed("CAR", 0.42));
+  });
+
+  it("lets opposing cars pass on adjacent local-road lanes without a false gridlock", () => {
+    const eastbound: TrafficVehicleSnapshot = {
+      id: "eastbound",
+      kind: "CAR",
+      current: { x: -2, y: 0 },
+      next: { x: -1, y: 0 },
+      progress: 0.92,
+      cruiseSpeed: 0.0024,
+      path: Array.from({ length: 8 }, (_, index) => ({ x: index - 2, y: 0 })),
+      trail: [{ x: -3, y: 0 }],
+    };
+    const westbound: TrafficVehicleSnapshot = {
+      id: "westbound",
+      kind: "CAR",
+      current: { x: 2, y: -1 },
+      next: { x: 1, y: -1 },
+      progress: 0.98,
+      cruiseSpeed: 0.0024,
+      path: Array.from({ length: 8 }, (_, index) => ({ x: 2 - index, y: -1 })),
+      trail: [{ x: 3, y: -1 }],
+    };
+
+    expect(vehicleUnsafePairCount([eastbound, westbound])).toBe(0);
+    const decisions = planVehicleFrame([eastbound, westbound], 50);
+    expect(decisions.get("eastbound")?.advance).toBeGreaterThan(0);
+    expect(decisions.get("westbound")?.advance).toBeGreaterThan(0);
+  });
+
+  it("drains four signal-controlled queues without starvation", () => {
+    type SimVehicle = TrafficVehicleSnapshot & {
+      trail: { x: number; y: number }[];
+      baseSpeed: number;
+      stoppedMs: number;
+    };
+    const junction: TrafficJunction = {
+      id: "queue-drain",
+      bounds: { minX: -1, minY: -1, maxX: 0, maxY: 0 },
+      cells: [{ x: -1, y: -1 }, { x: 0, y: -1 }, { x: -1, y: 0 }, { x: 0, y: 0 }],
+      arms: ["N", "E", "S", "W"],
+      signalPosts: [],
+    };
+    const range = (start: number, end: number) => Array.from(
+      { length: Math.abs(end - start) + 1 },
+      (_, index) => start + Math.sign(end - start) * index,
+    );
+    const routes = {
+      east: range(-32, 32).map((x) => ({ x, y: 0 })),
+      west: range(32, -32).map((x) => ({ x, y: -1 })),
+      south: range(-32, 32).map((y) => ({ x: -1, y })),
+      north: range(32, -32).map((y) => ({ x: 0, y })),
+    };
+    const vehicles: SimVehicle[] = [];
+    for (const [approach, route] of Object.entries(routes)) {
+      for (let queueIndex = 0; queueIndex < 6; queueIndex += 1) {
+        const path = route.slice(26 - queueIndex * 4);
+        vehicles.push({
+          id: `${approach}-${queueIndex}`,
+          kind: "CAR",
+          current: path[0]!,
+          next: path[1]!,
+          progress: 0,
+          cruiseSpeed: 0.0024,
+          baseSpeed: 0.0024,
+          path,
+          trail: [],
+          stoppedMs: 0,
+        });
+      }
+    }
+
+    let elapsedMs = 0;
+    let maxStoppedMs = 0;
+    while (vehicles.length > 0 && elapsedMs < 120_000) {
+      for (const vehicle of vehicles) {
+        vehicle.cruiseSpeed = mustYieldAtTrafficSignal(vehicle.current, vehicle.next, [junction], elapsedMs, vehicle.progress)
+          || mustYieldForBlockedJunctionExit(vehicle, [junction], vehicles)
+          ? 0
+          : vehicle.baseSpeed;
+      }
+      const decisions = planVehicleFrame(vehicles, 50);
+      for (const vehicle of vehicles) {
+        const advance = decisions.get(vehicle.id)?.advance ?? 0;
+        vehicle.stoppedMs = advance < 0.0001 ? vehicle.stoppedMs + 50 : 0;
+        maxStoppedMs = Math.max(maxStoppedMs, vehicle.stoppedMs);
+        vehicle.progress += advance;
+        if (vehicle.progress < 1) continue;
+        vehicle.progress -= 1;
+        vehicle.trail.unshift(vehicle.current);
+        vehicle.trail.length = Math.min(vehicle.trail.length, 7);
+        vehicle.current = vehicle.next;
+        vehicle.path = vehicle.path.slice(1);
+        vehicle.next = vehicle.path[1] ?? vehicle.current;
+      }
+      for (let index = vehicles.length - 1; index >= 0; index -= 1) {
+        if (vehicles[index]!.path.length < 2) vehicles.splice(index, 1);
+      }
+      expect(vehicleUnsafePairCount(vehicles), `unsafe pair at ${elapsedMs}ms`).toBe(0);
+      elapsedMs += 50;
+    }
+
+    expect(vehicles).toHaveLength(0);
+    expect(maxStoppedMs).toBeLessThan(60_000);
   });
 
   it("slows a following car before it reaches the vehicle ahead", () => {

@@ -16,8 +16,9 @@ import { createDb } from "./db";
 import { registerMcpHttp } from "./mcp-http";
 import { registerRoutes } from "./routes";
 import { isStaticAssetRequest } from "./static-path";
-import { publishWorldEvent, subscribeToWorldEvents } from "./world-event-relay";
-import type { RealtimeEvent } from "../shared/contracts";
+import { consumeDurableWorldEvents, publishWorldEvent } from "./world-event-relay";
+import { PostgresWorldGenerationDispatcher, startWorldGenerationWorker } from "./world-generation-jobs";
+import { createOptionalRedisWorldCache } from "./optional-redis-cache";
 
 const app = Fastify({
   logger: {
@@ -97,29 +98,31 @@ io?.on("connection", (socket) => {
   socket.once("disconnect", () => clearInterval(revalidate));
 });
 
+const generationDispatcher = config.runtimeRole === "web" || config.runtimeRole === "mcp"
+  ? new PostgresWorldGenerationDispatcher(db, config.generationWaitMs)
+  : undefined;
+const sharedWorldCache = createOptionalRedisWorldCache(config.redisUrl, {
+  ttlSeconds: config.redisChunkTtlSeconds,
+  operationTimeoutMs: config.redisOperationTimeoutMs,
+});
 const service = new AppService(db, (event) => {
   if (config.runtimeRole === "combined") io?.to(`country:${event.countryId}`).emit("world:event", event);
   else void publishWorldEvent(db, event).catch((error) => app.log.error({ err: error, eventId: event.id }, "World event publish failed"));
-});
+}, config.uploadDir, generationDispatcher, sharedWorldCache);
+const worldGenerationWorker = config.runtimeRole === "world"
+  ? startWorldGenerationWorker(db, service, undefined, (error) => app.log.error({ err: error }, "World generation worker pump failed"))
+  : undefined;
 const worldEventSubscription = config.runtimeRole === "web"
-  ? await subscribeToWorldEvents(config.databaseUrl, async (eventId) => {
+  ? await consumeDurableWorldEvents(db, config.databaseUrl, async (event) => {
       try {
-        const row = await db.prepare(`SELECT id, country_id, type, world_version, payload_json, created_at
-          FROM events WHERE id = ?`).get(eventId);
-        if (!row) return;
-        const event: RealtimeEvent = {
-          id: Number(row.id), countryId: String(row.country_id), type: String(row.type),
-          worldVersion: Number(row.world_version),
-          payload: (typeof row.payload_json === "string" ? JSON.parse(row.payload_json) : row.payload_json) as Record<string, unknown>,
-          createdAt: String(row.created_at),
-        };
+        service.acceptExternalEvent(event);
         io?.to(`country:${event.countryId}`).emit("world:event", event);
       } catch (error) {
-        app.log.error({ err: error, eventId }, "World event relay failed");
+        app.log.error({ err: error, eventId: event.id }, "World event relay failed");
       }
     })
   : undefined;
-if (servesWeb) {
+if (config.runtimeRole === "combined" || config.runtimeRole === "world") {
   const upgradedArchives = await service.upgradeCountryArchiveInfrastructure();
   if (upgradedArchives > 0) app.log.info({ countries: upgradedArchives }, "State archive infrastructure synchronized");
 }
@@ -127,7 +130,7 @@ const mcpHandler = servesMcp ? registerMcpHttp(app, db, service, config.APP_ORIG
 
 if (servesApiRoutes) await registerRoutes(app, db, service, servesWeb ? {
   registrationEnabled: config.registrationEnabled,
-  worldOperationsEnabled: config.runtimeRole === "combined",
+  worldOperationsEnabled: true,
   async onCountryAccessRevoked(countryId, userId) {
     const sockets = await io!.in(`country:${countryId}`).fetchSockets();
     for (const socket of sockets) {
@@ -144,7 +147,7 @@ if (servesApiRoutes) await registerRoutes(app, db, service, servesWeb ? {
       if (connectedUser?.id === userId) socket.disconnect(true);
     }
   },
-} : { registrationEnabled: false, worldOperationsEnabled: true });
+} : { registrationEnabled: false, worldOperationsEnabled: false });
 
 if (!servesApiRoutes) app.get("/health", async () => {
   await db.prepare("SELECT 1").get();
@@ -205,6 +208,8 @@ const close = async () => {
   io?.close();
   await mcpHandler?.close();
   await worldEventSubscription?.close();
+  await worldGenerationWorker?.close();
+  await sharedWorldCache?.close();
   await app.close();
   await db.close();
 };

@@ -21,10 +21,13 @@ async function main(): Promise<void> {
   }
   const force = forceValue === "1";
 
-  const db = await createDb(config.databaseUrl);
+  const db = await createDb(config.databaseUrl, { maxConnections: config.databasePoolMax });
   const service = new AppService(db);
   const failures: Array<{ country: string; error: string }> = [];
+  const lockName = "tasktopia:release-world-regeneration";
   try {
+    const lock = await db.prepare("SELECT pg_try_advisory_lock(hashtext(?)) AS acquired").get<{ acquired: boolean }>(lockName);
+    if (!lock?.acquired) throw new Error("Another release-wide world regeneration is already running");
     const countries = await db.prepare("SELECT id, name, seed FROM countries ORDER BY created_at, id").all<CountryRow>();
     console.log(JSON.stringify({ event: "world-regeneration.started", runId, countries: countries.length }));
 
@@ -96,6 +99,7 @@ async function main(): Promise<void> {
     }
     console.log(JSON.stringify({ event: "world-regeneration.finished", runId, countries: countries.length }));
   } finally {
+    await db.prepare("SELECT pg_advisory_unlock(hashtext(?))").get(lockName).catch(() => undefined);
     await db.close();
   }
 }
