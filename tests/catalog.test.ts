@@ -130,7 +130,7 @@ describe("active building catalog", () => {
   });
 
   it("registers crisp incident-response sprites on the same pixel grid", () => {
-    expect(PROP_CATALOG["fire-engine-horizontal"]).toMatchObject({ size: { width: 32, height: 8 }, footprint: { width: 4, height: 1 } });
+    expect(PROP_CATALOG["fire-engine-horizontal"]).toMatchObject({ size: { width: 40, height: 16 }, footprint: { width: 5, height: 2 } });
     for (const key of ["incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"]) {
       expect(PROP_CATALOG[key]?.size.width, key).toBe(8);
       expect(PROP_CATALOG[key]?.size.height % 8, key).toBe(0);

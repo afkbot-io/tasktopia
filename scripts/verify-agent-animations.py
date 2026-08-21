@@ -20,6 +20,19 @@ def alpha_bounds(image: Image.Image) -> tuple[int, int, int, int]:
     return bounds
 
 
+def assert_no_chroma_matte(image: Image.Image, prefix: str) -> None:
+    """Reject studio-key backdrops and their saturated edge halos."""
+    matte = []
+    for red, green, blue, alpha in image.getdata():
+        if alpha == 0:
+            continue
+        is_green_key = green >= 150 and green >= red * 1.45 and green >= blue * 1.18
+        is_magenta_key = red >= 140 and blue >= 120 and red - green >= 55 and blue - green >= 45
+        if is_green_key or is_magenta_key:
+            matte.append((red, green, blue))
+    assert not matte, f"{prefix}: chroma matte leaked into {len(matte)} opaque pixels"
+
+
 def family_frames(prefix: str) -> list[Image.Image]:
     return [Image.open(RUNTIME / f"{prefix}-{frame}.png").convert("RGBA") for frame in "abc"]
 
@@ -32,11 +45,25 @@ def verify_family(prefix: str, expected_size: tuple[int, int], expected_occupied
     baselines = [bottom for _, _, _, bottom in bounds]
     alpha_modes = [set(frame.getchannel("A").getdata()) for frame in frames]
     hashes = [hash(frame.tobytes()) for frame in frames]
+    opaque_points = [
+        [(x, y) for y in range(frame.height) for x in range(frame.width) if frame.getpixel((x, y))[3] == 255]
+        for frame in frames
+    ]
+    centroids = [
+        (sum(x for x, _ in points) / len(points), sum(y for _, y in points) / len(points))
+        for points in opaque_points
+    ]
     assert all(size == expected_size for size in sizes), f"{prefix}: canvas drift {sizes}"
     assert all(box == expected_occupied for box in occupied), f"{prefix}: occupied drift {occupied}, expected {expected_occupied}"
     assert len(set(baselines)) == 1, f"{prefix}: baseline drift {baselines}"
     assert all(mode <= {0, 255} for mode in alpha_modes), f"{prefix}: soft alpha"
+    for frame in frames:
+        assert_no_chroma_matte(frame, prefix)
     assert len(set(hashes)) == 3, f"{prefix}: duplicate gait frames"
+    assert max(point[0] for point in centroids) - min(point[0] for point in centroids) <= 1, f"{prefix}: horizontal mass drift {centroids}"
+    assert max(point[1] for point in centroids) - min(point[1] for point in centroids) <= 1, f"{prefix}: vertical mass drift {centroids}"
+    opaque_counts = [len(points) for points in opaque_points]
+    assert max(opaque_counts) / min(opaque_counts) <= 1.35, f"{prefix}: silhouette mass drift {opaque_counts}"
     return {"prefix": prefix, "canvas": expected_size, "occupied": expected_occupied, "baseline": baselines[0]}
 
 

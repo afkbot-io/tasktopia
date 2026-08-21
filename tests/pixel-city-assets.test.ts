@@ -242,7 +242,7 @@ describe("Pixel City active asset contract", () => {
     const props = manifest.props as Record<string, { footprintCells: number[]; artSource?: string; sourceSheet?: string }>;
     for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) {
       expect(props[key], key).toMatchObject({
-        footprintCells: [4, 1],
+        footprintCells: [5, 2],
         artSource: "HAND_AUTHORED_NATIVE",
         sourceSheet: "hand-authored/ambient/fire-engines-v3.png",
       });

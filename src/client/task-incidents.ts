@@ -115,7 +115,10 @@ export function incidentWaterJetFrame(
     return {
       x: Math.round(source.x + (target.x - source.x) * ratio),
       y: Math.round(source.y + (target.y - source.y) * ratio - Math.sin(Math.PI * ratio) * arcHeight),
-      size: 2,
+      // A real hose stream has visible volume at the nozzle and tapers only
+      // near the facade. The previous uniform 2 px diagonal read as a debug
+      // line next to tall buildings, especially below native camera scale.
+      size: ratio < 0.72 ? 3 : 2,
     };
   };
   const core = Array.from({ length: steps + 1 }, (_, index) => pointAt(index));

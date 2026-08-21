@@ -1713,9 +1713,19 @@ def remove_ai_chroma_key(source: Image.Image) -> Image.Image:
                 red >= 140 and blue >= 120
                 and red - green >= 55 and blue - green >= 45
             )
+            # The resident walk sheet uses a saturated green studio key while
+            # most generated atlases use magenta. Treat green as a candidate
+            # matte component instead of deleting every matching pixel: only
+            # the large connected backdrop is removed, so small authored green
+            # details elsewhere in the asset pack remain intact.
+            is_green = (
+                green >= 150
+                and green >= red * 1.45
+                and green >= blue * 1.18
+            )
             if is_magenta or alpha < 80:
                 pixels[x, y] = (0, 0, 0, 0)
-            elif (
+            elif is_green or (
                 (max(red, green, blue) <= 48 or min(red, green, blue) >= 220)
                 and max(red, green, blue) - min(red, green, blue) <= 22
             ):
@@ -1849,6 +1859,40 @@ def ai_grid_segment(source: Path, index: int, columns: int, rows: int) -> Image.
     if right <= left or bottom <= top:
         raise ValueError(f"{source}: empty grid segment {index}/{columns}x{rows}")
     return sheet.crop((left, top, right, bottom))
+
+
+def ai_subject_grid_segment(source: Path, index: int, columns: int, rows: int) -> Image.Image:
+    """Extract a centred animated subject without cutting it at grid thirds.
+
+    Generated animation sheets keep reliable row bands, but their subjects are
+    centred optically rather than mathematically inside equal-width columns.
+    Cropping literal thirds therefore captured neighbours in the middle frame
+    and cut the outer frames, which became visible as direction-dependent
+    squashing after normalization. Within the selected row, chroma-separated
+    occupied x-runs are the actual frame boundaries.
+    """
+    count = columns * rows
+    if columns < 1 or rows < 1 or index < 0 or index >= count:
+        raise ValueError(f"{source}: invalid subject grid segment {index}/{columns}x{rows}")
+    sheet = remove_ai_chroma_key(Image.open(source).convert("RGBA"))
+    row = index // columns
+    top = round(row * sheet.height / rows)
+    bottom = round((row + 1) * sheet.height / rows)
+    row_sheet = sheet.crop((0, top, sheet.width, bottom))
+    alpha = row_sheet.getchannel("A")
+    bands: list[tuple[int, int]] = []
+    start: int | None = None
+    for x in range(row_sheet.width + 1):
+        occupied = x < row_sheet.width and alpha.crop((x, 0, x + 1, row_sheet.height)).getbbox() is not None
+        if occupied and start is None:
+            start = x
+        elif not occupied and start is not None:
+            bands.append((start, x))
+            start = None
+    if len(bands) != columns:
+        raise ValueError(f"{source}: expected {columns} subjects in row {row}, found {len(bands)}")
+    left, right = bands[index % columns]
+    return row_sheet.crop((left, 0, right, row_sheet.height))
 
 
 def normalize_ai_authored_ambient(
@@ -2128,7 +2172,9 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         segment_index = int(authored.get("segment", 0))
         grid = authored.get("grid")
         source_segment = (
-            ai_grid_segment(source, segment_index, int(grid[0]), int(grid[1]))
+            ai_subject_grid_segment(source, segment_index, int(grid[0]), int(grid[1]))
+            if grid and authored.get("strictOccupiedBounds") and not authored["key"].startswith("walker-")
+            else ai_grid_segment(source, segment_index, int(grid[0]), int(grid[1]))
             if grid
             else ai_subject_segment(source, segment_index, segment_count)
             if authored.get("autoSegments")

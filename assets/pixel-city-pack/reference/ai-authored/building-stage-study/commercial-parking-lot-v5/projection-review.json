@@ -2,18 +2,19 @@
   "key": "commercial-parking-lot",
   "stage": 5,
   "facadeVerticals": [
-    [[1, 27], [1, 62]],
-    [[78, 27], [78, 62]]
+    [[2, 32], [2, 63]],
+    [[77, 32], [77, 63]]
   ],
   "floorHorizontals": [
-    [[1, 43], [78, 43]]
+    [[2, 43], [77, 43]],
+    [[2, 53], [77, 53]]
   ],
   "topPlanes": [
     {
       "name": "main-roof-deck",
       "role": "primary-roof",
-      "backEdge": [[4, 16], [75, 16]],
-      "frontEdge": [[1, 26], [78, 26]]
+      "backEdge": [[11, 23], [68, 23]],
+      "frontEdge": [[2, 31], [77, 31]]
     }
   ],
   "sideFacadeWidthPx": 0,

@@ -146,6 +146,7 @@ describe("incidentWaterJetFrame", () => {
     expect(frame.core[0]).toMatchObject({ x: 52, y: -7 });
     expect(frame.core.at(-1)!.x).toBeCloseTo(-18, 0);
     expect(frame.core.at(-1)!.y).toBeCloseTo(-126, 0);
+    expect(frame.core.some(({ size }) => size === 3)).toBe(true);
     expect(frame.spray.length).toBeGreaterThanOrEqual(5);
   });
 

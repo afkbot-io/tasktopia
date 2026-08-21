@@ -1705,20 +1705,20 @@
           63
         ],
         [
-          0,
+          1,
           33,
+          79,
+          64
+        ],
+        [
+          0,
+          16,
           80,
           64
         ],
         [
           0,
-          15,
-          80,
-          64
-        ],
-        [
-          0,
-          15,
+          16,
           80,
           64
         ]
@@ -15031,16 +15031,16 @@
       "label": "Пожарная автоцистерна",
       "path": "props/fire-engine-horizontal.png",
       "size": [
-        32,
-        8
+        40,
+        16
       ],
       "footprintCells": [
-        4,
-        1
+        5,
+        2
       ],
       "anchorPx": [
-        16,
-        8
+        20,
+        16
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
       "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
@@ -15051,16 +15051,16 @@
       "label": "Пожарно-спасательная машина",
       "path": "props/fire-engine-rescue.png",
       "size": [
-        32,
-        8
+        40,
+        16
       ],
       "footprintCells": [
-        4,
-        1
+        5,
+        2
       ],
       "anchorPx": [
-        16,
-        8
+        20,
+        16
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
       "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
@@ -15071,16 +15071,16 @@
       "label": "Пожарная автолестница",
       "path": "props/fire-engine-ladder.png",
       "size": [
-        32,
-        8
+        40,
+        16
       ],
       "footprintCells": [
-        4,
-        1
+        5,
+        2
       ],
       "anchorPx": [
-        16,
-        8
+        20,
+        16
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
       "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
@@ -19218,5 +19218,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "0e97f484ac78a58d"
+  "assetRevision": "58a9a83ffaf0215d"
 }

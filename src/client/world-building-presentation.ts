@@ -49,7 +49,7 @@ export function buildingBadgePresentation(taskNumber: number, stage: number): Bu
 }
 
 export type BuildingPlatformPresentation =
-  | { family: "tile"; key: "pavement" | "road" }
+  | { family: "tile"; key: "pavement" | "road" | "path-asphalt" }
   | { family: "tile"; key: "path-brown" }
   | { family: "terrain"; key: "GRASS" | "MEADOW" | "DIRT"; variant: 0 | 1 | 2 };
 
@@ -109,6 +109,27 @@ export function taskPlatformCellPresentation(
   seed: number,
   stage: number,
 ): BuildingPlatformPresentation {
+  if (entry.serviceRole === "fuel-service" && footprint.length > 0) {
+    const minX = Math.min(...footprint.map((candidate) => candidate.x));
+    const maxX = Math.max(...footprint.map((candidate) => candidate.x));
+    const minY = Math.min(...footprint.map((candidate) => candidate.y));
+    const maxY = Math.max(...footprint.map((candidate) => candidate.y));
+    const width = maxX - minX + 1;
+    const localX = cell.x - minX;
+    const localY = cell.y - minY;
+    const entranceX = Math.max(0, Math.min(width - 1,
+      entry.entrances.find((entrance) => entrance.side === "S")?.offset ?? Math.floor(width / 2)));
+    const forecourtHalfWidth = Math.min(5, Math.max(2, Math.floor((width - 2) / 2)));
+    const onCompactForecourt = cell.y >= Math.max(minY, maxY - 2)
+      && Math.abs(localX - entranceX) <= forecourtHalfWidth;
+    if (onCompactForecourt) return { family: "tile", key: "path-asphalt" };
+
+    const onShopPad = localY <= 1 && Math.abs(localX - entranceX) <= Math.min(3, forecourtHalfWidth);
+    if (onShopPad) return { family: "tile", key: "pavement" };
+
+    return { family: "terrain", key: "GRASS", variant: yardVariant(cell.x, cell.y, seed + 97) };
+  }
+
   const base = taskPlatformPresentation(entry);
   if (base.family !== "terrain" || base.key !== "GRASS" || footprint.length === 0) return base;
 

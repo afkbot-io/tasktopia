@@ -648,7 +648,7 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   );
 
   const visualSeed = [...task.id].reduce((value, char) => ((value * 33) ^ char.charCodeAt(0)) >>> 0, 5381);
-  const engineX = entry.spriteSize.width / 2 + 15;
+  const engineX = entry.spriteSize.width / 2 + 24;
   const engine = sprite(PROP_SPRITES[FIRE_ENGINE_KEYS[visualSeed % FIRE_ENGINE_KEYS.length]!]!, engineX, 2);
   engine.anchor.set(0.5, 1);
 
@@ -662,7 +662,7 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const beacon = fullResponse
     ? new Graphics().rect(-2, -2, 4, 2).fill(0x71d7f2)
     : new Graphics().rect(-2, -2, 4, 4).fill(0xf2574c);
-  beacon.position.set(fullResponse ? engineX - 4 : alarmAnchor.x - 2, fullResponse ? -7 : alarmAnchor.y - 3);
+  beacon.position.set(fullResponse ? engineX - 7 : alarmAnchor.x - 2, fullResponse ? -13 : alarmAnchor.y - 3);
 
   const flames = layout.flameAnchors.map((anchor, index) => {
     const frameA = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
@@ -690,7 +690,7 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const waterTarget = layout.flameAnchors[Math.floor(layout.flameAnchors.length / 2)] ?? alarmAnchor;
   const targetX = waterTarget.x + 3;
   const targetY = waterTarget.y - 2;
-  const waterJet = { source: { x: engineX - 4, y: -8 }, target: { x: targetX, y: targetY } };
+  const waterJet = { source: { x: engineX - 9, y: -13 }, target: { x: targetX, y: targetY } };
   drawIncidentWaterJet(water, waterJet.source, waterJet.target, 0, visualSeed % 700);
 
   const hasFlame = profile.burning;

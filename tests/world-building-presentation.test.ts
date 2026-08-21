@@ -116,4 +116,18 @@ describe("building platform presentation", () => {
     expect(footprint.map((cell) => taskPlatformCellPresentation(entry, footprint, cell, 4, 1)))
       .toEqual(footprint.map(() => ({ family: "tile", key: "pavement" })));
   });
+
+  it("builds a compact fuel forecourt instead of a full road-tile rectangle", () => {
+    const entry = getBuilding("commercial-gas-station");
+    const footprint = Array.from({ length: 7 }, (_, row) =>
+      Array.from({ length: 14 }, (_unused, column) => ({ x: 20 + column, y: 30 + row })),
+    ).flat();
+
+    expect(taskPlatformCellPresentation(entry, footprint, { x: 26, y: 35 }, 9, 5))
+      .toEqual({ family: "tile", key: "path-asphalt" });
+    expect(taskPlatformCellPresentation(entry, footprint, { x: 20, y: 35 }, 9, 5))
+      .toEqual({ family: "terrain", key: "GRASS", variant: expect.any(Number) });
+    expect(taskPlatformCellPresentation(entry, footprint, { x: 26, y: 30 }, 9, 5))
+      .toEqual({ family: "tile", key: "pavement" });
+  });
 });
