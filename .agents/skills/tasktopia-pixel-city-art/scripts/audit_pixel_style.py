@@ -366,6 +366,24 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                     errors.append(f"vehicles/{variant}/horizontal: model is too small at native scale")
                 if orientation in {"north", "south"} and (width < 12 or height < 21):
                     errors.append(f"vehicles/{variant}/{orientation}: model is too small at native scale")
+            if orientation in {"north", "south"}:
+                alpha = image.getchannel("A")
+                remaining = {
+                    (x, y) for y in range(image.height) for x in range(image.width)
+                    if alpha.getpixel((x, y)) > 0
+                }
+                components = 0
+                while remaining:
+                    components += 1
+                    stack = [remaining.pop()]
+                    while stack:
+                        x, y = stack.pop()
+                        for neighbour in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                            if neighbour in remaining:
+                                remaining.remove(neighbour)
+                                stack.append(neighbour)
+                if components != 1:
+                    errors.append(f"vehicles/{variant}/{orientation}: body has {components} disconnected components")
             if vehicle.get("artSource") != "AI_AUTHORED" or not vehicle.get("sourceSheet"):
                 errors.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
             if vehicle.get("visualProfile") != "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE":

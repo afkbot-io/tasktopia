@@ -290,13 +290,13 @@ describe("living city agent routing", () => {
     expect(trafficSignalDecision(current, next, [junction], horizontalRedAt, "CAR", admitted.reservationId).yield).toBe(false);
   });
 
-  it("keeps most of the signal cycle moving while retaining bus clearance", () => {
+  it("keeps most of the signal cycle moving and clears a late minimum-speed bus", () => {
     const junction: TrafficJunction = {
       id: "throughput",
       bounds: { minX: -3, minY: -3, maxX: 3, maxY: 3 },
       cells: [], arms: ["E", "N", "S", "W"], signalPosts: [],
     };
-    const samples = Array.from({ length: 260 }, (_, index) => trafficSignalPhase(junction, index * 100));
+    const samples = Array.from({ length: 630 }, (_, index) => trafficSignalPhase(junction, index * 100));
     const movingSamples = samples.filter((phase) => phase.horizontal === "GREEN" || phase.vertical === "GREEN").length;
     expect(movingSamples / samples.length).toBeGreaterThanOrEqual(0.65);
 
@@ -308,7 +308,21 @@ describe("living city agent routing", () => {
         longestAllRed = Math.max(longestAllRed, currentAllRed);
       } else currentAllRed = 0;
     }
-    expect(longestAllRed).toBeLessThanOrEqual(4_500);
+    expect(longestAllRed).toBeLessThanOrEqual(10_500);
+
+    const current = { x: -8, y: 0 };
+    const next = { x: -7, y: 0 };
+    // This junction's coordinate wave advances the cycle by 1.5 seconds, so
+    // 19,499 ms is the final horizontal-green millisecond.
+    const admitted = trafficSignalDecision(current, next, [junction], 19_499, "BUS");
+    expect(admitted).toEqual({ yield: false, reservationId: junction.id });
+    expect(trafficSignalPhase(junction, 29_999).vertical).toBe("RED");
+    expect(trafficSignalPhase(junction, 30_000).vertical).toBe("GREEN");
+
+    const fiveCellStopEnvelope = 5;
+    const crossingAndTailCells = 7 + 6.75 / 2;
+    expect(vehicleCruiseSpeed("BUS", 0) * 10_501)
+      .toBeGreaterThan(fiveCellStopEnvelope + crossingAndTailCells);
   });
 
   it("does not enter an intersection when the exit lane cannot fit the vehicle", () => {

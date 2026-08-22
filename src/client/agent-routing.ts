@@ -632,20 +632,20 @@ export function detectTrafficJunctions(graph: ReadonlyMap<string, Cell>): Traffi
 }
 
 export function trafficSignalPhase(junction: TrafficJunction, elapsedMs: number): TrafficSignalPhase {
-  // A full-size bus needs 4.5 seconds to clear a seven-cell crossing at its
-  // minimum cruise speed. The former eight-second all-red windows left every
-  // junction stopped for most of the cycle and created queues faster than the
-  // five-second greens could drain them. Nine-second admission windows retain
-  // the safe clearance while keeping two thirds of the cycle productive.
-  const cycleMs = 27_000;
+  // From the five-cell bus stop envelope, a minimum-speed 6.75-cell bus needs
+  // just under ten seconds for its tail to clear a seven-cell junction. Pair
+  // each 10.5-second clearance with a 21-second admission window: two thirds
+  // of the cycle remains productive without admitting a conflicting arm while
+  // the late bus body is still inside the box.
+  const cycleMs = 63_000;
   // Adjacent intersections receive a short, spatially coherent wave instead
   // of unrelated hash phases. A vehicle moving through a street grid now sees
   // successive greens rather than a random red wall at every next block.
   const offset = Math.abs(junction.bounds.minX + junction.bounds.minY) % 8 * 250;
   const phase = (elapsedMs + offset) % cycleMs;
-  if (phase < 9_000) return { horizontal: "GREEN", vertical: "RED" };
-  if (phase < 13_500) return { horizontal: "RED", vertical: "RED" };
-  if (phase < 22_500) return { horizontal: "RED", vertical: "GREEN" };
+  if (phase < 21_000) return { horizontal: "GREEN", vertical: "RED" };
+  if (phase < 31_500) return { horizontal: "RED", vertical: "RED" };
+  if (phase < 52_500) return { horizontal: "RED", vertical: "GREEN" };
   return { horizontal: "RED", vertical: "RED" };
 }
 

@@ -901,6 +901,26 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       if (!disposed) setStreaming(false);
     };
     const app = new Application();
+    const startupDisposers: Array<() => void> = [];
+    let startupResourcesCleaned = false;
+    let appDestroyed = false;
+    const cleanupStartupResources = () => {
+      if (startupResourcesCleaned) return;
+      startupResourcesCleaned = true;
+      for (const dispose of startupDisposers.reverse()) {
+        try { dispose(); } catch (error) { console.error("Failed to dispose partial world resource", error); }
+      }
+    };
+    const destroyApp = () => {
+      if (appDestroyed) return;
+      appDestroyed = true;
+      try { app.stop(); } catch (error) { console.error("Failed to stop partial world renderer", error); }
+      try {
+        if (app.renderer) app.destroy({ removeView: true }, { children: true });
+      } catch (error) {
+        console.error("Failed to destroy partial world renderer", error);
+      }
+    };
     const chunks = new Map<string, ChunkDto>();
     const entityChunks = new Map<string, ChunkDto>();
     const entityChunkLods = new Map<string, MapLod>();
@@ -1028,6 +1048,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         socialCooldownMs: number;
         activity: "NONE" | "THINK" | "CHAT";
         activityView?: Graphics;
+        wheelView?: Graphics;
+        motionFrame?: 0 | 1 | 2 | 3;
         steps: number;
         randomState: number;
         route: Cell[];
@@ -1042,6 +1064,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       const destroyMovingAgent = (agent: MovingAgent): void => {
         agent.activityView?.removeFromParent();
         agent.activityView?.destroy();
+        agent.wheelView?.removeFromParent();
+        agent.wheelView?.destroy();
         agent.view.removeFromParent();
         agent.view.destroy();
       };
@@ -1109,6 +1133,33 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           const presentation = animalPresentation(agent.variant, agent.current, agent.next, agent.steps + Math.floor(agent.progress * 3));
           agent.view.scale.set(presentation.scaleX, presentation.scaleY);
         }
+      };
+      let renderedVehicleFrameMask = 0;
+      const renderVehicleMotionFrame = (agent: MovingAgent, frame: 0 | 1 | 2 | 3): void => {
+        const wheels = agent.wheelView;
+        if (!wheels || agent.motionFrame === frame) return;
+        agent.motionFrame = frame;
+        wheels.clear();
+        const presentation = vehiclePresentation(agent.current, agent.next);
+        const width = agent.view.texture.width;
+        const height = agent.view.texture.height;
+        const centres = presentation.view === "horizontal"
+          ? [
+              { x: -(width / 2 - (agent.kind === "BUS" ? 10 : 5)), y: height / 2 - 3 },
+              { x: width / 2 - (agent.kind === "BUS" ? 10 : 5), y: height / 2 - 3 },
+            ]
+          : [
+              { x: -(width / 2 - 3), y: -(height / 2 - (agent.kind === "BUS" ? 10 : 5)) },
+              { x: width / 2 - 3, y: -(height / 2 - (agent.kind === "BUS" ? 10 : 5)) },
+              { x: -(width / 2 - 3), y: height / 2 - (agent.kind === "BUS" ? 10 : 5) },
+              { x: width / 2 - 3, y: height / 2 - (agent.kind === "BUS" ? 10 : 5) },
+            ];
+        const orbit = [{ x: -1, y: 0 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }][frame]!;
+        for (const centre of centres) {
+          wheels.rect(Math.round(centre.x + orbit.x), Math.round(centre.y + orbit.y), 1, 1).fill(0xb8d4cf);
+        }
+        renderedVehicleFrameMask |= 1 << frame;
+        host.dataset.vehicleRenderedFrameMask = renderedVehicleFrameMask.toString(2).padStart(4, "0");
       };
 
       const movingAgentSpriteUrl = (agent: Pick<MovingAgent, "kind" | "variant" | "current" | "next"> & Partial<Pick<MovingAgent, "progress" | "phase" | "steps">>): string => {
@@ -1302,6 +1353,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           const vehicleMotion = agent.kind === "CAR" || agent.kind === "BUS"
             ? vehicleMotionPresentation(agent.kind, agent.progress, agent.steps, (motorDecision?.advance ?? 0) > 0)
             : undefined;
+          if (vehicleMotion) renderVehicleMotionFrame(agent, vehicleMotion.frame);
           agent.view.position.set(motion.x, motion.y + (vehicleMotion?.suspensionYPx ?? 0));
           agent.view.rotation = motion.rotation;
           if (agent.activityView) {
@@ -1563,7 +1615,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       };
       const resizeObserver = new ResizeObserver(scheduleResize);
       resizeObserver.observe(host);
+      startupDisposers.push(() => resizeObserver.disconnect());
       window.addEventListener("resize", scheduleResize);
+      startupDisposers.push(() => window.removeEventListener("resize", scheduleResize));
       app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
       app.stage.on("pointerdown", (event) => { dragging = true; previous = { x: event.global.x, y: event.global.y }; });
@@ -2015,6 +2069,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               : { x: current.x * CELL_SIZE + CELL_SIZE / 2, y: current.y * CELL_SIZE + CELL_SIZE / 2 };
             const view = sprite(url, groundPosition.x, groundPosition.y);
             view.anchor.set(0.5, tallRoadUser ? 1 : 0.5);
+            const wheelView = motorAgent ? new Graphics() : undefined;
+            if (wheelView) view.addChild(wheelView);
             worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
             const activityView = kind === "WALKER" ? new Graphics() : undefined;
             if (activityView) { activityView.visible = false; agentOverlayLayer.addChild(activityView); }
@@ -2022,12 +2078,13 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               id: `${sessionSeed.toString(36)}-${nextAgentId++}`,
               view, graph, outgoing, current, next, progress, speed,
               kind, variant, phase, pauseMs: 0, socialCooldownMs: index * 170 % 2_000,
-              activity: "NONE", activityView, steps: index % 17,
+              activity: "NONE", activityView, wheelView, steps: index % 17,
               randomState: planned.randomState, route: planned.route, routeIndex: 1, trail: [],
               waitMs: 0,
               visualKey: walkerPresentation?.key ?? url,
             };
             orientRoadUser(agent);
+            if (motorAgent) renderVehicleMotionFrame(agent, 0);
             movingAgents.push(agent);
             if (kind === "WALKER") movingWalkers.push(agent);
             for (const cell of candidateOccupancy) occupiedStarts.add(key(cell));
@@ -2918,6 +2975,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         void loadVisible();
       };
       canvas.addEventListener("wheel", wheel, { passive: false });
+      startupDisposers.push(() => canvas.removeEventListener("wheel", wheel));
       host.dataset.inputReady = "true";
       let intersectsViewport = true;
       const updateAnimation = () => {
@@ -2931,33 +2989,37 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         updateAnimation();
       }, { threshold: 0.01 });
       intersectionObserver.observe(host);
+      startupDisposers.push(() => intersectionObserver.disconnect());
       document.addEventListener("visibilitychange", visibility);
+      startupDisposers.push(() => document.removeEventListener("visibilitychange", visibility));
       loadVisible();
       updateAnimation();
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap = () => {
         if (districtLayerRef.current === districtLayer) districtLayerRef.current = null;
         if (districtTooltipLayerRef.current === districtTooltipLayer) districtTooltipLayerRef.current = null;
         if (runtimeRef.current) runtimeRef.current = null;
-        resizeObserver.disconnect(); window.removeEventListener("resize", scheduleResize); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer); window.clearTimeout(streamingTimer);
+        cleanupStartupResources(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(panFrame); cancelAnimationFrame(reconcileFrame); window.clearTimeout(loadRetryTimer); window.clearTimeout(streamingTimer);
         cancelGroundBakes();
-        intersectionObserver.disconnect();
         for (const pending of pendingChunks.values()) pending.controller.abort();
         pendingChunks.clear();
         for (const cacheKey of [...groundContainers.keys()]) removeGround(cacheKey, "dispose");
         chunkMaterializer.destroy();
-        canvas.removeEventListener("wheel", wheel); document.removeEventListener("visibilitychange", visibility);
       };
-    })().catch(() => {
+    })().catch((error: unknown) => {
       if (disposed) return;
+      console.error("World renderer startup failed", error);
       host.dataset.loadError = "true";
       host.dataset.loading = "false";
       setMapLoadError("Не удалось запустить карту. Повторите попытку.");
+      cleanupStartupResources();
+      destroyApp();
     });
 
     return () => {
       disposed = true;
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap?.();
-      if (app.renderer) app.destroy({ removeView: true }, { children: true });
+      cleanupStartupResources();
+      destroyApp();
     };
   }, [chunkSize, countryId, terrainSeed, rendererAttempt]);
 

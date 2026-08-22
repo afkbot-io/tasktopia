@@ -54,12 +54,19 @@ def verify_family(prefix: str, expected_size: tuple[int, int], expected_occupied
         for points in opaque_points
     ]
     assert all(size == expected_size for size in sizes), f"{prefix}: canvas drift {sizes}"
-    assert all(width <= expected_occupied[0] and height <= expected_occupied[1] for width, height in occupied), (
-        f"{prefix}: occupied frame exceeds family envelope {occupied}, expected <= {expected_occupied}"
-    )
-    minimum_width = expected_occupied[0] // 2 if prefix.startswith("walker-") else expected_occupied[0] - 4
-    assert min(width for width, _ in occupied) >= minimum_width, f"{prefix}: width squash {occupied}"
-    assert min(height for _, height in occupied) >= expected_occupied[1] - 2, f"{prefix}: height squash {occupied}"
+    if prefix.startswith("walker-"):
+        assert all(width <= expected_occupied[0] and height <= expected_occupied[1] for width, height in occupied), (
+            f"{prefix}: occupied frame exceeds family envelope {occupied}, expected <= {expected_occupied}"
+        )
+        assert min(width for width, _ in occupied) >= expected_occupied[0] // 2, f"{prefix}: width squash {occupied}"
+        assert min(height for _, height in occupied) >= expected_occupied[1] - 2, f"{prefix}: height squash {occupied}"
+    else:
+        # Cyclists, scooters and animals already use stable authored boxes.
+        # Do not relax their exact contract when allowing a walker's naturally
+        # narrower passing pose.
+        assert all(box == expected_occupied for box in occupied), (
+            f"{prefix}: occupied drift {occupied}, expected {expected_occupied}"
+        )
     assert len(set(baselines)) == 1, f"{prefix}: baseline drift {baselines}"
     assert all(mode <= {0, 255} for mode in alpha_modes), f"{prefix}: soft alpha"
     for frame in frames:

@@ -56,6 +56,7 @@ test("keeps visible agent state across detail zoom and randomizes a new page ses
   const trafficStepsBefore = Number(await host.getAttribute("data-traffic-steps") ?? 0);
   await expect.poll(async () => await host.getAttribute("data-resident-walk-state"), { timeout: 8_000 }).not.toBe(walkStateBefore);
   await expect.poll(async () => Number(await host.getAttribute("data-traffic-steps") ?? 0), { timeout: 8_000 }).toBeGreaterThan(trafficStepsBefore);
+  await expect.poll(async () => await host.getAttribute("data-vehicle-rendered-frame-mask"), { timeout: 8_000 }).toBe("1111");
   await canvas.hover();
   await page.mouse.wheel(0, -200);
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 90_000 }).toBe("false");

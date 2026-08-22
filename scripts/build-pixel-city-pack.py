@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import math
 import shutil
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -1948,6 +1949,38 @@ def normalize_ai_authored_ambient(
     return canvas
 
 
+def keep_largest_opaque_component(image: Image.Image) -> Image.Image:
+    """Remove a detached generated shadow before native-size normalization."""
+    alpha = image.getchannel("A")
+    remaining = {
+        (x, y)
+        for y in range(image.height)
+        for x in range(image.width)
+        if alpha.getpixel((x, y)) > 0
+    }
+    components: list[set[tuple[int, int]]] = []
+    while remaining:
+        seed = remaining.pop()
+        component = {seed}
+        stack = [seed]
+        while stack:
+            x, y = stack.pop()
+            for neighbour in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if neighbour not in remaining:
+                    continue
+                remaining.remove(neighbour)
+                component.add(neighbour)
+                stack.append(neighbour)
+        components.append(component)
+    if len(components) <= 1:
+        return image
+    components.sort(key=len, reverse=True)
+    result = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    for x, y in components[0]:
+        result.putpixel((x, y), image.getpixel((x, y)))
+    return result
+
+
 def normalize_ai_authored_animation_family(
     sources: list[Image.Image],
     canvas_size: tuple[int, int],
@@ -2399,6 +2432,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                     if grid
                     else ai_sheet_segment(source, segment_index, segment_count)
                 )
+                if orientation == "north":
+                    source_segment = keep_largest_opaque_component(remove_ai_chroma_key(source_segment))
                 image = normalize_ai_authored_ambient(
                     source_segment,
                     canvas_size,
@@ -2667,14 +2702,23 @@ def projection_style_sheet(manifest: dict) -> None:
 def transport_style_sheet(manifest: dict) -> None:
     """Render every accepted vehicle view and transit/park prop at nearest-neighbour 8x."""
     scale = 8
-    card_width, card_height, columns = 310, 230, 4
+    # One car needs 192 px for the horizontal view plus 128 px for each
+    # vertical view at 8x. The former 310 px card clipped south and overflowed
+    # north into the next model, invalidating the release contact sheet.
+    card_width, card_height, columns = 520, 300, 2
     vehicle_items = sorted(manifest["vehicles"].items())
     review_props = (
         "city-bus-horizontal", "city-bus-north", "city-bus-south",
         "bus-stop-horizontal", "bus-stop-vertical", "fountain-large", "gazebo", "playground-carousel",
     )
     prop_row_height = 190
-    image = Image.new("RGB", (card_width * columns, card_height * 2 + prop_row_height * 2), rgba("#132126ff")[:3])
+    vehicle_rows = math.ceil(len(vehicle_items) / columns)
+    prop_rows = math.ceil(len(review_props) / columns)
+    image = Image.new(
+        "RGB",
+        (card_width * columns, card_height * vehicle_rows + prop_row_height * prop_rows),
+        rgba("#132126ff")[:3],
+    )
     draw = ImageDraw.Draw(image)
     for index, (key, views) in enumerate(vehicle_items):
         left, top = (index % columns) * card_width, (index // columns) * card_height
@@ -2685,9 +2729,9 @@ def transport_style_sheet(manifest: dict) -> None:
             sprite = Image.open(RUNTIME / views[orientation]["path"]).convert("RGBA")
             sprite = sprite.resize((sprite.width * scale, sprite.height * scale), Image.Resampling.NEAREST)
             image.paste(sprite, (x, top + 62), sprite)
-            draw.text((x, top + 195), orientation, fill=rgba("#9eb0aeff")[:3])
+            draw.text((x, top + 270), orientation, fill=rgba("#9eb0aeff")[:3])
             x += sprite.width + 12
-    base_top = card_height * 2
+    base_top = card_height * vehicle_rows
     for index, key in enumerate(review_props):
         left = (index % columns) * card_width
         top = base_top + (index // columns) * prop_row_height
