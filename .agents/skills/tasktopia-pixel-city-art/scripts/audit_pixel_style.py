@@ -236,8 +236,13 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
             else:
                 resident_width = bounds[2] - bounds[0]
                 resident_height = bounds[3] - bounds[1]
-                if resident_width < 8 or resident_width > 12:
-                    errors.append(f"{label}: walking resident opaque width must be 8..12 px")
+                # A passing pose is naturally narrower than the two contact
+                # poses. Requiring every frame to fill eight pixels caused the
+                # pipeline to rescale individual frames and made residents
+                # visibly stretch while walking. Family-level scale, mass and
+                # baseline stability are verified by verify-agent-animations.
+                if resident_width < 6 or resident_width > 12:
+                    errors.append(f"{label}: walking resident opaque width must be 6..12 px")
                 if resident_height < 16 or resident_height > 18:
                     errors.append(f"{label}: walking resident opaque height must be 16..18 px, got {resident_height}")
                 if bounds[3] != image.height:

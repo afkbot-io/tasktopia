@@ -238,11 +238,11 @@ describe("living city agent routing", () => {
     expect(decisions.get("clearing")?.blockedBy).toBeUndefined();
   });
 
-  it("animates suspension by travelled distance and settles blocked queues", () => {
+  it("advances the motion phase without lifting vehicles off the lane", () => {
     expect(vehicleMotionPresentation("CAR", 0, 0)).toEqual({ frame: 0, suspensionYPx: 0 });
-    expect(vehicleMotionPresentation("CAR", 0.25, 0)).toEqual({ frame: 1, suspensionYPx: -1 });
+    expect(vehicleMotionPresentation("CAR", 0.25, 0)).toEqual({ frame: 1, suspensionYPx: 0 });
     expect(vehicleMotionPresentation("CAR", 0.5, 0)).toEqual({ frame: 2, suspensionYPx: 0 });
-    expect(vehicleMotionPresentation("BUS", 0.5, 0)).toEqual({ frame: 1, suspensionYPx: -1 });
+    expect(vehicleMotionPresentation("BUS", 0.5, 0)).toEqual({ frame: 1, suspensionYPx: 0 });
     expect(vehicleMotionPresentation("BUS", 0.75, 12, false)).toEqual({ frame: 0, suspensionYPx: 0 });
   });
 
@@ -288,6 +288,27 @@ describe("living city agent routing", () => {
     const admitted = trafficSignalDecision(current, next, [junction], horizontalGreenAt, "CAR");
     expect(admitted.reservationId).toBe(junction.id);
     expect(trafficSignalDecision(current, next, [junction], horizontalRedAt, "CAR", admitted.reservationId).yield).toBe(false);
+  });
+
+  it("keeps most of the signal cycle moving while retaining bus clearance", () => {
+    const junction: TrafficJunction = {
+      id: "throughput",
+      bounds: { minX: -3, minY: -3, maxX: 3, maxY: 3 },
+      cells: [], arms: ["E", "N", "S", "W"], signalPosts: [],
+    };
+    const samples = Array.from({ length: 260 }, (_, index) => trafficSignalPhase(junction, index * 100));
+    const movingSamples = samples.filter((phase) => phase.horizontal === "GREEN" || phase.vertical === "GREEN").length;
+    expect(movingSamples / samples.length).toBeGreaterThanOrEqual(0.65);
+
+    let longestAllRed = 0;
+    let currentAllRed = 0;
+    for (const phase of samples) {
+      if (phase.horizontal === "RED" && phase.vertical === "RED") {
+        currentAllRed += 100;
+        longestAllRed = Math.max(longestAllRed, currentAllRed);
+      } else currentAllRed = 0;
+    }
+    expect(longestAllRed).toBeLessThanOrEqual(4_500);
   });
 
   it("does not enter an intersection when the exit lane cannot fit the vehicle", () => {

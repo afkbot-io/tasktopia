@@ -128,6 +128,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .world-canvas-wrap { position: relative; width: 100%; height: 100%; }
 .world-first-frame-loading { position: absolute; inset: 0; z-index: 4; background: #0d1b1e; }
 .world-streaming-indicator { position: absolute; top: 14px; left: 50%; z-index: 5; display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 7px 12px; border: 1px solid #3c5961; border-radius: 9px; background: #0d1b1ee8; box-shadow: 0 8px 24px #0008; color: #dbe8e3; font-size: 12px; font-weight: 750; pointer-events: none; transform: translateX(-50%); backdrop-filter: blur(6px); }
+.world-streaming-error { position: absolute; top: 14px; left: 50%; z-index: 6; display: flex; align-items: center; gap: 10px; max-width: min(560px, calc(100% - 28px)); min-height: 38px; padding: 8px 10px 8px 14px; border: 1px solid #8b5050; border-radius: 9px; background: #321d22ed; box-shadow: 0 8px 24px #0008; color: #f4dede; font-size: 12px; font-weight: 750; transform: translateX(-50%); backdrop-filter: blur(6px); }
 .world-streaming-dot { width: 8px; height: 8px; border-radius: 2px; background: #f2c84b; animation: pulse 1s ease-in-out infinite; }
 .map-retry-button { cursor: pointer; border: 1px solid #3e6973; border-radius: 8px; background: #173039; color: #edf3e7; padding: 8px 14px; font-weight: 700; }
 .map-retry-button:hover { border-color: #66b8cc; background: #1d3c46; }

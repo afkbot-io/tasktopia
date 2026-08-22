@@ -81,6 +81,27 @@ describe("canonical road geometry", () => {
     });
   });
 
+  it("keeps every travel lane connected through a three-to-seven-cell T junction", () => {
+    const graph = new Map<string, Cell & { roadClass: "LOCAL" | "COLLECTOR" }>();
+    for (let x = -10; x <= 10; x += 1) {
+      for (let y = -3; y <= 3; y += 1) graph.set(`${x},${y}`, { x, y, roadClass: "COLLECTOR" });
+    }
+    for (let y = -10; y <= -4; y += 1) {
+      for (let x = -1; x <= 1; x += 1) graph.set(`${x},${y}`, { x, y, roadClass: "LOCAL" });
+    }
+
+    const travelCells = [...graph.values()].filter((cell) => (
+      cell.x > -10 && cell.x < 10 && cell.y > -10 && roadBandRole(graph, cell).kind === "TRAVEL"
+    ));
+    expect(travelCells.length).toBeGreaterThan(0);
+    for (const cell of travelCells) {
+      const role = roadBandRole(graph, cell);
+      if (role.kind !== "TRAVEL") continue;
+      const next = { x: cell.x + role.dx, y: cell.y + role.dy };
+      expect(graph.has(cellKey(next)), `lane at ${cellKey(cell)} exits asphalt toward ${cellKey(next)}`).toBe(true);
+    }
+  });
+
   it("stamps every cross-section of a straight local street", () => {
     const road = keys(stampRoadCorridor(orthogonalPath({ x: -3, y: 0 }, { x: 3, y: 0 }, true), "LOCAL", ROAD_WIDTH));
     for (let x = -3; x <= 3; x += 1) for (let y = -1; y <= 1; y += 1) expect(road.has(`${x},${y}`)).toBe(true);

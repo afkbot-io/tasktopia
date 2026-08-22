@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.19.3",
+  "version": "1.19.4",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -39,7 +39,7 @@
     "assets:residential:geometry": "node scripts/write-lowrise-geometry.mjs",
     "assets:residential:migrate": "node scripts/migrate-residential-catalog.mjs",
     "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack.py",
-    "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack.py && .venv-assets/bin/python .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py --manifest assets/pixel-city-pack/manifest.json --runtime assets/pixel-city-pack/runtime --report tmp/pixel-city-style-audit.json",
+    "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack.py && .venv-assets/bin/python scripts/verify-agent-animations.py && .venv-assets/bin/python .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py --manifest assets/pixel-city-pack/manifest.json --runtime assets/pixel-city-pack/runtime --report tmp/pixel-city-style-audit.json",
     "assets:storybook": ".venv-assets/bin/python scripts/render-pixel-city-storybook.py"
   },
   "dependencies": {

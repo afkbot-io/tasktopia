@@ -1948,6 +1948,67 @@ def normalize_ai_authored_ambient(
     return canvas
 
 
+def normalize_ai_authored_animation_family(
+    sources: list[Image.Image],
+    canvas_size: tuple[int, int],
+    occupied_envelope: tuple[int, int],
+) -> list[Image.Image]:
+    """Normalize one gait with a shared scale instead of stretching each pose."""
+    cropped: list[Image.Image] = []
+    for source in sources:
+        clean = remove_ai_chroma_key(source)
+        bounds = clean.getchannel("A").getbbox()
+        if bounds is None:
+            raise RuntimeError("Empty animation frame after chroma removal")
+        cropped.append(clean.crop(bounds))
+    scale = min(
+        occupied_envelope[0] / max(image.width for image in cropped),
+        occupied_envelope[1] / max(image.height for image in cropped),
+    )
+    normalized: list[Image.Image] = []
+    for source in cropped:
+        content_size = (max(1, round(source.width * scale)), max(1, round(source.height * scale)))
+        reduced = source.resize(content_size, Image.Resampling.BOX)
+        alpha = reduced.getchannel("A").point(lambda value: 255 if value >= 72 else 0)
+        reduced = reduced.quantize(
+            colors=28,
+            method=Image.Quantize.FASTOCTREE,
+            dither=Image.Dither.NONE,
+        ).convert("RGBA")
+        reduced.putalpha(alpha)
+        canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
+        canvas.alpha_composite(
+            reduced,
+            ((canvas_size[0] - content_size[0]) // 2, canvas_size[1] - content_size[1]),
+        )
+        normalized.append(canvas)
+    return normalized
+
+
+def align_animation_family_mass(frames: list[Image.Image]) -> list[Image.Image]:
+    """Keep a gait's body mass on one ground anchor without scaling frames."""
+    centroids: list[float] = []
+    for frame in frames:
+        points = [
+            x for y in range(frame.height) for x in range(frame.width)
+            if frame.getpixel((x, y))[3] == 255
+        ]
+        if not points:
+            raise RuntimeError("Empty animation frame while aligning body mass")
+        centroids.append(sum(points) / len(points))
+    target = sorted(centroids)[len(centroids) // 2]
+    aligned: list[Image.Image] = []
+    for frame, centroid in zip(frames, centroids):
+        shift = round(target - centroid)
+        if shift == 0:
+            aligned.append(frame)
+            continue
+        canvas = Image.new("RGBA", frame.size, (0, 0, 0, 0))
+        canvas.alpha_composite(frame, (shift, 0))
+        aligned.append(canvas)
+    return aligned
+
+
 def load_ai_authored_ambient_catalog(name: str) -> list[dict]:
     path = CATALOG / name
     if not path.exists():
@@ -2250,6 +2311,35 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "visualProfile": authored.get("visualProfile", "TASKTOPIA_V5_AMBIENT"),
             **({"baseFacing": authored["baseFacing"]} if authored.get("baseFacing") else {}),
         }
+    # A walk cycle is one authored subject, so all three poses must use one
+    # source-to-runtime scale. Normalizing each cropped pose independently to
+    # 12×18 enlarged the compact passing pose by up to 44%, which appeared as
+    # a sideways stretch during texture swaps.
+    entries_by_key = {entry["key"]: entry for entry in ai_prop_entries}
+    for direction, row in (("north", 0), ("east", 1), ("south", 2)):
+        keys = [f"walker-{direction}-{frame}" for frame in "abc"]
+        if not all(key in entries_by_key for key in keys):
+            continue
+        entry = entries_by_key[keys[0]]
+        source = AI_AUTHORED_ART / entry["sheet"]
+        sources = [ai_grid_segment(source, row * 3 + column, 3, 3) for column in range(3)]
+        normalized = normalize_ai_authored_animation_family(
+            sources,
+            tuple(entry["size"]),
+            tuple(entry["occupiedSize"]),
+        )
+        for key, frame in zip(keys, normalized):
+            generated_props[key] = frame
+    # Authored contact/passing poses may differ by a source pixel after BOX
+    # reduction. Align the opaque mass with integer translation only: the
+    # runtime canvas, baseline and anatomy remain unchanged, while texture
+    # swaps no longer make the pedestrian appear to stretch sideways.
+    for direction in ("north", "east", "south"):
+        keys = [f"walker-{direction}-{frame}" for frame in "abc"]
+        if all(key in generated_props for key in keys):
+            aligned = align_animation_family_mass([generated_props[key] for key in keys])
+            for key, frame in zip(keys, aligned):
+                generated_props[key] = frame
     # West-facing pedestrians and animals are a runtime mirror contract, not
     # another AI projection. Mirroring the already normalized east frame here
     # guarantees identical mass, palette, baseline and sampling quality.

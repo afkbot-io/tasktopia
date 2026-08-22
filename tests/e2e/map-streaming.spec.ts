@@ -262,6 +262,37 @@ test("recovers a failed chunk and paints a static map with reduced motion", asyn
   expect(failedOnce).toBe(true);
 });
 
+test("offers a working renderer restart when its setup fails", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.addInitScript(() => {
+    const OriginalResizeObserver = ResizeObserver;
+    (window as typeof window & { __allowMapRenderer?: boolean }).__allowMapRenderer = false;
+    window.ResizeObserver = class extends OriginalResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        if (!(window as typeof window & { __allowMapRenderer?: boolean }).__allowMapRenderer) {
+          throw new Error("simulated renderer setup failure");
+        }
+        super(callback);
+      }
+    };
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("demo@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("Не удалось запустить карту", { timeout: 30_000 });
+  await page.evaluate(() => {
+    (window as typeof window & { __allowMapRenderer?: boolean }).__allowMapRenderer = true;
+  });
+  await alert.getByRole("button", { name: "Повторить" }).click();
+  await expect(alert).toHaveCount(0);
+  await expect(page.getByText("Готовим карту…", { exact: true })).toBeHidden({ timeout: 90_000 });
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-seed-first-frame", "true");
+});
+
 test("shows a recoverable error after retries and keeps rendered ground", async ({ page }) => {
   test.setTimeout(120_000);
   let failChunks = false;
@@ -293,6 +324,8 @@ test("shows a recoverable error after retries and keeps rendered ground", async 
   for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, initialLod === "overview" ? -800 : 800);
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Не удалось загрузить карту", { timeout: 30_000 });
+  await expect(alert).not.toHaveClass(/world-first-frame-loading/);
+  await expect(canvas).toBeVisible();
   expect(Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
   failChunks = false;
   await alert.getByRole("button", { name: "Повторить" }).click();

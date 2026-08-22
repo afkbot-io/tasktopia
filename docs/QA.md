@@ -86,6 +86,26 @@
 
 Автоматические браузерные проверки находятся в `tests/e2e/chunk-pipeline.spec.ts` и `tests/e2e/map-streaming.spec.ts`.
 
+## Походка, трафик и восстановление карты — 1.19.4
+
+1. На native detail scale просмотреть `A→B→C→B` для north/east/south/west:
+   canvas остаётся `16×24`, стопы имеют общий baseline, промежуточная поза может
+   быть уже контактных поз, но голова, торс и длина конечностей не меняют масштаб.
+2. Сравнить восемь моделей в `screenshots/transport-native-views-review.png`:
+   horizontal/north/south используют одну frontal-top камеру, одинаковую линию
+   колёс и контакт с дорогой; runtime не добавляет bob кузову.
+3. На T-перекрёстке убедиться, что все travel-роли лежат на asphalt. За полный
+   27-секундный цикл транспорт должен иметь не менее 65% времени движения;
+   непрерывный all-red не превышает 4,5 секунды.
+4. Принудительно вернуть `503` для viewport после готового кадра: seed/готовый
+   ground остаётся видимым, ошибка показывается компактно. Отдельно оборвать
+   инициализацию renderer: кнопка «Повторить» должна пересоздать карту и получить
+   `data-seed-first-frame="true"`.
+5. Автоматические результаты релиза 2026-08-22: `470 passed / 7 skipped` unit,
+   `27 passed / 6 skipped` E2E, `42` animation families / `126` frames, `1 224`
+   PNG без нарушений. Scale-smoke: generation `12 929 ms`, cold chunk `185 ms`,
+   cached chunk `45 ms`, compact wire `−82%`, RSS `420 MB`.
+
 ## Release gate
 
 ```bash

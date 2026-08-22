@@ -818,6 +818,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const [firstFrameReady, setFirstFrameReady] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [mapLoadError, setMapLoadError] = useState<string>();
+  const [rendererAttempt, setRendererAttempt] = useState(0);
   const hostRef = useRef<HTMLDivElement>(null);
   const districtLayerRef = useRef<Container | null>(null);
   const districtTooltipLayerRef = useRef<Container | null>(null);
@@ -2946,19 +2947,27 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         chunkMaterializer.destroy();
         canvas.removeEventListener("wheel", wheel); document.removeEventListener("visibilitychange", visibility);
       };
-    })();
+    })().catch(() => {
+      if (disposed) return;
+      host.dataset.loadError = "true";
+      host.dataset.loading = "false";
+      setMapLoadError("Не удалось запустить карту. Повторите попытку.");
+    });
 
     return () => {
       disposed = true;
       (host as HTMLElement & { cleanupMap?: () => void }).cleanupMap?.();
       if (app.renderer) app.destroy({ removeView: true }, { children: true });
     };
-  }, [chunkSize, countryId, terrainSeed]);
+  }, [chunkSize, countryId, terrainSeed, rendererAttempt]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />
     {!firstFrameReady && !mapLoadError && <div className="app-loading world-first-frame-loading" role="status"><div className="loader-square" /><span>Готовим карту…</span></div>}
     {firstFrameReady && streaming && !mapLoadError && <div className="world-streaming-indicator" role="status"><span className="world-streaming-dot" />Подгружаем карту…</div>}
-    {mapLoadError && <div className="app-loading world-first-frame-loading" role="alert"><span>{mapLoadError}</span><button type="button" className="map-retry-button" onClick={() => runtimeRef.current?.retry()}>Повторить</button></div>}
+    {mapLoadError && <div className={firstFrameReady ? "world-streaming-error" : "app-loading world-first-frame-loading"} role="alert"><span>{mapLoadError}</span><button type="button" className="map-retry-button" onClick={() => {
+      if (firstFrameReady) runtimeRef.current?.retry();
+      else { setMapLoadError(undefined); setRendererAttempt((attempt) => attempt + 1); }
+    }}>Повторить</button></div>}
   </div>;
 }

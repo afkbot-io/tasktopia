@@ -506,9 +506,9 @@ export function vehiclePresentation(current: Cell, next: Cell, scale = 1): Vehic
 }
 
 /**
- * Animate suspension without deforming or rotating pixel art. Cars use one
- * crisp compression pixel; buses traverse the same four phases more slowly.
- * A blocked vehicle settles on frame zero so queues do not visibly vibrate.
+ * Advance a stable distance phase without deforming or rotating pixel art.
+ * Vehicle wheels are authored into the sprite, so moving the whole body by a
+ * pixel made it detach from the lane and look crooked at frame boundaries.
  */
 export function vehicleMotionPresentation(
   kind: "CAR" | "BUS",
@@ -520,7 +520,7 @@ export function vehicleMotionPresentation(
   const distancePhase = Math.max(0, completedCells) + Math.max(0, Math.min(0.999_999, progress));
   const multiplier = kind === "BUS" ? 2 : 4;
   const frame = Math.floor(distancePhase * multiplier) % 4 as 0 | 1 | 2 | 3;
-  return { frame, suspensionYPx: frame === 1 ? -1 : 0 };
+  return { frame, suspensionYPx: 0 };
 }
 
 /** Pixel position on the exact centre of the assigned travel cell. */
@@ -632,19 +632,20 @@ export function detectTrafficJunctions(graph: ReadonlyMap<string, Cell>): Traffi
 }
 
 export function trafficSignalPhase(junction: TrafficJunction, elapsedMs: number): TrafficSignalPhase {
-  // A seven-cell crossing plus a full-size bus needs materially more clearing
-  // time than the former two-cell road. Each direction gets a bounded five-
-  // second admission window followed by eight seconds of all-red clearance;
-  // the next arm never opens while the previous long body is still in-box.
-  const cycleMs = 26_000;
+  // A full-size bus needs 4.5 seconds to clear a seven-cell crossing at its
+  // minimum cruise speed. The former eight-second all-red windows left every
+  // junction stopped for most of the cycle and created queues faster than the
+  // five-second greens could drain them. Nine-second admission windows retain
+  // the safe clearance while keeping two thirds of the cycle productive.
+  const cycleMs = 27_000;
   // Adjacent intersections receive a short, spatially coherent wave instead
   // of unrelated hash phases. A vehicle moving through a street grid now sees
   // successive greens rather than a random red wall at every next block.
   const offset = Math.abs(junction.bounds.minX + junction.bounds.minY) % 8 * 250;
   const phase = (elapsedMs + offset) % cycleMs;
-  if (phase < 5_000) return { horizontal: "GREEN", vertical: "RED" };
-  if (phase < 13_000) return { horizontal: "RED", vertical: "RED" };
-  if (phase < 18_000) return { horizontal: "RED", vertical: "GREEN" };
+  if (phase < 9_000) return { horizontal: "GREEN", vertical: "RED" };
+  if (phase < 13_500) return { horizontal: "RED", vertical: "RED" };
+  if (phase < 22_500) return { horizontal: "RED", vertical: "GREEN" };
   return { horizontal: "RED", vertical: "RED" };
 }
 
