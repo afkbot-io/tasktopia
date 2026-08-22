@@ -2432,8 +2432,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                     if grid
                     else ai_sheet_segment(source, segment_index, segment_count)
                 )
-                if orientation == "north":
-                    source_segment = keep_largest_opaque_component(remove_ai_chroma_key(source_segment))
+                source_segment = keep_largest_opaque_component(remove_ai_chroma_key(source_segment))
                 image = normalize_ai_authored_ambient(
                     source_segment,
                     canvas_size,

@@ -366,7 +366,7 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                     errors.append(f"vehicles/{variant}/horizontal: model is too small at native scale")
                 if orientation in {"north", "south"} and (width < 12 or height < 21):
                     errors.append(f"vehicles/{variant}/{orientation}: model is too small at native scale")
-            if orientation in {"north", "south"}:
+            if orientation in {"horizontal", "north", "south"}:
                 alpha = image.getchannel("A")
                 remaining = {
                     (x, y) for y in range(image.height) for x in range(image.width)

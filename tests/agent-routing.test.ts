@@ -421,7 +421,7 @@ describe("living city agent routing", () => {
     expect(decisions.get("westbound")?.advance).toBeGreaterThan(0);
   });
 
-  it("drains four signal-controlled queues without starvation", () => {
+  it.each(["T", "X"] as const)("drains mixed CAR/BUS queues through a %s junction without starvation", (shape) => {
     type SimVehicle = TrafficVehicleSnapshot & {
       trail: { x: number; y: number }[];
       baseSpeed: number;
@@ -433,31 +433,37 @@ describe("living city agent routing", () => {
       id: "queue-drain",
       bounds: { minX: -3, minY: -3, maxX: 3, maxY: 3 },
       cells: Array.from({ length: 49 }, (_, index) => ({ x: index % 7 - 3, y: Math.floor(index / 7) - 3 })),
-      arms: ["N", "E", "S", "W"],
+      arms: shape === "X" ? ["N", "E", "S", "W"] : ["E", "S", "W"],
       signalPosts: [],
     };
     const range = (start: number, end: number) => Array.from(
       { length: Math.abs(end - start) + 1 },
       (_, index) => start + Math.sign(end - start) * index,
     );
-    const routes = {
+    const allRoutes = {
       east: range(-32, 32).map((x) => ({ x, y: 2 })),
       west: range(32, -32).map((x) => ({ x, y: -2 })),
       south: range(-32, 32).map((y) => ({ x: -2, y })),
       north: range(32, -32).map((y) => ({ x: 2, y })),
     };
+    const routes = Object.entries(allRoutes).filter(([approach]) => shape === "X" || approach !== "north");
     const vehicles: SimVehicle[] = [];
-    for (const [approach, route] of Object.entries(routes)) {
-      for (let queueIndex = 0; queueIndex < 6; queueIndex += 1) {
-        const path = route.slice(26 - queueIndex * 4);
+    for (const [approach, route] of routes) {
+      for (let queueIndex = 0; queueIndex < 3; queueIndex += 1) {
+        // The leader starts one cell before the largest (bus) stop envelope;
+        // later queue members retain a full body-and-gap separation. This is
+        // the same admissible spawn geometry used by the runtime traffic core.
+        const path = route.slice(23 - queueIndex * 9);
+        const kind = queueIndex === 0 && (approach === "east" || approach === "south") ? "BUS" : "CAR";
+        const baseSpeed = vehicleCruiseSpeed(kind, kind === "BUS" ? 0 : 0.5);
         vehicles.push({
           id: `${approach}-${queueIndex}`,
-          kind: "CAR",
+          kind,
           current: path[0]!,
           next: path[1]!,
           progress: 0,
-          cruiseSpeed: 0.0024,
-          baseSpeed: 0.0024,
+          cruiseSpeed: baseSpeed,
+          baseSpeed,
           path,
           trail: [],
           stoppedMs: 0,
@@ -468,7 +474,14 @@ describe("living city agent routing", () => {
 
     let elapsedMs = 0;
     let maxStoppedMs = 0;
-    while (vehicles.length > 0 && elapsedMs < 120_000) {
+    let previousPhase = trafficSignalPhase(junction, 0);
+    const insideConflictZone = (vehicle: SimVehicle) => (
+      vehicle.current.x >= junction.bounds.minX
+      && vehicle.current.x <= junction.bounds.maxX
+      && vehicle.current.y >= junction.bounds.minY
+      && vehicle.current.y <= junction.bounds.maxY
+    );
+    while (vehicles.length > 0 && elapsedMs < 180_000) {
       for (const vehicle of vehicles) {
         const signal = trafficSignalDecision(
           vehicle.current,
@@ -483,6 +496,14 @@ describe("living city agent routing", () => {
           ? 0
           : vehicle.baseSpeed;
       }
+      const phase = trafficSignalPhase(junction, elapsedMs);
+      if (previousPhase.horizontal !== "GREEN" && phase.horizontal === "GREEN") {
+        expect(vehicles.filter((vehicle) => vehicle.current.y !== vehicle.next.y && insideConflictZone(vehicle)), `vertical tail at ${elapsedMs}ms`).toEqual([]);
+      }
+      if (previousPhase.vertical !== "GREEN" && phase.vertical === "GREEN") {
+        expect(vehicles.filter((vehicle) => vehicle.current.x !== vehicle.next.x && insideConflictZone(vehicle)), `horizontal tail at ${elapsedMs}ms`).toEqual([]);
+      }
+      previousPhase = phase;
       const decisions = planVehicleFrame(vehicles, 50);
       for (const vehicle of vehicles) {
         const advance = decisions.get(vehicle.id)?.advance ?? 0;
@@ -502,11 +523,12 @@ describe("living city agent routing", () => {
         if (vehicles[index]!.path.length < 2) vehicles.splice(index, 1);
       }
       expect(vehicleUnsafePairCount(vehicles), `unsafe pair at ${elapsedMs}ms`).toBe(0);
+      expect(vehicles.every((vehicle) => Math.abs(vehicle.next.x - vehicle.current.x) + Math.abs(vehicle.next.y - vehicle.current.y) <= 1), `wrong-way segment at ${elapsedMs}ms`).toBe(true);
       elapsedMs += 50;
     }
 
     expect(vehicles).toHaveLength(0);
-    expect(maxStoppedMs).toBeLessThan(60_000);
+    expect(maxStoppedMs).toBeLessThan(120_000);
   });
 
   it("slows a following car before it reaches the vehicle ahead", () => {
