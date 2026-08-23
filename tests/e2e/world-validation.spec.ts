@@ -72,6 +72,8 @@ test("validates and captures ten new-build cities", async ({ page }) => {
     await expect.poll(async () => await host.getAttribute("data-resident-walk-state"), { timeout: 8_000 }).not.toBe(walkState);
     await expect.poll(async () => Number(await host.getAttribute("data-traffic-steps") ?? 0), { timeout: 8_000 })
       .toBeGreaterThan(trafficSteps);
+    await expect.poll(async () => Number(await host.getAttribute("data-traffic-moving-vehicles") ?? 0), { timeout: 16_000 })
+      .toBeGreaterThan(0);
 
     await page.waitForTimeout(600);
     const metric = async (name: string): Promise<number> => Number(await host.getAttribute(`data-${name}`) ?? 0);
@@ -91,6 +93,8 @@ test("validates and captures ten new-build cities", async ({ page }) => {
       wrongWayCars: await metric("wrong-way-cars"),
       wrongWayBuses: await metric("wrong-way-buses"),
       trafficUnsafePairs: await metric("traffic-unsafe-pairs"),
+      trafficMovingVehicles: await metric("traffic-moving-vehicles"),
+      trafficMaxWaitMs: await metric("traffic-max-wait-ms"),
       worldObjectDepthErrors: await metric("world-object-depth-errors"),
       residentCenterErrors: await metric("resident-center-errors"),
       trafficSteps: await metric("traffic-steps"),

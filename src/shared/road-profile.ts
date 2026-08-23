@@ -107,3 +107,19 @@ export function roadBandRole(graph: ReadonlyMap<string, RoadProfileCell>, cell: 
   if (width >= 5 && Math.abs(cell.x - midpoint) >= Math.floor(width / 2)) return { kind: "SHOULDER", axis: "V" };
   return { kind: "TRAVEL", axis: "V", dx: 0, dy: cell.x <= midpoint ? 1 : -1 };
 }
+
+/**
+ * Median clearance may span three cells for vehicle physics, but the visual
+ * centre line belongs only to the exact middle cell of that envelope.
+ */
+export function roadMarkingAxis(
+  graph: ReadonlyMap<string, RoadProfileCell>,
+  cell: RoadProfileCell,
+): "H" | "V" | undefined {
+  const profileCell = graph.get(key(cell)) ?? cell;
+  const role = roadBandRole(graph, profileCell);
+  if (role.kind !== "MEDIAN") return undefined;
+  const band = contiguousBand(graph, profileCell, role.axis === "H");
+  const coordinate = role.axis === "H" ? cell.y : cell.x;
+  return coordinate === (band.min + band.max) / 2 ? role.axis : undefined;
+}

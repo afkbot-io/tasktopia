@@ -61,9 +61,10 @@ const VEHICLE_BODY_CELLS = {
   BUS: { length: 6.75, width: 2.75 },
 } as const;
 const VEHICLE_SAFETY_GAP_CELLS = 0.16;
-// A native-pixel inset separates a moving body from the median marking while
-// preserving the authored integer-sized sprite.
-const VEHICLE_LANE_OFFSET_CELLS = { CAR: 0.125, BUS: 0.25 } as const;
+// The directed graph already assigns the correct right-hand travel cell. A
+// second visual inset pushed wide sprites into the shoulder and made turns
+// appear off-lane, so physics and rendering share the exact cell centreline.
+const VEHICLE_LANE_OFFSET_CELLS = { CAR: 0, BUS: 0 } as const;
 const EPSILON = 1e-9;
 
 /**
@@ -556,6 +557,11 @@ export function vehicleMotionPresentation(
   return { frame, suspensionYPx: 0 };
 }
 
+/** End-on vehicle art has no visible wheel plane; animating corner pixels there looks like image noise. */
+export function vehicleWheelAnimationEnabled(current: Cell, next: Cell): boolean {
+  return current.x !== next.x;
+}
+
 /** Pixel position on the exact centre of the assigned travel cell. */
 export function vehicleLanePosition(
   current: Cell,
@@ -650,20 +656,18 @@ export function detectTrafficJunctions(graph: ReadonlyMap<string, TrafficRoadCel
 }
 
 export function trafficSignalPhase(junction: TrafficJunction, elapsedMs: number): TrafficSignalPhase {
-  // From the five-cell bus stop envelope, a minimum-speed 6.75-cell bus needs
-  // just under ten seconds for its tail to clear a seven-cell junction. Pair
-  // each 10.5-second clearance with a 21-second admission window: two thirds
-  // of the cycle remains productive without admitting a conflicting arm while
-  // the late bus body is still inside the box.
-  const cycleMs = 63_000;
+  // A short nominal all-red interval separates twelve-second greens. Physical
+  // tail occupancy below can extend it when a bus genuinely still occupies
+  // the box, without forcing every empty intersection to wait 10.5 seconds.
+  const cycleMs = 26_000;
   // Adjacent intersections receive a short, spatially coherent wave instead
   // of unrelated hash phases. A vehicle moving through a street grid now sees
   // successive greens rather than a random red wall at every next block.
   const offset = Math.abs(junction.bounds.minX + junction.bounds.minY) % 8 * 250;
   const phase = (elapsedMs + offset) % cycleMs;
-  if (phase < 21_000) return { horizontal: "GREEN", vertical: "RED" };
-  if (phase < 31_500) return { horizontal: "RED", vertical: "RED" };
-  if (phase < 52_500) return { horizontal: "RED", vertical: "GREEN" };
+  if (phase < 12_000) return { horizontal: "GREEN", vertical: "RED" };
+  if (phase < 13_000) return { horizontal: "RED", vertical: "RED" };
+  if (phase < 25_000) return { horizontal: "RED", vertical: "GREEN" };
   return { horizontal: "RED", vertical: "RED" };
 }
 

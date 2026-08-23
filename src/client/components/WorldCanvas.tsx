@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
-import { roadBandRole } from "../../shared/road-profile";
+import { roadMarkingAxis } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
 import { terrainAt } from "../../shared/world-terrain";
 import { encodeTerrainSample } from "../../shared/world-chunk-payload";
@@ -25,6 +25,7 @@ import {
   vehicleUnsafePairCount,
   vehicleCruiseSpeed,
   vehicleMotionPresentation,
+  vehicleWheelAnimationEnabled,
   vehiclePresentation,
   mustYieldAtCrosswalk,
   mustYieldForBlockedJunctionExit,
@@ -61,6 +62,7 @@ import {
 } from "../world-building-presentation";
 import { micromobilityOccupancy, micromobilityPresentation } from "../micromobility-presentation";
 import { residentActivityPosition, residentActivityVisualKey, residentGroundPosition, residentWalkPresentation } from "../resident-presentation";
+import { SEED_TERRAIN_COLORS, seedTerrainCellPresentation } from "../seed-terrain-presentation";
 import { compareWorldObjects, type WorldObjectKind } from "../world-object-depth";
 import { overviewFromDetailChunk } from "../world-chunk-cache";
 import { greenAreaDecorStage, greenAreaSurfaceRole } from "../../shared/green-area";
@@ -136,11 +138,7 @@ function exposeRollingMetric(
   host.dataset[`${prefix}Samples`] = String(snapshot.samples);
 }
 
-const TERRAIN_COLORS: Record<string, number> = {
-  GRASS: 0x668548, MEADOW: 0x789451, FOREST: 0x315f3d,
-  DIRT: 0x8d6549, SAND: 0xc5aa73, CLAY: 0x9b5d47, STONE: 0x7d8581,
-  HILL: 0x64754b, MOUNTAIN: 0x717875, SHALLOW_WATER: 0x287da0, DEEP_WATER: 0x1f648c,
-};
+const TERRAIN_COLORS = SEED_TERRAIN_COLORS;
 const GRID_DIRECTIONS = [
   { x: 0, y: -1, bit: 1 }, { x: 1, y: 0, bit: 2 }, { x: 0, y: 1, bit: 4 }, { x: -1, y: 0, bit: 8 },
 ] as const;
@@ -237,9 +235,9 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, road
   if (crossing?.kind === "CROSSWALK") {
     group.addChild(sprite(TILE_SPRITES[crossing.orientation === "V" ? "crosswalk-vertical" : "crosswalk-horizontal"]!, p.x, p.y));
   } else {
-    const role = roadBandRole(roads, cell);
-    if (role.kind === "MEDIAN") {
-      group.addChild(sprite(TILE_SPRITES[role.axis === "H" ? "road-marking-horizontal" : "road-marking-vertical"]!, p.x, p.y));
+    const markingAxis = roadMarkingAxis(roads, cell);
+    if (markingAxis) {
+      group.addChild(sprite(TILE_SPRITES[markingAxis === "H" ? "road-marking-horizontal" : "road-marking-vertical"]!, p.x, p.y));
     }
   }
   for (let direction = 0; direction < GRID_DIRECTIONS.length; direction += 1) {
@@ -1053,6 +1051,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         activityView?: Graphics;
         wheelView?: Graphics;
         motionFrame?: 0 | 1 | 2 | 3;
+        motionView?: "horizontal" | "north" | "south";
         steps: number;
         randomState: number;
         route: Cell[];
@@ -1140,10 +1139,13 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let renderedVehicleFrameMask = 0;
       const renderVehicleMotionFrame = (agent: MovingAgent, frame: 0 | 1 | 2 | 3): void => {
         const wheels = agent.wheelView;
-        if (!wheels || agent.motionFrame === frame) return;
-        agent.motionFrame = frame;
-        wheels.clear();
+        if (!wheels) return;
         const presentation = vehiclePresentation(agent.current, agent.next);
+        if (agent.motionFrame === frame && agent.motionView === presentation.view) return;
+        agent.motionFrame = frame;
+        agent.motionView = presentation.view;
+        wheels.clear();
+        if (!vehicleWheelAnimationEnabled(agent.current, agent.next)) return;
         const width = agent.view.texture.width;
         const height = agent.view.texture.height;
         const centres = presentation.view === "horizontal"
@@ -1269,6 +1271,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         nextTrafficTelemetryMs -= elapsed;
         if (nextTrafficTelemetryMs <= 0) {
           host.dataset.trafficBlockedVehicles = String([...vehicleFrame.values()].filter((decision) => decision.blockedBy).length);
+          host.dataset.trafficMovingVehicles = String([...vehicleFrame.values()].filter((decision) => decision.advance > 0.000_001).length);
+          host.dataset.trafficMaxWaitMs = String(Math.round(Math.max(0, ...motorAgents.map((agent) => agent.waitMs))));
           host.dataset.trafficUnsafePairs = String(vehicleUnsafePairCount(trafficSnapshot));
           nextTrafficTelemetryMs = 250;
         }
@@ -1749,8 +1753,18 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           for (let x = originX; x < originX + chunkSize; x += step) {
             const terrain = terrainAt(terrainSeed, x, y);
             samples[sampleIndex++] = encodeTerrainSample(terrain);
+            const presentation = seedTerrainCellPresentation(terrainSeed, { x, y, ...terrain });
             graphics.rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE * step, CELL_SIZE * step)
-              .fill(TERRAIN_COLORS[terrain.terrain] ?? TERRAIN_COLORS.GRASS);
+              .fill(presentation.fill);
+            const accentSize = step === 1 ? 1 : 2;
+            for (const accent of presentation.accents) {
+              graphics.rect(
+                x * CELL_SIZE + accent.x * step,
+                y * CELL_SIZE + accent.y * step,
+                accentSize,
+                accentSize,
+              ).fill(accent.color);
+            }
           }
         }
         const texture = app.renderer.textureGenerator.generateTexture({
@@ -1822,6 +1836,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           host!.dataset.seedGroundPrimes = String(Number(host!.dataset.seedGroundPrimes ?? 0) + 1);
           host!.dataset.seedFirstFrame = "true";
           host!.dataset.seedFirstFrameMode = "synchronous";
+          host!.dataset.seedTerrainPattern = "procedural-pixel-v1";
           setFirstFrameReady(true);
           paintedFrame = true;
           if (reducedMotion) app.render();

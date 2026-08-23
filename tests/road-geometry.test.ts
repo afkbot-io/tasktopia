@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Cell, RoadCellDto } from "../src/shared/contracts";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
-import { roadBandRole, roadClassSupportsVehicle } from "../src/shared/road-profile";
+import { roadBandRole, roadClassSupportsVehicle, roadMarkingAxis } from "../src/shared/road-profile";
 import { bridgeComponentsWithoutTwoLandPortals, centeredRoadOffsets, roadCorridorBlockers, stampRoadCorridor } from "../src/server/world/road-geometry";
 import { cellKey, orthogonalPath } from "../src/server/world/grid";
 
@@ -56,6 +56,8 @@ describe("canonical road geometry", () => {
     expect(roadBandRole(graph, { x: 0, y: 1 })).toEqual({ kind: "MEDIAN", axis: "H" });
     expect(roadBandRole(graph, { x: 0, y: 2 })).toEqual({ kind: "TRAVEL", axis: "H", dx: 1, dy: 0 });
     expect(roadBandRole(graph, { x: 0, y: 3 })).toEqual({ kind: "SHOULDER", axis: "H" });
+    expect([-3, -2, -1, 0, 1, 2, 3].filter((y) => roadMarkingAxis(graph, { x: 0, y })).length).toBe(1);
+    expect(roadMarkingAxis(graph, { x: 0, y: 0 })).toBe("H");
   });
 
   it("does not multiply lane markings where a narrower road class joins a main road", () => {

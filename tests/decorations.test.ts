@@ -16,6 +16,24 @@ describe("procedural decoration footprints", () => {
     expect(new Set(crops.map((item) => item.kind)).size).toBeGreaterThanOrEqual(2);
     expect(crops.some((item) => crops.some((other) => item.id !== other.id
       && Math.abs(item.origin.x - other.origin.x) + Math.abs(item.origin.y - other.origin.y) === 1))).toBe(true);
+    const cropKeys = new Set(crops.map((item) => cellKey(item.origin)));
+    const componentSizes: number[] = [];
+    while (cropKeys.size > 0) {
+      const [start] = cropKeys;
+      const queue = [start!];
+      cropKeys.delete(start!);
+      let size = 0;
+      for (let cursor = 0; cursor < queue.length; cursor += 1) {
+        size += 1;
+        const [x, y] = queue[cursor]!.split(",").map(Number);
+        for (const neighbor of [`${x! - 1},${y}`, `${x! + 1},${y}`, `${x},${y! - 1}`, `${x},${y! + 1}`]) {
+          if (!cropKeys.delete(neighbor)) continue;
+          queue.push(neighbor);
+        }
+      }
+      componentSizes.push(size);
+    }
+    expect(Math.max(...componentSizes)).toBeGreaterThanOrEqual(180);
     const tinyNature = first.filter((item) => /^(bush|shrub|rock)-/.test(item.kind));
     expect(tinyNature.every((item) => tinyNature.some((other) => item.id !== other.id
       && Math.abs(item.origin.x - other.origin.x) <= 2

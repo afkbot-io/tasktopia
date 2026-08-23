@@ -44,7 +44,7 @@ type SeededNaturePatch = "WHEAT" | "CORN" | "SHRUB" | "ROCK";
  * A patch is a composition rule; the backend never stores its cells.
  */
 function seededNaturePatch(seed: number, cell: Cell): SeededNaturePatch | undefined {
-  const macroSize = 20;
+  const macroSize = 32;
   const macroX = Math.floor(cell.x / macroSize);
   const macroY = Math.floor(cell.y / macroSize);
   const localX = cell.x - macroX * macroSize;
@@ -55,16 +55,16 @@ function seededNaturePatch(seed: number, cell: Cell): SeededNaturePatch | undefi
       : roll < 0.5 ? "SHRUB"
         : roll < 0.58 ? "ROCK" : undefined;
   if (!patch) return undefined;
-  const centerX = 7 + Math.floor(hashCoordinate(seed, macroX, macroY, 883) * 6);
-  const centerY = 7 + Math.floor(hashCoordinate(seed, macroX, macroY, 887) * 6);
+  const centerX = 12 + Math.floor(hashCoordinate(seed, macroX, macroY, 883) * 8);
+  const centerY = 12 + Math.floor(hashCoordinate(seed, macroX, macroY, 887) * 8);
   if (patch === "WHEAT" || patch === "CORN") {
-    const halfWidth = 4 + Math.floor(hashCoordinate(seed, macroX, macroY, 907) * 2);
-    const halfHeight = 3 + Math.floor(hashCoordinate(seed, macroX, macroY, 911) * 2);
+    const halfWidth = 8 + Math.floor(hashCoordinate(seed, macroX, macroY, 907) * 4);
+    const halfHeight = 6 + Math.floor(hashCoordinate(seed, macroX, macroY, 911) * 3);
     return Math.abs(localX - centerX) <= halfWidth && Math.abs(localY - centerY) <= halfHeight ? patch : undefined;
   }
   const dx = localX - centerX;
   const dy = localY - centerY;
-  const radius = patch === "SHRUB" ? 4 : 3;
+  const radius = patch === "SHRUB" ? 6 : 4;
   const inside = dx * dx + dy * dy <= radius * radius;
   const density = patch === "SHRUB" ? 0.68 : 0.52;
   return inside && hashCoordinate(seed, cell.x, cell.y, 919) < density ? patch : undefined;

@@ -55,7 +55,7 @@
 
 ## Chunk Streaming V2
 
-1. В DevTools задержать `/api/world/viewport` и `/api/chunks/*` на 3 секунды: terrain должен появиться синхронно до первого ответа, а `.world-canvas` получить `data-seed-first-frame="true"` и `data-seed-first-frame-mode="synchronous"`; дорог и зданий до authoritative overlay быть не должно.
+1. В DevTools задержать `/api/world/viewport` и `/api/chunks/*` на 3 секунды: текстурный terrain должен появиться синхронно до первого ответа, а `.world-canvas` получить `data-seed-first-frame="true"`, `data-seed-first-frame-mode="synchronous"` и `data-seed-terrain-pattern="procedural-pixel-v1"`; дорог и зданий до authoritative overlay быть не должно.
 2. Перезагрузить тот же viewport: ответ хранится в приватном HTTP-кэше и перепроверяется content-hash ETag; комментарий к задаче не должен менять ETag.
 3. Изменить status обычного здания: после загрузки stage asset растёт `data-entity-rebuilds`, но chunk HTTP-запрос отсутствует и `data-ground-rebuilds` не меняется.
 4. Задержать один building PNG: ground должен появиться до ответа; после ответа растут `data-entity-ready-publishes` и `data-entity-rebuilds`, то есть ранний reconcile соседа не оставил здание пустым.
@@ -64,6 +64,7 @@
 7. Зафиксировать `data-chunk-payload-p50-bytes`, `data-chunk-payload-p95-bytes`, `data-chunk-payload-p99-bytes`; аналогичные `p50/p95/p99` атрибуты для `chunk-request`, `chunk-parse`, `chunk-materialize` и `ground-bake` заканчиваются на `-ms`. Сравнить cold/warm viewport; worker/CSP/Pixi errors недопустимы.
 8. На районе больше одного чанка проверить, что `world_chunk_district_cells_v1` содержит не более 4096 клеток в строке, а chunk response не возвращает клетки за пределами requested bounds.
 9. Первый экран должен вызвать один `/api/world/viewport`, а не отдельный HTTP на каждый видимый чанк. В payload должен быть `payloadVersion: 2`, `generatorVersion: square-v8`, `roadRuns`, `surfaceRuns` и районные `cellRuns`; после materialization клетки обязаны совпадать с v1 без потерь.
+10. На семиклеточной collector/arterial/highway дороге должна быть одна жёлтая осевая линия, две travel-полосы и сохранённая общая ширина. За 16 секунд `data-traffic-moving-vehicles` хотя бы раз больше нуля; `data-traffic-unsafe-pairs`, `data-wrong-way-cars` и `data-wrong-way-buses` остаются нулевыми. У north/south машин нет движущихся угловых пикселей колёс.
 
 ## Геометрия обновлённых зданий
 
@@ -97,17 +98,18 @@
    колёс и контакт с дорогой; canvas равен `24×16`/`16×24`, а occupied bounds —
    `22×13`/`13×22`. North/south — один связный кузов без отдельной тени.
    Проверить, что catalog/manifest SHA-256 совпадает с исходным листом. Во время
-   движения `data-vehicle-rendered-frame-mask` достигает `1111`:
-   меняется пиксельный блик ступицы, но runtime не добавляет bob кузову.
+   движения `data-vehicle-rendered-frame-mask` достигает `1111` на horizontal:
+   меняется пиксельный блик ступицы, но runtime не добавляет bob кузову;
+   north/south не получают wheel overlay.
 3. На T-перекрёстке убедиться, что все travel-роли лежат на asphalt. За полный
-   63-секундный цикл транспорт должен иметь не менее 65% времени движения;
-   непрерывный all-red не превышает 10,5 секунды и за это время минимально
-   быстрый автобус полностью выводит хвост из семиклеточного box.
+   26-секундный цикл транспорт должен иметь не менее 90% номинального времени
+   движения; плановый all-red равен 1 секунде. Если хвост автобуса ещё физически
+   пересекает box, только этот узел адресно продлевает all-red до освобождения.
 4. Принудительно вернуть `503` для viewport после готового кадра: seed/готовый
    ground остаётся видимым, ошибка показывается компактно. Отдельно оборвать
    инициализацию renderer: кнопка «Повторить» должна пересоздать карту и получить
    `data-seed-first-frame="true"`.
-5. Автоматические результаты релиза 2026-08-23: `472 passed / 7 skipped` unit,
+5. Автоматические результаты релиза 2026-08-23: `474 passed / 7 skipped` unit,
    `27 passed / 6 skipped` E2E, `42` animation families / `126` frames, `1 224`
    PNG без нарушений и `8` vehicle models / `24` views. Все `10/10`
    world-validation городов имеют clean audit. Scale-smoke: generation

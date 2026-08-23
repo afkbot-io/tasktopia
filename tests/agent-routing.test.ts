@@ -19,6 +19,7 @@ import {
   shortestAgentRoute,
   vehiclePresentation,
   vehicleMotionPresentation,
+  vehicleWheelAnimationEnabled,
   vehicleLanePosition,
   planVehicleFrame,
   vehicleCruiseSpeed,
@@ -258,16 +259,33 @@ describe("living city agent routing", () => {
     expect(vehicleMotionPresentation("CAR", 0.5, 0)).toEqual({ frame: 2, suspensionYPx: 0 });
     expect(vehicleMotionPresentation("BUS", 0.5, 0)).toEqual({ frame: 1, suspensionYPx: 0 });
     expect(vehicleMotionPresentation("BUS", 0.75, 12, false)).toEqual({ frame: 0, suspensionYPx: 0 });
+    expect(vehicleWheelAnimationEnabled({ x: 0, y: 0 }, { x: 1, y: 0 })).toBe(true);
+    expect(vehicleWheelAnimationEnabled({ x: 0, y: 0 }, { x: 0, y: -1 })).toBe(false);
+    expect(vehicleWheelAnimationEnabled({ x: 0, y: 0 }, { x: 0, y: 1 })).toBe(false);
   });
 
-  it("keeps vehicles inset toward the centre of their carriageway through turns", () => {
-    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 13 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 11 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 21, y: 8 });
+  it("never keeps either signal axis red for more than sixteen seconds", () => {
+    const detected = detectTrafficJunctions(collectorJunctionGraph("X"))[0]!;
+    for (const axis of ["horizontal", "vertical"] as const) {
+      let redMs = 0;
+      let maximumRedMs = 0;
+      for (let elapsedMs = 0; elapsedMs <= 126_000; elapsedMs += 250) {
+        if (trafficSignalPhase(detected, elapsedMs)[axis] === "RED") redMs += 250;
+        else redMs = 0;
+        maximumRedMs = Math.max(maximumRedMs, redMs);
+      }
+      expect(maximumRedMs, axis).toBeLessThanOrEqual(16_000);
+    }
+  });
+
+  it("keeps vehicles on the graph-assigned lane centreline through turns", () => {
+    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 12 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 12 });
+    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 20, y: 8 });
     const turnStart = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 0, { x: 0, y: 1 });
     const turnEnd = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 1, { x: 0, y: 1 });
-    expect(turnStart).toEqual({ x: 12, y: 13 });
-    expect(turnEnd).toEqual({ x: 13, y: 4 });
+    expect(turnStart).toEqual({ x: 12, y: 12 });
+    expect(turnEnd).toEqual({ x: 12, y: 4 });
   });
 
   it("preserves road class and detects real seven-cell T/X junctions without treating road width as a crossing", () => {
@@ -323,20 +341,20 @@ describe("living city agent routing", () => {
         longestAllRed = Math.max(longestAllRed, currentAllRed);
       } else currentAllRed = 0;
     }
-    expect(longestAllRed).toBeLessThanOrEqual(10_500);
+    expect(longestAllRed).toBeLessThanOrEqual(1_000);
 
     const current = { x: -8, y: 0 };
     const next = { x: -7, y: 0 };
     // This junction's coordinate wave advances the cycle by 1.5 seconds, so
-    // 19,499 ms is the final horizontal-green millisecond.
-    const admitted = trafficSignalDecision(current, next, [junction], 19_499, "BUS");
+    // 10,499 ms is the final horizontal-green millisecond.
+    const admitted = trafficSignalDecision(current, next, [junction], 10_499, "BUS");
     expect(admitted).toEqual({ yield: false, reservationId: junction.id });
-    expect(trafficSignalPhase(junction, 29_999).vertical).toBe("RED");
-    expect(trafficSignalPhase(junction, 30_000).vertical).toBe("GREEN");
+    expect(trafficSignalPhase(junction, 11_499).vertical).toBe("RED");
+    expect(trafficSignalPhase(junction, 11_500).vertical).toBe("GREEN");
 
     const fiveCellStopEnvelope = 5;
     const crossingAndTailCells = 7 + 6.75 / 2;
-    expect(vehicleCruiseSpeed("BUS", 0) * 10_501)
+    expect(vehicleCruiseSpeed("BUS", 0) * 12_000)
       .toBeGreaterThan(fiveCellStopEnvelope + crossingAndTailCells);
   });
 
@@ -559,7 +577,7 @@ describe("living city agent routing", () => {
       id: vehicle.id, current: vehicle.current, next: vehicle.next, progress: vehicle.progress,
       reservation: vehicle.signalReservationId, waitMs: vehicle.waitMs, decision: leftoverDecisions.get(vehicle.id),
     })))}`).toHaveLength(0);
-    expect(maxStoppedMs).toBeLessThan(60_000);
+    expect(maxStoppedMs).toBeLessThan(30_000);
   });
 
   it("slows a following car before it reaches the vehicle ahead", () => {
