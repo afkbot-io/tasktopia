@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getBuilding } from "../src/shared/catalog";
+import { getBuilding, TASK_BUILDING_CATALOG } from "../src/shared/catalog";
 import type { CityDto, DistrictDto, RoadCellDto, TaskDto, WorldFeatureDto } from "../src/shared/contracts";
 import { greenAreaDevelopmentStage } from "../src/shared/green-area";
 import {
@@ -222,28 +222,35 @@ describe("V6 city morphology and access planning", () => {
     ).toBe(true);
   });
 
-  it("finds a short entrance-to-sidewalk path inside the lot", () => {
-    const entry = getBuilding("house-lowrise-gallery");
-    const origin = { x: 1, y: 1 };
-    const footprint = rectangleFootprint(origin, entry.footprint.width, entry.footprint.height);
-    const entrance = entranceOutside(origin, entry, "S", entry.entrances[0]!.offset);
-    const sidewalk = { x: entrance.x, y: entrance.y + 2 };
-    const lotWidth = Math.max(8, entry.footprint.width + 2);
-    const lotHeight = Math.max(8, entry.footprint.height + 3);
-    const surfaces = new Map([[cellKey(sidewalk), { ...sidewalk, kind: "SIDEWALK" as const }]]);
-    const plan = findAccessPlan({
-      entry,
-      origin,
-      lotCells: new Set(rectangleFootprint({ x: 0, y: 0 }, lotWidth, lotHeight).map(cellKey)),
-      buildingFootprint: new Set(footprint.map(cellKey)),
-      occupied: new Set(),
-      roads: new Map(),
-      surfaces,
-      isWalkableTerrain: () => true,
-    });
-    expect(plan).not.toBeNull();
-    expect(plan!.path.length).toBeLessThanOrEqual(6);
-    expect(cellKey(plan!.entrance)).toBe(cellKey(entrance));
+  it("keeps all enlarged low-rise entrances accessible inside their lots", () => {
+    const keys = TASK_BUILDING_CATALOG
+      .filter((entry) => entry.tags.includes("low-rise-residential"))
+      .map((entry) => entry.key);
+    expect(keys).toHaveLength(10);
+    for (const key of keys) {
+      const entry = getBuilding(key);
+      const origin = { x: 1, y: 1 };
+      const footprint = rectangleFootprint(origin, entry.footprint.width, entry.footprint.height);
+      const entrance = entranceOutside(origin, entry, "S", entry.entrances[0]!.offset);
+      const sidewalk = { x: entrance.x, y: entrance.y + 2 };
+      const lotWidth = entry.footprint.width + 2;
+      const lotHeight = entry.footprint.height + 3;
+      const surfaces = new Map([[cellKey(sidewalk), { ...sidewalk, kind: "SIDEWALK" as const }]]);
+      const plan = findAccessPlan({
+        entry,
+        origin,
+        lotCells: new Set(rectangleFootprint({ x: 0, y: 0 }, lotWidth, lotHeight).map(cellKey)),
+        buildingFootprint: new Set(footprint.map(cellKey)),
+        occupied: new Set(),
+        roads: new Map(),
+        surfaces,
+        isWalkableTerrain: () => true,
+      });
+      expect(plan, key).not.toBeNull();
+      expect(plan!.path.length, key).toBeLessThanOrEqual(6);
+      expect(cellKey(plan!.entrance), key).toBe(cellKey(entrance));
+      expect(footprint.every((cell) => !plan!.path.some((pathCell) => cellKey(pathCell) === cellKey(cell))), key).toBe(true);
+    }
   });
 
   it("persists the sidewalk endpoint of a green-area access path", () => {

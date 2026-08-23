@@ -8,16 +8,16 @@ const catalogPath = resolve(root, "assets/pixel-city-pack/catalog/buildings.json
 const referenceRoot = resolve(root, "assets/pixel-city-pack/reference");
 
 const replacements = [
-  ["house-lowrise-courtyard-brick", "Кирпичный малоэтажный ЖК", [128, 120], [16, 10]],
-  ["house-lowrise-courtyard-plaster", "Светлый малоэтажный ЖК", [112, 112], [14, 10]],
-  ["house-lowrise-gallery", "Галерейный жилой дом", [96, 88], [12, 9]],
-  ["house-lowrise-terrace", "Террасный малоэтажный ЖК", [112, 144], [14, 10]],
-  ["house-lowrise-corner", "Угловой малоэтажный ЖК", [112, 136], [14, 10]],
-  ["house-lowrise-stepped", "Ступенчатый малоэтажный ЖК", [128, 152], [16, 10]],
-  ["house-lowrise-green-roof", "Жилой дом с зелёной крышей", [112, 136], [14, 10]],
-  ["house-lowrise-loft", "Малоэтажные лофт-апартаменты", [96, 136], [12, 9]],
-  ["house-lowrise-arcade", "Жилой дом с аркадой", [128, 144], [16, 10]],
-  ["house-lowrise-modular", "Модульный малоэтажный ЖК", [96, 128], [12, 9]],
+  ["house-lowrise-courtyard-brick", "Кирпичный малоэтажный ЖК", [192, 184], [24, 16]],
+  ["house-lowrise-courtyard-plaster", "Светлый малоэтажный ЖК", [176, 176], [22, 16]],
+  ["house-lowrise-gallery", "Галерейный жилой дом", [144, 136], [18, 14]],
+  ["house-lowrise-terrace", "Террасный малоэтажный ЖК", [176, 224], [22, 16]],
+  ["house-lowrise-corner", "Угловой малоэтажный ЖК", [176, 216], [22, 16]],
+  ["house-lowrise-stepped", "Ступенчатый малоэтажный ЖК", [192, 232], [24, 16]],
+  ["house-lowrise-green-roof", "Жилой дом с зелёной крышей", [176, 216], [22, 16]],
+  ["house-lowrise-loft", "Малоэтажные лофт-апартаменты", [144, 200], [18, 14]],
+  ["house-lowrise-arcade", "Жилой дом с аркадой", [192, 216], [24, 16]],
+  ["house-lowrise-modular", "Модульный малоэтажный ЖК", [144, 192], [18, 14]],
 ];
 
 function unique(values) {

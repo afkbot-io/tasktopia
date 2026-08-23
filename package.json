@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.19.8",
+  "version": "1.19.9",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -37,6 +37,7 @@
     "study:worldgen": "tsx scripts/worldgen-algorithm-study.ts",
     "assets:setup": "python3 -m venv .venv-assets && .venv-assets/bin/python -m pip install -r requirements-assets.txt",
     "assets:residential:geometry": "node scripts/write-lowrise-geometry.mjs",
+    "assets:residential:accept-doors": ".venv-assets/bin/python scripts/accept-residential-door-review.py",
     "assets:residential:migrate": "node scripts/migrate-residential-catalog.mjs",
     "assets:build": ".venv-assets/bin/python scripts/build-pixel-city-pack.py",
     "assets:verify": ".venv-assets/bin/python scripts/audit-pixel-city-pack.py && .venv-assets/bin/python scripts/verify-agent-animations.py && .venv-assets/bin/python scripts/verify-vehicle-proportions.py && .venv-assets/bin/python .agents/skills/tasktopia-pixel-city-art/scripts/audit_pixel_style.py --manifest assets/pixel-city-pack/manifest.json --runtime assets/pixel-city-pack/runtime --report tmp/pixel-city-style-audit.json",

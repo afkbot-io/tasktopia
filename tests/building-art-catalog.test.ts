@@ -137,10 +137,80 @@ describe("unified building art catalog", () => {
         doorSizePx: number[];
         doorLeafSizePx: number[];
         doorBottomInsetPx: number;
+        doorVisualReview: {
+          moduleBoundsPx: number[];
+          leafBoundsPx: number[];
+          reviewedStage5Sha256: string;
+          reviewedEvidenceSha256: string;
+          moduleMatchesVisibleEntrance: boolean;
+          leavesMatchVisibleDoorPixels: boolean;
+        };
       };
       expect(geometry.doorSizePx, building.key).toEqual(residentialMask.humanScaleMask.doubleDoorFramePx);
       expect(geometry.doorLeafSizePx, building.key).toEqual(residentialMask.humanScaleMask.doubleDoorLeavesPx);
-      expect(geometry.doorBottomInsetPx, building.key).toBe(residentialMask.humanScaleMask.doorBottomInsetPx);
+      expect(geometry.doorBottomInsetPx, building.key).toBeGreaterThanOrEqual(
+        residentialMask.humanScaleMask.doorBottomInsetPxRange[0],
+      );
+      expect(geometry.doorBottomInsetPx, building.key).toBeLessThanOrEqual(
+        residentialMask.humanScaleMask.doorBottomInsetPxRange[1],
+      );
+      const [moduleLeft, moduleTop, moduleRight, moduleBottom] = geometry.doorVisualReview.moduleBoundsPx;
+      const [leafLeft, leafTop, leafRight, leafBottom] = geometry.doorVisualReview.leafBoundsPx;
+      expect([moduleRight - moduleLeft, moduleBottom - moduleTop], building.key).toEqual(
+        residentialMask.humanScaleMask.doubleDoorFramePx,
+      );
+      expect([leafRight - leafLeft, leafBottom - leafTop], building.key).toEqual(
+        residentialMask.humanScaleMask.doubleDoorLeavesPx,
+      );
+      expect((moduleLeft + moduleRight) / 2, building.key).toBe(building.anchorPx[0]);
+      expect((leafLeft + leafRight) / 2, building.key).toBe(building.anchorPx[0]);
+      expect(moduleBottom, building.key).toBe(building.spriteSize[1] - geometry.doorBottomInsetPx);
+      expect(leafBottom, building.key).toBe(moduleBottom);
+      expect(geometry.doorVisualReview.moduleMatchesVisibleEntrance, building.key).toBe(true);
+      expect(geometry.doorVisualReview.leavesMatchVisibleDoorPixels, building.key).toBe(true);
+      const runtimeStage5 = resolve(
+        "assets/pixel-city-pack/runtime/buildings/house",
+        building.key,
+        "stage-5.png",
+      );
+      expect(geometry.doorVisualReview.reviewedStage5Sha256, building.key).toBe(
+        createHash("sha256").update(readFileSync(runtimeStage5)).digest("hex"),
+      );
+      const doorEvidence = JSON.stringify({
+        leafBoundsPx: geometry.doorVisualReview.leafBoundsPx,
+        moduleBoundsPx: geometry.doorVisualReview.moduleBoundsPx,
+        runtimeStage5Sha256: geometry.doorVisualReview.reviewedStage5Sha256,
+      });
+      expect(geometry.doorVisualReview.reviewedEvidenceSha256, building.key).toBe(
+        createHash("sha256").update(doorEvidence).digest("hex"),
+      );
+      const projection = JSON.parse(readFileSync(resolve(studyDir, "projection-review.json"), "utf8")) as {
+        facadeVerticals: number[][][];
+        floorHorizontals: number[][][];
+        topPlanes: unknown[];
+        sideFacadeWidthPx: number;
+        reviewedEvidenceFingerprint: string;
+        primaryRoofIsDominantSurface: boolean;
+        primaryRoofFrontEdgeMatchesEave: boolean;
+        annotationsMatchVisiblePixels: boolean;
+        sameCameraAcrossStages: boolean;
+      };
+      const projectionEvidence = JSON.stringify({
+        spriteSize: building.spriteSize,
+        footprintCells: building.footprintCells,
+        stageSha256: building.stageSha256,
+        facadeVerticals: projection.facadeVerticals,
+        floorHorizontals: projection.floorHorizontals,
+        topPlanes: projection.topPlanes,
+        sideFacadeWidthPx: projection.sideFacadeWidthPx,
+      });
+      expect(projection.reviewedEvidenceFingerprint, building.key).toBe(
+        createHash("sha256").update(projectionEvidence).digest("hex"),
+      );
+      expect(projection.primaryRoofIsDominantSurface, building.key).toBe(true);
+      expect(projection.primaryRoofFrontEdgeMatchesEave, building.key).toBe(true);
+      expect(projection.annotationsMatchVisiblePixels, building.key).toBe(true);
+      expect(projection.sameCameraAcrossStages, building.key).toBe(true);
     }
   });
 

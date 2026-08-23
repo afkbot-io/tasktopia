@@ -5,21 +5,21 @@
     [
       [
         3,
-        60
+        94
       ],
       [
         3,
-        150
+        230
       ]
     ],
     [
       [
-        124,
-        60
+        188,
+        94
       ],
       [
-        124,
-        150
+        188,
+        230
       ]
     ]
   ],
@@ -27,11 +27,11 @@
     [
       [
         3,
-        128
+        196
       ],
       [
-        124,
-        128
+        188,
+        196
       ]
     ]
   ],
@@ -43,22 +43,22 @@
       "edgeProfile": "parallel-pitched",
       "backEdge": [
         [
-          4,
-          45
+          6,
+          71
         ],
         [
-          38,
-          45
+          57,
+          71
         ]
       ],
       "frontEdge": [
         [
-          3,
-          60
+          5,
+          94
         ],
         [
-          39,
-          60
+          59,
+          94
         ]
       ]
     },
@@ -69,22 +69,22 @@
       "edgeProfile": "parallel-pitched",
       "backEdge": [
         [
-          40,
-          24
+          60,
+          40
         ],
         [
-          88,
-          24
+          132,
+          40
         ]
       ],
       "frontEdge": [
         [
-          39,
-          39
+          59,
+          62
         ],
         [
-          89,
-          39
+          134,
+          62
         ]
       ]
     },
@@ -95,22 +95,22 @@
       "edgeProfile": "parallel-pitched",
       "backEdge": [
         [
-          90,
-          45
+          135,
+          71
         ],
         [
-          124,
-          45
+          186,
+          71
         ]
       ],
       "frontEdge": [
         [
-          89,
-          60
+          134,
+          94
         ],
         [
-          125,
-          60
+          188,
+          94
         ]
       ]
     }
@@ -119,5 +119,6 @@
   "primaryRoofIsDominantSurface": true,
   "primaryRoofFrontEdgeMatchesEave": true,
   "annotationsMatchVisiblePixels": true,
-  "sameCameraAcrossStages": true
+  "sameCameraAcrossStages": true,
+  "reviewedEvidenceFingerprint": "e5927fd69111479c991f8cba1f2aed8efb58e4cc86b7cfe569f78280e1697c51"
 }

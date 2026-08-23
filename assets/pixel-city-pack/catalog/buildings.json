@@ -868,8 +868,14 @@
         "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
         "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
       ],
-      "stageSourceGrid": [4, 2],
-      "stageSourceRowCounts": [4, 3],
+      "stageSourceGrid": [
+        4,
+        2
+      ],
+      "stageSourceRowCounts": [
+        4,
+        3
+      ],
       "stageSourceSegment": 0
     },
     {
@@ -1577,8 +1583,14 @@
         "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
         "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
       ],
-      "stageSourceGrid": [4, 2],
-      "stageSourceRowCounts": [4, 3],
+      "stageSourceGrid": [
+        4,
+        2
+      ],
+      "stageSourceRowCounts": [
+        4,
+        3
+      ],
       "stageSourceSegment": 1
     },
     {
@@ -1684,8 +1696,14 @@
         "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
         "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
       ],
-      "stageSourceGrid": [4, 2],
-      "stageSourceRowCounts": [4, 3],
+      "stageSourceGrid": [
+        4,
+        2
+      ],
+      "stageSourceRowCounts": [
+        4,
+        3
+      ],
       "stageSourceSegment": 2
     },
     {
@@ -2428,8 +2446,14 @@
         "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
         "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
       ],
-      "stageSourceGrid": [4, 2],
-      "stageSourceRowCounts": [4, 3],
+      "stageSourceGrid": [
+        4,
+        2
+      ],
+      "stageSourceRowCounts": [
+        4,
+        3
+      ],
       "stageSourceSegment": 3
     },
     {
@@ -2481,8 +2505,14 @@
         "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
         "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
       ],
-      "stageSourceGrid": [4, 2],
-      "stageSourceRowCounts": [4, 3],
+      "stageSourceGrid": [
+        4,
+        2
+      ],
+      "stageSourceRowCounts": [
+        4,
+        3
+      ],
       "stageSourceSegment": 4
     },
     {
@@ -2534,8 +2564,14 @@
         "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
         "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
       ],
-      "stageSourceGrid": [4, 2],
-      "stageSourceRowCounts": [4, 3],
+      "stageSourceGrid": [
+        4,
+        2
+      ],
+      "stageSourceRowCounts": [
+        4,
+        3
+      ],
       "stageSourceSegment": 5
     },
     {
@@ -2587,8 +2623,14 @@
         "aa0351329ab95cd725f20f99e101c38e6238540544fd195ec64ee13e1bd366a2",
         "561fafeeb882c5b6ee82a63936433212f242aeb1cfb17e8df59d2ecb55d3fd0b"
       ],
-      "stageSourceGrid": [4, 2],
-      "stageSourceRowCounts": [4, 3],
+      "stageSourceGrid": [
+        4,
+        2
+      ],
+      "stageSourceRowCounts": [
+        4,
+        3
+      ],
       "stageSourceSegment": 6
     },
     {
@@ -7943,16 +7985,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        128,
-        120
+        192,
+        184
       ],
       "footprintCells": [
-        16,
-        10
+        24,
+        16
       ],
       "anchorPx": [
-        64,
-        120
+        96,
+        184
       ],
       "platform": "STONE",
       "estimates": [
@@ -7972,7 +8014,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 12
         }
       ],
       "maxPerCity": null,
@@ -7996,16 +8038,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        112
+        176,
+        176
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        112
+        88,
+        176
       ],
       "platform": "STONE",
       "estimates": [
@@ -8025,7 +8067,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -8037,8 +8079,8 @@
         "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "4ee5191ae3d3b4b08a54d9735bec70b3fd86c149547b507a446c988785b97bcd",
-        "94738770d36cb8c6d0e7581b401a7479355cc3ec072dcf28063b98f5cf461f33",
+        "d3b313899fafff997d9f6d9fd04904043c3060052e2b99b9bc5ee06b174e9b44",
+        "4286cbe16e46b7d845ed778486d0f97f46ef76c99e5b4ed3fe01a101ea7e44a1",
         "e67b0c9727c94553ce114eff1e29e6a47fd3778a0443b66939679db438bfbb66"
       ],
       "reviewed": true
@@ -8049,16 +8091,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        96,
-        88
+        144,
+        136
       ],
       "footprintCells": [
-        12,
-        9
+        18,
+        14
       ],
       "anchorPx": [
-        48,
-        88
+        72,
+        136
       ],
       "platform": "STONE",
       "estimates": [
@@ -8078,7 +8120,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 6
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -8102,16 +8144,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        144
+        176,
+        224
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        144
+        88,
+        224
       ],
       "platform": "STONE",
       "estimates": [
@@ -8131,7 +8173,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -8143,8 +8185,8 @@
         "ai-authored/building-stage-study/house-lowrise-terrace-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "8d75ce76133f44cb9a20732cfacecac67bfa45d3f6eb85ad18029f466de93d00",
-        "ca5fd31f8e20b7e291fb349624e322ecbd64fbf8f12235de873c003cfc8454bf",
+        "a7eb538d9a699d9627f8d3f56af539f42bae1395bb8c1260add53e43fe97b0fc",
+        "c85a408ae405cbc1774ed4c529a3afe0b881d1c46acdb498a1d5dd4a0d30094c",
         "c226f2a53c0bb0ec699ca7b3c9523101765b32c580b8762b4a6a8fc5abae465d"
       ],
       "reviewed": true
@@ -8155,16 +8197,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        136
+        176,
+        216
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        136
+        88,
+        216
       ],
       "platform": "STONE",
       "estimates": [
@@ -8184,7 +8226,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -8196,8 +8238,8 @@
         "ai-authored/building-stage-study/house-lowrise-corner-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "1159f411b64d0bd58c91701f5b5cf4bba25a64d5fd99ff11ca26e504f720d478",
-        "25b969e786e06533ba22bfcd88f6c2514b9f96e8e078abe6b6bad952d39e3d89",
+        "a60d3a599075e4198748503789b450b3d7e3f0f323780647180c79655cb0a140",
+        "613ac2808f344096e73c8389165db422bc5370e2b894ca73234c4c03bc2489cd",
         "9c9b23fe1e8a5347ae2d2b3b359661697529259cc90c3c85398a3d8a86bd432e"
       ],
       "reviewed": true
@@ -8208,16 +8250,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        128,
-        152
+        192,
+        232
       ],
       "footprintCells": [
-        16,
-        10
+        24,
+        16
       ],
       "anchorPx": [
-        64,
-        152
+        96,
+        232
       ],
       "platform": "STONE",
       "estimates": [
@@ -8237,7 +8279,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 12
         }
       ],
       "maxPerCity": null,
@@ -8249,8 +8291,8 @@
         "ai-authored/building-stage-study/house-lowrise-stepped-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "8056ebc7562dbf8840d7983e2c473fe75cac2a58bc404772bd1930005fb8403c",
-        "d35c7f75bfd6f8870101a1a2302eb074d115ad70c9d67f59c04e029458efe964",
+        "6f068fbcdd20df17dafb206d5a426842ce4183149c6ec7366de8af9f0d434f72",
+        "4de7f54c23f3173c6f3522afdf33b4784bf1ec8ee14961a1f0a9141dd3a4a34a",
         "f939daa3558a481994a62c0eb357ba829e4f394b9cff7cac21fa3fd038bc5596"
       ],
       "reviewed": true
@@ -8261,16 +8303,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        136
+        176,
+        216
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        136
+        88,
+        216
       ],
       "platform": "STONE",
       "estimates": [
@@ -8290,7 +8332,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -8302,8 +8344,8 @@
         "ai-authored/building-stage-study/house-lowrise-green-roof-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "acabfd9b10c0b183095863e3076423e17031ee66edb07ba4753702939da88240",
-        "3fe6b8c404041f22044f0688ba4d8384c5aeb93e4b5e04f0c083153b29141876",
+        "79124a5a5d34f67e4bf281cb50cbbdc39bcc8e9a47b62b118136844015dccf4a",
+        "c597bc7285b4ac686fb082fa312608b84c826817b720a11413c95e2786b52eb8",
         "ca5ea72a6c8e04717c2768cddf320603ef79ad8eae3eae7fcea728c62e54be38"
       ],
       "reviewed": true
@@ -8314,16 +8356,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        96,
-        136
+        144,
+        200
       ],
       "footprintCells": [
-        12,
-        9
+        18,
+        14
       ],
       "anchorPx": [
-        48,
-        136
+        72,
+        200
       ],
       "platform": "STONE",
       "estimates": [
@@ -8343,7 +8385,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 6
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -8355,8 +8397,8 @@
         "ai-authored/building-stage-study/house-lowrise-loft-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "3bf9b4dfac59a82f3d36b72c993f60615fedb4c1a6d645be9938f0b1ce2e141f",
-        "931b229a539175c57c3d510e73d6000fdc90de3bb21a2cef75fa6e15b1e2555d",
+        "5f072dc3a476869072b19a7ac7577b4c25af6e8f27ad531bd88d159f5f5c54cd",
+        "1dab36a05e4e602951e6a45fb5c3ef9af5a79ccbd80660eda7db35d540f8ac62",
         "669fdfb5e983e7127202c93fd7f0dda2831b6a24414823a2eb9d005ecbf9a37f"
       ],
       "reviewed": true
@@ -8367,16 +8409,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        128,
-        144
+        192,
+        216
       ],
       "footprintCells": [
-        16,
-        10
+        24,
+        16
       ],
       "anchorPx": [
-        64,
-        144
+        96,
+        216
       ],
       "platform": "STONE",
       "estimates": [
@@ -8396,7 +8438,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 12
         }
       ],
       "maxPerCity": null,
@@ -8408,8 +8450,8 @@
         "ai-authored/building-stage-study/house-lowrise-arcade-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "22896d9c29fdaec73603987d0b31f6385df1a63b9db5b8bf9d8236fef7f88da8",
-        "ab529f9b753e299d8ae980bd924950e2bdf460f7692957131fdfb309716dca67",
+        "03f41f344abdec802bfcb53ebf0a2d778cf5670c40942f8a4083eff20a7410a8",
+        "ee9469d80e5ca98556877d863a4b65e17ec4954b270abef75f0dd2fd2c2704a5",
         "f02e9cf89c1484cb705718c82a80c757f6503842ded22cbffc5260338dcdecfe"
       ],
       "reviewed": true
@@ -8420,16 +8462,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        96,
-        128
+        144,
+        192
       ],
       "footprintCells": [
-        12,
-        9
+        18,
+        14
       ],
       "anchorPx": [
-        48,
-        128
+        72,
+        192
       ],
       "platform": "STONE",
       "estimates": [
@@ -8449,7 +8491,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 6
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -8461,8 +8503,8 @@
         "ai-authored/building-stage-study/house-lowrise-modular-v5/sources/stage-5.png"
       ],
       "stageSha256": [
-        "4bff020ce7eaeb5a6e03cae8cae832ca77b392f58395fed1b7d651728a4fb19a",
-        "eab50e584f053a7dc23fe1c6640c00c5136d8a64aeffb98dd0ca0a2a9f80f3b2",
+        "8b29ff586e171abfb22dd75a6f276c18047c12f43872e0e7d214b2d3b242ebf1",
+        "647f27af1d72cd4fcc0ac7c137b733b4bee53f1e2bbad1da07493fb5ccb117ef",
         "b5a2c0cedabb440cdff8d26c88c50a7a4d1d5572ea3647285c89b48f6768fa0f"
       ],
       "reviewed": true

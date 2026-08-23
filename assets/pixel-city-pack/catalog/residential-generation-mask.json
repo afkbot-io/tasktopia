@@ -29,7 +29,7 @@
   "humanScaleMask": {
     "doubleDoorFramePx": [16, 16],
     "doubleDoorLeavesPx": [12, 14],
-    "doorBottomInsetPx": 0
+    "doorBottomInsetPxRange": [0, 8]
   },
   "stageMask": {
     "stage3TargetHeightShare": [0.55, 0.65],

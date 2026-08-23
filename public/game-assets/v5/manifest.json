@@ -12500,16 +12500,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        128,
-        120
+        192,
+        184
       ],
       "footprintCells": [
-        16,
-        10
+        24,
+        16
       ],
       "anchorPx": [
-        64,
-        120
+        96,
+        184
       ],
       "stages": [
         "buildings/house/house-lowrise-courtyard-brick/stage-1.png",
@@ -12521,33 +12521,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          112,
-          126,
-          120
+          176,
+          190,
+          184
         ],
         [
           2,
-          106,
-          126,
-          119
+          170,
+          190,
+          183
         ],
         [
-          4,
-          50,
-          125,
-          120
-        ],
-        [
-          0,
-          2,
-          128,
-          120
+          5,
+          80,
+          187,
+          184
         ],
         [
           0,
-          1,
-          128,
-          120
+          6,
+          192,
+          184
+        ],
+        [
+          0,
+          5,
+          192,
+          184
         ]
       ],
       "platform": "STONE",
@@ -12568,7 +12568,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 12
         }
       ],
       "maxPerCity": null,
@@ -12580,16 +12580,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        112
+        176,
+        176
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        112
+        88,
+        176
       ],
       "stages": [
         "buildings/house/house-lowrise-courtyard-plaster/stage-1.png",
@@ -12601,33 +12601,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          104,
-          110,
-          112
+          168,
+          174,
+          176
         ],
         [
           2,
-          98,
-          110,
-          111
+          162,
+          174,
+          175
+        ],
+        [
+          3,
+          69,
+          173,
+          176
         ],
         [
           0,
-          60,
-          112,
-          112
+          40,
+          176,
+          176
         ],
         [
           0,
-          26,
-          112,
-          112
-        ],
-        [
-          0,
-          26,
-          112,
-          112
+          40,
+          176,
+          176
         ]
       ],
       "platform": "STONE",
@@ -12648,7 +12648,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -12660,16 +12660,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        96,
-        88
+        144,
+        136
       ],
       "footprintCells": [
-        12,
-        9
+        18,
+        14
       ],
       "anchorPx": [
-        48,
-        88
+        72,
+        136
       ],
       "stages": [
         "buildings/house/house-lowrise-gallery/stage-1.png",
@@ -12681,33 +12681,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          80,
-          94,
-          88
+          128,
+          142,
+          136
         ],
         [
           2,
-          74,
-          94,
-          87
+          122,
+          142,
+          135
         ],
         [
           0,
-          43,
-          96,
-          88
+          62,
+          144,
+          136
         ],
         [
           0,
-          4,
-          96,
-          88
+          10,
+          144,
+          136
         ],
         [
           0,
-          4,
-          96,
-          88
+          10,
+          144,
+          136
         ]
       ],
       "platform": "STONE",
@@ -12728,7 +12728,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 6
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -12740,16 +12740,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        144
+        176,
+        224
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        144
+        88,
+        224
       ],
       "stages": [
         "buildings/house/house-lowrise-terrace/stage-1.png",
@@ -12761,33 +12761,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          136,
-          110,
-          144
+          216,
+          174,
+          224
         ],
         [
           2,
-          130,
-          110,
-          143
+          210,
+          174,
+          223
+        ],
+        [
+          1,
+          63,
+          175,
+          224
+        ],
+        [
+          7,
+          27,
+          168,
+          224
         ],
         [
           0,
-          62,
-          111,
-          144
-        ],
-        [
-          0,
-          16,
-          112,
-          144
-        ],
-        [
-          0,
-          14,
-          112,
-          144
+          20,
+          176,
+          224
         ]
       ],
       "platform": "STONE",
@@ -12808,7 +12808,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -12820,16 +12820,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        136
+        176,
+        216
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        136
+        88,
+        216
       ],
       "stages": [
         "buildings/house/house-lowrise-corner/stage-1.png",
@@ -12841,33 +12841,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          128,
-          110,
-          136
+          208,
+          174,
+          216
         ],
         [
           2,
-          122,
-          110,
-          135
+          202,
+          174,
+          215
         ],
         [
-          2,
-          56,
-          109,
-          136
-        ],
-        [
-          0,
-          32,
-          112,
-          136
+          1,
+          94,
+          174,
+          216
         ],
         [
           0,
-          33,
-          112,
-          136
+          63,
+          175,
+          216
+        ],
+        [
+          0,
+          54,
+          176,
+          216
         ]
       ],
       "platform": "STONE",
@@ -12888,7 +12888,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -12900,16 +12900,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        128,
-        152
+        192,
+        232
       ],
       "footprintCells": [
-        16,
-        10
+        24,
+        16
       ],
       "anchorPx": [
-        64,
-        152
+        96,
+        232
       ],
       "stages": [
         "buildings/house/house-lowrise-stepped/stage-1.png",
@@ -12921,33 +12921,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          144,
-          126,
-          152
+          224,
+          190,
+          232
         ],
         [
           2,
-          138,
-          126,
-          151
-        ],
-        [
-          1,
-          49,
-          127,
-          152
+          218,
+          190,
+          231
         ],
         [
           0,
-          23,
-          128,
-          152
+          103,
+          192,
+          232
+        ],
+        [
+          9,
+          41,
+          183,
+          232
         ],
         [
           0,
-          23,
-          128,
-          152
+          38,
+          192,
+          232
         ]
       ],
       "platform": "STONE",
@@ -12968,7 +12968,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 12
         }
       ],
       "maxPerCity": null,
@@ -12980,16 +12980,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        112,
-        136
+        176,
+        216
       ],
       "footprintCells": [
-        14,
-        10
+        22,
+        16
       ],
       "anchorPx": [
-        56,
-        136
+        88,
+        216
       ],
       "stages": [
         "buildings/house/house-lowrise-green-roof/stage-1.png",
@@ -13001,33 +13001,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          128,
-          110,
-          136
+          208,
+          174,
+          216
         ],
         [
           2,
-          122,
-          110,
-          135
+          202,
+          174,
+          215
+        ],
+        [
+          1,
+          82,
+          174,
+          216
         ],
         [
           0,
-          52,
-          112,
-          136
+          32,
+          176,
+          216
         ],
         [
           0,
-          18,
-          112,
-          136
-        ],
-        [
-          0,
-          19,
-          112,
-          136
+          33,
+          176,
+          216
         ]
       ],
       "platform": "STONE",
@@ -13048,7 +13048,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 7
+          "offset": 11
         }
       ],
       "maxPerCity": null,
@@ -13060,16 +13060,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        96,
-        136
+        144,
+        200
       ],
       "footprintCells": [
-        12,
-        9
+        18,
+        14
       ],
       "anchorPx": [
-        48,
-        136
+        72,
+        200
       ],
       "stages": [
         "buildings/house/house-lowrise-loft/stage-1.png",
@@ -13081,33 +13081,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          128,
-          94,
-          136
+          192,
+          142,
+          200
         ],
         [
           2,
-          122,
-          94,
-          135
-        ],
-        [
-          2,
-          73,
-          93,
-          136
+          186,
+          142,
+          199
         ],
         [
           0,
-          39,
-          96,
-          136
+          86,
+          144,
+          200
         ],
         [
           0,
-          40,
-          96,
-          136
+          55,
+          144,
+          200
+        ],
+        [
+          0,
+          56,
+          144,
+          200
         ]
       ],
       "platform": "STONE",
@@ -13128,7 +13128,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 6
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -13140,16 +13140,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        128,
-        144
+        192,
+        216
       ],
       "footprintCells": [
-        16,
-        10
+        24,
+        16
       ],
       "anchorPx": [
-        64,
-        144
+        96,
+        216
       ],
       "stages": [
         "buildings/house/house-lowrise-arcade/stage-1.png",
@@ -13161,33 +13161,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          136,
-          126,
-          144
+          208,
+          190,
+          216
         ],
         [
           2,
-          130,
-          126,
-          143
+          202,
+          190,
+          215
+        ],
+        [
+          6,
+          86,
+          185,
+          216
         ],
         [
           0,
-          67,
-          127,
-          144
+          36,
+          192,
+          216
         ],
         [
           0,
-          26,
-          128,
-          144
-        ],
-        [
-          0,
-          25,
-          128,
-          144
+          37,
+          192,
+          216
         ]
       ],
       "platform": "STONE",
@@ -13208,7 +13208,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 8
+          "offset": 12
         }
       ],
       "maxPerCity": null,
@@ -13220,16 +13220,16 @@
       "category": "HOUSE",
       "rarity": "COMMON",
       "spriteSize": [
-        96,
-        128
+        144,
+        192
       ],
       "footprintCells": [
-        12,
-        9
+        18,
+        14
       ],
       "anchorPx": [
-        48,
-        128
+        72,
+        192
       ],
       "stages": [
         "buildings/house/house-lowrise-modular/stage-1.png",
@@ -13241,33 +13241,33 @@
       "stageOpaqueBounds": [
         [
           2,
-          120,
-          94,
-          128
+          184,
+          142,
+          192
         ],
         [
           2,
-          114,
-          94,
-          127
+          178,
+          142,
+          191
         ],
         [
           2,
-          49,
-          95,
-          128
+          47,
+          142,
+          192
         ],
         [
           0,
-          9,
-          96,
-          128
+          8,
+          144,
+          192
         ],
         [
           0,
-          7,
-          96,
-          128
+          10,
+          144,
+          192
         ]
       ],
       "platform": "STONE",
@@ -13288,7 +13288,7 @@
       "entrances": [
         {
           "side": "S",
-          "offset": 6
+          "offset": 9
         }
       ],
       "maxPerCity": null,
@@ -20358,5 +20358,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "7b5ba56b141359cb"
+  "assetRevision": "372f15fef78369c7"
 }

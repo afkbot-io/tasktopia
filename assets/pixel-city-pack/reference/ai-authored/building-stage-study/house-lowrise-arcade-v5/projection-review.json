@@ -5,21 +5,21 @@
     [
       [
         3,
-        45
+        67
       ],
       [
         3,
-        142
+        214
       ]
     ],
     [
       [
-        124,
-        45
+        188,
+        67
       ],
       [
-        124,
-        142
+        188,
+        214
       ]
     ]
   ],
@@ -27,11 +27,11 @@
     [
       [
         3,
-        120
+        180
       ],
       [
-        124,
-        120
+        188,
+        180
       ]
     ]
   ],
@@ -41,22 +41,22 @@
       "role": "primary-roof",
       "backEdge": [
         [
-          8,
-          26
+          12,
+          39
         ],
         [
-          119,
-          26
+          179,
+          39
         ]
       ],
       "frontEdge": [
         [
-          2,
-          45
+          3,
+          67
         ],
         [
-          125,
-          45
+          188,
+          67
         ]
       ]
     }
@@ -65,5 +65,6 @@
   "primaryRoofIsDominantSurface": true,
   "primaryRoofFrontEdgeMatchesEave": true,
   "annotationsMatchVisiblePixels": true,
-  "sameCameraAcrossStages": true
+  "sameCameraAcrossStages": true,
+  "reviewedEvidenceFingerprint": "5a66939f08e0415f81f752e6227ae12373c9da80711abf2432bf5e951e8eaa2c"
 }

@@ -4,19 +4,19 @@
   "category": "HOUSE",
   "cellSizePx": 8,
   "spriteCanvasCells": [
-    12,
-    16
+    18,
+    24
   ],
   "physicalFootprintCells": [
-    12,
-    9
+    18,
+    14
   ],
-  "projectedRoofDepthCells": 3,
+  "projectedRoofDepthCells": 5,
   "foundationThicknessCells": 2,
   "constructionClearanceCells": 1,
   "entrance": {
     "side": "S",
-    "offset": 6
+    "offset": 9
   },
   "doorSizePx": [
     16,
@@ -26,9 +26,27 @@
     12,
     14
   ],
-  "doorBottomInsetPx": 0,
+  "doorBottomInsetPx": 8,
+  "doorVisualReview": {
+    "moduleBoundsPx": [
+      64,
+      168,
+      80,
+      184
+    ],
+    "leafBoundsPx": [
+      66,
+      170,
+      78,
+      184
+    ],
+    "reviewedStage5Sha256": "03748965bf2ab68a60e1b3d6c68fb5529a091eb2accc7be1a94b789cdb781dec",
+    "moduleMatchesVisibleEntrance": true,
+    "leavesMatchVisibleDoorPixels": true,
+    "reviewedEvidenceSha256": "8bbb37ef332470f2d16a314b8a41b7b7ba7abc0cba264869eb74a6775ffc3428"
+  },
   "sitePreviewCells": [
-    16,
-    17
+    22,
+    22
   ]
 }

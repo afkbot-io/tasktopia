@@ -5,21 +5,21 @@
     [
       [
         3,
-        68
+        98
       ],
       [
         3,
-        134
+        198
       ]
     ],
     [
       [
-        92,
-        68
+        140,
+        98
       ],
       [
-        92,
-        134
+        140,
+        198
       ]
     ]
   ],
@@ -27,11 +27,11 @@
     [
       [
         3,
-        112
+        164
       ],
       [
-        92,
-        112
+        140,
+        164
       ]
     ]
   ],
@@ -43,22 +43,22 @@
       "edgeProfile": "parallel-pitched",
       "backEdge": [
         [
-          5,
-          52
+          8,
+          74
         ],
         [
-          25,
-          40
+          38,
+          56
         ]
       ],
       "frontEdge": [
         [
-          5,
-          68
+          8,
+          98
         ],
         [
-          25,
-          56
+          38,
+          80
         ]
       ]
     },
@@ -69,22 +69,22 @@
       "edgeProfile": "parallel-pitched",
       "backEdge": [
         [
-          27,
-          52
+          41,
+          74
         ],
         [
-          47,
-          40
+          71,
+          56
         ]
       ],
       "frontEdge": [
         [
-          27,
-          68
+          41,
+          98
         ],
         [
-          47,
-          56
+          71,
+          80
         ]
       ]
     },
@@ -95,22 +95,22 @@
       "edgeProfile": "parallel-pitched",
       "backEdge": [
         [
-          49,
-          52
+          74,
+          74
         ],
         [
-          69,
-          40
+          104,
+          56
         ]
       ],
       "frontEdge": [
         [
-          49,
-          68
+          74,
+          98
         ],
         [
-          69,
-          56
+          104,
+          80
         ]
       ]
     },
@@ -121,22 +121,22 @@
       "edgeProfile": "parallel-pitched",
       "backEdge": [
         [
-          71,
-          52
+          107,
+          74
         ],
         [
-          91,
-          40
+          137,
+          56
         ]
       ],
       "frontEdge": [
         [
-          71,
-          68
+          107,
+          98
         ],
         [
-          91,
-          56
+          137,
+          80
         ]
       ]
     }
@@ -145,5 +145,6 @@
   "primaryRoofIsDominantSurface": true,
   "primaryRoofFrontEdgeMatchesEave": true,
   "annotationsMatchVisiblePixels": true,
-  "sameCameraAcrossStages": true
+  "sameCameraAcrossStages": true,
+  "reviewedEvidenceFingerprint": "00200e5385dc731fb999ed8c854b946a98d8e8b8538cc24c0d0470521a9873d8"
 }
