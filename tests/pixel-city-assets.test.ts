@@ -292,7 +292,7 @@ describe("Pixel City active asset contract", () => {
         occupiedSize: [46, 14],
         footprintCells: [6, 2],
         artSource: "HAND_AUTHORED_NATIVE",
-        sourceSheet: "hand-authored/ambient/fire-engines-v4.png",
+        sourceSheet: "hand-authored/ambient/fire-engines-v5.png",
       });
     }
     for (const prefix of ["incident-flame", "incident-smoke"]) {

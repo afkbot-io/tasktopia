@@ -15535,7 +15535,7 @@
         14
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v4.png",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v5.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -15559,7 +15559,7 @@
         14
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v4.png",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v5.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -15583,7 +15583,7 @@
         14
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v4.png",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v5.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -20358,5 +20358,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "83304c5abf27721c"
+  "assetRevision": "06a0560a513bd8ac"
 }

@@ -6,19 +6,21 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 
-OUT = Path("assets/pixel-city-pack/reference/hand-authored/ambient/fire-engines-v4.png")
+OUT = Path("assets/pixel-city-pack/reference/hand-authored/ambient/fire-engines-v5.png")
 TRANSPARENT = (0, 0, 0, 0)
 OUTLINE = "#263945"
 TIRE = "#182b34"
-RED_DARK = "#8f2f32"
+RED_SHADOW = "#7f2930"
+RED_DARK = "#9e3034"
 RED = "#c64138"
-RED_LIGHT = "#e55a45"
-CREAM = "#eadfbf"
-CREAM_LIGHT = "#f4edda"
+RED_LIGHT = "#e15b49"
+CREAM = "#ddd6bd"
+CREAM_LIGHT = "#f1ead7"
 GLASS = "#58aec0"
-GLASS_DARK = "#326f82"
-METAL = "#9ca9aa"
-METAL_LIGHT = "#c7ceca"
+GLASS_LIGHT = "#75c3ce"
+GLASS_DARK = "#2f6878"
+METAL = "#96a5a8"
+METAL_LIGHT = "#c5ceca"
 METAL_DARK = "#68777c"
 AMBER = "#e9a13a"
 
@@ -27,71 +29,136 @@ def rect(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], color: str) 
     draw.rectangle(box, fill=color)
 
 
-def common_engine(draw: ImageDraw.ImageDraw, offset: int) -> None:
-    # Two current 24×16 passenger-car lengths, but lower and shorter than the
-    # 56×24 bus. Opaque bounds are exactly 46×14 inside the 48×16 canvas.
-    rect(draw, (offset + 2, 3, offset + 44, 4), OUTLINE)
-    rect(draw, (offset + 1, 5, offset + 46, 12), OUTLINE)
-    rect(draw, (offset + 2, 5, offset + 35, 11), RED)
-    rect(draw, (offset + 3, 5, offset + 34, 7), RED_LIGHT)
-    rect(draw, (offset + 2, 9, offset + 45, 10), CREAM)
-    rect(draw, (offset + 2, 11, offset + 45, 12), RED_DARK)
-    # The east-facing cab uses the same shallow roof, windscreen and near-side
-    # body planes as the current passenger-car family.
-    rect(draw, (offset + 35, 3, offset + 43, 4), CREAM_LIGHT)
-    rect(draw, (offset + 35, 5, offset + 46, 10), CREAM)
-    rect(draw, (offset + 36, 5, offset + 39, 7), GLASS)
-    rect(draw, (offset + 40, 5, offset + 43, 7), GLASS_DARK)
-    rect(draw, (offset + 44, 7, offset + 46, 10), RED_LIGHT)
-    draw.point((offset + 46, 9), fill=AMBER)
-    # Two explicit wheels share the sedan baseline and remain inside one lane.
-    for center in (10, 39):
-        rect(draw, (offset + center - 3, 12, offset + center + 3, 14), TIRE)
-        rect(draw, (offset + center - 1, 12, offset + center + 1, 13), METAL_DARK)
-        draw.point((offset + center, 12), fill=METAL_LIGHT)
-    # Roof beacon and rear bumper.
-    rect(draw, (offset + 37, 1, offset + 40, 2), OUTLINE)
-    rect(draw, (offset + 38, 1, offset + 39, 1), AMBER)
-    rect(draw, (offset + 1, 9, offset + 2, 12), METAL_LIGHT)
+def poly(draw: ImageDraw.ImageDraw, offset: int, points: list[tuple[int, int]], color: str) -> None:
+    draw.polygon([(offset + x, y) for x, y in points], fill=color)
+
+
+def draw_wheel(draw: ImageDraw.ImageDraw, offset: int, center: int) -> None:
+    # Four authored rows form a rounded tyre. The 3 px ground contact prevents
+    # the old square caster look while keeping one hard-pixel component.
+    poly(draw, offset, [
+        (center - 3, 12), (center + 3, 12),
+        (center + 4, 13), (center + 3, 14),
+        (center + 1, 15), (center - 1, 15),
+        (center - 3, 14), (center - 4, 13),
+    ], TIRE)
+    rect(draw, (offset + center - 2, 13, offset + center + 2, 14), METAL_DARK)
+    rect(draw, (offset + center - 1, 13, offset + center + 1, 14), METAL_LIGHT)
+    draw.point((offset + center, 14), fill=OUTLINE)
+
+
+def common_chassis_and_cab(draw: ImageDraw.ImageDraw, offset: int) -> None:
+    # Thin chassis and near-side body plane; only two rows span most of the
+    # vehicle, unlike the former rectangular block.
+    poly(draw, offset, [
+        (1, 9), (3, 8), (31, 8), (33, 9), (46, 9),
+        (46, 12), (44, 13), (42, 13), (41, 12),
+        (35, 12), (34, 13), (14, 13), (13, 12),
+        (7, 12), (6, 13), (3, 13), (1, 11),
+    ], OUTLINE)
+    poly(draw, offset, [
+        (2, 9), (31, 9), (33, 10), (45, 10),
+        (45, 11), (43, 12), (3, 12), (2, 11),
+    ], RED_DARK)
+    rect(draw, (offset + 3, 9, offset + 43, 9), CREAM)
+    rect(draw, (offset + 15, 12, offset + 33, 12), RED_SHADOW)
+
+    # East-facing cab: a stepped roof, two windows, sloped windscreen and hood
+    # expose the same shallow frontal-top camera as the passenger-car family.
+    poly(draw, offset, [
+        (31, 7), (32, 5), (34, 3), (40, 3), (42, 4),
+        (43, 6), (45, 7), (46, 9), (46, 11), (44, 12),
+        (32, 12), (31, 10),
+    ], OUTLINE)
+    poly(draw, offset, [
+        (32, 7), (33, 5), (35, 4), (39, 4), (41, 5),
+        (42, 7), (44, 8), (45, 9), (45, 11), (43, 11),
+        (32, 11),
+    ], RED)
+    # Roof/top plane and upper-left highlight.
+    poly(draw, offset, [(34, 3), (40, 3), (41, 4), (35, 4)], CREAM_LIGHT)
+    rect(draw, (offset + 35, 4, offset + 40, 4), CREAM)
+    # Near-side window and the independently sloped front windscreen.
+    poly(draw, offset, [(34, 5), (38, 5), (38, 8), (33, 8), (33, 6)], GLASS)
+    rect(draw, (offset + 34, 5, offset + 37, 5), GLASS_LIGHT)
+    poly(draw, offset, [(39, 5), (41, 5), (42, 7), (42, 8), (39, 8)], GLASS_DARK)
+    draw.point((offset + 40, 5), fill=GLASS_LIGHT)
+    rect(draw, (offset + 33, 9, offset + 42, 10), RED_LIGHT)
+    rect(draw, (offset + 38, 9, offset + 38, 11), OUTLINE)
+    draw.point((offset + 40, 10), fill=AMBER)
+    # Hood/front face taper rather than a vertical rectangular cab end.
+    poly(draw, offset, [(43, 8), (45, 9), (45, 11), (43, 11)], RED_LIGHT)
+    rect(draw, (offset + 44, 11, offset + 46, 12), CREAM)
+    draw.point((offset + 46, 10), fill=AMBER)
+    draw.point((offset + 45, 12), fill=OUTLINE)
+
+    # Low beacon belongs to the cab roof and establishes the 14 px envelope.
+    rect(draw, (offset + 36, 2, offset + 39, 2), OUTLINE)
+    rect(draw, (offset + 37, 2, offset + 38, 2), AMBER)
+    draw_wheel(draw, offset, 10)
+    draw_wheel(draw, offset, 38)
 
 
 def draw_pumper(draw: ImageDraw.ImageDraw, offset: int) -> None:
-    common_engine(draw, offset)
-    # Auto-pumper: wide ribbed water tank, side pump panel and roof hose tray.
-    rect(draw, (offset + 5, 4, offset + 28, 11), METAL_DARK)
-    rect(draw, (offset + 6, 4, offset + 27, 8), METAL)
-    rect(draw, (offset + 6, 5, offset + 27, 5), METAL_LIGHT)
-    for x in (8, 13, 18, 23):
-        rect(draw, (offset + x, 7, offset + x + 1, 10), METAL_LIGHT)
-    rect(draw, (offset + 29, 6, offset + 33, 10), RED_DARK)
-    rect(draw, (offset + 30, 7, offset + 32, 9), METAL_LIGHT)
-    draw.point((offset + 31, 8), fill=AMBER)
-    rect(draw, (offset + 7, 3, offset + 27, 4), METAL_DARK)
+    common_chassis_and_cab(draw, offset)
+    # Rounded tank: narrow top plane, curved end pixels, ribbed near side and a
+    # separate pump panel. It reads as volume, not as a warehouse rectangle.
+    poly(draw, offset, [
+        (1, 8), (2, 6), (4, 4), (26, 4), (29, 5),
+        (31, 7), (31, 10), (29, 11), (3, 11), (1, 10),
+    ], OUTLINE)
+    poly(draw, offset, [
+        (3, 6), (5, 5), (25, 5), (28, 6), (29, 7),
+        (29, 10), (3, 10), (2, 9),
+    ], METAL)
+    poly(draw, offset, [(5, 4), (25, 4), (27, 5), (4, 5)], METAL_LIGHT)
+    rect(draw, (offset + 3, 8, offset + 29, 10), METAL_DARK)
+    for x in (7, 12, 17, 22):
+        rect(draw, (offset + x, 6, offset + x, 9), METAL_LIGHT)
+    rect(draw, (offset + 26, 7, offset + 30, 10), RED_DARK)
+    rect(draw, (offset + 27, 8, offset + 29, 9), METAL_LIGHT)
+    draw.point((offset + 28, 9), fill=AMBER)
 
 
 def draw_rescue(draw: ImageDraw.ImageDraw, offset: int) -> None:
-    common_engine(draw, offset)
-    # Rescue unit: high enclosed equipment body with three unmistakable bays.
-    rect(draw, (offset + 4, 3, offset + 32, 11), RED_DARK)
-    rect(draw, (offset + 5, 3, offset + 31, 4), CREAM_LIGHT)
-    for left in (5, 14, 23):
-        rect(draw, (offset + left, 5, offset + left + 7, 10), METAL_DARK)
-        rect(draw, (offset + left + 1, 5, offset + left + 6, 8), METAL_LIGHT)
-        rect(draw, (offset + left + 3, 9, offset + left + 4, 10), AMBER)
-    rect(draw, (offset + 7, 2, offset + 29, 3), METAL)
+    common_chassis_and_cab(draw, offset)
+    # A chamfered high rescue body with a visible pale roof plane and three
+    # roll-up equipment bays. Corners step inward instead of forming a box.
+    poly(draw, offset, [
+        (1, 8), (2, 6), (5, 3), (26, 3), (29, 4),
+        (31, 6), (31, 11), (29, 12), (3, 12), (1, 10),
+    ], OUTLINE)
+    poly(draw, offset, [(5, 3), (26, 3), (28, 4), (3, 4)], CREAM_LIGHT)
+    poly(draw, offset, [
+        (3, 6), (5, 5), (28, 5), (30, 7), (30, 10),
+        (28, 11), (3, 11), (2, 9),
+    ], RED_DARK)
+    for left, width in ((4, 7), (13, 7), (22, 6)):
+        rect(draw, (offset + left, 6, offset + left + width, 10), METAL_DARK)
+        rect(draw, (offset + left + 1, 6, offset + left + width - 1, 8), METAL_LIGHT)
+        rect(draw, (offset + left + 1, 9, offset + left + width - 1, 9), METAL)
+        draw.point((offset + left + width - 1, 10), fill=AMBER)
 
 
 def draw_ladder(draw: ImageDraw.ImageDraw, offset: int) -> None:
-    common_engine(draw, offset)
-    # Ladder truck: open turntable and a long ladder reaching almost the cab.
-    rect(draw, (offset + 3, 1, offset + 33, 4), OUTLINE)
-    rect(draw, (offset + 4, 1, offset + 32, 1), METAL_LIGHT)
-    rect(draw, (offset + 4, 4, offset + 32, 4), METAL)
-    for x in range(6, 33, 4):
-        rect(draw, (offset + x, 1, offset + x, 4), OUTLINE)
-    rect(draw, (offset + 7, 5, offset + 29, 10), RED_DARK)
-    rect(draw, (offset + 12, 6, offset + 31, 7), METAL)
-    rect(draw, (offset + 13, 8, offset + 28, 9), METAL_DARK)
+    common_chassis_and_cab(draw, offset)
+    # Lower open bed and a slightly rising authored ladder. The turntable joins
+    # roof equipment to the chassis so the whole truck remains one silhouette.
+    poly(draw, offset, [
+        (1, 8), (3, 6), (27, 6), (31, 8), (31, 11),
+        (29, 12), (3, 12), (1, 10),
+    ], OUTLINE)
+    poly(draw, offset, [(3, 7), (26, 7), (29, 8), (29, 11), (3, 11), (2, 9)], RED)
+    rect(draw, (offset + 4, 8, offset + 28, 9), RED_LIGHT)
+    rect(draw, (offset + 18, 5, offset + 24, 8), OUTLINE)
+    rect(draw, (offset + 19, 5, offset + 23, 7), METAL_DARK)
+    # Ladder rails rise by one pixel toward the cab, matching the near-top view.
+    poly(draw, offset, [(4, 3), (29, 2), (30, 3), (5, 4)], OUTLINE)
+    poly(draw, offset, [(5, 3), (28, 2), (29, 2), (6, 3)], METAL_LIGHT)
+    poly(draw, offset, [(5, 5), (29, 4), (30, 5), (6, 6)], OUTLINE)
+    poly(draw, offset, [(6, 5), (28, 4), (29, 4), (7, 5)], METAL)
+    for x in range(8, 29, 4):
+        draw.line((offset + x, 3, offset + x + 1, 5), fill=OUTLINE)
 
 
 def main() -> None:
