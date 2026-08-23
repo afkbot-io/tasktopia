@@ -1,5 +1,5 @@
-import type { Cell } from "../shared/contracts";
-import { roadBandRole } from "../shared/road-profile";
+import type { Cell, RoadCellDto } from "../shared/contracts";
+import { roadBandRole, roadClassSupportsVehicle } from "../shared/road-profile";
 
 export function agentCellKey(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
@@ -30,7 +30,21 @@ export type TrafficVehicleSnapshot = {
   trail?: readonly Cell[];
   /** Continuous time spent unable to advance; older queues receive priority. */
   waitMs?: number;
+  /** Junction admission token retained until the complete vehicle body clears. */
+  signalReservationId?: string;
 };
+
+export type TrafficRoadCell = Cell & { roadClass?: RoadCellDto["roadClass"] };
+
+/** Preserve road profile metadata through the exact graph consumed by traffic. */
+export function trafficRoadGraph(
+  roads: ReadonlyMap<string, TrafficRoadCell>,
+  kind: "CAR" | "BUS" = "CAR",
+): Map<string, TrafficRoadCell> {
+  return new Map([...roads]
+    .filter(([, road]) => !road.roadClass || roadClassSupportsVehicle(road.roadClass, kind))
+    .map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y, ...(road.roadClass ? { roadClass: road.roadClass } : {}) }]));
+}
 
 export type VehicleFrameDecision = {
   /** Maximum distance, in road cells, that the vehicle may advance this frame. */
@@ -130,6 +144,19 @@ function vehicleBodiesOverlap(left: TrafficVehicleSnapshot, right: TrafficVehicl
     && Math.abs(leftCenter.y - rightCenter.y) + EPSILON < leftExtent.y + rightExtent.y;
 }
 
+/** True while any part of the physical vehicle body still occupies a box. */
+export function vehicleBodyIntersectsBounds(
+  vehicle: TrafficVehicleSnapshot,
+  bounds: TrafficJunction["bounds"],
+): boolean {
+  const center = vehicleCenter(vehicle);
+  const extent = vehicleHalfExtents(vehicle);
+  return center.x + extent.x > bounds.minX - EPSILON
+    && center.x - extent.x < bounds.maxX + EPSILON
+    && center.y + extent.y > bounds.minY - EPSILON
+    && center.y - extent.y < bounds.maxY + EPSILON;
+}
+
 /** Number of physically overlapping motor-agent bodies in world coordinates. */
 export function vehicleUnsafePairCount(vehicles: readonly TrafficVehicleSnapshot[]): number {
   let unsafePairs = 0;
@@ -210,6 +237,8 @@ function winnerAtConflict(
   right: TrafficVehicleSnapshot,
   priorityDistance: ReadonlyMap<string, number>,
 ): TrafficVehicleSnapshot {
+  if (left.signalReservationId && !right.signalReservationId) return left;
+  if (right.signalReservationId && !left.signalReservationId) return right;
   if (left.cruiseSpeed <= 0 && right.cruiseSpeed > 0) return right;
   if (right.cruiseSpeed <= 0 && left.cruiseSpeed > 0) return left;
   const leftDistance = priorityDistance.get(left.id) ?? Number.POSITIVE_INFINITY;
@@ -358,8 +387,12 @@ function preferredCollisionLoser(
   right: TrafficVehicleSnapshot,
   decisions: ReadonlyMap<string, VehicleFrameDecision>,
 ): TrafficVehicleSnapshot {
-  const leftAdvance = decisions.get(left.id)!.advance;
-  const rightAdvance = decisions.get(right.id)!.advance;
+  const leftDecision = decisions.get(left.id)!;
+  const rightDecision = decisions.get(right.id)!;
+  if (leftDecision.blockedBy === right.id && rightDecision.blockedBy !== left.id) return left;
+  if (rightDecision.blockedBy === left.id && leftDecision.blockedBy !== right.id) return right;
+  const leftAdvance = leftDecision.advance;
+  const rightAdvance = rightDecision.advance;
   if (leftAdvance <= EPSILON && rightAdvance > EPSILON) return right;
   if (rightAdvance <= EPSILON && leftAdvance > EPSILON) return left;
   if (left.cruiseSpeed <= 0 && right.cruiseSpeed > 0) return right;
@@ -562,30 +595,15 @@ export type TrafficJunction = {
 };
 export type TrafficSignalPhase = { horizontal: "RED" | "GREEN"; vertical: "RED" | "GREEN" };
 
-function directionalRun(graph: ReadonlyMap<string, Cell>, cell: Cell, dx: number, dy: number): number {
-  let length = 0;
-  for (let step = 1; step <= 12; step += 1) {
-    if (!graph.has(agentCellKey({ x: cell.x + dx * step, y: cell.y + dy * step }))) break;
-    length += 1;
-  }
-  return length;
-}
-
 /**
  * Collapse the asphalt overlap of every genuine T/X crossing into one logical
- * junction. Requiring a four-cell arm beyond the overlap deliberately rejects
- * both ordinary bends and the transverse thickness of a four-lane avenue.
+ * junction. The shared road-profile classifier owns the distinction between a
+ * real crossing and the transverse width of a seven-cell collector.
  */
-export function detectTrafficJunctions(graph: ReadonlyMap<string, Cell>): TrafficJunction[] {
-  const seeds = new Map<string, Cell>();
+export function detectTrafficJunctions(graph: ReadonlyMap<string, TrafficRoadCell>): TrafficJunction[] {
+  const seeds = new Map<string, TrafficRoadCell>();
   for (const cell of graph.values()) {
-    const north = directionalRun(graph, cell, 0, -1);
-    const east = directionalRun(graph, cell, 1, 0);
-    const south = directionalRun(graph, cell, 0, 1);
-    const west = directionalRun(graph, cell, -1, 0);
-    const horizontalThrough = east >= 6 && west >= 6;
-    const verticalThrough = north >= 6 && south >= 6;
-    if (horizontalThrough && (north >= 6 || south >= 6) || verticalThrough && (east >= 6 || west >= 6)) {
+    if (roadBandRole(graph, cell).kind === "JUNCTION") {
       seeds.set(agentCellKey(cell), cell);
     }
   }
@@ -649,6 +667,26 @@ export function trafficSignalPhase(junction: TrafficJunction, elapsedMs: number)
   return { horizontal: "RED", vertical: "RED" };
 }
 
+/**
+ * Do not release a conflicting green while a car or bus tail still intersects
+ * the box. The nominal clock remains deterministic; physical occupancy can
+ * only extend the all-red clearance interval.
+ */
+export function trafficSignalPhaseForTraffic(
+  junction: TrafficJunction,
+  elapsedMs: number,
+  traffic: readonly TrafficVehicleSnapshot[],
+): TrafficSignalPhase {
+  const phase = trafficSignalPhase(junction, elapsedMs);
+  if (phase.horizontal === phase.vertical) return phase;
+  const greenAxis = phase.horizontal === "GREEN" ? "horizontal" : "vertical";
+  const conflictingTail = traffic.some((vehicle) => {
+    const axis = vehicle.current.x !== vehicle.next.x ? "horizontal" : "vertical";
+    return axis !== greenAxis && vehicleBodyIntersectsBounds(vehicle, junction.bounds);
+  });
+  return conflictingTail ? { horizontal: "RED", vertical: "RED" } : phase;
+}
+
 export type TrafficSignalDecision = { yield: boolean; reservationId?: string };
 
 export function trafficSignalDecision(
@@ -658,8 +696,11 @@ export function trafficSignalDecision(
   elapsedMs: number,
   kind: "CAR" | "BUS" = "CAR",
   reservationId?: string,
+  traffic: readonly TrafficVehicleSnapshot[] = [],
 ): TrafficSignalDecision {
-  const stopClearance = junctionReservationClearance({ kind });
+  // Every approach respects the largest turning envelope so a compact car
+  // cannot wait inside the sweep of an admitted bus.
+  const stopClearance = junctionReservationClearance({ kind: "BUS" });
   const distanceToBounds = (bounds: TrafficJunction["bounds"], cell: Cell) => (
     Math.max(bounds.minX - cell.x, 0, cell.x - bounds.maxX)
     + Math.max(bounds.minY - cell.y, 0, cell.y - bounds.maxY)
@@ -689,8 +730,33 @@ export function trafficSignalDecision(
       && (containsCell(stopBounds, current) || containsCell(stopBounds, next));
   });
   if (!junction) return { yield: false };
+  const movementAxis = (from: Cell, to: Cell) => from.x !== to.x ? "horizontal" : "vertical";
+  const turnsBeforeExit = (vehicle: TrafficVehicleSnapshot): boolean => {
+    const entryAxis = movementAxis(vehicle.current, vehicle.next);
+    let reachedBox = containsCell(junction.bounds, vehicle.current) || containsCell(junction.bounds, vehicle.next);
+    for (let index = 0; index < vehicle.path.length - 1; index += 1) {
+      const from = vehicle.path[index]!;
+      const to = vehicle.path[index + 1]!;
+      reachedBox ||= containsCell(junction.bounds, from) || containsCell(junction.bounds, to);
+      if (reachedBox && movementAxis(from, to) !== entryAxis) return true;
+      if (reachedBox && !containsCell(junction.bounds, from) && !containsCell(junction.bounds, to)) break;
+    }
+    return false;
+  };
+  const currentVehicle = traffic.find((vehicle) => (
+    vehicle.kind === kind && sameCell(vehicle.current, current) && sameCell(vehicle.next, next)
+  ));
+  const currentAxis = movementAxis(current, next);
+  const activeReservation = traffic.some((vehicle) => (
+    vehicle.signalReservationId === junction.id
+    && vehicle !== currentVehicle
+    && (movementAxis(vehicle.current, vehicle.next) !== currentAxis
+      || turnsBeforeExit(vehicle)
+      || Boolean(currentVehicle && turnsBeforeExit(currentVehicle)))
+  ));
+  if (activeReservation) return { yield: true };
   const axis = next.x !== current.x ? "horizontal" : "vertical";
-  if (trafficSignalPhase(junction, elapsedMs)[axis] === "RED") return { yield: true };
+  if (trafficSignalPhaseForTraffic(junction, elapsedMs, traffic)[axis] === "RED") return { yield: true };
   return { yield: false, reservationId: junction.id };
 }
 

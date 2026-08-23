@@ -1949,8 +1949,8 @@ def normalize_ai_authored_ambient(
     return canvas
 
 
-def keep_largest_opaque_component(image: Image.Image) -> Image.Image:
-    """Remove a detached generated shadow before native-size normalization."""
+def opaque_component_count(image: Image.Image) -> int:
+    """Count hard-alpha 4-neighbour components without mutating source art."""
     alpha = image.getchannel("A")
     remaining = {
         (x, y)
@@ -1958,27 +1958,18 @@ def keep_largest_opaque_component(image: Image.Image) -> Image.Image:
         for x in range(image.width)
         if alpha.getpixel((x, y)) > 0
     }
-    components: list[set[tuple[int, int]]] = []
+    components = 0
     while remaining:
-        seed = remaining.pop()
-        component = {seed}
-        stack = [seed]
+        components += 1
+        stack = [remaining.pop()]
         while stack:
             x, y = stack.pop()
             for neighbour in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
                 if neighbour not in remaining:
                     continue
                 remaining.remove(neighbour)
-                component.add(neighbour)
                 stack.append(neighbour)
-        components.append(component)
-    if len(components) <= 1:
-        return image
-    components.sort(key=len, reverse=True)
-    result = Image.new("RGBA", image.size, (0, 0, 0, 0))
-    for x, y in components[0]:
-        result.putpixel((x, y), image.getpixel((x, y)))
-    return result
+    return components
 
 
 def normalize_ai_authored_animation_family(
@@ -2417,6 +2408,13 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             legacy_vehicle.unlink()
         for authored in ai_vehicle_entries:
             source = AI_AUTHORED_ART / authored["sheet"]
+            expected_digest = authored.get("sheetSha256")
+            actual_digest = hashlib.sha256(source.read_bytes()).hexdigest()
+            if expected_digest != actual_digest:
+                raise ValueError(
+                    f"{authored['key']}: vehicle source digest mismatch; "
+                    f"expected {expected_digest}, got {actual_digest}"
+                )
             orientation_segments = authored["orientationSegments"]
             segment_count = int(authored["segments"])
             grid = authored.get("grid")
@@ -2432,7 +2430,12 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                     if grid
                     else ai_sheet_segment(source, segment_index, segment_count)
                 )
-                source_segment = keep_largest_opaque_component(remove_ai_chroma_key(source_segment))
+                source_segment = remove_ai_chroma_key(source_segment)
+                components = opaque_component_count(source_segment)
+                if components != 1:
+                    raise ValueError(
+                        f"{authored['key']}/{orientation}: source cell has {components} opaque components"
+                    )
                 image = normalize_ai_authored_ambient(
                     source_segment,
                     canvas_size,
@@ -2448,6 +2451,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                     "footprintCells": [3, 2] if orientation == "horizontal" else [2, 3],
                     "artSource": "AI_AUTHORED",
                     "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
+                    "sourceSha256": actual_digest,
                     "visualProfile": "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE",
                     "baseFacing": "EAST" if orientation == "horizontal" else orientation.upper(),
                 }

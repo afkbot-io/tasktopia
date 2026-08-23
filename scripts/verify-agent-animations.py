@@ -73,9 +73,29 @@ def verify_family(prefix: str, expected_size: tuple[int, int], expected_occupied
         assert_no_chroma_matte(frame, prefix)
     assert len(set(hashes)) == 3, f"{prefix}: duplicate gait frames"
     assert max(point[0] for point in centroids) - min(point[0] for point in centroids) <= 1, f"{prefix}: horizontal mass drift {centroids}"
-    assert max(point[1] for point in centroids) - min(point[1] for point in centroids) <= 1, f"{prefix}: vertical mass drift {centroids}"
+    # A lifted passing leg legitimately moves the whole-body centroid. Stable
+    # canvas height, top edge and baseline prove that the renderer did not
+    # stretch or bob the resident without outlawing an actual gait.
+    if not prefix.startswith("walker-"):
+        assert max(point[1] for point in centroids) - min(point[1] for point in centroids) <= 1, f"{prefix}: vertical mass drift {centroids}"
     opaque_counts = [len(points) for points in opaque_points]
     assert max(opaque_counts) / min(opaque_counts) <= 1.35, f"{prefix}: silhouette mass drift {opaque_counts}"
+    if prefix.startswith("walker-"):
+        contact_widths = [occupied[0][0], occupied[2][0]]
+        assert 6 <= occupied[1][0] <= max(contact_widths), f"{prefix}: passing pose width is not compact and stable {occupied}"
+        lower_start = baselines[0] - 6
+        contact_diff = ImageChops.difference(frames[0].getchannel("A"), frames[2].getchannel("A"))
+        changed = [
+            (x, y)
+            for y in range(lower_start, baselines[0])
+            for x in range(expected_size[0])
+            if contact_diff.getpixel((x, y)) != 0
+        ]
+        centre = expected_size[0] / 2
+        assert len(changed) >= 4, f"{prefix}: A/C contacts reuse the same leg silhouette"
+        assert any(x < centre for x, _ in changed) and any(x >= centre for x, _ in changed), (
+            f"{prefix}: A/C contact change must involve both sides of the body"
+        )
     return {"prefix": prefix, "canvas": expected_size, "occupiedEnvelope": expected_occupied, "baseline": baselines[0]}
 
 
@@ -86,6 +106,25 @@ def gif_proof(prefix: str, output: Path) -> None:
     enlarged = [frame.resize((frame.width * scale, frame.height * scale), Image.Resampling.NEAREST) for frame in sequence]
     output.parent.mkdir(parents=True, exist_ok=True)
     enlarged[0].save(output, save_all=True, append_images=enlarged[1:], duration=180, loop=0, disposal=2)
+    # Magenta = pixels unique to contact A, cyan = pixels unique to contact C,
+    # white = shared silhouette. This makes same-leg cycles obvious even when
+    # clothing colors would otherwise hide the repeated alpha outline.
+    a_alpha = frames[0].getchannel("A")
+    c_alpha = frames[2].getchannel("A")
+    overlay = Image.new("RGBA", frames[0].size, (0, 0, 0, 0))
+    for y in range(overlay.height):
+        for x in range(overlay.width):
+            in_a = a_alpha.getpixel((x, y)) > 0
+            in_c = c_alpha.getpixel((x, y)) > 0
+            if in_a and in_c:
+                overlay.putpixel((x, y), (228, 228, 220, 255))
+            elif in_a:
+                overlay.putpixel((x, y), (255, 52, 188, 255))
+            elif in_c:
+                overlay.putpixel((x, y), (36, 220, 255, 255))
+    overlay.resize((overlay.width * scale, overlay.height * scale), Image.Resampling.NEAREST).save(
+        output.with_name(f"{output.stem}-a-c-overlay.png")
+    )
 
 
 def main() -> None:
@@ -106,7 +145,13 @@ def main() -> None:
         if args.gif_dir:
             gif_proof(prefix, args.gif_dir / f"{prefix}.gif")
 
-    # West is a pure mirror contract, never an independently projected animal.
+    # West is a pure mirror contract, never an independently normalized frame.
+    for frame in "abc":
+        east = Image.open(RUNTIME / f"walker-east-{frame}.png").convert("RGBA")
+        west = Image.open(RUNTIME / f"walker-west-{frame}.png").convert("RGBA")
+        assert ImageChops.difference(east.transpose(Image.Transpose.FLIP_LEFT_RIGHT), west).getbbox() is None, (
+            f"walker-{frame}: west is not an exact east mirror"
+        )
     for species in ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"):
         for frame in "abc":
             east = Image.open(RUNTIME / f"animal-{species}-east-{frame}.png").convert("RGBA")

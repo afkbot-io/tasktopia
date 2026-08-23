@@ -91,10 +91,13 @@
 1. На native detail scale просмотреть `A→B→C→B` для north/east/south/west:
    canvas остаётся `16×24`, стопы имеют общий baseline, промежуточная поза может
    быть уже контактных поз, но голова, торс и длина конечностей не меняют масштаб.
-2. Сравнить восемь моделей в `screenshots/transport-native-views-review.png`:
+2. Сравнить восемь моделей в `tmp/vehicle-proportion-proof.png` и
+   `screenshots/transport-native-views-review.png`:
    horizontal/north/south используют одну frontal-top камеру, одинаковую линию
-   колёс и контакт с дорогой; north/south — один связный кузов без отдельной
-   тени. Во время движения `data-vehicle-rendered-frame-mask` достигает `1111`:
+   колёс и контакт с дорогой; canvas равен `24×16`/`16×24`, а occupied bounds —
+   `22×13`/`13×22`. North/south — один связный кузов без отдельной тени.
+   Проверить, что catalog/manifest SHA-256 совпадает с исходным листом. Во время
+   движения `data-vehicle-rendered-frame-mask` достигает `1111`:
    меняется пиксельный блик ступицы, но runtime не добавляет bob кузову.
 3. На T-перекрёстке убедиться, что все travel-роли лежат на asphalt. За полный
    63-секундный цикл транспорт должен иметь не менее 65% времени движения;
@@ -104,16 +107,20 @@
    ground остаётся видимым, ошибка показывается компактно. Отдельно оборвать
    инициализацию renderer: кнопка «Повторить» должна пересоздать карту и получить
    `data-seed-first-frame="true"`.
-5. Автоматические результаты релиза 2026-08-22: `470 passed / 7 skipped` unit,
+5. Автоматические результаты релиза 2026-08-23: `472 passed / 7 skipped` unit,
    `27 passed / 6 skipped` E2E, `42` animation families / `126` frames, `1 224`
-   PNG без нарушений. Scale-smoke: generation `11 683 ms`, cold chunk `205 ms`,
-   cached chunk `42 ms`, compact wire `−82%`, RSS `418 MB`.
+   PNG без нарушений и `8` vehicle models / `24` views. Все `10/10`
+   world-validation городов имеют clean audit. Scale-smoke: generation
+   `11 866 ms`, cold chunk `233 ms`, cached chunk `47 ms`, compact wire `−82%`,
+   RSS `417 MB`.
 
 ## Release gate
 
 ```bash
 npm run test:db:start
 npm run assets:verify
+.venv-assets/bin/python scripts/verify-vehicle-proportions.py \
+  --proof tmp/vehicle-proportion-proof.png
 npm run typecheck
 npm run lint
 TEST_DATABASE_URL=postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test \

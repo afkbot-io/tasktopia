@@ -9,8 +9,10 @@ import {
   detectTrafficJunctions,
   mustYieldAtTrafficSignal,
   trafficSignalDecision,
+  trafficSignalPhaseForTraffic,
   mustYieldForBlockedJunctionExit,
   trafficSignalPhase,
+  trafficRoadGraph,
   nextSeededRandom,
   nextWithoutUTurn,
   planAgentRoute,
@@ -21,6 +23,7 @@ import {
   planVehicleFrame,
   vehicleCruiseSpeed,
   vehicleUnsafePairCount,
+  vehicleBodyIntersectsBounds,
   walkerInteractionPairs,
   type TrafficJunction,
   type TrafficVehicleSnapshot,
@@ -51,6 +54,17 @@ function independentlyOverlaps(left: TrafficVehicleSnapshot, right: TrafficVehic
   const rightExtents = extents(right);
   return Math.abs(leftCenter.x - rightCenter.x) < leftExtents.x + rightExtents.x
     && Math.abs(leftCenter.y - rightCenter.y) < leftExtents.y + rightExtents.y;
+}
+
+function collectorJunctionGraph(shape: "T" | "X") {
+  const horizontal = Array.from({ length: 161 }, (_, index) => (
+    Array.from({ length: 7 }, (__, band) => ({ x: index - 80, y: band - 3, roadClass: "COLLECTOR" as const }))
+  )).flat();
+  const verticalStart = shape === "X" ? -80 : -3;
+  const vertical = Array.from({ length: 81 - verticalStart }, (_, index) => (
+    Array.from({ length: 7 }, (__, band) => ({ x: band - 3, y: verticalStart + index, roadClass: "COLLECTOR" as const }))
+  )).flat();
+  return trafficRoadGraph(new Map([...horizontal, ...vertical].map((cell) => [agentCellKey(cell), cell])), "CAR");
 }
 
 describe("living city agent routing", () => {
@@ -256,20 +270,21 @@ describe("living city agent routing", () => {
     expect(turnEnd).toEqual({ x: 13, y: 4 });
   });
 
-  it("detects real T/X junctions but not an ordinary ninety-degree bend", () => {
-    const horizontal = Array.from({ length: 13 }, (_, index) => [-1, 0].map((y) => ({ x: index - 6, y }))).flat();
-    const vertical = Array.from({ length: 13 }, (_, index) => [-1, 0].map((x) => ({ x, y: index - 6 }))).flat();
-    const crossing = new Map([...horizontal, ...vertical].map((cell) => [agentCellKey(cell), cell]));
-    const junctions = detectTrafficJunctions(crossing);
-    expect(junctions).toHaveLength(1);
-    expect(junctions[0]?.arms.sort()).toEqual(["E", "N", "S", "W"]);
-    expect(junctions[0]?.signalPosts).toHaveLength(4);
+  it("preserves road class and detects real seven-cell T/X junctions without treating road width as a crossing", () => {
+    for (const [shape, expectedArms] of [["T", ["E", "S", "W"]], ["X", ["E", "N", "S", "W"]]] as const) {
+      const graph = collectorJunctionGraph(shape);
+      expect(graph.get("0,0")?.roadClass).toBe("COLLECTOR");
+      const junctions = detectTrafficJunctions(graph);
+      expect(junctions).toHaveLength(1);
+      expect(junctions[0]?.bounds).toEqual({ minX: -3, minY: -3, maxX: 3, maxY: 3 });
+      expect(junctions[0]?.arms.sort()).toEqual([...expectedArms].sort());
+      expect(junctions[0]?.signalPosts).toHaveLength(expectedArms.length);
+    }
 
-    const bendCells = [
-      ...Array.from({ length: 7 }, (_, index) => [-1, 0].map((y) => ({ x: index - 6, y }))).flat(),
-      ...Array.from({ length: 7 }, (_, index) => [-1, 0].map((x) => ({ x, y: index - 6 }))).flat(),
-    ];
-    expect(detectTrafficJunctions(new Map(bendCells.map((cell) => [agentCellKey(cell), cell])))).toEqual([]);
+    const straight = trafficRoadGraph(new Map(Array.from({ length: 161 }, (_, index) => (
+      Array.from({ length: 7 }, (__, band) => ({ x: index - 80, y: band - 3, roadClass: "COLLECTOR" as const }))
+    )).flat().map((cell) => [agentCellKey(cell), cell])), "CAR");
+    expect(detectTrafficJunctions(straight)).toEqual([]);
   });
 
   it("holds an approaching car on red and releases it on its green phase", () => {
@@ -323,6 +338,25 @@ describe("living city agent routing", () => {
     const crossingAndTailCells = 7 + 6.75 / 2;
     expect(vehicleCruiseSpeed("BUS", 0) * 10_501)
       .toBeGreaterThan(fiveCellStopEnvelope + crossingAndTailCells);
+  });
+
+  it("extends all-red until the physical bus tail clears the conflict box", () => {
+    const junction: TrafficJunction = {
+      id: "tail-clearance",
+      bounds: { minX: -3, minY: -3, maxX: 3, maxY: 3 },
+      cells: [], arms: ["N", "E", "S", "W"], signalPosts: [],
+    };
+    const verticalBus: TrafficVehicleSnapshot = {
+      id: "vertical-bus", kind: "BUS", current: { x: 2, y: 4 }, next: { x: 2, y: 5 },
+      progress: 0, cruiseSpeed: 0.00155,
+      path: [{ x: 2, y: 4 }, { x: 2, y: 5 }, { x: 2, y: 6 }, { x: 2, y: 7 }],
+      signalReservationId: junction.id,
+    };
+    expect(vehicleBodyIntersectsBounds(verticalBus, junction.bounds)).toBe(true);
+    expect(trafficSignalPhaseForTraffic(junction, 0, [verticalBus])).toEqual({ horizontal: "RED", vertical: "RED" });
+    const cleared = { ...verticalBus, current: { x: 2, y: 7 }, next: { x: 2, y: 8 }, path: [{ x: 2, y: 7 }, { x: 2, y: 8 }] };
+    expect(vehicleBodyIntersectsBounds(cleared, junction.bounds)).toBe(false);
+    expect(trafficSignalPhaseForTraffic(junction, 0, [cleared])).toEqual({ horizontal: "GREEN", vertical: "RED" });
   });
 
   it("does not enter an intersection when the exit lane cannot fit the vehicle", () => {
@@ -429,32 +463,29 @@ describe("living city agent routing", () => {
       waitMs: number;
       signalReservationId?: string;
     };
-    const junction: TrafficJunction = {
-      id: "queue-drain",
-      bounds: { minX: -3, minY: -3, maxX: 3, maxY: 3 },
-      cells: Array.from({ length: 49 }, (_, index) => ({ x: index % 7 - 3, y: Math.floor(index / 7) - 3 })),
-      arms: shape === "X" ? ["N", "E", "S", "W"] : ["E", "S", "W"],
-      signalPosts: [],
-    };
+    const graph = collectorJunctionGraph(shape);
+    const outgoing = buildDirectedCarEdges(graph);
+    const junction = detectTrafficJunctions(graph)[0]!;
     const range = (start: number, end: number) => Array.from(
       { length: Math.abs(end - start) + 1 },
       (_, index) => start + Math.sign(end - start) * index,
     );
     const allRoutes = {
-      east: range(-32, 32).map((x) => ({ x, y: 2 })),
-      west: range(32, -32).map((x) => ({ x, y: -2 })),
-      south: range(-32, 32).map((y) => ({ x: -2, y })),
-      north: range(32, -32).map((y) => ({ x: 2, y })),
+      fromWest: range(-56, 24).map((x) => ({ x, y: 2 })),
+      fromEast: range(56, -24).map((x) => ({ x, y: -2 })),
+      fromNorth: range(-56, 24).map((y) => ({ x: -2, y })),
+      fromSouth: shape === "X"
+        ? range(56, -24).map((y) => ({ x: 2, y }))
+        : [...range(56, 2).map((y) => ({ x: 2, y })), ...range(3, 24).map((x) => ({ x, y: 2 }))],
     };
-    const routes = Object.entries(allRoutes).filter(([approach]) => shape === "X" || approach !== "north");
+    const routes = Object.entries(allRoutes).filter(([approach]) => shape === "X" || approach !== "fromNorth");
     const vehicles: SimVehicle[] = [];
     for (const [approach, route] of routes) {
-      for (let queueIndex = 0; queueIndex < 3; queueIndex += 1) {
-        // The leader starts one cell before the largest (bus) stop envelope;
-        // later queue members retain a full body-and-gap separation. This is
-        // the same admissible spawn geometry used by the runtime traffic core.
-        const path = route.slice(23 - queueIndex * 9);
-        const kind = queueIndex === 0 && (approach === "east" || approach === "south") ? "BUS" : "CAR";
+      for (let queueIndex = 0; queueIndex < 6; queueIndex += 1) {
+        // Six vehicles per arm with eight-cell spacing exercise two complete
+        // bus envelopes without creating an invalid overlapping spawn.
+        const path = route.slice(47 - queueIndex * 8);
+        const kind = queueIndex === 0 || queueIndex === 3 ? "BUS" : "CAR";
         const baseSpeed = vehicleCruiseSpeed(kind, kind === "BUS" ? 0 : 0.5);
         vehicles.push({
           id: `${approach}-${queueIndex}`,
@@ -474,13 +505,7 @@ describe("living city agent routing", () => {
 
     let elapsedMs = 0;
     let maxStoppedMs = 0;
-    let previousPhase = trafficSignalPhase(junction, 0);
-    const insideConflictZone = (vehicle: SimVehicle) => (
-      vehicle.current.x >= junction.bounds.minX
-      && vehicle.current.x <= junction.bounds.maxX
-      && vehicle.current.y >= junction.bounds.minY
-      && vehicle.current.y <= junction.bounds.maxY
-    );
+    let previousPhase = trafficSignalPhaseForTraffic(junction, 0, vehicles);
     while (vehicles.length > 0 && elapsedMs < 180_000) {
       for (const vehicle of vehicles) {
         const signal = trafficSignalDecision(
@@ -490,18 +515,19 @@ describe("living city agent routing", () => {
           elapsedMs,
           vehicle.kind,
           vehicle.signalReservationId,
+          vehicles,
         );
         vehicle.signalReservationId = signal.reservationId;
         vehicle.cruiseSpeed = signal.yield || mustYieldForBlockedJunctionExit(vehicle, [junction], vehicles)
           ? 0
           : vehicle.baseSpeed;
       }
-      const phase = trafficSignalPhase(junction, elapsedMs);
+      const phase = trafficSignalPhaseForTraffic(junction, elapsedMs, vehicles);
       if (previousPhase.horizontal !== "GREEN" && phase.horizontal === "GREEN") {
-        expect(vehicles.filter((vehicle) => vehicle.current.y !== vehicle.next.y && insideConflictZone(vehicle)), `vertical tail at ${elapsedMs}ms`).toEqual([]);
+        expect(vehicles.filter((vehicle) => vehicle.current.y !== vehicle.next.y && vehicleBodyIntersectsBounds(vehicle, junction.bounds)), `vertical tail at ${elapsedMs}ms`).toEqual([]);
       }
       if (previousPhase.vertical !== "GREEN" && phase.vertical === "GREEN") {
-        expect(vehicles.filter((vehicle) => vehicle.current.x !== vehicle.next.x && insideConflictZone(vehicle)), `horizontal tail at ${elapsedMs}ms`).toEqual([]);
+        expect(vehicles.filter((vehicle) => vehicle.current.x !== vehicle.next.x && vehicleBodyIntersectsBounds(vehicle, junction.bounds)), `horizontal tail at ${elapsedMs}ms`).toEqual([]);
       }
       previousPhase = phase;
       const decisions = planVehicleFrame(vehicles, 50);
@@ -524,11 +550,16 @@ describe("living city agent routing", () => {
       }
       expect(vehicleUnsafePairCount(vehicles), `unsafe pair at ${elapsedMs}ms`).toBe(0);
       expect(vehicles.every((vehicle) => Math.abs(vehicle.next.x - vehicle.current.x) + Math.abs(vehicle.next.y - vehicle.current.y) <= 1), `wrong-way segment at ${elapsedMs}ms`).toBe(true);
+      expect(vehicles.every((vehicle) => isAgentEdgeAllowed(vehicle.current, vehicle.next, outgoing)), `forbidden directed edge at ${elapsedMs}ms`).toBe(true);
       elapsedMs += 50;
     }
 
-    expect(vehicles).toHaveLength(0);
-    expect(maxStoppedMs).toBeLessThan(120_000);
+    const leftoverDecisions = planVehicleFrame(vehicles, 50);
+    expect(vehicles, `${shape} leftovers: ${JSON.stringify(vehicles.map((vehicle) => ({
+      id: vehicle.id, current: vehicle.current, next: vehicle.next, progress: vehicle.progress,
+      reservation: vehicle.signalReservationId, waitMs: vehicle.waitMs, decision: leftoverDecisions.get(vehicle.id),
+    })))}`).toHaveLength(0);
+    expect(maxStoppedMs).toBeLessThan(60_000);
   });
 
   it("slows a following car before it reaches the vehicle ahead", () => {

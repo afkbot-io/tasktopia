@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -344,12 +345,20 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         for direction, relative in sorted(directions.items()):
             audit_image(relative, f"transitions/{material}/{direction}", expected_size=(CELL, CELL))
 
+    ai_vehicle_catalog = manifest_path.parent / "catalog" / "ai-authored-vehicles.json"
+    authored_vehicles = {
+        entry["key"]: entry
+        for entry in json.loads(ai_vehicle_catalog.read_text(encoding="utf-8"))
+    } if ai_vehicle_catalog.exists() else {}
     vehicle_signatures: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
     vehicle_drawings: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
     vehicles = manifest.get("vehicles", {})
     if len(vehicles) < 6:
         errors.append("vehicles: expected at least six distinct models")
     for variant, orientations in sorted(vehicles.items()):
+        authored = authored_vehicles.get(variant)
+        if authored is None or not authored.get("reviewed"):
+            errors.append(f"vehicles/{variant}: missing reviewed source catalog entry")
         if set(orientations) != {"horizontal", "north", "south"}:
             errors.append(f"vehicles/{variant}: expected exactly horizontal, north and south views")
         for orientation, vehicle in sorted(orientations.items()):
@@ -386,6 +395,12 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                     errors.append(f"vehicles/{variant}/{orientation}: body has {components} disconnected components")
             if vehicle.get("artSource") != "AI_AUTHORED" or not vehicle.get("sourceSheet"):
                 errors.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
+            if authored is not None:
+                source_path = manifest_path.parent / "reference" / authored["sheet"]
+                expected_digest = authored.get("sheetSha256")
+                actual_digest = hashlib.sha256(source_path.read_bytes()).hexdigest() if source_path.is_file() else None
+                if actual_digest != expected_digest or vehicle.get("sourceSha256") != expected_digest:
+                    errors.append(f"vehicles/{variant}/{orientation}: source digest provenance mismatch")
             if vehicle.get("visualProfile") != "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE":
                 errors.append(f"vehicles/{variant}/{orientation}: wrong V6 native-road visual profile")
         horizontal = orientations.get("horizontal")

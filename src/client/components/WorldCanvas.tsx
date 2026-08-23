@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
-import { roadBandRole, roadClassSupportsVehicle } from "../../shared/road-profile";
+import { roadBandRole } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
 import { terrainAt } from "../../shared/world-terrain";
 import { encodeTerrainSample } from "../../shared/world-chunk-payload";
@@ -30,6 +30,8 @@ import {
   mustYieldForBlockedJunctionExit,
   trafficSignalDecision,
   trafficSignalPhase,
+  trafficSignalPhaseForTraffic,
+  trafficRoadGraph,
   walkerInteractionPairs,
   type AgentEdges,
   type TrafficVehicleSnapshot,
@@ -935,6 +937,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const groundContainers = new Map<string, GroundRecord>();
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
+    startupDisposers.push(() => chunkMaterializer.destroy());
     const chunkPayloadMetric = new RollingPerformanceMetric();
     const chunkRequestMetric = new RollingPerformanceMetric();
     const chunkParseMetric = new RollingPerformanceMetric();
@@ -1206,6 +1209,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         path: plannedVehiclePath(agent),
         trail: agent.trail,
         waitMs: agent.waitMs,
+        signalReservationId: agent.signalReservationId,
       });
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
@@ -1237,7 +1241,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         }
         const motorAgents = movingAgents
           .filter((agent): agent is MovingAgent & { kind: "CAR" | "BUS" } => agent.kind === "CAR" || agent.kind === "BUS");
-        const signalDecisions = new Map(motorAgents.map((agent) => {
+        const trafficPositions = motorAgents.map((agent) => vehicleSnapshot(agent));
+        const signalDecisions = new Map(motorAgents.map((agent, index) => {
           const decision = trafficSignalDecision(
             agent.current,
             agent.next,
@@ -1245,11 +1250,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             simulationTimeMs,
             agent.kind,
             agent.signalReservationId,
+            trafficPositions,
           );
           agent.signalReservationId = decision.reservationId;
+          trafficPositions[index]!.signalReservationId = decision.reservationId;
           return [agent.id, decision] as const;
         }));
-        const trafficPositions = motorAgents.map((agent) => vehicleSnapshot(agent));
         const trafficSnapshot = motorAgents.map((agent, index) => vehicleSnapshot(agent, agent.pauseMs > 0
           || mustYieldAtCrosswalk(agent.next, activeCrosswalks, movingWalkers)
           || signalDecisions.get(agent.id)?.yield
@@ -1379,7 +1385,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           nextDepthSortMs = 100;
         }
         for (const signal of trafficSignalViews.values()) {
-          const phase = trafficSignalPhase(signal.junction, simulationTimeMs);
+          const phase = trafficSignalPhaseForTraffic(signal.junction, simulationTimeMs, trafficPositions);
           const state = signal.axis === "H" ? phase.horizontal : phase.vertical;
           if (state === signal.state) continue;
           signal.state = state;
@@ -2091,7 +2097,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             created += 1;
           }
         };
-        const residentRoadGraph = new Map<string, Cell>([...roads].map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y }] as const));
+        const residentRoadGraph = trafficRoadGraph(roads, "CAR");
         trafficJunctions = detectTrafficJunctions(residentRoadGraph);
         const wantedSignals = new Map<string, { junction: TrafficJunction; origin: Cell; axis: "H" | "V"; approach: string }>(trafficJunctions.flatMap((junction) => junction.signalPosts.map((post) => [
           `${junction.id}:${post.approach}`,
@@ -2126,9 +2132,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           .filter(([cellKey]) => trafficCore.has(cellKey))
           .map(([cellKey, candidates]) => [cellKey, candidates.filter((candidate) => trafficCore.has(key(candidate)))] as const)
           .filter(([, candidates]) => candidates.length > 0));
-        const residentBusRoadGraph = new Map<string, Cell>([...roads]
-          .filter(([, road]) => roadClassSupportsVehicle(road.roadClass, "BUS"))
-          .map(([cellKey, road]) => [cellKey, { x: road.x, y: road.y }] as const));
+        const residentBusRoadGraph = trafficRoadGraph(roads, "BUS");
         const residentBusEdges = buildDirectedCarEdges(residentBusRoadGraph);
         const busTrafficCore = directedTrafficCore(residentBusEdges);
         const busGraph = new Map<string, Cell>([...residentBusRoadGraph].filter(([cellKey]) => busTrafficCore.has(cellKey)));
