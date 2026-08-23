@@ -284,13 +284,15 @@ describe("Pixel City active asset contract", () => {
     expect(props["walker-south-a"]?.occupiedSize?.[1]).toBeLessThan(20);
   });
 
-  it("publishes four incident animation frames, three engine silhouettes, and eight animal species", () => {
-    const props = manifest.props as Record<string, { footprintCells: number[]; artSource?: string; sourceSheet?: string }>;
+  it("publishes four incident animation frames, three proportional engine silhouettes, and eight animal species", () => {
+    const props = manifest.props as Record<string, { size: number[]; occupiedSize?: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string }>;
     for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) {
       expect(props[key], key).toMatchObject({
-        footprintCells: [5, 2],
+        size: [48, 16],
+        occupiedSize: [46, 14],
+        footprintCells: [6, 2],
         artSource: "HAND_AUTHORED_NATIVE",
-        sourceSheet: "hand-authored/ambient/fire-engines-v3.png",
+        sourceSheet: "hand-authored/ambient/fire-engines-v4.png",
       });
     }
     for (const prefix of ["incident-flame", "incident-smoke"]) {

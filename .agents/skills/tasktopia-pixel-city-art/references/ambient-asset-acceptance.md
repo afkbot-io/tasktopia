@@ -38,6 +38,7 @@ Reject the source before catalog registration when any item applies:
 - Distinct models must differ structurally: compact, sedan, estate, taxi, van, pickup, electric hatch, or classic car. A color swap is not a model.
 - Every model must have a unique full RGBA drawing and a visibly different source-level body/roof/cargo structure. The reviewed contact sheet is the silhouette gate: tiny runtime cars may share the same safe lane envelope, so an alpha-bounds hash alone is not proof of diversity.
 - City buses use the same three-view contract but occupy `56x24 px` horizontally and `24x56 px` vertically (`7x3` or `3x7` cells). Their opaque subject must occupy at least `52x21 px` horizontally and `21x52 px` north/south. The long roof, window rhythm, front/rear lighting and three-cell width must remain readable at native `1x`. A short vehicle padded inside the large canvas is blocking. Buses run only on canonical seven-cell collector/arterial/highway roads.
+- Parked fire engines use a `48x16 px` east-facing canvas with an exact `46x14 px` connected opaque body and a `6x2` visual footprint. This is two current passenger-car canvases long and remains below the `56x24 px` bus envelope. Pumper, rescue and ladder variants require different tank/bay/ladder silhouettes; palette-only variants, disconnected wheels/equipment or a stale smaller source are blocking.
 
 ## Transit-stop gate
 

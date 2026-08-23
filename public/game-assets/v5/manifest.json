@@ -15519,23 +15519,23 @@
       "label": "Пожарная автоцистерна",
       "path": "props/fire-engine-horizontal.png",
       "size": [
-        40,
+        48,
         16
       ],
       "footprintCells": [
-        5,
+        6,
         2
       ],
       "anchorPx": [
-        20,
+        24,
         16
       ],
       "occupiedSize": [
-        38,
-        12
+        46,
+        14
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v4.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -15543,23 +15543,23 @@
       "label": "Пожарно-спасательная машина",
       "path": "props/fire-engine-rescue.png",
       "size": [
-        40,
+        48,
         16
       ],
       "footprintCells": [
-        5,
+        6,
         2
       ],
       "anchorPx": [
-        20,
+        24,
         16
       ],
       "occupiedSize": [
-        38,
-        12
+        46,
+        14
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v4.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -15567,23 +15567,23 @@
       "label": "Пожарная автолестница",
       "path": "props/fire-engine-ladder.png",
       "size": [
-        40,
+        48,
         16
       ],
       "footprintCells": [
-        5,
+        6,
         2
       ],
       "anchorPx": [
-        20,
+        24,
         16
       ],
       "occupiedSize": [
-        38,
-        12
+        46,
+        14
       ],
       "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v3.png",
+      "sourceSheet": "hand-authored/ambient/fire-engines-v4.png",
       "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
       "baseFacing": "EAST"
     },
@@ -20358,5 +20358,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "cc7001d090c0148b"
+  "assetRevision": "83304c5abf27721c"
 }

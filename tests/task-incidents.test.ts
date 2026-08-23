@@ -5,6 +5,7 @@ import {
   incidentVisualLayout,
   incidentVisualProfile,
   incidentWaterJetFrame,
+  incidentWaterTargetFrame,
   planIncidentEngines,
 } from "../src/client/task-incidents";
 import type { ChunkTaskDto } from "../src/shared/contracts";
@@ -160,6 +161,35 @@ describe("incidentWaterJetFrame", () => {
     expect(second.core.at(-1)).toEqual(first.core.at(-1));
     expect(second.highlights).not.toEqual(first.highlights);
     expect(second.spray).not.toEqual(first.spray);
+  });
+});
+
+describe("incidentWaterTargetFrame", () => {
+  it("smoothly retargets the hose across every burning facade point", () => {
+    const targets = [
+      { x: -32, y: -96 },
+      { x: 4, y: -132 },
+      { x: 38, y: -72 },
+    ];
+
+    const first = incidentWaterTargetFrame(targets, 600, 0);
+    const turning = incidentWaterTargetFrame(targets, 1_760, 0);
+    const second = incidentWaterTargetFrame(targets, 2_000, 0);
+    const third = incidentWaterTargetFrame(targets, 3_600, 0);
+
+    expect(turning).toBeDefined();
+    if (!turning) throw new Error("water target transition is missing");
+    expect(first).toMatchObject({ index: 0, target: targets[0] });
+    expect(turning.index).toBe(1);
+    expect(turning.target.x).toBeGreaterThan(targets[0]!.x);
+    expect(turning.target.x).toBeLessThan(targets[1]!.x);
+    expect(second).toMatchObject({ index: 1, target: targets[1] });
+    expect(third).toMatchObject({ index: 2, target: targets[2] });
+  });
+
+  it("keeps the only available fire point stable", () => {
+    const target = { x: 12, y: -80 };
+    expect(incidentWaterTargetFrame([target], 18_000, 317)).toEqual({ index: 0, target });
   });
 });
 

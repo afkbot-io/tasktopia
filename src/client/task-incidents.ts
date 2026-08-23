@@ -22,6 +22,10 @@ export type IncidentWaterJetFrame = {
   highlights: IncidentWaterPixel[];
   spray: IncidentWaterPixel[];
 };
+export type IncidentWaterTargetFrame = {
+  index: number;
+  target: { x: number; y: number };
+};
 
 const FIRE_X_FRACTIONS = [0, 1, 0.2, 0.8, 0.4, 0.6] as const;
 const FIRE_Y_FRACTIONS = [0.72, 0.34, 0.5, 0.82, 0.22, 0.61] as const;
@@ -138,6 +142,42 @@ export function incidentWaterJetFrame(
     size: index < 2 ? 2 : 1,
   }));
   return { core, highlights, spray };
+}
+
+const WATER_TARGET_HOLD_MS = 1_600;
+const WATER_TARGET_TURN_MS = 320;
+
+/**
+ * Select the facade point currently being extinguished. A crew holds each
+ * point long enough for the stream to read at native scale, then moves the
+ * nozzle across the facade over a short pixel-aligned transition instead of
+ * teleporting one diagonal line to another.
+ */
+export function incidentWaterTargetFrame(
+  targets: ReadonlyArray<{ x: number; y: number }>,
+  timeMs: number,
+  phaseMs = 0,
+): IncidentWaterTargetFrame | undefined {
+  if (targets.length === 0) return undefined;
+  if (targets.length === 1) return { index: 0, target: targets[0]! };
+
+  const elapsed = Math.max(0, timeMs + phaseMs);
+  const cycle = Math.floor(elapsed / WATER_TARGET_HOLD_MS);
+  const index = cycle % targets.length;
+  const current = targets[index]!;
+  const localMs = elapsed % WATER_TARGET_HOLD_MS;
+  if (localMs >= WATER_TARGET_TURN_MS) return { index, target: current };
+
+  const previous = targets[(index - 1 + targets.length) % targets.length]!;
+  const linear = localMs / WATER_TARGET_TURN_MS;
+  const eased = linear * linear * (3 - 2 * linear);
+  return {
+    index,
+    target: {
+      x: Math.round(previous.x + (current.x - previous.x) * eased),
+      y: Math.round(previous.y + (current.y - previous.y) * eased),
+    },
+  };
 }
 
 export function incidentMode(task: Pick<ChunkTaskDto, "workItemType" | "status" | "defectSummary">): IncidentMode {

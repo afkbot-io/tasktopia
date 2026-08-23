@@ -39,7 +39,7 @@ import {
   type TrafficJunction,
 } from "../agent-routing";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
-import { incidentMode, incidentVisualLayout, incidentVisualProfile, incidentWaterJetFrame, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
+import { incidentMode, incidentVisualLayout, incidentVisualProfile, incidentWaterJetFrame, incidentWaterTargetFrame, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
 import { ambientMotionPresentation } from "../ambient-motion";
 import { animalPresentation } from "../animal-presentation";
 import {
@@ -111,7 +111,7 @@ type IncidentView = {
   smokePlumes: Array<{ frameA: Sprite; frameB: Sprite; alpha: number }>;
   beacon: Graphics;
   water: Graphics;
-  waterJet: { source: { x: number; y: number }; target: { x: number; y: number } };
+  waterJet: { source: { x: number; y: number }; targets: Array<{ x: number; y: number }>; targetIndex: number };
   phaseMs: number;
 };
 type WorldRuntime = {
@@ -690,11 +690,14 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   });
 
   const water = new Graphics();
-  const waterTarget = layout.flameAnchors[Math.floor(layout.flameAnchors.length / 2)] ?? alarmAnchor;
-  const targetX = waterTarget.x + 3;
-  const targetY = waterTarget.y - 2;
-  const waterJet = { source: { x: engineX - 9, y: -13 }, target: { x: targetX, y: targetY } };
-  drawIncidentWaterJet(water, waterJet.source, waterJet.target, 0, visualSeed % 700);
+  const responseAnchors = layout.flameAnchors.length > 0 ? layout.flameAnchors : layout.smokeAnchors;
+  const targets = (responseAnchors.length > 0 ? responseAnchors : [alarmAnchor]).map((anchor) => ({
+    x: anchor.x + 3,
+    y: anchor.y - 2,
+  }));
+  const initialTarget = incidentWaterTargetFrame(targets, 0, visualSeed % 700)!;
+  const waterJet = { source: { x: engineX - 9, y: -13 }, targets, targetIndex: initialTarget.index };
+  drawIncidentWaterJet(water, waterJet.source, initialTarget.target, 0, visualSeed % 700);
 
   const hasFlame = profile.burning;
   const hasWater = fullResponse && (profile.burning || mode === "DEFECT_REPAIRING");
@@ -1436,7 +1439,19 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             plume.frameA.alpha = plume.frameB.alpha = plume.alpha + Math.sin(time * 0.004 + index) * 0.08;
           });
           incident.beacon.alpha = Math.floor(time / 160) % 2 ? 1 : 0.28;
-          if (incident.water.visible) drawIncidentWaterJet(incident.water, incident.waterJet.source, incident.waterJet.target, time, incident.phaseMs);
+          if (incident.water.visible) {
+            const targetFrame = incidentWaterTargetFrame(incident.waterJet.targets, simulationTimeMs, incident.phaseMs);
+            if (targetFrame) {
+              if (incident.waterJet.targetIndex !== targetFrame.index) {
+                incident.waterJet.targetIndex = targetFrame.index;
+                host.dataset.incidentWaterTargetIndexes = [...incidentViews.values()]
+                  .filter((view) => view.water.visible)
+                  .map((view) => view.waterJet.targetIndex)
+                  .join(",");
+              }
+              drawIncidentWaterJet(incident.water, incident.waterJet.source, targetFrame.target, time, incident.phaseMs);
+            }
+          }
         }
         if (!airplane) {
           nextFlybyMs -= elapsed;
@@ -2014,6 +2029,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host!.dataset.incidentActiveDefects = String([...incidentViews.values()].reduce((sum, view) => sum + view.profile.activeDefects, 0));
         host!.dataset.incidentSmokeStrength = String(Math.max(0, ...[...incidentViews.values()].map((view) => view.profile.smokeStrength)));
         host!.dataset.incidentWaterJets = String([...incidentViews.values()].filter((view) => view.water.visible).length);
+        host!.dataset.incidentWaterTargets = String(Math.max(0, ...[...incidentViews.values()].map((view) => view.waterJet.targets.length)));
+        host!.dataset.incidentWaterTargetIndexes = [...incidentViews.values()].filter((view) => view.water.visible).map((view) => view.waterJet.targetIndex).join(",");
         host!.dataset.incidentModes = [...incidentViews.values()].map((view) => view.mode).sort().join(",");
         host!.dataset.entityReplacements = String(entityReplacementCount);
 

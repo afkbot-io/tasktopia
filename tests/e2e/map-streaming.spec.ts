@@ -537,6 +537,9 @@ test("realtime task status patches its entity without refetching or rebaking sta
     await expect.poll(async () => Number(await host.getAttribute("data-incident-smoke-strength")), { timeout: 30_000 }).toBe(6);
     await expect.poll(async () => Number(await host.getAttribute("data-incident-fires")), { timeout: 30_000 }).toBe(1);
     await expect.poll(async () => Number(await host.getAttribute("data-incident-water-jets")), { timeout: 30_000 }).toBe(1);
+    await expect.poll(async () => Number(await host.getAttribute("data-incident-water-targets")), { timeout: 30_000 }).toBeGreaterThan(1);
+    const targetIndex = await host.getAttribute("data-incident-water-target-indexes");
+    await expect.poll(async () => await host.getAttribute("data-incident-water-target-indexes"), { timeout: 4_000 }).not.toBe(targetIndex);
     if (incidentScreenshotPath) {
       await page.waitForTimeout(420);
       await page.screenshot({ path: incidentScreenshotPath, fullPage: true });

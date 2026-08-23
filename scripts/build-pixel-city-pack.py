@@ -2381,7 +2381,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         image.save(target, optimize=True)
         if key in PARK_FEATURE_FOOTPRINTS: footprint = list(PARK_FEATURE_FOOTPRINTS[key])
         elif key == "playground-small": footprint = [3, 2]
-        elif key in {"boat-horizontal-a", "boat-horizontal-b", "fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"}: footprint = [3, 1]
+        elif key in {"fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"}: footprint = [6, 2]
+        elif key in {"boat-horizontal-a", "boat-horizontal-b"}: footprint = [3, 1]
         elif key in {"boat-vertical-a", "boat-vertical-b"}: footprint = [1, 3]
         elif key in {"bus-stop-horizontal", "guardrail-horizontal", "fence-horizontal", "archive-fence-horizontal", "archive-security-barrier"}: footprint = [2, 1]
         elif key in {"bus-stop-vertical", "guardrail-vertical", "fence-vertical", "archive-fence-vertical"}: footprint = [1, 2]
