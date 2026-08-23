@@ -132,8 +132,8 @@ describe("active building catalog", () => {
   it("registers crisp incident-response sprites on the same pixel grid", () => {
     for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) {
       expect(PROP_CATALOG[key], key).toMatchObject({
-        size: { width: 48, height: 16 },
-        footprint: { width: 6, height: 2 },
+        size: { width: 56, height: 24 },
+        footprint: { width: 7, height: 3 },
       });
     }
     for (const key of ["incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"]) {

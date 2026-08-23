@@ -34,29 +34,29 @@ def main() -> None:
     images = [(label, Image.open(RUNTIME / "props" / f"{key}.png").convert("RGBA")) for key, label in keys]
     car = Image.open(RUNTIME / "vehicles/sedan-red-horizontal.png").convert("RGBA")
     bus = Image.open(RUNTIME / "props/city-bus-horizontal.png").convert("RGBA")
-    sheet = Image.new("RGBA", (900, 560), BACKGROUND)
+    sheet = Image.new("RGBA", (960, 670), BACKGROUND)
     draw = ImageDraw.Draw(sheet)
     font = ImageFont.load_default()
     draw.text((20, 16), "TASKTOPIA FIRE ENGINE FAMILY - NATIVE 1x / NEAREST 4x", fill=TEXT, font=font)
 
     for row, (label, image) in enumerate(images):
-        top = 48 + row * 128
+        top = 48 + row * 150
         draw.text((20, top), label, fill=TEXT, font=font)
-        native_panel = road_panel(132, 32, 8)
+        native_panel = road_panel(144, 40, 8)
         native_panel.alpha_composite(image, (8, 8))
         sheet.alpha_composite(native_panel, (20, top + 18))
-        draw.text((20, top + 54), "native 48x16 / body 46x14", fill=MUTED, font=font)
+        draw.text((20, top + 64), "native 56x24 / body 54x22", fill=MUTED, font=font)
 
         scale = 4
-        large_panel = road_panel(244, 80, 32)
+        large_panel = road_panel(256, 112, 32)
         large = image.resize((image.width * scale, image.height * scale), Image.Resampling.NEAREST)
         large_panel.alpha_composite(large, (16, 8))
         sheet.alpha_composite(large_panel, (190, top + 8))
-        draw.text((450, top + 36), "4x nearest", fill=MUTED, font=font)
+        draw.text((470, top + 50), "4x nearest", fill=MUTED, font=font)
 
-    comparison_y = 448
-    draw.text((20, comparison_y), "SCALE: CAR 24x16  |  FIRE 48x16  |  BUS 56x24", fill=TEXT, font=font)
-    comparison = road_panel(560, 80, 32)
+    comparison_y = 510
+    draw.text((20, comparison_y), "SCALE: CAR 24x16  |  FIRE 56x24  |  BUS 56x24", fill=TEXT, font=font)
+    comparison = road_panel(620, 116, 32)
     scale = 3
     x = 18
     for image in (car, images[0][1], bus):

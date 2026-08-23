@@ -15519,72 +15519,72 @@
       "label": "Пожарная автоцистерна",
       "path": "props/fire-engine-horizontal.png",
       "size": [
-        48,
-        16
+        56,
+        24
       ],
       "footprintCells": [
-        6,
-        2
+        7,
+        3
       ],
       "anchorPx": [
-        24,
-        16
+        28,
+        24
       ],
       "occupiedSize": [
-        46,
-        14
+        54,
+        22
       ],
-      "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v5.png",
-      "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/fire-engines-v6.png",
+      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE",
       "baseFacing": "EAST"
     },
     "fire-engine-rescue": {
       "label": "Пожарно-спасательная машина",
       "path": "props/fire-engine-rescue.png",
       "size": [
-        48,
-        16
+        56,
+        24
       ],
       "footprintCells": [
-        6,
-        2
+        7,
+        3
       ],
       "anchorPx": [
-        24,
-        16
+        28,
+        24
       ],
       "occupiedSize": [
-        46,
-        14
+        54,
+        22
       ],
-      "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v5.png",
-      "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/fire-engine-rescue-v6.png",
+      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE",
       "baseFacing": "EAST"
     },
     "fire-engine-ladder": {
       "label": "Пожарная автолестница",
       "path": "props/fire-engine-ladder.png",
       "size": [
-        48,
-        16
+        56,
+        24
       ],
       "footprintCells": [
-        6,
-        2
+        7,
+        3
       ],
       "anchorPx": [
-        24,
-        16
+        28,
+        24
       ],
       "occupiedSize": [
-        46,
-        14
+        54,
+        22
       ],
-      "artSource": "HAND_AUTHORED_NATIVE",
-      "sourceSheet": "hand-authored/ambient/fire-engines-v5.png",
-      "visualProfile": "TASKTOPIA_V5_EMERGENCY_VEHICLE_FRONTAL_TOP",
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/ambient/fire-engines-v6.png",
+      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE",
       "baseFacing": "EAST"
     },
     "boat-horizontal-a": {
@@ -20358,5 +20358,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "06a0560a513bd8ac"
+  "assetRevision": "7b5ba56b141359cb"
 }

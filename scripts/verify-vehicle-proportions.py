@@ -64,7 +64,7 @@ def opaque_runs(alpha: Image.Image, y: int) -> list[int]:
 
 
 def assert_fire_engine_projection(key: str, image: Image.Image) -> None:
-    """Reject flat box trucks that do not share the passenger-car camera."""
+    """Require the same bus-class envelope and near-top wheel profile as transit."""
     alpha = image.getchannel("A")
     bounds = alpha.getbbox()
     assert bounds is not None
@@ -78,13 +78,14 @@ def assert_fire_engine_projection(key: str, image: Image.Image) -> None:
         rows.append((min(xs), max(xs), len(xs)))
     row_widths = {width for _, _, width in rows}
     front_edges = {row_right for _, row_right, _ in rows}
-    full_width_rows = sum(width == right - left for _, _, width in rows)
-
-    assert fill_ratio <= 0.755, f"{key}: boxy silhouette fill ratio {fill_ratio:.3f}"
-    assert len(row_widths) >= 6, f"{key}: flat silhouette has only {len(row_widths)} row widths"
-    assert len(front_edges) >= 5, f"{key}: cab/front lacks a stepped east-facing profile"
-    assert full_width_rows <= 3, f"{key}: {full_width_rows} full rectangular body rows"
-    assert opaque_runs(alpha, bottom - 1) == [3, 3], f"{key}: wheels lack rounded 3 px ground contacts"
+    bottom_runs = opaque_runs(alpha, bottom - 1)
+    assert 0.84 <= fill_ratio <= 0.97, f"{key}: implausible heavy-vehicle fill ratio {fill_ratio:.3f}"
+    assert len(row_widths) >= 4, f"{key}: flat silhouette has only {len(row_widths)} row widths"
+    assert len(front_edges) >= 4, f"{key}: cab/front lacks a stepped east-facing profile"
+    assert rows[0][2] < right - left, f"{key}: roof/top plane fills the full rectangular envelope"
+    assert len(bottom_runs) == 2 and all(3 <= width <= 6 for width in bottom_runs), (
+        f"{key}: expected two bus-scale rounded wheel contacts, got {bottom_runs}"
+    )
 
 
 def main() -> None:
@@ -117,17 +118,26 @@ def main() -> None:
         checked.append((key, images))
 
     fire_engines: dict[str, Image.Image] = {}
-    for key in ("fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"):
+    fire_sources = {
+        "fire-engine-horizontal": "ai-authored/ambient/fire-engines-v6.png",
+        "fire-engine-rescue": "ai-authored/ambient/fire-engine-rescue-v6.png",
+        "fire-engine-ladder": "ai-authored/ambient/fire-engines-v6.png",
+    }
+    for key, source_sheet in fire_sources.items():
         entry = manifest["props"][key]
         image = Image.open(RUNTIME / entry["path"]).convert("RGBA")
-        assert image.size == (48, 16), f"{key}: canvas {image.size}"
+        assert image.size == (56, 24), f"{key}: canvas {image.size}"
         bounds = image.getchannel("A").getbbox()
         assert bounds is not None
-        assert (bounds[2] - bounds[0], bounds[3] - bounds[1]) == (46, 14), f"{key}: bounds {bounds}"
+        assert (bounds[2] - bounds[0], bounds[3] - bounds[1]) == (54, 22), f"{key}: bounds {bounds}"
         assert set(image.getchannel("A").getdata()) <= {0, 255}, f"{key}: soft alpha"
         assert component_count(image) == 1, f"{key}: disconnected body"
-        assert entry["footprintCells"] == [6, 2], f"{key}: footprint {entry['footprintCells']}"
-        assert entry.get("sourceSheet") == "hand-authored/ambient/fire-engines-v5.png", f"{key}: stale source"
+        assert entry["footprintCells"] == [7, 3], f"{key}: footprint {entry['footprintCells']}"
+        assert entry.get("sourceSheet") == source_sheet, f"{key}: stale source"
+        assert entry.get("artSource") == "AI_AUTHORED", f"{key}: source is not AI-authored"
+        assert entry.get("visualProfile") == "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE", (
+            f"{key}: stale visual profile"
+        )
         assert_fire_engine_projection(key, image)
         fire_engines[key] = image
     for left_key, right_key in itertools.combinations(fire_engines, 2):

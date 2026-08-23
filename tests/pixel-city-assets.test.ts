@@ -286,13 +286,18 @@ describe("Pixel City active asset contract", () => {
 
   it("publishes four incident animation frames, three proportional engine silhouettes, and eight animal species", () => {
     const props = manifest.props as Record<string, { size: number[]; occupiedSize?: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string }>;
-    for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) {
+    const fireSources: Record<string, string> = {
+      "fire-engine-horizontal": "ai-authored/ambient/fire-engines-v6.png",
+      "fire-engine-rescue": "ai-authored/ambient/fire-engine-rescue-v6.png",
+      "fire-engine-ladder": "ai-authored/ambient/fire-engines-v6.png",
+    };
+    for (const [key, sourceSheet] of Object.entries(fireSources)) {
       expect(props[key], key).toMatchObject({
-        size: [48, 16],
-        occupiedSize: [46, 14],
-        footprintCells: [6, 2],
-        artSource: "HAND_AUTHORED_NATIVE",
-        sourceSheet: "hand-authored/ambient/fire-engines-v5.png",
+        size: [56, 24],
+        occupiedSize: [54, 22],
+        footprintCells: [7, 3],
+        artSource: "AI_AUTHORED",
+        sourceSheet,
       });
     }
     for (const prefix of ["incident-flame", "incident-smoke"]) {
