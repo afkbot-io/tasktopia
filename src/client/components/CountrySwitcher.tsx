@@ -9,10 +9,11 @@ const roleLabel: Record<CountryRole, string> = {
   VIEWER: "Наблюдатель",
 };
 
-export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onManage, onCreate }: {
+export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onPlan, onManage, onCreate }: {
   bootstrap: BootstrapDto;
   onClose: () => void;
   onBootstrap: (bootstrap: BootstrapDto) => void;
+  onPlan: () => void;
   onManage: () => void;
   onCreate: () => void;
 }) {
@@ -69,6 +70,7 @@ export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onManage, onC
       </button>)}
     </div>
     <div className="country-switcher-actions">
+      <button type="button" className="country-plan-action" onClick={onPlan}>План страны</button>
       <button type="button" onClick={onManage}>Редактировать страну</button>
       <button type="button" className="country-create-action" onClick={onCreate}>＋ Новая страна</button>
     </div>

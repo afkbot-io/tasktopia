@@ -13,6 +13,7 @@ import type {
 } from "./contracts";
 
 export const COUNTRY_ATLAS_TERRAIN_TILE_CELLS = 4;
+export const COUNTRY_ATLAS_SCHEMA_VERSION = 5 as const;
 
 export type CountryAtlasScale = 0.5 | 0.375 | 0.25 | 0.125 | 0.0625;
 
@@ -21,6 +22,7 @@ export type CountryAtlasDistrictDto = {
   name: string;
   status: DistrictDto["status"];
   color: string;
+  progress: number;
   sourceCenter: { x: number; y: number };
   sourceBounds: Rect;
   atlasCenter: Cell;
@@ -99,6 +101,7 @@ export type CountryAtlasCityDto = {
   atlasCenter: Cell;
   atlasBounds: Rect;
   labelBounds: Rect;
+  labelAnchor: Cell;
   scale: CountryAtlasScale;
   miniatureSizePx: { width: number; height: number };
   atlasMask: Cell[];
@@ -111,7 +114,7 @@ export type CountryAtlasCityDto = {
 };
 
 export type CountryAtlasDto = {
-  schemaVersion: 4;
+  schemaVersion: typeof COUNTRY_ATLAS_SCHEMA_VERSION;
   worldVersion: number;
   terrainSeed: number;
   bounds: Rect;

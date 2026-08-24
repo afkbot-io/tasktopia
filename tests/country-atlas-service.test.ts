@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
+import type { RealtimeEvent } from "../src/shared/contracts";
 
 describe("country atlas read model", () => {
   let db: Db;
@@ -40,7 +41,7 @@ describe("country atlas read model", () => {
     const atlas = await service.getCountryAtlas(countryId);
     const sourceFeatures = (await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id);
 
-    expect(atlas).toMatchObject({ schemaVersion: 4, cities: [{ id: city.id, name: "Riverside" }] });
+    expect(atlas).toMatchObject({ schemaVersion: 5, cities: [{ id: city.id, name: "Riverside" }] });
     expect(Number.isInteger(atlas.terrainSeed)).toBe(true);
     expect(atlas.cities[0]!.districts).toHaveLength(3);
     for (const district of atlas.cities[0]!.districts) {
@@ -65,6 +66,37 @@ describe("country atlas read model", () => {
       expect(building.atlasFootprint).not.toHaveLength(0);
       expect(atlas.cities[0]!.atlasMask).toContainEqual(building.atlasOrigin);
     }
+    const statusEvent: RealtimeEvent = {
+      id: 99,
+      countryId,
+      type: "task.status_changed",
+      worldVersion: atlas.worldVersion + 1,
+      payload: { taskId: tasks[0]!.id, status: "IN_PROGRESS", progress: 60, stage: 3, groundChanged: false },
+      createdAt: "2026-08-24T00:00:00.000Z",
+    };
+    // A newer unrelated event can advance the general world-version fence
+    // before a delayed visual event reaches this replica. Atlas invalidation
+    // must still apply the delayed event when its snapshot is older.
+    service.acceptExternalEvent({
+      ...statusEvent,
+      id: 98,
+      worldVersion: statusEvent.worldVersion + 1,
+      type: "task.comment_added",
+      payload: { taskId: tasks[0]!.id },
+    });
+    service.acceptExternalEvent(statusEvent);
+    const patched = await service.getCountryAtlas(countryId);
+    expect(patched.worldVersion).toBe(statusEvent.worldVersion);
+    expect(patched.cities[0]!.buildings[0]).toMatchObject({ progress: 60, stage: 3, status: "IN_PROGRESS" });
+    expect(patched.cities[0]!.districts.find((district) => district.id === tasks[0]!.districtId)!.progress).toBe(60);
+
+    const listCities = vi.spyOn(service, "listCities");
+    service.acceptExternalEvent({ ...statusEvent, id: 100, worldVersion: statusEvent.worldVersion + 2, type: "task.comment_added", payload: { taskId: tasks[0]!.id } });
+    await service.getCountryAtlas(countryId);
+    expect(listCities).not.toHaveBeenCalled();
+    service.acceptExternalEvent({ ...statusEvent, id: 101, worldVersion: statusEvent.worldVersion + 3, type: "district.renamed", payload: { districtId: districts[0]!.id } });
+    await service.getCountryAtlas(countryId);
+    expect(listCities).toHaveBeenCalled();
     expect((await service.listCities(countryId))[0]!.center).toEqual(city.center);
   }, 30_000);
 });

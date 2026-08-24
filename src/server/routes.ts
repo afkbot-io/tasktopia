@@ -236,7 +236,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const atlas = await service.getCountryAtlas(user.countryId);
             const etag = `"${user.countryId}-${atlas.worldVersion}-atlas-${atlas.schemaVersion}"`;
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
-            return reply.header("ETag", etag).header("Cache-Control", "private, no-cache, must-revalidate").send(atlas);
+            return reply.header("ETag", etag).header("Cache-Control", "private, max-age=30, stale-while-revalidate=300").send(atlas);
           });
 
   app.get("/api/plan/cities", async (request, reply) => {

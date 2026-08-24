@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import type { BootstrapDto, CityDto, RealtimeEvent, Rect, TaskSearchResultDto } from "../shared/contracts";
+import type { BootstrapDto, CityDto, RealtimeEvent, TaskSearchResultDto } from "../shared/contracts";
 import type { CountryAtlasCityDto } from "../shared/country-atlas-contract";
+import { enqueueCountryAtlasEvent } from "../shared/country-atlas-events";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
 import { CountryPanel } from "./components/CountryPanel";
@@ -8,6 +9,7 @@ import { CountrySwitcher } from "./components/CountrySwitcher";
 import { PlanDrawer } from "./components/PlanDrawer";
 import { TaskSearch } from "./components/TaskSearch";
 import { Button, cx } from "./components/ui";
+import { eventInvalidation, type MapInvalidation } from "./map-invalidation";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
 const CountryAtlasCanvas = lazy(() => import("./components/CountryAtlasCanvas").then((module) => ({ default: module.CountryAtlasCanvas })));
@@ -16,28 +18,8 @@ const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
 type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
-type MapInvalidation = {
-  id: number; worldVersion: number; type: string; affectedBounds?: Rect; taskId?: string;
-  status?: string; progress?: number; stage?: number; groundChanged?: boolean;
-};
 type RealtimeNotice = { id: number; text: string; tone: "info" | "success" };
 type CityFocus = Pick<CityDto, "id" | "name" | "center" | "bounds">;
-
-function eventInvalidation(event: RealtimeEvent): MapInvalidation {
-  const candidate = event.payload.affectedBounds as Partial<Rect> | undefined;
-  const affectedBounds = candidate
-    && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite)
-    ? candidate as Rect
-    : undefined;
-  return {
-    id: event.id, worldVersion: event.worldVersion, type: event.type, affectedBounds,
-    taskId: typeof event.payload.taskId === "string" ? event.payload.taskId : undefined,
-    status: typeof event.payload.status === "string" ? event.payload.status : undefined,
-    progress: typeof event.payload.progress === "number" ? event.payload.progress : undefined,
-    stage: typeof event.payload.stage === "number" ? event.payload.stage : undefined,
-    groundChanged: typeof event.payload.groundChanged === "boolean" ? event.payload.groundChanged : undefined,
-  };
-}
 
 function playCompletionChime(): void {
   if (document.hidden) return;
@@ -81,6 +63,7 @@ export function App() {
   const lastWorldEventIdRef = useRef(0);
   const [revision, setRevision] = useState(0);
   const [mapInvalidation, setMapInvalidation] = useState<MapInvalidation>();
+  const [atlasEvents, setAtlasEvents] = useState<RealtimeEvent[]>([]);
   const [online, setOnline] = useState(true);
   const [notices, setNotices] = useState<RealtimeNotice[]>([]);
   const countryId = bootstrap?.country.id;
@@ -98,6 +81,9 @@ export function App() {
   const hoverAtlasCity = useCallback((city: CountryAtlasCityDto | null) => {
     setHoveredAtlasCity(city ? { id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds } : null);
   }, []);
+  const acknowledgeAtlasEvents = useCallback((eventId: number) => {
+    setAtlasEvents((current) => current.filter((event) => event.id > eventId));
+  }, []);
 
   const logout = useCallback(async () => {
     await api("/api/auth/logout", { method: "POST" });
@@ -112,6 +98,7 @@ export function App() {
     if (eventCountryRef.current !== next.country.id) {
       eventCountryRef.current = next.country.id;
       lastWorldEventIdRef.current = next.eventCursor;
+      setAtlasEvents([]);
     }
     setBootstrap(next);
     setFocusCity(next.initialCity);
@@ -183,6 +170,7 @@ export function App() {
     if (event.countryId !== countryId || event.id <= lastWorldEventIdRef.current) return;
     lastWorldEventIdRef.current = event.id;
     setMapInvalidation(eventInvalidation(event));
+    setAtlasEvents((current) => enqueueCountryAtlasEvent(current, event));
     const completed = event.type === "task.status_changed" && event.payload.status === "COMPLETED";
     if (event.type.startsWith("task.") && event.type !== "task.comment_added") {
       const notice: RealtimeNotice = {
@@ -258,7 +246,7 @@ export function App() {
   const effectiveMapMode = bootstrap.stats.cities > 1 ? mapMode : "CITY";
   const headerCity = effectiveMapMode === "ATLAS" ? hoveredAtlasCity : activeCity;
   return <main className="grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
-    <header className="app-header relative z-10 grid min-h-[62px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 py-2 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:h-[62px] md:grid-cols-[minmax(0,1fr)_minmax(260px,400px)_minmax(0,1fr)] md:gap-3 md:px-4 md:py-0" aria-label="Панель управления страной">
+    <header className="app-header relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 py-1.5 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:grid-cols-[minmax(0,1fr)_minmax(240px,380px)_minmax(0,1fr)] md:gap-3 md:px-4 md:py-0" aria-label="Панель управления страной">
       <div className="order-1 flex min-w-0 items-center gap-2.5 md:gap-4">
         <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
         <div className="relative min-w-0">
@@ -266,7 +254,7 @@ export function App() {
           <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">СТРАНА</span>
           <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7] md:max-w-[240px]">{bootstrap.country.name}</strong>
         </button>
-        {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={applyBootstrap} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} onCreate={() => { setCountryMenuOpen(false); setCountryDialog("create"); }} />}
+        {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={applyBootstrap} onPlan={() => { setCountryMenuOpen(false); setPlanSection("cities"); setPlanOpen(true); }} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} onCreate={() => { setCountryMenuOpen(false); setCountryDialog("create"); }} />}
         </div>
         {headerCity && <div className="header-city hidden min-w-0 border-l border-[#304850] pl-4 sm:grid" aria-live="polite">
           <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">ГОРОД</span>
@@ -285,10 +273,9 @@ export function App() {
           <span className="hidden whitespace-nowrap 2xl:inline">Зданий · {bootstrap.stats.unfinishedBuildings}</span>
         </div>
         <nav className="flex items-center justify-end gap-1.5" aria-label="Действия карты">
-          {bootstrap.stats.cities > 1 && <Button className={cx("map-mode-button h-9 min-h-9 w-9 px-0", effectiveMapMode === "ATLAS" && "!border-signal !bg-[#3a321d] !text-signal")} aria-pressed={effectiveMapMode === "ATLAS"} aria-label={effectiveMapMode === "ATLAS" ? "Открыть выбранный город" : "Открыть карту страны"} title={effectiveMapMode === "ATLAS" ? "Открыть выбранный город" : "Открыть карту страны"} onClick={() => { setHoveredAtlasCity(null); setMapMode((value) => value === "ATLAS" ? "CITY" : "ATLAS"); }}><span aria-hidden="true">{effectiveMapMode === "ATLAS" ? "▤" : "▦"}</span></Button>}
-          <Button data-plan-trigger className={cx("min-h-9 px-3 text-xs", planOpen && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={planOpen} onClick={() => { setCountryMenuOpen(false); setPlanSection("cities"); setPlanOpen((value) => !value); }}>План</Button>
-          {effectiveMapMode === "CITY" && <Button className={cx("min-h-9 px-3 text-xs", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>}
-          <Button className="h-9 min-h-9 w-9 rounded-full px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
+          {bootstrap.stats.cities > 1 && <Button className={cx("header-control map-mode-button min-h-0 px-3 text-xs", effectiveMapMode === "ATLAS" && "!border-signal !bg-[#3a321d] !text-signal")} aria-pressed={effectiveMapMode === "ATLAS"} aria-label="Карта" title={effectiveMapMode === "ATLAS" ? "Вернуться в выбранный город" : "Открыть карту страны"} onClick={() => { setHoveredAtlasCity(null); setMapMode((value) => value === "ATLAS" ? "CITY" : "ATLAS"); }}><span>Карта</span></Button>}
+          {effectiveMapMode === "CITY" && <Button className={cx("header-control min-h-0 px-3 text-xs", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>}
+          <Button className="header-control account-button min-h-0 px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
         </nav>
       </div>
     </header>
@@ -298,10 +285,11 @@ export function App() {
         <Suspense fallback={<div className="app-loading" role="status"><div className="loader-square" /><span>Загружаем карту…</span></div>}>
           {effectiveMapMode === "ATLAS"
             ? <CountryAtlasCanvas
-                key={`${bootstrap.country.id}:${bootstrap.country.worldVersion}`}
+                key={bootstrap.country.id}
                 countryId={bootstrap.country.id}
-                worldVersion={bootstrap.country.worldVersion}
                 activeCityId={activeCity?.id}
+                events={atlasEvents}
+                onEventsProcessed={acknowledgeAtlasEvents}
                 onCitySelect={(city) => {
                   setFocusCity({ id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds });
                   setHoveredAtlasCity(null);
@@ -317,9 +305,6 @@ export function App() {
               />
             : <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} />}
         </Suspense>
-        <div className="map-help">{effectiveMapMode === "ATLAS"
-          ? <><span>Район — навести для сводки</span><span>Район — открыть по центру</span><span>Название — открыть весь город</span></>
-          : <><span>Перетаскивание — движение</span><span>Колесо — масштаб</span><span>Здание — карточка задачи</span></>}</div>
       </> : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Создайте первый город через MCP</h2><p>Подключите Tasktopia к MCP-клиенту, затем попросите его создать город. Карта обновится автоматически.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
       {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setMapMode("CITY"); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
     </section>

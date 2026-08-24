@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { gameAssetUrl, getBuilding, PROP_CATALOG, TERRAIN_SPRITES, type BuildingCatalogEntry } from "../../shared/catalog";
-import type { Cell, TerrainKind } from "../../shared/contracts";
+import type { Cell, RealtimeEvent, TerrainKind } from "../../shared/contracts";
 import {
+  COUNTRY_ATLAS_SCHEMA_VERSION,
   type CountryAtlasCityDto,
   type CountryAtlasDistrictDto,
   type CountryAtlasDto,
 } from "../../shared/country-atlas-contract";
 import { seededAtlasCutoutTerrain, seededAtlasMacroTerrain } from "../../shared/country-atlas-terrain";
+import { countryAtlasEventBatchImpact, patchCountryAtlasTaskProgress } from "../../shared/country-atlas-events";
+import { fitCountryAtlasBoundsToAspect } from "../../shared/country-atlas-viewport";
 import { api } from "../api";
 import { atlasBuildingPresentation } from "../country-atlas-presentation";
 
 const CELL = 8;
+const ATLAS_CACHE_PREFIX = `tasktopia:country-atlas:v${COUNTRY_ATLAS_SCHEMA_VERSION}:`;
 const DISTRICT_STATUS_LABEL: Record<CountryAtlasDistrictDto["status"], string> = {
   PLANNED: "Запланирован",
   ACTIVE: "Активный район",
@@ -20,6 +24,21 @@ const DISTRICT_STATUS_LABEL: Record<CountryAtlasDistrictDto["status"], string> =
 
 function terrainPatternId(terrain: TerrainKind, variant: number): string {
   return `atlas-terrain-${terrain.toLowerCase().replaceAll("_", "-")}-${variant}`;
+}
+
+function readCachedAtlas(countryId: string): CountryAtlasDto | null {
+  try {
+    const raw = window.sessionStorage.getItem(`${ATLAS_CACHE_PREFIX}${countryId}`);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as CountryAtlasDto;
+    return cached.schemaVersion === COUNTRY_ATLAS_SCHEMA_VERSION ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAtlas(countryId: string, atlas: CountryAtlasDto): void {
+  try { window.sessionStorage.setItem(`${ATLAS_CACHE_PREFIX}${countryId}`, JSON.stringify(atlas)); } catch { /* Optional fast path. */ }
 }
 
 function cutoutBoundary(cells: Cell[]): string {
@@ -112,16 +131,20 @@ function AtlasBuildingGlyph({ entry, identity, scale, groundX, groundY }: {
   </g>;
 }
 
-export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCitySelect, onDistrictSelect, onCityHover }: {
+export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsProcessed, onCitySelect, onDistrictSelect, onCityHover }: {
   countryId: string;
-  worldVersion: number;
   activeCityId?: string;
+  events: RealtimeEvent[];
+  onEventsProcessed: (eventId: number) => void;
   onCitySelect: (city: CountryAtlasCityDto) => void;
   onDistrictSelect: (city: CountryAtlasCityDto, district: CountryAtlasDistrictDto) => void;
   onCityHover: (city: CountryAtlasCityDto | null) => void;
 }) {
-  const [atlas, setAtlas] = useState<CountryAtlasDto | null>(null);
+  const [atlas, setAtlas] = useState<CountryAtlasDto | null>(() => readCachedAtlas(countryId));
   const [error, setError] = useState("");
+  const [hostAspect, setHostAspect] = useState(16 / 9);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const processedEventIdRef = useRef(0);
   const [hoveredDistrict, setHoveredDistrict] = useState<{ cityId: string; districtId: string } | null>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleDistrictHover = (next: { cityId: string; districtId: string }, immediate = false) => {
@@ -144,28 +167,83 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
   useEffect(() => {
     const controller = new AbortController();
     setError("");
-    void api<CountryAtlasDto>("/api/country-atlas", { signal: controller.signal })
-      .then(setAtlas)
+    setAtlas(readCachedAtlas(countryId));
+    void api<CountryAtlasDto>("/api/country-atlas", {
+      signal: controller.signal,
+      cache: "no-cache",
+      headers: { "Cache-Control": "no-cache" },
+    })
+      .then((next) => { setAtlas(next); writeCachedAtlas(countryId, next); })
       .catch((reason) => {
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось собрать карту страны");
       });
     return () => controller.abort();
-  }, [countryId, worldVersion]);
+  }, [countryId]);
+  useEffect(() => {
+    if (!atlas) return;
+    const pending = events
+      .filter((event) => event.countryId === countryId && event.id > processedEventIdRef.current)
+      .sort((left, right) => left.id - right.id);
+    if (pending.length === 0) return;
+    const latestEventId = pending.at(-1)!.id;
+    const batchImpact = countryAtlasEventBatchImpact(pending);
+    if (batchImpact !== "STRUCTURE") {
+      setAtlas((current) => {
+        if (!current) return current;
+        const updated = pending.reduce((snapshot, event) => patchCountryAtlasTaskProgress(snapshot, event), current);
+        if (updated !== current) writeCachedAtlas(countryId, updated);
+        return updated;
+      });
+      processedEventIdRef.current = latestEventId;
+      onEventsProcessed(latestEventId);
+      return;
+    }
+    const controller = new AbortController();
+    void api<CountryAtlasDto>("/api/country-atlas", { signal: controller.signal, cache: "reload" })
+      .then((next) => {
+        setAtlas(next);
+        writeCachedAtlas(countryId, next);
+        setError("");
+        processedEventIdRef.current = latestEventId;
+        onEventsProcessed(latestEventId);
+      })
+      .catch((reason) => {
+        if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось обновить карту страны");
+      });
+    return () => controller.abort();
+  }, [atlas, countryId, events, onEventsProcessed]);
   useEffect(() => () => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
   }, []);
 
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const update = () => {
+      const bounds = host.getBoundingClientRect();
+      if (bounds.width > 0 && bounds.height > 0) setHostAspect(bounds.width / bounds.height);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [atlas]);
+
+  const displayBounds = useMemo(() => atlas
+    ? fitCountryAtlasBoundsToAspect(atlas.bounds, hostAspect)
+    : { minX: 0, minY: 0, maxX: 0, maxY: 0 }, [atlas, hostAspect]);
+
   const viewport = useMemo(() => {
     if (!atlas) return "0 0 1 1";
-    return `${atlas.bounds.minX * CELL} ${atlas.bounds.minY * CELL} ${(atlas.bounds.maxX - atlas.bounds.minX + 1) * CELL} ${(atlas.bounds.maxY - atlas.bounds.minY + 1) * CELL}`;
-  }, [atlas]);
+    return `${displayBounds.minX * CELL} ${displayBounds.minY * CELL} ${(displayBounds.maxX - displayBounds.minX + 1) * CELL} ${(displayBounds.maxY - displayBounds.minY + 1) * CELL}`;
+  }, [atlas, displayBounds]);
   const seededTerrain = useMemo(() => {
     if (!atlas) return { macroTerrain: [], cutoutByCity: new Map<string, ReturnType<typeof seededAtlasCutoutTerrain>>() };
     return {
-      macroTerrain: seededAtlasMacroTerrain(atlas.terrainSeed, atlas.bounds, atlas.cities),
+      macroTerrain: seededAtlasMacroTerrain(atlas.terrainSeed, displayBounds, atlas.cities),
       cutoutByCity: new Map(atlas.cities.map((city) => [city.id, seededAtlasCutoutTerrain(atlas.terrainSeed, city)])),
     };
-  }, [atlas]);
+  }, [atlas, displayBounds]);
   const terrainPatterns = useMemo(() => {
     if (!atlas) return [];
     const combinations = new Map<string, { terrain: TerrainKind; variant: number }>();
@@ -181,21 +259,18 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
     const district = city?.districts.find((entry) => entry.id === hoveredDistrict.districtId);
     if (!city || !district) return null;
     const buildings = city.buildings.filter((building) => building.districtId === district.id);
-    const progress = buildings.length > 0
-      ? Math.round(buildings.reduce((total, building) => total + building.progress, 0) / buildings.length)
-      : 0;
-    const atlasMidpoint = (atlas.bounds.minX + atlas.bounds.maxX) / 2;
+    const atlasMidpoint = (displayBounds.minX + displayBounds.maxX) / 2;
     const opensLeft = city.atlasCenter.x > atlasMidpoint;
     const tooltipAnchorX = opensLeft ? city.atlasBounds.minX - 2 : city.atlasBounds.maxX + 2;
-    const x = (tooltipAnchorX - atlas.bounds.minX) / (atlas.bounds.maxX - atlas.bounds.minX + 1) * 100;
-    const y = (district.atlasCenter.y - atlas.bounds.minY) / (atlas.bounds.maxY - atlas.bounds.minY + 1) * 100;
-    return { city, district, buildings: buildings.length, progress, x, y, opensLeft };
-  }, [atlas, hoveredDistrict]);
+    const x = (tooltipAnchorX - displayBounds.minX) / (displayBounds.maxX - displayBounds.minX + 1) * 100;
+    const y = (district.atlasCenter.y - displayBounds.minY) / (displayBounds.maxY - displayBounds.minY + 1) * 100;
+    return { city, district, buildings: buildings.length, progress: district.progress, x, y, opensLeft };
+  }, [atlas, displayBounds, hoveredDistrict]);
 
-  if (error) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
+  if (error && !atlas) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
   if (!atlas) return <div className="atlas-state" role="status"><i /><span>Сжимаем расстояния между городами…</span></div>;
 
-  return <div className="country-atlas" data-country-atlas-cities={atlas.cities.length} onPointerMove={(event) => {
+  return <div ref={hostRef} className="country-atlas" data-country-atlas-cities={atlas.cities.length} onPointerMove={(event) => {
     const target = event.target instanceof Element ? event.target.closest<SVGGElement>(".atlas-city") : null;
     const city = target ? atlas.cities.find((entry) => entry.id === target.dataset.cityId) : undefined;
     onCityHover(city ?? null);
@@ -210,7 +285,7 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
           </pattern>;
         })}
       </defs>
-      <rect x={atlas.bounds.minX * CELL} y={atlas.bounds.minY * CELL} width={(atlas.bounds.maxX - atlas.bounds.minX + 1) * CELL} height={(atlas.bounds.maxY - atlas.bounds.minY + 1) * CELL} className="atlas-ground" />
+      <rect x={displayBounds.minX * CELL} y={displayBounds.minY * CELL} width={(displayBounds.maxX - displayBounds.minX + 1) * CELL} height={(displayBounds.maxY - displayBounds.minY + 1) * CELL} className="atlas-ground" />
       <g className="atlas-macro-terrain" aria-hidden="true">
         {seededTerrain.macroTerrain.map((tile) => <rect
           key={tile.id}
@@ -237,11 +312,14 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
         <g className="atlas-districts">
           {city.districts.map((district) => {
             const hovered = hoveredDistrict?.districtId === district.id;
+            const progressOpacity = (0.1 + district.progress * 0.0044).toFixed(3);
             return <g
               key={district.id}
               className="atlas-district"
               data-status={district.status}
               data-hovered={hovered ? "true" : "false"}
+              data-progress={district.progress}
+              style={{ "--atlas-progress-opacity": progressOpacity } as CSSProperties}
               role="button"
               tabIndex={0}
               aria-label={`${district.name}, ${DISTRICT_STATUS_LABEL[district.status]}`}
@@ -341,11 +419,13 @@ export function CountryAtlasCanvas({ countryId, worldVersion, activeCityId, onCi
           })}
         </g>
         <g className="atlas-city-label" role="button" tabIndex={0} aria-label={`Открыть город ${city.name}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onCitySelect(city); }}>
-          <path d={`M${city.atlasCenter.x * CELL - 4} ${city.labelBounds.maxY * CELL + CELL}h8l-4 5Z`} className="atlas-city-label-tab" />
+          <path d={`M${city.labelAnchor.x * CELL} ${(city.labelBounds.maxY + 1) * CELL}h8l-4 5Z`} className="atlas-city-label-tab" />
           <rect x={city.labelBounds.minX * CELL} y={city.labelBounds.minY * CELL} width={(city.labelBounds.maxX - city.labelBounds.minX + 1) * CELL} height={(city.labelBounds.maxY - city.labelBounds.minY + 1) * CELL} />
           {city.districts.some((district) => district.status === "ACTIVE") && <circle cx={city.labelBounds.minX * CELL + 14} cy={(city.labelBounds.minY + 2.45) * CELL} r="3.2" className="atlas-city-active-dot" />}
-          <text x={city.atlasCenter.x * CELL} y={(city.labelBounds.minY + 2.5) * CELL} textAnchor="middle">{city.name}</text>
-          <text x={city.atlasCenter.x * CELL} y={(city.labelBounds.minY + 4.85) * CELL} textAnchor="middle" className="atlas-city-meta">{city.districts.length} РАЙОНА · {city.buildings.length} ЗДАНИЙ</text>
+          <text x={(city.labelBounds.minX + city.labelBounds.maxX + 1) * CELL / 2} y={(city.labelBounds.minY + 2.5) * CELL} textAnchor="middle">{city.name}</text>
+          <text x={(city.labelBounds.minX + city.labelBounds.maxX + 1) * CELL / 2} y={(city.labelBounds.minY + 4.65) * CELL} textAnchor="middle" className="atlas-city-meta">{city.districts.length} РАЙОНА · {city.buildings.length} ЗДАНИЙ</text>
+          <rect x={city.labelBounds.minX * CELL + 8} y={(city.labelBounds.maxY + 1) * CELL - 3} width={(city.labelBounds.maxX - city.labelBounds.minX + 1) * CELL - 16} height="2" className="atlas-city-progress-track" />
+          <rect x={city.labelBounds.minX * CELL + 8} y={(city.labelBounds.maxY + 1) * CELL - 3} width={Math.max(0, ((city.labelBounds.maxX - city.labelBounds.minX + 1) * CELL - 16) * (city.districts.length > 0 ? city.districts.reduce((total, district) => total + district.progress, 0) / city.districts.length : 0) / 100)} height="2" className="atlas-city-progress-value" />
         </g>
       </g>)}
     </svg>

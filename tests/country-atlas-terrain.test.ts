@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seededAtlasCutoutTerrain, seededAtlasMacroTerrain } from "../src/shared/country-atlas-terrain";
+import { terrainAt } from "../src/shared/world-terrain";
 
 describe("client-seeded country atlas terrain", () => {
   it("covers the exact atlas bounds with deterministic square macro tiles", () => {
@@ -28,6 +29,7 @@ describe("client-seeded country atlas terrain", () => {
         name: "District",
         status: "ACTIVE",
         color: "#fff",
+        progress: 0,
         sourceCenter: { x: 96, y: 198 },
         sourceBounds: { minX: 90, minY: 190, maxX: 105, maxY: 205 },
         atlasCenter: { x: 8, y: 9 },
@@ -36,6 +38,8 @@ describe("client-seeded country atlas terrain", () => {
       }],
     });
     expect(cutout.map((tile) => tile.sourceCell)).toEqual([{ x: 96, y: 198 }, { x: 98, y: 198 }]);
-    expect(cutout.every((tile) => Number.isInteger(tile.variant))).toBe(true);
+    expect(cutout.map(({ terrain, variant }) => ({ terrain, variant }))).toEqual(
+      cutout.map(({ sourceCell }) => terrainAt(777, sourceCell.x, sourceCell.y)),
+    );
   });
 });

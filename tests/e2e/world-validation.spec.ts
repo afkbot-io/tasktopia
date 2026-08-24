@@ -46,7 +46,8 @@ test("validates and captures ten new-build cities", async ({ page }) => {
     // the requested city from the plan.
     const previousCity = await headerCity.textContent({ timeout: 1_000 }).catch(() => null);
     const previousAgentIds = await host.getAttribute("data-agent-ids", { timeout: 1_000 }).catch(() => null);
-    await page.getByRole("button", { name: "План", exact: true }).click();
+    await page.locator(".country-title-button").click();
+    await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
     const drawer = page.getByRole("complementary", { name: "План страны" });
     await expect(drawer).toBeVisible();
     await drawer.locator(".plan-row > button:first-child", { hasText: cities[index] }).click();
@@ -117,7 +118,8 @@ test("validates and captures ten new-build cities", async ({ page }) => {
     });
     if (index === cities.length - 1) {
       await page.setViewportSize({ width: 2560, height: 1440 });
-      await page.getByRole("button", { name: "План", exact: true }).click();
+      await page.locator(".country-title-button").click();
+      await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
       const wideDrawer = page.getByRole("complementary", { name: "План страны" });
       await expect(wideDrawer).toBeVisible();
       await wideDrawer.locator(".plan-row > button:first-child", { hasText: cities[index] }).click();

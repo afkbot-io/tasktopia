@@ -10,6 +10,7 @@ import { apiWithMetrics } from "../api";
 import { ChunkMaterializer } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
 import { loadGameAssets } from "../game-asset-loader";
+import type { MapInvalidation } from "../map-invalidation";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
 import {
   agentCellKey,
@@ -96,10 +97,6 @@ const GROUND_PRESERVING_EVENTS = new Set([
   "district.activated", "district.completed",
   "archive.record_created", "archive.record_deleted",
 ]);
-type MapInvalidation = {
-  id: number; worldVersion: number; type: string; affectedBounds?: Rect; taskId?: string;
-  status?: string; progress?: number; stage?: number; groundChanged?: boolean;
-};
 type FocusArea = { point: Cell; bounds: Rect };
 type IncidentView = {
   signature: string;

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.use({ viewport: { width: 1440, height: 900 } });
 test.skip(process.env.E2E_ATLAS_FIXTURE !== "true", "Run against the dedicated fixture with npm run test:atlas");
 
-test("all atlas cities hover safely and drive the compact header", async ({ page }) => {
+test("all atlas cities hover safely and drive the compact header", async ({ page }, testInfo) => {
   const browserErrors: string[] = [];
   const fullBuildingRequests: string[] = [];
   page.on("pageerror", (error) => browserErrors.push(error.message));
@@ -23,6 +23,17 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   const atlas = page.locator(".country-atlas");
   await expect(atlas).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
   await expect(page.getByRole("banner").getByLabel("MCP-интеграции")).toHaveCount(0);
+  const header = page.getByLabel("Панель управления страной");
+  await expect(header.getByRole("button", { name: "Карта", exact: true })).toBeVisible();
+  await expect(header.getByRole("button", { name: "План", exact: true })).toHaveCount(0);
+  await expect(page.locator(".map-help")).toHaveCount(0);
+  await page.locator(".country-title-button").click();
+  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
+  await expect(page.getByRole("complementary", { name: "План страны" })).toBeVisible();
+  await page.getByRole("button", { name: "Закрыть план" }).click();
+  const accountBox = await page.getByRole("button", { name: "Настройки аккаунта" }).boundingBox();
+  expect(accountBox).not.toBeNull();
+  expect(Math.abs(accountBox!.width - accountBox!.height)).toBeLessThanOrEqual(1);
   const search = page.getByPlaceholder("Поиск задачи: № или название");
   await expect(search).toBeVisible();
 
@@ -50,6 +61,28 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   const tooltip = page.getByRole("tooltip");
   await expect(tooltip).toBeVisible();
   expect((await tooltip.boundingBox())!.width).toBeGreaterThanOrEqual(160);
+
+  const cacheMetrics = await page.evaluate(async () => {
+    const startedAt = performance.now();
+    const response = await fetch("/api/country-atlas", { cache: "no-store" });
+    const payload = await response.arrayBuffer();
+    return {
+      bytes: payload.byteLength,
+      durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+      status: response.status,
+    };
+  });
+  expect(cacheMetrics.status).toBe(200);
+  expect(cacheMetrics.bytes).toBeLessThan(2_000_000);
+  expect(cacheMetrics.durationMs).toBeLessThan(1_500);
+  console.info("country-atlas-cache-metrics", JSON.stringify(cacheMetrics));
+  await testInfo.attach("country-atlas-cache-metrics", {
+    body: Buffer.from(JSON.stringify(cacheMetrics, null, 2)),
+    contentType: "application/json",
+  });
+  if (process.env.ATLAS_SCREENSHOT_PATH) {
+    await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH, fullPage: true });
+  }
   expect(browserErrors).toEqual([]);
 });
 
@@ -85,4 +118,23 @@ test("a city miniature click opens the exact district instead of a task card", a
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-focus-x", String(target.district.sourceCenter.x));
   await expect(host).toHaveAttribute("data-focus-y", String(target.district.sourceCenter.y));
+});
+
+test("a session snapshot paints while the atlas revalidates in the background", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+
+  const revalidationHeaders: string[] = [];
+  await page.route("**/api/country-atlas", async (route) => {
+    revalidationHeaders.push(route.request().headers()["cache-control"] ?? "");
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await route.continue();
+  });
+  await page.reload();
+  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 700 });
+  await expect.poll(() => revalidationHeaders.length).toBeGreaterThan(0);
+  expect(revalidationHeaders.some((value) => value.includes("no-cache") || value.includes("max-age=0"))).toBe(true);
 });

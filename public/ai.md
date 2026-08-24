@@ -1,7 +1,7 @@
 # Tasktopia AI integration guide
 
-Version: 1.19.3
-Last updated: 2026-08-21
+Version: 1.21.0
+Last updated: 2026-08-24
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
@@ -14,6 +14,15 @@ internal `/api/world/viewport` batch endpoint; `/api/chunks/:x/:y` remains the
 rolling-deploy fallback. Terrain and ambient decorations are reconstructed
 client-side; these endpoints are not MCP resources and external agents should
 use the tools and resources below.
+
+The country overview uses the internal authenticated `GET /api/country-atlas`
+read model (`schemaVersion: 5`). It carries the canonical `terrainSeed`, an
+attached `labelAnchor` for every city, and `progress` for every district; the
+browser reconstructs natural terrain rather than downloading terrain
+coordinates. This endpoint is private UI infrastructure, uses ETag plus
+conditional background revalidation, and is not an MCP resource. Agents must
+continue to use `country.get_current`, `city.list`, `district.list`, and the
+task tools below.
 
 This document is intended for AI agents and developers integrating through the
 Model Context Protocol (MCP).

@@ -131,6 +131,53 @@ describe("country atlas projection", () => {
       expect(cell.y, `cutout y ${cell.y}`).toBeGreaterThanOrEqual(atlas.bounds.minY);
       expect(cell.y, `cutout y ${cell.y}`).toBeLessThanOrEqual(atlas.bounds.maxY);
     }
+    expect(projected.labelAnchor.y).toBe(Math.min(...projected.cutoutMask.map((cell) => cell.y)));
+    expect(projected.labelBounds.maxY).toBe(projected.labelAnchor.y - 1);
+    expect(projected.cutoutMask).toContainEqual(projected.labelAnchor);
+  });
+
+  it("pads a tall city constellation into a full-width landscape viewport", () => {
+    const atlas = projectCountryAtlas({
+      cities: [
+        city("north", { x: 0, y: -640 }),
+        city("middle", { x: 0, y: 0 }),
+        city("south", { x: 0, y: 640 }),
+      ],
+    });
+    const width = atlas.bounds.maxX - atlas.bounds.minX + 1;
+    const height = atlas.bounds.maxY - atlas.bounds.minY + 1;
+    expect(width / height).toBeGreaterThanOrEqual(2);
+    const renderedMinX = Math.min(...atlas.cities.flatMap((entry) => [entry.atlasBounds.minX, entry.labelBounds.minX]));
+    const renderedMaxX = Math.max(...atlas.cities.flatMap((entry) => [entry.atlasBounds.maxX, entry.labelBounds.maxX]));
+    expect(renderedMinX - atlas.bounds.minX).toBeGreaterThanOrEqual(16);
+    expect(atlas.bounds.maxX - renderedMaxX).toBeGreaterThanOrEqual(16);
+  });
+
+  it("reserves attached labels for irregular city masks during packing", () => {
+    const atlas = projectCountryAtlas({
+      cities: [
+        {
+          ...city("asymmetric-west", { x: 0, y: 0 }, { width: 192, height: 160 }),
+          districts: [{ id: "west", cells: [{ x: -32, y: -20 }, { x: -30, y: -20 }, { x: 24, y: 18 }] }],
+        },
+        {
+          ...city("asymmetric-east", { x: 0, y: 0 }, { width: 192, height: 160 }),
+          districts: [{ id: "east", cells: [{ x: 28, y: -20 }, { x: 30, y: -20 }, { x: -24, y: 18 }] }],
+        },
+        city("center", { x: 0, y: 0 }, { width: 192, height: 160 }),
+      ],
+    });
+    const renderedBounds = atlas.cities.map((entry) => ({
+      minX: Math.min(entry.labelBounds.minX, ...entry.cutoutMask.map((cell) => cell.x)),
+      minY: Math.min(entry.labelBounds.minY, ...entry.cutoutMask.map((cell) => cell.y)),
+      maxX: Math.max(entry.labelBounds.maxX, ...entry.cutoutMask.map((cell) => cell.x)),
+      maxY: Math.max(entry.labelBounds.maxY, ...entry.cutoutMask.map((cell) => cell.y)),
+    }));
+    for (let left = 0; left < renderedBounds.length; left += 1) {
+      for (let right = left + 1; right < renderedBounds.length; right += 1) {
+        expect(intersects(renderedBounds[left]!, renderedBounds[right]!)).toBe(false);
+      }
+    }
   });
 
   it("samples macro terrain from the real source geography", () => {
@@ -263,7 +310,7 @@ describe("country atlas projection", () => {
     });
 
     const scale = fitCameraScale({ width: 1440, height: 900 }, atlas.bounds, 8, 1, 48);
-    expect(scale).toBeGreaterThanOrEqual(0.5);
+    expect(scale).toBeGreaterThanOrEqual(0.48);
     for (const projected of atlas.cities) {
       expect(projected.labelBounds.maxY).toBeLessThan(projected.atlasBounds.minY);
     }

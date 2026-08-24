@@ -41,8 +41,9 @@ describe("country atlas HTTP boundary", () => {
     const response = await app.inject({ method: "GET", url: "/api/country-atlas", headers: { cookie } });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toContain("-atlas-4");
-    expect(response.json()).toMatchObject({ schemaVersion: 4, cities: [{ name: "Atlas City" }] });
+    expect(response.headers.etag).toContain("-atlas-5");
+    expect(response.headers["cache-control"]).toBe("private, max-age=30, stale-while-revalidate=300");
+    expect(response.json()).toMatchObject({ schemaVersion: 5, cities: [{ name: "Atlas City" }] });
     expect((await app.inject({
       method: "GET",
       url: "/api/country-atlas",

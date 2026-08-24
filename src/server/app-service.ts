@@ -82,7 +82,9 @@ import { bridgeComponentsWithoutTwoLandPortals, roadCorridorBlockers, stampRoadC
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
 import { generatedGreenAreaProfile, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
 import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
-import type { CountryAtlasDto } from "../shared/country-atlas-contract";
+import { COUNTRY_ATLAS_SCHEMA_VERSION, type CountryAtlasDto } from "../shared/country-atlas-contract";
+import { countryAtlasEventImpact, patchCountryAtlasTaskProgress } from "../shared/country-atlas-events";
+import { meanCountryAtlasProgress } from "../shared/country-atlas-progress";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import { projectCountryAtlas } from "./world/country-atlas";
 import type { SharedWorldCache } from "./optional-redis-cache";
@@ -716,7 +718,7 @@ export class AppService {
   private readonly chunkCache = new Map<string, ChunkPayloadDto>();
   private readonly pendingChunkBuilds = new Map<string, Promise<ChunkPayloadDto>>();
   private readonly knownWorldVersions = new Map<string, number>();
-  private readonly countryAtlasCache = new Map<string, { worldVersion: number; atlas: CountryAtlasDto }>();
+  private readonly countryAtlasCache = new Map<string, { atlas: CountryAtlasDto }>();
   // A desktop viewport can hold a few dozen chunks in two LODs. Keeping only
   // 64 entries caused one user's zoom to evict the previous level and denied
   // concurrent viewers any cache reuse. 512 remains a small bounded footprint
@@ -850,11 +852,18 @@ export class AppService {
    * disposable projections that could otherwise mix old roads with new tasks.
    */
   acceptExternalEvent(event: RealtimeEvent): void {
+    const cachedAtlas = this.countryAtlasCache.get(event.countryId);
+    if (!cachedAtlas || event.worldVersion > cachedAtlas.atlas.worldVersion) {
+      const atlasImpact = countryAtlasEventImpact(event);
+      if (atlasImpact === "STRUCTURE") this.countryAtlasCache.delete(event.countryId);
+      else if (atlasImpact === "TASK_PROGRESS" && cachedAtlas) {
+        cachedAtlas.atlas = patchCountryAtlasTaskProgress(cachedAtlas.atlas, event);
+      }
+    }
     const knownVersion = this.knownWorldVersions.get(event.countryId) ?? 0;
     if (event.worldVersion <= knownVersion) return;
     this.knownWorldVersions.set(event.countryId, event.worldVersion);
     this.invalidateChunkCache(event.countryId, event);
-    this.countryAtlasCache.delete(event.countryId);
     if (this.chunkInvalidationScope(event) !== "NONE") {
       this.roadCache.delete(event.countryId);
       this.surfaceCache.delete(event.countryId);
@@ -1273,9 +1282,9 @@ export class AppService {
   }
 
   async getCountryAtlas(countryId: string): Promise<CountryAtlasDto> {
-    const countrySnapshot = await this.getCountry(countryId);
     const cached = this.countryAtlasCache.get(countryId);
-    if (cached?.worldVersion === countrySnapshot.worldVersion) return cached.atlas;
+    if (cached) return cached.atlas;
+    const countrySnapshot = await this.getCountry(countryId);
     const [countryRow, country, cities, districts, tasks, features, roadMap, surfaceMap] = await Promise.all([
       this.countryRow(countryId),
       Promise.resolve(countrySnapshot),
@@ -1288,10 +1297,14 @@ export class AppService {
     ]);
     const districtsByCity = new Map<string, DistrictDto[]>();
     const tasksByCity = new Map<string, TaskDto[]>();
+    const tasksByDistrict = new Map<string, TaskDto[]>();
     for (const district of districts) {
       districtsByCity.set(district.cityId, [...districtsByCity.get(district.cityId) ?? [], district]);
     }
-    for (const task of tasks) tasksByCity.set(task.cityId, [...tasksByCity.get(task.cityId) ?? [], task]);
+    for (const task of tasks) {
+      tasksByCity.set(task.cityId, [...tasksByCity.get(task.cityId) ?? [], task]);
+      tasksByDistrict.set(task.districtId, [...tasksByDistrict.get(task.districtId) ?? [], task]);
+    }
 
     const projection = projectCountryAtlas({
       cities: cities.map((city) => ({
@@ -1334,7 +1347,7 @@ export class AppService {
     }
 
     const atlas: CountryAtlasDto = {
-      schemaVersion: 4,
+      schemaVersion: COUNTRY_ATLAS_SCHEMA_VERSION,
       worldVersion: country.worldVersion,
       terrainSeed: Number(countryRow.seed),
       bounds: projection.bounds,
@@ -1390,17 +1403,20 @@ export class AppService {
           atlasCenter: projected.atlasCenter,
           atlasBounds: projected.atlasBounds,
           labelBounds: projected.labelBounds,
+          labelAnchor: projected.labelAnchor,
           scale: projected.scale,
           miniatureSizePx: projected.miniatureSizePx,
           atlasMask: projected.atlasMask,
           cutoutMask: projected.cutoutMask,
           districts: projected.districts.map((district) => {
             const source = districtById.get(district.id)!;
+            const districtTasks = tasksByDistrict.get(source.id) ?? [];
             return {
               id: source.id,
               name: source.name,
               status: source.status,
               color: atlasDistrictColorById.get(source.id) ?? source.color,
+              progress: meanCountryAtlasProgress(districtTasks),
               sourceCenter: district.sourceCenter,
               sourceBounds: boundsOf(source.cells),
               atlasCenter: district.atlasCenter,
@@ -1440,7 +1456,7 @@ export class AppService {
         };
       }),
     };
-    this.countryAtlasCache.set(countryId, { worldVersion: country.worldVersion, atlas });
+    this.countryAtlasCache.set(countryId, { atlas });
     return atlas;
   }
 

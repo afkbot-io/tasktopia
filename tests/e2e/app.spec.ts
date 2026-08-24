@@ -90,10 +90,8 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await districtsToggle.click();
 
   const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
-  const planToggle = page.getByRole("button", { name: "План", exact: true });
-  await expect(planToggle).toHaveAttribute("aria-pressed", "false");
-  await planToggle.click();
-  await expect(planToggle).toHaveAttribute("aria-pressed", "true");
+  await page.locator(".country-title-button").click();
+  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   let cityDirectory = page.getByRole("complementary", { name: "План страны" });
   await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
   await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
@@ -125,7 +123,8 @@ test("login, map and MCP token management", async ({ page, context }) => {
   expect(residentChunks).toBeLessThanOrEqual(36);
   await capture(page, "screenshots/release-city-zoomed-out.png");
 
-  await page.getByRole("button", { name: "План", exact: true }).click();
+  await page.locator(".country-title-button").click();
+  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   cityDirectory = page.getByRole("complementary", { name: "План страны" });
   await expect(cityDirectory).toBeVisible();
   await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
@@ -187,7 +186,8 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByLabel("Название страны").fill("Временная страна");
   await page.getByRole("button", { name: "Создать страну" }).click();
   await expect(page.locator(".country-title-button")).toContainText("Временная страна");
-  await page.getByRole("button", { name: "План", exact: true }).click();
+  await page.locator(".country-title-button").click();
+  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   await expect(page.getByRole("complementary", { name: "План страны" }).getByText("Нет городов", { exact: true })).toBeVisible();
   await page.locator(".map-region").click({ position: { x: 20, y: 20 } });
   await expect(page.getByRole("complementary", { name: "План страны" })).toBeHidden();
@@ -205,7 +205,9 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toBeVisible();
-  await expect(page.getByRole("button", { name: "План", exact: true })).toBeVisible();
+  await page.locator(".country-title-button").click();
+  await expect(page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Границы" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await capture(page, "screenshots/release-city-mobile.png");

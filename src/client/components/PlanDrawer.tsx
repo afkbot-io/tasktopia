@@ -43,7 +43,7 @@ export function PlanDrawer({ bootstrap, refreshToken, initialSection, onClose, o
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (!(event.target instanceof Element)) return;
-      if (!drawerRef.current?.contains(event.target) && !event.target.closest("[data-plan-trigger]")) onClose();
+      if (!drawerRef.current?.contains(event.target)) onClose();
     };
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     document.addEventListener("pointerdown", closeOutside);

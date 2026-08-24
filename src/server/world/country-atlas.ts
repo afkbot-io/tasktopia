@@ -9,7 +9,8 @@ const CELL_SIZE_PX = 8;
 const TARGET_CITY_TEXTURE_PX = 320;
 const CITY_GAP_CELLS = 6;
 const ATLAS_MARGIN_CELLS = 8;
-const LABEL_GAP_CELLS = 1;
+const ATLAS_HORIZONTAL_MARGIN_CELLS = 16;
+const MIN_ATLAS_VIEW_ASPECT = 2;
 const DISTANCE_COMPRESSION = 0.12;
 const DISTRICT_DISTANCE_COMPRESSION = 0.55;
 const DISTRICT_GAP_CELLS = 1;
@@ -49,6 +50,7 @@ export type ProjectedAtlasCity = {
   atlasCenter: Cell;
   atlasBounds: Rect;
   labelBounds: Rect;
+  labelAnchor: Cell;
   scale: CountryAtlasScale;
   miniatureSizePx: { width: number; height: number };
   atlasMask: Cell[];
@@ -155,6 +157,61 @@ function cellsBounds(cells: Cell[]): Rect {
     if (cell.y > bounds.maxY) bounds.maxY = cell.y;
   }
   return bounds;
+}
+
+function labelAnchorForCity(atlasBounds: Rect, cutoutMask: Cell[], atlasCenter: Cell): Cell {
+  if (cutoutMask.length === 0) return { x: atlasCenter.x, y: atlasBounds.minY };
+  const topY = Math.min(...cutoutMask.map((cell) => cell.y));
+  return [...cutoutMask]
+    .filter((cell) => cell.y === topY)
+    .sort((left, right) => Math.abs(left.x - atlasCenter.x) - Math.abs(right.x - atlasCenter.x) || left.x - right.x)[0]!;
+}
+
+function localCityCollisionSize(
+  miniatureWidthCells: number,
+  miniatureHeightCells: number,
+  labelWidthCells: number,
+  labelHeightCells: number,
+  compactedDistricts: PreparedCity["compactedDistricts"],
+): { width: number; height: number } {
+  const atlasBounds = sizedBounds(miniatureWidthCells, miniatureHeightCells, { x: 0, y: 0 });
+  const atlasMask = compactedDistricts.flatMap((district) => district.atlasCells);
+  const cutoutMask = atlasMask.length > 0 ? bufferedCutout(atlasMask) : [];
+  const labelAnchor = labelAnchorForCity(atlasBounds, cutoutMask, { x: 0, y: 0 });
+  const labelMinX = labelAnchor.x - Math.floor(labelWidthCells / 2);
+  const labelBounds = {
+    minX: labelMinX,
+    minY: labelAnchor.y - labelHeightCells,
+    maxX: labelMinX + labelWidthCells - 1,
+    maxY: labelAnchor.y - 1,
+  };
+  const minX = Math.min(atlasBounds.minX, labelBounds.minX, ...cutoutMask.map((cell) => cell.x));
+  const minY = Math.min(atlasBounds.minY, labelBounds.minY, ...cutoutMask.map((cell) => cell.y));
+  const maxX = Math.max(atlasBounds.maxX, labelBounds.maxX, ...cutoutMask.map((cell) => cell.x));
+  const maxY = Math.max(atlasBounds.maxY, labelBounds.maxY, ...cutoutMask.map((cell) => cell.y));
+  return {
+    width: 2 * Math.max(Math.abs(minX), Math.abs(maxX)) + 1,
+    height: 2 * Math.max(Math.abs(minY), Math.abs(maxY)) + 1,
+  };
+}
+
+function landscapeBounds(cities: ProjectedAtlasCity[]): Rect {
+  const minX = Math.min(...cities.flatMap((city) => [city.atlasBounds.minX, city.labelBounds.minX, ...city.cutoutMask.map((cell) => cell.x)]));
+  const maxX = Math.max(...cities.flatMap((city) => [city.atlasBounds.maxX, city.labelBounds.maxX, ...city.cutoutMask.map((cell) => cell.x)]));
+  const minY = Math.min(...cities.flatMap((city) => [city.atlasBounds.minY, city.labelBounds.minY, ...city.cutoutMask.map((cell) => cell.y)]));
+  const maxY = Math.max(...cities.flatMap((city) => [city.atlasBounds.maxY, city.labelBounds.maxY, ...city.cutoutMask.map((cell) => cell.y)]));
+  const padded = {
+    minX: minX - ATLAS_HORIZONTAL_MARGIN_CELLS,
+    minY: minY - ATLAS_MARGIN_CELLS,
+    maxX: maxX + ATLAS_HORIZONTAL_MARGIN_CELLS,
+    maxY: maxY + ATLAS_MARGIN_CELLS,
+  };
+  const width = padded.maxX - padded.minX + 1;
+  const height = padded.maxY - padded.minY + 1;
+  const missingWidth = Math.max(0, Math.ceil(height * MIN_ATLAS_VIEW_ASPECT) - width);
+  padded.minX -= Math.floor(missingWidth / 2);
+  padded.maxX += Math.ceil(missingWidth / 2);
+  return padded;
 }
 
 function bufferedCutout(cells: Cell[]): Cell[] {
@@ -500,7 +557,9 @@ function minimumSpanningEdges(cities: ProjectedAtlasCity[]): Array<readonly [Pro
 function routeConnections(cities: ProjectedAtlasCity[], atlasBounds: Rect): ProjectedAtlasConnection[] {
   const occupied = new Set(cities.flatMap((city) => {
     const cells: string[] = [];
-    for (const bounds of [city.atlasBounds, city.labelBounds]) {
+    // Labels are attached overlays, not geographic obstacles. Reserving them
+    // here can trap a vertical connector at the city's north port.
+    for (const bounds of [city.atlasBounds]) {
       for (let y = bounds.minY; y <= bounds.maxY; y += 1) {
         for (let x = bounds.minX; x <= bounds.maxX; x += 1) cells.push(cellKey({ x, y }));
       }
@@ -561,6 +620,13 @@ export function projectCountryAtlas(input: CountryAtlasProjectionInput): Country
     const labelWidthCells = Math.max(1, Math.ceil(labelSizePx.width / CELL_SIZE_PX));
     const labelHeightCells = Math.max(1, Math.ceil(labelSizePx.height / CELL_SIZE_PX));
     const compactedDistricts = compactDistricts(city, scale);
+    const collisionSize = localCityCollisionSize(
+      miniatureWidthCells,
+      miniatureHeightCells,
+      labelWidthCells,
+      labelHeightCells,
+      compactedDistricts,
+    );
     const position = {
       x: Math.round((city.sourceCenter.x - centroid.x) * distanceCompression.x),
       y: Math.round((city.sourceCenter.y - centroid.y) * distanceCompression.y),
@@ -573,10 +639,8 @@ export function projectCountryAtlas(input: CountryAtlasProjectionInput): Country
       miniatureHeightCells,
       labelWidthCells,
       labelHeightCells,
-      collisionWidthCells: Math.max(miniatureWidthCells, labelWidthCells),
-      // The symmetric reservation intentionally leaves the label's height
-      // below the miniature too. It is conservative and keeps packing pure.
-      collisionHeightCells: miniatureHeightCells + 2 * (labelHeightCells + LABEL_GAP_CELLS + CITY_CUTOUT_BUFFER_CELLS),
+      collisionWidthCells: collisionSize.width,
+      collisionHeightCells: collisionSize.height,
       compactedDistricts,
       position,
     };
@@ -597,14 +661,15 @@ export function projectCountryAtlas(input: CountryAtlasProjectionInput): Country
       y: Math.round(city.position.y) + shift.y,
     };
     const atlasBounds = sizedBounds(city.miniatureWidthCells, city.miniatureHeightCells, atlasCenter);
-    const labelMaxY = atlasBounds.minY - LABEL_GAP_CELLS - CITY_CUTOUT_BUFFER_CELLS - 1;
-    const labelMinX = atlasCenter.x - Math.floor(city.labelWidthCells / 2);
     const districts = projectDistricts(city, atlasCenter);
     const atlasMask = [...new Map(districts
       .flatMap((district) => district.atlasCells)
       .map((cell) => [cellKey(cell), cell] as const)).values()].sort(compareCells);
     const cutoutMask = bufferedCutout(atlasMask);
     partitionCutout(cutoutMask, districts);
+    const labelAnchor = labelAnchorForCity(atlasBounds, cutoutMask, atlasCenter);
+    const labelMaxY = labelAnchor.y - 1;
+    const labelMinX = labelAnchor.x - Math.floor(city.labelWidthCells / 2);
     const projectedCity: ProjectedAtlasCity = {
       id: city.id,
       sourceCenter: { ...city.sourceCenter },
@@ -616,6 +681,7 @@ export function projectCountryAtlas(input: CountryAtlasProjectionInput): Country
         maxX: labelMinX + city.labelWidthCells - 1,
         maxY: labelMaxY,
       },
+      labelAnchor,
       scale: city.scale,
       miniatureSizePx: city.miniatureSizePx,
       atlasMask,
@@ -631,14 +697,7 @@ export function projectCountryAtlas(input: CountryAtlasProjectionInput): Country
       : [];
     return projectedCity;
   });
-  const renderedCells = cities.flatMap((city) => city.cutoutMask);
-  const renderedBounds = cellsBounds(renderedCells);
-  const bounds: Rect = {
-    minX: 0,
-    minY: 0,
-    maxX: Math.max(renderedBounds.maxX, ...cities.flatMap((city) => [city.atlasBounds.maxX, city.labelBounds.maxX])) + ATLAS_MARGIN_CELLS,
-    maxY: Math.max(renderedBounds.maxY, ...cities.flatMap((city) => [city.atlasBounds.maxY, city.labelBounds.maxY])) + ATLAS_MARGIN_CELLS,
-  };
+  const bounds = landscapeBounds(cities);
   return {
     bounds,
     cities,

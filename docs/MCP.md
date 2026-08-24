@@ -6,6 +6,22 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 Готовый Codex skill для выбора проектного контекста, постановки задач и ведения прогресса: [https://tasktopia.online/skills/tasktopia-progress/SKILL.md](https://tasktopia.online/skills/tasktopia-progress/SKILL.md). Установка и правила вызова приведены в публичной AI-инструкции.
 
+## Внутренний API обзорной карты
+
+Аутентифицированный браузер получает обзор страны через `GET /api/country-atlas`.
+Это не MCP resource и не замена `country.get_current`/`city.list`: endpoint
+предназначен только для UI. Контракт `schemaVersion: 5` содержит `terrainSeed`,
+общие `bounds`, города с обязательным `labelAnchor` и районы с обязательным
+`progress` (`0..100`). Природные клетки в ответ не входят — браузер
+восстанавливает их из canonical seed.
+
+Ответ использует ETag и `Cache-Control: private, max-age=30,
+stale-while-revalidate=300`. Клиент сначала рисует schema-gated snapshot из
+`sessionStorage`, затем обязательно выполняет conditional revalidation.
+Комментарии и невизуальные поля snapshot не инвалидируют; статус задачи
+патчит здание и агрегат района, структурные события города/района/задачи
+пересобирают проекцию.
+
 ## Быстрое подключение
 
 1. В Tasktopia откройте кнопку «MCP-интеграции» или «Подключить MCP».
