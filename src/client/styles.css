@@ -233,17 +233,13 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-building { outline: none; transition: filter .12s; cursor: pointer; shape-rendering: crispEdges; }
 .atlas-building:focus { filter: drop-shadow(0 0 3px #f2c84b); }
 .atlas-city-label { outline: none; cursor: pointer; }
-.atlas-city-label rect { fill: var(--atlas-panel); stroke: var(--atlas-line); stroke-width: 1.8px; vector-effect: non-scaling-stroke; }
 .atlas-city-label-tab { fill: #a99c66; stroke: #0c2023; stroke-width: 1px; vector-effect: non-scaling-stroke; }
-.atlas-city-label:hover rect, .atlas-city-label:focus rect { fill: #1b3331; stroke: #f2d45e; }
-.atlas-city[data-active="true"] .atlas-city-label rect { stroke: #f0cf56; stroke-width: 2px; }
+.atlas-city-label:hover .atlas-overview-card-hit, .atlas-city-label:focus-within .atlas-overview-card-hit { fill: #1b3331; stroke: #f2d45e; }
+.atlas-city[data-active="true"] .atlas-overview-card-hit { stroke: #f0cf56; stroke-width: 2px; }
 .atlas-city[data-active="true"] .atlas-city-label-tab { fill: #f0cf56; }
-.atlas-city-label:hover .atlas-city-label-tab, .atlas-city-label:focus .atlas-city-label-tab { fill: #f2d45e; }
-.atlas-city-label text { fill: #fff5d5; font: 950 17px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .01em; pointer-events: none; }
-.atlas-city-label .atlas-city-meta { fill: #b4c3ba; font-size: 8px; letter-spacing: .025em; }
-.atlas-city-progress-track { fill: var(--atlas-progress-track) !important; stroke: none !important; }
-.atlas-city-progress-value { fill: var(--atlas-progress-value) !important; stroke: none !important; }
-.atlas-city-active-dot { fill: #8bdd6a; stroke: #102528; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.atlas-city-label:hover .atlas-city-label-tab, .atlas-city-label:focus-within .atlas-city-label-tab { fill: #f2d45e; }
+.atlas-city-label .atlas-overview-card-title, .atlas-city-label .atlas-overview-card-progress { font-size: 15px; }
+.atlas-city-label .atlas-overview-card-meta { font-size: 8px; }
 .atlas-air-routes, .atlas-clouds { pointer-events: none; }
 .atlas-air-route-line { fill: none; stroke: #dce8dc; stroke-width: .8px; stroke-dasharray: 2 4; opacity: .18; vector-effect: non-scaling-stroke; }
 .atlas-aircraft-sprite { image-rendering: pixelated; }
@@ -289,15 +285,15 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-country:hover > path, .planet-country:focus > path { filter: brightness(1.18) saturate(1.08); }
 .planet-country[data-active="true"] > path { stroke: #f2d45e; stroke-width: 2px; }
 .planet-country[data-selecting="true"] { opacity: .68; }
-.planet-country-label { cursor: pointer; outline: none; }
-.planet-country-label-hit { fill: #0a1b1ef2; stroke: #c3b06c; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
-.planet-country-label[data-active="true"] .planet-country-label-hit { stroke: #f2d45e; stroke-width: 2px; }
+.atlas-overview-card { cursor: pointer; outline: none; }
+.atlas-overview-card-hit { fill: #0a1b1ef2; stroke: #c3b06c; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.atlas-overview-card-title, .atlas-overview-card-progress { fill: #fff4d2; font: 900 11px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; pointer-events: none; }
+.atlas-overview-card-meta { fill: #91aaa6; font: 800 6px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .04em; pointer-events: none; }
+.atlas-overview-progress-track { fill: var(--atlas-progress-track) !important; stroke: none !important; }
+.atlas-overview-progress-value { fill: var(--atlas-progress-value) !important; stroke: none !important; }
+.planet-country-label[data-active="true"] .atlas-overview-card-hit { stroke: #f2d45e; stroke-width: 2px; }
 .planet-country-label[data-selecting="true"] { opacity: .68; }
-.planet-country-label:hover .planet-country-label-hit, .planet-country-label:focus .planet-country-label-hit { fill: #112a2e; stroke: #f2d45e; }
-.planet-country-label text { fill: #fff4d2; font: 900 11px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; pointer-events: none; }
-.planet-country-label .planet-country-meta { fill: #91aaa6; font-size: 6px; letter-spacing: .08em; }
-.planet-country-progress-track { fill: #233a3c !important; stroke: none !important; }
-.planet-country-progress-value { fill: #88c96f !important; stroke: none !important; }
+.planet-country-label:hover .atlas-overview-card-hit, .planet-country-label:focus .atlas-overview-card-hit { fill: #112a2e; stroke: #f2d45e; }
 .planet-route-line { fill: none; stroke: #d7e8dc; stroke-width: 1px; stroke-dasharray: 3 4; opacity: .28; vector-effect: non-scaling-stroke; }
 .planet-clouds { pointer-events: none; }
 .planet-clouds > g { animation: planet-cloud-drift var(--cloud-duration) steps(18, end) var(--cloud-delay) infinite alternate; }
@@ -560,6 +556,10 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   flex: 0 0 var(--control-compact-size);
   padding-inline: 0 !important;
 }
+.app-header .profile-presence { position: relative; overflow: visible; }
+.profile-presence-dot { position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border: 2px solid #0e1d21; border-radius: 999px; }
+.profile-presence-dot-online { background: #78be6d; box-shadow: 0 0 7px #78be6d; }
+.profile-presence-dot-connecting { background: #d66e5d; }
 .app-header .map-mode-button span { display: block; font-size: 12px; line-height: 1; }
 @media (max-width: 767px) {
   .app-header { height: auto; min-height: var(--layout-header-mobile-height); }

@@ -11,6 +11,7 @@ import { PlanDrawer } from "./components/PlanDrawer";
 import { TaskSearch } from "./components/TaskSearch";
 import { Button, cx } from "./components/ui";
 import { MapLevelNav, type MapLevel } from "./components/MapLevelNav";
+import { ProfilePresence } from "./components/ProfilePresence";
 import { eventInvalidation, type MapInvalidation } from "./map-invalidation";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
@@ -283,12 +284,9 @@ export function App() {
       </div>
 
       <div className="order-2 flex min-w-0 items-center justify-end gap-2 md:order-3">
-        <div className="hidden items-center gap-3 text-[11px] text-[#9cafb2] lg:flex">
-          <span className="flex items-center gap-1.5 whitespace-nowrap"><i className={cx("h-2 w-2 rounded-full", online ? "bg-[#78be6d] shadow-[0_0_8px_#78be6d]" : "bg-[#d66e5d]")} />{online ? "В сети" : "Подключение"}</span>
-        </div>
         <nav className="flex items-center justify-end gap-1.5" aria-label="Действия карты">
           {effectiveMapMode === "CITY" && <Button className={cx("header-control min-h-0 px-3 text-xs", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>}
-          <Button className="header-control account-button min-h-0 px-0 text-xs text-skyline" onClick={() => openSettings("account")} title="Настройки аккаунта" aria-label="Настройки аккаунта">{bootstrap.user.name.slice(0, 1).toUpperCase()}</Button>
+          <ProfilePresence initial={bootstrap.user.name.slice(0, 1).toUpperCase()} online={online} onOpen={() => openSettings("account")} />
         </nav>
       </div>
     </header>

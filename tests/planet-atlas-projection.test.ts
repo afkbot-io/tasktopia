@@ -4,13 +4,13 @@ import { layoutPlanetCountryLabels, projectPlanetAtlas, projectPlanetGlobe, proj
 import { planetAtlasCacheKey } from "../src/client/planet-atlas-cache";
 
 const fixture: PlanetAtlasDto = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   planetSeed: 782_441,
   revision: "planet-fixture",
   countries: [
-    { id: "country-a", name: "Атуаленда", seed: 11, worldVersion: 4, cityCount: 1, districtCount: 3, buildingCount: 12, progress: 30 },
-    { id: "country-b", name: "Северия", seed: 22, worldVersion: 7, cityCount: 4, districtCount: 12, buildingCount: 80, progress: 65 },
-    { id: "country-c", name: "Острова", seed: 33, worldVersion: 2, cityCount: 2, districtCount: 6, buildingCount: 25, progress: 90 },
+    { id: "country-a", name: "Атуаленда", seed: 11, worldVersion: 4, cityCount: 1, districtCount: 3, buildingCount: 12, unfinishedBuildingCount: 8, progress: 30 },
+    { id: "country-b", name: "Северия", seed: 22, worldVersion: 7, cityCount: 4, districtCount: 12, buildingCount: 80, unfinishedBuildingCount: 14, progress: 65 },
+    { id: "country-c", name: "Острова", seed: 33, worldVersion: 2, cityCount: 2, districtCount: 6, buildingCount: 25, unfinishedBuildingCount: 2, progress: 90 },
   ],
 };
 

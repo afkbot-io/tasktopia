@@ -19,6 +19,7 @@ import { api } from "../api";
 import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
 import { atlasBuildingPresentation } from "../country-atlas-presentation";
 import { AtlasAircraft } from "./AtlasAircraft";
+import { AtlasOverviewCard, cityOverviewCardModel } from "./AtlasOverviewCard";
 
 const CELL = 8;
 const ATLAS_CACHE_PREFIX = `tasktopia:country-atlas:v${COUNTRY_ATLAS_SCHEMA_VERSION}:`;
@@ -153,22 +154,17 @@ function AtlasCityLabel({ city, onSelect }: { city: CountryAtlasCityDto; onSelec
   const maxY = bounds.maxY;
   const minY = bounds.minY;
   const width = widthCells * CELL;
-  const progress = city.districts.length > 0
-    ? city.districts.reduce((total, district) => total + district.progress, 0) / city.districts.length
-    : 0;
-  return <g className="atlas-city-label" role="button" tabIndex={0} aria-label={`Открыть город ${city.name}`} onClick={(event) => { event.stopPropagation(); onSelect(); }} onKeyDown={(event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    event.stopPropagation();
-    onSelect();
-  }}>
+  const model = cityOverviewCardModel(city);
+  return <g className="atlas-city-label">
     <path d={`M${city.labelAnchor.x * CELL} ${(maxY + 1) * CELL}h8l-4 5Z`} className="atlas-city-label-tab" />
-    <rect x={minX * CELL} y={minY * CELL} width={width} height={heightCells * CELL} />
-    {city.districts.some((district) => district.status === "ACTIVE") && <circle cx={minX * CELL + 14} cy={(minY + 2.45) * CELL} r="3.2" className="atlas-city-active-dot" />}
-    <text x={(minX + widthCells / 2) * CELL} y={(minY + 2.5) * CELL} textAnchor="middle">{city.name}</text>
-    <text x={(minX + widthCells / 2) * CELL} y={(minY + 4.65) * CELL} textAnchor="middle" className="atlas-city-meta">{city.districts.length} РАЙОНА · {city.buildings.length} ЗДАНИЙ</text>
-    <rect x={minX * CELL + 8} y={(maxY + 1) * CELL - 3} width={width - 16} height="2" className="atlas-city-progress-track" />
-    <rect x={minX * CELL + 8} y={(maxY + 1) * CELL - 3} width={Math.max(0, (width - 16) * progress / 100)} height="2" className="atlas-city-progress-value" />
+    <AtlasOverviewCard
+      transform={`translate(${minX * CELL} ${minY * CELL})`}
+      model={model}
+      width={width}
+      height={heightCells * CELL}
+      ariaLabel={`Открыть город ${city.name}, ${model.metrics[0]!.value} зданий в работе, прогресс ${model.progress}%`}
+      onSelect={onSelect}
+    />
   </g>;
 }
 

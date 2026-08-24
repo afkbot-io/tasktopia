@@ -11,6 +11,7 @@ import { api } from "../api";
 import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
 import { planetAtlasCacheKey } from "../planet-atlas-cache";
 import { AtlasAircraft } from "./AtlasAircraft";
+import { AtlasOverviewCard, planetOverviewCardModel } from "./AtlasOverviewCard";
 
 const MIN_GLOBE_ZOOM = .82;
 const MAX_GLOBE_ZOOM = 1.45;
@@ -38,18 +39,18 @@ function CountryLabel({ country, x, y, width, height, active, selecting, onSelec
   selecting: boolean;
   onSelect: () => void;
 }) {
-  const displayName = country.name.length > 18 ? `${country.name.slice(0, 17)}…` : country.name;
-  return <g className="planet-country-label" transform={`translate(${x} ${y})`} data-country-id={country.id} data-active={active ? "true" : "false"} data-selecting={selecting ? "true" : "false"} role="button" tabIndex={0} aria-label={`Открыть страну ${country.name}, ${country.cityCount} городов, прогресс ${country.progress}%`} onPointerDown={(event) => event.stopPropagation()} onClick={onSelect} onKeyDown={(event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    onSelect();
-  }}>
-    <rect className="planet-country-label-hit" width={width} height={height} />
-    <rect className="planet-country-progress-track" x="10" y={height - 7} width={width - 20} height="3" />
-    <rect className="planet-country-progress-value" x="10" y={height - 7} width={(width - 20) * country.progress / 100} height="3" />
-    <text x={width / 2} y="15" textAnchor="middle">{displayName}</text>
-    <text className="planet-country-meta" x={width / 2} y="25" textAnchor="middle">{country.cityCount} ГОРОДОВ</text>
-  </g>;
+  return <AtlasOverviewCard
+    className="planet-country-label"
+    transform={`translate(${x} ${y})`}
+    data-country-id={country.id}
+    data-active={active ? "true" : "false"}
+    data-selecting={selecting ? "true" : "false"}
+    model={planetOverviewCardModel(country)}
+    width={width}
+    height={height}
+    ariaLabel={`Открыть страну ${country.name}, ${country.cityCount} городов, ${country.unfinishedBuildingCount} зданий в работе, прогресс ${country.progress}%`}
+    onSelect={onSelect}
+  />;
 }
 
 export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCountrySelect }: {
@@ -70,7 +71,10 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCou
     const controller = new AbortController();
     setAtlas(readCachedPlanet(userId));
     void api<PlanetAtlasDto>("/api/planet-atlas", { signal: controller.signal, cache: "no-cache" })
-      .then((next) => { setAtlas(next); writeCachedPlanet(userId, next); setError(""); })
+      .then((next) => {
+        if (next.schemaVersion !== PLANET_ATLAS_SCHEMA_VERSION) throw new Error("Версия планеты устарела. Обновите страницу");
+        setAtlas(next); writeCachedPlanet(userId, next); setError("");
+      })
       .catch((reason) => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось открыть планету"); });
     return () => controller.abort();
   }, [refreshToken, userId]);

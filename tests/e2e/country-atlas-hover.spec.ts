@@ -39,7 +39,7 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   await expect(page.getByRole("complementary", { name: "План страны" })).toBeVisible();
   await page.getByRole("button", { name: "Закрыть план" }).click();
-  const accountBox = await page.getByRole("button", { name: "Настройки аккаунта" }).boundingBox();
+  const accountBox = await page.getByRole("button", { name: /Настройки аккаунта/ }).boundingBox();
   expect(accountBox).not.toBeNull();
   expect(Math.abs(accountBox!.width - accountBox!.height)).toBeLessThanOrEqual(1);
   const search = page.getByPlaceholder("Поиск здания: № или название");
@@ -113,11 +113,33 @@ test("planet, country and city levels keep selection and disabled states coheren
   const levels = page.getByRole("navigation", { name: "Уровень карты" });
   await levels.getByRole("button", { name: "Планета" }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-countries", String(planetFixture.countryCount));
-  const countryLabelBoxes = await page.locator(".planet-country-label-hit").evaluateAll((nodes) => nodes.map((node) => {
-    const box = (node as SVGGraphicsElement).getBBox();
+  await expect(page.getByRole("button", { name: /Настройки аккаунта, в сети/i })).toBeVisible();
+  await expect(page.getByText("В сети", { exact: true })).toHaveCount(0);
+  const countryLabelBoxes = await page.locator(".planet-country-label .atlas-overview-card-hit").evaluateAll((nodes) => nodes.map((node) => {
+    const box = (node as SVGGraphicsElement).getBoundingClientRect();
     return { width: box.width, height: box.height };
   }));
-  expect(new Set(countryLabelBoxes.map((box) => `${box.width}:${box.height}`))).toEqual(new Set(["144:38"]));
+  expect(new Set(countryLabelBoxes.map((box) => `${Math.round(box.width)}:${Math.round(box.height)}`)).size).toBe(1);
+  const globe = page.locator(".planet-atlas svg");
+  const globeBox = await globe.boundingBox();
+  expect(globeBox).not.toBeNull();
+  await page.mouse.move(globeBox!.x + globeBox!.width / 2, globeBox!.y + globeBox!.height / 2);
+  await page.mouse.wheel(0, -120);
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-globe-zoom", "1.10");
+  const zoomedCountryLabelBoxes = await page.locator(".planet-country-label .atlas-overview-card-hit").evaluateAll((nodes) => nodes.map((node) => {
+    const box = (node as SVGGraphicsElement).getBoundingClientRect();
+    return { width: Math.round(box.width), height: Math.round(box.height) };
+  }));
+  expect(new Set(zoomedCountryLabelBoxes.map((box) => `${box.width}:${box.height}`))).toEqual(
+    new Set(countryLabelBoxes.map((box) => `${Math.round(box.width)}:${Math.round(box.height)}`)),
+  );
+  const planetCard = page.locator(".planet-country-label.atlas-overview-card").first();
+  await expect(planetCard).toContainText("ГОРОДА");
+  await expect(planetCard).toContainText("В РАБОТЕ");
+  await expect(planetCard.locator(".atlas-overview-card-progress")).toContainText("%");
+  if (process.env.ATLAS_SCREENSHOT_PATH) {
+    await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH.replace(/\.png$/, "-planet.png"), fullPage: true });
+  }
   await expect(page.locator(".planet-routes .atlas-aircraft-sprite").first()).toBeAttached();
   await expect(page.locator('animateMotion[rotate="auto"]')).toHaveCount(0);
   expect(await page.locator(".planet-routes .atlas-aircraft-sprite").first().evaluate((node) => getComputedStyle(node).imageRendering)).toBe("pixelated");
@@ -127,6 +149,18 @@ test("planet, country and city levels keep selection and disabled states coheren
 
   await page.locator(`.planet-country-label[data-country-id="${planetFixture.originalCountryId}"]`).click();
   await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+  const cityCard = page.locator(".atlas-city-label .atlas-overview-card").first();
+  const cityCardSizes = await page.locator(".atlas-city-label .atlas-overview-card-hit").evaluateAll((nodes) => nodes.map((node) => {
+    const box = (node as SVGGraphicsElement).getBoundingClientRect();
+    return `${Math.round(box.width)}:${Math.round(box.height)}`;
+  }));
+  expect(new Set(cityCardSizes).size).toBe(1);
+  await expect(cityCard).toContainText("В РАБОТЕ");
+  await expect(cityCard.locator(".atlas-overview-card-progress")).toContainText("%");
+  await expect(cityCard).not.toContainText("РАЙОНА");
+  if (process.env.ATLAS_SCREENSHOT_PATH) {
+    await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH.replace(/\.png$/, "-country.png"), fullPage: true });
+  }
   await expect(levels.getByRole("button", { name: "Страна" })).toHaveAttribute("aria-current", "page");
   await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
 

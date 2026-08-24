@@ -1045,6 +1045,9 @@ export class AppService {
         (SELECT COUNT(*) FROM tasks_v3 task
           JOIN cities_v3 city ON city.id = task.city_id
           WHERE city.country_id = c.id) AS building_count,
+        (SELECT COUNT(*) FROM tasks_v3 task
+          JOIN cities_v3 city ON city.id = task.city_id
+          WHERE city.country_id = c.id AND task.status <> 'COMPLETED') AS unfinished_building_count,
         (SELECT COALESCE(ROUND(AVG(task.progress)), 0) FROM tasks_v3 task
           JOIN cities_v3 city ON city.id = task.city_id
           WHERE city.country_id = c.id) AS progress
@@ -1056,9 +1059,10 @@ export class AppService {
     const countries = rows.map((row) => ({
       id: String(row.id), name: String(row.name), seed: Number(row.seed), worldVersion: Number(row.world_version),
       cityCount: Number(row.city_count), districtCount: Number(row.district_count), buildingCount: Number(row.building_count),
+      unfinishedBuildingCount: Number(row.unfinished_building_count),
       progress: Math.max(0, Math.min(100, Number(row.progress))),
     }));
-    const revisionSource = countries.map((country) => `${country.id}:${country.name}:${country.worldVersion}:${country.cityCount}:${country.districtCount}:${country.buildingCount}:${country.progress}`).join("|");
+    const revisionSource = countries.map((country) => `${country.id}:${country.name}:${country.worldVersion}:${country.cityCount}:${country.districtCount}:${country.buildingCount}:${country.unfinishedBuildingCount}:${country.progress}`).join("|");
     const revision = createHash("sha256").update(revisionSource).digest("hex").slice(0, 16);
     const planetSeed = createHash("sha256").update(`tasktopia-planet:${userId}`).digest().readUInt32LE(0) & 0x7fffffff;
     return { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed, revision, countries };

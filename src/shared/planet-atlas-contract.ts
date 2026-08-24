@@ -1,4 +1,4 @@
-export const PLANET_ATLAS_SCHEMA_VERSION = 1 as const;
+export const PLANET_ATLAS_SCHEMA_VERSION = 2 as const;
 
 export type PlanetCountryDto = {
   id: string;
@@ -8,6 +8,7 @@ export type PlanetCountryDto = {
   cityCount: number;
   districtCount: number;
   buildingCount: number;
+  unfinishedBuildingCount: number;
   progress: number;
 };
 
