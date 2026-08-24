@@ -31,6 +31,29 @@ export type ProjectedPlanetAtlas = {
   clouds: Array<{ id: string; x: number; y: number; scale: number; durationSeconds: number; delaySeconds: number }>;
   edgeFog: Array<{ id: string; xPercent: number; yPercent: number; scale: number }>;
 };
+export type PlanetGlobeCamera = { longitude: number; latitude: number; zoom: number };
+export type PlanetGlobeCell = PlanetHex & { center: PlanetPoint; path: string; depth: number };
+export type PlanetGlobeCountry = Omit<ProjectedPlanetCountry, "cells" | "center"> & {
+  cells: PlanetGlobeCell[];
+  center: PlanetPoint;
+};
+export type PlanetCountryLabelLayout = {
+  countryId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+export type ProjectedPlanetGlobe = {
+  width: number;
+  height: number;
+  center: PlanetPoint;
+  clipRadius: number;
+  countries: PlanetGlobeCountry[];
+  coastCells: PlanetGlobeCell[];
+  routes: PlanetRoute[];
+  clouds: Array<{ id: string; x: number; y: number; scale: number; durationSeconds: number; delaySeconds: number }>;
+};
 
 const DIRECTIONS: PlanetHex[] = [
   { q: 1, r: 0 }, { q: -1, r: 0 }, { q: 0, r: 1 },
@@ -54,6 +77,12 @@ function random01(seed: number): number {
   let value = seed >>> 0;
   value ^= value << 13; value ^= value >>> 17; value ^= value << 5;
   return (value >>> 0) / 0x1_0000_0000;
+}
+
+function hexDistance(left: PlanetHex, right: PlanetHex): number {
+  const q = left.q - right.q;
+  const r = left.r - right.r;
+  return Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r));
 }
 
 function key(cell: PlanetHex): string { return `${cell.q}:${cell.r}`; }
@@ -90,8 +119,8 @@ function growTerritory(anchor: PlanetHex, wanted: number, occupied: Set<string>,
   queued.add(key(anchor));
   while (frontier.length > 0 && cells.length < wanted) {
     frontier.sort((left, right) => {
-      const leftScore = hashText(key(left), seed);
-      const rightScore = hashText(key(right), seed);
+      const leftScore = hexDistance(left, anchor) * 1_000 + hashText(key(left), seed) % 1_000;
+      const rightScore = hexDistance(right, anchor) * 1_000 + hashText(key(right), seed) % 1_000;
       return leftScore - rightScore || left.r - right.r || left.q - right.q;
     });
     const cell = frontier.shift()!;
@@ -246,4 +275,138 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
     };
   });
   return { width: pixelWidth, height: pixelHeight, hexRadius, viewBox: `0 0 ${pixelWidth} ${pixelHeight}`, oceanCells, coastCells, countries, routes, clouds, edgeFog };
+}
+
+const GLOBE_WIDTH = 1000;
+const GLOBE_HEIGHT = 700;
+
+function globePoint(
+  point: PlanetPoint,
+  base: Pick<ProjectedPlanetAtlas, "width" | "height">,
+  camera: PlanetGlobeCamera,
+  center: PlanetPoint,
+  radius: number,
+): PlanetPoint & { depth: number } {
+  const longitude = point.x / base.width * Math.PI * 2 - Math.PI - camera.longitude;
+  const latitude = Math.PI / 2 - point.y / base.height * Math.PI;
+  const cosLatitude = Math.cos(latitude);
+  const x = cosLatitude * Math.sin(longitude);
+  const y = Math.sin(latitude);
+  const z = cosLatitude * Math.cos(longitude);
+  const cosPitch = Math.cos(camera.latitude);
+  const sinPitch = Math.sin(camera.latitude);
+  const rotatedY = y * cosPitch - z * sinPitch;
+  const rotatedZ = y * sinPitch + z * cosPitch;
+  return { x: center.x + x * radius, y: center.y - rotatedY * radius, depth: rotatedZ };
+}
+
+function globeHexPath(center: PlanetPoint, radius: number): string {
+  const points = Array.from({ length: 6 }, (_, index) => {
+    const angle = Math.PI / 180 * (60 * index - 30);
+    return `${Math.round(center.x + radius * Math.cos(angle))},${Math.round(center.y + radius * Math.sin(angle))}`;
+  });
+  return `M${points.join("L")}Z`;
+}
+
+function projectGlobeCell(
+  cell: PlanetHex,
+  base: ProjectedPlanetAtlas,
+  camera: PlanetGlobeCamera,
+  center: PlanetPoint,
+  radius: number,
+): PlanetGlobeCell | null {
+  const point = globePoint(planetHexCenter(cell, base.hexRadius), base, camera, center, radius);
+  if (point.depth <= 0.025) return null;
+  const cellRadius = Math.max(4, 13.5 * Math.min(1.35, camera.zoom) * (0.65 + point.depth * 0.35));
+  return { ...cell, center: point, depth: point.depth, path: globeHexPath(point, cellRadius) };
+}
+
+export function projectProjectedPlanetGlobe(base: ProjectedPlanetAtlas, camera: PlanetGlobeCamera): ProjectedPlanetGlobe {
+  const center = { x: GLOBE_WIDTH / 2, y: GLOBE_HEIGHT / 2 };
+  const zoom = Math.max(0.82, Math.min(1.45, camera.zoom));
+  const clipRadius = Math.min(GLOBE_HEIGHT * 0.46, GLOBE_HEIGHT * 0.36 * zoom);
+  const normalizedCamera = { ...camera, zoom };
+  const countries = base.countries.flatMap((country): PlanetGlobeCountry[] => {
+    const cells = country.cells.flatMap((cell) => {
+      const projected = projectGlobeCell(cell, base, normalizedCamera, center, clipRadius);
+      return projected ? [projected] : [];
+    });
+    if (cells.length === 0) return [];
+    const totalDepth = cells.reduce((total, cell) => total + cell.depth, 0);
+    return [{
+      ...country,
+      cells,
+      center: {
+        x: cells.reduce((total, cell) => total + cell.center.x * cell.depth, 0) / totalDepth,
+        y: cells.reduce((total, cell) => total + cell.center.y * cell.depth, 0) / totalDepth,
+      },
+    }];
+  });
+  const byCountry = new Map(countries.map((country) => [country.id, country]));
+  const routes = base.routes.flatMap((route): PlanetRoute[] => {
+    const from = byCountry.get(route.fromCountryId);
+    const to = byCountry.get(route.toCountryId);
+    if (!from || !to) return [];
+    const midX = (from.center.x + to.center.x) / 2;
+    const distance = Math.hypot(to.center.x - from.center.x, to.center.y - from.center.y);
+    const midY = (from.center.y + to.center.y) / 2 - Math.max(18, distance * 0.22);
+    return [{ ...route, path: `M${from.center.x.toFixed(1)} ${from.center.y.toFixed(1)} Q${midX.toFixed(1)} ${midY.toFixed(1)} ${to.center.x.toFixed(1)} ${to.center.y.toFixed(1)}` }];
+  });
+  const coastCells = base.coastCells.flatMap((cell) => {
+    const projected = projectGlobeCell(cell, base, normalizedCamera, center, clipRadius);
+    return projected ? [projected] : [];
+  });
+  const clouds = base.clouds.flatMap((cloud) => {
+    const point = globePoint({ x: cloud.x, y: cloud.y }, base, normalizedCamera, center, clipRadius);
+    if (point.depth <= 0.08) return [];
+    return [{ ...cloud, x: point.x, y: point.y, scale: cloud.scale * (0.55 + point.depth * 0.35) }];
+  });
+  return { width: GLOBE_WIDTH, height: GLOBE_HEIGHT, center, clipRadius, countries, coastCells, routes, clouds };
+}
+
+export function projectPlanetGlobe(atlas: PlanetAtlasDto, camera: PlanetGlobeCamera): ProjectedPlanetGlobe {
+  return projectProjectedPlanetGlobe(projectPlanetAtlas(atlas), camera);
+}
+
+function rectanglesOverlap(left: PlanetCountryLabelLayout, right: PlanetCountryLabelLayout): boolean {
+  return left.x < right.x + right.width && left.x + left.width > right.x
+    && left.y < right.y + right.height && left.y + left.height > right.y;
+}
+
+export function layoutPlanetCountryLabels(
+  countries: PlanetGlobeCountry[],
+  width: number,
+  height: number,
+): PlanetCountryLabelLayout[] {
+  const labelWidth = 144;
+  const labelHeight = 38;
+  const margin = 12;
+  const placed: PlanetCountryLabelLayout[] = [];
+  const offsets = [
+    { x: -labelWidth / 2, y: -62 }, { x: 18, y: -38 }, { x: -labelWidth - 18, y: -38 },
+    { x: -labelWidth / 2, y: 24 }, { x: 26, y: 14 }, { x: -labelWidth - 26, y: 14 },
+  ];
+  for (const country of [...countries].sort((left, right) => right.progress - left.progress || left.id.localeCompare(right.id))) {
+    let selected: PlanetCountryLabelLayout | undefined;
+    for (const offset of offsets) {
+      const candidate = {
+        countryId: country.id,
+        x: Math.max(margin, Math.min(width - labelWidth - margin, country.center.x + offset.x)),
+        y: Math.max(margin, Math.min(height - labelHeight - margin, country.center.y + offset.y)),
+        width: labelWidth,
+        height: labelHeight,
+      };
+      if (!placed.some((other) => rectanglesOverlap(candidate, other))) { selected = candidate; break; }
+    }
+    if (!selected) {
+      for (let y = margin; y <= height - labelHeight - margin && !selected; y += labelHeight + 6) {
+        for (let x = margin; x <= width - labelWidth - margin; x += labelWidth + 6) {
+          const candidate = { countryId: country.id, x, y, width: labelWidth, height: labelHeight };
+          if (!placed.some((other) => rectanglesOverlap(candidate, other))) { selected = candidate; break; }
+        }
+      }
+    }
+    if (selected) placed.push(selected);
+  }
+  return placed;
 }

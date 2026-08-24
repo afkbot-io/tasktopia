@@ -53,6 +53,7 @@ import {
   nextCameraTargetScale,
   pixelPerfectCameraScale,
 } from "../world-camera";
+import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
 import {
   buildingBadgePresentation,
@@ -815,7 +816,7 @@ function ambientDetailAssets(): string[] {
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
+export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onZoomOutToCountry }: {
   countryId: string;
   chunkSize: number;
   worldManifest: WorldManifestDto;
@@ -826,6 +827,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
   onArchiveSelect: () => void;
+  onZoomOutToCountry?: () => void;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
   const [streaming, setStreaming] = useState(false);
@@ -838,6 +840,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const showDistrictsRef = useRef(showDistricts);
   const onTaskSelectRef = useRef(onTaskSelect);
   const onArchiveSelectRef = useRef(onArchiveSelect);
+  const onZoomOutToCountryRef = useRef(onZoomOutToCountry);
   const terrainSeed = worldManifest.terrainSeed;
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
@@ -862,7 +865,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   useEffect(() => {
     onTaskSelectRef.current = onTaskSelect;
     onArchiveSelectRef.current = onArchiveSelect;
-  }, [onArchiveSelect, onTaskSelect]);
+    onZoomOutToCountryRef.current = onZoomOutToCountry;
+  }, [onArchiveSelect, onTaskSelect, onZoomOutToCountry]);
 
   useEffect(() => {
     if (focusX == null || focusY == null || focusMinX == null || focusMinY == null || focusMaxX == null || focusMaxY == null) return;
@@ -1518,6 +1522,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         initialScale,
         minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
       );
+      let zoomBoundary = initialAtlasZoomBoundary();
       world.scale.set(appliedInitialScale);
       host.dataset.renderScale = String(appliedInitialScale);
       currentLod = appliedInitialScale < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
@@ -3004,6 +3009,19 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       const wheel = (event: WheelEvent) => {
         event.preventDefault();
         const oldScale = world.scale.x;
+        const minimumScale = minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
+        const wasAtMinimum = cameraTargetScale <= minimumScale + 0.001;
+        const direction = event.deltaY > 0 ? "OUT" : "IN";
+        const boundaryStep = advanceAtlasZoomBoundary(zoomBoundary, {
+          at: performance.now(),
+          atBoundary: direction === "OUT" && wasAtMinimum,
+          direction,
+        });
+        zoomBoundary = boundaryStep.state;
+        if (boundaryStep.triggered) {
+          onZoomOutToCountryRef.current?.();
+          return;
+        }
         cameraTargetScale = nextCameraTargetScale(cameraTargetScale, event.deltaY);
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };

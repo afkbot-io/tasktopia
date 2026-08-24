@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlanetAtlasDto } from "../src/shared/planet-atlas-contract";
-import { projectPlanetAtlas } from "../src/shared/planet-atlas";
+import { layoutPlanetCountryLabels, projectPlanetAtlas, projectPlanetGlobe, projectProjectedPlanetGlobe } from "../src/shared/planet-atlas";
 import { planetAtlasCacheKey } from "../src/client/planet-atlas-cache";
 
 const fixture: PlanetAtlasDto = {
@@ -73,5 +73,35 @@ describe("planet atlas projection", () => {
 
   it("keeps browser snapshots isolated between accounts", () => {
     expect(planetAtlasCacheKey("user-a")).not.toBe(planetAtlasCacheKey("user-b"));
+  });
+
+  it("projects only the visible hemisphere and rotates deterministically", () => {
+    const front = projectPlanetGlobe(fixture, { longitude: 0, latitude: 0, zoom: 1 });
+    const rotated = projectPlanetGlobe(fixture, { longitude: Math.PI / 2, latitude: 0, zoom: 1 });
+
+    expect(front.countries.flatMap((country) => country.cells).every((cell) => cell.depth > 0)).toBe(true);
+    expect(front.countries.flatMap((country) => country.cells).length).toBeGreaterThan(0);
+    expect(rotated.countries.map((country) => country.center)).not.toEqual(front.countries.map((country) => country.center));
+    expect(front.clipRadius).toBeLessThan(front.width / 2);
+  });
+
+  it("reuses the immutable seed projection while the camera moves", () => {
+    const projected = projectPlanetAtlas(fixture);
+    const first = projectProjectedPlanetGlobe(projected, { longitude: 0, latitude: 0, zoom: 1 });
+    const second = projectProjectedPlanetGlobe(projected, { longitude: .4, latitude: .1, zoom: 1.2 });
+    expect(first.countries.map((country) => country.center)).not.toEqual(second.countries.map((country) => country.center));
+    expect(projected.countries.flatMap((country) => country.cells).length).toBeGreaterThan(0);
+  });
+
+  it("lays out equal screen-space country labels without collisions", () => {
+    const globe = projectPlanetGlobe(fixture, { longitude: 0, latitude: 0, zoom: 1 });
+    const labels = layoutPlanetCountryLabels(globe.countries, globe.width, globe.height);
+    expect(new Set(labels.map((label) => label.width))).toEqual(new Set([144]));
+    expect(new Set(labels.map((label) => label.height))).toEqual(new Set([38]));
+    for (let left = 0; left < labels.length; left += 1) for (let right = left + 1; right < labels.length; right += 1) {
+      const a = labels[left]!;
+      const b = labels[right]!;
+      expect(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y).toBe(true);
+    }
   });
 });

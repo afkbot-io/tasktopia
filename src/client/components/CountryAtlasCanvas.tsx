@@ -9,8 +9,14 @@ import {
 } from "../../shared/country-atlas-contract";
 import { seededAtlasCutoutTerrain, seededAtlasMacroTerrain } from "../../shared/country-atlas-terrain";
 import { countryAtlasEventBatchImpact, patchCountryAtlasTaskProgress } from "../../shared/country-atlas-events";
-import { fitCountryAtlasBoundsToAspect } from "../../shared/country-atlas-viewport";
+import {
+  COUNTRY_ATLAS_BASE_HEIGHT_CELLS,
+  COUNTRY_ATLAS_BASE_WIDTH_CELLS,
+  fixedCountryAtlasLabelBounds,
+  fitCountryAtlasBoundsToAspect,
+} from "../../shared/country-atlas-viewport";
 import { api } from "../api";
+import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
 import { atlasBuildingPresentation } from "../country-atlas-presentation";
 import { AtlasAircraft } from "./AtlasAircraft";
 
@@ -139,7 +145,34 @@ function atlasFlightPath(from: CountryAtlasCityDto, to: CountryAtlasCityDto, ind
   return `M${start.x} ${start.y} Q${(start.x + end.x) / 2} ${(start.y + end.y) / 2 + curve} ${end.x} ${end.y}`;
 }
 
-export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsProcessed, onCitySelect, onDistrictSelect, onCityHover }: {
+function AtlasCityLabel({ city, onSelect }: { city: CountryAtlasCityDto; onSelect: () => void }) {
+  const bounds = fixedCountryAtlasLabelBounds(city.labelAnchor, city.labelBounds.maxY);
+  const widthCells = bounds.maxX - bounds.minX + 1;
+  const heightCells = bounds.maxY - bounds.minY + 1;
+  const minX = bounds.minX;
+  const maxY = bounds.maxY;
+  const minY = bounds.minY;
+  const width = widthCells * CELL;
+  const progress = city.districts.length > 0
+    ? city.districts.reduce((total, district) => total + district.progress, 0) / city.districts.length
+    : 0;
+  return <g className="atlas-city-label" role="button" tabIndex={0} aria-label={`Открыть город ${city.name}`} onClick={(event) => { event.stopPropagation(); onSelect(); }} onKeyDown={(event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect();
+  }}>
+    <path d={`M${city.labelAnchor.x * CELL} ${(maxY + 1) * CELL}h8l-4 5Z`} className="atlas-city-label-tab" />
+    <rect x={minX * CELL} y={minY * CELL} width={width} height={heightCells * CELL} />
+    {city.districts.some((district) => district.status === "ACTIVE") && <circle cx={minX * CELL + 14} cy={(minY + 2.45) * CELL} r="3.2" className="atlas-city-active-dot" />}
+    <text x={(minX + widthCells / 2) * CELL} y={(minY + 2.5) * CELL} textAnchor="middle">{city.name}</text>
+    <text x={(minX + widthCells / 2) * CELL} y={(minY + 4.65) * CELL} textAnchor="middle" className="atlas-city-meta">{city.districts.length} РАЙОНА · {city.buildings.length} ЗДАНИЙ</text>
+    <rect x={minX * CELL + 8} y={(maxY + 1) * CELL - 3} width={width - 16} height="2" className="atlas-city-progress-track" />
+    <rect x={minX * CELL + 8} y={(maxY + 1) * CELL - 3} width={Math.max(0, (width - 16) * progress / 100)} height="2" className="atlas-city-progress-value" />
+  </g>;
+}
+
+export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsProcessed, onCitySelect, onDistrictSelect, onCityHover, onZoomOut }: {
   countryId: string;
   activeCityId?: string;
   events: RealtimeEvent[];
@@ -147,6 +180,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   onCitySelect: (city: CountryAtlasCityDto) => void;
   onDistrictSelect: (city: CountryAtlasCityDto, district: CountryAtlasDistrictDto) => void;
   onCityHover: (city: CountryAtlasCityDto | null) => void;
+  onZoomOut: () => void;
 }) {
   const [atlas, setAtlas] = useState<CountryAtlasDto | null>(() => readCachedAtlas(countryId));
   const [error, setError] = useState("");
@@ -155,6 +189,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   const processedEventIdRef = useRef(0);
   const [hoveredDistrict, setHoveredDistrict] = useState<{ cityId: string; districtId: string } | null>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoomBoundary = useRef(initialAtlasZoomBoundary());
   const scheduleDistrictHover = (next: { cityId: string; districtId: string }, immediate = false) => {
     if (hoveredDistrict?.cityId === next.cityId && hoveredDistrict.districtId === next.districtId) return;
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -238,7 +273,10 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   }, [atlas]);
 
   const displayBounds = useMemo(() => atlas
-    ? fitCountryAtlasBoundsToAspect(atlas.bounds, hostAspect)
+    ? fitCountryAtlasBoundsToAspect(atlas.bounds, hostAspect, {
+      width: COUNTRY_ATLAS_BASE_WIDTH_CELLS,
+      height: COUNTRY_ATLAS_BASE_HEIGHT_CELLS,
+    })
     : { minX: 0, minY: 0, maxX: 0, maxY: 0 }, [atlas, hostAspect]);
 
   const viewport = useMemo(() => {
@@ -307,7 +345,26 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   if (error && !atlas) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
   if (!atlas) return <div className="atlas-state" role="status"><i /><span>Сжимаем расстояния между городами…</span></div>;
 
-  return <div ref={hostRef} className="country-atlas" data-country-atlas-cities={atlas.cities.length} onPointerMove={(event) => {
+  return <div ref={hostRef} className="country-atlas" data-country-atlas-cities={atlas.cities.length} onWheel={(event) => {
+    event.preventDefault();
+    const direction = event.deltaY < 0 ? "IN" : "OUT";
+    const next = advanceAtlasZoomBoundary(zoomBoundary.current, {
+      at: performance.now(), atBoundary: true, direction,
+    });
+    zoomBoundary.current = next.state;
+    if (!next.triggered) return;
+    if (direction === "OUT") { onZoomOut(); return; }
+    const bounds = hostRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const pointer = {
+      x: displayBounds.minX + (event.clientX - bounds.left) / Math.max(1, bounds.width) * (displayBounds.maxX - displayBounds.minX + 1),
+      y: displayBounds.minY + (event.clientY - bounds.top) / Math.max(1, bounds.height) * (displayBounds.maxY - displayBounds.minY + 1),
+    };
+    const city = [...atlas.cities].sort((left, right) =>
+      Math.hypot(left.atlasCenter.x - pointer.x, left.atlasCenter.y - pointer.y)
+      - Math.hypot(right.atlasCenter.x - pointer.x, right.atlasCenter.y - pointer.y))[0];
+    if (city) onCitySelect(city);
+  }} onPointerMove={(event) => {
     const target = event.target instanceof Element ? event.target.closest<SVGGElement>(".atlas-city") : null;
     const city = target ? atlas.cities.find((entry) => entry.id === target.dataset.cityId) : undefined;
     onCityHover(city ?? null);
@@ -475,15 +532,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
             </g>;
           })}
         </g>
-        <g className="atlas-city-label" role="button" tabIndex={0} aria-label={`Открыть город ${city.name}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onCitySelect(city); }}>
-          <path d={`M${city.labelAnchor.x * CELL} ${(city.labelBounds.maxY + 1) * CELL}h8l-4 5Z`} className="atlas-city-label-tab" />
-          <rect x={city.labelBounds.minX * CELL} y={city.labelBounds.minY * CELL} width={(city.labelBounds.maxX - city.labelBounds.minX + 1) * CELL} height={(city.labelBounds.maxY - city.labelBounds.minY + 1) * CELL} />
-          {city.districts.some((district) => district.status === "ACTIVE") && <circle cx={city.labelBounds.minX * CELL + 14} cy={(city.labelBounds.minY + 2.45) * CELL} r="3.2" className="atlas-city-active-dot" />}
-          <text x={(city.labelBounds.minX + city.labelBounds.maxX + 1) * CELL / 2} y={(city.labelBounds.minY + 2.5) * CELL} textAnchor="middle">{city.name}</text>
-          <text x={(city.labelBounds.minX + city.labelBounds.maxX + 1) * CELL / 2} y={(city.labelBounds.minY + 4.65) * CELL} textAnchor="middle" className="atlas-city-meta">{city.districts.length} РАЙОНА · {city.buildings.length} ЗДАНИЙ</text>
-          <rect x={city.labelBounds.minX * CELL + 8} y={(city.labelBounds.maxY + 1) * CELL - 3} width={(city.labelBounds.maxX - city.labelBounds.minX + 1) * CELL - 16} height="2" className="atlas-city-progress-track" />
-          <rect x={city.labelBounds.minX * CELL + 8} y={(city.labelBounds.maxY + 1) * CELL - 3} width={Math.max(0, ((city.labelBounds.maxX - city.labelBounds.minX + 1) * CELL - 16) * (city.districts.length > 0 ? city.districts.reduce((total, district) => total + district.progress, 0) / city.districts.length : 0) / 100)} height="2" className="atlas-city-progress-value" />
-        </g>
+        <AtlasCityLabel city={city} onSelect={() => onCitySelect(city)} />
       </g>)}
       <g className="atlas-clouds" aria-hidden="true">
         {atmosphereClouds.map((cloud) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--atlas-cloud-duration": `${cloud.duration}s` } as CSSProperties}>

@@ -268,8 +268,14 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-state i { width: 18px; height: 18px; border: 3px solid #49645f; border-top-color: #f2c84b; animation: spin .8s steps(8) infinite; }
 
 /* ── Seeded planet atlas ─────────────────────────────────── */
-.planet-atlas { position: absolute; inset: 0; overflow: hidden; background: #174f69; }
-.planet-atlas svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.planet-atlas { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(circle at 50% 45%, #173d55 0, #091c2d 58%, #06131f 100%); }
+.planet-atlas svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; user-select: none; }
+.planet-atlas svg:focus-visible { outline: 2px solid #f2d45e; outline-offset: -4px; }
+.planet-space { fill: #071a29; }
+.planet-globe-shadow { fill: #020b12; opacity: .58; filter: blur(7px); }
+.planet-globe-ocean { stroke: #75bbc4; stroke-width: 3px; }
+.planet-globe-atmosphere { pointer-events: none; }
+.planet-globe-shade { fill: none; stroke: #0617259c; stroke-width: 17px; pointer-events: none; }
 .planet-ocean, .planet-coast, .planet-routes { pointer-events: none; }
 .planet-ocean path { stroke: #2c7890; stroke-width: .45px; shape-rendering: crispEdges; }
 .planet-water-sparkles { pointer-events: none; }
@@ -277,17 +283,19 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-water-sparkles rect[data-phase="1"] { animation-delay: -1.2s; }
 @keyframes planet-water-shimmer { 50% { translate: 4px 0; fill: #70b8c4; } }
 .planet-coast path { fill: #c4b176; stroke: #ede0a2; stroke-width: .7px; opacity: .8; shape-rendering: crispEdges; }
-.planet-country { cursor: pointer; outline: none; pointer-events: bounding-box; }
+.planet-country { cursor: grab; outline: none; pointer-events: bounding-box; }
 .planet-country-hit { fill: transparent; stroke: none; pointer-events: all; }
 .planet-country > path { stroke-width: 1.2px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; transition: filter .12s steps(2, end); }
 .planet-country:hover > path, .planet-country:focus > path { filter: brightness(1.18) saturate(1.08); }
 .planet-country[data-active="true"] > path { stroke: #f2d45e; stroke-width: 2px; }
 .planet-country[data-selecting="true"] { opacity: .68; }
-.planet-country-label { pointer-events: none; }
-.planet-country-label > rect:first-child { fill: #0a1b1e; stroke: #c3b06c; stroke-width: 1.4px; vector-effect: non-scaling-stroke; }
-.planet-country[data-active="true"] .planet-country-label > rect:first-child { stroke: #f2d45e; stroke-width: 2px; }
-.planet-country-label text { fill: #fff4d2; font: 900 9px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
-.planet-country-label .planet-country-meta { fill: #91aaa6; font-size: 5px; letter-spacing: .08em; }
+.planet-country-label { cursor: pointer; outline: none; }
+.planet-country-label-hit { fill: #0a1b1ef2; stroke: #c3b06c; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.planet-country-label[data-active="true"] .planet-country-label-hit { stroke: #f2d45e; stroke-width: 2px; }
+.planet-country-label[data-selecting="true"] { opacity: .68; }
+.planet-country-label:hover .planet-country-label-hit, .planet-country-label:focus .planet-country-label-hit { fill: #112a2e; stroke: #f2d45e; }
+.planet-country-label text { fill: #fff4d2; font: 900 11px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; pointer-events: none; }
+.planet-country-label .planet-country-meta { fill: #91aaa6; font-size: 6px; letter-spacing: .08em; }
 .planet-country-progress-track { fill: #233a3c !important; stroke: none !important; }
 .planet-country-progress-value { fill: #88c96f !important; stroke: none !important; }
 .planet-route-line { fill: none; stroke: #d7e8dc; stroke-width: 1px; stroke-dasharray: 3 4; opacity: .28; vector-effect: non-scaling-stroke; }
@@ -295,7 +303,8 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-clouds > g { animation: planet-cloud-drift var(--cloud-duration) steps(18, end) var(--cloud-delay) infinite alternate; }
 .planet-clouds path { fill: #eaf0df; stroke: #b7c9c3; stroke-width: .8px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
 .planet-clouds .planet-cloud-shade { fill: #b9cbc5; }
-@keyframes planet-cloud-drift { from { translate: -28px 0; } to { translate: 28px 0; } }
+@keyframes planet-cloud-drift { from { translate: -72px 8px; } to { translate: 72px -8px; } }
+.planet-globe-hint { position: absolute; left: 50%; bottom: 70px; z-index: 3; padding: 7px 10px; border: 1px solid #365768; border-radius: 7px; background: #071923d9; color: #9eb4b8; font-size: 10px; transform: translateX(-50%); pointer-events: none; }
 .planet-edge-fog { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
 .planet-edge-fog i, .country-edge-water-fog i { position: absolute; width: 36px; height: 12px; margin: -6px 0 0 -18px; background: #eaf0df; image-rendering: pixelated; animation: edge-fog-drift 9s steps(6, end) infinite alternate; }
 .planet-edge-fog i::before, .country-edge-water-fog i::before, .planet-edge-fog i::after, .country-edge-water-fog i::after { position: absolute; content: ""; }

@@ -113,6 +113,11 @@ test("planet, country and city levels keep selection and disabled states coheren
   const levels = page.getByRole("navigation", { name: "Уровень карты" });
   await levels.getByRole("button", { name: "Планета" }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-countries", String(planetFixture.countryCount));
+  const countryLabelBoxes = await page.locator(".planet-country-label-hit").evaluateAll((nodes) => nodes.map((node) => {
+    const box = (node as SVGGraphicsElement).getBBox();
+    return { width: box.width, height: box.height };
+  }));
+  expect(new Set(countryLabelBoxes.map((box) => `${box.width}:${box.height}`))).toEqual(new Set(["144:38"]));
   await expect(page.locator(".planet-routes .atlas-aircraft-sprite").first()).toBeAttached();
   await expect(page.locator('animateMotion[rotate="auto"]')).toHaveCount(0);
   expect(await page.locator(".planet-routes .atlas-aircraft-sprite").first().evaluate((node) => getComputedStyle(node).imageRendering)).toBe("pixelated");
@@ -120,7 +125,7 @@ test("planet, country and city levels keep selection and disabled states coheren
   await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
   await expect(page.getByLabel("Панель управления страной").getByText(/Районов|Зданий/)).toHaveCount(0);
 
-  await page.locator(`.planet-country[data-country-id="${planetFixture.originalCountryId}"]`).click();
+  await page.locator(`.planet-country-label[data-country-id="${planetFixture.originalCountryId}"]`).click();
   await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
   await expect(levels.getByRole("button", { name: "Страна" })).toHaveAttribute("aria-current", "page");
   await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
@@ -130,6 +135,29 @@ test("planet, country and city levels keep selection and disabled states coheren
   await expect(levels.getByRole("button", { name: "Город" })).toHaveAttribute("aria-current", "page");
   await expect(levels.getByRole("button", { name: "Страна" })).toBeEnabled();
   await levels.getByRole("button", { name: "Страна" }).click();
+  await expect(page.locator(".country-atlas")).toBeVisible();
+});
+
+test("two extra wheel steps cross upward from city to country and from country to planet", async ({ page }) => {
+  await loginAndOpenCountryAtlas(page);
+  const activeCountryId = await page.evaluate(async () => (await fetch("/api/bootstrap").then((response) => response.json()) as { country: { id: string } }).country.id);
+  const atlas = page.locator(".country-atlas");
+  const atlasBox = await atlas.boundingBox();
+  expect(atlasBox).not.toBeNull();
+  await page.mouse.move(atlasBox!.x + atlasBox!.width / 2, atlasBox!.y + atlasBox!.height / 2);
+  await page.mouse.wheel(0, 120);
+  await expect(atlas).toBeVisible();
+  await page.mouse.wheel(0, 120);
+  await expect(page.locator(".planet-atlas")).toBeVisible();
+
+  await page.locator(`.planet-country-label[data-country-id="${activeCountryId}"]`).click();
+  await page.locator(".atlas-city-label").first().click();
+  const world = page.locator(".world-canvas");
+  await expect(world).toBeVisible({ timeout: 45_000 });
+  const worldBox = await world.boundingBox();
+  expect(worldBox).not.toBeNull();
+  await page.mouse.move(worldBox!.x + worldBox!.width / 2, worldBox!.y + worldBox!.height / 2);
+  for (let index = 0; index < 15 && await world.count() > 0; index += 1) await page.mouse.wheel(0, 180);
   await expect(page.locator(".country-atlas")).toBeVisible();
 });
 
