@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "key": "house-lowrise-courtyard-plaster",
+  "category": "HOUSE",
+  "cellSizePx": 8,
+  "spriteCanvasCells": [
+    22,
+    22
+  ],
+  "physicalFootprintCells": [
+    22,
+    16
+  ],
+  "projectedRoofDepthCells": 4,
+  "foundationThicknessCells": 2,
+  "constructionClearanceCells": 1,
+  "entrance": {
+    "side": "S",
+    "offset": 11
+  },
+  "doorSizePx": [
+    16,
+    16
+  ],
+  "doorLeafSizePx": [
+    12,
+    14
+  ],
+  "doorBottomInsetPx": 6,
+  "doorVisualReview": {
+    "moduleBoundsPx": [
+      80,
+      154,
+      96,
+      170
+    ],
+    "leafBoundsPx": [
+      82,
+      156,
+      94,
+      170
+    ],
+    "reviewedStage5Sha256": "13480d0895fb0513d46e4de7901ada8dfcb97ff1de5eb48ebfd6acf0417aef7d",
+    "moduleMatchesVisibleEntrance": true,
+    "leavesMatchVisibleDoorPixels": true,
+    "reviewedEvidenceSha256": "d319b1817a0d9421cc3b8f36d9013e7bcedd5a9b02b9615b303a21903d2ab6c2"
+  },
+  "sitePreviewCells": [
+    26,
+    24
+  ]
+}

@@ -40,12 +40,18 @@ test("validates and captures ten new-build cities", async ({ page }) => {
   for (let index = 0; index < cities.length; index += 1) {
     if (onlyCityIndex > 0 && index !== onlyCityIndex - 1) continue;
     consoleErrors.length = 0;
+    const headerCity = page.locator(".header-city strong");
+    // Atlas mode intentionally has no city heading. Never let that optional
+    // element consume the full five-minute scenario timeout before opening
+    // the requested city from the plan.
+    const previousCity = await headerCity.textContent({ timeout: 1_000 }).catch(() => null);
+    const previousAgentIds = await host.getAttribute("data-agent-ids", { timeout: 1_000 }).catch(() => null);
     await page.getByRole("button", { name: "План", exact: true }).click();
     const drawer = page.getByRole("complementary", { name: "План страны" });
     await expect(drawer).toBeVisible();
     await drawer.locator(".plan-row > button:first-child", { hasText: cities[index] }).click();
     await expect(drawer).toBeHidden();
-
+    await expect(headerCity).toHaveText(cities[index], { timeout: 45_000 });
     await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks") ?? 0), { timeout: 45_000 })
       .toBeGreaterThan(0);
     await canvas.hover();
@@ -60,6 +66,10 @@ test("validates and captures ten new-build cities", async ({ page }) => {
       .toBeGreaterThan(0);
     await expect.poll(async () => Number(await host.getAttribute("data-walkers") ?? 0), { timeout: 45_000 })
       .toBeGreaterThan(0);
+    if (previousCity && previousCity !== cities[index] && previousAgentIds) {
+      await expect.poll(async () => await host.getAttribute("data-agent-ids"), { timeout: 45_000 })
+        .not.toBe(previousAgentIds);
+    }
     await expect.poll(async () => Number(await host.getAttribute("data-traffic-signals") ?? 0), { timeout: 45_000 })
       .toBeGreaterThanOrEqual(2);
     await expect(host).toHaveAttribute("data-wrong-way-cars", "0");
@@ -68,10 +78,10 @@ test("validates and captures ten new-build cities", async ({ page }) => {
     await expect(host).toHaveAttribute("data-world-object-depth-errors", "0");
     await expect(host).toHaveAttribute("data-resident-center-errors", "0");
     const walkState = await host.getAttribute("data-resident-walk-state");
-    const trafficSteps = Number(await host.getAttribute("data-traffic-steps") ?? 0);
+    const trafficLifetimeSteps = Number(await host.getAttribute("data-traffic-lifetime-steps") ?? 0);
     await expect.poll(async () => await host.getAttribute("data-resident-walk-state"), { timeout: 8_000 }).not.toBe(walkState);
-    await expect.poll(async () => Number(await host.getAttribute("data-traffic-steps") ?? 0), { timeout: 8_000 })
-      .toBeGreaterThan(trafficSteps);
+    await expect.poll(async () => Number(await host.getAttribute("data-traffic-lifetime-steps") ?? 0), { timeout: 8_000 })
+      .toBeGreaterThan(trafficLifetimeSteps);
     await expect.poll(async () => Number(await host.getAttribute("data-traffic-moving-vehicles") ?? 0), { timeout: 16_000 })
       .toBeGreaterThan(0);
 
@@ -98,6 +108,7 @@ test("validates and captures ten new-build cities", async ({ page }) => {
       worldObjectDepthErrors: await metric("world-object-depth-errors"),
       residentCenterErrors: await metric("resident-center-errors"),
       trafficSteps: await metric("traffic-steps"),
+      trafficLifetimeSteps: await metric("traffic-lifetime-steps"),
       residentWalkFrames: await host.getAttribute("data-resident-walk-frames") ?? "",
     });
     await page.screenshot({

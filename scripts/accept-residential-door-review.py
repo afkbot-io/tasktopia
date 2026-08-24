@@ -8,11 +8,14 @@ import hashlib
 import json
 from pathlib import Path
 
+from pixel_city_study import active_study_directory
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "assets/pixel-city-pack/catalog/buildings.json"
 RUNTIME = ROOT / "assets/pixel-city-pack/runtime/buildings/house"
 STUDIES = ROOT / "assets/pixel-city-pack/reference/ai-authored/building-stage-study"
+REFERENCE = ROOT / "assets/pixel-city-pack/reference"
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,7 +47,12 @@ def main() -> None:
     for building in buildings:
         key = building["key"]
         runtime_stage = RUNTIME / key / "stage-5.png"
-        geometry_path = STUDIES / f"{key}-v5" / "geometry.json"
+        directory = active_study_directory(
+            building,
+            reference_root=REFERENCE,
+            studies_root=STUDIES,
+        )
+        geometry_path = directory / "geometry.json"
         geometry = json.loads(geometry_path.read_text(encoding="utf-8"))
         review = geometry["doorVisualReview"]
         runtime_sha256 = hashlib.sha256(runtime_stage.read_bytes()).hexdigest()
@@ -60,7 +68,7 @@ def main() -> None:
         review["moduleMatchesVisibleEntrance"] = True
         review["leavesMatchVisibleDoorPixels"] = True
         geometry_path.write_text(f"{json.dumps(geometry, ensure_ascii=False, indent=2)}\n", encoding="utf-8")
-        projection_path = STUDIES / f"{key}-v5" / "projection-review.json"
+        projection_path = directory / "projection-review.json"
         projection = json.loads(projection_path.read_text(encoding="utf-8"))
         if not projection.get("reviewedEvidenceFingerprint"):
             raise ValueError(f"{key}: projection evidence fingerprint is missing")

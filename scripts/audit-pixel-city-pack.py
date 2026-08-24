@@ -9,12 +9,15 @@ from typing import Any
 
 from PIL import Image
 
+from pixel_city_study import active_study_directory
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / "assets" / "pixel-city-pack"
 RUNTIME = PACK / "runtime"
 MANIFEST_PATH = PACK / "manifest.json"
 AI_PROP_CATALOG_PATH = PACK / "catalog" / "ai-authored-props.json"
+BUILDING_CATALOG_PATH = PACK / "catalog" / "buildings.json"
 BUILDING_STUDY_ROOT = PACK / "reference" / "ai-authored" / "building-stage-study"
 CELL = 8
 PALETTE_BUDGET = 32
@@ -27,11 +30,25 @@ GAS_STATION_KEYS = {
     "commercial-gas-station-cafe",
     "commercial-gas-station-wash",
 }
+BUILDING_CATALOG = {
+    str(building["key"]): building
+    for building in json.loads(BUILDING_CATALOG_PATH.read_text())["buildings"]
+}
+
+
+def active_geometry_path(key: str) -> Path:
+    """Resolve the geometry beside the catalog's active versioned stage sources."""
+    building = BUILDING_CATALOG.get(key, {"key": key})
+    return active_study_directory(
+        building,
+        reference_root=PACK / "reference",
+        studies_root=BUILDING_STUDY_ROOT,
+    ) / "geometry.json"
 
 
 def minimum_finished_height_ratio(key: str, canvas_height: int) -> float:
     """Use the accepted building geometry instead of a generic tall-building ratio."""
-    contract_path = BUILDING_STUDY_ROOT / f"{key}-v5" / "geometry.json"
+    contract_path = active_geometry_path(key)
     if not contract_path.is_file() or canvas_height <= 0:
         return 0.6
     contract = json.loads(contract_path.read_text())

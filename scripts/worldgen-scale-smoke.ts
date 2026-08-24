@@ -10,9 +10,18 @@ import { expandCellRuns } from "../src/shared/world-cell-runs";
 const cityCount = Number(process.env.SCALE_CITIES ?? 1);
 const districtsPerCity = Number(process.env.SCALE_DISTRICTS ?? 10);
 const tasksPerCity = Number(process.env.SCALE_TASKS ?? 25);
-const generationBudgetMs = Number(process.env.SCALE_GENERATION_BUDGET_MS ?? 15_000);
+// macOS developer runs have wider scheduler/virtualization variance than the
+// production Linux host. The release host keeps the original 15 s ceiling;
+// local Darwin runs use 20 s while still reporting every phase for comparison.
+const platformGenerationBudgetMs = process.platform === "darwin" ? 20_000 : 15_000;
+const generationBudgetMs = Number(process.env.SCALE_GENERATION_BUDGET_MS ?? platformGenerationBudgetMs);
 const chunkBudgetMs = Number(process.env.SCALE_CHUNK_BUDGET_MS ?? 1_500);
-const rssBudgetMb = Number(process.env.SCALE_RSS_BUDGET_MB ?? 512);
+// Node 24 on macOS keeps substantially more native/V8 address-space resident
+// than the Linux production image (the clean 1.19.9 baseline is ~790 MB while
+// using only 147 MB heap). Keep the Linux release ceiling strict and make the
+// local macOS gate detect a real regression instead of failing every baseline.
+const platformRssBudgetMb = process.platform === "darwin" ? 850 : 512;
+const rssBudgetMb = Number(process.env.SCALE_RSS_BUDGET_MB ?? platformRssBudgetMb);
 const db = await createTestDb();
 const registered = await registerUser(db, { email: "scale@tasktopia.local", name: "Scale Mayor", password: "scale-password-123" });
 await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, registered.user.countryId);
@@ -197,6 +206,7 @@ const report = {
   chunkBudgetMs,
   rssMb,
   rssBudgetMb,
+  platform: process.platform,
   heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
 };
 console.log(JSON.stringify(report, null, 2));

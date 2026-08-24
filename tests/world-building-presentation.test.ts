@@ -7,7 +7,7 @@ import {
   taskPlatformCells,
   taskPlatformPresentation,
 } from "../src/client/world-building-presentation";
-import { getBuilding } from "../src/shared/catalog";
+import { BUILDING_CATALOG, getBuilding } from "../src/shared/catalog";
 
 describe("building badge presentation", () => {
   it("uses the task number as the compact house number", () => {
@@ -126,8 +126,33 @@ describe("building platform presentation", () => {
     expect(taskPlatformCellPresentation(entry, footprint, { x: 26, y: 35 }, 9, 5))
       .toEqual({ family: "tile", key: "path-asphalt" });
     expect(taskPlatformCellPresentation(entry, footprint, { x: 20, y: 35 }, 9, 5))
-      .toEqual({ family: "terrain", key: "GRASS", variant: expect.any(Number) });
+      .toEqual({ family: "tile", key: "path-asphalt" });
     expect(taskPlatformCellPresentation(entry, footprint, { x: 26, y: 30 }, 9, 5))
-      .toEqual({ family: "tile", key: "pavement" });
+      .toEqual({ family: "terrain", key: "GRASS", variant: expect.any(Number) });
+  });
+
+  it("keeps completed low-rise pavement under the building instead of above its roof", () => {
+    const entry = getBuilding("house-lowrise-courtyard-plaster");
+    const footprint = Array.from({ length: entry.footprint.height }, (_, row) =>
+      Array.from({ length: entry.footprint.width }, (_unused, column) => ({ x: 10 + column, y: 20 + row })),
+    ).flat();
+    const platform = taskPlatformCells(footprint, 5, entry);
+    expect(platform).toHaveLength(entry.finishedPlatform!.width * entry.finishedPlatform!.height);
+    expect(Math.min(...platform.map((cell) => cell.y))).toBe(32);
+    expect(Math.max(...platform.map((cell) => cell.y))).toBe(35);
+  });
+
+  it("declares and applies an authored lower platform for every ordinary low-rise family", () => {
+    for (const entry of BUILDING_CATALOG.filter((candidate) => candidate.tags.includes("low-rise-residential"))) {
+      expect(entry.finishedPlatform, entry.key).toBeDefined();
+      const footprint = Array.from({ length: entry.footprint.height }, (_, row) =>
+        Array.from({ length: entry.footprint.width }, (_unused, column) => ({ x: column, y: row })),
+      ).flat();
+      const platform = taskPlatformCells(footprint, 5, entry);
+      expect(platform, entry.key).toHaveLength(entry.finishedPlatform!.width * entry.finishedPlatform!.height);
+      expect(Math.max(...platform.map((cell) => cell.y)), entry.key).toBe(entry.footprint.height - 1);
+      expect(Math.min(...platform.map((cell) => cell.y)), entry.key)
+        .toBe(entry.footprint.height - entry.finishedPlatform!.height);
+    }
   });
 });

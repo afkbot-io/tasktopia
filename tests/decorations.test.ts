@@ -5,35 +5,14 @@ import { generateWorldDecorations } from "../src/shared/world-decorations";
 import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 
 describe("procedural decoration footprints", () => {
-  it("builds deterministic rural crop and shrub patches instead of isolated confetti", () => {
+  it("keeps crop fields in the seed-ground layer and only emits grouped shrub/rock props", () => {
     const terrain: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 160, 128)
       .map((cell) => ({ ...cell, terrain: "MEADOW" as const, variant: 0 }));
     const first = generateWorldDecorations(20260821, terrain, new Set(), [], [], [], []);
     const second = generateWorldDecorations(20260821, terrain, new Set(), [], [], [], []);
     expect(first).toEqual(second);
-    const crops = first.filter((item) => item.kind.startsWith("crop-"));
-    expect(crops.length).toBeGreaterThanOrEqual(12);
-    expect(new Set(crops.map((item) => item.kind)).size).toBeGreaterThanOrEqual(2);
-    expect(crops.some((item) => crops.some((other) => item.id !== other.id
-      && Math.abs(item.origin.x - other.origin.x) + Math.abs(item.origin.y - other.origin.y) === 1))).toBe(true);
-    const cropKeys = new Set(crops.map((item) => cellKey(item.origin)));
-    const componentSizes: number[] = [];
-    while (cropKeys.size > 0) {
-      const [start] = cropKeys;
-      const queue = [start!];
-      cropKeys.delete(start!);
-      let size = 0;
-      for (let cursor = 0; cursor < queue.length; cursor += 1) {
-        size += 1;
-        const [x, y] = queue[cursor]!.split(",").map(Number);
-        for (const neighbor of [`${x! - 1},${y}`, `${x! + 1},${y}`, `${x},${y! - 1}`, `${x},${y! + 1}`]) {
-          if (!cropKeys.delete(neighbor)) continue;
-          queue.push(neighbor);
-        }
-      }
-      componentSizes.push(size);
-    }
-    expect(Math.max(...componentSizes)).toBeGreaterThanOrEqual(180);
+    expect(first.filter((item) => item.kind.startsWith("crop-"))).toHaveLength(0);
+    expect(first.length).toBeLessThan(900);
     const tinyNature = first.filter((item) => /^(bush|shrub|rock)-/.test(item.kind));
     expect(tinyNature.every((item) => tinyNature.some((other) => item.id !== other.id
       && Math.abs(item.origin.x - other.origin.x) <= 2

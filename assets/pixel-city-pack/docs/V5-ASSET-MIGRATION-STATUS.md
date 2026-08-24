@@ -49,6 +49,13 @@ double-door leaf bounds on the same south baseline. Eight legacy stage-3/4
 sources were replaced with true-alpha authored stages; the strict verifier now
 accepts all ten families with zero errors.
 
+The 1.20.0 projection correction moves `house-lowrise-courtyard-plaster` to
+versioned authored sources `v6`. Its three independent stages share one
+baseline and camera; stage 3 occupies 58.5% of the finished height, while the
+finished sprite uses one 32px-deep shallow mansard plane instead of the former
+cutaway roof. The active 16×16 entrance, projection annotations and their
+evidence fingerprints are bound to the rebuilt runtime SHA-256.
+
 ## Release gates
 
 1. `npm run assets:build` produces exactly 167 building families and 835 stages.

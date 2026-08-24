@@ -36,7 +36,7 @@ function footprint(origin: Cell, width: number, height: number): Cell[] {
   return Array.from({ length: width * height }, (_, index) => ({ x: origin.x + index % width, y: origin.y + Math.floor(index / width) }));
 }
 
-type SeededNaturePatch = "WHEAT" | "CORN" | "SHRUB" | "ROCK";
+type SeededNaturePatch = "SHRUB" | "ROCK";
 
 /**
  * Macro-cell patches are evaluated from world coordinates, not chunk-local
@@ -50,18 +50,11 @@ function seededNaturePatch(seed: number, cell: Cell): SeededNaturePatch | undefi
   const localX = cell.x - macroX * macroSize;
   const localY = cell.y - macroY * macroSize;
   const roll = hashCoordinate(seed, macroX, macroY, 881);
-  const patch: SeededNaturePatch | undefined = roll < 0.18 ? "WHEAT"
-    : roll < 0.34 ? "CORN"
-      : roll < 0.5 ? "SHRUB"
-        : roll < 0.58 ? "ROCK" : undefined;
+  const patch: SeededNaturePatch | undefined = roll < 0.18 ? "SHRUB"
+    : roll < 0.24 ? "ROCK" : undefined;
   if (!patch) return undefined;
   const centerX = 12 + Math.floor(hashCoordinate(seed, macroX, macroY, 883) * 8);
   const centerY = 12 + Math.floor(hashCoordinate(seed, macroX, macroY, 887) * 8);
-  if (patch === "WHEAT" || patch === "CORN") {
-    const halfWidth = 8 + Math.floor(hashCoordinate(seed, macroX, macroY, 907) * 4);
-    const halfHeight = 6 + Math.floor(hashCoordinate(seed, macroX, macroY, 911) * 3);
-    return Math.abs(localX - centerX) <= halfWidth && Math.abs(localY - centerY) <= halfHeight ? patch : undefined;
-  }
   const dx = localX - centerX;
   const dy = localY - centerY;
   const radius = patch === "SHRUB" ? 6 : 4;
@@ -128,11 +121,7 @@ export function generateWorldDecorations(
     const shoreDirection = (cell.terrain === "SAND" || cell.terrain === "WET_SAND") && closeToCity(cell) ? waterDirection(cell) : undefined;
     const naturePatch = !district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && !closeToCity(cell, 24)
       ? seededNaturePatch(seed, cell) : undefined;
-    if (naturePatch === "WHEAT") {
-      kind = hashCoordinate(seed, cell.x, cell.y, 929) < 0.5 ? "crop-wheat-a" : "crop-wheat-b";
-    } else if (naturePatch === "CORN") {
-      kind = hashCoordinate(seed, cell.x, cell.y, 937) < 0.5 ? "crop-corn-a" : "crop-corn-b";
-    } else if (naturePatch === "SHRUB") {
+    if (naturePatch === "SHRUB") {
       const shrubs = ["shrub-hazel", "shrub-fern", "shrub-flowering", "shrub-hedge", "shrub-juniper"];
       kind = shrubs[Math.floor(hashCoordinate(seed, cell.x, cell.y, 941) * shrubs.length)];
     } else if (naturePatch === "ROCK") {

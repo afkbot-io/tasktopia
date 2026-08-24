@@ -105,7 +105,7 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
   await expect(canvas).toBeVisible();
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-seed-first-frame", "true");
-  await expect(host).toHaveAttribute("data-seed-terrain-pattern", "procedural-pixel-v1");
+  await expect(host).toHaveAttribute("data-seed-terrain-pattern", "procedural-pixel-v2");
   await expect(firstFrame).toBeHidden({ timeout: 90_000 });
   await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
   await expect.poll(async () => await host.getAttribute("data-loading")).toBe("false");

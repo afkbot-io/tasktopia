@@ -10,11 +10,14 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from pixel_city_study import active_study_directory
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "assets/pixel-city-pack/catalog/buildings.json"
 RUNTIME = ROOT / "assets/pixel-city-pack/runtime/buildings/house"
 STUDIES = ROOT / "assets/pixel-city-pack/reference/ai-authored/building-stage-study"
+REFERENCE = ROOT / "assets/pixel-city-pack/reference"
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,7 +41,11 @@ def entrance_crop(building: dict[str, object], scale: int) -> Image.Image:
     key = str(building["key"])
     image = Image.open(RUNTIME / key / "stage-5.png").convert("RGBA")
     runtime_sha256 = hashlib.sha256((RUNTIME / key / "stage-5.png").read_bytes()).hexdigest()
-    geometry = json.loads((STUDIES / f"{key}-v5" / "geometry.json").read_text())
+    geometry = json.loads((active_study_directory(
+        building,
+        reference_root=REFERENCE,
+        studies_root=STUDIES,
+    ) / "geometry.json").read_text())
     entrance = geometry["entrance"]
     module_width, module_height = geometry["doorSizePx"]
     leaf_width, leaf_height = geometry["doorLeafSizePx"]
@@ -91,7 +98,11 @@ def main() -> None:
         row.paste(crop, (0, 0), crop)
         draw = ImageDraw.Draw(row)
         key = str(building["key"])
-        geometry = json.loads((STUDIES / f"{key}-v5" / "geometry.json").read_text())
+        geometry = json.loads((active_study_directory(
+            building,
+            reference_root=REFERENCE,
+            studies_root=STUDIES,
+        ) / "geometry.json").read_text())
         draw.text((crop.width + 12, 12), key, fill=(239, 236, 215), font=font)
         draw.text(
             (crop.width + 12, 30),

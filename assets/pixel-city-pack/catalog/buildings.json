@@ -7992,6 +7992,10 @@
         24,
         16
       ],
+      "finishedPlatformCells": [
+        24,
+        4
+      ],
       "anchorPx": [
         96,
         184
@@ -8045,6 +8049,10 @@
         22,
         16
       ],
+      "finishedPlatformCells": [
+        22,
+        4
+      ],
       "anchorPx": [
         88,
         176
@@ -8074,14 +8082,14 @@
       "maxPerDistrict": null,
       "serviceRole": null,
       "stageSources": [
-        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v5/sources/stage-5.png"
+        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v6/sources/stage-3.png",
+        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v6/sources/stage-4.png",
+        "ai-authored/building-stage-study/house-lowrise-courtyard-plaster-v6/sources/stage-5.png"
       ],
       "stageSha256": [
-        "d3b313899fafff997d9f6d9fd04904043c3060052e2b99b9bc5ee06b174e9b44",
-        "4286cbe16e46b7d845ed778486d0f97f46ef76c99e5b4ed3fe01a101ea7e44a1",
-        "e67b0c9727c94553ce114eff1e29e6a47fd3778a0443b66939679db438bfbb66"
+        "b3b53a6106f173b24862aff91a1240575f90374a3ed15436d9802f0992d2bfee",
+        "6dc88e60d63a68127103c067b0083e417fa1b1c7305221b61d1f06075db6309e",
+        "29824afb54325facf1d495c89b80692660419f1f6888a6f8af3d543dfa8979c1"
       ],
       "reviewed": true
     },
@@ -8097,6 +8105,10 @@
       "footprintCells": [
         18,
         14
+      ],
+      "finishedPlatformCells": [
+        18,
+        3
       ],
       "anchorPx": [
         72,
@@ -8151,6 +8163,10 @@
         22,
         16
       ],
+      "finishedPlatformCells": [
+        22,
+        4
+      ],
       "anchorPx": [
         88,
         224
@@ -8203,6 +8219,10 @@
       "footprintCells": [
         22,
         16
+      ],
+      "finishedPlatformCells": [
+        22,
+        4
       ],
       "anchorPx": [
         88,
@@ -8257,6 +8277,10 @@
         24,
         16
       ],
+      "finishedPlatformCells": [
+        24,
+        4
+      ],
       "anchorPx": [
         96,
         232
@@ -8309,6 +8333,10 @@
       "footprintCells": [
         22,
         16
+      ],
+      "finishedPlatformCells": [
+        22,
+        4
       ],
       "anchorPx": [
         88,
@@ -8363,6 +8391,10 @@
         18,
         14
       ],
+      "finishedPlatformCells": [
+        18,
+        3
+      ],
       "anchorPx": [
         72,
         200
@@ -8416,6 +8448,10 @@
         24,
         16
       ],
+      "finishedPlatformCells": [
+        24,
+        4
+      ],
       "anchorPx": [
         96,
         216
@@ -8468,6 +8504,10 @@
       "footprintCells": [
         18,
         14
+      ],
+      "finishedPlatformCells": [
+        18,
+        3
       ],
       "anchorPx": [
         72,

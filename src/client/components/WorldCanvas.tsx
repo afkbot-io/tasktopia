@@ -330,7 +330,7 @@ function drawPlatform(task: ChunkTaskDto): Container {
     return group;
   }
   const entry = getBuilding(task.buildingType);
-  for (const cell of taskPlatformCells(task.footprint, task.stage)) {
+  for (const cell of taskPlatformCells(task.footprint, task.stage, entry)) {
     const p = position(cell);
     const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
     const tile = presentation.family === "tile"
@@ -752,7 +752,7 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[]
           for (const detail of construction.details) urls.add(PROP_SPRITES[detail.key]!);
           }
           if (task.stage > 2) urls.add(entry.stages[task.stage - 1]!);
-          for (const cell of task.footprint) {
+          for (const cell of taskPlatformCells(task.footprint, task.stage, entry)) {
             const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
             urls.add(presentation.family === "tile"
               ? TILE_SPRITES[presentation.key]!
@@ -1303,6 +1303,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             agent.trail.length = Math.min(agent.trail.length, 4);
             agent.current = agent.next;
             agent.steps += 1;
+            if (agent.kind === "CAR" || agent.kind === "BUS") {
+              host.dataset.trafficLifetimeSteps = String(Number(host.dataset.trafficLifetimeSteps ?? 0) + 1);
+            }
             agent.routeIndex += 1;
             if (agent.kind === "BUS") {
               const stopKey = key(agent.current);
@@ -1853,7 +1856,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           host!.dataset.seedGroundPrimes = String(Number(host!.dataset.seedGroundPrimes ?? 0) + 1);
           host!.dataset.seedFirstFrame = "true";
           host!.dataset.seedFirstFrameMode = "synchronous";
-          host!.dataset.seedTerrainPattern = "procedural-pixel-v1";
+          host!.dataset.seedTerrainPattern = "procedural-pixel-v2";
           setFirstFrameReady(true);
           paintedFrame = true;
           if (reducedMotion) app.render();

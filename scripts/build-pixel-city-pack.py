@@ -2278,6 +2278,8 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                 "platform", "estimates", "tags", "ruleIds", "entrances",
                 "maxPerCity", "maxPerDistrict", "serviceRole",
             )},
+            **({"finishedPlatformCells": authored_contract["finishedPlatformCells"]}
+               if "finishedPlatformCells" in authored_contract else {}),
         }
         buildings[spec.key] = building_metadata(spec.key, raw)
 

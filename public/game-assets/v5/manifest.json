@@ -12573,7 +12573,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        24,
+        4
+      ]
     },
     "house-lowrise-courtyard-plaster": {
       "label": "Светлый малоэтажный ЖК",
@@ -12612,20 +12616,20 @@
           175
         ],
         [
-          3,
-          69,
-          173,
-          176
-        ],
-        [
           0,
-          40,
+          100,
           176,
           176
         ],
         [
           0,
-          40,
+          46,
+          176,
+          176
+        ],
+        [
+          0,
+          46,
           176,
           176
         ]
@@ -12653,7 +12657,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        22,
+        4
+      ]
     },
     "house-lowrise-gallery": {
       "label": "Галерейный жилой дом",
@@ -12733,7 +12741,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        18,
+        3
+      ]
     },
     "house-lowrise-terrace": {
       "label": "Террасный малоэтажный ЖК",
@@ -12813,7 +12825,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        22,
+        4
+      ]
     },
     "house-lowrise-corner": {
       "label": "Угловой малоэтажный ЖК",
@@ -12893,7 +12909,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        22,
+        4
+      ]
     },
     "house-lowrise-stepped": {
       "label": "Ступенчатый малоэтажный ЖК",
@@ -12973,7 +12993,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        24,
+        4
+      ]
     },
     "house-lowrise-green-roof": {
       "label": "Жилой дом с зелёной крышей",
@@ -13053,7 +13077,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        22,
+        4
+      ]
     },
     "house-lowrise-loft": {
       "label": "Малоэтажные лофт-апартаменты",
@@ -13133,7 +13161,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        18,
+        3
+      ]
     },
     "house-lowrise-arcade": {
       "label": "Жилой дом с аркадой",
@@ -13213,7 +13245,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        24,
+        4
+      ]
     },
     "house-lowrise-modular": {
       "label": "Модульный малоэтажный ЖК",
@@ -13293,7 +13329,11 @@
       ],
       "maxPerCity": null,
       "maxPerDistrict": null,
-      "serviceRole": null
+      "serviceRole": null,
+      "finishedPlatformCells": [
+        18,
+        3
+      ]
     }
   },
   "vehicles": {
@@ -20358,5 +20398,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "372f15fef78369c7"
+  "assetRevision": "b83eb6992d6e8bf1"
 }

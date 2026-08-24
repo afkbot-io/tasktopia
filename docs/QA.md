@@ -59,7 +59,7 @@
 
 ## Chunk Streaming V2
 
-1. В DevTools задержать `/api/world/viewport` и `/api/chunks/*` на 3 секунды: текстурный terrain должен появиться синхронно до первого ответа, а `.world-canvas` получить `data-seed-first-frame="true"`, `data-seed-first-frame-mode="synchronous"` и `data-seed-terrain-pattern="procedural-pixel-v1"`; дорог и зданий до authoritative overlay быть не должно.
+1. В DevTools задержать `/api/world/viewport` и `/api/chunks/*` на 3 секунды: текстурный terrain должен появиться синхронно до первого ответа, а `.world-canvas` получить `data-seed-first-frame="true"`, `data-seed-first-frame-mode="synchronous"` и `data-seed-terrain-pattern="procedural-pixel-v2"`; дорог и зданий до authoritative overlay быть не должно.
 2. Перезагрузить тот же viewport: ответ хранится в приватном HTTP-кэше и перепроверяется content-hash ETag; комментарий к задаче не должен менять ETag.
 3. Изменить status обычного здания: после загрузки stage asset растёт `data-entity-rebuilds`, но chunk HTTP-запрос отсутствует и `data-ground-rebuilds` не меняется.
 4. Задержать один building PNG: ground должен появиться до ответа; после ответа растут `data-entity-ready-publishes` и `data-entity-rebuilds`, то есть ранний reconcile соседа не оставил здание пустым.

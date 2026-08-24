@@ -113,6 +113,25 @@ gates. Все `10/10` world-validation городов завершили server 
 нарушений; scale fixture: `11 866 ms` генерации, `233 ms` холодный viewport,
 `47 ms` повторный viewport, `417 MB` RSS и `82%` сокращения compact wire.
 
+Release gate 1.20.0 от 2026-08-24 дал `478 passed / 7 skipped`
+unit/integration и `27 passed / 6 skipped` базовых E2E. Отдельная фикстура
+пересоздала `10/10` городов с `violations: []`; browser-validation прошла все
+десять за `1.4 min`. На контрольных кадрах находились 217 машин, 2 автобуса,
+116 жителей и 87 светофоров; `wrongWayCars`, `wrongWayBuses` и
+`trafficUnsafePairs` равны нулю, максимальное наблюдаемое ожидание — `3959 ms`,
+монотонная telemetry зафиксировала 11 163 перехода транспорта через клетки.
+Asset gate проверил 167 зданий / 835 стадий, 288 props, 42 animation families
+и 8 моделей / 24 ракурса транспорта без нарушений. Scale-сравнение на одной
+macOS-машине: изолированный прогон ветки 1.20.0 — `15 415 ms`, `178 ms` cold
+chunk, `41 ms` cached chunk, `781 MB` RSS / `156 MB` heap; чистый 1.19.9 — `15 855 ms`, `198/44 ms`,
+`790 MB` RSS / `147 MB` heap. Для Node 24 на macOS формализован отдельный RSS
+ceiling `850 MB`, поскольку чистый baseline уже резервирует около `790 MB`;
+production/CI Linux сохраняет строгий ceiling `512 MB`. Оба профиля также
+ограничены generation/chunk budgets: macOS допускает `20 s` из-за scheduler и
+виртуализации локальной БД, production/CI Linux сохраняет `15 s`.
+`SCALE_GENERATION_BUDGET_MS` и `SCALE_RSS_BUDGET_MB` позволяют задать более
+строгие ceilings для конкретного запуска.
+
 ## Production rollout 2026-08-22
 
 - Fast-forward release `ecb1334` опубликован в `main` и развёрнут штатным

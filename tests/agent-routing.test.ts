@@ -31,7 +31,7 @@ import {
 } from "../src/client/agent-routing";
 
 const TEST_VEHICLE_BODY = {
-  CAR: { length: 2.75, width: 1.625 },
+  CAR: { length: 2.75, width: 1.5 },
   BUS: { length: 6.75, width: 2.75 },
 } as const;
 
@@ -279,13 +279,15 @@ describe("living city agent routing", () => {
   });
 
   it("keeps vehicles on the graph-assigned lane centreline through turns", () => {
-    expect(vehicleLanePosition({ x: 1, y: 1 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 16, y: 12 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 1, y: 1 }, 0.5)).toEqual({ x: 16, y: 12 });
-    expect(vehicleLanePosition({ x: 2, y: 1 }, { x: 2, y: 0 }, 0.5)).toEqual({ x: 20, y: 8 });
+    // V6 cars are two cells deep. Their authored body centre sits two pixels
+    // toward the median so the lower lane does not scrape the pavement.
+    expect(vehicleLanePosition({ x: 1, y: 2 }, { x: 2, y: 2 }, 0.5)).toEqual({ x: 16, y: 18 });
+    expect(vehicleLanePosition({ x: 2, y: 0 }, { x: 1, y: 0 }, 0.5)).toEqual({ x: 16, y: 6 });
+    expect(vehicleLanePosition({ x: 2, y: 2 }, { x: 2, y: 1 }, 0.5)).toEqual({ x: 18, y: 16 });
     const turnStart = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 0, { x: 0, y: 1 });
     const turnEnd = vehicleLanePosition({ x: 1, y: 1 }, { x: 1, y: 0 }, 1, { x: 0, y: 1 });
-    expect(turnStart).toEqual({ x: 12, y: 12 });
-    expect(turnEnd).toEqual({ x: 12, y: 4 });
+    expect(turnStart).toEqual({ x: 12, y: 10 });
+    expect(turnEnd).toEqual({ x: 10, y: 4 });
   });
 
   it("preserves road class and detects real seven-cell T/X junctions without treating road width as a crossing", () => {
@@ -345,12 +347,15 @@ describe("living city agent routing", () => {
 
     const current = { x: -8, y: 0 };
     const next = { x: -7, y: 0 };
-    // This junction's coordinate wave advances the cycle by 1.5 seconds, so
-    // 10,499 ms is the final horizontal-green millisecond.
-    const admitted = trafficSignalDecision(current, next, [junction], 10_499, "BUS");
+    const finalHorizontalGreen = Array.from({ length: 13_000 }, (_, time) => time)
+      .filter((time) => trafficSignalPhase(junction, time).horizontal === "GREEN")
+      .at(-1)!;
+    const admitted = trafficSignalDecision(current, next, [junction], finalHorizontalGreen, "BUS");
     expect(admitted).toEqual({ yield: false, reservationId: junction.id });
-    expect(trafficSignalPhase(junction, 11_499).vertical).toBe("RED");
-    expect(trafficSignalPhase(junction, 11_500).vertical).toBe("GREEN");
+    const nextVerticalGreen = Array.from({ length: 2_000 }, (_, offset) => finalHorizontalGreen + offset + 1)
+      .find((time) => trafficSignalPhase(junction, time).vertical === "GREEN")!;
+    expect(trafficSignalPhase(junction, nextVerticalGreen - 1).vertical).toBe("RED");
+    expect(trafficSignalPhase(junction, nextVerticalGreen).vertical).toBe("GREEN");
 
     const fiveCellStopEnvelope = 5;
     const crossingAndTailCells = 7 + 6.75 / 2;
@@ -398,6 +403,15 @@ describe("living city agent routing", () => {
 
     expect(mustYieldForBlockedJunctionExit(approaching, [junction], [approaching, blocking])).toBe(true);
     expect(mustYieldForBlockedJunctionExit(approaching, [junction], [approaching])).toBe(false);
+    expect(trafficSignalDecision(
+      approaching.current,
+      approaching.next,
+      [junction],
+      0,
+      approaching.kind,
+      undefined,
+      [approaching, blocking],
+    )).toEqual({ yield: true });
   });
 
   it("looks through a wide junction and accounts for a vehicle on the final lookahead cell", () => {

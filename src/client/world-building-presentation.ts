@@ -80,14 +80,32 @@ export function taskPlatformPresentation(entry: BuildingCatalogEntry): BuildingP
  * pad is surfaced. The full collision lot remains reserved by the server but
  * stays ordinary terrain, so a narrow facade does not sit on a huge plaza.
  */
-export function taskPlatformCells(footprint: Cell[], stage: number): Cell[] {
-  if (stage > 2 || footprint.length === 0) return footprint;
+export function taskPlatformCells(
+  footprint: Cell[],
+  stage: number,
+  entry?: BuildingCatalogEntry,
+): Cell[] {
+  if (footprint.length === 0) return footprint;
   const minX = Math.min(...footprint.map((cell) => cell.x));
   const maxX = Math.max(...footprint.map((cell) => cell.x));
   const minY = Math.min(...footprint.map((cell) => cell.y));
   const maxY = Math.max(...footprint.map((cell) => cell.y));
-  const depth = constructionPadDepth({ width: maxX - minX + 1, height: maxY - minY + 1 });
-  return footprint.filter((cell) => cell.y > maxY - depth);
+  const footprintSize = { width: maxX - minX + 1, height: maxY - minY + 1 };
+  const shallowFinishedPlatform = stage > 2 && Boolean(entry) && (
+    entry!.serviceRole === "fuel-service"
+    || entry!.tags.includes("low-rise-residential")
+      && !entry!.tags.includes("new-build")
+      && !entry!.tags.includes("dense")
+  );
+  if (stage > 2 && !shallowFinishedPlatform) return footprint;
+  const platformSize = entry?.finishedPlatform;
+  const depth = entry?.serviceRole === "fuel-service"
+    ? Math.min(4, footprintSize.height)
+    : Math.min(platformSize?.height ?? constructionPadDepth(footprintSize), footprintSize.height);
+  const width = Math.min(platformSize?.width ?? footprintSize.width, footprintSize.width);
+  const firstX = minX + Math.floor((footprintSize.width - width) / 2);
+  const lastX = firstX + width - 1;
+  return footprint.filter((cell) => cell.y > maxY - depth && cell.x >= firstX && cell.x <= lastX);
 }
 
 function yardVariant(x: number, y: number, seed: number): 0 | 1 | 2 {
@@ -110,22 +128,12 @@ export function taskPlatformCellPresentation(
   stage: number,
 ): BuildingPlatformPresentation {
   if (entry.serviceRole === "fuel-service" && footprint.length > 0) {
-    const minX = Math.min(...footprint.map((candidate) => candidate.x));
-    const maxX = Math.max(...footprint.map((candidate) => candidate.x));
     const minY = Math.min(...footprint.map((candidate) => candidate.y));
     const maxY = Math.max(...footprint.map((candidate) => candidate.y));
-    const width = maxX - minX + 1;
-    const localX = cell.x - minX;
-    const localY = cell.y - minY;
-    const entranceX = Math.max(0, Math.min(width - 1,
-      entry.entrances.find((entrance) => entrance.side === "S")?.offset ?? Math.floor(width / 2)));
-    const forecourtHalfWidth = Math.min(5, Math.max(2, Math.floor((width - 2) / 2)));
-    const onCompactForecourt = cell.y >= Math.max(minY, maxY - 2)
-      && Math.abs(localX - entranceX) <= forecourtHalfWidth;
-    if (onCompactForecourt) return { family: "tile", key: "path-asphalt" };
-
-    const onShopPad = localY <= 1 && Math.abs(localX - entranceX) <= Math.min(3, forecourtHalfWidth);
-    if (onShopPad) return { family: "tile", key: "pavement" };
+    // One contiguous four-cell-deep pad follows the full authored station
+    // width. It reads as a centred forecourt with a small transparent-canvas
+    // margin, instead of two disconnected slabs above and below the building.
+    if (cell.y >= Math.max(minY, maxY - 3)) return { family: "tile", key: "path-asphalt" };
 
     return { family: "terrain", key: "GRASS", variant: yardVariant(cell.x, cell.y, seed + 97) };
   }

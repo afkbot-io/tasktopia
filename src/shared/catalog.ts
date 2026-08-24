@@ -32,6 +32,7 @@ export type BuildingCatalogEntry = {
   rarity: "COMMON" | "UNCOMMON" | "RARE" | "UNIQUE";
   platform: PlatformKind;
   footprint: { width: number; height: number };
+  finishedPlatform?: { width: number; height: number };
   spriteSize: { width: number; height: number };
   anchor: { x: number; y: number };
   stageOpaqueBounds: Array<{ left: number; top: number; right: number; bottom: number }>;
@@ -52,6 +53,7 @@ type RawBuilding = {
   rarity: BuildingCatalogEntry["rarity"];
   platform: PlatformKind;
   footprintCells: [number, number];
+  finishedPlatformCells?: [number, number];
   spriteSize: [number, number];
   anchorPx: [number, number];
   stageOpaqueBounds: Array<[number, number, number, number]>;
@@ -75,6 +77,9 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
     rarity: building.rarity,
     platform: building.platform,
     footprint: { width: building.footprintCells[0], height: building.footprintCells[1] },
+    finishedPlatform: building.finishedPlatformCells
+      ? { width: building.finishedPlatformCells[0], height: building.finishedPlatformCells[1] }
+      : undefined,
     spriteSize: { width: building.spriteSize[0], height: building.spriteSize[1] },
     anchor: { x: building.anchorPx[0], y: building.anchorPx[1] },
     stageOpaqueBounds: building.stageOpaqueBounds.map(([left, top, right, bottom]) => ({ left, top, right, bottom })),

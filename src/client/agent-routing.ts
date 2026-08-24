@@ -57,14 +57,17 @@ export type VehicleFrameDecision = {
 // Wide road classes reserve enough real cells for these bodies; render scale
 // never changes physics and is never used to squeeze traffic into a lane.
 const VEHICLE_BODY_CELLS = {
-  CAR: { length: 2.75, width: 1.625 },
+  // The visible 13px body has tapered corners; a 12px collision envelope
+  // keeps opposing median-inset silhouettes passing without false AABB locks.
+  CAR: { length: 2.75, width: 1.5 },
   BUS: { length: 6.75, width: 2.75 },
 } as const;
 const VEHICLE_SAFETY_GAP_CELLS = 0.16;
-// The directed graph already assigns the correct right-hand travel cell. A
-// second visual inset pushed wide sprites into the shoulder and made turns
-// appear off-lane, so physics and rendering share the exact cell centreline.
-const VEHICLE_LANE_OFFSET_CELLS = { CAR: 0, BUS: 0 } as const;
+// V6 road vehicles are wider than one logical lane cell. Their physical
+// centre therefore sits slightly toward the median inside the two/three-cell
+// body envelope. The same inset drives collision and rendering; applying it
+// only to the sprite would make a visually clear lane physically occupied.
+const VEHICLE_LANE_OFFSET_CELLS = { CAR: 0.25, BUS: 0.25 } as const;
 const EPSILON = 1e-9;
 
 /**
@@ -117,9 +120,9 @@ function vehicleCenter(vehicle: TrafficVehicleSnapshot): { x: number; y: number 
   const laneOffset = VEHICLE_LANE_OFFSET_CELLS[vehicle.kind];
   const previous = vehicle.trail?.[0];
   const startInset = previous
-    ? rightHandLaneInset(previous, vehicle.current, laneOffset)
-    : rightHandLaneInset(vehicle.current, vehicle.next, laneOffset);
-  const endInset = rightHandLaneInset(vehicle.current, vehicle.next, laneOffset);
+    ? rightHandLaneInset(previous, vehicle.current, -laneOffset)
+    : rightHandLaneInset(vehicle.current, vehicle.next, -laneOffset);
+  const endInset = rightHandLaneInset(vehicle.current, vehicle.next, -laneOffset);
   return {
     x: vehicle.current.x + (vehicle.next.x - vehicle.current.x) * vehicle.progress
       + startInset.x * (1 - vehicle.progress) + endInset.x * vehicle.progress,
@@ -573,8 +576,8 @@ export function vehicleLanePosition(
 ): { x: number; y: number } {
   const inset = VEHICLE_LANE_OFFSET_CELLS[kind] * cellSize;
   const clamped = Math.max(0, Math.min(1, progress));
-  const startInset = previous ? rightHandLaneInset(previous, current, inset) : rightHandLaneInset(current, next, inset);
-  const endInset = rightHandLaneInset(current, next, inset);
+  const startInset = previous ? rightHandLaneInset(previous, current, -inset) : rightHandLaneInset(current, next, -inset);
+  const endInset = rightHandLaneInset(current, next, -inset);
   return {
     x: (current.x + (next.x - current.x) * clamped) * cellSize + cellSize / 2
       + startInset.x * (1 - clamped) + endInset.x * clamped,
@@ -656,18 +659,20 @@ export function detectTrafficJunctions(graph: ReadonlyMap<string, TrafficRoadCel
 }
 
 export function trafficSignalPhase(junction: TrafficJunction, elapsedMs: number): TrafficSignalPhase {
-  // A short nominal all-red interval separates twelve-second greens. Physical
-  // tail occupancy below can extend it when a bus genuinely still occupies
-  // the box, without forcing every empty intersection to wait 10.5 seconds.
-  const cycleMs = 26_000;
+  // Compact city blocks need shorter, coordinated phases than a highway
+  // signal. Nine-second greens establish the nominal wave; the live phase
+  // selector below may hand it to an older queue before starvation occurs.
+  // the opposing queue stopped for a full minute; physical tail occupancy
+  // below still extends all-red for a bus that genuinely needs more time.
+  const cycleMs = 19_000;
   // Adjacent intersections receive a short, spatially coherent wave instead
   // of unrelated hash phases. A vehicle moving through a street grid now sees
   // successive greens rather than a random red wall at every next block.
   const offset = Math.abs(junction.bounds.minX + junction.bounds.minY) % 8 * 250;
   const phase = (elapsedMs + offset) % cycleMs;
-  if (phase < 12_000) return { horizontal: "GREEN", vertical: "RED" };
-  if (phase < 13_000) return { horizontal: "RED", vertical: "RED" };
-  if (phase < 25_000) return { horizontal: "RED", vertical: "GREEN" };
+  if (phase < 9_000) return { horizontal: "GREEN", vertical: "RED" };
+  if (phase < 9_500) return { horizontal: "RED", vertical: "RED" };
+  if (phase < 18_500) return { horizontal: "RED", vertical: "GREEN" };
   return { horizontal: "RED", vertical: "RED" };
 }
 
@@ -681,14 +686,34 @@ export function trafficSignalPhaseForTraffic(
   elapsedMs: number,
   traffic: readonly TrafficVehicleSnapshot[],
 ): TrafficSignalPhase {
-  const phase = trafficSignalPhase(junction, elapsedMs);
-  if (phase.horizontal === phase.vertical) return phase;
-  const greenAxis = phase.horizontal === "GREEN" ? "horizontal" : "vertical";
+  const nominal = trafficSignalPhase(junction, elapsedMs);
+  if (nominal.horizontal === nominal.vertical) return nominal;
+  const queueWait = { horizontal: 0, vertical: 0 };
+  for (const vehicle of traffic) {
+    if (!vehicle.path.some((cell) => containsCell(junction.bounds, cell))) continue;
+    const axis = vehicle.current.x !== vehicle.next.x ? "horizontal" : "vertical";
+    queueWait[axis] = Math.max(queueWait[axis], vehicle.waitMs ?? 0);
+  }
+  const nominalAxis = nominal.horizontal === "GREEN" ? "horizontal" : "vertical";
+  const otherAxis = nominalAxis === "horizontal" ? "vertical" : "horizontal";
+  // A four-second age lead is large enough to avoid frame-by-frame toggling,
+  // while guaranteeing that a dense approach is served before a second full
+  // fixed cycle. Existing reservations and the physical tail gate below keep
+  // this adaptive hand-off conflict-free.
+  const greenAxis = queueWait[otherAxis] > queueWait[nominalAxis] + 4_000
+    ? otherAxis
+    : nominalAxis;
   const conflictingTail = traffic.some((vehicle) => {
     const axis = vehicle.current.x !== vehicle.next.x ? "horizontal" : "vertical";
-    return axis !== greenAxis && vehicleBodyIntersectsBounds(vehicle, junction.bounds);
+    const admittedOrInside = vehicle.signalReservationId === junction.id
+      || containsCell(junction.bounds, vehicle.current)
+      || (vehicle.trail ?? []).some((cell) => containsCell(junction.bounds, cell));
+    return axis !== greenAxis && admittedOrInside && vehicleBodyIntersectsBounds(vehicle, junction.bounds);
   });
-  return conflictingTail ? { horizontal: "RED", vertical: "RED" } : phase;
+  if (conflictingTail) return { horizontal: "RED", vertical: "RED" };
+  return greenAxis === "horizontal"
+    ? { horizontal: "GREEN", vertical: "RED" }
+    : { horizontal: "RED", vertical: "GREEN" };
 }
 
 export type TrafficSignalDecision = { yield: boolean; reservationId?: string };
@@ -709,8 +734,19 @@ export function trafficSignalDecision(
     Math.max(bounds.minX - cell.x, 0, cell.x - bounds.maxX)
     + Math.max(bounds.minY - cell.y, 0, cell.y - bounds.maxY)
   );
+  const currentVehicle = traffic.find((vehicle) => (
+    vehicle.kind === kind && sameCell(vehicle.current, current) && sameCell(vehicle.next, next)
+  ));
   const reserved = reservationId ? junctions.find((candidate) => candidate.id === reservationId) : undefined;
   if (reserved) {
+    if (currentVehicle
+      && !containsCell(reserved.bounds, currentVehicle.current)
+      && !vehicleBodyIntersectsBounds(currentVehicle, reserved.bounds)
+      && mustYieldForBlockedJunctionExit(currentVehicle, [reserved], traffic)) {
+      // A reservation is admission, not ownership while waiting outside. Drop
+      // it when the exit fills so another non-conflicting approach can drain.
+      return { yield: true };
+    }
     const currentDistance = distanceToBounds(reserved.bounds, current);
     const nextDistance = distanceToBounds(reserved.bounds, next);
     // Keep the token from the stop line through the entire box. It is released
@@ -747,9 +783,9 @@ export function trafficSignalDecision(
     }
     return false;
   };
-  const currentVehicle = traffic.find((vehicle) => (
-    vehicle.kind === kind && sameCell(vehicle.current, current) && sameCell(vehicle.next, next)
-  ));
+  if (currentVehicle && mustYieldForBlockedJunctionExit(currentVehicle, [junction], traffic)) {
+    return { yield: true };
+  }
   const currentAxis = movementAxis(current, next);
   const activeReservation = traffic.some((vehicle) => (
     vehicle.signalReservationId === junction.id
