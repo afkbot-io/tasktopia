@@ -132,6 +132,32 @@ production/CI Linux сохраняет строгий ceiling `512 MB`. Оба �
 `SCALE_GENERATION_BUDGET_MS` и `SCALE_RSS_BUDGET_MB` позволяют задать более
 строгие ceilings для конкретного запуска.
 
+## Production rollout 2026-08-24
+
+- Fast-forward release `ace5763` опубликован в `main` и развёрнут штатным
+  `deploy/update-server.sh`; атомарный static release —
+  `20260824105203-ace5763`, версия runtime — `1.20.0`.
+- Перед переключением создан и проверен через `pg_restore -l` custom dump
+  `backups/pre-update-2026-08-24-105128.dump` размером `9 741 294` байта.
+- `app`, `mcp` и `world` healthy, имеют `0` restart / `OOMKilled=false`; после
+  replay занимают около `85/92/75 MiB` при лимитах `1536/768/1536 MiB`. В
+  runtime-логах rollout нет `error`, `fatal`, `panic`, `unhandled` или
+  `exception`.
+- Публичная ревизия `b83eb6992d6e8bf1` доступна с immutable cache. Проверенный
+  stage-5 Светлого малоэтажного ЖК возвращает `HTTP 200`, `17 150` байт и
+  годовой `Cache-Control: immutable`.
+- Forced replay `release-ace5763` завершился с `exit 0`: обработано `9/9`
+  production-стран, у каждой `violationsAfter: 0`. Крупнейший «Атуталенд»
+  (`3` города / `4` района / `115` задач) отклонил первую несвязную раскладку,
+  успешно повторился и опубликовался только после чистого аудита.
+- Абсолютный dev-scale gate на текущем VPS не репрезентативен для CI: 1.20.0
+  показал `75 494 ms / 729 ms / 171 ms / 806 MB`, а чистый 1.19.9 на том же
+  одноразовом Node/PostgreSQL-профиле — `95 630 ms / 3 345 ms / 166 ms /
+  696 MB`. Новая генерация быстрее на `21%`, cold materialization — на `78%`;
+  cache latency эквивалентна, но dev-container RSS выше на `110 MB`. Реальные
+  production runtimes остаются ниже `100 MiB` каждый; CI Linux сохраняет
+  контракт `15 s / 512 MB`.
+
 ## Production rollout 2026-08-22
 
 - Fast-forward release `ecb1334` опубликован в `main` и развёрнут штатным
