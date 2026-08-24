@@ -16,12 +16,18 @@ const parkLabel: Record<string, string> = {
 const defectStatusLabel: Record<NonNullable<TaskDto["defects"]>[number]["status"], string> = {
   OPEN: "Зафиксирован", IN_PROGRESS: "Исправляется", VERIFYING: "Проверяется", FIXED: "Исправлен",
 };
-const eventLabel: Record<NonNullable<TaskDto["events"]>[number]["type"], string> = {
-  CREATED: "Задача создана", TITLE_CHANGED: "Задача переименована", STATUS_CHANGED: "Изменён этап строительства", COMMENT_ADDED: "Добавлен комментарий", ASSIGNEE_CHANGED: "Изменён ответственный",
-  FIELDS_UPDATED: "Обновлена постановка", DEFECT_CREATED: "Зафиксирован связанный дефект", DEFECT_UPDATED: "Обновлён связанный дефект",
+type TaskEventType = NonNullable<TaskDto["events"]>[number]["type"];
+const buildingEventLabel: Record<TaskEventType, string> = {
+  CREATED: "Здание заложено", TITLE_CHANGED: "Здание переименовано", STATUS_CHANGED: "Изменён этап строительства", COMMENT_ADDED: "К зданию добавлен комментарий", ASSIGNEE_CHANGED: "У здания изменён ответственный",
+  FIELDS_UPDATED: "Обновлены параметры здания", DEFECT_CREATED: "У здания зафиксирована неисправность", DEFECT_UPDATED: "Обновлено состояние неисправности здания",
   LINK_ADDED: "Добавлена ссылка на MR", LINK_REMOVED: "Удалена ссылка на MR", ATTACHMENT_ADDED: "Прикреплён файл",
-  DOCUMENT_UPDATED: "Обновлён документ задачи", DOCUMENT_DELETED: "Удалён дополнительный документ",
+  DOCUMENT_UPDATED: "Обновлён документ задачи", DOCUMENT_DELETED: "Удалён дополнительный документ задачи",
   CHECKLIST_REPLACED: "Обновлён чек-лист", CHECKLIST_ITEM_UPDATED: "Обновлён пункт чек-листа",
+};
+const parkEventLabel: Record<TaskEventType, string> = {
+  ...buildingEventLabel,
+  CREATED: "Парк заложен", TITLE_CHANGED: "Парк переименован", STATUS_CHANGED: "Изменён этап благоустройства", COMMENT_ADDED: "К парку добавлен комментарий", ASSIGNEE_CHANGED: "У парка изменён ответственный",
+  FIELDS_UPDATED: "Обновлены параметры парка", DEFECT_CREATED: "В парке зафиксирована неисправность", DEFECT_UPDATED: "Обновлено состояние неисправности парка",
 };
 const dateTime = (value: string) => new Date(value).toLocaleString("ru-RU", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const fileSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} МБ` : bytes >= 1024 ? `${Math.round(bytes / 1024)} КБ` : `${bytes} Б`;
@@ -135,7 +141,7 @@ export function TaskModal({ taskId, revision, onClose }: TaskModalProps) {
           {task.defects?.length ? task.defects.map((defect) => <article key={defect.id} className={defect.status.toLowerCase()}><header><strong>{defect.title}</strong><span>{defectStatusLabel[defect.status]}</span></header>{defect.description && <Markdown text={defect.description} />}<dl><div><dt>Шаги</dt><dd>{defect.reproductionSteps}</dd></div><div><dt>Фактически</dt><dd>{defect.actualResult}</dd></div><div><dt>Ожидалось</dt><dd>{defect.expectedResult}</dd></div></dl></article>) : <p className="muted">Связанных дефектов нет.</p>}
         </section>
         <section className="comments"><h3>Ход работы</h3>{task.comments?.length ? task.comments.map((comment) => <article key={comment.id}><header className="comment-meta"><strong>{comment.actor}</strong><time>{new Date(comment.createdAt).toLocaleString("ru-RU")}</time></header><Markdown text={comment.body} /></article>) : <p className="muted">Комментариев пока нет.</p>}</section>
-        <section className="task-history"><h3>Хроника задачи</h3>{task.events?.length ? task.events.map((event) => <article key={event.id}><i /><div><strong>{eventLabel[event.type]}</strong><span>{event.actor} · {new Date(event.createdAt).toLocaleString("ru-RU")}</span></div></article>) : <p className="muted">Хроника начнёт заполняться при следующем изменении.</p>}</section>
+        <section className="task-history"><h3>Хроника {task.visualKind === "PARK" ? "парка" : "здания"}</h3>{task.events?.length ? task.events.map((event) => <article key={event.id}><i /><div><strong>{(task.visualKind === "PARK" ? parkEventLabel : buildingEventLabel)[event.type]}</strong><span>{event.actor} · {new Date(event.createdAt).toLocaleString("ru-RU")}</span></div></article>) : <p className="muted">Хроника начнёт заполняться при следующем изменении.</p>}</section>
       </>}
     </section>
   </div>;

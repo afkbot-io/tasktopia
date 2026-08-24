@@ -200,9 +200,30 @@ export type TaskSearchResultDto = {
   stage: number;
   cityId: string;
   cityName: string;
+  cityCenter: Cell;
+  cityBounds: Rect;
   districtId: string;
   districtName: string;
   origin: Cell;
+};
+
+/**
+ * Immutable world-language snapshot attached to a durable task event.
+ * Notification copy must describe the entity as it was when the event
+ * happened, while the city viewport lets the client open its exact building.
+ */
+export type BuildingEventContext = {
+  id: string;
+  taskNumber: number;
+  title: string;
+  visualKind: "BUILDING" | "PARK";
+  status: TaskStatus;
+  progress: number;
+  stage: number;
+  origin: Cell;
+  country: Pick<CountryDto, "id" | "name">;
+  city: Pick<CityDto, "id" | "name" | "center" | "bounds">;
+  district: Pick<DistrictDto, "id" | "name">;
 };
 
 export type TaskEventDto = {

@@ -43,6 +43,14 @@
   --atlas-line-active: var(--yellow);
   --atlas-progress-track: #233a3c;
   --atlas-progress-value: #88c96f;
+
+  /* Realtime-notification component tokens. */
+  --notice-panel: #102328f2;
+  --notice-panel-success: #173025f2;
+  --notice-line: #3a5961;
+  --notice-line-success: #6bab63;
+  --notice-location: #8fa5a8;
+  --notice-action: var(--color-skyline);
 }
 
 * { box-sizing: border-box; }
@@ -486,13 +494,19 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   .app-header .header-search { padding-top: 2px; }
 }
 
-/* ── Realtime city feedback ───────────────────────────────── */
-.realtime-notices { position: fixed; z-index: 80; right: 18px; top: 88px; display: grid; gap: 8px; width: min(340px, calc(100vw - 28px)); pointer-events: none; }
-.realtime-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 46px; padding: 11px 13px; border: 1px solid #3a5961; border-radius: 10px; background: #102328f2; box-shadow: 0 12px 34px #0008; color: #e9f0ec; font: 750 12px/1.35 inherit; text-align: left; cursor: pointer; pointer-events: auto; animation: realtime-notice-in .22s ease-out both; }
-.realtime-notice span { color: #7f969a; font-size: 18px; line-height: 1; }
-.realtime-notice-success { border-color: #6bab63; background: #173025f2; }
-.realtime-notice-success::before { content: "✦"; color: #f2c84b; }
-.realtime-notice-info::before { content: "▦"; color: #73bddc; }
+/* ── Realtime country events ──────────────────────────────── */
+.realtime-notices { position: fixed; z-index: 80; right: 18px; top: 72px; display: grid; gap: 8px; width: min(420px, calc(100vw - 28px)); pointer-events: none; }
+.realtime-notice { display: grid; grid-template-columns: 18px minmax(0, 1fr) 28px; align-items: start; gap: 10px; width: 100%; min-height: 76px; padding: 12px; border: 1px solid var(--notice-line); border-radius: 10px; background: var(--notice-panel); box-shadow: 0 12px 34px #0008; color: #e9f0ec; pointer-events: auto; animation: realtime-notice-in .22s ease-out both; }
+.realtime-notice-content { display: grid; gap: 4px; min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.realtime-notice-content:disabled { opacity: 1; cursor: default !important; }
+.realtime-notice-content strong { font-size: 12px; line-height: 1.4; }
+.realtime-notice-content small { overflow: hidden; color: var(--notice-location); font-size: 10px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.realtime-notice-content span { margin-top: 3px; color: var(--notice-action); font-size: 10px; font-weight: 850; line-height: 1.2; }
+.realtime-notice-close { width: 28px; height: 28px; margin: -5px -5px 0 0; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #7f969a; font-size: 18px; line-height: 1; cursor: pointer; }
+.realtime-notice-close:hover { background: #ffffff0a; color: #dce7e3; }
+.realtime-notice-success { border-color: var(--notice-line-success); background: var(--notice-panel-success); }
+.realtime-notice-success::before { content: "✦"; color: var(--color-signal); }
+.realtime-notice-info::before { content: "▦"; color: var(--notice-action); }
 @keyframes realtime-notice-in { from { opacity: 0; transform: translate3d(18px, 0, 0); } to { opacity: 1; transform: none; } }
 
 /* ── Task modal extras: share, MR links, attachments ───────── */

@@ -59,8 +59,8 @@ export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDt
             setQuery("");
           }
         }}
-        placeholder="Поиск задачи: № или название"
-        aria-label="Поиск задачи по номеру или названию"
+        placeholder="Поиск здания: № или название"
+        aria-label="Поиск здания по номеру или названию"
       />
       {open && <ul className="task-search-results" role="listbox">
         {results.length === 0 && !loading && <li className="task-search-empty">Ничего не найдено</li>}

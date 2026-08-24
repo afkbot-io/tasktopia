@@ -64,7 +64,7 @@ test("opens and captures the 100-task megacity", async ({ page }) => {
   });
 
   const captureFocusedTask = async (taskNumber: number, fileName: string) => {
-    const search = page.getByLabel("Поиск задачи по номеру или названию");
+    const search = page.getByLabel("Поиск здания по номеру или названию");
     await search.fill(String(taskNumber));
     const result = page.getByRole("option").filter({ hasText: `#${taskNumber}` }).first();
     await expect(result).toBeVisible();

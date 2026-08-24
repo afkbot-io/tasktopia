@@ -459,13 +459,13 @@ test("realtime task status patches its entity without refetching or rebaking sta
   }
 
   const integration = await page.evaluate(async (visibleChunkKeys) => {
-    const bootstrap = await fetch("/api/bootstrap").then((response) => response.json()) as { country: { id: string } };
-    const cities = await fetch("/api/plan/cities").then((response) => response.json()) as Array<{ id: string }>;
+    const bootstrap = await fetch("/api/bootstrap").then((response) => response.json()) as { country: { id: string; name: string } };
+    const cities = await fetch("/api/plan/cities").then((response) => response.json()) as Array<{ id: string; name: string }>;
     for (const city of cities) {
-      const districts = await fetch(`/api/plan/cities/${city.id}/districts`).then((response) => response.json()) as Array<{ id: string; status: string }>;
+      const districts = await fetch(`/api/plan/cities/${city.id}/districts`).then((response) => response.json()) as Array<{ id: string; name: string; status: string }>;
       for (const district of districts) {
         if (district.status !== "ACTIVE") continue;
-        const tasks = await fetch(`/api/plan/districts/${district.id}/tasks`).then((response) => response.json()) as Array<{ id: string; status: string }>;
+        const tasks = await fetch(`/api/plan/districts/${district.id}/tasks`).then((response) => response.json()) as Array<{ id: string; taskNumber: number; title: string; status: string }>;
         for (const task of tasks) {
           if (task.status !== "PLANNING") continue;
           const detail = await fetch(`/api/tasks/${task.id}`).then((response) => response.json()) as { origin: { x: number; y: number } };
@@ -476,7 +476,17 @@ test("realtime task status patches its entity without refetching or rebaking sta
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ name: "Realtime map test" }),
           }).then((response) => response.json()) as { id: string; token: string };
-          return { countryId: bootstrap.country.id, taskId: task.id, chunkKey, ...issued };
+          return {
+            countryId: bootstrap.country.id,
+            countryName: bootstrap.country.name,
+            cityName: city.name,
+            districtName: district.name,
+            taskId: task.id,
+            taskNumber: task.taskNumber,
+            taskTitle: task.title,
+            chunkKey,
+            ...issued,
+          };
         }
       }
     }
@@ -645,7 +655,12 @@ test("realtime task status patches its entity without refetching or rebaking sta
       });
       expect(result.isError).not.toBe(true);
     }
-    await expect(page.locator(".realtime-notice-success")).toContainText("Здание завершено — город обновлён");
+    const completionNotice = page.locator(".realtime-notice-success");
+    await expect(completionNotice).toContainText(`Здание №${integration.taskNumber} «${integration.taskTitle}» построено`);
+    await expect(completionNotice).toContainText(`${integration.countryName} · ${integration.cityName} · ${integration.districtName}`);
+    await completionNotice.locator(".realtime-notice-content").click();
+    await expect(page.getByRole("dialog").getByRole("heading", { name: integration.taskTitle })).toBeVisible();
+    await expect(host).toHaveAttribute("data-loading", "false");
     await expect.poll(async () => Number(await host.getAttribute("data-celebrations") ?? 0), { timeout: 30_000 }).toBeGreaterThan(0);
   } finally {
     releaseChunkRefresh?.();

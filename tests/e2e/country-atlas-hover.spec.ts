@@ -34,7 +34,7 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   const accountBox = await page.getByRole("button", { name: "Настройки аккаунта" }).boundingBox();
   expect(accountBox).not.toBeNull();
   expect(Math.abs(accountBox!.width - accountBox!.height)).toBeLessThanOrEqual(1);
-  const search = page.getByPlaceholder("Поиск задачи: № или название");
+  const search = page.getByPlaceholder("Поиск здания: № или название");
   await expect(search).toBeVisible();
 
   const cities = page.locator(".atlas-city");
@@ -137,4 +137,35 @@ test("a session snapshot paints while the atlas revalidates in the background", 
   await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 700 });
   await expect.poll(() => revalidationHeaders.length).toBeGreaterThan(0);
   expect(revalidationHeaders.some((value) => value.includes("no-cache") || value.includes("max-age=0"))).toBe(true);
+});
+
+test("building search switches to the owning city before focusing the building", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+
+  const target = await page.evaluate(async () => {
+    const atlas = await fetch("/api/country-atlas", { cache: "no-store" }).then((response) => response.json()) as {
+      cities: Array<{
+        id: string;
+        name: string;
+        buildings: Array<{ id: string; taskNumber: number; title: string; sourceOrigin: { x: number; y: number } }>;
+      }>;
+    };
+    const city = atlas.cities.at(-1)!;
+    const building = city.buildings.at(-1)!;
+    return { city, building };
+  });
+
+  const search = page.getByLabel("Поиск здания по номеру или названию");
+  await search.fill(String(target.building.taskNumber));
+  await page.getByRole("option").filter({ hasText: target.building.title }).click();
+
+  await expect(page.locator(".country-atlas")).toHaveCount(0);
+  await expect(page.locator(".header-city strong")).toHaveText(target.city.name);
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-focus-x", String(target.building.sourceOrigin.x));
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-focus-y", String(target.building.sourceOrigin.y));
+  await expect(page.getByRole("dialog").getByRole("heading", { name: target.building.title })).toBeVisible();
 });

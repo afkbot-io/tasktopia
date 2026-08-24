@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import type { BootstrapDto, CityDto, RealtimeEvent, TaskSearchResultDto } from "../shared/contracts";
+import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto } from "../shared/contracts";
 import type { CountryAtlasCityDto } from "../shared/country-atlas-contract";
 import { enqueueCountryAtlasEvent } from "../shared/country-atlas-events";
+import { presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
 import { CountryPanel } from "./components/CountryPanel";
@@ -18,8 +19,8 @@ const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
 type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
-type RealtimeNotice = { id: number; text: string; tone: "info" | "success" };
 type CityFocus = Pick<CityDto, "id" | "name" | "center" | "bounds">;
+type BuildingNavigationTarget = Pick<BuildingEventContext, "id" | "origin" | "city">;
 
 function playCompletionChime(): void {
   if (document.hidden) return;
@@ -65,7 +66,7 @@ export function App() {
   const [mapInvalidation, setMapInvalidation] = useState<MapInvalidation>();
   const [atlasEvents, setAtlasEvents] = useState<RealtimeEvent[]>([]);
   const [online, setOnline] = useState(true);
-  const [notices, setNotices] = useState<RealtimeNotice[]>([]);
+  const [notices, setNotices] = useState<RealtimeNoticePresentation[]>([]);
   const countryId = bootstrap?.country.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
   const closeArchiveRecord = useCallback(() => setSelectedArchiveRecord(null), []);
@@ -92,6 +93,7 @@ export function App() {
     setSessionState("ANONYMOUS");
     setAuthError("");
     setTokensOpen(false);
+    setNotices([]);
   }, []);
 
   const applyBootstrap = useCallback((next: BootstrapDto) => {
@@ -99,6 +101,7 @@ export function App() {
       eventCountryRef.current = next.country.id;
       lastWorldEventIdRef.current = next.eventCursor;
       setAtlasEvents([]);
+      setNotices([]);
     }
     setBootstrap(next);
     setFocusCity(next.initialCity);
@@ -116,6 +119,8 @@ export function App() {
       if (eventCountryRef.current !== next.country.id) {
         eventCountryRef.current = next.country.id;
         lastWorldEventIdRef.current = next.eventCursor;
+        setAtlasEvents([]);
+        setNotices([]);
       }
       setBootstrap(next);
       setFocusCity((current) => current ?? next.initialCity);
@@ -126,6 +131,7 @@ export function App() {
         setBootstrap(null);
         setSessionState("ANONYMOUS");
         setAuthError("");
+        setNotices([]);
         return;
       }
       setAuthError(error instanceof Error ? error.message : "Не удалось загрузить страну");
@@ -136,6 +142,22 @@ export function App() {
   const refreshWorld = useCallback(async () => {
     applyBootstrap(await api<BootstrapDto>("/api/bootstrap"));
   }, [applyBootstrap]);
+
+  const openBuilding = useCallback((target: BuildingNavigationTarget) => {
+    setFocusCity(target.city);
+    setHoveredAtlasCity(null);
+    setMapMode("CITY");
+    setFocusTask({ origin: target.origin, token: Date.now() });
+    setSelectedTask(target.id);
+  }, []);
+
+  const openTaskFromSearch = useCallback((result: TaskSearchResultDto) => {
+    openBuilding({
+      id: result.id,
+      origin: result.origin,
+      city: { id: result.cityId, name: result.cityName, center: result.cityCenter, bounds: result.cityBounds },
+    });
+  }, [openBuilding]);
 
   useEffect(() => { void load().catch(() => undefined); }, [load]);
   useEffect(() => {
@@ -155,32 +177,20 @@ export function App() {
       .then((found) => {
         const result = found.find((item) => item.taskNumber === number);
         if (!result) return;
-        setFocusTask({ origin: result.origin, token: Date.now() });
-        setSelectedTask(result.id);
+        openTaskFromSearch(result);
       })
       .catch(() => undefined);
-  }, [bootstrap]);
-
-  const openTaskFromSearch = useCallback((result: TaskSearchResultDto) => {
-    setMapMode("CITY");
-    setFocusTask({ origin: result.origin, token: Date.now() });
-    setSelectedTask(result.id);
-  }, []);
+  }, [bootstrap, openTaskFromSearch]);
   const applyRealtimeEvent = useCallback((event: RealtimeEvent) => {
     if (event.countryId !== countryId || event.id <= lastWorldEventIdRef.current) return;
     lastWorldEventIdRef.current = event.id;
     setMapInvalidation(eventInvalidation(event));
     setAtlasEvents((current) => enqueueCountryAtlasEvent(current, event));
-    const completed = event.type === "task.status_changed" && event.payload.status === "COMPLETED";
-    if (event.type.startsWith("task.") && event.type !== "task.comment_added") {
-      const notice: RealtimeNotice = {
-        id: event.id,
-        text: completed ? "Здание завершено — город обновлён" : event.type === "task.created" ? "Новое здание добавлено на карту" : "Задача обновлена на карте",
-        tone: completed ? "success" : "info",
-      };
+    const notice = presentRealtimeNotice(event);
+    if (notice) {
       setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));
-      window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), completed ? 8_000 : 5_000);
-      if (completed) playCompletionChime();
+      window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), notice.tone === "success" ? 10_000 : 7_000);
+      if (notice.tone === "success") playCompletionChime();
     }
     if (event.type === "task.comment_added" || event.type === "task.status_changed") {
       setBootstrap((current) => current
@@ -313,8 +323,19 @@ export function App() {
     {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
-    <aside className="realtime-notices" aria-live="polite" aria-label="Обновления города">
-      {notices.map((notice) => <button key={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`} onClick={() => setNotices((current) => current.filter((item) => item.id !== notice.id))}>{notice.text}<span aria-hidden="true">×</span></button>)}
+    <aside className="realtime-notices" aria-live="polite" aria-label="События страны">
+      {notices.map((notice) => <article key={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`}>
+        <button className="realtime-notice-content" type="button" disabled={!notice.target} onClick={() => {
+          if (!notice.target) return;
+          openBuilding(notice.target);
+          setNotices((current) => current.filter((item) => item.id !== notice.id));
+        }}>
+          <strong>{notice.title}</strong>
+          <small>{notice.location}</small>
+          {notice.actionLabel && <span>{notice.actionLabel} →</span>}
+        </button>
+        <button className="realtime-notice-close" type="button" aria-label="Закрыть уведомление" onClick={() => setNotices((current) => current.filter((item) => item.id !== notice.id))}>×</button>
+      </article>)}
     </aside>
   </main>;
 }

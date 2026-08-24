@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.21.0
+Version: 1.22.0
 Last updated: 2026-08-24
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -23,6 +23,11 @@ coordinates. This endpoint is private UI infrastructure, uses ETag plus
 conditional background revalidation, and is not an MCP resource. Agents must
 continue to use `country.get_current`, `city.list`, `district.list`, and the
 task tools below.
+
+The authenticated browser-only `GET /api/tasks/search` response includes the
+building `origin`, `cityId`/`cityName`, and the city's `cityCenter` and
+`cityBounds`. The UI uses that viewport to switch cities before focusing a
+building; external agents should continue to use `task.list` and `task.get`.
 
 This document is intended for AI agents and developers integrating through the
 Model Context Protocol (MCP).

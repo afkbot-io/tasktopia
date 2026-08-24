@@ -48,9 +48,12 @@ describe("task extras: numbers, MR links, attachments, search", () => {
     await makeTask("Починить авторизацию", 1);
     await makeTask("Обновить лендинг", 2);
     const byNumber = await service.searchTasks(countryId, "2");
+    const currentCity = (await service.listCities(countryId))[0]!;
     expect(byNumber).toHaveLength(1);
     expect(byNumber[0]!.title).toBe("Обновить лендинг");
     expect(byNumber[0]!.cityName).toBe("Extras City");
+    expect(byNumber[0]!.cityCenter).toEqual(currentCity.center);
+    expect(byNumber[0]!.cityBounds).toEqual(currentCity.bounds);
     const byTitle = await service.searchTasks(countryId, "авториз");
     expect(byTitle).toHaveLength(1);
     expect(byTitle[0]!.taskNumber).toBe(1);

@@ -581,6 +581,19 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(task.progress).toBe(100);
     expect(task.comments).toHaveLength(4);
     const statusEvent = (await service.listEvents(countryId)).findLast((event) => event.type === "task.status_changed");
+    const eventCity = (await service.listCities(countryId)).find((candidate) => candidate.id === city.id)!;
+    expect(statusEvent?.payload.building).toMatchObject({
+      id: task.id,
+      taskNumber: task.taskNumber,
+      title: "Build mixed-use tower",
+      status: "COMPLETED",
+      progress: 100,
+      stage: 5,
+      origin: task.origin,
+      country: { id: countryId, name: "Tester: страна" },
+      city: { id: city.id, name: "Southport", center: eventCity.center, bounds: eventCity.bounds },
+      district: { id: district.id, name: "Core" },
+    });
     const affected = statusEvent?.payload.affectedBounds as ReturnType<typeof boundsOf>;
     const buildingBounds = boundsOf(task.footprint);
     expect(affected.minX).toBeLessThanOrEqual(buildingBounds.minX);

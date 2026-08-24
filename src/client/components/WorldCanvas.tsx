@@ -98,6 +98,12 @@ const GROUND_PRESERVING_EVENTS = new Set([
   "archive.record_created", "archive.record_deleted",
 ]);
 type FocusArea = { point: Cell; bounds: Rect };
+function buildingFocusArea(origin: Cell): FocusArea {
+  return {
+    point: origin,
+    bounds: { minX: origin.x - 14, minY: origin.y - 14, maxX: origin.x + 14, maxY: origin.y + 14 },
+  };
+}
 type IncidentView = {
   signature: string;
   container: Container;
@@ -844,7 +850,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const focusMaxX = focusArea?.bounds.maxX;
   const focusMaxY = focusArea?.bounds.maxY;
   const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
-  const initialFocusRef = useRef(focusArea);
+  const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin) : focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
 
   useEffect(() => {
@@ -875,11 +881,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const focusTaskToken = focusTask?.token;
   useEffect(() => {
     if (!focusTaskToken || !focusTask) return;
-    const { x, y } = focusTask.origin;
-    runtimeRef.current?.focus({
-      point: { x, y },
-      bounds: { minX: x - 14, minY: y - 14, maxX: x + 14, maxY: y + 14 },
-    });
+    runtimeRef.current?.focus(buildingFocusArea(focusTask.origin));
   }, [focusTaskToken, focusTask]);
 
   useEffect(() => {

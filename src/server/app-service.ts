@@ -13,6 +13,7 @@ import {
   STATUS_PROGRESS_RANGE,
   TASK_STAGE,
   type BootstrapDto,
+  type BuildingEventContext,
   type ArchiveRecordDto,
   type ArchiveRecordKind,
   type Cell,
@@ -877,13 +878,52 @@ export class AppService {
   }
 
   private async createEvent(countryId: string, type: string, payload: Record<string, unknown>): Promise<RealtimeEvent> {
+    let eventPayload = payload;
+    const taskId = typeof payload.taskId === "string" ? payload.taskId : undefined;
+    if (type.startsWith("task.") && type !== "task.comment_added" && taskId && !payload.building) {
+      const building = await this.buildingEventContext(countryId, taskId);
+      if (building) eventPayload = { ...payload, building };
+    }
     await this.db.prepare("UPDATE countries SET world_version = world_version + 1 WHERE id = ?").run(countryId);
     const country = await this.countryRow(countryId);
     const createdAt = now();
     const version = Number(country.world_version);
     const result = await this.db.prepare("INSERT INTO events (country_id, type, world_version, payload_json, created_at) VALUES (?, ?, ?, ?, ?) RETURNING id")
-                      .run(countryId, type, version, JSON.stringify(payload), createdAt);
-    return { id: Number(result.rows[0]?.id), countryId, type, worldVersion: version, payload, createdAt };
+                      .run(countryId, type, version, JSON.stringify(eventPayload), createdAt);
+    return { id: Number(result.rows[0]?.id), countryId, type, worldVersion: version, payload: eventPayload, createdAt };
+  }
+
+  private async buildingEventContext(countryId: string, taskId: string): Promise<BuildingEventContext | undefined> {
+    const row = await this.db.prepare(`SELECT
+      task.id, task.task_number, task.title, task.visual_kind, task.status, task.progress, task.origin_x, task.origin_y,
+      country.id AS country_id, country.name AS country_name,
+      city.id AS city_id, city.name AS city_name, city.center_x AS city_center_x, city.center_y AS city_center_y, city.bounds_json AS city_bounds_json,
+      district.id AS district_id, district.name AS district_name
+      FROM tasks_v3 task
+      JOIN cities_v3 city ON city.id = task.city_id
+      JOIN countries country ON country.id = city.country_id
+      JOIN districts_v3 district ON district.id = task.district_id
+      WHERE task.id = ? AND city.country_id = ?`).get(taskId, countryId) as Row | undefined;
+    if (!row) return undefined;
+    const status = String(row.status) as TaskStatus;
+    return {
+      id: String(row.id),
+      taskNumber: Number(row.task_number),
+      title: String(row.title),
+      visualKind: String(row.visual_kind ?? "BUILDING") as BuildingEventContext["visualKind"],
+      status,
+      progress: Number(row.progress),
+      stage: TASK_STAGE[status],
+      origin: { x: Number(row.origin_x), y: Number(row.origin_y) },
+      country: { id: String(row.country_id), name: String(row.country_name) },
+      city: {
+        id: String(row.city_id),
+        name: String(row.city_name),
+        center: { x: Number(row.city_center_x), y: Number(row.city_center_y) },
+        bounds: json<Rect>(row.city_bounds_json),
+      },
+      district: { id: String(row.district_id), name: String(row.district_name) },
+    };
   }
 
   private async mutate<T>(countryId: string, operation: string, idempotencyKey: string, payload: unknown, callback: () => Promise<{ data: T; eventType: string; eventPayload: Record<string, unknown> }> | { data: T; eventType: string; eventPayload: Record<string, unknown> }): Promise<T> {
@@ -1676,11 +1716,13 @@ export class AppService {
     const bounded = Math.max(1, Math.min(25, limit));
     const rows = /^\d{1,9}$/.test(text)
       ? await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id, t.origin_x, t.origin_y,
-          city.name AS city_name, district.name AS district_name
+          city.name AS city_name, city.center_x AS city_center_x, city.center_y AS city_center_y, city.bounds_json AS city_bounds_json,
+          district.name AS district_name
           FROM tasks_v3 t JOIN cities_v3 city ON city.id = t.city_id JOIN districts_v3 district ON district.id = t.district_id
           WHERE city.country_id = ? AND t.task_number = ?`).all(countryId, Number(text)) as Row[]
       : await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id, t.origin_x, t.origin_y,
-          city.name AS city_name, district.name AS district_name
+          city.name AS city_name, city.center_x AS city_center_x, city.center_y AS city_center_y, city.bounds_json AS city_bounds_json,
+          district.name AS district_name
           FROM tasks_v3 t JOIN cities_v3 city ON city.id = t.city_id JOIN districts_v3 district ON district.id = t.district_id
           WHERE city.country_id = ? AND t.title ILIKE ? ESCAPE '\\'
           ORDER BY t.updated_at DESC LIMIT ?`).all(countryId, `%${text.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_")}%`, bounded) as Row[];
@@ -1691,6 +1733,8 @@ export class AppService {
         workItemType: String(row.work_item_type ?? "TASK") as WorkItemType,
         status, progress: Number(row.progress), stage: TASK_STAGE[status],
         cityId: String(row.city_id), cityName: String(row.city_name),
+        cityCenter: { x: Number(row.city_center_x), y: Number(row.city_center_y) },
+        cityBounds: json<Rect>(row.city_bounds_json),
         districtId: String(row.district_id), districtName: String(row.district_name),
         origin: { x: Number(row.origin_x), y: Number(row.origin_y) },
       };
@@ -4982,6 +5026,7 @@ export class AppService {
   async deleteTask(countryId: string, input: { taskId: string; confirmTitle: string; idempotencyKey: string }): Promise<{ deleted: true; taskId: string; districtId: string; cityId: string; title: string }> {
     return await this.mutate(countryId, "task.delete.v1", input.idempotencyKey, input, async () => {
                       const task = await this.getTask(countryId, input.taskId);
+                      const building = await this.buildingEventContext(countryId, input.taskId);
                       if (input.confirmTitle.trim() !== task.title) throw new DomainError("CONFIRMATION_MISMATCH", "Для удаления укажите точное текущее название задачи");
                       const districtRow = await this.db.prepare("SELECT lots_json FROM districts_v3 WHERE id = ?").get(task.districtId) as Row | undefined;
                       if (districtRow) {
@@ -5001,7 +5046,7 @@ export class AppService {
                       await this.db.prepare("DELETE FROM tasks_v3 WHERE id = ?").run(task.id);
                       this.surfaceCache.delete(countryId);
                       const data = { deleted: true as const, taskId: task.id, districtId: task.districtId, cityId: task.cityId, title: task.title };
-                      return { data, eventType: "task.deleted", eventPayload: { ...data, affectedBounds: boundsOf([...task.footprint, ...task.accessPath]) } };
+                      return { data, eventType: "task.deleted", eventPayload: { ...data, building, affectedBounds: boundsOf([...task.footprint, ...task.accessPath]) } };
                     });
   }
 
