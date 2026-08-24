@@ -88,6 +88,57 @@ describe("durable world generation jobs", { timeout: 20_000 }, () => {
     expect(duplicate.id).toBe(first.id);
   });
 
+  it("normalizes undefined optional fields before persisting and comparing an idempotent payload", async () => {
+    const payload = {
+      cityId: crypto.randomUUID(),
+      title: "Queued task",
+      estimate: 2,
+      dueAt: undefined,
+      assigneeUserId: undefined,
+      forUserId: undefined,
+      parkVariant: undefined,
+      idempotencyKey: "task-with-omitted-optionals",
+    };
+
+    const first = await enqueueWorldGenerationJob(
+      db, countryId, "task.create", payload.idempotencyKey, payload,
+    );
+    const duplicate = await enqueueWorldGenerationJob(
+      db, countryId, "task.create", payload.idempotencyKey, payload,
+    );
+
+    expect(duplicate.id).toBe(first.id);
+    expect(first.payload).toEqual({
+      cityId: payload.cityId,
+      title: payload.title,
+      estimate: payload.estimate,
+      idempotencyKey: payload.idempotencyKey,
+    });
+    const count = await db.prepare(`SELECT COUNT(*)::integer AS count FROM world_generation_jobs_v1
+      WHERE country_id = ? AND operation = ? AND idempotency_key = ?`)
+      .get<{ count: number }>(countryId, "task.create", payload.idempotencyKey);
+    expect(count?.count).toBe(1);
+  });
+
+  it("still rejects a reused key when the normalized payload changes", async () => {
+    const idempotencyKey = "task-normalized-conflict";
+    await enqueueWorldGenerationJob(db, countryId, "task.create", idempotencyKey, {
+      title: "Original task", dueAt: undefined, idempotencyKey,
+    });
+
+    await expect(enqueueWorldGenerationJob(db, countryId, "task.create", idempotencyKey, {
+      title: "Changed task", dueAt: undefined, idempotencyKey,
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+
+    const nullKey = "task-null-remains-meaningful";
+    await enqueueWorldGenerationJob(db, countryId, "task.create", nullKey, {
+      title: "Null-sensitive task", dueAt: undefined, idempotencyKey: nullKey,
+    });
+    await expect(enqueueWorldGenerationJob(db, countryId, "task.create", nullKey, {
+      title: "Null-sensitive task", dueAt: null, idempotencyKey: nullKey,
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
   it("heartbeats a long-running job so another worker cannot reclaim its lease", async () => {
     const payload = { name: "Slow city", idempotencyKey: "slow-city" };
     await enqueueWorldGenerationJob(db, countryId, "city.create", payload.idempotencyKey, payload);
