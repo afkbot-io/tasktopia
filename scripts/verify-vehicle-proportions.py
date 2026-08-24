@@ -63,7 +63,7 @@ def opaque_runs(alpha: Image.Image, y: int) -> list[int]:
     return widths
 
 
-def assert_fire_engine_projection(key: str, image: Image.Image) -> None:
+def assert_fire_engine_projection(key: str, image: Image.Image, bus: Image.Image) -> None:
     """Require the same bus-class envelope and near-top wheel profile as transit."""
     alpha = image.getchannel("A")
     bounds = alpha.getbbox()
@@ -79,12 +79,20 @@ def assert_fire_engine_projection(key: str, image: Image.Image) -> None:
     row_widths = {width for _, _, width in rows}
     front_edges = {row_right for _, row_right, _ in rows}
     bottom_runs = opaque_runs(alpha, bottom - 1)
+    bus_alpha = bus.getchannel("A")
+    bus_bounds = bus_alpha.getbbox()
+    assert bus_bounds is not None
+    bus_top_xs = [x for x in range(bus_bounds[0], bus_bounds[2]) if bus_alpha.getpixel((x, bus_bounds[1]))]
     assert 0.84 <= fill_ratio <= 0.97, f"{key}: implausible heavy-vehicle fill ratio {fill_ratio:.3f}"
     assert len(row_widths) >= 4, f"{key}: flat silhouette has only {len(row_widths)} row widths"
     assert len(front_edges) >= 4, f"{key}: cab/front lacks a stepped east-facing profile"
     assert rows[0][2] < right - left, f"{key}: roof/top plane fills the full rectangular envelope"
     assert len(bottom_runs) == 2 and all(3 <= width <= 6 for width in bottom_runs), (
         f"{key}: expected two bus-scale rounded wheel contacts, got {bottom_runs}"
+    )
+    assert (left, top, right, bottom) == bus_bounds, f"{key}: road envelope diverges from the city bus"
+    assert abs(rows[0][0] - min(bus_top_xs)) <= 2 and abs(rows[0][1] - max(bus_top_xs)) <= 2, (
+        f"{key}: shallow top plane does not match the canonical east-facing bus camera"
     )
 
 
@@ -118,11 +126,10 @@ def main() -> None:
         checked.append((key, images))
 
     fire_engines: dict[str, Image.Image] = {}
-    fire_sources = {
-        "fire-engine-horizontal": "ai-authored/ambient/fire-engines-v6.png",
-        "fire-engine-rescue": "ai-authored/ambient/fire-engine-rescue-v6.png",
-        "fire-engine-ladder": "ai-authored/ambient/fire-engines-v6.png",
-    }
+    fire_sources = {key: "ai-authored/ambient/fire-engines-v7.png" for key in (
+        "fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder",
+    )}
+    bus = Image.open(RUNTIME / manifest["props"]["city-bus-horizontal"]["path"]).convert("RGBA")
     for key, source_sheet in fire_sources.items():
         entry = manifest["props"][key]
         image = Image.open(RUNTIME / entry["path"]).convert("RGBA")
@@ -135,10 +142,12 @@ def main() -> None:
         assert entry["footprintCells"] == [7, 3], f"{key}: footprint {entry['footprintCells']}"
         assert entry.get("sourceSheet") == source_sheet, f"{key}: stale source"
         assert entry.get("artSource") == "AI_AUTHORED", f"{key}: source is not AI-authored"
-        assert entry.get("visualProfile") == "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE", (
+        assert entry.get("visualProfile") == "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP", (
             f"{key}: stale visual profile"
         )
-        assert_fire_engine_projection(key, image)
+        assert entry.get("baseFacing") == "EAST", f"{key}: horizontal source must face east"
+        assert entry.get("sourceSha256"), f"{key}: missing immutable source digest"
+        assert_fire_engine_projection(key, image, bus)
         fire_engines[key] = image
     for left_key, right_key in itertools.combinations(fire_engines, 2):
         left = fire_engines[left_key]

@@ -656,6 +656,10 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const engineX = entry.spriteSize.width / 2 + engineWidth / 2;
   const engine = sprite(PROP_SPRITES[engineKey]!, engineX, 2);
   engine.anchor.set(0.5, 1);
+  // Authored horizontal engines face east. They park to the right of the
+  // building, so mirror the accepted view exactly as moving cars do for west:
+  // the cab and hose point back toward the incident instead of away from it.
+  engine.scale.x = -1;
 
   const stageBounds = entry.stageOpaqueBounds[Math.max(0, Math.min(4, task.stage - 1))]!;
   const layout = incidentVisualLayout(entry.spriteSize.width, entry.spriteSize.height, profile, stageBounds);
@@ -667,7 +671,7 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
   const beacon = fullResponse
     ? new Graphics().rect(-2, -2, 4, 2).fill(0x71d7f2)
     : new Graphics().rect(-2, -2, 4, 4).fill(0xf2574c);
-  beacon.position.set(fullResponse ? engineX + 12 : alarmAnchor.x - 2, fullResponse ? -20 : alarmAnchor.y - 3);
+  beacon.position.set(fullResponse ? engineX - 12 : alarmAnchor.x - 2, fullResponse ? -20 : alarmAnchor.y - 3);
 
   const flames = layout.flameAnchors.map((anchor, index) => {
     const frameA = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
@@ -698,7 +702,7 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
     y: anchor.y - 2,
   }));
   const initialTarget = incidentWaterTargetFrame(targets, 0, visualSeed % 700)!;
-  const waterJet = { source: { x: engineX + 8, y: -18 }, targets, targetIndex: initialTarget.index };
+  const waterJet = { source: { x: engineX - 8, y: -18 }, targets, targetIndex: initialTarget.index };
   drawIncidentWaterJet(water, waterJet.source, initialTarget.target, 0, visualSeed % 700);
 
   const hasFlame = profile.burning;

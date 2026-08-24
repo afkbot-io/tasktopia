@@ -15575,8 +15575,9 @@
         22
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/fire-engines-v6.png",
-      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE",
+      "sourceSheet": "ai-authored/ambient/fire-engines-v7.png",
+      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP",
+      "sourceSha256": "28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8",
       "baseFacing": "EAST"
     },
     "fire-engine-rescue": {
@@ -15599,8 +15600,9 @@
         22
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/fire-engine-rescue-v6.png",
-      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE",
+      "sourceSheet": "ai-authored/ambient/fire-engines-v7.png",
+      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP",
+      "sourceSha256": "28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8",
       "baseFacing": "EAST"
     },
     "fire-engine-ladder": {
@@ -15623,8 +15625,9 @@
         22
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/fire-engines-v6.png",
-      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_NATIVE",
+      "sourceSheet": "ai-authored/ambient/fire-engines-v7.png",
+      "visualProfile": "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP",
+      "sourceSha256": "28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8",
       "baseFacing": "EAST"
     },
     "boat-horizontal-a": {
@@ -20398,5 +20401,5 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "b83eb6992d6e8bf1"
+  "assetRevision": "070809906bd33e85"
 }

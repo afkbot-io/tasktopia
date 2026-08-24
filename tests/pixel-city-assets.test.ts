@@ -285,12 +285,11 @@ describe("Pixel City active asset contract", () => {
   });
 
   it("publishes four incident animation frames, three proportional engine silhouettes, and eight animal species", () => {
-    const props = manifest.props as Record<string, { size: number[]; occupiedSize?: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string }>;
-    const fireSources: Record<string, string> = {
-      "fire-engine-horizontal": "ai-authored/ambient/fire-engines-v6.png",
-      "fire-engine-rescue": "ai-authored/ambient/fire-engine-rescue-v6.png",
-      "fire-engine-ladder": "ai-authored/ambient/fire-engines-v6.png",
-    };
+    const props = manifest.props as Record<string, { size: number[]; occupiedSize?: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string; sourceSha256?: string; visualProfile?: string; baseFacing?: string }>;
+    const fireSources: Record<string, string> = Object.fromEntries(
+      ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]
+        .map((key) => [key, "ai-authored/ambient/fire-engines-v7.png"]),
+    );
     for (const [key, sourceSheet] of Object.entries(fireSources)) {
       expect(props[key], key).toMatchObject({
         size: [56, 24],
@@ -298,6 +297,9 @@ describe("Pixel City active asset contract", () => {
         footprintCells: [7, 3],
         artSource: "AI_AUTHORED",
         sourceSheet,
+        sourceSha256: "28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8",
+        visualProfile: "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP",
+        baseFacing: "EAST",
       });
     }
     for (const prefix of ["incident-flame", "incident-smoke"]) {

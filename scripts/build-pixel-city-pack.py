@@ -2070,6 +2070,14 @@ def load_ai_authored_ambient_catalog(name: str) -> list[dict]:
             raise ValueError(f"{key}: AI-authored path leaves reference directory")
         if not source.exists():
             raise FileNotFoundError(source)
+        expected_digest = entry.get("sheetSha256")
+        if expected_digest is not None:
+            actual_digest = hashlib.sha256(source.read_bytes()).hexdigest()
+            if expected_digest != actual_digest:
+                raise ValueError(
+                    f"{key}: ambient source digest mismatch; "
+                    f"expected {expected_digest}, got {actual_digest}"
+                )
         grid = entry.get("grid")
         if grid is not None and (
             not isinstance(grid, list)
@@ -2335,6 +2343,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "artSource": authored.get("artSource", "AI_AUTHORED"),
             "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
             "visualProfile": authored.get("visualProfile", "TASKTOPIA_V5_AMBIENT"),
+            **({"sourceSha256": authored["sheetSha256"]} if authored.get("sheetSha256") else {}),
             **({"baseFacing": authored["baseFacing"]} if authored.get("baseFacing") else {}),
         }
     # A walk cycle is one authored subject, so all three poses must use one
