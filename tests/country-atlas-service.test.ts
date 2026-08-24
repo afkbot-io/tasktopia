@@ -40,6 +40,7 @@ describe("country atlas read model", () => {
 
     const atlas = await service.getCountryAtlas(countryId);
     const sourceFeatures = (await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id);
+    const airports = sourceFeatures.filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA");
 
     expect(atlas).toMatchObject({ schemaVersion: 5, cities: [{ id: city.id, name: "Riverside" }] });
     expect(Number.isInteger(atlas.terrainSeed)).toBe(true);
@@ -62,6 +63,9 @@ describe("country atlas read model", () => {
     expect("cutoutTerrain" in atlas.cities[0]!).toBe(false);
     expect(atlas.cities[0]!.districts.flatMap((district) => district.displayCells)).toHaveLength(atlas.cities[0]!.cutoutMask.length);
     expect(atlas.cities[0]!.features.map((feature) => feature.id).sort()).toEqual(sourceFeatures.map((feature) => feature.id).sort());
+    expect(airports).toHaveLength(1);
+    expect(airports[0]!.assetKey).toMatch(/^city-airport-terminal-[1-5]$/);
+    expect(atlas.cities[0]!.features).toContainEqual(expect.objectContaining({ id: airports[0]!.id, kind: "AIRPORT" }));
     for (const building of atlas.cities[0]!.buildings) {
       expect(building.atlasFootprint).not.toHaveLength(0);
       expect(atlas.cities[0]!.atlasMask).toContainEqual(building.atlasOrigin);

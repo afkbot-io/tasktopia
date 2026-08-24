@@ -125,7 +125,7 @@ test("planet, country and city levels keep selection and disabled states coheren
   expect(globeBox).not.toBeNull();
   await page.mouse.move(globeBox!.x + globeBox!.width / 2, globeBox!.y + globeBox!.height / 2);
   await page.mouse.wheel(0, -120);
-  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-globe-zoom", "1.10");
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-globe-zoom", "1.20");
   const zoomedCountryLabelBoxes = await page.locator(".planet-country-label .atlas-overview-card-hit").evaluateAll((nodes) => nodes.map((node) => {
     const box = (node as SVGGraphicsElement).getBoundingClientRect();
     return { width: Math.round(box.width), height: Math.round(box.height) };
@@ -141,6 +141,9 @@ test("planet, country and city levels keep selection and disabled states coheren
     await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH.replace(/\.png$/, "-planet.png"), fullPage: true });
   }
   await expect(page.locator(".planet-routes .atlas-aircraft-sprite").first()).toBeAttached();
+  await expect(page.locator(".planet-routes .atlas-aircraft-frame-b").first()).toBeAttached();
+  await expect(page.locator(".planet-airport-markers rect")).not.toHaveCount(0);
+  await expect(page.locator('.planet-clouds image[href*="atlas/clouds/cloud-planet-"]')).not.toHaveCount(0);
   await expect(page.locator('animateMotion[rotate="auto"]')).toHaveCount(0);
   expect(await page.locator(".planet-routes .atlas-aircraft-sprite").first().evaluate((node) => getComputedStyle(node).imageRendering)).toBe("pixelated");
   await expect(levels.getByRole("button", { name: "Страна" })).toBeDisabled();
@@ -155,6 +158,8 @@ test("planet, country and city levels keep selection and disabled states coheren
     return `${Math.round(box.width)}:${Math.round(box.height)}`;
   }));
   expect(new Set(cityCardSizes).size).toBe(1);
+  await expect(page.locator(".atlas-airport-markers")).not.toHaveCount(0);
+  await expect(page.locator('.atlas-clouds image[href*="atlas/clouds/cloud-country-"]')).not.toHaveCount(0);
   await expect(cityCard).toContainText("В РАБОТЕ");
   await expect(cityCard.locator(".atlas-overview-card-progress")).toContainText("%");
   await expect(cityCard).not.toContainText("РАЙОНА");
@@ -172,7 +177,7 @@ test("planet, country and city levels keep selection and disabled states coheren
   await expect(page.locator(".country-atlas")).toBeVisible();
 });
 
-test("two extra wheel steps cross upward from city to country and from country to planet", async ({ page }) => {
+test("city exits at its zoom boundary while country keeps its two-step parent guard", async ({ page }) => {
   await loginAndOpenCountryAtlas(page);
   const activeCountryId = await page.evaluate(async () => (await fetch("/api/bootstrap").then((response) => response.json()) as { country: { id: string } }).country.id);
   const atlas = page.locator(".country-atlas");

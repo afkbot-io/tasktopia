@@ -93,11 +93,19 @@ describe("planet atlas projection", () => {
     expect(projected.countries.flatMap((country) => country.cells).length).toBeGreaterThan(0);
   });
 
+  it("lets the selected country fill the viewport without fractional hex seams", () => {
+    const globe = projectPlanetGlobe(fixture, { longitude: 0, latitude: 0, zoom: 5.5 });
+    expect(globe.clipRadius).toBeGreaterThan(globe.height / 2);
+    for (const cell of globe.countries.flatMap((country) => country.cells)) {
+      expect(cell.path).not.toMatch(/\d\.\d/);
+    }
+  });
+
   it("lays out equal screen-space country labels without collisions", () => {
     const globe = projectPlanetGlobe(fixture, { longitude: 0, latitude: 0, zoom: 1 });
     const labels = layoutPlanetCountryLabels(globe.countries, globe.width, globe.height);
-    expect(new Set(labels.map((label) => label.width))).toEqual(new Set([144]));
-    expect(new Set(labels.map((label) => label.height))).toEqual(new Set([38]));
+    expect(new Set(labels.map((label) => label.width))).toEqual(new Set([132]));
+    expect(new Set(labels.map((label) => label.height))).toEqual(new Set([34]));
     for (let left = 0; left < labels.length; left += 1) for (let right = left + 1; right < labels.length; right += 1) {
       const a = labels[left]!;
       const b = labels[right]!;

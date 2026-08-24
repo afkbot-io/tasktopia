@@ -65,11 +65,13 @@ export type CountryAtlasSurfaceDto = {
 
 export type CountryAtlasFeatureDto = {
   id: string;
+  kind: WorldFeatureDto["kind"];
   districtId: string | null;
   assetKind: WorldFeatureDto["assetKind"];
   assetKey: string;
   developmentStage: WorldFeatureDto["developmentStage"];
   sourceOrigin: Cell;
+  sourceFootprint: Cell[];
   atlasOrigin: Cell;
   atlasFootprint: Cell[];
 };

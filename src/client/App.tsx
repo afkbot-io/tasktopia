@@ -11,7 +11,9 @@ import { PlanDrawer } from "./components/PlanDrawer";
 import { TaskSearch } from "./components/TaskSearch";
 import { Button, cx } from "./components/ui";
 import { MapLevelNav, type MapLevel } from "./components/MapLevelNav";
+import { MapLevelTransition } from "./components/MapLevelTransition";
 import { ProfilePresence } from "./components/ProfilePresence";
+import { createAtlasTransition, type AtlasTransition } from "./atlas-navigation-transition";
 import { eventInvalidation, type MapInvalidation } from "./map-invalidation";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
@@ -59,6 +61,8 @@ export function App() {
   const [countryDialog, setCountryDialog] = useState<"manage" | "create" | null>(null);
   const [showDistricts, setShowDistricts] = useState(false);
   const [mapMode, setMapMode] = useState<MapLevel>("COUNTRY");
+  const [mapTransition, setMapTransition] = useState<AtlasTransition | null>(null);
+  const mapTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [focusCity, setFocusCity] = useState<CityFocus | null>(null);
   const [hoveredAtlasCity, setHoveredAtlasCity] = useState<CityFocus | null>(null);
   const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
@@ -83,6 +87,25 @@ export function App() {
     setPlanSection("archive");
     setPlanOpen(true);
   }, []);
+  const transitionMap = useCallback(async (
+    to: MapLevel,
+    focus: { x: number; y: number },
+    commit: () => Promise<void> | void,
+  ) => {
+    if (mapTransitionTimerRef.current) clearTimeout(mapTransitionTimerRef.current);
+    const transition = createAtlasTransition(mapMode, to, focus, performance.now());
+    setMapTransition(transition);
+    const startedAt = performance.now();
+    try {
+      await commit();
+    } finally {
+      const remaining = Math.max(0, transition.durationMs - (performance.now() - startedAt));
+      mapTransitionTimerRef.current = setTimeout(() => {
+        setMapTransition((current) => current?.id === transition.id ? null : current);
+        mapTransitionTimerRef.current = null;
+      }, remaining);
+    }
+  }, [mapMode]);
   const hoverAtlasCity = useCallback((city: CountryAtlasCityDto | null) => {
     setHoveredAtlasCity(city ? { id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds } : null);
   }, []);
@@ -166,6 +189,9 @@ export function App() {
   }, [openBuilding]);
 
   useEffect(() => { void load().catch(() => undefined); }, [load]);
+  useEffect(() => () => {
+    if (mapTransitionTimerRef.current) clearTimeout(mapTransitionTimerRef.current);
+  }, []);
   useEffect(() => {
     document.title = bootstrap ? `Tasktopia — ${bootstrap.country.name}` : "Tasktopia — цифровая страна";
   }, [bootstrap]);
@@ -298,9 +324,11 @@ export function App() {
                 userId={bootstrap.user.id}
                 activeCountryId={bootstrap.country.id}
                 refreshToken={planetRevision}
-                onCountrySelect={async (selectedCountryId) => {
-                  const next = await api<BootstrapDto>(`/api/countries/${selectedCountryId}/select`, { method: "POST" });
-                  applyBootstrap(next, "COUNTRY");
+                onCountrySelect={async (selectedCountryId, focus = { x: .5, y: .5 }) => {
+                  await transitionMap("COUNTRY", focus, async () => {
+                    const next = await api<BootstrapDto>(`/api/countries/${selectedCountryId}/select`, { method: "POST" });
+                    applyBootstrap(next, "COUNTRY");
+                  });
                 }}
               />
             : effectiveMapMode === "COUNTRY" && bootstrap.stats.cities > 0
@@ -310,10 +338,19 @@ export function App() {
                 activeCityId={activeCity?.id}
                 events={atlasEvents}
                 onEventsProcessed={acknowledgeAtlasEvents}
-                onCitySelect={(city) => {
-                  setFocusCity({ id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds });
-                  setHoveredAtlasCity(null);
-                  setMapMode("CITY");
+                onCitySelect={(city, focus = { x: .5, y: .5 }, sourcePoint = city.sourceCenter) => {
+                  void transitionMap("CITY", focus, () => {
+                    const airportCells = city.features.filter((feature) => feature.kind === "AIRPORT").flatMap((feature) => feature.sourceFootprint);
+                    const navigationBounds = airportCells.length === 0 ? city.sourceBounds : {
+                      minX: Math.min(city.sourceBounds.minX, ...airportCells.map((cell) => cell.x)),
+                      minY: Math.min(city.sourceBounds.minY, ...airportCells.map((cell) => cell.y)),
+                      maxX: Math.max(city.sourceBounds.maxX, ...airportCells.map((cell) => cell.x)),
+                      maxY: Math.max(city.sourceBounds.maxY, ...airportCells.map((cell) => cell.y)),
+                    };
+                    setFocusCity({ id: city.id, name: city.name, center: sourcePoint, bounds: navigationBounds });
+                    setHoveredAtlasCity(null);
+                    setMapMode("CITY");
+                  });
                 }}
                 onDistrictSelect={(city, district) => {
                   setFocusCity({ id: city.id, name: city.name, center: district.sourceCenter, bounds: district.sourceBounds });
@@ -322,10 +359,13 @@ export function App() {
                   setMapMode("CITY");
                 }}
                 onCityHover={hoverAtlasCity}
-                onZoomOut={() => setMapMode("PLANET")}
+                onZoomOut={() => { void transitionMap("PLANET", { x: .5, y: .5 }, () => setMapMode("PLANET")); }}
               />
               : effectiveMapMode === "CITY" && bootstrap.stats.cities > 0
-                ? <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onZoomOutToCountry={() => setMapMode("COUNTRY")} />
+                ? <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity ? {
+                  minX: Math.min(bootstrap.viewBounds.minX, activeCity.bounds.minX), minY: Math.min(bootstrap.viewBounds.minY, activeCity.bounds.minY),
+                  maxX: Math.max(bootstrap.viewBounds.maxX, activeCity.bounds.maxX), maxY: Math.max(bootstrap.viewBounds.maxY, activeCity.bounds.maxY),
+                } : bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onZoomOutToCountry={() => { void transitionMap("COUNTRY", { x: .5, y: .5 }, () => setMapMode("COUNTRY")); }} />
                 : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>В стране пока нет городов</h2><p>Создайте первый город через MCP — он сразу появится на карте страны и планеты.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
       </Suspense>
       <MapLevelNav level={effectiveMapMode} hasCity={Boolean(activeCity)} onChange={(nextLevel) => {
@@ -333,6 +373,7 @@ export function App() {
         if (nextLevel === "CITY" && effectiveMapMode !== "CITY") return;
         setMapMode(nextLevel);
       }} />
+      {mapTransition && <MapLevelTransition transition={mapTransition} />}
       {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setMapMode("CITY"); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
     </section>
 

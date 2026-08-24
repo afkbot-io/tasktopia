@@ -222,6 +222,9 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-district[data-status="ACTIVE"] .atlas-district-state-outline { filter: brightness(1.18) saturate(1.12); opacity: 1; }
 .atlas-district[data-hovered="true"] .atlas-district-state-outline { filter: brightness(1.32) saturate(1.08); opacity: 1; }
 .atlas-local-infrastructure { pointer-events: none; }
+.atlas-airport-markers { pointer-events: none; }
+.atlas-airport-markers rect { fill: #0b1d20; stroke: #f2c84b; stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.atlas-airport-markers path { fill: #edf1df; shape-rendering: crispEdges; }
 .atlas-park-cell { fill: #6d9251; stroke: #c0ae78; stroke-width: .45px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
 .atlas-grove-cell { fill: #3f6f45; stroke: #765f43; stroke-width: .45px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
 .atlas-road-cell { fill: #3f4d55; stroke: #879398; stroke-width: .45px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
@@ -238,15 +241,17 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-city[data-active="true"] .atlas-overview-card-hit { stroke: #f0cf56; stroke-width: 2px; }
 .atlas-city[data-active="true"] .atlas-city-label-tab { fill: #f0cf56; }
 .atlas-city-label:hover .atlas-city-label-tab, .atlas-city-label:focus-within .atlas-city-label-tab { fill: #f2d45e; }
-.atlas-city-label .atlas-overview-card-title, .atlas-city-label .atlas-overview-card-progress { font-size: 15px; }
-.atlas-city-label .atlas-overview-card-meta { font-size: 8px; }
 .atlas-air-routes, .atlas-clouds { pointer-events: none; }
 .atlas-air-route-line { fill: none; stroke: #dce8dc; stroke-width: .8px; stroke-dasharray: 2 4; opacity: .18; vector-effect: non-scaling-stroke; }
 .atlas-aircraft-sprite { image-rendering: pixelated; }
-.atlas-clouds > g { animation: atlas-cloud-drift var(--atlas-cloud-duration) steps(16, end) infinite alternate; }
+.atlas-aircraft-frame-a { animation: atlas-aircraft-frame-a .32s steps(1, end) infinite; }
+.atlas-aircraft-frame-b { animation: atlas-aircraft-frame-b .32s steps(1, end) infinite; }
+@keyframes atlas-aircraft-frame-a { 0%, 49.99% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes atlas-aircraft-frame-b { 0%, 49.99% { opacity: 0; } 50%, 100% { opacity: 1; } }
+.atlas-clouds > g { animation: atlas-cloud-drift var(--atlas-cloud-duration) linear var(--atlas-cloud-delay) infinite alternate; }
 .atlas-clouds path { fill: #edf1df; stroke: #b7c8bf; stroke-width: .7px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
 .atlas-clouds .atlas-cloud-shadow { fill: #aebfba; }
-@keyframes atlas-cloud-drift { from { translate: -20px 0; } to { translate: 20px 0; } }
+@keyframes atlas-cloud-drift { from { translate: 0 0; } to { translate: var(--atlas-cloud-drift-x) var(--atlas-cloud-drift-y); } }
 .country-edge-water-fog { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .atlas-district-tooltip { position: absolute; z-index: 4; display: grid; gap: 2px; width: 168px; padding: 9px 10px; border: 1px solid #b4a569; border-left: 4px solid #b4a569; background: #0b1d20; color: #edf0df; box-shadow: 4px 4px 0 #061113c7; transform: translate(10px, -50%); pointer-events: none; }
 .atlas-district-tooltip-left { transform: translate(calc(-100% - 10px), -50%); }
@@ -283,7 +288,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-country-hit { fill: transparent; stroke: none; pointer-events: all; }
 .planet-country > path { stroke-width: 1.2px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; transition: filter .12s steps(2, end); }
 .planet-country:hover > path, .planet-country:focus > path { filter: brightness(1.18) saturate(1.08); }
-.planet-country[data-active="true"] > path { stroke: #f2d45e; stroke-width: 2px; }
+.planet-country[data-active="true"] > path { stroke: none; filter: brightness(1.14) saturate(1.12); }
 .planet-country[data-selecting="true"] { opacity: .68; }
 .atlas-overview-card { cursor: pointer; outline: none; }
 .atlas-overview-card-hit { fill: #0a1b1ef2; stroke: #c3b06c; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
@@ -296,10 +301,12 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-country-label:hover .atlas-overview-card-hit, .planet-country-label:focus .atlas-overview-card-hit { fill: #112a2e; stroke: #f2d45e; }
 .planet-route-line { fill: none; stroke: #d7e8dc; stroke-width: 1px; stroke-dasharray: 3 4; opacity: .28; vector-effect: non-scaling-stroke; }
 .planet-clouds { pointer-events: none; }
-.planet-clouds > g { animation: planet-cloud-drift var(--cloud-duration) steps(18, end) var(--cloud-delay) infinite alternate; }
+.planet-airport-markers rect { fill: #0b1d20; stroke: #f2c84b; stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.planet-airport-markers path { fill: #edf1df; shape-rendering: crispEdges; }
+.planet-clouds > g { animation: planet-cloud-drift var(--cloud-duration) linear var(--cloud-delay) infinite; }
 .planet-clouds path { fill: #eaf0df; stroke: #b7c9c3; stroke-width: .8px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
 .planet-clouds .planet-cloud-shade { fill: #b9cbc5; }
-@keyframes planet-cloud-drift { from { translate: -72px 8px; } to { translate: 72px -8px; } }
+@keyframes planet-cloud-drift { from { translate: 0 0; } to { translate: var(--cloud-drift-x) var(--cloud-drift-y); } }
 .planet-globe-hint { position: absolute; left: 50%; bottom: 70px; z-index: 3; padding: 7px 10px; border: 1px solid #365768; border-radius: 7px; background: #071923d9; color: #9eb4b8; font-size: 10px; transform: translateX(-50%); pointer-events: none; }
 .planet-edge-fog { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
 .planet-edge-fog i, .country-edge-water-fog i { position: absolute; width: 36px; height: 12px; margin: -6px 0 0 -18px; background: #eaf0df; image-rendering: pixelated; animation: edge-fog-drift 9s steps(6, end) infinite alternate; }
@@ -317,6 +324,17 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .map-level-button:hover:not(:disabled), .map-level-button:focus-visible { border-color: #42636b; background: #152c31; color: #ecf0e8; }
 .map-level-button-active { border-color: #8d7832; background: #302b19; color: #f2d45e; }
 .map-level-button:disabled.map-level-button-active { opacity: 1; }
+
+.map-level-transition { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; overflow: hidden; background: #06151bd9; color: #f5e7ad; font: 900 11px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; pointer-events: all; animation: map-transition-fade var(--map-transition-duration) ease-in-out both; }
+.map-level-transition-pixels { position: absolute; inset: -16px; background-image: linear-gradient(90deg, #78a7a026 50%, transparent 50%), linear-gradient(#d9c66c22 50%, transparent 50%); background-size: 16px 16px; transform-origin: var(--map-transition-x) var(--map-transition-y); animation: map-transition-pixels var(--map-transition-duration) cubic-bezier(.3,.7,.2,1) both; image-rendering: pixelated; }
+.map-level-transition-focus { position: absolute; left: var(--map-transition-x); top: var(--map-transition-y); width: 64px; height: 64px; transform: translate(-50%, -50%); }
+.map-level-transition-focus i { position: absolute; inset: 0; border: 3px solid #f0cf56; animation: map-transition-ring var(--map-transition-duration) steps(8, end) both; }
+.map-level-transition-focus i:nth-child(2) { inset: 12px; border-color: #80b7b2; animation-delay: 40ms; }
+.map-level-transition-focus i:nth-child(3) { inset: 24px; border-color: #eef0dc; animation-delay: 80ms; }
+.map-level-transition span { position: relative; padding: 8px 11px; border: 1px solid #7a713f; background: #0a1d20e8; box-shadow: 4px 4px 0 #02090b99; }
+@keyframes map-transition-fade { 0% { opacity: 0; } 24%, 76% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes map-transition-pixels { 0% { scale: .18; opacity: 0; } 42% { scale: 1; opacity: 1; } 100% { scale: 3; opacity: 0; } }
+@keyframes map-transition-ring { 0% { scale: 1.8; opacity: 0; } 38% { scale: 1; opacity: 1; } 100% { scale: .35; opacity: 0; } }
 
 @media (max-width: 560px) {
   .map-level-nav { bottom: 10px; grid-template-columns: repeat(3, minmax(74px, 1fr)); width: calc(100% - 20px); }

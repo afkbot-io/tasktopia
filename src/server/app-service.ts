@@ -126,6 +126,7 @@ const COUNTRY_ATLAS_DISTRICT_COLORS = [
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
 const ARCHIVE_COMPOUND = { width: 42, height: 28 } as const;
 const ARCHIVE_CITY_CLEARANCE = 24;
+const AIRPORT_COMPOUND = { width: 44, height: 22 } as const;
 
 function roadReachable(roads: ReadonlyMap<string, Cell>, start: Cell, target: Cell): boolean {
   const startKey = cellKey(start);
@@ -1388,7 +1389,7 @@ export class AppService {
           width: (city.bounds.maxX - city.bounds.minX + 1) * 8,
           height: (city.bounds.maxY - city.bounds.minY + 1) * 8,
         },
-        labelSizePx: { width: Math.max(208, city.name.length * 12 + 56), height: 48 },
+        labelSizePx: { width: 208, height: 48 },
         districts: (districtsByCity.get(city.id) ?? []).map((district) => ({ id: district.id, cells: district.cells })),
       })),
     });
@@ -1519,11 +1520,13 @@ export class AppService {
           surfaces: [...projectedSurfaces.values()],
           features: features.filter((feature) => feature.cityId === city.id).map((feature) => ({
             id: feature.id,
+            kind: feature.kind,
             districtId: feature.districtId,
             assetKind: feature.assetKind,
             assetKey: feature.assetKey,
             developmentStage: feature.developmentStage,
             sourceOrigin: feature.origin,
+            sourceFootprint: feature.footprint,
             atlasOrigin: projectCell(feature.origin, feature.districtId ?? ""),
             atlasFootprint: projectFootprint(feature.footprint, feature.districtId ?? ""),
           })),
@@ -3009,6 +3012,60 @@ export class AppService {
     return relocatedBounds ? unionRect(relocatedBounds, currentBounds) : currentBounds;
   }
 
+  private async syncCityAirport(
+    countryId: string,
+    city: CityDto,
+    seed: number,
+    snapshot?: GenerationSpatialSnapshot,
+  ): Promise<WorldFeatureDto | undefined> {
+    const existing = (snapshot?.features ?? await this.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "AIRPORT" && feature.cityId === city.id && feature.assetKind === "AREA");
+    if (existing) return existing;
+    const candidates: Cell[] = [];
+    const centeredX = city.center.x - Math.floor(AIRPORT_COMPOUND.width / 2);
+    const centeredY = city.center.y - Math.floor(AIRPORT_COMPOUND.height / 2);
+    for (const distance of [64, 80, 96, 112]) candidates.push(
+      { x: centeredX, y: city.bounds.maxY + distance },
+      { x: city.bounds.maxX + distance, y: centeredY },
+      { x: centeredX, y: city.bounds.minY - AIRPORT_COMPOUND.height - distance },
+      { x: city.bounds.minX - AIRPORT_COMPOUND.width - distance, y: centeredY },
+    );
+    const cityExclusions = (snapshot?.cities ?? await this.listCities(countryId)).map((candidate) => expandRect(candidate.bounds, 4));
+    for (const origin of candidates) {
+      const securedSite = rectangleFootprint(origin, AIRPORT_COMPOUND.width, AIRPORT_COMPOUND.height);
+      if (!await this.featurePlacementOpen(countryId, seed, securedSite, cityExclusions, snapshot)) continue;
+      return this.insertWorldFeature(countryId, {
+        cityId: city.id,
+        districtId: null,
+        parentFeatureId: null,
+        kind: "AIRPORT",
+        assetKind: "AREA",
+        assetKey: `city-airport-terminal-${Math.abs([...city.id].reduce((total, value) => total + value.charCodeAt(0), 0)) % 5 + 1}`,
+        origin,
+        footprint: rectanglePerimeterFootprint(origin, AIRPORT_COMPOUND.width, AIRPORT_COMPOUND.height),
+        orientation: "E",
+        accessPath: [],
+      }, snapshot);
+    }
+    return undefined;
+  }
+
+  async upgradeCityAirports(): Promise<number> {
+    const countries = await this.db.prepare(`SELECT country.id, country.seed
+      FROM countries country
+      WHERE EXISTS (SELECT 1 FROM cities_v3 city WHERE city.country_id = country.id)
+      ORDER BY country.created_at, country.id`).all<{ id: string; seed: number }>();
+    let upgraded = 0;
+    for (const country of countries) {
+      const cities = await this.listCities(country.id);
+      for (const city of cities) {
+        const airport = await this.db.transaction(async () => this.syncCityAirport(country.id, city, Number(country.seed)));
+        if (airport) upgraded += 1;
+      }
+    }
+    return upgraded;
+  }
+
   async upgradeCountryArchiveInfrastructure(): Promise<number> {
     const countries = await this.db.prepare(`SELECT country.id
       FROM countries country
@@ -3133,6 +3190,11 @@ export class AppService {
                       await this.normalizeUrbanHighways(countryId, bounds, generationSnapshot);
                       await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, connector, gateway.horizontalApproach, generationSnapshot);
                       const archiveBounds = await this.syncCountryArchiveComplex(countryId, hub, generationSnapshot);
+                      await this.syncCityAirport(countryId, {
+                        id, name, description: input.description?.trim().slice(0, 8000) ?? "", goal: input.goal?.trim().slice(0, 4000) ?? "",
+                        acceptanceCriteria: input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", deadline: input.deadline ?? null,
+                        status: "ACTIVE", center, bounds, styleId, morphology, createdAt,
+                      }, seed, generationSnapshot);
 
                       // A wide corridor can cover a one-cell water pocket on
                       // its lateral edge. That cell is technically a bridge,

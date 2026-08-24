@@ -16,12 +16,23 @@ import {
   fitCountryAtlasBoundsToAspect,
 } from "../../shared/country-atlas-viewport";
 import { api } from "../api";
-import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
+import {
+  advanceAtlasEntryHysteresis,
+  advanceAtlasZoomBoundary,
+  atlasTargetCoverage,
+  continuousAtlasZoom,
+  initialAtlasEntryHysteresis,
+  initialAtlasZoomBoundary,
+  mapAtlasFocusPoint,
+} from "../atlas-zoom-navigation";
 import { atlasBuildingPresentation } from "../country-atlas-presentation";
 import { AtlasAircraft } from "./AtlasAircraft";
 import { AtlasOverviewCard, cityOverviewCardModel } from "./AtlasOverviewCard";
 
 const CELL = 8;
+const MIN_COUNTRY_ZOOM = 1;
+const MAX_COUNTRY_ZOOM = 5;
+const CITY_ENTRY_COVERAGE = .72;
 const ATLAS_CACHE_PREFIX = `tasktopia:country-atlas:v${COUNTRY_ATLAS_SCHEMA_VERSION}:`;
 const DISTRICT_STATUS_LABEL: Record<CountryAtlasDistrictDto["status"], string> = {
   PLANNED: "Запланирован",
@@ -173,7 +184,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   activeCityId?: string;
   events: RealtimeEvent[];
   onEventsProcessed: (eventId: number) => void;
-  onCitySelect: (city: CountryAtlasCityDto) => void;
+  onCitySelect: (city: CountryAtlasCityDto, focus?: { x: number; y: number }, sourcePoint?: { x: number; y: number }) => void;
   onDistrictSelect: (city: CountryAtlasCityDto, district: CountryAtlasDistrictDto) => void;
   onCityHover: (city: CountryAtlasCityDto | null) => void;
   onZoomOut: () => void;
@@ -181,11 +192,13 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   const [atlas, setAtlas] = useState<CountryAtlasDto | null>(() => readCachedAtlas(countryId));
   const [error, setError] = useState("");
   const [hostAspect, setHostAspect] = useState(16 / 9);
+  const [camera, setCamera] = useState<{ zoom: number; center: { x: number; y: number } | null }>({ zoom: 1, center: null });
   const hostRef = useRef<HTMLDivElement>(null);
   const processedEventIdRef = useRef(0);
   const [hoveredDistrict, setHoveredDistrict] = useState<{ cityId: string; districtId: string } | null>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const zoomBoundary = useRef(initialAtlasZoomBoundary());
+  const entryHysteresis = useRef(initialAtlasEntryHysteresis());
   const scheduleDistrictHover = (next: { cityId: string; districtId: string }, immediate = false) => {
     if (hoveredDistrict?.cityId === next.cityId && hoveredDistrict.districtId === next.districtId) return;
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -275,10 +288,18 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
     })
     : { minX: 0, minY: 0, maxX: 0, maxY: 0 }, [atlas, hostAspect]);
 
-  const viewport = useMemo(() => {
-    if (!atlas) return "0 0 1 1";
-    return `${displayBounds.minX * CELL} ${displayBounds.minY * CELL} ${(displayBounds.maxX - displayBounds.minX + 1) * CELL} ${(displayBounds.maxY - displayBounds.minY + 1) * CELL}`;
-  }, [atlas, displayBounds]);
+  const viewportBounds = useMemo(() => {
+    const baseWidth = displayBounds.maxX - displayBounds.minX + 1;
+    const baseHeight = displayBounds.maxY - displayBounds.minY + 1;
+    const width = baseWidth / camera.zoom;
+    const height = baseHeight / camera.zoom;
+    const center = camera.center ?? {
+      x: displayBounds.minX + baseWidth / 2,
+      y: displayBounds.minY + baseHeight / 2,
+    };
+    return { minX: center.x - width / 2, minY: center.y - height / 2, maxX: center.x + width / 2, maxY: center.y + height / 2 };
+  }, [camera, displayBounds]);
+  const viewport = `${viewportBounds.minX * CELL} ${viewportBounds.minY * CELL} ${(viewportBounds.maxX - viewportBounds.minX) * CELL} ${(viewportBounds.maxY - viewportBounds.minY) * CELL}`;
   const seededTerrain = useMemo(() => {
     if (!atlas) return { macroTerrain: [], cutoutByCity: new Map<string, ReturnType<typeof seededAtlasCutoutTerrain>>() };
     return {
@@ -316,10 +337,14 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
       const value = Math.abs((atlas.terrainSeed ^ Math.imul(index + 1, 2_654_435_761)) >>> 0);
       return {
         id: `country-cloud-${index}`,
-        x: displayBounds.minX * CELL + value % Math.max(1, Math.floor(width)),
-        y: displayBounds.minY * CELL + (value >>> 9) % Math.max(1, Math.floor(height * .82)),
+        x: displayBounds.minX * CELL + (index + .5) / Math.max(1, Math.max(5, Math.min(12, atlas.cities.length + 4))) * width,
+        y: displayBounds.minY * CELL + (value >>> 9) % Math.max(1, Math.floor(height)),
         scale: .7 + (value % 5) * .1,
         duration: 28 + value % 25,
+        delay: -(value % 31),
+        variant: value % 8,
+        driftX: index % 3 === 0 ? -44 : 34 + value % 28,
+        driftY: index % 4 === 0 ? 20 : index % 4 === 1 ? -18 : 5,
       };
     });
   }, [atlas, displayBounds]);
@@ -344,22 +369,47 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   return <div ref={hostRef} className="country-atlas" data-country-atlas-cities={atlas.cities.length} onWheel={(event) => {
     event.preventDefault();
     const direction = event.deltaY < 0 ? "IN" : "OUT";
-    const next = advanceAtlasZoomBoundary(zoomBoundary.current, {
-      at: performance.now(), atBoundary: true, direction,
-    });
-    zoomBoundary.current = next.state;
-    if (!next.triggered) return;
-    if (direction === "OUT") { onZoomOut(); return; }
     const bounds = hostRef.current?.getBoundingClientRect();
     if (!bounds) return;
+    const focus = {
+      x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / Math.max(1, bounds.width))),
+      y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / Math.max(1, bounds.height))),
+    };
     const pointer = {
-      x: displayBounds.minX + (event.clientX - bounds.left) / Math.max(1, bounds.width) * (displayBounds.maxX - displayBounds.minX + 1),
-      y: displayBounds.minY + (event.clientY - bounds.top) / Math.max(1, bounds.height) * (displayBounds.maxY - displayBounds.minY + 1),
+      x: viewportBounds.minX + focus.x * (viewportBounds.maxX - viewportBounds.minX),
+      y: viewportBounds.minY + focus.y * (viewportBounds.maxY - viewportBounds.minY),
+    };
+    const nextZoom = continuousAtlasZoom(camera.zoom, event.deltaY, { min: MIN_COUNTRY_ZOOM, max: MAX_COUNTRY_ZOOM });
+    const atMinimum = direction === "OUT" && camera.zoom <= MIN_COUNTRY_ZOOM + .001 && nextZoom <= MIN_COUNTRY_ZOOM + .001;
+    const boundary = advanceAtlasZoomBoundary(zoomBoundary.current, { at: performance.now(), atBoundary: atMinimum, direction });
+    zoomBoundary.current = boundary.state;
+    if (boundary.triggered) { onZoomOut(); return; }
+    const nextWidth = (displayBounds.maxX - displayBounds.minX + 1) / nextZoom;
+    const nextHeight = (displayBounds.maxY - displayBounds.minY + 1) / nextZoom;
+    const nextCenter = {
+      x: pointer.x + (.5 - focus.x) * nextWidth,
+      y: pointer.y + (.5 - focus.y) * nextHeight,
+    };
+    const nextViewport = {
+      minX: nextCenter.x - nextWidth / 2,
+      minY: nextCenter.y - nextHeight / 2,
+      maxX: nextCenter.x + nextWidth / 2,
+      maxY: nextCenter.y + nextHeight / 2,
     };
     const city = [...atlas.cities].sort((left, right) =>
       Math.hypot(left.atlasCenter.x - pointer.x, left.atlasCenter.y - pointer.y)
       - Math.hypot(right.atlasCenter.x - pointer.x, right.atlasCenter.y - pointer.y))[0];
-    if (city) onCitySelect(city);
+    const coverage = city ? atlasTargetCoverage(city.atlasBounds, nextViewport) : 0;
+    const entry = advanceAtlasEntryHysteresis(entryHysteresis.current, {
+      direction,
+      zoom: nextZoom,
+      rearmZoom: 1.15,
+      coverage,
+      enterCoverage: CITY_ENTRY_COVERAGE,
+    });
+    entryHysteresis.current = entry.state;
+    setCamera({ zoom: nextZoom, center: nextCenter });
+    if (entry.triggered && city) onCitySelect(city, focus, mapAtlasFocusPoint(pointer, city.atlasBounds, city.sourceBounds));
   }} onPointerMove={(event) => {
     const target = event.target instanceof Element ? event.target.closest<SVGGElement>(".atlas-city") : null;
     const city = target ? atlas.cities.find((entry) => entry.id === target.dataset.cityId) : undefined;
@@ -386,26 +436,6 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
           fill={`url(#${terrainPatternId(tile.terrain, tile.variant)})`}
           data-terrain={tile.terrain}
         />)}
-      </g>
-
-      <g className="atlas-air-routes" aria-hidden="true">
-        {atlas.connections.map((connection, index) => {
-          const from = atlas.cities.find((city) => city.id === connection.fromCityId);
-          const to = atlas.cities.find((city) => city.id === connection.toCityId);
-          if (!from || !to) return null;
-          const path = atlasFlightPath(from, to, index);
-          const duration = 11 + index % 7;
-          return <g key={`${connection.fromCityId}:${connection.toCityId}`}>
-            <path d={path} className="atlas-air-route-line" />
-            <AtlasAircraft
-              path={path}
-              durationSeconds={duration}
-              delaySeconds={-(index * 3 % duration)}
-              kind={index}
-              facing={to.atlasCenter.x < from.atlasCenter.x ? "left" : "right"}
-            />
-          </g>;
-        })}
       </g>
 
       {atlas.cities.map((city) => <g key={city.id} className="atlas-city" data-city-id={city.id} data-active={city.id === activeCityId ? "true" : "false"} onClick={() => onCitySelect(city)} onPointerLeave={clearDistrictHover}>
@@ -462,13 +492,19 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
           <path d={districtSeparatorBoundary(city.districts)} className="atlas-district-separators" aria-hidden="true" />
         </g>
         <g className="atlas-local-infrastructure" aria-hidden="true">
-          {city.features.filter((feature) => feature.assetKind === "AREA").flatMap((feature) => feature.atlasFootprint.map((cell) => <rect
+          {city.features.filter((feature) => feature.assetKind === "AREA" && feature.kind !== "AIRPORT").flatMap((feature) => feature.atlasFootprint.map((cell) => <rect
             key={`${feature.id}:${cell.x}:${cell.y}`}
             x={cell.x * CELL} y={cell.y * CELL} width={CELL} height={CELL}
             className={feature.assetKey === "urban-grove" ? "atlas-grove-cell" : "atlas-park-cell"}
           />))}
           {city.roads.map((road, index) => <rect key={`${road.sourceCell.x}:${road.sourceCell.y}:${index}`} x={road.atlasCell.x * CELL + 2} y={road.atlasCell.y * CELL + 2} width={CELL - 4} height={CELL - 4} className="atlas-road-cell" />)}
           {city.surfaces.map((surface, index) => <rect key={`${surface.sourceCell.x}:${surface.sourceCell.y}:${index}`} x={surface.atlasCell.x * CELL + 2.75} y={surface.atlasCell.y * CELL + 2.75} width={CELL - 5.5} height={CELL - 5.5} className={`atlas-surface-cell atlas-surface-${surface.kind.toLowerCase()}`} />)}
+        </g>
+        <g className="atlas-airport-markers" aria-label={`Аэропорт города ${city.name}`}>
+          {city.features.filter((feature) => feature.kind === "AIRPORT").map((feature) => <g key={feature.id} transform={`translate(${feature.atlasOrigin.x * CELL} ${feature.atlasOrigin.y * CELL})`}>
+            <rect x="-5" y="-5" width="18" height="18" rx="2" />
+            <path d="M0 4h3l3-6h3L7 4h5v2H7l2 6H6L3 6H0Z" />
+          </g>)}
         </g>
         <g className="atlas-buildings">
           {[...city.buildings].sort((left, right) => left.atlasOrigin.y - right.atlasOrigin.y || left.atlasOrigin.x - right.atlasOrigin.x).map((building) => {
@@ -530,10 +566,34 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
         </g>
         <AtlasCityLabel city={city} onSelect={() => onCitySelect(city)} />
       </g>)}
+      <g className="atlas-air-routes" aria-hidden="true">
+        {atlas.connections.map((connection, index) => {
+          const from = atlas.cities.find((city) => city.id === connection.fromCityId);
+          const to = atlas.cities.find((city) => city.id === connection.toCityId);
+          if (!from || !to) return null;
+          const path = atlasFlightPath(from, to, index);
+          const duration = 11 + index % 7;
+          return <g key={`${connection.fromCityId}:${connection.toCityId}`}>
+            <path d={path} className="atlas-air-route-line" />
+            <AtlasAircraft path={path} durationSeconds={duration} delaySeconds={-(index * 3 % duration)} kind={index} facing={to.atlasCenter.x < from.atlasCenter.x ? "left" : "right"} />
+          </g>;
+        })}
+        {atlas.cities.map((city, index) => {
+          const side = index % 3;
+          const start = side === 0
+            ? { x: (displayBounds.minX - 6) * CELL, y: city.atlasCenter.y * CELL - 24 }
+            : side === 1
+              ? { x: (displayBounds.maxX + 6) * CELL, y: city.atlasCenter.y * CELL + 18 }
+              : { x: city.atlasCenter.x * CELL + 36, y: (displayBounds.minY - 6) * CELL };
+          const end = { x: city.atlasCenter.x * CELL, y: city.atlasCenter.y * CELL };
+          const bend = side === 2 ? { x: (start.x + end.x) / 2 - 42, y: (start.y + end.y) / 2 } : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 - 38 };
+          const path = `M${start.x} ${start.y} Q${bend.x} ${bend.y} ${end.x} ${end.y}`;
+          return <g key={`edge-flight-${city.id}`}><path d={path} className="atlas-air-route-line" /><AtlasAircraft path={path} durationSeconds={13 + index % 6} delaySeconds={-(index * 4)} kind={index + atlas.connections.length} facing={start.x <= end.x ? "right" : "left"} /></g>;
+        })}
+      </g>
       <g className="atlas-clouds" aria-hidden="true">
-        {atmosphereClouds.map((cloud) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--atlas-cloud-duration": `${cloud.duration}s` } as CSSProperties}>
-          <path d="M0 7h6V3h5V0h8v3h6v4h8v5H0Z" />
-          <path className="atlas-cloud-shadow" d="M6 12h21v3H6Z" />
+        {atmosphereClouds.map((cloud) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--atlas-cloud-duration": `${cloud.duration}s`, "--atlas-cloud-delay": `${cloud.delay}s`, "--atlas-cloud-drift-x": `${cloud.driftX}px`, "--atlas-cloud-drift-y": `${cloud.driftY}px` } as CSSProperties}>
+          <image href={gameAssetUrl(`atlas/clouds/cloud-country-${cloud.variant + 1}.png`)} x="-48" y="-24" width="96" height="48" className="atlas-pixel" />
         </g>)}
       </g>
     </svg>

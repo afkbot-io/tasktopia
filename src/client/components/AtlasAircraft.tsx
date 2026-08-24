@@ -1,10 +1,9 @@
 import { gameAssetUrl } from "../../shared/catalog";
 
-const AIRCRAFT_ASSETS = [
-  "props/airplane-small.png",
-  "props/airplane-twin.png",
-  "props/airplane-courier.png",
-] as const;
+const AIRCRAFT_MODELS = Array.from({ length: 8 }, (_, index) => ({
+  first: `atlas/aircraft/airplane-model-${index + 1}-frame-1.png`,
+  second: `atlas/aircraft/airplane-model-${index + 1}-frame-2.png`,
+}));
 
 export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facing, size = "default" }: {
   path: string;
@@ -14,15 +13,24 @@ export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facin
   facing: "left" | "right";
   size?: "default" | "planet";
 }) {
-  const asset = AIRCRAFT_ASSETS[Math.abs(kind) % AIRCRAFT_ASSETS.length]!;
-  const width = size === "planet" ? 18 : 32;
-  const height = size === "planet" ? 9 : 16;
+  const model = AIRCRAFT_MODELS[Math.abs(kind) % AIRCRAFT_MODELS.length]!;
+  const width = size === "planet" ? 24 : 36;
+  const height = size === "planet" ? 16 : 24;
   return <g className="atlas-aircraft-flight" data-facing={facing}>
     <animateMotion path={path} dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" />
     {size === "planet" && <animateTransform attributeName="transform" type="scale" values=".58;.86;1;.86;.58" keyTimes="0;.12;.5;.88;1" dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" additive="sum" />}
     <image
-      className="atlas-aircraft-sprite"
-      href={gameAssetUrl(asset)}
+      className="atlas-aircraft-sprite atlas-aircraft-frame-a"
+      href={gameAssetUrl(model.first)}
+      x={-width / 2}
+      y={-height / 2}
+      width={width}
+      height={height}
+      transform={facing === "left" ? "scale(-1 1)" : undefined}
+    />
+    <image
+      className="atlas-aircraft-sprite atlas-aircraft-frame-b"
+      href={gameAssetUrl(model.second)}
       x={-width / 2}
       y={-height / 2}
       width={width}

@@ -16,7 +16,7 @@ export type PlanetRoute = {
   path: string;
   durationSeconds: number;
   delaySeconds: number;
-  planeKind: 0 | 1 | 2;
+  planeKind: number;
   facing: "left" | "right";
 };
 export type ProjectedPlanetAtlas = {
@@ -226,17 +226,16 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
   for (let r = 0; r < rows; r += 1) for (let q = 0; q < columns; q += 1) if (!occupied.has(`${q}:${r}`)) oceanCells.push({ q, r });
 
   const routes: PlanetRoute[] = [];
-  const connected = new Set<string>();
-  for (let index = 1; index < countries.length; index += 1) {
-    const target = countries[index]!;
-    const previous = countries.slice(0, index).sort((left, right) =>
-      Math.hypot(left.center.x - target.center.x, left.center.y - target.center.y)
-      - Math.hypot(right.center.x - target.center.x, right.center.y - target.center.y))[0]!;
-    const routeKey = [previous.id, target.id].sort().join(":");
-    if (connected.has(routeKey)) continue;
-    connected.add(routeKey);
-    const curve = ((hashText(routeKey, atlas.planetSeed) % 2) * 2 - 1) * (18 + hashText(routeKey) % 20);
-    const midX = (previous.center.x + target.center.x) / 2;
+  const airportCount = countries.reduce((total, country) => total + country.cityCount, 0);
+  const routeTarget = countries.length < 2 ? 0 : Math.min(240, Math.max(countries.length - 1, airportCount * 12));
+  for (let index = 0; index < routeTarget; index += 1) {
+    const previous = countries[index % countries.length]!;
+    const offset = 1 + hashText(`route-offset:${index}`, atlas.planetSeed) % (countries.length - 1);
+    const target = countries[(index + offset) % countries.length]!;
+    const routeKey = `${previous.id}:${target.id}:${index}`;
+    const curve = ((hashText(routeKey, atlas.planetSeed) % 2) * 2 - 1) * (18 + hashText(routeKey) % 54);
+    const lateral = (hashText(routeKey, 113) % 31) - 15;
+    const midX = (previous.center.x + target.center.x) / 2 + lateral;
     const midY = (previous.center.y + target.center.y) / 2 - curve;
     routes.push({
       id: `planet-route-${routes.length}`,
@@ -245,7 +244,7 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
       path: `M${previous.center.x.toFixed(1)} ${previous.center.y.toFixed(1)} Q${midX.toFixed(1)} ${midY.toFixed(1)} ${target.center.x.toFixed(1)} ${target.center.y.toFixed(1)}`,
       durationSeconds: 12 + hashText(routeKey) % 11,
       delaySeconds: -(hashText(routeKey, 91) % 13),
-      planeKind: (hashText(routeKey, 47) % 3) as 0 | 1 | 2,
+      planeKind: hashText(routeKey, 47) % 8,
       facing: target.center.x < previous.center.x ? "left" : "right",
     });
   }
@@ -300,12 +299,13 @@ function globePoint(
   return { x: center.x + x * radius, y: center.y - rotatedY * radius, depth: rotatedZ };
 }
 
-function globeHexPath(center: PlanetPoint, radius: number): string {
-  const points = Array.from({ length: 6 }, (_, index) => {
-    const angle = Math.PI / 180 * (60 * index - 30);
-    return `${Math.round(center.x + radius * Math.cos(angle))},${Math.round(center.y + radius * Math.sin(angle))}`;
-  });
-  return `M${points.join("L")}Z`;
+function globePixelPath(center: PlanetPoint, radius: number): string {
+  const half = Math.max(4, Math.round(radius * .92));
+  const left = Math.round(center.x - half);
+  const top = Math.round(center.y - half);
+  const right = Math.round(center.x + half + 1);
+  const bottom = Math.round(center.y + half + 1);
+  return `M${left},${top}L${right},${top}L${right},${bottom}L${left},${bottom}Z`;
 }
 
 function projectGlobeCell(
@@ -317,14 +317,14 @@ function projectGlobeCell(
 ): PlanetGlobeCell | null {
   const point = globePoint(planetHexCenter(cell, base.hexRadius), base, camera, center, radius);
   if (point.depth <= 0.025) return null;
-  const cellRadius = Math.max(4, 13.5 * Math.min(1.35, camera.zoom) * (0.65 + point.depth * 0.35));
-  return { ...cell, center: point, depth: point.depth, path: globeHexPath(point, cellRadius) };
+  const cellRadius = Math.max(4, 13.5 * camera.zoom * (0.65 + point.depth * 0.35));
+  return { ...cell, center: point, depth: point.depth, path: globePixelPath(point, cellRadius) };
 }
 
 export function projectProjectedPlanetGlobe(base: ProjectedPlanetAtlas, camera: PlanetGlobeCamera): ProjectedPlanetGlobe {
   const center = { x: GLOBE_WIDTH / 2, y: GLOBE_HEIGHT / 2 };
-  const zoom = Math.max(0.82, Math.min(1.45, camera.zoom));
-  const clipRadius = Math.min(GLOBE_HEIGHT * 0.46, GLOBE_HEIGHT * 0.36 * zoom);
+  const zoom = Math.max(0.82, Math.min(5.5, camera.zoom));
+  const clipRadius = GLOBE_HEIGHT * 0.36 * zoom;
   const normalizedCamera = { ...camera, zoom };
   const countries = base.countries.flatMap((country): PlanetGlobeCountry[] => {
     const cells = country.cells.flatMap((cell) => {
@@ -378,8 +378,8 @@ export function layoutPlanetCountryLabels(
   width: number,
   height: number,
 ): PlanetCountryLabelLayout[] {
-  const labelWidth = 144;
-  const labelHeight = 38;
+  const labelWidth = 132;
+  const labelHeight = 34;
   const margin = 12;
   const placed: PlanetCountryLabelLayout[] = [];
   const offsets = [
