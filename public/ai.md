@@ -96,8 +96,8 @@ Codex skill directory convention.
 2. Open the account panel and create a personal MCP key.
 3. Copy the key immediately. Its secret is shown only once.
 4. Configure an MCP client with the endpoint and an Authorization header.
-5. Call `country.get_current`, then read the relevant city, district, and task
-   before making changes.
+5. Call `country.list`, choose the intended `countryId`, and pass it to every
+   country-scoped tool while reading the relevant city, district, and task.
 
 Generic client configuration:
 
@@ -139,7 +139,7 @@ A key can contain any combination of these scopes:
 
 | Scope | Allows |
 | --- | --- |
-| `country:read` | Read the selected country and list available countries |
+| `country:read` | Read an explicitly requested country and list available countries |
 | `cities:write` | Update the country profile and State Archive; create, update, rename, or delete cities |
 | `districts:write` | Create, update, rename, activate, complete, and delete districts |
 | `tasks:read` | Read tasks and task details |
@@ -147,19 +147,21 @@ A key can contain any combination of these scopes:
 | `comments:write` | Add task comments |
 
 Request only the permissions an integration needs. A key is bound to its owner.
-The selected country belongs to the account, not to an individual key, so
-`country.select` affects later MCP requests made by every key of that account.
+Every tool except `country.list` requires an explicit `countryId`. MCP never
+reads or changes the country selected in the web UI, so concurrent agents cannot
+redirect one another's requests by mutating shared account state. Membership and
+role are resolved for the requested country on every call.
 
 ## Safe agent workflow
 
 Follow this sequence unless the user explicitly asks for something else:
 
-1. Call `country.get_current`.
-2. If needed, call `country.list` and then `country.select`.
-3. Call `archive.record_list` when project rules, repository links or architecture context affect the work.
-4. Call `city.list`; do not invent city IDs.
-5. Call `district.list` for the relevant city.
-6. Call `task.list` and `task.get` before updating an existing task.
+1. Call `country.list` and choose the user-confirmed `countryId`.
+2. Call `country.get` with that `countryId`.
+3. Call `archive.record_list` with the same `countryId` when project rules, repository links or architecture context affect the work.
+4. Call `city.list` with that `countryId`; do not invent city IDs.
+5. Call `district.list` with `countryId` for the relevant city.
+6. Call `task.list` and `task.get` with the same `countryId` before updating an existing task.
 7. Make the smallest requested change.
 8. Re-read the changed entity and report the result to the user.
 
@@ -199,40 +201,32 @@ do not submit a second command with a new key.
 
 #### `world_generation.get`
 
-Reads one accepted generation operation in the selected country.
+Reads one accepted generation operation in the explicitly requested country.
 
 ```json
-{ "jobId": "<job-uuid>" }
+{ "countryId": "<country-id>", "jobId": "<job-uuid>" }
 ```
 
 `PENDING` and `RUNNING` are transient. `COMPLETED` includes `result`; final
 `FAILED` includes a safe error object. Required scope: `country:read`.
 
-The server exposes 47 tools.
+The server exposes 46 tools.
 
 ### Countries
 
-#### `country.get_current`
+#### `country.get`
 
-Returns the country currently selected for this account. No arguments.
+Returns the explicitly requested country, its State Archive, and cities.
+
+```json
+{ "countryId": "<country-id>" }
+```
 
 Required scope: `country:read`.
 
 #### `country.list`
 
 Lists countries available to the owner. No arguments.
-
-Required scope: `country:read`.
-
-#### `country.select`
-
-Selects the country used by subsequent requests.
-
-Arguments:
-
-```json
-{ "countryId": "<country-id>" }
-```
 
 Required scope: `country:read`.
 
@@ -244,6 +238,7 @@ clears a text field.
 
 ```json
 {
+  "countryId": "<country-id>",
   "goal": "Reduce onboarding time to under five minutes",
   "productContext": "B2B teams migrating from spreadsheets",
   "successCriteria": "Activation >= 60%; no critical accessibility defects",
@@ -256,12 +251,12 @@ clears a text field.
 
 #### `archive.get`
 
-Returns the country archive identity, record count, and visual stage. No arguments.
+Returns the country archive identity, record count, and visual stage. Pass `countryId`.
 Required scope: `country:read`.
 
 #### `archive.record_list`
 
-Lists every compact archive record for the selected country. Read this before
+Lists every compact archive record for the requested country. Read this before
 adding overlapping context. Required scope: `tasks:read`.
 
 #### `archive.record_create`
@@ -271,6 +266,7 @@ Creates durable project reference material. Allowed kinds are `PROJECT`,
 
 ```json
 {
+  "countryId": "<country-id>",
   "kind": "REPOSITORY",
   "title": "Main repository",
   "body": "Production monorepo; default branch is main",
@@ -298,7 +294,7 @@ is required because deletion is permanent.
 
 #### `city.list`
 
-Lists cities in the selected country. No arguments.
+Lists cities in the requested country. Pass `countryId`.
 
 Required scope: `country:read`.
 
@@ -307,17 +303,18 @@ Required scope: `country:read`.
 Reads one city.
 
 ```json
-{ "cityId": "<city-id>" }
+{ "countryId": "<country-id>", "cityId": "<city-id>" }
 ```
 
 Required scopes: `country:read` and `tasks:read`.
 
 #### `city.create`
 
-Creates a city in the selected country.
+Creates a city in the requested country.
 
 ```json
 {
+  "countryId": "<country-id>",
   "name": "Payments platform",
   "description": "Payments domain and its boundaries",
   "goal": "Make retryable payments production-ready",
@@ -339,7 +336,7 @@ Required scope: `cities:write`.
 Renames an existing city.
 
 ```json
-{ "cityId": "<city-id>", "name": "New city name", "idempotencyKey": "rename-city-v1" }
+{ "countryId": "<country-id>", "cityId": "<city-id>", "name": "New city name", "idempotencyKey": "rename-city-v1" }
 ```
 
 Required scope: `cities:write`.
@@ -355,7 +352,7 @@ plus required `idempotencyKey`. Use `deadline: null` to clear the date.
 Permanently deletes a city and cascades its districts, tasks, comments, and city features. City-local roads are removed; only genuine highway or through-road components are retained as shared infrastructure. The response includes `roadsDeleted`. Pass the exact current name to prevent accidental deletion.
 
 ```json
-{ "cityId": "<city-id>", "confirmName": "Exact city name", "idempotencyKey": "delete-city-v1" }
+{ "countryId": "<country-id>", "cityId": "<city-id>", "confirmName": "Exact city name", "idempotencyKey": "delete-city-v1" }
 ```
 
 Required scope: `cities:write`. This operation is destructive; always read the city and ask the user for explicit deletion intent first.
@@ -365,10 +362,10 @@ Required scope: `cities:write`. This operation is destructive; always read the c
 #### `district.list`
 
 Lists districts. Omit `cityId` to list districts across all cities in the
-selected country.
+requested country.
 
 ```json
-{ "cityId": "<optional-city-id>" }
+{ "countryId": "<country-id>", "cityId": "<optional-city-id>" }
 ```
 
 Required scope: `country:read`.
@@ -379,6 +376,7 @@ Creates a district.
 
 ```json
 {
+  "countryId": "<country-id>",
   "cityId": "<city-id>",
   "name": "Northern district",
   "goal": "Ship billing recovery",
@@ -407,7 +405,7 @@ Required scope: `districts:write`.
 Permanently deletes a district and all of its tasks. If the deleted district was active, the oldest planned district becomes active automatically.
 
 ```json
-{ "districtId": "<district-id>", "confirmName": "Exact district name", "idempotencyKey": "delete-district-v1" }
+{ "countryId": "<country-id>", "districtId": "<district-id>", "confirmName": "Exact district name", "idempotencyKey": "delete-district-v1" }
 ```
 
 Required scope: `districts:write`. Read the district and its tasks, state the cascade, and require explicit user intent before calling it.
@@ -417,7 +415,7 @@ Required scope: `districts:write`. Read the district and its tasks, state the ca
 Renames an existing district without changing its geometry or status.
 
 ```json
-{ "districtId": "<district-id>", "name": "New district name", "idempotencyKey": "rename-district-v1" }
+{ "countryId": "<country-id>", "districtId": "<district-id>", "name": "New district name", "idempotencyKey": "rename-district-v1" }
 ```
 
 Required scope: `districts:write`.
@@ -434,6 +432,7 @@ Marks a district as active.
 
 ```json
 {
+  "countryId": "<country-id>",
   "districtId": "<district-id>",
   "idempotencyKey": "activate-sprint-12-v1"
 }
@@ -447,6 +446,7 @@ Completes a district.
 
 ```json
 {
+  "countryId": "<country-id>",
   "districtId": "<district-id>",
   "idempotencyKey": "complete-sprint-12-v1"
 }
@@ -458,10 +458,10 @@ Required scope: `districts:write`.
 
 #### `task.list`
 
-Lists tasks. Omit `districtId` to list across the selected context.
+Lists tasks. Omit `districtId` to list across the requested country.
 
 ```json
-{ "districtId": "<optional-district-id>" }
+{ "countryId": "<country-id>", "districtId": "<optional-district-id>" }
 ```
 
 Required scope: `tasks:read`.
@@ -472,7 +472,7 @@ Reads one task with its current state, documents, checklist, defects, linked
 artifacts, human-facing task number, and browser URL.
 
 ```json
-{ "taskId": "<task-id>" }
+{ "countryId": "<country-id>", "taskId": "<task-id>" }
 ```
 
 Required scope: `tasks:read`.
@@ -485,6 +485,7 @@ card, five statuses, checklist, defects, deletion and realtime updates.
 
 ```json
 {
+  "countryId": "<country-id>",
   "cityId": "<city-id>",
   "districtId": "<optional-district-id>",
   "title": "Add retry policy",
@@ -501,7 +502,7 @@ card, five statuses, checklist, defects, deletion and realtime updates.
 }
 ```
 
-Required fields: `cityId`, `title`, `estimate`, and `idempotencyKey`. Allowed
+Required fields: `countryId`, `cityId`, `title`, `estimate`, and `idempotencyKey`. Allowed
 estimates are `1`, `2`, `3`, or `6`. Allowed priorities are `LOW`, `NORMAL`,
 `HIGH`, and `CRITICAL`.
 
@@ -554,6 +555,7 @@ cleared by upserting empty content and cannot be deleted.
 
 ```json
 {
+  "countryId": "<country-id>",
   "taskId": "<task-id>",
   "fileName": "implementation-plan.md",
   "title": "План реализации",
@@ -572,6 +574,7 @@ step done or refine its title. Re-read `task.get` before and after the write.
 
 ```json
 {
+  "countryId": "<country-id>",
   "taskId": "<task-id>",
   "items": [
     { "title": "Add the migration", "done": true },
@@ -593,6 +596,7 @@ task type or status.
 
 ```json
 {
+  "countryId": "<country-id>",
   "taskId": "<task-id>",
   "title": "Duplicate payment after timeout",
   "reproductionSteps": "1. Delay provider response\n2. Retry checkout\n3. Open ledger",
@@ -627,7 +631,7 @@ Required scope: `tasks:write`.
 Permanently deletes one task/building and releases its planned lot so a later task can reuse it.
 
 ```json
-{ "taskId": "<task-id>", "confirmTitle": "Exact task title", "idempotencyKey": "delete-task-v1" }
+{ "countryId": "<country-id>", "taskId": "<task-id>", "confirmTitle": "Exact task title", "idempotencyKey": "delete-task-v1" }
 ```
 
 Required scope: `tasks:write`. Read the task first and require explicit deletion intent.
@@ -638,7 +642,7 @@ Renames a task and the title associated with its building. The change is added
 to the task event history.
 
 ```json
-{ "taskId": "<task-id>", "title": "New task title", "idempotencyKey": "rename-task-v1" }
+{ "countryId": "<country-id>", "taskId": "<task-id>", "title": "New task title", "idempotencyKey": "rename-task-v1" }
 ```
 
 Required scope: `tasks:write`.
@@ -650,6 +654,7 @@ comment in the same operation.
 
 ```json
 {
+  "countryId": "<country-id>",
   "taskId": "<task-id>",
   "status": "IN_PROGRESS",
   "progress": 35,
@@ -666,6 +671,7 @@ Reports status, progress, and a progress comment together.
 
 ```json
 {
+  "countryId": "<country-id>",
   "taskId": "<task-id>",
   "status": "IN_PROGRESS",
   "progress": 70,
@@ -682,6 +688,7 @@ Adds a comment without changing task status.
 
 ```json
 {
+  "countryId": "<country-id>",
   "taskId": "<task-id>",
   "body": "Blocked pending access approval",
   "idempotencyKey": "comment-access-blocker-v1"
@@ -698,6 +705,7 @@ change `forUserEmail`.
 
 ```json
 {
+  "countryId": "<country-id>",
   "taskId": "<task-id>",
   "assigneeEmail": "person@example.com",
   "assigneeRole": "qa",
@@ -709,6 +717,7 @@ Required scope: `tasks:write`.
 
 #### Additional task context tools
 
+- Every tool in this section also requires the same explicit `countryId`.
 - `task.activity` accepts `taskId` and reads the audit trail: events, comments,
   defects, attachments and dependencies. `task.get` also returns documents and
   the checklist.
@@ -732,10 +741,10 @@ repository artifacts linked to the task that produced or verified them.
 
 ## Resources
 
-### `tasktopia://country/current`
+### `tasktopia://countries/{countryId}`
 
-Returns the current country and its cities. Use it to orient an agent before
-planning work.
+Returns the explicitly addressed country, its State Archive, and cities. The
+resource does not read or change the country selected in the web UI.
 
 Required scope: `country:read`.
 
@@ -757,8 +766,8 @@ Transport-level failures:
 - `403 Forbidden`: a browser Origin is not allowed;
 - `429 Too Many Requests`: rate limit reached; wait before retrying;
 
-Validated tool calls return protocol-level MCP results. Missing scopes, invalid
-or inaccessible IDs, conflicts, invalid transitions, and domain validation
+Validated tool calls return protocol-level MCP results. Missing `countryId`,
+missing scopes, `COUNTRY_ACCESS_DENIED`, invalid or inaccessible IDs, conflicts, invalid transitions, and domain validation
 failures are returned as MCP tool results with `isError: true`, not as HTTP
 `403`, `404`, or `409`. Inspect the returned error content and never silently
 assume a mutation succeeded.
@@ -768,7 +777,7 @@ still necessary, reuse the original `idempotencyKey`.
 
 ## Agent rules
 
-- Confirm the selected country before writing.
+- Confirm one `countryId` through `country.list` and pass it explicitly to every project-scoped call.
 - Never guess entity IDs or silently create substitute entities.
 - Preserve the user's hierarchy: country → city → district → task/building.
 - Prefer one small, verifiable mutation at a time.

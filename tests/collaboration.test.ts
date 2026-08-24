@@ -37,7 +37,7 @@ describe("countries, government and personal task history", () => {
     expect(await removeCountryMember(db, secondCountryId, member.user.id)).toBe(true);
   });
 
-  it("reissues a personal MCP key and follows the account's selected country", async () => {
+  it("reissues a personal MCP key without coupling authentication to the selected country", async () => {
     const owner = await registerUser(db, { email: "mcp@example.com", name: "MCP Person", password: "password-mcp" });
     const secondCountryId = await createCountry(db, owner.user.id, "MCP second country");
     const first = await createMcpToken(db, secondCountryId, "First", owner.user.id);
@@ -45,11 +45,11 @@ describe("countries, government and personal task history", () => {
 
     expect(await authenticateMcpToken(db, `Bearer ${first.token}`)).toBeNull();
     expect(await authenticateMcpToken(db, `Bearer ${second.token}`)).toMatchObject({
-      userId: owner.user.id, countryId: secondCountryId, countryRole: "OWNER",
+      userId: owner.user.id,
     });
     await setActiveCountry(db, owner.user.id, owner.user.countryId);
     expect(await authenticateMcpToken(db, second.token)).toBeNull();
-    expect(await authenticateMcpToken(db, `Bearer ${second.token}`)).toMatchObject({ countryId: owner.user.countryId });
+    expect(await authenticateMcpToken(db, `Bearer ${second.token}`)).toMatchObject({ userId: owner.user.id });
   });
 
   it("issues least-privilege expiring tokens and caps a viewer at read scopes", async () => {
@@ -60,9 +60,9 @@ describe("countries, government and personal task history", () => {
 
     const token = await createMcpToken(db, owner.user.countryId, "Read tasks", viewer.user.id, {
                       scopes: ["country:read", "tasks:read"], expiresInDays: 30,
-                    });
+    });
     expect(await authenticateMcpToken(db, `Bearer ${token.token}`)).toMatchObject({
-      countryRole: "VIEWER", scopes: ["country:read", "tasks:read"],
+      scopes: ["country:read", "tasks:read"],
     });
     expect(new Date(token.expiresAt).getTime()).toBeGreaterThan(Date.now() + 29 * 24 * 60 * 60 * 1000);
     await expect(createMcpToken(db, owner.user.countryId, "Illegal write", viewer.user.id, {

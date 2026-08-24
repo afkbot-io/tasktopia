@@ -27,7 +27,7 @@ Tasktopia: React/PixiJS → изолированные Fastify runtime (`web`, `
 
 ## Инварианты
 
-- Transport не принимает `countryId` как доверенную границу мира: HTTP использует session active country, MCP — заново аутентифицированный персональный token.
+- Transport не принимает `countryId` как доверенную границу мира: HTTP использует session active country, а MCP требует явный `countryId` и на каждом tool call сверяет его с актуальным `country_members` и ролью владельца персонального token. MCP не читает и не изменяет web active country.
 - Чужие city/district/task id возвращают `404`/`403` без геометрии или данных другой страны.
 - Изменяющие MCP-команды требуют `idempotencyKey`; запись домена, `worldVersion`, event и сохранённый ответ коммитятся атомарно. Тип задачи (`TASK`, `BUG`, `RELEASE`, `HOTFIX`) не заменяет связанный дефект: дефект всегда остаётся отдельной проверяемой сущностью. Его ремонт не откатывает родительскую задачу из `TESTING`, а переход задачи в `COMPLETED` блокируется до исправления всех связанных дефектов.
 - `/mcp` обслуживается официальным web-standard MCP v2 server handler через streaming Fetch→Fastify bridge: основной протокол `2026-07-28`, stateless fallback `2025-11-25`. Аутентификация принимает только персональный `Authorization: Bearer ttp_mcp_...`; Origin проверяется для всех transport methods. Отдельный Hono/Node adapter не используется, поэтому runtime не зависит от несовместимого framework major override.

@@ -11,6 +11,9 @@ const login = await fetch(`${baseUrl}/api/auth/login`, {
 if (!login.ok) throw new Error(`Login failed: ${login.status} ${await login.text()}`);
 const cookie = login.headers.get("set-cookie")?.split(";")[0];
 if (!cookie) throw new Error("Login response did not contain a session cookie");
+const bootstrapResponse = await fetch(`${baseUrl}/api/bootstrap`, { headers: { cookie } });
+if (!bootstrapResponse.ok) throw new Error(`Bootstrap failed: ${bootstrapResponse.status} ${await bootstrapResponse.text()}`);
+const { country: { id: countryId } } = await bootstrapResponse.json() as { country: { id: string } };
 
 const tokenResponse = await fetch(`${baseUrl}/api/tokens`, {
   method: "POST",
@@ -25,7 +28,7 @@ const transport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
   requestInit: { headers: { authorization: `Bearer ${token}` } },
 });
 const expectedTools = [
-  "country.get_current", "country.list", "country.select", "country.update_profile",
+  "country.get", "country.list", "country.update_profile",
   "world_generation.get",
   "archive.get", "archive.record_list", "archive.record_create", "archive.record_update", "archive.record_delete",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
@@ -46,25 +49,25 @@ try {
   }
   const missingId = "00000000-0000-4000-8000-000000000001";
   for (const [name, arguments_] of [
-    ["city.rename", { cityId: missingId, name: "Renamed city", idempotencyKey: "smoke-rename-city" }],
-    ["district.rename", { districtId: missingId, name: "Renamed district", idempotencyKey: "smoke-rename-district" }],
-    ["task.rename", { taskId: missingId, title: "Renamed task", idempotencyKey: "smoke-rename-task" }],
-    ["task.document_upsert", { taskId: missingId, fileName: "architecture.md", content: "# Missing", idempotencyKey: "smoke-document-upsert" }],
-    ["task.document_delete", { taskId: missingId, documentId: missingId, idempotencyKey: "smoke-document-delete" }],
-    ["task.checklist_replace", { taskId: missingId, items: [{ title: "Missing task" }], idempotencyKey: "smoke-checklist-replace" }],
-    ["task.checklist_item_update", { taskId: missingId, itemId: missingId, done: true, idempotencyKey: "smoke-checklist-update" }],
-    ["city.delete", { cityId: missingId, confirmName: "Missing city", idempotencyKey: "smoke-delete-city" }],
-    ["district.delete", { districtId: missingId, confirmName: "Missing district", idempotencyKey: "smoke-delete-district" }],
-    ["task.delete", { taskId: missingId, confirmTitle: "Missing task", idempotencyKey: "smoke-delete-task" }],
+    ["city.rename", { countryId, cityId: missingId, name: "Renamed city", idempotencyKey: "smoke-rename-city" }],
+    ["district.rename", { countryId, districtId: missingId, name: "Renamed district", idempotencyKey: "smoke-rename-district" }],
+    ["task.rename", { countryId, taskId: missingId, title: "Renamed task", idempotencyKey: "smoke-rename-task" }],
+    ["task.document_upsert", { countryId, taskId: missingId, fileName: "architecture.md", content: "# Missing", idempotencyKey: "smoke-document-upsert" }],
+    ["task.document_delete", { countryId, taskId: missingId, documentId: missingId, idempotencyKey: "smoke-document-delete" }],
+    ["task.checklist_replace", { countryId, taskId: missingId, items: [{ title: "Missing task" }], idempotencyKey: "smoke-checklist-replace" }],
+    ["task.checklist_item_update", { countryId, taskId: missingId, itemId: missingId, done: true, idempotencyKey: "smoke-checklist-update" }],
+    ["city.delete", { countryId, cityId: missingId, confirmName: "Missing city", idempotencyKey: "smoke-delete-city" }],
+    ["district.delete", { countryId, districtId: missingId, confirmName: "Missing district", idempotencyKey: "smoke-delete-district" }],
+    ["task.delete", { countryId, taskId: missingId, confirmTitle: "Missing task", idempotencyKey: "smoke-delete-task" }],
   ] as const) {
     const result = await client.callTool({ name, arguments: arguments_ });
     if (!result.isError || !JSON.stringify(result.content).includes("NOT_FOUND")) throw new Error(`${name} did not reach its protected domain handler`);
   }
-  const result = await client.callTool({ name: "country.get_current", arguments: {} });
-  if (result.isError) throw new Error(`country.get_current failed: ${JSON.stringify(result.content)}`);
-  const currentCountry = await client.readResource({ uri: "tasktopia://country/current" });
+  const result = await client.callTool({ name: "country.get", arguments: { countryId } });
+  if (result.isError) throw new Error(`country.get failed: ${JSON.stringify(result.content)}`);
+  const countryResource = await client.readResource({ uri: `tasktopia://countries/${countryId}` });
   const buildingCatalog = await client.readResource({ uri: "tasktopia://catalog/buildings" });
-  if (currentCountry.contents.length === 0 || buildingCatalog.contents.length === 0) {
+  if (countryResource.contents.length === 0 || buildingCatalog.contents.length === 0) {
     throw new Error("Modern MCP client did not receive both resources");
   }
   console.log(`MCP smoke passed (${tools.tools.length} tools).`);
@@ -162,13 +165,14 @@ const readOnlyTransport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/
 let readOnlyRevokeFailure = "";
 try {
   await readOnlyClient.connect(readOnlyTransport);
-  const currentCountry = await readOnlyClient.callTool({ name: "country.get_current", arguments: {} });
-  if (currentCountry.isError) {
-    throw new Error(`Read-only country.get_current failed: ${JSON.stringify(currentCountry.content)}`);
+  const countryResult = await readOnlyClient.callTool({ name: "country.get", arguments: { countryId } });
+  if (countryResult.isError) {
+    throw new Error(`Read-only country.get failed: ${JSON.stringify(countryResult.content)}`);
   }
   const forbiddenMutation = await readOnlyClient.callTool({
     name: "city.create",
     arguments: {
+      countryId,
       name: "Forbidden smoke city",
       districtCount: 1,
       idempotencyKey: `read-only-smoke-${Date.now()}`,
@@ -177,7 +181,7 @@ try {
   if (!forbiddenMutation.isError) throw new Error("Read-only MCP token unexpectedly created a city");
   const forbiddenDelete = await readOnlyClient.callTool({
     name: "task.delete",
-    arguments: { taskId: "00000000-0000-4000-8000-000000000001", confirmTitle: "Missing task", idempotencyKey: "scope-delete-task" },
+    arguments: { countryId, taskId: "00000000-0000-4000-8000-000000000001", confirmTitle: "Missing task", idempotencyKey: "scope-delete-task" },
   });
   if (!forbiddenDelete.isError || !JSON.stringify(forbiddenDelete.content).includes("FORBIDDEN_SCOPE")) throw new Error("Read-only token reached task.delete");
   console.log("Read-only MCP scopes were enforced as expected.");
@@ -210,10 +214,10 @@ let protectedResourceRejected = false;
 let taskOnlyRevokeFailure = "";
 try {
   await taskOnlyClient.connect(taskOnlyTransport);
-  const tasks = await taskOnlyClient.callTool({ name: "task.list", arguments: {} });
+  const tasks = await taskOnlyClient.callTool({ name: "task.list", arguments: { countryId } });
   if (tasks.isError) throw new Error(`Task-only task.list failed: ${JSON.stringify(tasks.content)}`);
   try {
-    await taskOnlyClient.readResource({ uri: "tasktopia://country/current" });
+    await taskOnlyClient.readResource({ uri: `tasktopia://countries/${countryId}` });
   } catch {
     protectedResourceRejected = true;
   }
@@ -247,11 +251,11 @@ const countryOnlyTransport = new StreamableHTTPClientTransport(new URL(`${baseUr
 let countryOnlyRevokeFailure = "";
 try {
   await countryOnlyClient.connect(countryOnlyTransport);
-  const cities = await countryOnlyClient.callTool({ name: "city.list", arguments: {} });
+  const cities = await countryOnlyClient.callTool({ name: "city.list", arguments: { countryId } });
   if (cities.isError) throw new Error(`Country-only city.list failed: ${JSON.stringify(cities.content)}`);
   const cityRows = (cities.structuredContent as { result?: Array<{ id: string }> } | undefined)?.result;
   if (!cityRows?.[0]?.id) throw new Error("Country-only city.list returned no city for scope test");
-  const leakedTasks = await countryOnlyClient.callTool({ name: "city.get", arguments: { cityId: cityRows[0].id } });
+  const leakedTasks = await countryOnlyClient.callTool({ name: "city.get", arguments: { countryId, cityId: cityRows[0].id } });
   if (!leakedTasks.isError) throw new Error("country:read unexpectedly bypassed tasks:read through city.get");
 } finally {
   await countryOnlyClient.close().catch(() => undefined);

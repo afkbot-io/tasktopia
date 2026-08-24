@@ -31,7 +31,7 @@ test("public AI integration guide is directly accessible", async ({ request }) =
   const guide = await response.text();
   expect(guide).toContain("https://tasktopia.online/mcp");
   expect(guide).toContain('"Authorization": "Bearer <PERSONAL_MCP_KEY>"');
-  expect(guide).toContain("`country.get_current`");
+  expect(guide).toContain("`country.get`");
   expect(guide).toContain("`task.report_progress`");
   const skill = await request.get("/skills/tasktopia-progress/SKILL.md");
   expect(skill.ok()).toBe(true);

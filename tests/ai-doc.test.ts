@@ -27,8 +27,9 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("reproductionSteps");
     expect(guide).toContain("OPEN → IN_PROGRESS → VERIFYING → FIXED");
     expect(guide).toContain("completion is rejected while any\nlinked defect is not `FIXED`");
-    expect(guide).toContain("across all cities in the\nselected country");
-    expect(guide).toContain("`tasktopia://country/current`");
+    expect(guide).toContain("across all cities in the\nrequested country");
+    expect(guide).toContain("Every tool except `country.list` requires an explicit `countryId`");
+    expect(guide).toContain("`tasktopia://countries/{countryId}`");
     expect(guide).toContain("`tasktopia://catalog/buildings`");
     for (const tool of documentedTools) expect(guide).toContain(`\`${tool}\``);
   });
@@ -52,6 +53,8 @@ describe("public AI integration guide", () => {
     expect(skill).toContain("`assigneeRole`");
     expect(skill).toContain("`forUserEmail`");
     expect(skill).toContain("Прочитать устойчивый контекст");
+    expect(skill).toContain("`country.get` с выбранным `countryId`");
+    expect(skill).not.toContain("`country.get_current`");
     expect(skill).toContain("Связать commit или MR/PR");
     expect(skill).toContain("родительскую задачу сохранять в\n`TESTING`");
     expect(skill).toContain("Готово: <конкретный результат");
@@ -69,6 +72,7 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("`assigneeRole`");
     expect(guide).toContain("`forUserEmail`");
     expect(guide).toContain("Base64");
+    expect(guide).toContain("обязательный `countryId`");
     for (const tool of documentedTools) expect(guide).toContain(`\`${tool}\``);
   });
 });

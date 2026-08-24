@@ -26,7 +26,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 }
 ```
 
-Ключ создаётся в разделе MCP и показывается только один раз. В PostgreSQL хранится только SHA-256 hash. Новый персональный ключ отзывает предыдущий активный ключ пользователя, а команды выполняются от его имени в выбранной стране. Принимается только точный заголовок `Authorization: Bearer ttp_mcp_...`: `X-API-Key`, bare token, cookie и query-параметры отклоняются. Эти персональные ключи не являются OAuth-токенами, поэтому endpoint не публикует фиктивный OAuth discovery.
+Ключ создаётся в разделе MCP и показывается только один раз. В PostgreSQL хранится только SHA-256 hash. Новый персональный ключ отзывает предыдущий активный ключ пользователя, а команды выполняются от его имени в явно указанной стране. Принимается только точный заголовок `Authorization: Bearer ttp_mcp_...`: `X-API-Key`, bare token, cookie и query-параметры отклоняются. Эти персональные ключи не являются OAuth-токенами, поэтому endpoint не публикует фиктивный OAuth discovery.
 
 При выпуске выбираются срок `30 | 90 | 365` дней и непустое подмножество scopes:
 
@@ -37,11 +37,11 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 - `tasks:write` — создание/уточнение задач и связанных дефектов, назначение, смена стадии и безопасное удаление задач;
 - `comments:write` — добавление комментариев.
 
-Глава страны и министр могут выбрать любые scopes. Наблюдателю доступны только `country:read` и `tasks:read`. Сервер заново проверяет активную страну и текущую роль на каждом MCP HTTP-запросе, поэтому сохранённые в старом ключе write-scopes не дают наблюдателю право записи. Истёкший, отозванный, повреждённый или пустой по разрешениям ключ отклоняется. Существующие ключи с `expires_at = NULL` продолжают работать до отзыва; все новые имеют явный срок.
+Глава страны и министр могут выбрать любые scopes. Наблюдателю доступны только `country:read` и `tasks:read`. `country.list` не требует контекста; каждый другой MCP tool принимает обязательный `countryId`. Сервер заново проверяет членство и текущую роль пользователя именно в этой стране на каждом вызове, поэтому `countryId` нельзя использовать для обхода доступа, а страна, выбранная в веб-интерфейсе, не влияет на MCP. Истёкший, отозванный, повреждённый или пустой по разрешениям ключ отклоняется. Существующие ключи с `expires_at = NULL` продолжают работать до отзыва; все новые имеют явный срок.
 
 ## Основные инструменты
 
-- `country.get_current`, `country.list`, `country.select`, `country.update_profile`
+- `country.get`, `country.list`, `country.update_profile`
 - `archive.get`, `archive.record_list`, `archive.record_create`, `archive.record_update`, `archive.record_delete`
 - `city.list`, `city.get`, `city.create`, `city.update`, `city.rename`, `city.delete`
 - `district.list`, `district.create`, `district.update`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
@@ -72,6 +72,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 ```json
 {
+  "countryId": "<uuid страны>",
   "name": "Northpoint",
   "description": "Основной продуктовый город",
   "idempotencyKey": "northpoint-v1"
@@ -82,6 +83,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 ```json
 {
+  "countryId": "<uuid страны>",
   "cityId": "<uuid города>",
   "name": "Release Quarter",
   "goal": "Подготовить релиз",
@@ -102,6 +104,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 ```json
 {
+  "countryId": "<uuid страны>",
   "cityId": "<uuid города>",
   "title": "Открыть районную аптеку",
   "description": "Каталог, поиск и карточка лекарства",
@@ -118,7 +121,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 `districtId` у `task.create` необязателен: без него используется активный район города. `buildingHint` позволяет запросить конкретный ключ из `tasktopia://catalog/buildings`; если вариант нарушает квоту или несовместим с архитектурой района, сервер возвращает явную ошибку. Ключи `landmark-*` — не готовый декор: это уникальные здания задач, которые проходят те же пять стадий вместе со статусом задачи. В одном городе может существовать только одна такая задача-ориентир; Государственный архив остаётся отдельным объектом страны.
 
-`assigneeEmail` необязателен, но указанный человек должен быть зарегистрирован и состоять в правительстве выбранной страны. `assigneeRole` фиксирует роль исполнителя в конкретной работе (`backend-lead`, `qa`, `ai-agent:codex`), а `forUserEmail` — зарегистрированного заказчика/владельца результата. Создателем задачи автоматически становится владелец персонального MCP-ключа; создатель, исполнитель и заказчик могут различаться. Назначение и роль можно позже изменить через `task.assign`, заказчика — через `task.update_fields`.
+`assigneeEmail` необязателен, но указанный человек должен быть зарегистрирован и состоять в правительстве переданной страны. `assigneeRole` фиксирует роль исполнителя в конкретной работе (`backend-lead`, `qa`, `ai-agent:codex`), а `forUserEmail` — зарегистрированного заказчика/владельца результата. Создателем задачи автоматически становится владелец персонального MCP-ключа; создатель, исполнитель и заказчик могут различаться. Назначение и роль можно позже изменить через `task.assign`, заказчика — через `task.update_fields`.
 
 Материалы реализации хранятся как документы задачи. После создания агент
 заполняет `system-analysis.md`, `architecture.md`, `design-system.md` и
@@ -147,6 +150,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 ```json
 {
+  "countryId": "<uuid страны>",
   "taskId": "<uuid задачи>",
   "status": "IN_PROGRESS",
   "progress": 55,
@@ -173,7 +177,7 @@ Production endpoint: `https://tasktopia.online/mcp`. Транспорт — Stre
 
 Ресурсы:
 
-- `tasktopia://country/current`
+- `tasktopia://countries/{countryId}`
 - `tasktopia://catalog/buildings`
 
 Оба ресурса требуют `country:read`.

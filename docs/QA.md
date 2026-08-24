@@ -89,6 +89,17 @@
 
 ## Изоляция runtime
 
+### Явный контекст страны
+
+Перед проверкой изоляции подтвердить явный MCP-контекст:
+
+1. Создать для одного аккаунта две страны A и B, оставить A выбранной в вебе и вызвать `task.get` для задачи B с `countryId` страны B: задача должна вернуться, а web active country остаться A.
+2. Убедиться, что `tools/list` содержит `country.get`, не содержит `country.get_current`/`country.select`, и каждый tool кроме `country.list` требует `countryId`.
+3. Для аккаунта-владельца A и наблюдателя B выпустить полномочный ключ в A: запись с `countryId` A должна пройти, запись с `countryId` B — вернуть `FORBIDDEN_SCOPE`, а страна без членства — `COUNTRY_ACCESS_DENIED`.
+4. Прочитать `tasktopia://countries/{countryId}` для доступной страны и убедиться, что старый `tasktopia://country/current` отсутствует.
+
+### Процессы
+
 1. Проверить health `3000`, `3002`, `3003`; nginx `/mcp` должен идти на 3002, а HTTP regenerate — приниматься web на 3000 и ставить durable job для worker на 3003.
 2. Запустить долгий MCP mutation и одновременно открыть `/health`, `/api/bootstrap` и существующий viewport: web должен отвечать независимо от загрузки MCP event loop.
 3. После MCP mutation убедиться, что web получает realtime event через PostgreSQL relay и обновляет только затронутую страну.

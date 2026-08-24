@@ -23,7 +23,7 @@ describe("MCP generation polling boundary", () => {
       name: "Foreign MCP city", idempotencyKey: "mcp-foreign-job",
     });
     const identity: McpIdentity = {
-      userId: owner.user.id, countryId: owner.user.countryId, countryRole: "OWNER",
+      userId: owner.user.id,
       tokenId: crypto.randomUUID(), scopes: ["country:read"],
     };
     const server = await createMcpServer(db, new AppService(db), identity);
@@ -33,18 +33,18 @@ describe("MCP generation polling boundary", () => {
     await client.connect(clientTransport);
 
     try {
-      const ownPending = await client.callTool({ name: "world_generation.get", arguments: { jobId: pending.id } });
+      const ownPending = await client.callTool({ name: "world_generation.get", arguments: { countryId: owner.user.countryId, jobId: pending.id } });
       expect(ownPending.isError).not.toBe(true);
       expect(ownPending.structuredContent).toMatchObject({ result: { id: pending.id, status: "PENDING" } });
 
       await processNextWorldGenerationJob(db, new AppService(db), "mcp-boundary-worker");
-      const ownCompleted = await client.callTool({ name: "world_generation.get", arguments: { jobId: pending.id } });
+      const ownCompleted = await client.callTool({ name: "world_generation.get", arguments: { countryId: owner.user.countryId, jobId: pending.id } });
       expect(ownCompleted.structuredContent).toMatchObject({
         result: { id: pending.id, status: "COMPLETED", result: { name: "MCP queued city" } },
       });
 
       for (const jobId of [foreignJob.id, crypto.randomUUID()]) {
-        const hidden = await client.callTool({ name: "world_generation.get", arguments: { jobId } });
+        const hidden = await client.callTool({ name: "world_generation.get", arguments: { countryId: owner.user.countryId, jobId } });
         expect(hidden.isError).toBe(true);
         expect(JSON.parse((hidden.content[0] as { text: string }).text)).toMatchObject({ code: "NOT_FOUND" });
       }

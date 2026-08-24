@@ -248,7 +248,7 @@ export async function createMcpToken(
   return { id, token, prefix, scopes, expiresAt, createdAt };
 }
 
-export async function authenticateMcpToken(db: Db, header: string | string[] | undefined): Promise<{ userId: string; countryId: string; countryRole: CountryRole; tokenId: string; scopes: McpScope[] } | null> {
+export async function authenticateMcpToken(db: Db, header: string | string[] | undefined): Promise<{ userId: string; tokenId: string; scopes: McpScope[] } | null> {
   if (Array.isArray(header) || !header) return null;
   const match = /^Bearer (ttp_mcp_[A-Za-z0-9_-]+)$/i.exec(header.trim());
   if (!match) return null;
@@ -259,11 +259,8 @@ export async function authenticateMcpToken(db: Db, header: string | string[] | u
   if (!row) return null;
   const owner = row.user_id ? undefined : await db.prepare("SELECT user_id FROM countries WHERE id = ?").get<{ user_id: string }>(String(row.country_id));
   const userId = row.user_id ? String(row.user_id) : String(owner?.user_id);
-  const user = await db.prepare("SELECT active_country_id FROM users WHERE id = ?").get<{ active_country_id?: string }>(userId);
-  const active = await activeCountry(db, userId, user?.active_country_id ?? String(row.country_id));
-  if (!active) return null;
+  if (!userId || userId === "undefined") return null;
   await db.prepare("UPDATE mcp_tokens SET last_used_at = ? WHERE id = ?").run(now(), String(row.id));
-  const maximumScopes = active.role === "VIEWER" ? MCP_READ_SCOPES : MCP_SCOPES;
   let storedScopes: McpScope[];
   try {
     const parsed = typeof row.scopes_json === "string" ? JSON.parse(row.scopes_json) as unknown : row.scopes_json;
@@ -274,7 +271,5 @@ export async function authenticateMcpToken(db: Db, header: string | string[] | u
   } catch {
     return null;
   }
-  const scopes = storedScopes.filter((scope) => maximumScopes.includes(scope));
-  if (scopes.length === 0) return null;
-  return { userId, countryId: active.id, countryRole: active.role, tokenId: String(row.id), scopes };
+  return { userId, tokenId: String(row.id), scopes: storedScopes };
 }

@@ -459,6 +459,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
   }
 
   const integration = await page.evaluate(async (visibleChunkKeys) => {
+    const bootstrap = await fetch("/api/bootstrap").then((response) => response.json()) as { country: { id: string } };
     const cities = await fetch("/api/plan/cities").then((response) => response.json()) as Array<{ id: string }>;
     for (const city of cities) {
       const districts = await fetch(`/api/plan/cities/${city.id}/districts`).then((response) => response.json()) as Array<{ id: string; status: string }>;
@@ -475,7 +476,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ name: "Realtime map test" }),
           }).then((response) => response.json()) as { id: string; token: string };
-          return { taskId: task.id, chunkKey, ...issued };
+          return { countryId: bootstrap.country.id, taskId: task.id, chunkKey, ...issued };
         }
       }
     }
@@ -495,7 +496,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
     await client.connect(transport);
     const result = await client.callTool({
       name: "task.set_status",
-      arguments: { taskId: integration.taskId, status: "STARTED", progress: 10, idempotencyKey: `e2e-map-${Date.now()}` },
+      arguments: { countryId: integration.countryId, taskId: integration.taskId, status: "STARTED", progress: 10, idempotencyKey: `e2e-map-${Date.now()}` },
     });
     expect(result.isError, JSON.stringify(result.content)).not.toBe(true);
     await expect.poll(async () => Number(await host.getAttribute("data-entity-rebuilds")), { timeout: 30_000 }).toBeGreaterThan(beforeEntityRebuilds);
@@ -585,6 +586,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
     const checklistResult = await client.callTool({
       name: "task.checklist_replace",
       arguments: {
+        countryId: integration.countryId,
         taskId: integration.taskId,
         items: [{ title: "Проверить realtime-перестроение здания", done: true }],
         idempotencyKey: `e2e-map-checklist-${Date.now()}`,
@@ -611,7 +613,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
     requestedChunks.clear();
     const inProgressResult = await client.callTool({
       name: "task.set_status",
-      arguments: { taskId: integration.taskId, status: "IN_PROGRESS", progress: 55, idempotencyKey: `e2e-map-IN_PROGRESS-${Date.now()}` },
+      arguments: { countryId: integration.countryId, taskId: integration.taskId, status: "IN_PROGRESS", progress: 55, idempotencyKey: `e2e-map-IN_PROGRESS-${Date.now()}` },
     });
     expect(inProgressResult.isError).not.toBe(true);
     releaseChunkRefresh?.();
@@ -639,7 +641,7 @@ test("realtime task status patches its entity without refetching or rebaking sta
     for (const [status, progress] of [["TESTING", 90], ["COMPLETED", 100]] as const) {
       const result = await client.callTool({
         name: "task.set_status",
-        arguments: { taskId: integration.taskId, status, progress, idempotencyKey: `e2e-map-${status}-${Date.now()}` },
+        arguments: { countryId: integration.countryId, taskId: integration.taskId, status, progress, idempotencyKey: `e2e-map-${status}-${Date.now()}` },
       });
       expect(result.isError).not.toBe(true);
     }
