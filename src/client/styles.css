@@ -244,6 +244,14 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-city-progress-track { fill: var(--atlas-progress-track) !important; stroke: none !important; }
 .atlas-city-progress-value { fill: var(--atlas-progress-value) !important; stroke: none !important; }
 .atlas-city-active-dot { fill: #8bdd6a; stroke: #102528; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.atlas-air-routes, .atlas-clouds { pointer-events: none; }
+.atlas-air-route-line { fill: none; stroke: #dce8dc; stroke-width: .8px; stroke-dasharray: 2 4; opacity: .18; vector-effect: non-scaling-stroke; }
+.atlas-aircraft-sprite { image-rendering: pixelated; }
+.atlas-clouds > g { animation: atlas-cloud-drift var(--atlas-cloud-duration) steps(16, end) infinite alternate; }
+.atlas-clouds path { fill: #edf1df; stroke: #b7c8bf; stroke-width: .7px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
+.atlas-clouds .atlas-cloud-shadow { fill: #aebfba; }
+@keyframes atlas-cloud-drift { from { translate: -20px 0; } to { translate: 20px 0; } }
+.country-edge-water-fog { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .atlas-district-tooltip { position: absolute; z-index: 4; display: grid; gap: 2px; width: 168px; padding: 9px 10px; border: 1px solid #b4a569; border-left: 4px solid #b4a569; background: #0b1d20; color: #edf0df; box-shadow: 4px 4px 0 #061113c7; transform: translate(10px, -50%); pointer-events: none; }
 .atlas-district-tooltip-left { transform: translate(calc(-100% - 10px), -50%); }
 .atlas-district-tooltip header { display: flex; align-items: center; gap: 6px; color: #c9d2c8; font: 800 9px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .07em; text-transform: uppercase; }
@@ -258,6 +266,57 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-state { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; background: #142629; color: #a9bcba; font-size: 13px; }
 .atlas-state strong { color: #f0f1e5; font-size: 17px; }
 .atlas-state i { width: 18px; height: 18px; border: 3px solid #49645f; border-top-color: #f2c84b; animation: spin .8s steps(8) infinite; }
+
+/* ── Seeded planet atlas ─────────────────────────────────── */
+.planet-atlas { position: absolute; inset: 0; overflow: hidden; background: #174f69; }
+.planet-atlas svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.planet-ocean, .planet-coast, .planet-routes { pointer-events: none; }
+.planet-ocean path { stroke: #2c7890; stroke-width: .45px; shape-rendering: crispEdges; }
+.planet-water-sparkles { pointer-events: none; }
+.planet-water-sparkles rect { fill: #b8dadd; shape-rendering: crispEdges; animation: planet-water-shimmer 2.4s steps(2, end) infinite; }
+.planet-water-sparkles rect[data-phase="1"] { animation-delay: -1.2s; }
+@keyframes planet-water-shimmer { 50% { translate: 4px 0; fill: #70b8c4; } }
+.planet-coast path { fill: #c4b176; stroke: #ede0a2; stroke-width: .7px; opacity: .8; shape-rendering: crispEdges; }
+.planet-country { cursor: pointer; outline: none; pointer-events: bounding-box; }
+.planet-country-hit { fill: transparent; stroke: none; pointer-events: all; }
+.planet-country > path { stroke-width: 1.2px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; transition: filter .12s steps(2, end); }
+.planet-country:hover > path, .planet-country:focus > path { filter: brightness(1.18) saturate(1.08); }
+.planet-country[data-active="true"] > path { stroke: #f2d45e; stroke-width: 2px; }
+.planet-country[data-selecting="true"] { opacity: .68; }
+.planet-country-label { pointer-events: none; }
+.planet-country-label > rect:first-child { fill: #0a1b1e; stroke: #c3b06c; stroke-width: 1.4px; vector-effect: non-scaling-stroke; }
+.planet-country[data-active="true"] .planet-country-label > rect:first-child { stroke: #f2d45e; stroke-width: 2px; }
+.planet-country-label text { fill: #fff4d2; font: 900 9px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
+.planet-country-label .planet-country-meta { fill: #91aaa6; font-size: 5px; letter-spacing: .08em; }
+.planet-country-progress-track { fill: #233a3c !important; stroke: none !important; }
+.planet-country-progress-value { fill: #88c96f !important; stroke: none !important; }
+.planet-route-line { fill: none; stroke: #d7e8dc; stroke-width: 1px; stroke-dasharray: 3 4; opacity: .28; vector-effect: non-scaling-stroke; }
+.planet-clouds { pointer-events: none; }
+.planet-clouds > g { animation: planet-cloud-drift var(--cloud-duration) steps(18, end) var(--cloud-delay) infinite alternate; }
+.planet-clouds path { fill: #eaf0df; stroke: #b7c9c3; stroke-width: .8px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
+.planet-clouds .planet-cloud-shade { fill: #b9cbc5; }
+@keyframes planet-cloud-drift { from { translate: -28px 0; } to { translate: 28px 0; } }
+.planet-edge-fog { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
+.planet-edge-fog i, .country-edge-water-fog i { position: absolute; width: 36px; height: 12px; margin: -6px 0 0 -18px; background: #eaf0df; image-rendering: pixelated; animation: edge-fog-drift 9s steps(6, end) infinite alternate; }
+.planet-edge-fog i::before, .country-edge-water-fog i::before, .planet-edge-fog i::after, .country-edge-water-fog i::after { position: absolute; content: ""; }
+.planet-edge-fog i::before, .country-edge-water-fog i::before { left: -16px; top: 5px; width: 28px; height: 12px; background: #d2dfd8; }
+.planet-edge-fog i::after, .country-edge-water-fog i::after { left: 12px; top: -7px; width: 22px; height: 14px; background: #f4f4df; }
+.country-edge-water-fog i { background: #b9d7d2; }
+.country-edge-water-fog i::before { background: #79aeb0; }
+.country-edge-water-fog i::after { background: #d5e6dc; }
+@keyframes edge-fog-drift { from { translate: -6px 0; } to { translate: 6px 0; } }
+.planet-refresh-warning { position: absolute; top: 14px; left: 50%; z-index: 4; padding: 7px 10px; border: 1px solid #705e35; background: #302817e8; color: #f0daa0; font-size: 11px; transform: translateX(-50%); }
+
+.map-level-nav { position: absolute; left: 50%; bottom: 18px; z-index: 10; display: grid; grid-template-columns: repeat(3, minmax(88px, 116px)); gap: 3px; padding: 4px; border: 1px solid #3b565d; border-radius: 11px; background: #0a191ce8; box-shadow: 0 12px 30px #0008; transform: translateX(-50%); backdrop-filter: blur(8px); }
+.map-level-button { min-height: 36px; padding: 0 13px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #91a6a8; font-size: 11px; font-weight: 850; cursor: pointer; }
+.map-level-button:hover:not(:disabled), .map-level-button:focus-visible { border-color: #42636b; background: #152c31; color: #ecf0e8; }
+.map-level-button-active { border-color: #8d7832; background: #302b19; color: #f2d45e; }
+.map-level-button:disabled.map-level-button-active { opacity: 1; }
+
+@media (max-width: 560px) {
+  .map-level-nav { bottom: 10px; grid-template-columns: repeat(3, minmax(74px, 1fr)); width: calc(100% - 20px); }
+  .map-level-button { padding-inline: 7px; }
+}
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: clamp(16px, 4vh, 32px); background: #020607c7; backdrop-filter: blur(6px); }
 .task-modal, .token-panel { position: relative; width: min(680px, 100%); max-height: min(840px, 92vh); overflow: auto; padding: 30px; border: 1px solid #3a5259; border-radius: 16px; background: #111e22; box-shadow: 0 28px 90px #000a; }
@@ -463,6 +522,10 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  .atlas-aircraft-flight { display: none; }
+  .planet-clouds > g { animation: none !important; }
+  .planet-water-sparkles rect, .planet-edge-fog i, .country-edge-water-fog i { animation: none !important; }
+  .atlas-clouds > g { animation: none !important; }
 }
 
 /* ── Task search in the header ─────────────────────────────── */

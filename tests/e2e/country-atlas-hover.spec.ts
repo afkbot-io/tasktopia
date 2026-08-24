@@ -1,7 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 1440, height: 900 } });
 test.skip(process.env.E2E_ATLAS_FIXTURE !== "true", "Run against the dedicated fixture with npm run test:atlas");
+
+async function loginAndOpenCountryAtlas(page: Page): Promise<void> {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
+  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
+  await page.getByRole("button", { name: "Открыть страну" }).click();
+  const countryTitle = page.locator(".country-title-button strong");
+  if (await countryTitle.textContent() !== "Федерация Новостроек") {
+    await page.locator(".country-title-button").click();
+    await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button").filter({ hasText: "Федерация Новостроек" }).click();
+  }
+  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+}
 
 test("all atlas cities hover safely and drive the compact header", async ({ page }, testInfo) => {
   const browserErrors: string[] = [];
@@ -14,17 +27,12 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
     if (request.url().includes("/game-assets/v5/buildings/")) fullBuildingRequests.push(request.url());
   });
 
-  await page.goto("/");
-  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
-  await page.getByRole("button", { name: "Открыть страну" }).click();
+  await loginAndOpenCountryAtlas(page);
   browserErrors.length = 0;
 
-  const atlas = page.locator(".country-atlas");
-  await expect(atlas).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
   await expect(page.getByRole("banner").getByLabel("MCP-интеграции")).toHaveCount(0);
   const header = page.getByLabel("Панель управления страной");
-  await expect(header.getByRole("button", { name: "Карта", exact: true })).toBeVisible();
+  await expect(header.getByRole("button", { name: "Карта", exact: true })).toHaveCount(0);
   await expect(header.getByRole("button", { name: "План", exact: true })).toHaveCount(0);
   await expect(page.locator(".map-help")).toHaveCount(0);
   await page.locator(".country-title-button").click();
@@ -86,12 +94,47 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   expect(browserErrors).toEqual([]);
 });
 
-test("a city miniature click opens the exact district instead of a task card", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
-  await page.getByRole("button", { name: "Открыть страну" }).click();
+test("planet, country and city levels keep selection and disabled states coherent", async ({ page }) => {
+  await loginAndOpenCountryAtlas(page);
+
+  const planetFixture = await page.evaluate(async () => {
+    const bootstrap = await fetch("/api/bootstrap").then((response) => response.json()) as { country: { id: string }; countries: unknown[] };
+    if (bootstrap.countries.length < 2) {
+      await fetch("/api/countries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Островная страна" }),
+      });
+    }
+    const atlas = await fetch("/api/planet-atlas", { cache: "no-store" }).then((response) => response.json()) as { countries: unknown[] };
+    return { originalCountryId: bootstrap.country.id, countryCount: atlas.countries.length };
+  });
+
+  const levels = page.getByRole("navigation", { name: "Уровень карты" });
+  await levels.getByRole("button", { name: "Планета" }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-countries", String(planetFixture.countryCount));
+  await expect(page.locator(".planet-routes .atlas-aircraft-sprite").first()).toBeAttached();
+  await expect(page.locator('animateMotion[rotate="auto"]')).toHaveCount(0);
+  expect(await page.locator(".planet-routes .atlas-aircraft-sprite").first().evaluate((node) => getComputedStyle(node).imageRendering)).toBe("pixelated");
+  await expect(levels.getByRole("button", { name: "Страна" })).toBeDisabled();
+  await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
+  await expect(page.getByLabel("Панель управления страной").getByText(/Районов|Зданий/)).toHaveCount(0);
+
+  await page.locator(`.planet-country[data-country-id="${planetFixture.originalCountryId}"]`).click();
   await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+  await expect(levels.getByRole("button", { name: "Страна" })).toHaveAttribute("aria-current", "page");
+  await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
+
+  await page.locator(".atlas-city-label").first().click();
+  await expect(page.locator(".world-canvas")).toBeVisible({ timeout: 45_000 });
+  await expect(levels.getByRole("button", { name: "Город" })).toHaveAttribute("aria-current", "page");
+  await expect(levels.getByRole("button", { name: "Страна" })).toBeEnabled();
+  await levels.getByRole("button", { name: "Страна" }).click();
+  await expect(page.locator(".country-atlas")).toBeVisible();
+});
+
+test("a city miniature click opens the exact district instead of a task card", async ({ page }) => {
+  await loginAndOpenCountryAtlas(page);
 
   const target = await page.evaluate(async () => {
     const atlas = await fetch("/api/country-atlas", { cache: "no-store" }).then((response) => response.json()) as {
@@ -121,11 +164,7 @@ test("a city miniature click opens the exact district instead of a task card", a
 });
 
 test("a session snapshot paints while the atlas revalidates in the background", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
-  await page.getByRole("button", { name: "Открыть страну" }).click();
-  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+  await loginAndOpenCountryAtlas(page);
 
   const revalidationHeaders: string[] = [];
   await page.route("**/api/country-atlas", async (route) => {
@@ -140,11 +179,7 @@ test("a session snapshot paints while the atlas revalidates in the background", 
 });
 
 test("building search switches to the owning city before focusing the building", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Email").fill("world-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
-  await page.getByRole("button", { name: "Открыть страну" }).click();
-  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+  await loginAndOpenCountryAtlas(page);
 
   const target = await page.evaluate(async () => {
     const atlas = await fetch("/api/country-atlas", { cache: "no-store" }).then((response) => response.json()) as {

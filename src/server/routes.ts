@@ -239,6 +239,15 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             return reply.header("ETag", etag).header("Cache-Control", "private, max-age=30, stale-while-revalidate=300").send(atlas);
           });
 
+  app.get("/api/planet-atlas", async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            if (!user) return reply;
+            const atlas = await service.getPlanetAtlas(user.id);
+            const etag = `"${atlas.revision}-planet-${atlas.schemaVersion}"`;
+            if (request.headers["if-none-match"] === etag) return reply.code(304).send();
+            return reply.header("ETag", etag).header("Cache-Control", "private, max-age=60, stale-while-revalidate=600").send(atlas);
+          });
+
   app.get("/api/plan/cities", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             return user ? await service.listPlanCities(user.countryId) : reply;

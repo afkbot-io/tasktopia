@@ -12,6 +12,7 @@ import { countryAtlasEventBatchImpact, patchCountryAtlasTaskProgress } from "../
 import { fitCountryAtlasBoundsToAspect } from "../../shared/country-atlas-viewport";
 import { api } from "../api";
 import { atlasBuildingPresentation } from "../country-atlas-presentation";
+import { AtlasAircraft } from "./AtlasAircraft";
 
 const CELL = 8;
 const ATLAS_CACHE_PREFIX = `tasktopia:country-atlas:v${COUNTRY_ATLAS_SCHEMA_VERSION}:`;
@@ -129,6 +130,13 @@ function AtlasBuildingGlyph({ entry, identity, scale, groundX, groundY }: {
     {entry.category !== "HIGHRISE" && bodyHeight >= 8 && <path d={`M${left + 1.5} ${groundY - 4}H${left + marker.width - 1.5}`} stroke={marker.accent} strokeWidth=".7" opacity=".7" />}
     <rect x={groundX - marker.doorWidth / 2} y={groundY - 3.5} width={marker.doorWidth} height="3.5" fill="#29494b" />
   </g>;
+}
+
+function atlasFlightPath(from: CountryAtlasCityDto, to: CountryAtlasCityDto, index: number): string {
+  const start = { x: from.atlasCenter.x * CELL, y: from.atlasCenter.y * CELL };
+  const end = { x: to.atlasCenter.x * CELL, y: to.atlasCenter.y * CELL };
+  const curve = (index % 2 === 0 ? -1 : 1) * Math.max(22, Math.hypot(end.x - start.x, end.y - start.y) * .15);
+  return `M${start.x} ${start.y} Q${(start.x + end.x) / 2} ${(start.y + end.y) / 2 + curve} ${end.x} ${end.y}`;
 }
 
 export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsProcessed, onCitySelect, onDistrictSelect, onCityHover }: {
@@ -266,6 +274,35 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
     const y = (district.atlasCenter.y - displayBounds.minY) / (displayBounds.maxY - displayBounds.minY + 1) * 100;
     return { city, district, buildings: buildings.length, progress: district.progress, x, y, opensLeft };
   }, [atlas, displayBounds, hoveredDistrict]);
+  const atmosphereClouds = useMemo(() => {
+    if (!atlas) return [];
+    const width = (displayBounds.maxX - displayBounds.minX + 1) * CELL;
+    const height = (displayBounds.maxY - displayBounds.minY + 1) * CELL;
+    return Array.from({ length: Math.max(5, Math.min(12, atlas.cities.length + 4)) }, (_, index) => {
+      const value = Math.abs((atlas.terrainSeed ^ Math.imul(index + 1, 2_654_435_761)) >>> 0);
+      return {
+        id: `country-cloud-${index}`,
+        x: displayBounds.minX * CELL + value % Math.max(1, Math.floor(width)),
+        y: displayBounds.minY * CELL + (value >>> 9) % Math.max(1, Math.floor(height * .82)),
+        scale: .7 + (value % 5) * .1,
+        duration: 28 + value % 25,
+      };
+    });
+  }, [atlas, displayBounds]);
+  const countryEdgeFog = useMemo(() => {
+    if (!atlas) return [];
+    return Array.from({ length: 24 }, (_, index) => {
+      const value = Math.abs((atlas.terrainSeed ^ Math.imul(index + 11, 1_103_515_245)) >>> 0);
+      const side = index % 4;
+      const along = 2 + value % 96;
+      return {
+        id: `country-edge-fog-${index}`,
+        left: side === 0 ? along : side === 1 ? 98 : side === 2 ? along : 2,
+        top: side === 0 ? 2 : side === 1 ? along : side === 2 ? 98 : along,
+        scale: .75 + (value % 4) * .2,
+      };
+    });
+  }, [atlas]);
 
   if (error && !atlas) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
   if (!atlas) return <div className="atlas-state" role="status"><i /><span>Сжимаем расстояния между городами…</span></div>;
@@ -296,6 +333,26 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
           fill={`url(#${terrainPatternId(tile.terrain, tile.variant)})`}
           data-terrain={tile.terrain}
         />)}
+      </g>
+
+      <g className="atlas-air-routes" aria-hidden="true">
+        {atlas.connections.map((connection, index) => {
+          const from = atlas.cities.find((city) => city.id === connection.fromCityId);
+          const to = atlas.cities.find((city) => city.id === connection.toCityId);
+          if (!from || !to) return null;
+          const path = atlasFlightPath(from, to, index);
+          const duration = 11 + index % 7;
+          return <g key={`${connection.fromCityId}:${connection.toCityId}`}>
+            <path d={path} className="atlas-air-route-line" />
+            <AtlasAircraft
+              path={path}
+              durationSeconds={duration}
+              delaySeconds={-(index * 3 % duration)}
+              kind={index}
+              facing={to.atlasCenter.x < from.atlasCenter.x ? "left" : "right"}
+            />
+          </g>;
+        })}
       </g>
 
       {atlas.cities.map((city) => <g key={city.id} className="atlas-city" data-city-id={city.id} data-active={city.id === activeCityId ? "true" : "false"} onClick={() => onCitySelect(city)} onPointerLeave={clearDistrictHover}>
@@ -428,7 +485,16 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
           <rect x={city.labelBounds.minX * CELL + 8} y={(city.labelBounds.maxY + 1) * CELL - 3} width={Math.max(0, ((city.labelBounds.maxX - city.labelBounds.minX + 1) * CELL - 16) * (city.districts.length > 0 ? city.districts.reduce((total, district) => total + district.progress, 0) / city.districts.length : 0) / 100)} height="2" className="atlas-city-progress-value" />
         </g>
       </g>)}
+      <g className="atlas-clouds" aria-hidden="true">
+        {atmosphereClouds.map((cloud) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--atlas-cloud-duration": `${cloud.duration}s` } as CSSProperties}>
+          <path d="M0 7h6V3h5V0h8v3h6v4h8v5H0Z" />
+          <path className="atlas-cloud-shadow" d="M6 12h21v3H6Z" />
+        </g>)}
+      </g>
     </svg>
+    <div className="country-edge-water-fog" aria-hidden="true">
+      {countryEdgeFog.map((fog) => <i key={fog.id} style={{ left: `${fog.left}%`, top: `${fog.top}%`, scale: fog.scale }} />)}
+    </div>
     {hoveredDistrictInfo && <aside
       className={`atlas-district-tooltip${hoveredDistrictInfo.opensLeft ? " atlas-district-tooltip-left" : ""}`}
       role="tooltip"

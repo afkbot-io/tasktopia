@@ -1,6 +1,6 @@
 # Tasktopia AI integration guide
 
-Version: 1.22.0
+Version: 1.23.0
 Last updated: 2026-08-24
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
@@ -23,6 +23,16 @@ coordinates. This endpoint is private UI infrastructure, uses ETag plus
 conditional background revalidation, and is not an MCP resource. Agents must
 continue to use `country.get_current`, `city.list`, `district.list`, and the
 task tools below.
+
+The planet overview uses the authenticated browser-only `GET /api/planet-atlas`
+read model (`schemaVersion: 1`). It contains only countries visible to the
+current account and compact city, district, building, and progress aggregates.
+The browser deterministically projects continents, coasts, water, routes, and
+atmosphere from `planetSeed`; coordinates are not stored or transferred. The
+response uses a private ETag cache (`max-age=60`, `stale-while-revalidate=600`),
+and browser snapshots are isolated by account. This endpoint is UI
+infrastructure, not an MCP resource; agents should use `country.list` and the
+country tools below.
 
 The authenticated browser-only `GET /api/tasks/search` response includes the
 building `origin`, `cityId`/`cityName`, and the city's `cityCenter` and

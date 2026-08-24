@@ -86,6 +86,7 @@ import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-a
 import { COUNTRY_ATLAS_SCHEMA_VERSION, type CountryAtlasDto } from "../shared/country-atlas-contract";
 import { countryAtlasEventImpact, patchCountryAtlasTaskProgress } from "../shared/country-atlas-events";
 import { meanCountryAtlasProgress } from "../shared/country-atlas-progress";
+import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/planet-atlas-contract";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import { projectCountryAtlas } from "./world/country-atlas";
 import type { SharedWorldCache } from "./optional-redis-cache";
@@ -1032,6 +1033,35 @@ export class AppService {
       chunkSize: CHUNK_SIZE,
       assetVersion: 4,
     };
+  }
+
+  async getPlanetAtlas(userId: string): Promise<PlanetAtlasDto> {
+    const rows = await this.db.prepare(`
+      SELECT c.id, c.name, c.seed, c.world_version, c.created_at,
+        (SELECT COUNT(*) FROM cities_v3 city WHERE city.country_id = c.id) AS city_count,
+        (SELECT COUNT(*) FROM districts_v3 district
+          JOIN cities_v3 city ON city.id = district.city_id
+          WHERE city.country_id = c.id) AS district_count,
+        (SELECT COUNT(*) FROM tasks_v3 task
+          JOIN cities_v3 city ON city.id = task.city_id
+          WHERE city.country_id = c.id) AS building_count,
+        (SELECT COALESCE(ROUND(AVG(task.progress)), 0) FROM tasks_v3 task
+          JOIN cities_v3 city ON city.id = task.city_id
+          WHERE city.country_id = c.id) AS progress
+      FROM country_members membership
+      JOIN countries c ON c.id = membership.country_id
+      WHERE membership.user_id = ?
+      ORDER BY c.created_at, c.id
+    `).all(userId) as Row[];
+    const countries = rows.map((row) => ({
+      id: String(row.id), name: String(row.name), seed: Number(row.seed), worldVersion: Number(row.world_version),
+      cityCount: Number(row.city_count), districtCount: Number(row.district_count), buildingCount: Number(row.building_count),
+      progress: Math.max(0, Math.min(100, Number(row.progress))),
+    }));
+    const revisionSource = countries.map((country) => `${country.id}:${country.name}:${country.worldVersion}:${country.cityCount}:${country.districtCount}:${country.buildingCount}:${country.progress}`).join("|");
+    const revision = createHash("sha256").update(revisionSource).digest("hex").slice(0, 16);
+    const planetSeed = createHash("sha256").update(`tasktopia-planet:${userId}`).digest().readUInt32LE(0) & 0x7fffffff;
+    return { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed, revision, countries };
   }
 
   async getWorldManifest(user: AuthUser): Promise<BootstrapDto["worldManifest"]> {
