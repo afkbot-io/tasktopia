@@ -2795,18 +2795,18 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 }
                 // The coherent ground swap is complete. Dynamic entities may
                 // now stream independently without leaving the old LOD visible.
-                await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
+                for (const [chunkX, chunkY] of wanted) {
                   const cacheKey = chunkKey(chunkX, chunkY);
                   const chunk = fetched.get(cacheKey);
-                  if (!chunk || !desiredKeys.has(cacheKey)) return;
-                  await publishEntityWhenReady(
+                  if (!chunk || !desiredKeys.has(cacheKey)) continue;
+                  void publishEntityWhenReady(
                     cacheKey,
                     chunk,
                     lod,
                     () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey),
                     rebuildMovement,
-                  );
-                }));
+                  ).catch(() => undefined);
+                }
                 if (disposed || generation !== loadGeneration || desiredLod !== lod) continue;
               }
               discardPreparedGrounds();
