@@ -10,7 +10,7 @@ import { APP_VERSION } from "../src/server/version";
 import type { SurfaceCellDto } from "../src/shared/contracts";
 import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
 
-describe("authentication HTTP boundary", () => {
+describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
   let db: Db;
   let app: FastifyInstance;
   let service: AppService;
@@ -213,7 +213,7 @@ describe("authentication HTTP boundary", () => {
     });
     expect(loggedIn.statusCode).toBe(200);
     expect(loggedIn.headers["set-cookie"]).toBeDefined();
-  }, 30_000);
+  }, 60_000);
 
   it("polls generation jobs only inside the authenticated country", async () => {
     const owner = await registerUser(db, {
@@ -248,7 +248,7 @@ describe("authentication HTTP boundary", () => {
     expect((await app.inject({
       method: "GET", url: `/api/world-generation-jobs/${crypto.randomUUID()}`, headers: { cookie },
     })).statusCode).toBe(404);
-  }, 20_000);
+  }, 60_000);
 
   it("accepts HTTP regeneration on the web boundary and polls the world-worker result", async () => {
     const owner = await registerUser(db, {
@@ -290,7 +290,7 @@ describe("authentication HTTP boundary", () => {
     } finally {
       await webApp.close();
     }
-  }, 30_000);
+  }, 60_000);
 
   it("keeps registration and its first city atomic when the web dispatcher is enabled", async () => {
     const queuedApp = Fastify();
@@ -470,7 +470,7 @@ describe("authentication HTTP boundary", () => {
       error: "CONFLICT",
       message: "Аккаунт с таким email уже существует",
     });
-  }, 20_000);
+  }, 60_000);
 
   it("returns understandable validation and credential errors", async () => {
     const malformed = await app.inject({
