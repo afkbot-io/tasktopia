@@ -33,6 +33,12 @@ def main() -> None:
     terrain_names = ("grass", "meadow", "forest", "hill", "mountain", "coast", "river", "stone")
     terrain = [verify(ATLAS / "terrain-v2" / f"planet-{name}.png", (16, 16)) for name in terrain_names]
     assert len(set(terrain)) == 8, "planet terrain sprites must be distinct"
+    square_terrain = []
+    for name in terrain_names:
+        path = ATLAS / "terrain-v3" / f"planet-{name}.png"
+        square_terrain.append(verify(path, (16, 16)))
+        assert set(Image.open(path).convert("RGBA").getchannel("A").getdata()) == {255}, f"{path}: square tile must fill every pixel"
+    assert len(set(square_terrain)) == 8, "planet V3 square terrain sprites must be distinct"
     planet_aircraft = []
     for model in range(1, 9):
         frames = [verify(ATLAS / "aircraft-v2" / f"airplane-topdown-{model}-frame-{frame}.png", (24, 16)) for frame in range(1, 3)]
@@ -41,7 +47,7 @@ def main() -> None:
     assert len(set(planet_aircraft)) == 8, "planet aircraft models must be distinct"
     planet_clouds = [verify(ATLAS / "clouds-v2" / f"cloud-topdown-{variant}.png", (64, 32)) for variant in range(1, 9)]
     assert len(set(planet_clouds)) == 8, "planet V2 clouds must be distinct"
-    print("atlas assets: V1 + 8 terrain, 8 planet aircraft x2 and 8 planet clouds V2 verified")
+    print("atlas assets: V1 + V2/V3 terrain, 8 planet aircraft x2 and 8 shared top-down clouds verified")
 
 
 if __name__ == "__main__":

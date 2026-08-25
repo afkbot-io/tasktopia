@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlanetAtlasDto } from "../src/shared/planet-atlas-contract";
-import { layoutPlanetCountryLabels, projectPlanetAtlas, projectPlanetMap, projectProjectedPlanetMap } from "../src/shared/planet-atlas";
+import { layoutPlanetCountryLabels, planetHexPath, projectPlanetAtlas, projectPlanetMap, projectProjectedPlanetMap, zoomPlanetCameraAtFocus } from "../src/shared/planet-atlas";
 import { planetAtlasCacheKey } from "../src/client/planet-atlas-cache";
 
 const fixture: PlanetAtlasDto = {
@@ -68,7 +68,7 @@ describe("planet atlas projection", () => {
     );
     expect(new Set(projected.countries.flatMap((country) => country.cells.map((cell) => cell.terrain))).size).toBeGreaterThan(3);
     for (const route of projected.routes) {
-      expect(airportIds.has(route.fromAirportId)).toBe(true);
+      if (route.fromAirportId) expect(airportIds.has(route.fromAirportId)).toBe(true);
       expect(airportIds.has(route.toAirportId)).toBe(true);
       expect(route.fromAirportId).not.toBe(route.toAirportId);
       expect(route.path).toMatch(/^M/);
@@ -79,7 +79,8 @@ describe("planet atlas projection", () => {
     const withoutAirports = projectPlanetAtlas({ ...fixture, countries: fixture.countries.map((country) => ({ ...country, cityCount: 0 })) });
     const oneAirport = projectPlanetAtlas({ ...fixture, countries: [{ ...fixture.countries[0]!, cityCount: 1 }] });
     expect(withoutAirports.routes).toEqual([]);
-    expect(oneAirport.routes).toEqual([]);
+    expect(oneAirport.routes).toHaveLength(1);
+    expect(oneAirport.routes[0]!.fromAirportId).toBeNull();
   });
 
   it("keeps browser snapshots isolated between accounts", () => {
@@ -118,6 +119,18 @@ describe("planet atlas projection", () => {
       expect(Number.isInteger(cell.y)).toBe(true);
       expect(Number.isInteger(cell.size)).toBe(true);
     }
+  });
+
+  it("uses square terrain paths and keeps focal world content stable during zoom", () => {
+    expect(planetHexPath({ q: 2, r: 3 }, 6)).toBe("M24,36H36V48H24Z");
+    const base = projectPlanetAtlas(fixture);
+    const focus = { x: 230, y: 510 };
+    const before = projectProjectedPlanetMap(base, { panX: .1, panY: -.08, zoom: 1.2 });
+    const nextCamera = zoomPlanetCameraAtFocus(base, { panX: .1, panY: -.08, zoom: 1.2 }, 2.4, focus);
+    const after = projectProjectedPlanetMap(base, nextCamera);
+    const nearestBefore = [...before.countries.flatMap((country) => country.cells)].sort((left, right) => Math.hypot(left.center.x - focus.x, left.center.y - focus.y) - Math.hypot(right.center.x - focus.x, right.center.y - focus.y))[0]!;
+    const matchingAfter = after.countries.flatMap((country) => country.cells).find((cell) => cell.id === nearestBefore.id)!;
+    expect(Math.hypot(matchingAfter.center.x - focus.x, matchingAfter.center.y - focus.y)).toBeLessThanOrEqual(Math.hypot(nearestBefore.center.x - focus.x, nearestBefore.center.y - focus.y) * 2 + 3);
   });
 
   it("lays out equal screen-space country labels without collisions", () => {

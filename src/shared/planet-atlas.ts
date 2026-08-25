@@ -15,9 +15,9 @@ export type ProjectedPlanetCountry = PlanetCountryDto & {
 };
 export type PlanetRoute = {
   id: string;
-  fromCountryId: string;
+  fromCountryId: string | null;
   toCountryId: string;
-  fromAirportId: string;
+  fromAirportId: string | null;
   toAirportId: string;
   from: PlanetPoint;
   control: PlanetPoint;
@@ -26,10 +26,11 @@ export type PlanetRoute = {
   durationSeconds: number;
   delaySeconds: number;
   planeKind: number;
+  altitudeScale: number;
   rotateWithPath: true;
 };
-export type PlanetStar = { id: string; xPercent: number; yPercent: number; size: number; delaySeconds: number };
-export type PlanetFogCell = { id: string; xPercent: number; yPercent: number; size: number; opacity: number };
+export type PlanetStar = { id: string; xPercent: number; yPercent: number; size: number; opacity: number; delaySeconds: number; group: "field" | "constellation" | "milky-way" };
+export type PlanetFogCell = { id: string; point: PlanetPoint; size: number; opacity: number };
 export type ProjectedPlanetAtlas = {
   width: number;
   height: number;
@@ -55,6 +56,7 @@ export type PlanetCountryLabelLayout = { countryId: string; x: number; y: number
 export type ProjectedPlanetMap = {
   width: number;
   height: number;
+  surface: { minX: number; minY: number; maxX: number; maxY: number };
   countries: PlanetMapCountry[];
   coastCells: PlanetMapCell[];
   routes: PlanetRoute[];
@@ -64,8 +66,7 @@ export type ProjectedPlanetMap = {
 };
 
 const DIRECTIONS: PlanetHex[] = [
-  { q: 1, r: 0 }, { q: -1, r: 0 }, { q: 0, r: 1 },
-  { q: 0, r: -1 }, { q: 1, r: -1 }, { q: -1, r: 1 },
+  { q: 1, r: 0 }, { q: -1, r: 0 }, { q: 0, r: 1 }, { q: 0, r: -1 },
 ];
 const COUNTRY_COLORS = [
   ["#759b54", "#a9bf69"], ["#b88b52", "#dfb86b"], ["#4f8e7b", "#79b9a6"],
@@ -90,9 +91,7 @@ function random01(seed: number): number {
 }
 
 function hexDistance(left: PlanetHex, right: PlanetHex): number {
-  const q = left.q - right.q;
-  const r = left.r - right.r;
-  return Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r));
+  return Math.abs(left.q - right.q) + Math.abs(left.r - right.r);
 }
 
 function key(cell: PlanetHex): string { return `${cell.q}:${cell.r}`; }
@@ -102,18 +101,14 @@ function inside(cell: PlanetHex, columns: number, rows: number): boolean {
 
 export function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
   return {
-    x: radius * Math.sqrt(3) * (cell.q + cell.r / 2) + radius * 1.5,
-    y: radius * 1.5 * cell.r + radius * 1.5,
+    x: cell.q * radius * 2 + radius,
+    y: cell.r * radius * 2 + radius,
   };
 }
 
 export function planetHexPath(cell: PlanetHex, radius: number): string {
   const center = planetHexCenter(cell, radius);
-  const points = Array.from({ length: 6 }, (_, index) => {
-    const angle = Math.PI / 180 * (60 * index - 30);
-    return `${Math.round(center.x + radius * Math.cos(angle))},${Math.round(center.y + radius * Math.sin(angle))}`;
-  });
-  return `M${points.join("L")}Z`;
+  return `M${center.x - radius},${center.y - radius}H${center.x + radius}V${center.y + radius}H${center.x - radius}Z`;
 }
 
 function territorySize(country: PlanetCountryDto): number {
@@ -248,6 +243,8 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
   const oceanCells: PlanetHex[] = [];
   for (let r = 0; r < rows; r += 1) for (let q = 0; q < columns; q += 1) if (!occupied.has(`${q}:${r}`)) oceanCells.push({ q, r });
 
+  const pixelWidth = planetHexCenter({ q: columns, r: rows }, hexRadius).x + hexRadius * 2;
+  const pixelHeight = planetHexCenter({ q: columns, r: rows }, hexRadius).y + hexRadius * 2;
   const airports = countries.flatMap((country) => country.airports);
   const routes: PlanetRoute[] = [];
   const routeTarget = airports.length < 2 ? 0 : Math.min(240, Math.max(airports.length, airports.length * 6));
@@ -274,32 +271,71 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
       durationSeconds: 12 + hashText(routeKey) % 11,
       delaySeconds: -(hashText(routeKey, 91) % 17),
       planeKind: hashText(routeKey, 47) % 8,
+      altitudeScale: [.82, 1, 1.18][hashText(routeKey, 73) % 3]!,
+      rotateWithPath: true,
+    });
+  }
+  for (let index = 0; index < airports.length; index += 1) {
+    const to = airports[index]!;
+    const edgeSeed = hashText(`edge-route:${to.id}`, atlas.planetSeed);
+    const side = edgeSeed % 4;
+    const from = side === 0
+      ? { x: 0, y: random01(edgeSeed ^ 0x11) * pixelHeight }
+      : side === 1
+        ? { x: pixelWidth, y: random01(edgeSeed ^ 0x22) * pixelHeight }
+        : side === 2
+          ? { x: random01(edgeSeed ^ 0x33) * pixelWidth, y: 0 }
+          : { x: random01(edgeSeed ^ 0x44) * pixelWidth, y: pixelHeight };
+    const dx = to.point.x - from.x;
+    const dy = to.point.y - from.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const bend = ((edgeSeed & 1) === 0 ? -1 : 1) * Math.min(110, 24 + distance * .18);
+    const control = { x: (from.x + to.point.x) / 2 - dy / distance * bend, y: (from.y + to.point.y) / 2 + dx / distance * bend };
+    routes.push({
+      id: `planet-edge-route-${index}`,
+      fromCountryId: null,
+      toCountryId: to.countryId,
+      fromAirportId: null,
+      toAirportId: to.id,
+      from,
+      control,
+      to: to.point,
+      path: pathForRoute(from, control, to.point),
+      durationSeconds: 14 + edgeSeed % 12,
+      delaySeconds: -(edgeSeed % 29),
+      planeKind: edgeSeed % 8,
+      altitudeScale: [.82, 1, 1.18][(edgeSeed >>> 4) % 3]!,
       rotateWithPath: true,
     });
   }
 
-  const pixelWidth = planetHexCenter({ q: columns, r: rows }, hexRadius).x + hexRadius * 2;
-  const pixelHeight = planetHexCenter({ q: columns, r: rows }, hexRadius).y + hexRadius * 2;
-  const clouds = Array.from({ length: Math.max(18, Math.min(34, 18 + countries.length * 3)) }, (_, index) => {
+  const clouds = Array.from({ length: Math.max(20, Math.min(38, 20 + countries.length * 3)) }, (_, index) => {
     const cloudSeed = hashText(`cloud:${index}`, atlas.planetSeed);
-    return { id: `planet-cloud-${index}`, x: random01(cloudSeed) * pixelWidth, y: (.05 + random01(cloudSeed ^ 0xa531) * .88) * pixelHeight, scale: .48 + random01(cloudSeed ^ 0x13f7) * .62, durationSeconds: 38 + cloudSeed % 35, delaySeconds: -(cloudSeed % 43) };
+    return { id: `planet-cloud-${index}`, x: random01(cloudSeed) * pixelWidth, y: (.05 + random01(cloudSeed ^ 0xa531) * .88) * pixelHeight, scale: .48 + random01(cloudSeed ^ 0x13f7) * .62, durationSeconds: 18 + cloudSeed % 17, delaySeconds: -(cloudSeed % 43) };
   });
-  const stars: PlanetStar[] = Array.from({ length: 64 }, (_, index) => {
+  const stars: PlanetStar[] = Array.from({ length: 180 }, (_, index) => {
     const starSeed = hashText(`star:${index}`, atlas.planetSeed);
-    return { id: `planet-star-${index}`, xPercent: 1 + random01(starSeed) * 98, yPercent: 1 + random01(starSeed ^ 0xb137) * 98, size: 1 + starSeed % 2, delaySeconds: -(starSeed % 7) };
+    const milkyWay = index >= 132;
+    const constellation = index >= 108 && index < 132;
+    const xPercent = 1 + random01(starSeed) * 98;
+    const yPercent = milkyWay
+      ? Math.max(1, Math.min(99, 78 - xPercent * .56 + (random01(starSeed ^ 0xb137) - .5) * 18))
+      : constellation
+        ? 14 + (index % 8) * 9 + (random01(starSeed) - .5) * 4
+        : 1 + random01(starSeed ^ 0xb137) * 98;
+    return { id: `planet-star-${index}`, xPercent, yPercent, size: constellation ? 2 : 1 + starSeed % 2, opacity: milkyWay ? .18 + random01(starSeed ^ 0x19a) * .36 : constellation ? .66 + random01(starSeed ^ 0x32b) * .3 : .22 + random01(starSeed ^ 0x54d) * .58, delaySeconds: -(starSeed % 7), group: milkyWay ? "milky-way" : constellation ? "constellation" : "field" };
   });
-  const edgeFog: PlanetFogCell[] = Array.from({ length: 72 }, (_, index) => {
+  const edgeFog: PlanetFogCell[] = Array.from({ length: 288 }, (_, index) => {
     const fogSeed = hashText(`edge-fog:${index}`, atlas.planetSeed);
-    const side = index % 4;
-    const along = random01(fogSeed) * 100;
-    const depth = random01(fogSeed ^ 0x93ab) * 16;
-    return { id: `planet-edge-fog-${index}`, xPercent: side === 1 ? 100 - depth : side === 3 ? depth : along, yPercent: side === 0 ? depth : side === 2 ? 100 - depth : along, size: 8 + fogSeed % 3 * 8, opacity: .3 + random01(fogSeed ^ 0x6d2b) * .58 };
+    const angle = Math.PI * 2 * index / 288 + (random01(fogSeed) - .5) * .05;
+    const depth = index % 4;
+    return { id: `planet-edge-fog-${index}`, point: { x: pixelWidth / 2 + Math.cos(angle) * pixelWidth * (.505 + depth * .024), y: pixelHeight / 2 + Math.sin(angle) * pixelHeight * (.505 + depth * .024) }, size: 4 + fogSeed % 2 * 4, opacity: .12 + depth * .11 + random01(fogSeed ^ 0x6d2b) * .1 };
   });
   return { width: pixelWidth, height: pixelHeight, hexRadius, viewBox: `0 0 ${pixelWidth} ${pixelHeight}`, oceanCells, coastCells, countries, routes, clouds, stars, edgeFog };
 }
 
 function affineProject(point: PlanetPoint, base: Pick<ProjectedPlanetAtlas, "width" | "height">, camera: PlanetMapCamera): PlanetPoint {
-  const zoom = Math.max(.82, Math.min(5.5, camera.zoom));
+  const zoom = Math.max(.82, Math.min(8.5, camera.zoom));
   const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
   const scale = fit * zoom;
   return { x: Math.round(MAP_WIDTH / 2 + (point.x - base.width / 2 - camera.panX * base.width * .32) * scale), y: Math.round(MAP_HEIGHT / 2 + (point.y - base.height / 2 - camera.panY * base.height * .32) * scale) };
@@ -308,7 +344,7 @@ function affineProject(point: PlanetPoint, base: Pick<ProjectedPlanetAtlas, "wid
 function projectCell(cell: PlanetTerrainCell, base: ProjectedPlanetAtlas, camera: PlanetMapCamera): PlanetMapCell {
   const center = affineProject(planetHexCenter(cell, base.hexRadius), base, camera);
   const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
-  const size = Math.max(8, Math.round(base.hexRadius * 2 * fit * Math.max(.82, Math.min(5.5, camera.zoom)) / 2) * 2);
+  const size = Math.max(8, Math.round(base.hexRadius * 2 * fit * Math.max(.82, Math.min(8.5, camera.zoom)) / 2) * 2);
   return { ...cell, center, x: center.x - size / 2, y: center.y - size / 2, size };
 }
 
@@ -329,7 +365,27 @@ export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: Pl
     const point = affineProject(cloud, base, camera);
     return { ...cloud, x: point.x, y: point.y, scale: cloud.scale * Math.min(1.25, .72 + camera.zoom * .16) };
   });
-  return { width: MAP_WIDTH, height: MAP_HEIGHT, countries, coastCells: base.coastCells.map((cell) => projectCell(cell, base, camera)), routes, clouds, stars: base.stars, edgeFog: base.edgeFog };
+  const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
+  const fogScale = fit * Math.max(.82, Math.min(8.5, camera.zoom));
+  const surfaceStart = affineProject({ x: 0, y: 0 }, base, camera);
+  const surfaceEnd = affineProject({ x: base.width, y: base.height }, base, camera);
+  return { width: MAP_WIDTH, height: MAP_HEIGHT, surface: { minX: surfaceStart.x, minY: surfaceStart.y, maxX: surfaceEnd.x, maxY: surfaceEnd.y }, countries, coastCells: base.coastCells.map((cell) => projectCell(cell, base, camera)), routes, clouds, stars: base.stars, edgeFog: base.edgeFog.map((fog) => ({ ...fog, point: affineProject(fog.point, base, camera), size: Math.max(4, Math.round(fog.size * fogScale)) })) };
+}
+
+/** Keep the same world point under the cursor while changing planet zoom. */
+export function zoomPlanetCameraAtFocus(base: Pick<ProjectedPlanetAtlas, "width" | "height">, camera: PlanetMapCamera, nextZoom: number, focus: PlanetPoint): PlanetMapCamera {
+  const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
+  const oldScale = fit * camera.zoom;
+  const newScale = fit * nextZoom;
+  const world = {
+    x: base.width / 2 + camera.panX * base.width * .32 + (focus.x - MAP_WIDTH / 2) / oldScale,
+    y: base.height / 2 + camera.panY * base.height * .32 + (focus.y - MAP_HEIGHT / 2) / oldScale,
+  };
+  return {
+    zoom: nextZoom,
+    panX: Math.max(-1.25, Math.min(1.25, (world.x - base.width / 2 - (focus.x - MAP_WIDTH / 2) / newScale) / (base.width * .32))),
+    panY: Math.max(-1, Math.min(1, (world.y - base.height / 2 - (focus.y - MAP_HEIGHT / 2) / newScale) / (base.height * .32))),
+  };
 }
 
 export function projectPlanetMap(atlas: PlanetAtlasDto, camera: PlanetMapCamera): ProjectedPlanetMap {

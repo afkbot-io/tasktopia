@@ -54,7 +54,9 @@ test("all atlas cities hover safely and drive the compact header", async ({ page
   expect(fullBuildingRequests).toEqual([]);
   for (let index = 0; index < 10; index += 1) {
     const city = cities.nth(index);
-    const name = await city.locator(".atlas-city-label text").first().textContent();
+    const label = city.locator(".atlas-city-label .atlas-overview-card");
+    const ariaLabel = await label.getAttribute("aria-label");
+    const name = ariaLabel?.match(/^Открыть город (.*?), \d+/)?.[1];
     expect(name).toBeTruthy();
     await city.locator(".atlas-city-label").hover();
     await expect(page.locator(".header-city strong")).toHaveText(name!);
@@ -113,7 +115,7 @@ test("planet, country and city levels keep selection and disabled states coheren
   const levels = page.getByRole("navigation", { name: "Уровень карты" });
   await levels.getByRole("button", { name: "Планета" }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-countries", String(planetFixture.countryCount));
-  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-renderer", "flat-pixel-map");
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-renderer", "square-pixel-map");
   await expect(page.locator(".planet-globe-shadow, .planet-globe-atmosphere, .planet-globe-hint")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Настройки аккаунта, в сети/i })).toBeVisible();
   await expect(page.getByText("В сети", { exact: true })).toHaveCount(0);
@@ -145,7 +147,7 @@ test("planet, country and city levels keep selection and disabled states coheren
   await expect(page.locator(".planet-routes .atlas-aircraft-sprite").first()).toBeAttached();
   await expect(page.locator(".planet-routes .atlas-aircraft-frame-b").first()).toBeAttached();
   await expect(page.locator(".planet-airport-markers rect")).not.toHaveCount(0);
-  await expect(page.locator('.planet-terrain-sprite[href*="atlas/terrain-v2/"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-terrain-sprite[href*="atlas/terrain-v3/"]')).not.toHaveCount(0);
   await expect(page.locator('.planet-clouds image[href*="atlas/clouds-v2/"]')).not.toHaveCount(0);
   await expect(page.locator('.planet-routes image[href*="atlas/aircraft-v2/"]')).not.toHaveCount(0);
   await expect(page.locator('.planet-routes animateMotion[rotate="auto"]')).not.toHaveCount(0);
@@ -154,7 +156,14 @@ test("planet, country and city levels keep selection and disabled states coheren
   await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
   await expect(page.getByLabel("Панель управления страной").getByText(/Районов|Зданий/)).toHaveCount(0);
 
-  await page.locator(`.planet-country-label[data-country-id="${planetFixture.originalCountryId}"]`).click();
+  const targetCountry = page.locator(`.planet-country[data-country-id="${planetFixture.originalCountryId}"]`);
+  const targetBox = await targetCountry.boundingBox();
+  expect(targetBox).not.toBeNull();
+  await page.mouse.move(targetBox!.x + targetBox!.width / 2, targetBox!.y + targetBox!.height / 2);
+  for (let index = 0; index < 24 && await page.locator(".planet-atlas").count() > 0; index += 1) {
+    await page.mouse.wheel(0, -160);
+    await page.waitForTimeout(35);
+  }
   await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
   const cityCard = page.locator(".atlas-city-label .atlas-overview-card").first();
   const cityCardSizes = await page.locator(".atlas-city-label .atlas-overview-card-hit").evaluateAll((nodes) => nodes.map((node) => {
@@ -163,7 +172,8 @@ test("planet, country and city levels keep selection and disabled states coheren
   }));
   expect(new Set(cityCardSizes).size).toBe(1);
   await expect(page.locator(".atlas-airport-markers")).not.toHaveCount(0);
-  await expect(page.locator('.atlas-clouds image[href*="atlas/clouds/cloud-country-"]')).not.toHaveCount(0);
+  await expect(page.locator('.atlas-clouds image[href*="atlas/clouds-v2/cloud-topdown-"]')).not.toHaveCount(0);
+  await expect(page.locator(".country-world-fog rect")).not.toHaveCount(0);
   await expect(cityCard).toContainText("В РАБОТЕ");
   await expect(cityCard.locator(".atlas-overview-card-progress")).toContainText("%");
   await expect(cityCard).not.toContainText("РАЙОНА");

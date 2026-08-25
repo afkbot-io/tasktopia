@@ -252,7 +252,6 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-clouds path { fill: #edf1df; stroke: #b7c8bf; stroke-width: .7px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
 .atlas-clouds .atlas-cloud-shadow { fill: #aebfba; }
 @keyframes atlas-cloud-drift { from { translate: 0 0; } to { translate: var(--atlas-cloud-drift-x) var(--atlas-cloud-drift-y); } }
-.country-edge-water-fog { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .atlas-district-tooltip { position: absolute; z-index: 4; display: grid; gap: 2px; width: 168px; padding: 9px 10px; border: 1px solid #b4a569; border-left: 4px solid #b4a569; background: #0b1d20; color: #edf0df; box-shadow: 4px 4px 0 #061113c7; transform: translate(10px, -50%); pointer-events: none; }
 .atlas-district-tooltip-left { transform: translate(calc(-100% - 10px), -50%); }
 .atlas-district-tooltip header { display: flex; align-items: center; gap: 6px; color: #c9d2c8; font: 800 9px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .07em; text-transform: uppercase; }
@@ -274,12 +273,15 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-atlas svg:focus-visible { outline: 2px solid #f2d45e; outline-offset: -4px; }
 .planet-space { fill: #03090f; }
 .planet-stars { pointer-events: none; }
-.planet-stars rect { fill: #c2d7d5; opacity: .32; shape-rendering: crispEdges; animation: planet-star-twinkle 3.6s steps(3, end) var(--star-delay) infinite; }
+.planet-stars rect { fill: #c2d7d5; shape-rendering: crispEdges; animation: planet-star-twinkle 3.6s steps(3, end) var(--star-delay) infinite; }
+.planet-stars rect[data-star-group="constellation"] { fill: #f2f1d9; }
+.planet-stars rect[data-star-group="milky-way"] { fill: #8fb2be; }
 @keyframes planet-star-twinkle { 50% { opacity: .88; } }
 .planet-map-ocean { opacity: .92; }
-.planet-map-frame { fill: none; stroke: #163744; stroke-width: 8px; shape-rendering: crispEdges; pointer-events: none; }
 .planet-fog-pixels { pointer-events: none; }
 .planet-fog-pixels rect { fill: #010407; shape-rendering: crispEdges; }
+.country-world-fog { pointer-events: none; }
+.country-world-fog rect { fill: #eff5eb; shape-rendering: crispEdges; }
 .planet-ocean, .planet-coast, .planet-routes { pointer-events: none; }
 .planet-terrain-sprite { shape-rendering: crispEdges; }
 .planet-country { cursor: grab; outline: none; pointer-events: bounding-box; }
@@ -301,17 +303,10 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-clouds { pointer-events: none; }
 .planet-airport-markers rect { fill: #0b1d20; stroke: #f2c84b; stroke-width: 1px; vector-effect: non-scaling-stroke; }
 .planet-airport-markers path { fill: #edf1df; shape-rendering: crispEdges; }
-.planet-clouds { opacity: .38; }
+.planet-clouds { opacity: .34; }
+.atlas-clouds { opacity: .52; }
 .planet-clouds > g { animation: planet-cloud-drift var(--cloud-duration) linear var(--cloud-delay) infinite; }
 @keyframes planet-cloud-drift { from { translate: 0 0; } to { translate: var(--cloud-drift-x) var(--cloud-drift-y); } }
-.country-edge-water-fog i { position: absolute; width: 36px; height: 12px; margin: -6px 0 0 -18px; background: #eaf0df; image-rendering: pixelated; animation: edge-fog-drift 9s steps(6, end) infinite alternate; }
-.country-edge-water-fog i::before, .country-edge-water-fog i::after { position: absolute; content: ""; }
-.country-edge-water-fog i::before { left: -16px; top: 5px; width: 28px; height: 12px; background: #d2dfd8; }
-.country-edge-water-fog i::after { left: 12px; top: -7px; width: 22px; height: 14px; background: #f4f4df; }
-.country-edge-water-fog i { background: #b9d7d2; }
-.country-edge-water-fog i::before { background: #79aeb0; }
-.country-edge-water-fog i::after { background: #d5e6dc; }
-@keyframes edge-fog-drift { from { translate: -6px 0; } to { translate: 6px 0; } }
 .planet-refresh-warning { position: absolute; top: 14px; left: 50%; z-index: 4; padding: 7px 10px; border: 1px solid #705e35; background: #302817e8; color: #f0daa0; font-size: 11px; transform: translateX(-50%); }
 
 .map-level-nav { position: absolute; left: 50%; bottom: 18px; z-index: 10; display: grid; grid-template-columns: repeat(3, minmax(88px, 116px)); gap: 3px; padding: 4px; border: 1px solid #3b565d; border-radius: 11px; background: #0a191ce8; box-shadow: 0 12px 30px #0008; transform: translateX(-50%); backdrop-filter: blur(8px); }
@@ -542,7 +537,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .atlas-aircraft-flight { display: none; }
   .planet-clouds > g { animation: none !important; }
-  .planet-stars rect, .country-edge-water-fog i { animation: none !important; }
+  .planet-stars rect { animation: none !important; }
   .atlas-clouds > g { animation: none !important; }
 }
 

@@ -9,7 +9,7 @@ const PLANET_AIRCRAFT_MODELS = Array.from({ length: 8 }, (_, index) => ({
   second: `atlas/aircraft-v2/airplane-topdown-${index + 1}-frame-2.png`,
 }));
 
-export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facing = "right", size = "default", rotateWithPath = false }: {
+export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facing = "right", size = "default", rotateWithPath = false, visualScale = 1 }: {
   path: string;
   durationSeconds: number;
   delaySeconds: number;
@@ -17,6 +17,7 @@ export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facin
   facing?: "left" | "right";
   size?: "default" | "planet";
   rotateWithPath?: boolean;
+  visualScale?: number;
 }) {
   const models = size === "planet" ? PLANET_AIRCRAFT_MODELS : AIRCRAFT_MODELS;
   const model = models[Math.abs(kind) % models.length]!;
@@ -24,7 +25,7 @@ export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facin
   const height = size === "planet" ? 16 : 24;
   return <g className="atlas-aircraft-flight" data-facing={facing}>
     <animateMotion path={path} dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" rotate={rotateWithPath ? "auto" : undefined} />
-    {size === "planet" && <animateTransform attributeName="transform" type="scale" values=".58;.86;1;.86;.58" keyTimes="0;.12;.5;.88;1" dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" additive="sum" />}
+    <g transform={`scale(${visualScale})`}>
     <image
       className="atlas-aircraft-sprite atlas-aircraft-frame-a"
       href={gameAssetUrl(model.first)}
@@ -43,5 +44,6 @@ export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facin
       height={height}
       transform={!rotateWithPath && facing === "left" ? "scale(-1 1)" : undefined}
     />
+    </g>
   </g>;
 }
