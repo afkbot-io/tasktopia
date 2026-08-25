@@ -90,6 +90,7 @@ const CHUNK_DATA_CACHE_LIMIT = 48;
 const CHUNK_PAYLOAD_CACHE_LIMIT = 160;
 const OVERVIEW_GROUND_TEXTURE_RESOLUTION = 0.5;
 const GROUND_CACHE_LIMIT = 96;
+const ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION = 0.25;
 const TASK_STATUS_PATCH_LIMIT = 512;
 type MapLod = "DETAIL" | "OVERVIEW";
 const GROUND_PRESERVING_EVENTS = new Set([
@@ -1796,7 +1797,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const texture = app.renderer.textureGenerator.generateTexture({
           target: source,
           frame: new Rectangle(originX, originY, size * CELL_SIZE, size * CELL_SIZE),
-          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
+          resolution: lod === "OVERVIEW"
+            ? desiredKeys.size > GROUND_CACHE_LIMIT ? ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION : OVERVIEW_GROUND_TEXTURE_RESOLUTION
+            : 1,
           antialias: false,
         });
         host!.dataset.groundTextureResolution = String(texture.source.resolution);
@@ -1888,7 +1891,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const texture = app.renderer.textureGenerator.generateTexture({
           target: graphics,
           frame: new Rectangle(originX * CELL_SIZE, originY * CELL_SIZE, chunkSize * CELL_SIZE, chunkSize * CELL_SIZE),
-          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
+          resolution: lod === "OVERVIEW"
+            ? desiredKeys.size > GROUND_CACHE_LIMIT ? ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION : OVERVIEW_GROUND_TEXTURE_RESOLUTION
+            : 1,
           antialias: false,
         });
         texture.source.scaleMode = "nearest";

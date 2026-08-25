@@ -15,6 +15,7 @@ describe("Государственный архив", () => {
     countryId = (await registerUser(db, {
       email: "archive@example.com", name: "Archivist", password: "password123",
     })).user.countryId;
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
   }, 30_000);
 
   afterEach(async () => await db.close());

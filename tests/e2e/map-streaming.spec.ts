@@ -196,7 +196,7 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   const visibleCount = (maximum![0]! - minimum![0]! + 1) * (maximum![1]! - minimum![1]! + 1);
 
   expect(visibleCount).toBeGreaterThan(96);
-  expect(await host.getAttribute("data-ground-texture-resolution")).toBe("0.5");
+  expect(await host.getAttribute("data-ground-texture-resolution")).toBe("0.25");
   expect(Number(await host.getAttribute("data-resident-chunks"))).toBe(visibleCount);
   expect(Number(await host.getAttribute("data-ground-cache"))).toBe(visibleCount);
   expect(Number(await host.getAttribute("data-ground-bake-queue-max"))).toBeLessThanOrEqual(visibleCount);
