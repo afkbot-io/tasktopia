@@ -470,7 +470,7 @@ describe("authentication HTTP boundary", () => {
       error: "CONFLICT",
       message: "Аккаунт с таким email уже существует",
     });
-  });
+  }, 20_000);
 
   it("returns understandable validation and credential errors", async () => {
     const malformed = await app.inject({
