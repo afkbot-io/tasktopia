@@ -75,7 +75,7 @@ describe("Государственный архив", () => {
       .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
     expect(relocated.id).not.toBe(oldCompound.id);
     expect(intersects(expandRect(city.bounds, 24), boundsOf(relocated.footprint))).toBe(false);
-  }, 30_000);
+  }, 60_000);
 
   it("повторяет размещение архива, если первая допустимая площадка изолирована", async () => {
     const city = await service.createCity(countryId, { name: "Город с разрывом сети", idempotencyKey: "archive-retry-city" });

@@ -30,6 +30,7 @@ AI_AUTHORED_ART = PACK / "reference"
 CELL = 8
 REGISTERED_RULES = {"STANDARD", "UNIQUE_SERVICE", "REQUIRES_COLLECTOR"}
 PRESERVED_RUNTIME_PNG: dict[str, bytes] = {}
+PINNED_REVIEWED_RUNTIME_PNG: set[str] = set()
 
 OUTLINE = "#263945ff"
 SHADOW = "#40515aff"
@@ -135,6 +136,15 @@ def save_runtime_png(image: Image.Image, target: Path) -> None:
     relative = target.relative_to(RUNTIME).as_posix()
     preserved = PRESERVED_RUNTIME_PNG.get(relative)
     if preserved is not None:
+        # A reviewed stage is a checked-in visual artifact, not an encoder
+        # fixture. Its geometry.json pins the exact approved bytes while the
+        # catalog separately pins every authored source. Re-emitting the same
+        # source through Pillow's platform-dependent quantizer can change both
+        # pixels and PNG bytes on Linux, so retain the explicitly approved
+        # stage until a new visual review updates that pin.
+        if relative in PINNED_REVIEWED_RUNTIME_PNG:
+            target.write_bytes(preserved)
+            return
         with Image.open(BytesIO(preserved)) as previous:
             previous_rgba = previous.convert("RGBA")
             current_rgba = image.convert("RGBA")
@@ -2845,11 +2855,22 @@ def pending_building_style_sheet(manifest: dict) -> None:
 
 
 def main() -> None:
-    global PRESERVED_RUNTIME_PNG
+    global PRESERVED_RUNTIME_PNG, PINNED_REVIEWED_RUNTIME_PNG
     PRESERVED_RUNTIME_PNG = {
         path.relative_to(RUNTIME).as_posix(): path.read_bytes()
         for path in RUNTIME.rglob("*.png")
     } if RUNTIME.exists() else {}
+    PINNED_REVIEWED_RUNTIME_PNG = set()
+    for review_path in AI_AUTHORED_ART.rglob("geometry.json"):
+        review = json.loads(review_path.read_text())
+        key = review.get("key")
+        approved_sha = review.get("doorVisualReview", {}).get("reviewedStage5Sha256")
+        if not isinstance(key, str) or not isinstance(approved_sha, str):
+            continue
+        for candidate in RUNTIME.glob(f"buildings/*/{key}/stage-5.png"):
+            relative = candidate.relative_to(RUNTIME).as_posix()
+            if hashlib.sha256(PRESERVED_RUNTIME_PNG[relative]).hexdigest() == approved_sha:
+                PINNED_REVIEWED_RUNTIME_PNG.add(relative)
     public_atlas = PUBLIC / "atlas"
     preserved_atlas = {
         path.relative_to(public_atlas).as_posix(): path.read_bytes()
