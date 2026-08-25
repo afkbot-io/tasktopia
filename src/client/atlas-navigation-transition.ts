@@ -14,7 +14,7 @@ export function createAtlasTransition(
   to: AtlasMapLevel,
   focus: { x: number; y: number },
   startedAt: number,
-  durationMs = 360,
+  durationMs = 720,
 ): AtlasTransition {
   return {
     id: `${from.toLowerCase()}-${to.toLowerCase()}-${Math.round(startedAt)}`,
@@ -25,7 +25,7 @@ export function createAtlasTransition(
       y: Math.max(0, Math.min(1, focus.y)),
     },
     startedAt,
-    durationMs: Math.max(120, Math.min(800, durationMs)),
+    durationMs: Math.max(120, Math.min(1_200, durationMs)),
   };
 }
 

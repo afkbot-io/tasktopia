@@ -145,13 +145,17 @@ test("planet, country and city levels keep selection and disabled states coheren
     await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH.replace(/\.png$/, "-planet.png"), fullPage: true });
   }
   await expect(page.locator(".planet-routes .atlas-aircraft-sprite").first()).toBeAttached();
-  await expect(page.locator(".planet-routes .atlas-aircraft-frame-b").first()).toBeAttached();
+  await expect(page.locator(".planet-routes .atlas-aircraft-frame-b")).toHaveCount(0);
+  await expect(page.locator(".planet-routes .atlas-aircraft-trail").first()).toBeAttached();
   await expect(page.locator(".planet-airport-markers rect")).not.toHaveCount(0);
-  await expect(page.locator('.planet-terrain-sprite[href*="atlas/terrain-v3/"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-terrain-sprite[href*="/terrain/"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-terrain-sprite[href*="atlas/terrain-v3/"]')).toHaveCount(0);
   await expect(page.locator('.planet-clouds image[href*="atlas/clouds-v2/"]')).not.toHaveCount(0);
-  await expect(page.locator('.planet-routes image[href*="atlas/aircraft-v2/"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-routes image[href*="atlas/aircraft-v4/"]')).not.toHaveCount(0);
   await expect(page.locator('.planet-routes animateMotion[rotate="auto"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-routes animateTransform[values="0.05;1;1;0.05"]')).not.toHaveCount(0);
   expect(await page.locator(".planet-routes .atlas-aircraft-sprite").first().evaluate((node) => getComputedStyle(node).imageRendering)).toBe("pixelated");
+  expect(await page.locator(".planet-clouds > g").first().evaluate((node) => getComputedStyle(node).animationDirection)).toBe("alternate");
   await expect(levels.getByRole("button", { name: "Страна" })).toBeDisabled();
   await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
   await expect(page.getByLabel("Панель управления страной").getByText(/Районов|Зданий/)).toHaveCount(0);
@@ -183,8 +187,20 @@ test("planet, country and city levels keep selection and disabled states coheren
   await expect(levels.getByRole("button", { name: "Страна" })).toHaveAttribute("aria-current", "page");
   await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();
 
-  await page.locator(".atlas-city-label").first().click();
+  const zoomCity = page.locator(".atlas-city").first();
+  const zoomCityBox = await zoomCity.locator(".atlas-city-cutout-outline").boundingBox();
+  expect(zoomCityBox).not.toBeNull();
+  await page.mouse.move(zoomCityBox!.x + zoomCityBox!.width / 2, zoomCityBox!.y + zoomCityBox!.height / 2);
+  for (let index = 0; index < 28 && await page.locator(".country-atlas").count() > 0; index += 1) {
+    await page.mouse.wheel(0, -160);
+    await page.waitForTimeout(35);
+  }
   await expect(page.locator(".world-canvas")).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-airports", /^[1-9]\d*$/, { timeout: 45_000 });
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-airplane", "flying", { timeout: 20_000 });
+  if (process.env.ATLAS_SCREENSHOT_PATH) {
+    await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH.replace(/\.png$/, "-city.png"), fullPage: true });
+  }
   await expect(levels.getByRole("button", { name: "Город" })).toHaveAttribute("aria-current", "page");
   await expect(levels.getByRole("button", { name: "Страна" })).toBeEnabled();
   await levels.getByRole("button", { name: "Страна" }).click();

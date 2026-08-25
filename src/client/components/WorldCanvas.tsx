@@ -853,13 +853,11 @@ function ambientDetailAssets(): string[] {
   for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
     for (const frame of ["a", "b", "c"] as const) urls.add(PROP_SPRITES[`animal-${species}-${direction}-${frame}`]!);
   }
-  for (let model = 1; model <= 8; model += 1) for (let frame = 1; frame <= 2; frame += 1) {
-    urls.add(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-${frame}.png`));
-  }
+  for (let model = 1; model <= 8; model += 1) urls.add(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onZoomOutToCountry }: {
+export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onReady, onZoomOutToCountry }: {
   countryId: string;
   chunkSize: number;
   worldManifest: WorldManifestDto;
@@ -870,6 +868,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
   onArchiveSelect: () => void;
+  onReady?: () => void;
   onZoomOutToCountry?: () => void;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
@@ -935,6 +934,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const [minX, minY, maxX, maxY] = viewBoundsKey.split(",").map(Number);
     runtimeRef.current?.setViewBounds({ minX: minX!, minY: minY!, maxX: maxX!, maxY: maxY! });
   }, [viewBoundsKey]);
+
+  useEffect(() => {
+    if (firstFrameReady) onReady?.();
+  }, [firstFrameReady, onReady]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -1139,7 +1142,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let minimumZoomReachedAt = 0;
       let airplane: {
         view: Sprite;
-        textures: [Texture, Texture];
+        trail: Graphics;
         elapsed: number;
         duration: number;
         start: { x: number; y: number };
@@ -1148,7 +1151,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         startsAtAirport: boolean;
         endsAtAirport: boolean;
       } | undefined;
-      let nextFlybyMs = 20_000 + nextSeededRandom(sessionSeed).value * 35_000;
+      // The first flight should make the airport feel alive shortly after the
+      // city becomes interactive. Later flights keep the quieter ambient pace.
+      let nextFlybyMs = 5_000 + nextSeededRandom(sessionSeed).value * 8_000;
       const celebrations: Array<{ particles: Array<{ view: Graphics; vx: number; vy: number }>; elapsed: number }> = [];
       const launchCelebration = (bounds: Rect) => {
         if (reducedMotion) return;
@@ -1523,33 +1528,44 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (!airplane) {
           nextFlybyMs -= elapsed;
           if (nextFlybyMs <= 0) {
-            const random = nextSeededRandom(spawnState);
-            spawnState = random.state;
-            const model = Math.floor(random.value * 8) + 1;
-            const textures = [1, 2].map((frame) => cachedTexture(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-${frame}.png`))) as [Texture | undefined, Texture | undefined];
-            if (textures[0] && textures[1]) {
-              const view = new Sprite(textures[0]);
+            const takeRandom = () => {
+              const next = nextSeededRandom(spawnState);
+              spawnState = next.state;
+              return next.value;
+            };
+            const model = Math.floor(takeRandom() * 8) + 1;
+            const texture = cachedTexture(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
+            if (texture) {
+              const view = new Sprite(texture);
               view.texture.source.scaleMode = "nearest";
               view.anchor.set(0.5);
-              const airportPoint = airportPoints[Math.floor(random.value * Math.max(1, airportPoints.length))];
-              const side = Math.floor(random.value * 4);
+              const trail = new Graphics()
+                .rect(-25, -1, 7, 2).fill({ color: 0xd9ecdf, alpha: .45 })
+                .rect(-30, -.5, 3, 1).fill({ color: 0xd9ecdf, alpha: .25 });
+              view.addChild(trail);
+              const airportPoint = airportPoints[Math.floor(takeRandom() * Math.max(1, airportPoints.length))];
+              const side = Math.floor(takeRandom() * 4);
+              const edgePosition = takeRandom();
               const edge = side === 0
-                ? { x: currentViewBounds.minX * CELL_SIZE - 48, y: (currentViewBounds.minY + random.value * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
+                ? { x: currentViewBounds.minX * CELL_SIZE - 48, y: (currentViewBounds.minY + edgePosition * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
                 : side === 1
-                  ? { x: currentViewBounds.maxX * CELL_SIZE + 48, y: (currentViewBounds.minY + random.value * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
+                  ? { x: currentViewBounds.maxX * CELL_SIZE + 48, y: (currentViewBounds.minY + edgePosition * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
                   : side === 2
-                    ? { x: (currentViewBounds.minX + random.value * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.minY * CELL_SIZE - 48 }
-                    : { x: (currentViewBounds.minX + random.value * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.maxY * CELL_SIZE + 48 };
-              const startsAtAirport = Boolean(airportPoint && random.value > .5);
+                    ? { x: (currentViewBounds.minX + edgePosition * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.minY * CELL_SIZE - 48 }
+                    : { x: (currentViewBounds.minX + edgePosition * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.maxY * CELL_SIZE + 48 };
+              const startsAtAirport = Boolean(airportPoint && takeRandom() > .5);
               const endsAtAirport = Boolean(airportPoint && !startsAtAirport);
               const start = startsAtAirport ? airportPoint! : edge;
               const end = endsAtAirport ? airportPoint! : airportPoint && startsAtAirport
                 ? { x: currentViewBounds.maxX * CELL_SIZE + 48, y: currentViewBounds.minY * CELL_SIZE - 24 }
                 : { x: currentViewBounds.maxX * CELL_SIZE + 48, y: currentViewBounds.maxY * CELL_SIZE + 48 - edge.y };
-              const control = { x: (start.x + end.x) / 2 + (side % 2 ? 72 : -72), y: (start.y + end.y) / 2 - 96 };
+              const control = {
+                x: (start.x + end.x) / 2 + (takeRandom() - .5) * 224,
+                y: (start.y + end.y) / 2 + (takeRandom() - .5) * 192,
+              };
               view.position.set(start.x, start.y);
               flightLayer.addChild(view);
-              airplane = { view, textures: [textures[0], textures[1]], elapsed: 0, duration: 9_000 + random.value * 6_000, start, control, end, startsAtAirport, endsAtAirport };
+              airplane = { view, trail, elapsed: 0, duration: 9_000 + takeRandom() * 6_000, start, control, end, startsAtAirport, endsAtAirport };
               host.dataset.airplane = "flying";
               host.dataset.airplaneVariant = `model-${model}`;
             }
@@ -1567,8 +1583,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             y: 2 * inverse * (airplane.control.y - airplane.start.y) + 2 * progress * (airplane.end.y - airplane.control.y),
           };
           airplane.view.rotation = Math.atan2(tangent.y, tangent.x);
-          airplane.view.texture = airplane.textures[Math.floor(airplane.elapsed / 180) % 2]!;
-          const endpointScale = airplane.startsAtAirport ? Math.min(1, .28 + progress * 2.2) : airplane.endsAtAirport ? Math.min(1, .28 + (1 - progress) * 2.2) : 1;
+          airplane.trail.alpha = .55 + Math.sin(airplane.elapsed * .018) * .22;
+          const takeoffScale = airplane.startsAtAirport ? Math.min(1, Math.max(.03, progress / .16)) : 1;
+          const landingScale = airplane.endsAtAirport ? Math.min(1, Math.max(.03, (1 - progress) / .16)) : 1;
+          const endpointScale = Math.min(takeoffScale, landingScale);
           airplane.view.scale.set(1.35 * endpointScale);
           if (progress >= 1) {
             airplane.view.removeFromParent();
@@ -1974,6 +1992,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           x: (Math.min(...feature.footprint.map((cell) => cell.x)) + Math.max(...feature.footprint.map((cell) => cell.x)) + 1) * CELL_SIZE / 2,
           y: (Math.min(...feature.footprint.map((cell) => cell.y)) + Math.max(...feature.footprint.map((cell) => cell.y)) + 1) * CELL_SIZE / 2,
         }));
+        if (host) host.dataset.airports = String(airportPoints.length);
 
         const reconcile = <T extends RenderNode, D>(
           source: Map<string, D>,

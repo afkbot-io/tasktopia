@@ -32,8 +32,8 @@ import { AtlasOverviewCard, cityOverviewCardModel } from "./AtlasOverviewCard";
 
 const CELL = 8;
 const MIN_COUNTRY_ZOOM = 1;
-const MAX_COUNTRY_ZOOM = 5;
-const CITY_ENTRY_COVERAGE = .72;
+const MAX_COUNTRY_ZOOM = 8.5;
+const CITY_ENTRY_COVERAGE = .56;
 const ATLAS_CACHE_PREFIX = `tasktopia:country-atlas:v${COUNTRY_ATLAS_SCHEMA_VERSION}:`;
 const DISTRICT_STATUS_LABEL: Record<CountryAtlasDistrictDto["status"], string> = {
   PLANNED: "Запланирован",
@@ -380,7 +380,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
   if (error && !atlas) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
   if (!atlas) return <div className="atlas-state" role="status"><i /><span>Сжимаем расстояния между городами…</span></div>;
 
-  return <div ref={hostRef} className="country-atlas" data-country-atlas-cities={atlas.cities.length} onWheel={(event) => {
+  return <div ref={hostRef} className="country-atlas" data-country-atlas-cities={atlas.cities.length} data-country-zoom={camera.zoom.toFixed(2)} onWheel={(event) => {
     event.preventDefault();
     const direction = event.deltaY < 0 ? "IN" : "OUT";
     const bounds = hostRef.current?.getBoundingClientRect();
@@ -583,7 +583,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
       <g className="atlas-air-routes" aria-hidden="true">
         {domesticFlightLanes.map((lane) => <g key={lane.id}>
           <path d={lane.path} className="atlas-air-route-line" />
-          <AtlasAircraft path={lane.path} durationSeconds={lane.durationSeconds} delaySeconds={lane.delaySeconds} kind={lane.aircraftKind} size="planet" rotateWithPath visualScale={lane.altitudeScale * sceneScale} />
+          <AtlasAircraft path={lane.path} durationSeconds={lane.durationSeconds} delaySeconds={lane.delaySeconds} kind={lane.aircraftKind} size="planet" rotateWithPath visualScale={lane.altitudeScale * sceneScale} startsAtAirport endsAtAirport />
         </g>)}
         {atlas.connections.map((connection, index) => {
           const from = airportAnchors.get(connection.fromCityId);
@@ -592,7 +592,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
           const lane = buildAtlasFlightLane(`country:${connection.fromCityId}:${connection.toCityId}`, from, to, atlas.terrainSeed, index % 3);
           return <g key={`${connection.fromCityId}:${connection.toCityId}`}>
             <path d={lane.path} className="atlas-air-route-line" />
-            <AtlasAircraft path={lane.path} durationSeconds={lane.durationSeconds} delaySeconds={lane.delaySeconds} kind={lane.aircraftKind} size="planet" rotateWithPath visualScale={lane.altitudeScale * sceneScale} />
+            <AtlasAircraft path={lane.path} durationSeconds={lane.durationSeconds} delaySeconds={lane.delaySeconds} kind={lane.aircraftKind} size="planet" rotateWithPath visualScale={lane.altitudeScale * sceneScale} startsAtAirport endsAtAirport />
           </g>;
         })}
         {atlas.cities.map((city, index) => {
@@ -601,7 +601,7 @@ export function CountryAtlasCanvas({ countryId, activeCityId, events, onEventsPr
           const pixelBounds = { minX: displayBounds.minX * CELL, minY: displayBounds.minY * CELL, maxX: displayBounds.maxX * CELL, maxY: displayBounds.maxY * CELL };
           const start = atlasEdgePoint(pixelBounds, end, atlas.terrainSeed + index);
           const lane = buildAtlasFlightLane(`country-edge:${city.id}`, start, end, atlas.terrainSeed, index % 4);
-          return <g key={`edge-flight-${city.id}`}><path d={lane.path} className="atlas-air-route-line" /><AtlasAircraft path={lane.path} durationSeconds={lane.durationSeconds} delaySeconds={lane.delaySeconds} kind={lane.aircraftKind} size="planet" rotateWithPath visualScale={lane.altitudeScale * sceneScale} /></g>;
+          return <g key={`edge-flight-${city.id}`}><path d={lane.path} className="atlas-air-route-line" /><AtlasAircraft path={lane.path} durationSeconds={lane.durationSeconds} delaySeconds={lane.delaySeconds} kind={lane.aircraftKind} size="planet" rotateWithPath visualScale={lane.altitudeScale * sceneScale} endsAtAirport /></g>;
         })}
       </g>
       <g className="atlas-clouds" aria-hidden="true">

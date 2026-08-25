@@ -112,6 +112,30 @@ describe("planet atlas projection", () => {
     expect(second.routes.every((route) => route.path.startsWith("M") && route.rotateWithPath)).toBe(true);
   });
 
+  it("keeps the planet surface and edge fog fixed while drag rotates only world content", () => {
+    const projected = projectPlanetAtlas(fixture);
+    const still = projectProjectedPlanetMap(projected, { panX: 0, panY: 0, zoom: 1 });
+    const dragged = projectProjectedPlanetMap(projected, { panX: .45, panY: -.2, zoom: 1 });
+
+    expect(dragged.surface).toEqual(still.surface);
+    expect(dragged.edgeFog).toEqual(still.edgeFog);
+    expect(dragged.clouds).toEqual(still.clouds);
+    expect(dragged.countries.map((country) => country.center)).not.toEqual(still.countries.map((country) => country.center));
+  });
+
+  it("projects adjacent terrain cells onto one shared pixel edge without gaps", () => {
+    const map = projectPlanetMap(fixture, { panX: .17, panY: -.11, zoom: 2.35 });
+    const byGrid = new Map(map.countries.flatMap((country) => country.cells).map((cell) => [`${cell.q}:${cell.r}`, cell]));
+    let adjacentPairs = 0;
+    for (const cell of byGrid.values()) {
+      const right = byGrid.get(`${cell.q + 1}:${cell.r}`);
+      if (!right) continue;
+      adjacentPairs += 1;
+      expect(cell.x + cell.width).toBe(right.x);
+    }
+    expect(adjacentPairs).toBeGreaterThan(8);
+  });
+
   it("keeps pixel terrain integer-aligned at maximum zoom", () => {
     const map = projectPlanetMap(fixture, { panX: 0, panY: 0, zoom: 5.5 });
     for (const cell of map.countries.flatMap((country) => country.cells)) {

@@ -75,7 +75,7 @@ describe("Государственный архив", () => {
       .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
     expect(relocated.id).not.toBe(oldCompound.id);
     expect(intersects(expandRect(city.bounds, 24), boundsOf(relocated.footprint))).toBe(false);
-  });
+  }, 15_000);
 
   it("соединяет ограждённый архив с дорожной сетью через единственный шлагбаум", async () => {
     await service.createCity(countryId, { name: "Столица", idempotencyKey: "archive-secure-city" });

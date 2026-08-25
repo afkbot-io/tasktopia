@@ -47,7 +47,9 @@ def main() -> None:
     assert len(set(planet_aircraft)) == 8, "planet aircraft models must be distinct"
     planet_clouds = [verify(ATLAS / "clouds-v2" / f"cloud-topdown-{variant}.png", (64, 32)) for variant in range(1, 9)]
     assert len(set(planet_clouds)) == 8, "planet V2 clouds must be distinct"
-    print("atlas assets: V1 + V2/V3 terrain, 8 planet aircraft x2 and 8 shared top-down clouds verified")
+    aircraft_v4 = [verify(ATLAS / "aircraft-v4" / f"airplane-topdown-{variant}.png", (24, 16)) for variant in range(1, 9)]
+    assert len(set(aircraft_v4)) == 8, "planet V4 aircraft must be distinct"
+    print("atlas assets: V1 + V2/V3 terrain, 8 V4 top-down aircraft and 8 shared top-down clouds verified")
 
 
 if __name__ == "__main__":

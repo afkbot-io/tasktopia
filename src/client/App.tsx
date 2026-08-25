@@ -75,6 +75,7 @@ export function App() {
   const [atlasEvents, setAtlasEvents] = useState<RealtimeEvent[]>([]);
   const [online, setOnline] = useState(true);
   const [notices, setNotices] = useState<RealtimeNoticePresentation[]>([]);
+  const cityReadyResolverRef = useRef<(() => void) | null>(null);
   const countryId = bootstrap?.country.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
   const closeArchiveRecord = useCallback(() => setSelectedArchiveRecord(null), []);
@@ -339,17 +340,42 @@ export function App() {
                 events={atlasEvents}
                 onEventsProcessed={acknowledgeAtlasEvents}
                 onCitySelect={(city, focus = { x: .5, y: .5 }, sourcePoint = city.sourceCenter) => {
-                  void transitionMap("CITY", focus, () => {
+                  void transitionMap("CITY", focus, async () => {
+                    const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
                     const airportCells = city.features.filter((feature) => feature.kind === "AIRPORT").flatMap((feature) => feature.sourceFootprint);
-                    const navigationBounds = airportCells.length === 0 ? city.sourceBounds : {
-                      minX: Math.min(city.sourceBounds.minX, ...airportCells.map((cell) => cell.x)),
-                      minY: Math.min(city.sourceBounds.minY, ...airportCells.map((cell) => cell.y)),
-                      maxX: Math.max(city.sourceBounds.maxX, ...airportCells.map((cell) => cell.x)),
-                      maxY: Math.max(city.sourceBounds.maxY, ...airportCells.map((cell) => cell.y)),
+                    const airportBounds = airportCells.length === 0 ? null : {
+                      minX: Math.min(...airportCells.map((cell) => cell.x)),
+                      minY: Math.min(...airportCells.map((cell) => cell.y)),
+                      maxX: Math.max(...airportCells.map((cell) => cell.x)),
+                      maxY: Math.max(...airportCells.map((cell) => cell.y)),
                     };
-                    setFocusCity({ id: city.id, name: city.name, center: sourcePoint, bounds: navigationBounds });
+                    const airportCenter = airportBounds ? {
+                      x: Math.round((airportBounds.minX + airportBounds.maxX) / 2),
+                      y: Math.round((airportBounds.minY + airportBounds.maxY) / 2),
+                    } : sourcePoint;
+                    // Retain the selected country-atlas point in view while
+                    // biasing the first city frame toward its real airport.
+                    // This makes the airfield and its road discoverable without
+                    // shrinking an entire mature city to an unreadable dot.
+                    const navigationCenter = {
+                      x: Math.round((sourcePoint.x + airportCenter.x * 4) / 5),
+                      y: Math.round((sourcePoint.y + airportCenter.y * 4) / 5),
+                    };
+                    const navigationBounds = airportBounds ? {
+                      minX: Math.min(sourcePoint.x - 36, airportBounds.minX - 4),
+                      minY: Math.min(sourcePoint.y - 28, airportBounds.minY - 4),
+                      maxX: Math.max(sourcePoint.x + 36, airportBounds.maxX + 4),
+                      maxY: Math.max(sourcePoint.y + 28, airportBounds.maxY + 4),
+                    } : city.sourceBounds;
+                    setFocusCity({ id: city.id, name: city.name, center: navigationCenter, bounds: navigationBounds });
                     setHoveredAtlasCity(null);
                     setMapMode("CITY");
+                    // Keep the cover in place until the city renderer has
+                    // painted its deterministic seed frame. The bounded
+                    // fallback exposes the normal recoverable loader if the
+                    // renderer itself cannot initialise.
+                    await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
+                    cityReadyResolverRef.current = null;
                   });
                 }}
                 onDistrictSelect={(city, district) => {
@@ -362,10 +388,13 @@ export function App() {
                 onZoomOut={() => { void transitionMap("PLANET", { x: .5, y: .5 }, () => setMapMode("PLANET")); }}
               />
               : effectiveMapMode === "CITY" && bootstrap.stats.cities > 0
-                ? <WorldCanvas key={bootstrap.country.id} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity ? {
+                ? <WorldCanvas key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity ? {
                   minX: Math.min(bootstrap.viewBounds.minX, activeCity.bounds.minX), minY: Math.min(bootstrap.viewBounds.minY, activeCity.bounds.minY),
                   maxX: Math.max(bootstrap.viewBounds.maxX, activeCity.bounds.maxX), maxY: Math.max(bootstrap.viewBounds.maxY, activeCity.bounds.maxY),
-                } : bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onZoomOutToCountry={() => { void transitionMap("COUNTRY", { x: .5, y: .5 }, () => setMapMode("COUNTRY")); }} />
+                } : bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onReady={() => {
+                  cityReadyResolverRef.current?.();
+                  cityReadyResolverRef.current = null;
+                }} onZoomOutToCountry={() => { void transitionMap("COUNTRY", { x: .5, y: .5 }, () => setMapMode("COUNTRY")); }} />
                 : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>В стране пока нет городов</h2><p>Создайте первый город через MCP — он сразу появится на карте страны и планеты.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
       </Suspense>
       <MapLevelNav level={effectiveMapMode} hasCity={Boolean(activeCity)} onChange={(nextLevel) => {
