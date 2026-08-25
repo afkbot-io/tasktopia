@@ -248,7 +248,7 @@ describe("authentication HTTP boundary", () => {
     expect((await app.inject({
       method: "GET", url: `/api/world-generation-jobs/${crypto.randomUUID()}`, headers: { cookie },
     })).statusCode).toBe(404);
-  }, 60_000);
+  }, 20_000);
 
   it("accepts HTTP regeneration on the web boundary and polls the world-worker result", async () => {
     const owner = await registerUser(db, {
@@ -321,7 +321,7 @@ describe("authentication HTTP boundary", () => {
     } finally {
       await queuedApp.close();
     }
-  }, 20_000);
+  }, 60_000);
 
   it("creates the named country and first city during onboarding", async () => {
     const registered = await app.inject({
