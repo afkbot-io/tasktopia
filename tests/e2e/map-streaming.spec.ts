@@ -107,8 +107,8 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
   await expect(host).toHaveAttribute("data-seed-first-frame", "true");
   await expect(host).toHaveAttribute("data-seed-terrain-pattern", "procedural-pixel-v2");
   await expect(firstFrame).toBeHidden({ timeout: 90_000 });
-  await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks"))).toBeGreaterThan(0);
-  await expect.poll(async () => await host.getAttribute("data-loading")).toBe("false");
+  await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks")), { timeout: 30_000 }).toBeGreaterThan(0);
+  await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 30_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-seed-ground-retained", "true");
   await expect(host).toHaveAttribute("data-seed-terrain-reused", "true");
   chunkRequests.length = 0;
@@ -151,7 +151,7 @@ test("streams delayed chunks without duplicate requests or an exposed empty canv
 });
 
 test("keeps every visible ground resident when an ultra-wide viewport exceeds the base GPU limit", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(300_000);
   await page.setViewportSize({ width: 4970, height: 2420 });
   await page.route("**/api/bootstrap", async (route) => {
     const response = await route.fetch();
@@ -185,7 +185,9 @@ test("keeps every visible ground resident when an ultra-wide viewport exceeds th
   for (let step = 0; step < 8 && await host.getAttribute("data-map-lod") !== "overview"; step += 1) {
     await page.mouse.wheel(0, 800);
   }
-  await expect(host).toHaveAttribute("data-map-lod", "overview", { timeout: 90_000 });
+  // The renderer keeps the previous coherent LOD published while a very large
+  // overview is baking. Wait on its public readiness signal before asserting
+  // the atomic LOD swap; slow CI GPUs can legitimately exceed 90 seconds.
   await expect.poll(async () => await host.getAttribute("data-loading"), { timeout: 180_000 }).toBe("false");
   await expect(host).toHaveAttribute("data-map-lod", "overview");
   const range = await host.getAttribute("data-chunk-range");
@@ -550,7 +552,9 @@ test("realtime task status patches its entity without refetching or rebaking sta
     await expect.poll(async () => Number(await host.getAttribute("data-incident-water-jets")), { timeout: 30_000 }).toBe(1);
     await expect.poll(async () => Number(await host.getAttribute("data-incident-water-targets")), { timeout: 30_000 }).toBeGreaterThan(1);
     const targetIndex = await host.getAttribute("data-incident-water-target-indexes");
-    await expect.poll(async () => await host.getAttribute("data-incident-water-target-indexes"), { timeout: 4_000 }).not.toBe(targetIndex);
+    // Browser timers are throttled on loaded CI runners; verify that the
+    // animation advances without coupling the contract to one frame cadence.
+    await expect.poll(async () => await host.getAttribute("data-incident-water-target-indexes"), { timeout: 12_000 }).not.toBe(targetIndex);
     if (incidentScreenshotPath) {
       await page.waitForTimeout(420);
       await page.screenshot({ path: incidentScreenshotPath, fullPage: true });

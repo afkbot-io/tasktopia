@@ -27,9 +27,13 @@ test("accepts full legacy chunks from a rollback server", async ({ page }) => {
 test("slow sprite downloads do not block the chunk API pipeline", async ({ page }) => {
   test.setTimeout(60_000);
   const viewportStarts: number[] = [];
+  let firstSpriteStartedAt = 0;
+  let firstSpriteReleasedAt = 0;
 
   await page.route("**/game-assets/**", async (route) => {
+    if (firstSpriteStartedAt === 0) firstSpriteStartedAt = Date.now();
     await new Promise((resolve) => setTimeout(resolve, 4_000));
+    if (firstSpriteReleasedAt === 0) firstSpriteReleasedAt = Date.now();
     await route.continue();
   });
   page.on("request", (request) => {
@@ -40,10 +44,13 @@ test("slow sprite downloads do not block the chunk API pipeline", async ({ page 
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-  await expect.poll(() => viewportStarts.length, {
-    message: "the viewport JSON request must start while sprites are still downloading",
-    timeout: 1_500,
-  }).toBe(1);
+  await expect.poll(() => firstSpriteStartedAt, { timeout: 15_000 }).toBeGreaterThan(0);
+  await expect.poll(() => viewportStarts.length, { timeout: 15_000 }).toBe(1);
+  await expect.poll(() => firstSpriteReleasedAt, { timeout: 15_000 }).toBeGreaterThan(0);
+  expect(
+    viewportStarts[0],
+    "the viewport JSON request must start while sprites are still downloading",
+  ).toBeLessThan(firstSpriteReleasedAt);
 });
 
 test("paints seed ground while the viewport response is still delayed", async ({ page }) => {
