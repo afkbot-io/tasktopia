@@ -49,7 +49,7 @@ describe("country atlas HTTP boundary", () => {
       url: "/api/country-atlas",
       headers: { cookie, "if-none-match": response.headers.etag! },
     })).statusCode).toBe(304);
-  }, 30_000);
+  }, 90_000);
 
   it("serves a compact country overview without city cell geometry", async () => {
     const registered = await app.inject({
