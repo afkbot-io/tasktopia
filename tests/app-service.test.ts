@@ -17,6 +17,9 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     db = await createTestDb();
     service = new AppService(db);
     countryId = (await registerUser(db, { email: "test@example.com", name: "Tester", password: "password123" })).user.countryId;
+    // Application-service contracts need a reproducible world fixture. Tests
+    // that exercise a particular terrain seed override this value explicitly.
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
   });
 
   afterEach(async () => await db?.close());

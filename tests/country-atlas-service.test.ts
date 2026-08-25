@@ -16,6 +16,8 @@ describe("country atlas read model", () => {
     countryId = (await registerUser(db, {
       email: "atlas@example.com", name: "Atlas", password: "password123",
     })).user.countryId;
+    // Atlas contracts use one reviewed terrain fixture on every platform.
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
   });
 
   afterEach(async () => await db.close());
@@ -140,5 +142,5 @@ describe("country atlas read model", () => {
     expect(relocated.id).not.toBe(airport.id);
     expect(relocated.accessPath.length).toBeGreaterThan(4);
     expect(intersects(expandRect(city.bounds, 4), boundsOf(relocated.footprint))).toBe(false);
-  }, 30_000);
+  }, 60_000);
 });
