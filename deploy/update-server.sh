@@ -12,6 +12,7 @@ readonly BACKUP_RETENTION_COUNT="${BACKUP_RETENTION_COUNT:-14}"
 readonly STATIC_RETENTION_COUNT="${STATIC_RETENTION_COUNT:-3}"
 readonly FAILED_ASSET_RETENTION_COUNT="${FAILED_ASSET_RETENTION_COUNT:-3}"
 readonly MIN_FREE_SPACE_MB="${MIN_FREE_SPACE_MB:-1024}"
+readonly HEALTH_RETRY_COUNT="${HEALTH_RETRY_COUNT:-90}"
 readonly UPDATE_LOCK_PATH="${TASKTOPIA_UPDATE_LOCK_PATH:-$APP_DIR/.git/tasktopia-update.lock}"
 
 if [[ ! "$BACKUP_RETENTION_COUNT" =~ ^[1-9][0-9]*$ ]]; then
@@ -28,6 +29,10 @@ if [[ ! "$STATIC_RETENTION_COUNT" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if [[ ! "$FAILED_ASSET_RETENTION_COUNT" =~ ^[1-9][0-9]*$ ]]; then
   echo "FAILED_ASSET_RETENTION_COUNT must be a positive integer" >&2
+  exit 2
+fi
+if [[ ! "$HEALTH_RETRY_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+  echo "HEALTH_RETRY_COUNT must be a positive integer" >&2
   exit 2
 fi
 if [[ ! "$STATIC_DIR" =~ ^/[A-Za-z0-9._/-]+$ || "$STATIC_DIR" == / || "$STATIC_DIR" == /srv ]]; then
@@ -119,7 +124,7 @@ wait_for_app_health() {
   local port
   for port in 3000 3002 3003; do
     curl --fail --silent --show-error \
-      --retry 30 --retry-delay 2 --retry-connrefused --retry-all-errors \
+      --retry "$HEALTH_RETRY_COUNT" --retry-delay 2 --retry-connrefused --retry-all-errors \
       "http://127.0.0.1:${port}/health"
   done
 }

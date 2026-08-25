@@ -53,6 +53,8 @@ describe("production reverse proxy", () => {
     expect(updateScript).toContain("refresh_self_host_nginx_static_config");
     expect(updateScript).toContain("is_managed_self_host_nginx_config");
     expect(updateScript).toContain("persisted_static_dir=");
+    expect(updateScript).toContain('readonly HEALTH_RETRY_COUNT="${HEALTH_RETRY_COUNT:-90}"');
+    expect(updateScript).toContain('--retry "$HEALTH_RETRY_COUNT"');
     expect(installScript).toContain("TASKTOPIA_STATIC_DIR=%s");
     expect(installScript.indexOf("refusing an unsafe installer rerun")).toBeLessThan(installScript.indexOf("apt-get update"));
     expect(installScript.indexOf("refusing an unsafe installer rerun")).toBeLessThan(installScript.indexOf("docker compose up -d --build"));
