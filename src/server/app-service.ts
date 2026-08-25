@@ -3104,7 +3104,21 @@ export class AppService {
       // square bend is safe. Keep it last so the usual airport remains O(n).
       for (let offset = 0; !connector && offset < roads.length; offset += targetBatchSize) {
         try {
-          const routed = await this.route(countryId, seed, apron.at(-1)!, roads.slice(offset, offset + targetBatchSize), cityAvoid, [], 2, true, routingSnapshot);
+          // Keep the A* centreline far enough from the secured perimeter for
+          // the complete three-cell LOCAL profile. Without this explicit site
+          // exclusion a fragmented seed could loop the fallback behind its
+          // own gate and stamp one lateral asphalt cell under the terminal.
+          const routed = await this.route(
+            countryId,
+            seed,
+            apron.at(-1)!,
+            roads.slice(offset, offset + targetBatchSize),
+            [expandRect(site, 2), ...cityAvoid],
+            [],
+            2,
+            true,
+            routingSnapshot,
+          );
           connector = [...apron, ...routed.slice(1)];
           break;
         } catch (error) {
@@ -3112,6 +3126,9 @@ export class AppService {
         }
       }
       if (!connector) throw new DomainError("ROUTE_BLOCKED", `Не удалось соединить аэропорт города ${city.name} с дорожной сетью`);
+      if (this.roadCorridor(connector, "LOCAL").some((cell) => contains(site, cell))) {
+        throw new DomainError("ROUTE_BLOCKED", `Подъездная дорога аэропорта города ${city.name} пересекает защищённый периметр`);
+      }
       if (!connectorPublished) await this.addRoadPath(countryId, seed, connector, "LOCAL", routingSnapshot);
       if (snapshot && routingSnapshot !== snapshot) snapshot.roads = routingSnapshot.roads;
       return connector;

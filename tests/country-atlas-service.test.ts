@@ -70,6 +70,7 @@ describe("country atlas read model", () => {
     const airportRoads = new Set((await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(countryId) as Array<{ x: number; y: number }>)
       .map((road) => `${road.x}:${road.y}`));
     expect(airports[0]!.accessPath.every((cell) => airportRoads.has(`${cell.x}:${cell.y}`))).toBe(true);
+    expect(airports[0]!.footprint.every((cell) => !airportRoads.has(`${cell.x}:${cell.y}`))).toBe(true);
     expect(atlas.cities[0]!.features).toContainEqual(expect.objectContaining({ id: airports[0]!.id, kind: "AIRPORT" }));
     for (const building of atlas.cities[0]!.buildings) {
       expect(building.atlasFootprint).not.toHaveLength(0);
