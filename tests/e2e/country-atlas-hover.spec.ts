@@ -197,8 +197,24 @@ test("planet, country and city levels keep selection and disabled states coheren
   }
   await expect(page.locator(".world-canvas")).toBeVisible({ timeout: 45_000 });
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-airports", /^[1-9]\d*$/, { timeout: 45_000 });
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-airport-visual-standard", "city-airport-v5");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-airport-surface-tiles", /^[1-9]\d{2,}$/);
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-airport-decoration-overlaps", "0");
+  const [visibleAirports, visibleAirportBuildings] = await Promise.all([
+    page.locator(".world-canvas").getAttribute("data-airports"),
+    page.locator(".world-canvas").getAttribute("data-airport-buildings"),
+  ]);
+  expect(Number(visibleAirportBuildings)).toBe(Number(visibleAirports) * 6);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-airplane", "flying", { timeout: 20_000 });
   if (process.env.ATLAS_SCREENSHOT_PATH) {
+    const cityCanvas = await page.locator(".world-canvas").boundingBox();
+    if (cityCanvas) {
+      await page.mouse.move(cityCanvas.x + cityCanvas.width * .55, cityCanvas.y + cityCanvas.height * .78);
+      await page.mouse.down();
+      await page.mouse.move(cityCanvas.x + cityCanvas.width * .55, cityCanvas.y + cityCanvas.height * .38, { steps: 12 });
+      await page.mouse.up();
+      await page.waitForTimeout(250);
+    }
     await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH.replace(/\.png$/, "-city.png"), fullPage: true });
   }
   await expect(levels.getByRole("button", { name: "Город" })).toHaveAttribute("aria-current", "page");

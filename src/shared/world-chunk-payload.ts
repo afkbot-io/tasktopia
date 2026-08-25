@@ -3,6 +3,7 @@ import { generateWorldDecorations } from "./world-decorations";
 import { terrainAt } from "./world-terrain";
 import { expandCellRuns, expandRoadRuns, expandSurfaceRuns } from "./world-cell-runs";
 import { taskParkDecorLayout } from "./task-park";
+import { airportCompoundCells } from "./city-airport-layout";
 
 function key(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
@@ -60,7 +61,9 @@ export function materializeChunkPayload(payload: ChunkPayloadDto, encodedTerrain
     ...roads.map(key),
     ...surfaces.map(key),
     ...payload.tasks.flatMap((task) => task.footprint).map(key),
-    ...worldFeatures.flatMap((feature) => feature.footprint).map(key),
+    ...worldFeatures.flatMap((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA"
+      ? airportCompoundCells(feature)
+      : feature.footprint).map(key),
   ]);
   const decorations = payload.lod === "DETAIL" && !payload.baseLayerOnly
     ? [
@@ -73,7 +76,7 @@ export function materializeChunkPayload(payload: ChunkPayloadDto, encodedTerrain
       payload.decorationContext.cityBounds,
       payload.decorationContext.tasks,
       ),
-      ...worldFeatures.filter((feature) => feature.assetKind === "AREA").flatMap((area) => (
+      ...worldFeatures.filter((feature) => feature.assetKind === "AREA" && feature.kind !== "AIRPORT").flatMap((area) => (
         taskParkDecorLayout(
           area.footprint,
           area.developmentStage,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
-import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadMarkingAxis } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
@@ -69,6 +69,7 @@ import { compareWorldObjects, type WorldObjectKind } from "../world-object-depth
 import { overviewFromDetailChunk } from "../world-chunk-cache";
 import { greenAreaDecorStage, greenAreaSurfaceRole } from "../../shared/green-area";
 import { taskParkDecorLayout } from "../../shared/task-park";
+import { airportCompoundCells, cityAirportVisualLayout } from "../../shared/city-airport-layout";
 import {
   CONSTRUCTION_DETAIL_SPEC_BY_KEY,
   CONSTRUCTION_TILE_KEYS,
@@ -205,6 +206,13 @@ function cachedTexture(url: string): Texture | undefined {
 
 function sprite(url: string, x: number, y: number): Sprite {
   const result = new Sprite(cachedTexture(url) ?? Texture.EMPTY);
+  result.texture.source.scaleMode = "nearest";
+  result.position.set(x, y);
+  return result;
+}
+
+function tiledSprite(url: string, x: number, y: number, width: number, height: number): TilingSprite {
+  const result = new TilingSprite({ texture: cachedTexture(url) ?? Texture.EMPTY, width, height });
   result.texture.source.scaleMode = "nearest";
   result.position.set(x, y);
   return result;
@@ -550,38 +558,50 @@ function drawWorldFeature(
   if (feature.assetKind === "AREA") {
     const platform = new Container();
     if (feature.kind === "AIRPORT") {
-      const minX = Math.min(...feature.footprint.map((cell) => cell.x));
-      const minY = Math.min(...feature.footprint.map((cell) => cell.y));
-      const maxX = Math.max(...feature.footprint.map((cell) => cell.x));
-      const maxY = Math.max(...feature.footprint.map((cell) => cell.y));
-      const left = minX * CELL_SIZE;
-      const top = minY * CELL_SIZE;
-      const width = (maxX - minX + 1) * CELL_SIZE;
-      const height = (maxY - minY + 1) * CELL_SIZE;
-      const terminalVariant = [...feature.id].reduce((total, value) => total + value.charCodeAt(0), 0) % 5;
-      const airport = new Graphics();
-      airport.rect(left, top, width, height).fill(0x7f8c86).stroke({ color: 0x263945, width: 2 });
-      airport.rect(left + 16, top + height * .58, width - 32, 32).fill(0x35454d).stroke({ color: 0x1d2c35, width: 2 });
-      for (let x = left + 28; x < left + width - 24; x += 32) airport.rect(x, top + height * .58 + 14, 16, 4).fill(0xe4d8a0);
-      airport.rect(left + 32, top + 68, 112, 24).fill(0x5c686a).stroke({ color: 0x263945, width: 2 });
-      for (let x = left; x <= left + width; x += 16) {
-        airport.rect(x, top, 2, 7).fill(0x263945);
-        airport.rect(x, top + height - 7, 2, 7).fill(0x263945);
+      const layout = cityAirportVisualLayout(feature);
+      const left = layout.bounds.minX * CELL_SIZE;
+      const top = layout.bounds.minY * CELL_SIZE;
+      platform.addChild(tiledSprite(
+        TILE_SPRITES.pavement!, left, top,
+        layout.bounds.width * CELL_SIZE, layout.bounds.height * CELL_SIZE,
+      ));
+      for (const [role, tileUrl] of [
+        ["APRON", TILE_SPRITES["construction-foundation"]!],
+        ["TAXIWAY", TILE_SPRITES["path-asphalt"]!],
+        ["RUNWAY", TILE_SPRITES["path-asphalt"]!],
+      ] as const) {
+        const cells = layout.surfaceTiles.filter((tile) => tile.role === role);
+        if (cells.length === 0) continue;
+        const minX = Math.min(...cells.map((tile) => tile.x));
+        const minY = Math.min(...cells.map((tile) => tile.y));
+        const maxX = Math.max(...cells.map((tile) => tile.x));
+        const maxY = Math.max(...cells.map((tile) => tile.y));
+        platform.addChild(tiledSprite(
+          tileUrl,
+          left + minX * CELL_SIZE, top + minY * CELL_SIZE,
+          (maxX - minX + 1) * CELL_SIZE, (maxY - minY + 1) * CELL_SIZE,
+        ));
       }
-      for (let y = top; y <= top + height; y += 16) {
-        airport.rect(left, y, 7, 2).fill(0x263945);
-        airport.rect(left + width - 7, y, 7, 2).fill(0x263945);
+      const markings = new Graphics();
+      for (let x = layout.runway.left + 12; x < layout.runway.left + layout.runway.width - 10; x += 32) {
+        markings.rect(left + x, top + layout.runway.top + layout.runway.height / 2 - 2, 16, 4);
       }
-      platform.addChild(airport);
-      const terminal = sprite(gameAssetUrl(`atlas/airport/airport-terminal-${terminalVariant + 1}.png`), left + 112, top + 90);
-      terminal.anchor.set(.5, 1);
-      platform.addChild(terminal);
-      for (let index = 0; index < 5; index += 1) {
-        const supportKind = (terminalVariant * 3 + index) % 8 + 1;
-        const support = sprite(gameAssetUrl(`atlas/airport/airport-support-${supportKind}.png`), left + 190 + (index % 3) * 52, top + 45 + Math.floor(index / 3) * 42);
-        support.anchor.set(.5, 1);
-        support.scale.set(.5);
-        platform.addChild(support);
+      markings.fill(0xe4d8a0);
+      markings.rect(left + layout.runway.left + 8, top + layout.runway.top + 4, 3, layout.runway.height - 8)
+        .rect(left + layout.runway.left + layout.runway.width - 11, top + layout.runway.top + 4, 3, layout.runway.height - 8)
+        .fill(0xe9e4ca);
+      platform.addChild(markings);
+      for (const tile of layout.fenceTiles) {
+        const view = sprite(TILE_SPRITES[tile.key]!, left + (tile.x + .5) * CELL_SIZE, top + (tile.y + .5) * CELL_SIZE);
+        view.anchor.set(.5);
+        view.rotation = (tile.quarterTurns ?? 0) * Math.PI / 2;
+        platform.addChild(view);
+      }
+      for (const placement of [...layout.buildings].sort((a, b) => a.baselineY - b.baselineY)) {
+        const view = sprite(gameAssetUrl(placement.asset), left + placement.centerX, top + placement.baselineY);
+        view.anchor.set(.5, 1);
+        view.scale.set(placement.scale);
+        platform.addChild(view);
       }
       return { platform };
     }
@@ -820,9 +840,12 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[]
         if (lod === "DETAIL") urls.add(buildingPlatformUrl(getBuilding(feature.assetKey).platform));
       } else if (lod === "DETAIL") {
         if (feature.kind === "AIRPORT") {
-          const variant = Math.abs([...feature.id].reduce((total, value) => total + value.charCodeAt(0), 0)) % 5;
-          urls.add(gameAssetUrl(`atlas/airport/airport-terminal-${variant + 1}.png`));
-          for (let index = 0; index < 5; index += 1) urls.add(gameAssetUrl(`atlas/airport/airport-support-${(variant * 3 + index) % 8 + 1}.png`));
+          for (const placement of cityAirportVisualLayout(feature).buildings) urls.add(gameAssetUrl(placement.asset));
+          for (const key of ["construction-foundation", "construction-fence", "construction-fence-post", "construction-gate"] as const) {
+            urls.add(TILE_SPRITES[key]!);
+          }
+          urls.add(TILE_SPRITES["path-asphalt"]!);
+          urls.add(TILE_SPRITES.pavement!);
         }
         urls.add(TILE_SPRITES["path-brown"]!);
         urls.add(TILE_SPRITES["path-pavers"]!);
@@ -1997,11 +2020,30 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           for (const decoration of chunk.decorations) decorations.set(decoration.id, decoration);
           for (const feature of chunk.worldFeatures) features.set(feature.id, feature);
         }
-        airportPoints = [...features.values()].filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA").map((feature) => ({
+        const airportFeatures = [...features.values()].filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA");
+        airportPoints = airportFeatures.map((feature) => ({
           x: (Math.min(...feature.footprint.map((cell) => cell.x)) + Math.max(...feature.footprint.map((cell) => cell.x)) + 1) * CELL_SIZE / 2,
           y: (Math.min(...feature.footprint.map((cell) => cell.y)) + Math.max(...feature.footprint.map((cell) => cell.y)) + 1) * CELL_SIZE / 2,
         }));
-        if (host) host.dataset.airports = String(airportPoints.length);
+        if (host) {
+          const airportCells = new Set(airportFeatures.flatMap(airportCompoundCells).map(key));
+          const decorationOverlapCount = [...decorations.values()].filter((decoration) => {
+            const metadata = PROP_CATALOG[decoration.kind];
+            const width = metadata?.footprint.width ?? 1;
+            const height = metadata?.footprint.height ?? 1;
+            return Array.from({ length: width * height }, (_, index) => ({
+              x: decoration.origin.x + index % width,
+              y: decoration.origin.y + Math.floor(index / width),
+            })).some((cell) => airportCells.has(key(cell)));
+          }).length;
+          const layouts = airportFeatures.map(cityAirportVisualLayout);
+          host.dataset.airports = String(airportPoints.length);
+          host.dataset.airportVisualStandard = "city-airport-v5";
+          host.dataset.airportSurfaceTiles = String(layouts.reduce((sum, layout) => sum + layout.surfaceTiles.length, 0));
+          host.dataset.airportFenceTiles = String(layouts.reduce((sum, layout) => sum + layout.fenceTiles.length, 0));
+          host.dataset.airportBuildings = String(layouts.reduce((sum, layout) => sum + layout.buildings.length, 0));
+          host.dataset.airportDecorationOverlaps = String(decorationOverlapCount);
+        }
 
         const reconcile = <T extends RenderNode, D>(
           source: Map<string, D>,
@@ -2299,6 +2341,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               })))
           )),
           ...[...features.values()].filter((feature) => feature.assetKind !== "AREA").flatMap((feature) => feature.footprint),
+          ...[...features.values()].filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA").flatMap(airportCompoundCells),
           ...[...decorations.values()].flatMap((decoration) => {
             const prop = PROP_CATALOG[decoration.kind];
             if (!prop) return [decoration.origin];
