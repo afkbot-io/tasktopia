@@ -239,6 +239,32 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             return reply.header("ETag", etag).header("Cache-Control", "private, max-age=30, stale-while-revalidate=300").send(atlas);
           });
 
+  app.get("/api/country-overview", async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            if (!user) return reply;
+            const overview = await service.getCountryOverview(user.countryId);
+            const etag = `"${overview.revision}-country-overview-${overview.schemaVersion}"`;
+            if (request.headers["if-none-match"] === etag) return reply.code(304).send();
+            return reply.header("ETag", etag)
+              .header("Cache-Control", "private, max-age=60, stale-while-revalidate=600")
+              .send(overview);
+          });
+
+  app.get("/api/cities/:cityId/scene", {
+            config: { rateLimit: { max: 30, timeWindow: "1 minute", groupId: "city-scene" } },
+          }, async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            if (!user) return reply;
+            const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
+            const scene = await service.getCityScene(user.countryId, cityId);
+            const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
+            if (request.headers["if-none-match"] === etag) return reply.code(304).send();
+            return reply.header("ETag", etag)
+              .header("Cache-Control", "private, no-cache, must-revalidate")
+              .header("X-World-Version", String(Math.max(0, ...scene.chunks.map((chunk) => chunk.publishedVersion))))
+              .send(scene);
+          });
+
   app.get("/api/planet-atlas", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;

@@ -18,16 +18,15 @@ max-age=60, stale-while-revalidate=600`; клиентский snapshot хран�
 для каждого `userId`. Переименование страны, изменение состава или прогресса
 меняет revision и ETag. Это внутренний UI endpoint, а не MCP resource.
 
-Аутентифицированный браузер получает обзор страны через `GET /api/country-atlas`.
+Аутентифицированный браузер получает обзор страны через `GET /api/country-overview`.
 Это не MCP resource и не замена `country.get_current`/`city.list`: endpoint
-предназначен только для UI. Контракт `schemaVersion: 5` содержит `terrainSeed`,
-общие `bounds`, города с обязательным `labelAnchor` и районы с обязательным
-`progress` (`0..100`). Природные клетки в ответ не входят — браузер
-восстанавливает их из canonical seed.
+предназначен только для UI. Контракт `schemaVersion: 1` содержит `terrainSeed`,
+общие `bounds`, города с исходными и обзорными центрами, агрегаты районов и связи.
+Поклеточная геометрия, задачи и sprite URL в ответ не входят.
 
-Ответ использует ETag и `Cache-Control: private, max-age=30,
-stale-while-revalidate=300`. Клиент сначала рисует schema-gated snapshot из
-`sessionStorage`, затем обязательно выполняет conditional revalidation.
+Ответ использует ETag и `Cache-Control: private, max-age=60,
+stale-while-revalidate=600`. Старый `/api/country-atlas` остаётся временным
+rollback-контрактом и не используется основной навигацией.
 Комментарии и невизуальные поля snapshot не инвалидируют; статус задачи
 патчит здание и агрегат района, структурные события города/района/задачи
 пересобирают проекцию.

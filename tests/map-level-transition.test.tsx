@@ -9,7 +9,7 @@ describe("map level transition", () => {
       "COUNTRY", "CITY", { x: 0.25, y: 0.75 }, 1_000,
     )} />);
 
-    expect(html).toContain("Открываем город");
+    expect(html).toContain("Загружаем данные: город");
     expect(html).toContain("--map-transition-x:25%");
     expect(html).toContain("--map-transition-y:75%");
     expect(html).toContain('role="status"');

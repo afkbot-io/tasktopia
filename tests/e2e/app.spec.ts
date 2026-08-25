@@ -64,7 +64,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page).toHaveTitle("Tasktopia — Тестовая страна");
   await expect(page.getByText("Riverside", { exact: true })).toBeVisible();
-  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
+  await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible();
   const mapWarmup = { timeout: 90_000 };
   const mapHost = page.locator(".world-canvas");
   await expect(page.getByText("Готовим карту…", { exact: true })).toBeHidden({ timeout: 90_000 });
@@ -91,7 +91,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await capture(page, "screenshots/release-city-districts.png");
   await districtsToggle.click();
 
-  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await page.locator(".country-title-button").click();
   await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   let cityDirectory = page.getByRole("complementary", { name: "План страны" });
@@ -236,6 +236,6 @@ test("registration creates the named country and first city", async ({ page }) =
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
   await expect(page.getByText("Новый продукт", { exact: true })).toBeVisible();
   await expect(page.getByText("Первый релиз", { exact: true })).toBeVisible();
-  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
+  await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible();
   await capture(page, "screenshots/release-onboarding-city.png");
 });

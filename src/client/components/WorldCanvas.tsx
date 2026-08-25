@@ -4,12 +4,14 @@ import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics,
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadMarkingAxis } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
+import type { CitySceneDto } from "../../shared/city-scene-contract";
 import { terrainAt } from "../../shared/world-terrain";
 import { encodeTerrainSample } from "../../shared/world-chunk-payload";
 import { apiWithMetrics } from "../api";
 import { ChunkMaterializer } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
 import { loadGameAssets } from "../game-asset-loader";
+import { AssetLease, leasedAssetCount } from "../asset-lease-registry";
 import type { MapInvalidation } from "../map-invalidation";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
 import {
@@ -885,18 +887,20 @@ function ambientDetailAssets(): string[] {
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onReady, onZoomOutToCountry }: {
+export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onReady, onFatalError, onZoomOutToCountry }: {
   countryId: string;
   chunkSize: number;
   worldManifest: WorldManifestDto;
   viewBounds: Rect;
   focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
+  initialCityScene?: CitySceneDto;
   focusTask?: { origin: Cell; token: number } | null;
   invalidation?: MapInvalidation;
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
   onArchiveSelect: () => void;
   onReady?: () => void;
+  onFatalError?: (message: string) => void;
   onZoomOutToCountry?: () => void;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
@@ -911,7 +915,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const onTaskSelectRef = useRef(onTaskSelect);
   const onArchiveSelectRef = useRef(onArchiveSelect);
   const onZoomOutToCountryRef = useRef(onZoomOutToCountry);
+  const onFatalErrorRef = useRef(onFatalError);
   const terrainSeed = worldManifest.terrainSeed;
+  const focusCityId = focusCity?.id;
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
     return { point: focusCity.center, bounds: cityDetailFocusBounds(focusCity.center, focusCity.bounds) };
@@ -925,6 +931,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
   const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin) : focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
+  const initialCitySceneRef = useRef(initialCityScene);
 
   useEffect(() => {
     showDistrictsRef.current = showDistricts;
@@ -936,7 +943,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     onTaskSelectRef.current = onTaskSelect;
     onArchiveSelectRef.current = onArchiveSelect;
     onZoomOutToCountryRef.current = onZoomOutToCountry;
-  }, [onArchiveSelect, onTaskSelect, onZoomOutToCountry]);
+    onFatalErrorRef.current = onFatalError;
+  }, [onArchiveSelect, onFatalError, onTaskSelect, onZoomOutToCountry]);
 
   useEffect(() => {
     if (focusX == null || focusY == null || focusMinX == null || focusMinY == null || focusMaxX == null || focusMaxY == null) return;
@@ -1013,6 +1021,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const chunkLods = new Map<string, MapLod>();
     const chunkDataCache = new Map<string, ChunkDto>();
     const chunkPayloadCache = new Map<string, ChunkPayloadDto>();
+    let cityScene: CitySceneDto | undefined;
+    let citySceneChunkCount = 0;
     // Seed terrain is immutable for a (seed, chunk, LOD) tuple. Infrastructure
     // is a separate transparent overlay, so an API response never destroys and
     // re-bakes the already visible first-frame terrain texture.
@@ -1022,6 +1032,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
     startupDisposers.push(() => chunkMaterializer.destroy());
+    const assetLease = new AssetLease();
+    startupDisposers.push(() => {
+      assetLease.dispose();
+      host.dataset.assetLease = "released";
+      host.dataset.leasedAssets = String(leasedAssetCount());
+    });
     const chunkPayloadMetric = new RollingPerformanceMetric();
     const chunkRequestMetric = new RollingPerformanceMetric();
     const chunkParseMetric = new RollingPerformanceMetric();
@@ -1040,7 +1056,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       if (disposed) { app.destroy({ removeView: true }, { children: true }); return; }
       const canvas = app.canvas;
       canvas.className = "world-canvas-element";
-      canvas.setAttribute("aria-label", "Интерактивная карта страны");
+      canvas.setAttribute("aria-label", "Интерактивная карта города");
       host.appendChild(canvas);
 
       const world = new Container();
@@ -1105,7 +1121,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Container }>();
       let entityReplacementCount = 0;
       let currentViewBounds = initialViewBoundsRef.current;
-      let currentLod: MapLod = world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
+      let currentLod: MapLod = focusCityId ? "DETAIL" : world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
       let ambientAssetsReady = false;
       let ambientAssetsPromise: Promise<void> | undefined;
       const redrawBackdrop = () => {
@@ -1987,8 +2003,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           host!.dataset.seedFirstFrame = "true";
           host!.dataset.seedFirstFrameMode = "synchronous";
           host!.dataset.seedTerrainPattern = "procedural-pixel-v2";
-          setFirstFrameReady(true);
-          paintedFrame = true;
+          if (!cityScene) {
+            setFirstFrameReady(true);
+            paintedFrame = true;
+          }
           if (reducedMotion) app.render();
         }).finally(() => pendingSeedGrounds.delete(cacheKey));
         pendingSeedGrounds.set(cacheKey, promise);
@@ -2452,6 +2470,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       }
 
       const lodForScale = (scale: number): MapLod => {
+        if (cityScene) return "DETAIL";
         if (currentLod === "DETAIL") return scale < DETAIL_LOD_EXIT_SCALE ? "OVERVIEW" : "DETAIL";
         return scale >= DETAIL_LOD_ENTER_SCALE ? "DETAIL" : "OVERVIEW";
       };
@@ -2460,7 +2479,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const key = dataKey(cacheKey, lod);
         chunkDataCache.delete(key);
         chunkDataCache.set(key, chunk);
-        while (chunkDataCache.size > CHUNK_DATA_CACHE_LIMIT) {
+        while (chunkDataCache.size > Math.max(CHUNK_DATA_CACHE_LIMIT, citySceneChunkCount)) {
           const oldest = chunkDataCache.keys().next().value as string | undefined;
           if (!oldest) break;
           chunkDataCache.delete(oldest);
@@ -2478,7 +2497,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const key = dataKey(cacheKey, lod);
         chunkPayloadCache.delete(key);
         chunkPayloadCache.set(key, payload);
-        while (chunkPayloadCache.size > CHUNK_PAYLOAD_CACHE_LIMIT) {
+        while (chunkPayloadCache.size > Math.max(CHUNK_PAYLOAD_CACHE_LIMIT, citySceneChunkCount)) {
           const oldest = chunkPayloadCache.keys().next().value as string | undefined;
           if (!oldest) break;
           chunkPayloadCache.delete(oldest);
@@ -2492,7 +2511,50 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         chunkPayloadCache.set(key, cached);
         return cached;
       };
+      if (focusCityId) {
+        const scene = initialCitySceneRef.current?.city.id === focusCityId
+          ? initialCitySceneRef.current
+          : (await apiWithMetrics<CitySceneDto>(`/api/cities/${focusCityId}/scene`, {
+            cache: "no-cache",
+            headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+          })).data;
+        if (scene.schemaVersion !== 1 || scene.city.id !== focusCityId || scene.lod !== "DETAIL") {
+          throw new Error("Сервер вернул несовместимую сцену города");
+        }
+        cityScene = scene;
+        citySceneChunkCount = cityScene.chunks.length;
+        for (const payload of cityScene.chunks) storeChunkPayload(chunkKey(payload.chunkX, payload.chunkY), "DETAIL", payload);
+        host!.dataset.citySceneRequests = "1";
+        host!.dataset.citySceneRevision = cityScene.sceneRevision;
+        host!.dataset.citySceneChunks = String(citySceneChunkCount);
+        host!.dataset.panNetworkRequests = "0";
+      }
+      let citySceneRefresh: Promise<void> | undefined;
+      const refreshCityScene = (): Promise<void> => {
+        if (!focusCityId) return Promise.resolve();
+        if (citySceneRefresh) return citySceneRefresh;
+        citySceneRefresh = (async () => {
+          const response = await apiWithMetrics<CitySceneDto>(`/api/cities/${focusCityId}/scene`, {
+            cache: "no-cache",
+            headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+          });
+          if (response.data.schemaVersion !== 1 || response.data.city.id !== focusCityId || response.data.lod !== "DETAIL") {
+            throw new Error("Сервер вернул несовместимую сцену города");
+          }
+          cityScene = response.data;
+          citySceneChunkCount = cityScene.chunks.length;
+          chunkPayloadCache.clear();
+          chunkDataCache.clear();
+          for (const payload of cityScene.chunks) storeChunkPayload(chunkKey(payload.chunkX, payload.chunkY), "DETAIL", payload);
+          host!.dataset.citySceneRequests = String(Number(host!.dataset.citySceneRequests ?? 0) + 1);
+          host!.dataset.citySceneRefreshRequests = String(Number(host!.dataset.citySceneRefreshRequests ?? 0) + 1);
+          host!.dataset.citySceneRevision = cityScene.sceneRevision;
+          host!.dataset.citySceneChunks = String(citySceneChunkCount);
+        })().finally(() => { citySceneRefresh = undefined; });
+        return citySceneRefresh;
+      };
       const preloadViewportPayloads = async (wanted: Array<[number, number]>, lod: MapLod): Promise<void> => {
+        if (cityScene) return;
         const missing = wanted.filter(([chunkX, chunkY]) => !cachedChunkPayload(chunkKey(chunkX, chunkY), lod));
         if (missing.length < 2) return;
         const minChunkX = Math.min(...missing.map(([chunkX]) => chunkX));
@@ -2560,6 +2622,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             const promise = (async () => {
               let payload = cachedChunkPayload(cacheKey, lod);
               if (!payload) {
+                if (cityScene) throw new Error(`В единой сцене отсутствует chunk ${cacheKey}:${lod}`);
                 const response = await apiWithMetrics<ChunkPayloadDto | ChunkDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${lod.toLowerCase()}`, {
                   signal: controller.signal,
                   cache: "no-cache",
@@ -2628,7 +2691,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         while (valid()) {
           const loadedAssets = requiredEntityAssets([candidate], lod).sort();
           try {
-            await withAssetSlot(() => loadTextureAssets(loadedAssets));
+            await withAssetSlot(() => assetLease.load(loadedAssets, loadTextureAssets));
+            host!.dataset.sceneAssets = String(assetLease.size);
+            host!.dataset.leasedAssets = String(leasedAssetCount());
             assetFailures = 0;
           } catch (error) {
             assetFailures += 1;
@@ -2654,7 +2719,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       };
       const preloadAmbientAssets = (): void => {
         if (ambientAssetsReady || ambientAssetsPromise) return;
-        ambientAssetsPromise = loadTextureAssets(ambientDetailAssets()).then(() => {
+        ambientAssetsPromise = assetLease.load(ambientDetailAssets(), loadTextureAssets).then(() => {
+          host!.dataset.leasedAssets = String(leasedAssetCount());
           if (disposed) return;
           ambientAssetsReady = true;
           host!.dataset.ambientAssets = "ready";
@@ -2702,8 +2768,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           app.render();
           host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
         }
-        setFirstFrameReady(true);
-        paintedFrame = true;
+        if (!cityScene) {
+          setFirstFrameReady(true);
+          paintedFrame = true;
+        }
       };
       function pruneGroundCache(active: Set<string>): void {
         const effectiveLimit = Math.max(GROUND_CACHE_LIMIT, active.size);
@@ -2782,7 +2850,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 });
                 fetched.set(cacheKey, chunk);
                 if (lod === "DETAIL") preloadAmbientAssets();
-                await withAssetSlot(() => loadTextureAssets(requiredGroundAssets([chunk], lod)));
+                await withAssetSlot(() => assetLease.load(requiredGroundAssets([chunk], lod), loadTextureAssets));
+                host!.dataset.sceneAssets = String(assetLease.size);
+                host!.dataset.leasedAssets = String(leasedAssetCount());
                 if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) return;
                 const ground = groundContainers.get(cacheKey);
                 if (invalidatedGroundKeys.has(cacheKey) || seedGroundKeys.has(cacheKey) || ground?.lod !== lod || !ground.overlayView) {
@@ -2877,7 +2947,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                     loadVisible({ isRetry: true });
                   }, loadRetryAttempt * 500);
                 } else {
-                  setMapLoadError("Не удалось загрузить карту. Проверьте соединение и повторите попытку.");
+                  const message = "Не удалось загрузить карту. Проверьте соединение и повторите попытку.";
+                  setMapLoadError(message);
+                  onFatalErrorRef.current?.(message);
                 }
               }
               if (generation === loadGeneration) break;
@@ -2889,6 +2961,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               return chunks.has(cacheKey) && chunkLods.get(cacheKey) === lod && groundContainers.get(cacheKey)?.lod === lod;
             });
             if (!covered) continue;
+            if (cityScene && host!.dataset.citySceneCommit !== "atomic") {
+              setFirstFrameReady(true);
+              paintedFrame = true;
+              host!.dataset.citySceneCommit = "atomic";
+            }
             let removedEntities = false;
             for (const cacheKey of [...chunks.keys()]) {
               if (active.has(cacheKey)) continue;
@@ -2932,7 +3009,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const range = chunkRangeForViewport(
           world.position, world.scale.x, app.screen, currentViewBounds, CELL_SIZE, chunkSize,
         );
-        const rangeLabel = `${range.minChunkX},${range.minChunkY}:${range.maxChunkX},${range.maxChunkY}`;
+        const rangeLabel = cityScene ? `city:${cityScene.sceneRevision}` : `${range.minChunkX},${range.minChunkY}:${range.maxChunkX},${range.maxChunkY}`;
         if (!options.forceKeys?.size && host!.dataset.loadError !== "true" && nextLod === desiredLod && rangeLabel === desiredRange) {
           host!.dataset.skippedReconciles = String(Number(host!.dataset.skippedReconciles ?? 0) + 1);
           return;
@@ -2943,9 +3020,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           && !options.forceKeys?.has(cacheKey)
         )));
         const plan = progressiveChunkPlan(range, resident);
-        const wanted = [...plan.critical, ...plan.background] as Array<[number, number]>;
+        const wanted = cityScene
+          ? cityScene.chunks.map((chunk) => [chunk.chunkX, chunk.chunkY] as [number, number])
+          : [...plan.critical, ...plan.background] as Array<[number, number]>;
         const activeKeys = new Set<string>();
-        for (let chunkX = range.minChunkX; chunkX <= range.maxChunkX; chunkX += 1) {
+        if (cityScene) for (const [chunkX, chunkY] of wanted) activeKeys.add(chunkKey(chunkX, chunkY));
+        else for (let chunkX = range.minChunkX; chunkX <= range.maxChunkX; chunkX += 1) {
           for (let chunkY = range.minChunkY; chunkY <= range.maxChunkY; chunkY += 1) activeKeys.add(chunkKey(chunkX, chunkY));
         }
         desiredLod = nextLod;
@@ -2956,7 +3036,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           for (const cacheKey of options.forceKeys) {
             for (const lod of ["DETAIL", "OVERVIEW"] as const) {
               chunkDataCache.delete(dataKey(cacheKey, lod));
-              chunkPayloadCache.delete(dataKey(cacheKey, lod));
+              if (!cityScene) chunkPayloadCache.delete(dataKey(cacheKey, lod));
               const pending = pendingChunks.get(dataKey(cacheKey, lod));
               pending?.controller.abort();
               pendingChunks.delete(dataKey(cacheKey, lod));
@@ -3109,6 +3189,24 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             }
             return;
           }
+          if (cityScene) {
+            const rebuildMovement = new Set([
+              "city.created", "city.deleted", "district.created", "district.deleted", "district.activated",
+              "task.created", "task.deleted",
+            ]).has(event.type);
+            void refreshCityScene().then(() => {
+              if (disposed || !cityScene) return;
+              const forceKeys = new Set(cityScene.chunks.map((chunk) => chunkKey(chunk.chunkX, chunk.chunkY)));
+              for (const cacheKey of forceKeys) invalidatedGroundKeys.add(cacheKey);
+              desiredRange = "";
+              loadVisible({ forceKeys, rebuildMovement });
+            }).catch(() => {
+              if (disposed) return;
+              host!.dataset.loadError = "true";
+              setMapLoadError("Не удалось обновить город. Проверьте соединение и повторите попытку.");
+            });
+            return;
+          }
           const groundChanged = event.groundChanged ?? !GROUND_PRESERVING_EVENTS.has(event.type);
           const forceKeys = new Set<string>();
           const affectedKeys = new Set<string>();
@@ -3224,6 +3322,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       host.dataset.loadError = "true";
       host.dataset.loading = "false";
       setMapLoadError("Не удалось запустить карту. Повторите попытку.");
+      onFatalErrorRef.current?.("Не удалось запустить карту. Повторите попытку.");
       cleanupStartupResources();
       destroyApp();
     });
@@ -3234,7 +3333,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       cleanupStartupResources();
       destroyApp();
     };
-  }, [chunkSize, countryId, terrainSeed, rendererAttempt]);
+  }, [chunkSize, countryId, focusCityId, terrainSeed, rendererAttempt]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />

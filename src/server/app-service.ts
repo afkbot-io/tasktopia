@@ -84,11 +84,14 @@ import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
 import { generatedGreenAreaProfile, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
 import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
 import { COUNTRY_ATLAS_SCHEMA_VERSION, type CountryAtlasDto } from "../shared/country-atlas-contract";
+import { COUNTRY_OVERVIEW_SCHEMA_VERSION, type CountryOverviewDto, type CountryOverviewDistrictDto } from "../shared/country-overview-contract";
+import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../shared/city-scene-contract";
 import { countryAtlasEventImpact, patchCountryAtlasTaskProgress } from "../shared/country-atlas-events";
 import { meanCountryAtlasProgress } from "../shared/country-atlas-progress";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/planet-atlas-contract";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import { projectCountryAtlas } from "./world/country-atlas";
+import { projectCountryOverview } from "./world/country-overview";
 import type { SharedWorldCache } from "./optional-redis-cache";
 import {
   ROAD_WIDTH,
@@ -722,6 +725,8 @@ export class AppService {
   private readonly pendingChunkBuilds = new Map<string, Promise<ChunkPayloadDto>>();
   private readonly knownWorldVersions = new Map<string, number>();
   private readonly countryAtlasCache = new Map<string, { atlas: CountryAtlasDto }>();
+  private readonly countryOverviewCache = new Map<string, CountryOverviewDto>();
+  private readonly citySceneCache = new Map<string, CitySceneDto>();
   // A desktop viewport can hold a few dozen chunks in two LODs. Keeping only
   // 64 entries caused one user's zoom to evict the previous level and denied
   // concurrent viewers any cache reuse. 512 remains a small bounded footprint
@@ -862,6 +867,10 @@ export class AppService {
       else if (atlasImpact === "TASK_PROGRESS" && cachedAtlas) {
         cachedAtlas.atlas = patchCountryAtlasTaskProgress(cachedAtlas.atlas, event);
       }
+    }
+    if (countryAtlasEventImpact(event) !== "NONE") this.countryOverviewCache.delete(event.countryId);
+    if (this.chunkInvalidationScope(event) !== "NONE") {
+      for (const key of this.citySceneCache.keys()) if (key.startsWith(`${event.countryId}:`)) this.citySceneCache.delete(key);
     }
     const knownVersion = this.knownWorldVersions.get(event.countryId) ?? 0;
     if (event.worldVersion <= knownVersion) return;
@@ -1535,6 +1544,114 @@ export class AppService {
     };
     this.countryAtlasCache.set(countryId, { atlas });
     return atlas;
+  }
+
+  async getCountryOverview(countryId: string): Promise<CountryOverviewDto> {
+    const cached = this.countryOverviewCache.get(countryId);
+    if (cached) {
+      this.countryOverviewCache.delete(countryId);
+      this.countryOverviewCache.set(countryId, cached);
+      return cached;
+    }
+    const [country, cities, districtRows] = await Promise.all([
+      this.countryRow(countryId),
+      this.listCities(countryId),
+      this.db.prepare(`SELECT d.id, d.city_id, d.name, d.status, d.color,
+        COUNT(t.id)::integer AS task_count,
+        COALESCE(ROUND(AVG(t.progress)), 0)::integer AS progress
+        FROM districts_v3 d
+        JOIN cities_v3 c ON c.id = d.city_id
+        LEFT JOIN tasks_v3 t ON t.district_id = d.id
+        WHERE c.country_id = ?
+        GROUP BY d.id, d.city_id, d.name, d.status, d.color, d.created_at
+        ORDER BY d.created_at, d.id`).all(countryId) as Promise<Row[]>,
+    ]);
+    const projection = projectCountryOverview(cities.map((city) => ({ id: city.id, sourceCenter: city.center })));
+    const districtsByCity = new Map<string, CountryOverviewDistrictDto[]>();
+    for (const row of districtRows) {
+      const district: CountryOverviewDistrictDto = {
+        id: String(row.id), name: String(row.name), status: String(row.status) as CountryOverviewDistrictDto["status"],
+        color: String(row.color), progress: Number(row.progress), taskCount: Number(row.task_count),
+      };
+      const cityId = String(row.city_id);
+      districtsByCity.set(cityId, [...districtsByCity.get(cityId) ?? [], district]);
+    }
+    const overviewWithoutRevision = {
+      schemaVersion: COUNTRY_OVERVIEW_SCHEMA_VERSION,
+      terrainSeed: Number(country.seed),
+      bounds: projection.bounds,
+      cities: cities.map((city) => {
+        const districts = districtsByCity.get(city.id) ?? [];
+        return {
+          id: city.id, name: city.name, status: city.status, sourceCenter: city.center, sourceBounds: city.bounds,
+          atlasCenter: projection.centers.get(city.id)!, progress: meanCountryAtlasProgress(districts), districts,
+        };
+      }),
+      connections: projection.connections,
+    };
+    const overview: CountryOverviewDto = { ...overviewWithoutRevision, revision: stableHash(overviewWithoutRevision) };
+    this.countryOverviewCache.set(countryId, overview);
+    while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);
+    return overview;
+  }
+
+  async getCityScene(countryId: string, cityId: string): Promise<CitySceneDto> {
+    const [cityRow, country] = await Promise.all([
+      this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(cityId, countryId) as Promise<Row | undefined>,
+      this.countryRow(countryId),
+    ]);
+    if (!cityRow) throw new DomainError("NOT_FOUND", "Город не найден");
+    const city = cityDto(cityRow);
+    const cacheKey = `${countryId}:${cityId}:${Number(country.world_version)}`;
+    const cached = this.citySceneCache.get(cacheKey);
+    if (cached) {
+      this.citySceneCache.delete(cacheKey);
+      this.citySceneCache.set(cacheKey, cached);
+      return cached;
+    }
+    const minChunkX = Math.floor(city.bounds.minX / CHUNK_SIZE);
+    const minChunkY = Math.floor(city.bounds.minY / CHUNK_SIZE);
+    const maxChunkX = Math.floor(city.bounds.maxX / CHUNK_SIZE);
+    const maxChunkY = Math.floor(city.bounds.maxY / CHUNK_SIZE);
+    const chunkCount = (maxChunkX - minChunkX + 1) * (maxChunkY - minChunkY + 1);
+    if (chunkCount > 256) throw new DomainError("INVALID_INPUT", "Город превышает лимит единой сцены");
+    const chunks = await this.getViewportPayloads(countryId, minChunkX, minChunkY, maxChunkX, maxChunkY, "DETAIL");
+    const completedDistrictIds = new Set(chunks.flatMap((chunk) => chunk.districts
+      .filter((district) => district.status === "COMPLETED")
+      .map((district) => district.id)));
+    const completedTasksByDistrict = new Map<string, Map<string, CitySceneDto["completedDistrictSnapshots"][number]["tasks"][number]>>();
+    for (const chunk of chunks) for (const task of chunk.tasks) {
+      if (!completedDistrictIds.has(task.districtId)) continue;
+      const taskById = completedTasksByDistrict.get(task.districtId) ?? new Map();
+      taskById.set(task.id, {
+          id: task.id, taskNumber: task.taskNumber, status: task.status, stage: task.stage,
+          buildingType: task.buildingType, visualKind: task.visualKind, visualAssetKey: task.visualAssetKey,
+          platformType: task.platformType, origin: task.origin, footprint: task.footprint,
+      });
+      completedTasksByDistrict.set(task.districtId, taskById);
+    }
+    const completedDistrictSnapshots = [...completedDistrictIds].sort().map((districtId) => {
+      const tasks = [...completedTasksByDistrict.get(districtId)?.values() ?? []].sort((left, right) => left.taskNumber - right.taskNumber);
+      return { districtId, revision: stableHash({ districtId, tasks }), tasks };
+    });
+    const sceneIdentity = {
+      schemaVersion: CITY_SCENE_SCHEMA_VERSION,
+      cityId,
+      bounds: city.bounds,
+      chunks: chunks.map((chunk) => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash, version: chunk.publishedVersion })),
+    };
+    const scene: CitySceneDto = {
+      schemaVersion: CITY_SCENE_SCHEMA_VERSION,
+      sceneRevision: stableHash(sceneIdentity),
+      city: { id: city.id, name: city.name, center: city.center, bounds: city.bounds },
+      lod: "DETAIL",
+      chunkSize: CHUNK_SIZE,
+      chunks,
+      completedDistrictSnapshots,
+    };
+    this.citySceneCache.set(cacheKey, scene);
+    while (this.citySceneCache.size > 8) this.citySceneCache.delete(this.citySceneCache.keys().next().value!);
+    return scene;
   }
 
   async listTasks(countryId: string, districtId?: string): Promise<TaskDto[]> {

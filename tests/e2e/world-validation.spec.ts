@@ -35,7 +35,7 @@ test("validates and captures ten new-build cities", async ({ page }) => {
   await expect(page.getByText("Федерация Новостроек", { exact: true })).toBeVisible();
 
   const host = page.locator(".world-canvas");
-  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   const browserReport: Array<Record<string, string | number>> = [];
   for (let index = 0; index < cities.length; index += 1) {
     if (onlyCityIndex > 0 && index !== onlyCityIndex - 1) continue;

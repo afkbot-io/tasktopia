@@ -25,7 +25,7 @@ test("opens and captures the 100-task megacity", async ({ page }) => {
   consoleErrors.length = 0;
 
   const host = page.locator(".world-canvas");
-  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await page.locator(".country-title-button").click();
   await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   const drawer = page.getByRole("complementary", { name: "План страны" });

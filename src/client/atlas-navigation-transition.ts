@@ -1,4 +1,5 @@
 export type AtlasMapLevel = "PLANET" | "COUNTRY" | "CITY";
+export type AtlasTransitionPhase = "PRELOAD" | "PREPARE" | "FIRST_FRAME" | "SWAP" | "EVICT";
 
 export type AtlasTransition = {
   id: string;
@@ -7,6 +8,7 @@ export type AtlasTransition = {
   focus: { x: number; y: number };
   startedAt: number;
   durationMs: number;
+  phase: AtlasTransitionPhase;
 };
 
 export function createAtlasTransition(
@@ -26,7 +28,12 @@ export function createAtlasTransition(
     },
     startedAt,
     durationMs: Math.max(120, Math.min(1_200, durationMs)),
+    phase: "PRELOAD",
   };
+}
+
+export function withAtlasTransitionPhase(transition: AtlasTransition, phase: AtlasTransitionPhase): AtlasTransition {
+  return { ...transition, phase };
 }
 
 export function atlasTransitionProgress(transition: AtlasTransition, now: number): number {

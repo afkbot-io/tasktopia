@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { AtlasTransition } from "../atlas-navigation-transition";
 
 const LEVEL_LABEL = { PLANET: "планету", COUNTRY: "страну", CITY: "город" } as const;
+const PHASE_LABEL = { PRELOAD: "Загружаем данные", PREPARE: "Готовим сцену", FIRST_FRAME: "Проверяем первый кадр", SWAP: "Открываем", EVICT: "Освобождаем ресурсы" } as const;
 
 export function MapLevelTransition({ transition }: { transition: AtlasTransition }) {
   return <div
@@ -18,6 +19,6 @@ export function MapLevelTransition({ transition }: { transition: AtlasTransition
   >
     <div className="map-level-transition-pixels" aria-hidden="true" />
     <div className="map-level-transition-focus" aria-hidden="true"><i /><i /><i /></div>
-    <span>Открываем {LEVEL_LABEL[transition.to]}…</span>
+    <span>{PHASE_LABEL[transition.phase]}: {LEVEL_LABEL[transition.to]}…</span>
   </div>;
 }
