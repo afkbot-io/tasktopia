@@ -90,7 +90,11 @@ const CHUNK_DATA_CACHE_LIMIT = 48;
 const CHUNK_PAYLOAD_CACHE_LIMIT = 160;
 const OVERVIEW_GROUND_TEXTURE_RESOLUTION = 0.5;
 const GROUND_CACHE_LIMIT = 48;
-const ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION = 0.25;
+// Ultra-wide overview cameras can keep more than the base GPU-cache budget
+// visible at once. Bake those large offscreen surfaces at one pixel per eight
+// source pixels; nearest-neighbour upscaling preserves the pixel-art contract
+// while keeping the coherent LOD swap bounded on low-throughput GPUs.
+const ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION = 0.125;
 const TASK_STATUS_PATCH_LIMIT = 512;
 type MapLod = "DETAIL" | "OVERVIEW";
 const GROUND_PRESERVING_EVENTS = new Set([
