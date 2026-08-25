@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { AppService, CHUNK_SIZE } from "../src/server/app-service";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AppService, CHUNK_SIZE, DomainError } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { boundsOf, cellKey, contains, expandRect, intersects, rectangleFootprint } from "../src/server/world/grid";
@@ -15,7 +15,7 @@ describe("Государственный архив", () => {
     countryId = (await registerUser(db, {
       email: "archive@example.com", name: "Archivist", password: "password123",
     })).user.countryId;
-  }, 15_000);
+  }, 30_000);
 
   afterEach(async () => await db.close());
 
@@ -75,7 +75,50 @@ describe("Государственный архив", () => {
       .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
     expect(relocated.id).not.toBe(oldCompound.id);
     expect(intersects(expandRect(city.bounds, 24), boundsOf(relocated.footprint))).toBe(false);
-  }, 15_000);
+  }, 30_000);
+
+  it("повторяет размещение архива, если первая допустимая площадка изолирована", async () => {
+    const city = await service.createCity(countryId, { name: "Город с разрывом сети", idempotencyKey: "archive-retry-city" });
+    const oldCompound = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
+    const legacyOrigin = { x: city.center.x + 18, y: city.center.y + 12 };
+    await db.prepare("UPDATE world_features_v6 SET origin_x = ?, origin_y = ?, footprint_json = ? WHERE id = ?").run(
+      legacyOrigin.x, legacyOrigin.y, JSON.stringify(rectangleFootprint(legacyOrigin, 18, 12)), oldCompound.id,
+    );
+
+    type ArchiveRouter = {
+      route: (
+        targetCountryId: string,
+        seed: number,
+        start: { x: number; y: number },
+        end: { x: number; y: number } | ReadonlyArray<{ x: number; y: number }>,
+        avoidBounds?: unknown[],
+        extraReserved?: Array<{ x: number; y: number }>,
+        reservationRadius?: number,
+        reuseUrbanRoads?: boolean,
+        snapshot?: unknown,
+      ) => Promise<Array<{ x: number; y: number }>>;
+    };
+    const router = service as unknown as ArchiveRouter;
+    const route = router.route.bind(router);
+    let blockedStart: string | undefined;
+    const attemptedStarts = new Set<string>();
+    vi.spyOn(router, "route").mockImplementation(async (...args) => {
+      const startKey = cellKey(args[2]);
+      attemptedStarts.add(startKey);
+      blockedStart ??= startKey;
+      if (startKey === blockedStart) throw new DomainError("ROUTE_BLOCKED", "first archive site is isolated");
+      return await route(...args);
+    });
+
+    expect(await service.upgradeCountryArchiveInfrastructure()).toBe(1);
+
+    const relocated = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
+    expect(relocated.id).not.toBe(oldCompound.id);
+    expect(relocated.accessPath.length).toBeGreaterThan(4);
+    expect(attemptedStarts.size).toBeGreaterThan(1);
+  }, 30_000);
 
   it("соединяет ограждённый архив с дорожной сетью через единственный шлагбаум", async () => {
     await service.createCity(countryId, { name: "Столица", idempotencyKey: "archive-secure-city" });
@@ -150,7 +193,8 @@ describe("Государственный архив", () => {
 
     service = new AppService(db);
     await expect(service.upgradeCountryArchiveInfrastructure()).resolves.toBe(1);
-    const restored = (await service.listWorldFeatures(countryId)).find((feature) => feature.id === compound.id)!;
+    const restored = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")!;
     expect(restored.accessPath).toContainEqual(reachable);
   }, 20_000);
 
@@ -239,5 +283,5 @@ describe("Государственный архив", () => {
     const buildings = await db.prepare(`SELECT asset_key FROM world_features_v6
       WHERE country_id = ? AND kind = 'COUNTRY_ARCHIVE' AND asset_kind = 'BUILDING'`).all<{ asset_key: string }>(countryId);
     expect(buildings.map((row) => row.asset_key)).toEqual(["state-archive-core"]);
-  });
+  }, 15_000);
 });

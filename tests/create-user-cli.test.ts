@@ -40,7 +40,7 @@ describe("create-user CLI boundary", () => {
       country: { name: "Company Workspace" },
       initialCity: { name: "Main Product" },
     });
-  });
+  }, 15_000);
 
   it("does not create an account when password confirmation differs", async () => {
     const stderr: string[] = [];

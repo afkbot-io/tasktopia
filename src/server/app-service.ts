@@ -2807,7 +2807,10 @@ export class AppService {
   }
 
   private async syncCountryArchiveComplex(
-    countryId: string, preferredAnchor?: Cell, snapshot?: GenerationSpatialSnapshot,
+    countryId: string,
+    preferredAnchor?: Cell,
+    snapshot?: GenerationSpatialSnapshot,
+    blockedOrigins = new Set<string>(),
   ): Promise<Rect | undefined> {
     const archive = await this.getArchive(countryId);
     let features = (snapshot?.features ?? await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "COUNTRY_ARCHIVE");
@@ -2878,6 +2881,7 @@ export class AppService {
       ]);
       for (const offset of candidates) {
         const origin = { x: anchor.x + offset.x, y: anchor.y + offset.y };
+        if (blockedOrigins.has(cellKey(origin))) continue;
         // Persist only the campus boundary. The secured rectangle is validated
         // below, while buildings/fences own their exact cells. Keeping 136
         // perimeter cells instead of 1,176 interior points prevents an
@@ -2939,7 +2943,21 @@ export class AppService {
           if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
         }
       }
-      if (!connector) throw new DomainError("ROUTE_BLOCKED", "Не удалось соединить Государственный архив с дорожной сетью");
+      if (!connector) {
+        // A buildable campus can still be isolated by the full two-lane road
+        // profile on a regenerated mature map. Retry another deterministic
+        // campus origin before rejecting the whole country replay.
+        if (blockedOrigins.size < 16) {
+          const blockedBounds = boundsOf([...compound.footprint, ...compound.accessPath]);
+          relocatedBounds = relocatedBounds ? unionRect(relocatedBounds, blockedBounds) : blockedBounds;
+          blockedOrigins.add(cellKey(compound.origin));
+          await this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?").run(compound.id);
+          if (snapshot) snapshot.features = snapshot.features.filter((feature) => feature.id !== compound!.id && feature.parentFeatureId !== compound!.id);
+          const retriedBounds = await this.syncCountryArchiveComplex(countryId, preferredAnchor, snapshot, blockedOrigins);
+          return relocatedBounds && retriedBounds ? unionRect(relocatedBounds, retriedBounds) : relocatedBounds ?? retriedBounds;
+        }
+        throw new DomainError("ROUTE_BLOCKED", "Не удалось соединить Государственный архив с дорожной сетью");
+      }
       await this.addRoadPath(countryId, seed, connector, "LOCAL", snapshot);
       await this.db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify(connector), compound.id);
       compound = { ...compound, accessPath: connector };
