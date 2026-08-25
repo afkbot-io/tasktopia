@@ -3020,6 +3020,7 @@ export class AppService {
   ): Promise<WorldFeatureDto | undefined> {
     let existing = (snapshot?.features ?? await this.listWorldFeatures(countryId))
       .find((feature) => feature.kind === "AIRPORT" && feature.cityId === city.id && feature.assetKind === "AREA");
+    const legacyAirportId = existing?.id;
     const connectToRoadNetwork = async (origin: Cell, footprint: Cell[], excludedFeatureId?: string): Promise<Cell[]> => {
       const site = boundsOf(footprint);
       const siteCenter = { x: Math.round((site.minX + site.maxX) / 2), y: Math.round((site.minY + site.maxY) / 2) };
@@ -3099,11 +3100,22 @@ export class AppService {
     };
     if (existing) {
       if (existing.accessPath.length > 0) return existing;
-      const connector = await connectToRoadNetwork(existing.origin, existing.footprint, existing.id);
-      await this.db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify(connector), existing.id);
-      existing = { ...existing, accessPath: connector };
-      if (snapshot) snapshot.features = snapshot.features.map((feature) => feature.id === existing!.id ? existing! : feature);
-      return existing;
+      try {
+        const connector = await connectToRoadNetwork(existing.origin, existing.footprint, existing.id);
+        await this.db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify(connector), existing.id);
+        existing = { ...existing, accessPath: connector };
+        if (snapshot) snapshot.features = snapshot.features.map((feature) => feature.id === existing!.id ? existing! : feature);
+        return existing;
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+        // Early atlas builds could persist an airport inside later city growth
+        // without an access road. If that site can no longer accept a full
+        // road profile, relocate the legacy feature transactionally instead
+        // of keeping the world worker in a restart loop.
+        await this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?").run(existing.id);
+        if (snapshot) snapshot.features = snapshot.features.filter((feature) => feature.id !== existing!.id && feature.parentFeatureId !== existing!.id);
+        existing = undefined;
+      }
     }
     const candidates: Cell[] = [];
     const centeredX = city.center.x - Math.floor(AIRPORT_COMPOUND.width / 2);
@@ -3151,6 +3163,9 @@ export class AppService {
         orientation: "E",
         accessPath: connector,
       }, snapshot);
+    }
+    if (legacyAirportId) {
+      throw new DomainError("ROUTE_BLOCKED", `Не удалось безопасно перенести аэропорт города ${city.name}`);
     }
     return undefined;
   }

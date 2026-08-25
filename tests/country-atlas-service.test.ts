@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AppService } from "../src/server/app-service";
+import { AppService, DomainError } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import type { RealtimeEvent } from "../src/shared/contracts";
+import { boundsOf, expandRect, intersects } from "../src/server/world/grid";
 
 describe("country atlas read model", () => {
   let db: Db;
@@ -106,5 +107,37 @@ describe("country atlas read model", () => {
     await service.getCountryAtlas(countryId);
     expect(listCities).toHaveBeenCalled();
     expect((await service.listCities(countryId))[0]!.center).toEqual(city.center);
+  }, 30_000);
+
+  it("transactionally relocates a legacy airport whose occupied site cannot accept an access road", async () => {
+    const city = await service.createCity(countryId, { name: "Legacy airport city", idempotencyKey: "legacy-airport-city" });
+    const airport = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "AIRPORT" && feature.cityId === city.id && feature.assetKind === "AREA")!;
+    const legacyOrigin = { x: city.center.x - 22, y: city.center.y - 11 };
+    const delta = { x: legacyOrigin.x - airport.origin.x, y: legacyOrigin.y - airport.origin.y };
+    const legacyFootprint = airport.footprint.map((cell) => ({ x: cell.x + delta.x, y: cell.y + delta.y }));
+    await db.prepare("UPDATE world_features_v6 SET origin_x = ?, origin_y = ?, footprint_json = ?, access_json = ? WHERE id = ?").run(
+      legacyOrigin.x, legacyOrigin.y, JSON.stringify(legacyFootprint), JSON.stringify([]), airport.id,
+    );
+    type AirportRoadWriter = {
+      addRoadPath: (countryId: string, seed: number, path: Array<{ x: number; y: number }>, roadClass: "LOCAL", snapshot?: unknown) => Promise<void>;
+    };
+    const roadWriter = service as unknown as AirportRoadWriter;
+    const addRoadPath = roadWriter.addRoadPath.bind(roadWriter);
+    vi.spyOn(roadWriter, "addRoadPath").mockImplementation(async (...args) => {
+      const start = args[2][0]!;
+      if (Math.abs(start.x - city.center.x) + Math.abs(start.y - city.center.y) < 48) {
+        throw new DomainError("ROUTE_BLOCKED", "legacy airport site is occupied");
+      }
+      await addRoadPath(...args);
+    });
+
+    expect(await service.upgradeCityAirports()).toBe(1);
+
+    const relocated = (await service.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "AIRPORT" && feature.cityId === city.id && feature.assetKind === "AREA")!;
+    expect(relocated.id).not.toBe(airport.id);
+    expect(relocated.accessPath.length).toBeGreaterThan(4);
+    expect(intersects(expandRect(city.bounds, 4), boundsOf(relocated.footprint))).toBe(false);
   }, 30_000);
 });
