@@ -4,20 +4,26 @@ const AIRCRAFT_MODELS = Array.from({ length: 8 }, (_, index) => ({
   first: `atlas/aircraft/airplane-model-${index + 1}-frame-1.png`,
   second: `atlas/aircraft/airplane-model-${index + 1}-frame-2.png`,
 }));
+const PLANET_AIRCRAFT_MODELS = Array.from({ length: 8 }, (_, index) => ({
+  first: `atlas/aircraft-v2/airplane-topdown-${index + 1}-frame-1.png`,
+  second: `atlas/aircraft-v2/airplane-topdown-${index + 1}-frame-2.png`,
+}));
 
-export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facing, size = "default" }: {
+export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facing = "right", size = "default", rotateWithPath = false }: {
   path: string;
   durationSeconds: number;
   delaySeconds: number;
   kind: number;
-  facing: "left" | "right";
+  facing?: "left" | "right";
   size?: "default" | "planet";
+  rotateWithPath?: boolean;
 }) {
-  const model = AIRCRAFT_MODELS[Math.abs(kind) % AIRCRAFT_MODELS.length]!;
+  const models = size === "planet" ? PLANET_AIRCRAFT_MODELS : AIRCRAFT_MODELS;
+  const model = models[Math.abs(kind) % models.length]!;
   const width = size === "planet" ? 24 : 36;
   const height = size === "planet" ? 16 : 24;
   return <g className="atlas-aircraft-flight" data-facing={facing}>
-    <animateMotion path={path} dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" />
+    <animateMotion path={path} dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" rotate={rotateWithPath ? "auto" : undefined} />
     {size === "planet" && <animateTransform attributeName="transform" type="scale" values=".58;.86;1;.86;.58" keyTimes="0;.12;.5;.88;1" dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" additive="sum" />}
     <image
       className="atlas-aircraft-sprite atlas-aircraft-frame-a"
@@ -26,7 +32,7 @@ export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facin
       y={-height / 2}
       width={width}
       height={height}
-      transform={facing === "left" ? "scale(-1 1)" : undefined}
+      transform={!rotateWithPath && facing === "left" ? "scale(-1 1)" : undefined}
     />
     <image
       className="atlas-aircraft-sprite atlas-aircraft-frame-b"
@@ -35,7 +41,7 @@ export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facin
       y={-height / 2}
       width={width}
       height={height}
-      transform={facing === "left" ? "scale(-1 1)" : undefined}
+      transform={!rotateWithPath && facing === "left" ? "scale(-1 1)" : undefined}
     />
   </g>;
 }

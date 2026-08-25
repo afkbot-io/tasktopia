@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlanetAtlasDto } from "../src/shared/planet-atlas-contract";
-import { layoutPlanetCountryLabels, projectPlanetAtlas, projectPlanetGlobe, projectProjectedPlanetGlobe } from "../src/shared/planet-atlas";
+import { layoutPlanetCountryLabels, projectPlanetAtlas, projectPlanetMap, projectProjectedPlanetMap } from "../src/shared/planet-atlas";
 import { planetAtlasCacheKey } from "../src/client/planet-atlas-cache";
 
 const fixture: PlanetAtlasDto = {
@@ -33,7 +33,7 @@ describe("planet atlas projection", () => {
       }
       const countryCells = new Set(country.cells.map(cellKey));
       const visited = new Set<string>();
-      const queue = [country.cells[0]!];
+      const queue: Array<{ q: number; r: number }> = [country.cells[0]!];
       while (queue.length > 0) {
         const cell = queue.shift()!;
         const key = cellKey(cell);
@@ -56,54 +56,73 @@ describe("planet atlas projection", () => {
     expect(large.cells.length).toBeGreaterThan(small.cells.length);
   });
 
-  it("builds valid inter-country routes, clouds and ocean cells", () => {
+  it("builds terrain, fixed airport anchors and airport-only routes", () => {
     const projected = projectPlanetAtlas(fixture);
-    const ids = new Set(projected.countries.map((country) => country.id));
+    const airportIds = new Set(projected.countries.flatMap((country) => country.airports.map((airport) => airport.id)));
     expect(projected.oceanCells.length).toBeGreaterThan(100);
-    expect(projected.clouds.length).toBeGreaterThanOrEqual(6);
-    expect(projected.edgeFog).toHaveLength(28);
-    expect(projected.routes.length).toBeGreaterThanOrEqual(fixture.countries.length - 1);
+    expect(projected.clouds.length).toBeGreaterThanOrEqual(12);
+    expect(projected.stars.length).toBeGreaterThanOrEqual(40);
+    expect(projected.edgeFog.length).toBeGreaterThanOrEqual(40);
+    expect(projected.countries.flatMap((country) => country.airports)).toHaveLength(
+      fixture.countries.reduce((total, country) => total + country.cityCount, 0),
+    );
+    expect(new Set(projected.countries.flatMap((country) => country.cells.map((cell) => cell.terrain))).size).toBeGreaterThan(3);
     for (const route of projected.routes) {
-      expect(ids.has(route.fromCountryId)).toBe(true);
-      expect(ids.has(route.toCountryId)).toBe(true);
-      expect(route.fromCountryId).not.toBe(route.toCountryId);
+      expect(airportIds.has(route.fromAirportId)).toBe(true);
+      expect(airportIds.has(route.toAirportId)).toBe(true);
+      expect(route.fromAirportId).not.toBe(route.toAirportId);
       expect(route.path).toMatch(/^M/);
     }
+  });
+
+  it("does not create flights when fewer than two airports exist", () => {
+    const withoutAirports = projectPlanetAtlas({ ...fixture, countries: fixture.countries.map((country) => ({ ...country, cityCount: 0 })) });
+    const oneAirport = projectPlanetAtlas({ ...fixture, countries: [{ ...fixture.countries[0]!, cityCount: 1 }] });
+    expect(withoutAirports.routes).toEqual([]);
+    expect(oneAirport.routes).toEqual([]);
   });
 
   it("keeps browser snapshots isolated between accounts", () => {
     expect(planetAtlasCacheKey("user-a")).not.toBe(planetAtlasCacheKey("user-b"));
   });
 
-  it("projects only the visible hemisphere and rotates deterministically", () => {
-    const front = projectPlanetGlobe(fixture, { longitude: 0, latitude: 0, zoom: 1 });
-    const rotated = projectPlanetGlobe(fixture, { longitude: Math.PI / 2, latitude: 0, zoom: 1 });
-
-    expect(front.countries.flatMap((country) => country.cells).every((cell) => cell.depth > 0)).toBe(true);
-    expect(front.countries.flatMap((country) => country.cells).length).toBeGreaterThan(0);
-    expect(rotated.countries.map((country) => country.center)).not.toEqual(front.countries.map((country) => country.center));
-    expect(front.clipRadius).toBeLessThan(front.width / 2);
+  it("keeps cell and airport identity stable while the flat map pans", () => {
+    const first = projectPlanetMap(fixture, { panX: 0, panY: 0, zoom: 1 });
+    const moved = projectPlanetMap(fixture, { panX: .35, panY: -.2, zoom: 1 });
+    expect(moved.countries.flatMap((country) => country.cells).map((cell) => cell.id)).toEqual(
+      first.countries.flatMap((country) => country.cells).map((cell) => cell.id),
+    );
+    expect(moved.countries.flatMap((country) => country.airports).map((airport) => airport.cellId)).toEqual(
+      first.countries.flatMap((country) => country.airports).map((airport) => airport.cellId),
+    );
+    expect(moved.countries.map((country) => country.center)).not.toEqual(first.countries.map((country) => country.center));
   });
 
-  it("reuses the immutable seed projection while the camera moves", () => {
+  it("uses one affine transform for terrain, airports and routes", () => {
     const projected = projectPlanetAtlas(fixture);
-    const first = projectProjectedPlanetGlobe(projected, { longitude: 0, latitude: 0, zoom: 1 });
-    const second = projectProjectedPlanetGlobe(projected, { longitude: .4, latitude: .1, zoom: 1.2 });
-    expect(first.countries.map((country) => country.center)).not.toEqual(second.countries.map((country) => country.center));
-    expect(projected.countries.flatMap((country) => country.cells).length).toBeGreaterThan(0);
+    const first = projectProjectedPlanetMap(projected, { panX: 0, panY: 0, zoom: 1 });
+    const second = projectProjectedPlanetMap(projected, { panX: .4, panY: .1, zoom: 1.2 });
+    const firstAirport = first.countries.flatMap((country) => country.airports)[0]!;
+    const secondAirport = second.countries.flatMap((country) => country.airports)[0]!;
+    const firstCell = first.countries.flatMap((country) => country.cells).find((cell) => cell.id === firstAirport.cellId)!;
+    const secondCell = second.countries.flatMap((country) => country.cells).find((cell) => cell.id === secondAirport.cellId)!;
+    expect(firstAirport.center).toEqual(firstCell.center);
+    expect(secondAirport.center).toEqual(secondCell.center);
+    expect(second.routes.every((route) => route.path.startsWith("M") && route.rotateWithPath)).toBe(true);
   });
 
-  it("lets the selected country fill the viewport without fractional hex seams", () => {
-    const globe = projectPlanetGlobe(fixture, { longitude: 0, latitude: 0, zoom: 5.5 });
-    expect(globe.clipRadius).toBeGreaterThan(globe.height / 2);
-    for (const cell of globe.countries.flatMap((country) => country.cells)) {
-      expect(cell.path).not.toMatch(/\d\.\d/);
+  it("keeps pixel terrain integer-aligned at maximum zoom", () => {
+    const map = projectPlanetMap(fixture, { panX: 0, panY: 0, zoom: 5.5 });
+    for (const cell of map.countries.flatMap((country) => country.cells)) {
+      expect(Number.isInteger(cell.x)).toBe(true);
+      expect(Number.isInteger(cell.y)).toBe(true);
+      expect(Number.isInteger(cell.size)).toBe(true);
     }
   });
 
   it("lays out equal screen-space country labels without collisions", () => {
-    const globe = projectPlanetGlobe(fixture, { longitude: 0, latitude: 0, zoom: 1 });
-    const labels = layoutPlanetCountryLabels(globe.countries, globe.width, globe.height);
+    const map = projectPlanetMap(fixture, { panX: 0, panY: 0, zoom: 1 });
+    const labels = layoutPlanetCountryLabels(map.countries, map.width, map.height);
     expect(new Set(labels.map((label) => label.width))).toEqual(new Set([132]));
     expect(new Set(labels.map((label) => label.height))).toEqual(new Set([34]));
     for (let left = 0; left < labels.length; left += 1) for (let right = left + 1; right < labels.length; right += 1) {

@@ -113,6 +113,8 @@ test("planet, country and city levels keep selection and disabled states coheren
   const levels = page.getByRole("navigation", { name: "Уровень карты" });
   await levels.getByRole("button", { name: "Планета" }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-countries", String(planetFixture.countryCount));
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-renderer", "flat-pixel-map");
+  await expect(page.locator(".planet-globe-shadow, .planet-globe-atmosphere, .planet-globe-hint")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Настройки аккаунта, в сети/i })).toBeVisible();
   await expect(page.getByText("В сети", { exact: true })).toHaveCount(0);
   const countryLabelBoxes = await page.locator(".planet-country-label .atlas-overview-card-hit").evaluateAll((nodes) => nodes.map((node) => {
@@ -143,8 +145,10 @@ test("planet, country and city levels keep selection and disabled states coheren
   await expect(page.locator(".planet-routes .atlas-aircraft-sprite").first()).toBeAttached();
   await expect(page.locator(".planet-routes .atlas-aircraft-frame-b").first()).toBeAttached();
   await expect(page.locator(".planet-airport-markers rect")).not.toHaveCount(0);
-  await expect(page.locator('.planet-clouds image[href*="atlas/clouds/cloud-planet-"]')).not.toHaveCount(0);
-  await expect(page.locator('animateMotion[rotate="auto"]')).toHaveCount(0);
+  await expect(page.locator('.planet-terrain-sprite[href*="atlas/terrain-v2/"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-clouds image[href*="atlas/clouds-v2/"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-routes image[href*="atlas/aircraft-v2/"]')).not.toHaveCount(0);
+  await expect(page.locator('.planet-routes animateMotion[rotate="auto"]')).not.toHaveCount(0);
   expect(await page.locator(".planet-routes .atlas-aircraft-sprite").first().evaluate((node) => getComputedStyle(node).imageRendering)).toBe("pixelated");
   await expect(levels.getByRole("button", { name: "Страна" })).toBeDisabled();
   await expect(levels.getByRole("button", { name: "Город" })).toBeDisabled();

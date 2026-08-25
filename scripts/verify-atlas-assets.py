@@ -30,7 +30,18 @@ def main() -> None:
     supports = [verify(ATLAS / "airport" / f"airport-support-{variant}.png", (128, 80)) for variant in range(1, 9)]
     assert len(set(terminals)) == 5, "airport terminals must be distinct"
     assert len(set(supports)) == 8, "airport support structures must be distinct"
-    print("atlas assets: 8 aircraft x2, 16 clouds, 5 terminals, 8 support structures verified")
+    terrain_names = ("grass", "meadow", "forest", "hill", "mountain", "coast", "river", "stone")
+    terrain = [verify(ATLAS / "terrain-v2" / f"planet-{name}.png", (16, 16)) for name in terrain_names]
+    assert len(set(terrain)) == 8, "planet terrain sprites must be distinct"
+    planet_aircraft = []
+    for model in range(1, 9):
+        frames = [verify(ATLAS / "aircraft-v2" / f"airplane-topdown-{model}-frame-{frame}.png", (24, 16)) for frame in range(1, 3)]
+        assert frames[0] != frames[1], f"planet aircraft model {model}: animation frames are identical"
+        planet_aircraft.append(frames[0])
+    assert len(set(planet_aircraft)) == 8, "planet aircraft models must be distinct"
+    planet_clouds = [verify(ATLAS / "clouds-v2" / f"cloud-topdown-{variant}.png", (64, 32)) for variant in range(1, 9)]
+    assert len(set(planet_clouds)) == 8, "planet V2 clouds must be distinct"
+    print("atlas assets: V1 + 8 terrain, 8 planet aircraft x2 and 8 planet clouds V2 verified")
 
 
 if __name__ == "__main__":

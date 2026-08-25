@@ -269,26 +269,24 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .atlas-state i { width: 18px; height: 18px; border: 3px solid #49645f; border-top-color: #f2c84b; animation: spin .8s steps(8) infinite; }
 
 /* ── Seeded planet atlas ─────────────────────────────────── */
-.planet-atlas { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(circle at 50% 45%, #173d55 0, #091c2d 58%, #06131f 100%); }
+.planet-atlas { position: absolute; inset: 0; overflow: hidden; background: #03090f; }
 .planet-atlas svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; user-select: none; }
 .planet-atlas svg:focus-visible { outline: 2px solid #f2d45e; outline-offset: -4px; }
-.planet-space { fill: #071a29; }
-.planet-globe-shadow { fill: #020b12; opacity: .58; filter: blur(7px); }
-.planet-globe-ocean { stroke: #75bbc4; stroke-width: 3px; }
-.planet-globe-atmosphere { pointer-events: none; }
-.planet-globe-shade { fill: none; stroke: #0617259c; stroke-width: 17px; pointer-events: none; }
+.planet-space { fill: #03090f; }
+.planet-stars { pointer-events: none; }
+.planet-stars rect { fill: #c2d7d5; opacity: .32; shape-rendering: crispEdges; animation: planet-star-twinkle 3.6s steps(3, end) var(--star-delay) infinite; }
+@keyframes planet-star-twinkle { 50% { opacity: .88; } }
+.planet-map-ocean { opacity: .92; }
+.planet-map-frame { fill: none; stroke: #163744; stroke-width: 8px; shape-rendering: crispEdges; pointer-events: none; }
+.planet-fog-pixels { pointer-events: none; }
+.planet-fog-pixels rect { fill: #010407; shape-rendering: crispEdges; }
 .planet-ocean, .planet-coast, .planet-routes { pointer-events: none; }
-.planet-ocean path { stroke: #2c7890; stroke-width: .45px; shape-rendering: crispEdges; }
-.planet-water-sparkles { pointer-events: none; }
-.planet-water-sparkles rect { fill: #b8dadd; shape-rendering: crispEdges; animation: planet-water-shimmer 2.4s steps(2, end) infinite; }
-.planet-water-sparkles rect[data-phase="1"] { animation-delay: -1.2s; }
-@keyframes planet-water-shimmer { 50% { translate: 4px 0; fill: #70b8c4; } }
-.planet-coast path { fill: #c4b176; stroke: #ede0a2; stroke-width: .7px; opacity: .8; shape-rendering: crispEdges; }
+.planet-terrain-sprite { shape-rendering: crispEdges; }
 .planet-country { cursor: grab; outline: none; pointer-events: bounding-box; }
 .planet-country-hit { fill: transparent; stroke: none; pointer-events: all; }
-.planet-country > path { stroke-width: 1.2px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; transition: filter .12s steps(2, end); }
-.planet-country:hover > path, .planet-country:focus > path { filter: brightness(1.18) saturate(1.08); }
-.planet-country[data-active="true"] > path { stroke: none; filter: brightness(1.14) saturate(1.12); }
+.planet-country-tint { opacity: .18; shape-rendering: crispEdges; pointer-events: none; }
+.planet-country:hover .planet-terrain-sprite, .planet-country:focus .planet-terrain-sprite { filter: brightness(1.12) saturate(1.05); }
+.planet-country[data-active="true"] .planet-terrain-sprite { filter: brightness(1.1) saturate(1.08); }
 .planet-country[data-selecting="true"] { opacity: .68; }
 .atlas-overview-card { cursor: pointer; outline: none; }
 .atlas-overview-card-hit { fill: #0a1b1ef2; stroke: #c3b06c; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
@@ -299,20 +297,17 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-country-label[data-active="true"] .atlas-overview-card-hit { stroke: #f2d45e; stroke-width: 2px; }
 .planet-country-label[data-selecting="true"] { opacity: .68; }
 .planet-country-label:hover .atlas-overview-card-hit, .planet-country-label:focus .atlas-overview-card-hit { fill: #112a2e; stroke: #f2d45e; }
-.planet-route-line { fill: none; stroke: #d7e8dc; stroke-width: 1px; stroke-dasharray: 3 4; opacity: .28; vector-effect: non-scaling-stroke; }
+.planet-route-line { fill: none; stroke: #bed4cf; stroke-width: .8px; stroke-dasharray: 2 5; opacity: .2; vector-effect: non-scaling-stroke; }
 .planet-clouds { pointer-events: none; }
 .planet-airport-markers rect { fill: #0b1d20; stroke: #f2c84b; stroke-width: 1px; vector-effect: non-scaling-stroke; }
 .planet-airport-markers path { fill: #edf1df; shape-rendering: crispEdges; }
+.planet-clouds { opacity: .38; }
 .planet-clouds > g { animation: planet-cloud-drift var(--cloud-duration) linear var(--cloud-delay) infinite; }
-.planet-clouds path { fill: #eaf0df; stroke: #b7c9c3; stroke-width: .8px; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
-.planet-clouds .planet-cloud-shade { fill: #b9cbc5; }
 @keyframes planet-cloud-drift { from { translate: 0 0; } to { translate: var(--cloud-drift-x) var(--cloud-drift-y); } }
-.planet-globe-hint { position: absolute; left: 50%; bottom: 70px; z-index: 3; padding: 7px 10px; border: 1px solid #365768; border-radius: 7px; background: #071923d9; color: #9eb4b8; font-size: 10px; transform: translateX(-50%); pointer-events: none; }
-.planet-edge-fog { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
-.planet-edge-fog i, .country-edge-water-fog i { position: absolute; width: 36px; height: 12px; margin: -6px 0 0 -18px; background: #eaf0df; image-rendering: pixelated; animation: edge-fog-drift 9s steps(6, end) infinite alternate; }
-.planet-edge-fog i::before, .country-edge-water-fog i::before, .planet-edge-fog i::after, .country-edge-water-fog i::after { position: absolute; content: ""; }
-.planet-edge-fog i::before, .country-edge-water-fog i::before { left: -16px; top: 5px; width: 28px; height: 12px; background: #d2dfd8; }
-.planet-edge-fog i::after, .country-edge-water-fog i::after { left: 12px; top: -7px; width: 22px; height: 14px; background: #f4f4df; }
+.country-edge-water-fog i { position: absolute; width: 36px; height: 12px; margin: -6px 0 0 -18px; background: #eaf0df; image-rendering: pixelated; animation: edge-fog-drift 9s steps(6, end) infinite alternate; }
+.country-edge-water-fog i::before, .country-edge-water-fog i::after { position: absolute; content: ""; }
+.country-edge-water-fog i::before { left: -16px; top: 5px; width: 28px; height: 12px; background: #d2dfd8; }
+.country-edge-water-fog i::after { left: 12px; top: -7px; width: 22px; height: 14px; background: #f4f4df; }
 .country-edge-water-fog i { background: #b9d7d2; }
 .country-edge-water-fog i::before { background: #79aeb0; }
 .country-edge-water-fog i::after { background: #d5e6dc; }
@@ -547,7 +542,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .atlas-aircraft-flight { display: none; }
   .planet-clouds > g { animation: none !important; }
-  .planet-water-sparkles rect, .planet-edge-fog i, .country-edge-water-fog i { animation: none !important; }
+  .planet-stars rect, .country-edge-water-fog i { animation: none !important; }
   .atlas-clouds > g { animation: none !important; }
 }
 
