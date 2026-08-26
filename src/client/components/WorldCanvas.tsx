@@ -2626,7 +2626,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       if (focusCityId) {
         const scene = initialCitySceneRef.current?.city.id === focusCityId
           ? initialCitySceneRef.current
-          : (await apiWithMetrics<CitySceneDto>(`/api/cities/${focusCityId}/scene`, {
+          : (await apiWithMetrics<CitySceneDto>(`/api/countries/${countryId}/cities/${focusCityId}/scene`, {
             cache: "no-cache",
             headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
           })).data;
@@ -2647,7 +2647,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (!focusCityId) return Promise.resolve();
         if (citySceneRefresh) return citySceneRefresh;
         citySceneRefresh = (async () => {
-          const response = await apiWithMetrics<CitySceneDto>(`/api/cities/${focusCityId}/scene`, {
+          const response = await apiWithMetrics<CitySceneDto>(`/api/countries/${countryId}/cities/${focusCityId}/scene`, {
             cache: "no-cache",
             headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
           });

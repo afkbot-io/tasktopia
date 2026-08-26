@@ -51,7 +51,7 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
   test.setTimeout(120_000);
   let sceneStarted = false;
   let sceneResolved = false;
-  await page.route("**/api/cities/*/scene", async (route) => {
+  await page.route("**/api/countries/*/cities/*/scene", async (route) => {
     sceneStarted = true;
     await new Promise((resolve) => setTimeout(resolve, 2_000));
     sceneResolved = true;
@@ -71,7 +71,7 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
 test("offers a renderer restart when the city-scene request fails", async ({ page }) => {
   test.setTimeout(120_000);
   let fail = true;
-  await page.route("**/api/cities/*/scene", async (route) => {
+  await page.route("**/api/countries/*/cities/*/scene", async (route) => {
     if (fail) {
       fail = false;
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });

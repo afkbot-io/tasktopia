@@ -268,11 +268,25 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
   app.get("/api/country-overview", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
-            const overview = await service.getCountryOverview(user.countryId);
+            const overview = await service.getCountryOverview(user.id, user.countryId);
             const etag = `"${overview.revision}-country-overview-${overview.schemaVersion}"`;
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
               .header("Cache-Control", "private, max-age=60, stale-while-revalidate=600")
+              .send(overview);
+          });
+
+  app.get("/api/countries/:countryId/overview", async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            if (!user) return reply;
+            const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
+            if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+            const overview = await service.getCountryOverview(user.id, countryId);
+            const etag = `"${overview.revision}-country-overview-${overview.schemaVersion}"`;
+            if (request.headers["if-none-match"] === etag) return reply.code(304).send();
+            return reply.header("ETag", etag)
+              .header("Cache-Control", "private, max-age=60, stale-while-revalidate=600")
+              .header("X-Country-Id", countryId)
               .send(overview);
           });
 
@@ -291,6 +305,27 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
               .header("Cache-Control", "private, no-cache, must-revalidate")
+              .header("X-World-Version", String(Math.max(0, ...scene.chunks.map((chunk) => chunk.publishedVersion))))
+              .send(scene);
+          });
+
+  app.get("/api/countries/:countryId/cities/:cityId/scene", {
+            config: { rateLimit: { max: 30, timeWindow: "1 minute", groupId: "country-city-scene" } },
+          }, async (request, reply) => {
+            const user = await requireUser(db, request, reply);
+            if (!user) return reply;
+            const params = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid() }).strict(), request.params);
+            if (!await countryRole(db, user.id, params.countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+            const currentScene = await service.getCityScene(params.countryId, params.cityId);
+            const accept = request.headers.accept ?? "";
+            const scene = accept.includes("version=1") && !accept.includes("version=2")
+              ? legacyCityScene(currentScene)
+              : currentScene;
+            const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
+            if (request.headers["if-none-match"] === etag) return reply.code(304).send();
+            return reply.header("ETag", etag)
+              .header("Cache-Control", "private, no-cache, must-revalidate")
+              .header("X-Country-Id", params.countryId)
               .header("X-World-Version", String(Math.max(0, ...scene.chunks.map((chunk) => chunk.publishedVersion))))
               .send(scene);
           });

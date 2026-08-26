@@ -20,7 +20,7 @@ describe("compact country overview projection", () => {
 
   it("centers a single city and creates no synthetic connection", () => {
     const projected = projectCountryOverview([{ id: "only", sourceCenter: { x: 812, y: -93 } }]);
-    expect(projected.centers.get("only")).toEqual({ x: 80, y: 45 });
+    expect(projected.centers.get("only")).toEqual({ x: 80, y: 48 });
     expect(projected.connections).toEqual([]);
   });
 });

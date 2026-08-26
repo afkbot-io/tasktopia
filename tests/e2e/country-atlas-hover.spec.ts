@@ -27,6 +27,8 @@ test("country overview stays compact, GPU-rendered and accessible", async ({ pag
   await loginAndOpenCountry(page);
   const atlas = page.locator(".country-overview");
   await expect(atlas).toHaveAttribute("data-country-renderer", "pixi");
+  await expect(atlas).toHaveAttribute("data-country-grid-topology", "SQUARE_4");
+  await expect(atlas).toHaveAttribute("data-country-terrain-cells", "960");
   expect(Number(await atlas.getAttribute("data-country-first-frame-ms"))).toBeLessThan(2_000);
   await expect(atlas.locator("canvas.country-overview-canvas")).toHaveCount(1);
   await expect(atlas.locator("svg")).toHaveCount(0);
@@ -42,11 +44,12 @@ test("country overview stays compact, GPU-rendered and accessible", async ({ pag
   await expect(page.locator(".header-city")).toHaveCount(0);
 
   const metrics = await page.evaluate(async () => {
-    const response = await fetch("/api/country-overview");
+    const countryId = document.querySelector<HTMLElement>(".country-overview")?.dataset.countryId;
+    const response = await fetch(`/api/countries/${countryId}/overview`);
     const body = await response.arrayBuffer();
     return { status: response.status, bytes: body.byteLength, etag: response.headers.get("etag") };
   });
-  expect(metrics).toMatchObject({ status: 200, etag: expect.stringMatching(/country-overview-1/) });
+  expect(metrics).toMatchObject({ status: 200, etag: expect.stringMatching(/country-overview-2/) });
   expect(metrics.bytes).toBeLessThan(200_000);
   await testInfo.attach("country-overview-metrics", { body: Buffer.from(JSON.stringify(metrics, null, 2)), contentType: "application/json" });
   if (process.env.ATLAS_SCREENSHOT_PATH) await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH, fullPage: true });
@@ -79,13 +82,13 @@ test("city opens with one atomic scene request and pan performs no data I/O", as
   const requests: string[] = [];
   page.on("request", (request) => {
     const pathname = new URL(request.url()).pathname;
-    if ((pathname.includes("/api/cities/") && pathname.endsWith("/scene")) || pathname.includes("/api/world/viewport") || pathname.includes("/api/chunks/")) requests.push(pathname);
+    if ((pathname.includes("/cities/") && pathname.endsWith("/scene")) || pathname.includes("/api/world/viewport") || pathname.includes("/api/chunks/")) requests.push(pathname);
   });
   await loginAndOpenCountry(page);
   requests.length = 0;
   const sceneResponsePromise = page.waitForResponse((response) => {
     const pathname = new URL(response.url()).pathname;
-    return pathname.includes("/api/cities/") && pathname.endsWith("/scene");
+    return pathname.includes("/cities/") && pathname.endsWith("/scene");
   });
   await page.locator(".country-overview-city").first().click();
   const sceneResponse = await sceneResponsePromise;
@@ -142,7 +145,7 @@ test("planet, country and city transitions keep a single renderer mounted", asyn
 test("a failed city preload keeps the country interactive and supports retry", async ({ page }) => {
   test.setTimeout(120_000);
   let fail = true;
-  await page.route("**/api/cities/*/scene", async (route) => {
+  await page.route("**/api/countries/*/cities/*/scene", async (route) => {
     if (fail) {
       fail = false;
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });

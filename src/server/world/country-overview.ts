@@ -1,7 +1,7 @@
 import type { Cell, Rect } from "../../shared/contracts";
 
 const OVERVIEW_WIDTH = 160;
-const OVERVIEW_HEIGHT = 90;
+const OVERVIEW_HEIGHT = 96;
 const OVERVIEW_PADDING = 12;
 
 type CityCenter = { id: string; sourceCenter: Cell };
