@@ -9,9 +9,11 @@ test("starts the whole-city request before slow sprite downloads", async ({ page
     if (new URL(request.url()).pathname.endsWith("/scene") && sceneStartedAt === 0) sceneStartedAt = Date.now();
   });
   await page.route("**/game-assets/**", async (route) => {
-    if (firstSpriteStartedAt === 0) firstSpriteStartedAt = Date.now();
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
-    if (firstSpriteReleasedAt === 0) firstSpriteReleasedAt = Date.now();
+    if (firstSpriteStartedAt === 0) {
+      firstSpriteStartedAt = Date.now();
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      firstSpriteReleasedAt = Date.now();
+    }
     await route.continue();
   });
   await page.goto("/");
