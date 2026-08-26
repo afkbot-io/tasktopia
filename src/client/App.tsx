@@ -207,7 +207,7 @@ export function App() {
       const scene = await api<CitySceneDto>(`/api/cities/${target.city.id}/scene`, {
         signal,
         cache: "no-cache",
-        headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+        headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
       });
       if (signal.aborted) return;
       const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
@@ -385,7 +385,7 @@ export function App() {
                     const scene = await api<CitySceneDto>(`/api/cities/${city.id}/scene`, {
                       signal,
                       cache: "no-cache",
-                      headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+                      headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
                     });
                     if (signal.aborted) return;
                     const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
@@ -436,7 +436,7 @@ export function App() {
           const scene = await api<CitySceneDto>(`/api/cities/${city.id}/scene`, {
             signal,
             cache: "no-cache",
-            headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+            headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
           });
           if (signal.aborted) return;
           const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });

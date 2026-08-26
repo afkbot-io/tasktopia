@@ -1,13 +1,12 @@
 import type { ChunkPayloadDto, ChunkTaskDto, CityDto } from "./contracts";
 
-export const CITY_SCENE_SCHEMA_VERSION = 1 as const;
+export const CITY_SCENE_SCHEMA_VERSION = 2 as const;
 
 export type CompletedDistrictRenderSnapshotDto = {
   districtId: string;
   revision: string;
-  tasks: Array<Pick<ChunkTaskDto,
-    "id" | "taskNumber" | "status" | "stage" | "buildingType" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint"
-  >>;
+  /** One immutable render record per completed task, instead of one copy per intersecting page. */
+  tasks: ChunkTaskDto[];
 };
 
 export type CitySceneDto = {

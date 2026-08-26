@@ -44,6 +44,28 @@ const retainedAuthoredBatch = [
 ] as const;
 
 describe("Pixel City active asset contract", () => {
+  it("packs every prop into one immutable particle atlas", () => {
+    const assetManifest = manifest as typeof manifest & {
+      propAtlas?: {
+        path: string;
+        size: [number, number];
+        frames: Record<string, { x: number; y: number; width: number; height: number }>;
+      };
+    };
+    const atlas = assetManifest.propAtlas;
+    expect(atlas).toBeDefined();
+    expect(atlas!.size[0]).toBeLessThanOrEqual(2048);
+    expect(atlas!.size[1]).toBeLessThanOrEqual(2048);
+    expect(existsSync(resolve(runtime, atlas!.path))).toBe(true);
+    expect(Object.keys(atlas!.frames).sort()).toEqual(Object.keys(manifest.props).sort());
+    for (const [key, prop] of Object.entries(manifest.props as unknown as Record<string, { size: [number, number] }>)) {
+      const frame = atlas!.frames[key];
+      expect(frame, key).toMatchObject({ width: prop.size[0], height: prop.size[1] });
+      expect(frame!.x + frame!.width, key).toBeLessThanOrEqual(atlas!.size[0]);
+      expect(frame!.y + frame!.height, key).toBeLessThanOrEqual(atlas!.size[1]);
+    }
+  });
+
   it("keeps every fuel-service family on the shared V6 grid with a centred full-size entrance", () => {
     const fuelStations = buildingCatalog.buildings.filter((building) => building.serviceRole === "fuel-service");
     expect(fuelStations).toHaveLength(7);

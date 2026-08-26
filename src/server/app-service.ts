@@ -1623,22 +1623,27 @@ export class AppService {
     for (const chunk of chunks) for (const task of chunk.tasks) {
       if (!completedDistrictIds.has(task.districtId)) continue;
       const taskById = completedTasksByDistrict.get(task.districtId) ?? new Map();
-      taskById.set(task.id, {
-          id: task.id, taskNumber: task.taskNumber, status: task.status, stage: task.stage,
-          buildingType: task.buildingType, visualKind: task.visualKind, visualAssetKey: task.visualAssetKey,
-          platformType: task.platformType, origin: task.origin, footprint: task.footprint,
-      });
+      taskById.set(task.id, task);
       completedTasksByDistrict.set(task.districtId, taskById);
     }
     const completedDistrictSnapshots = [...completedDistrictIds].sort().map((districtId) => {
       const tasks = [...completedTasksByDistrict.get(districtId)?.values() ?? []].sort((left, right) => left.taskNumber - right.taskNumber);
       return { districtId, revision: stableHash({ districtId, tasks }), tasks };
     });
+    const sceneChunks: ChunkPayloadDto[] = chunks.map((chunk) => {
+      const { contentHash, ...content } = chunk;
+      void contentHash;
+      const compactContent = {
+        ...content,
+        tasks: chunk.tasks.filter((task) => !completedDistrictIds.has(task.districtId)),
+      };
+      return { ...compactContent, contentHash: chunkPayloadContentHash(compactContent) } as ChunkPayloadDto;
+    });
     const sceneIdentity = {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       cityId,
       bounds: city.bounds,
-      chunks: chunks.map((chunk) => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash, version: chunk.publishedVersion })),
+      chunks: sceneChunks.map((chunk) => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash, version: chunk.publishedVersion })),
     };
     const scene: CitySceneDto = {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
@@ -1646,7 +1651,7 @@ export class AppService {
       city: { id: city.id, name: city.name, center: city.center, bounds: city.bounds },
       lod: "DETAIL",
       chunkSize: CHUNK_SIZE,
-      chunks,
+      chunks: sceneChunks,
       completedDistrictSnapshots,
     };
     this.citySceneCache.set(cacheKey, scene);

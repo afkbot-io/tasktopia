@@ -162,6 +162,18 @@ export const PROP_SPRITES = Object.fromEntries(
   Object.entries(PROP_CATALOG).map(([key, value]) => [key, value.path]),
 ) as Record<string, string>;
 
+type RawPropAtlas = {
+  path: string;
+  size: [number, number];
+  frames: Record<string, { x: number; y: number; width: number; height: number }>;
+};
+const rawPropAtlas = manifest.propAtlas as unknown as RawPropAtlas;
+export const PROP_ATLAS = {
+  path: gameAssetUrl(rawPropAtlas.path),
+  size: { width: rawPropAtlas.size[0], height: rawPropAtlas.size[1] },
+  frames: rawPropAtlas.frames,
+} as const;
+
 const ILLUMINATED_PROP_PAIRS = new Map<string, string>([
   ["streetlamp", "streetlamp-lit"],
   ["streetlamp-modern", "streetlamp-modern-lit"],

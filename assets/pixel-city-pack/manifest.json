@@ -20401,5 +20401,1742 @@
       "visualProfile": "TASKTOPIA_V5_CONSTRUCTION_DETAIL"
     }
   },
-  "assetRevision": "070809906bd33e85"
+  "propAtlas": {
+    "path": "atlas/props-v1.png",
+    "size": [
+      512,
+      512
+    ],
+    "frames": {
+      "construction-build-tower-crane": {
+        "x": 1,
+        "y": 1,
+        "width": 80,
+        "height": 96
+      },
+      "construction-build-tower-crane-alt": {
+        "x": 82,
+        "y": 1,
+        "width": 72,
+        "height": 88
+      },
+      "city-bus-north": {
+        "x": 155,
+        "y": 1,
+        "width": 24,
+        "height": 56
+      },
+      "city-bus-south": {
+        "x": 180,
+        "y": 1,
+        "width": 24,
+        "height": 56
+      },
+      "construction-plan-excavator": {
+        "x": 205,
+        "y": 1,
+        "width": 48,
+        "height": 32
+      },
+      "construction-plan-site-office": {
+        "x": 254,
+        "y": 1,
+        "width": 48,
+        "height": 32
+      },
+      "bandstand": {
+        "x": 303,
+        "y": 1,
+        "width": 40,
+        "height": 32
+      },
+      "construction-build-scaffolding-rack": {
+        "x": 344,
+        "y": 1,
+        "width": 32,
+        "height": 32
+      },
+      "fountain-large": {
+        "x": 377,
+        "y": 1,
+        "width": 32,
+        "height": 32
+      },
+      "gazebo": {
+        "x": 410,
+        "y": 1,
+        "width": 32,
+        "height": 32
+      },
+      "tree-apple": {
+        "x": 443,
+        "y": 1,
+        "width": 16,
+        "height": 32
+      },
+      "tree-aspen": {
+        "x": 460,
+        "y": 1,
+        "width": 16,
+        "height": 32
+      },
+      "tree-birch": {
+        "x": 477,
+        "y": 1,
+        "width": 16,
+        "height": 32
+      },
+      "tree-cedar": {
+        "x": 494,
+        "y": 1,
+        "width": 16,
+        "height": 32
+      },
+      "tree-cherry": {
+        "x": 1,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-conifer": {
+        "x": 18,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-cypress": {
+        "x": 35,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-deadwood": {
+        "x": 52,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-magnolia": {
+        "x": 69,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-maple": {
+        "x": 86,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-oak": {
+        "x": 103,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-palm": {
+        "x": 120,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-pine": {
+        "x": 137,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-redwood": {
+        "x": 154,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-round": {
+        "x": 171,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "tree-willow": {
+        "x": 188,
+        "y": 98,
+        "width": 16,
+        "height": 32
+      },
+      "city-bus-horizontal": {
+        "x": 205,
+        "y": 98,
+        "width": 56,
+        "height": 24
+      },
+      "fire-engine-horizontal": {
+        "x": 262,
+        "y": 98,
+        "width": 56,
+        "height": 24
+      },
+      "fire-engine-ladder": {
+        "x": 319,
+        "y": 98,
+        "width": 56,
+        "height": 24
+      },
+      "fire-engine-rescue": {
+        "x": 376,
+        "y": 98,
+        "width": 56,
+        "height": 24
+      },
+      "construction-build-mobile-crane": {
+        "x": 433,
+        "y": 98,
+        "width": 48,
+        "height": 24
+      },
+      "construction-build-dump-truck": {
+        "x": 1,
+        "y": 131,
+        "width": 40,
+        "height": 24
+      },
+      "park-bandstand": {
+        "x": 42,
+        "y": 131,
+        "width": 32,
+        "height": 24
+      },
+      "park-pond": {
+        "x": 75,
+        "y": 131,
+        "width": 32,
+        "height": 24
+      },
+      "playground-carousel": {
+        "x": 108,
+        "y": 131,
+        "width": 32,
+        "height": 24
+      },
+      "cyclist-horizontal-a": {
+        "x": 141,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "cyclist-horizontal-b": {
+        "x": 166,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "cyclist-horizontal-c": {
+        "x": 191,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "park-path-circle": {
+        "x": 216,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "playground-climbing": {
+        "x": 241,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "playground-swing": {
+        "x": 266,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "pond-small": {
+        "x": 291,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "scooter-horizontal-a": {
+        "x": 316,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "scooter-horizontal-b": {
+        "x": 341,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "scooter-horizontal-c": {
+        "x": 366,
+        "y": 131,
+        "width": 24,
+        "height": 24
+      },
+      "animal-deer-east-a": {
+        "x": 391,
+        "y": 131,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-east-b": {
+        "x": 408,
+        "y": 131,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-east-c": {
+        "x": 425,
+        "y": 131,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-north-a": {
+        "x": 442,
+        "y": 131,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-north-b": {
+        "x": 459,
+        "y": 131,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-north-c": {
+        "x": 476,
+        "y": 131,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-south-a": {
+        "x": 493,
+        "y": 131,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-south-b": {
+        "x": 1,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-south-c": {
+        "x": 18,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-west-a": {
+        "x": 35,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-west-b": {
+        "x": 52,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "animal-deer-west-c": {
+        "x": 69,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "construction-build-rebar-cage": {
+        "x": 86,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "construction-plan-safety-board": {
+        "x": 103,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "construction-plan-survey-tripod": {
+        "x": 120,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "cyclist-north-a": {
+        "x": 137,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "cyclist-north-b": {
+        "x": 154,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "cyclist-north-c": {
+        "x": 171,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "cyclist-south-a": {
+        "x": 188,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "cyclist-south-b": {
+        "x": 205,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "cyclist-south-c": {
+        "x": 222,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "fisher-east": {
+        "x": 239,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "fisher-north": {
+        "x": 256,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "fisher-south": {
+        "x": 273,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "fisher-west": {
+        "x": 290,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "mountain-peak": {
+        "x": 307,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "park-sculpture": {
+        "x": 324,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "resident-box": {
+        "x": 341,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "resident-phone": {
+        "x": 358,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "resident-reader": {
+        "x": 375,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "resident-sweeper": {
+        "x": 392,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "resident-wave": {
+        "x": 409,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "resident-worker": {
+        "x": 426,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "scooter-north-a": {
+        "x": 443,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "scooter-north-b": {
+        "x": 460,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "scooter-north-c": {
+        "x": 477,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "scooter-south-a": {
+        "x": 494,
+        "y": 156,
+        "width": 16,
+        "height": 24
+      },
+      "scooter-south-b": {
+        "x": 1,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "scooter-south-c": {
+        "x": 18,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "statue-abstract": {
+        "x": 35,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "statue-hero": {
+        "x": 52,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-east-a": {
+        "x": 69,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-east-b": {
+        "x": 86,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-east-c": {
+        "x": 103,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-north-a": {
+        "x": 120,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-north-b": {
+        "x": 137,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-north-c": {
+        "x": 154,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-south-a": {
+        "x": 171,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-south-b": {
+        "x": 188,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-south-c": {
+        "x": 205,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-west-a": {
+        "x": 222,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-west-b": {
+        "x": 239,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "walker-west-c": {
+        "x": 256,
+        "y": 181,
+        "width": 16,
+        "height": 24
+      },
+      "boat-vertical-a": {
+        "x": 273,
+        "y": 181,
+        "width": 8,
+        "height": 24
+      },
+      "boat-vertical-b": {
+        "x": 282,
+        "y": 181,
+        "width": 8,
+        "height": 24
+      },
+      "flower-bed-vertical": {
+        "x": 291,
+        "y": 181,
+        "width": 8,
+        "height": 24
+      },
+      "airplane-courier": {
+        "x": 300,
+        "y": 181,
+        "width": 32,
+        "height": 16
+      },
+      "airplane-small": {
+        "x": 333,
+        "y": 181,
+        "width": 32,
+        "height": 16
+      },
+      "airplane-twin": {
+        "x": 366,
+        "y": 181,
+        "width": 32,
+        "height": 16
+      },
+      "park-bridge": {
+        "x": 399,
+        "y": 181,
+        "width": 32,
+        "height": 16
+      },
+      "construction-build-concrete-mixer": {
+        "x": 432,
+        "y": 181,
+        "width": 24,
+        "height": 16
+      },
+      "construction-build-steel-beams": {
+        "x": 457,
+        "y": 181,
+        "width": 24,
+        "height": 16
+      },
+      "construction-build-workbench": {
+        "x": 482,
+        "y": 181,
+        "width": 24,
+        "height": 16
+      },
+      "construction-plan-blueprint-table": {
+        "x": 1,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "construction-plan-generator": {
+        "x": 26,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "construction-plan-pipe-stack": {
+        "x": 51,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "construction-plan-sand-pile": {
+        "x": 76,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "construction-plan-string-grid": {
+        "x": 101,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "mountain-ridge": {
+        "x": 126,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "park-bench-double": {
+        "x": 151,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "park-flower-clock": {
+        "x": 176,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "playground-slide": {
+        "x": 201,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "playground-small": {
+        "x": 226,
+        "y": 206,
+        "width": 24,
+        "height": 16
+      },
+      "animal-boar-east-a": {
+        "x": 251,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-east-b": {
+        "x": 268,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-east-c": {
+        "x": 285,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-north-a": {
+        "x": 302,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-north-b": {
+        "x": 319,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-north-c": {
+        "x": 336,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-south-a": {
+        "x": 353,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-south-b": {
+        "x": 370,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-south-c": {
+        "x": 387,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-west-a": {
+        "x": 404,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-west-b": {
+        "x": 421,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-boar-west-c": {
+        "x": 438,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-east-a": {
+        "x": 455,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-east-b": {
+        "x": 472,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-east-c": {
+        "x": 489,
+        "y": 206,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-north-a": {
+        "x": 1,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-north-b": {
+        "x": 18,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-north-c": {
+        "x": 35,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-south-a": {
+        "x": 52,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-south-b": {
+        "x": 69,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-south-c": {
+        "x": 86,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-west-a": {
+        "x": 103,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-west-b": {
+        "x": 120,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-cat-west-c": {
+        "x": 137,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-east-a": {
+        "x": 154,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-east-b": {
+        "x": 171,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-east-c": {
+        "x": 188,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-north-a": {
+        "x": 205,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-north-b": {
+        "x": 222,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-north-c": {
+        "x": 239,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-south-a": {
+        "x": 256,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-south-b": {
+        "x": 273,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-south-c": {
+        "x": 290,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-west-a": {
+        "x": 307,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-west-b": {
+        "x": 324,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-dog-west-c": {
+        "x": 341,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-east-a": {
+        "x": 358,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-east-b": {
+        "x": 375,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-east-c": {
+        "x": 392,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-north-a": {
+        "x": 409,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-north-b": {
+        "x": 426,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-north-c": {
+        "x": 443,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-south-a": {
+        "x": 460,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-south-b": {
+        "x": 477,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-south-c": {
+        "x": 494,
+        "y": 223,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-west-a": {
+        "x": 1,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-west-b": {
+        "x": 18,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-duck-west-c": {
+        "x": 35,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-east-a": {
+        "x": 52,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-east-b": {
+        "x": 69,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-east-c": {
+        "x": 86,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-north-a": {
+        "x": 103,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-north-b": {
+        "x": 120,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-north-c": {
+        "x": 137,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-south-a": {
+        "x": 154,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-south-b": {
+        "x": 171,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-south-c": {
+        "x": 188,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-west-a": {
+        "x": 205,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-west-b": {
+        "x": 222,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-fox-west-c": {
+        "x": 239,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-east-a": {
+        "x": 256,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-east-b": {
+        "x": 273,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-east-c": {
+        "x": 290,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-north-a": {
+        "x": 307,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-north-b": {
+        "x": 324,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-north-c": {
+        "x": 341,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-south-a": {
+        "x": 358,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-south-b": {
+        "x": 375,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-south-c": {
+        "x": 392,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-west-a": {
+        "x": 409,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-west-b": {
+        "x": 426,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-rabbit-west-c": {
+        "x": 443,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-east-a": {
+        "x": 460,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-east-b": {
+        "x": 477,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-east-c": {
+        "x": 494,
+        "y": 240,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-north-a": {
+        "x": 1,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-north-b": {
+        "x": 18,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-north-c": {
+        "x": 35,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-south-a": {
+        "x": 52,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-south-b": {
+        "x": 69,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-south-c": {
+        "x": 86,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-west-a": {
+        "x": 103,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-west-b": {
+        "x": 120,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "animal-sheep-west-c": {
+        "x": 137,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "bus-stop-horizontal": {
+        "x": 154,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "bus-stop-vertical": {
+        "x": 171,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "construction-build-box-pallet": {
+        "x": 188,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "construction-build-brick-pallet": {
+        "x": 205,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "construction-build-cement-bags": {
+        "x": 222,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "construction-build-wheelbarrow": {
+        "x": 239,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "construction-plan-tool-crate": {
+        "x": 256,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "fountain-small": {
+        "x": 273,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "hill-rocky": {
+        "x": 290,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "hill-small": {
+        "x": 307,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "picnic-table": {
+        "x": 324,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "streetlamp-double": {
+        "x": 341,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "streetlamp-double-lit": {
+        "x": 358,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "topiary-animal": {
+        "x": 375,
+        "y": 257,
+        "width": 16,
+        "height": 16
+      },
+      "active-district-flag": {
+        "x": 392,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "archive-fence-vertical": {
+        "x": 401,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "bench-vertical": {
+        "x": 410,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "city-sign-horizontal": {
+        "x": 419,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "city-sign-vertical": {
+        "x": 428,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "crop-corn-a": {
+        "x": 437,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "crop-corn-b": {
+        "x": 446,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "crop-wheat-a": {
+        "x": 455,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "crop-wheat-b": {
+        "x": 464,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "fence-vertical": {
+        "x": 473,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "guardrail-vertical": {
+        "x": 482,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "incident-smoke-a": {
+        "x": 491,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "incident-smoke-b": {
+        "x": 500,
+        "y": 257,
+        "width": 8,
+        "height": 16
+      },
+      "incident-smoke-c": {
+        "x": 1,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "incident-smoke-d": {
+        "x": 10,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "park-lamp": {
+        "x": 19,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "park-lamp-lit": {
+        "x": 28,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "reed-cattail": {
+        "x": 37,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "reed-green": {
+        "x": 46,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp": {
+        "x": 55,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-festive": {
+        "x": 64,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-festive-lit": {
+        "x": 73,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-industrial": {
+        "x": 82,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-industrial-lit": {
+        "x": 91,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-lit": {
+        "x": 100,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-modern": {
+        "x": 109,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-modern-lit": {
+        "x": 118,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-solar": {
+        "x": 127,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-solar-lit": {
+        "x": 136,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-vintage": {
+        "x": 145,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "streetlamp-vintage-lit": {
+        "x": 154,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "topiary-spiral": {
+        "x": 163,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "traffic-light-green": {
+        "x": 172,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "traffic-light-red": {
+        "x": 181,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "tree-flowering": {
+        "x": 190,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "utility-pole": {
+        "x": 199,
+        "y": 274,
+        "width": 8,
+        "height": 16
+      },
+      "boat-horizontal-a": {
+        "x": 208,
+        "y": 274,
+        "width": 24,
+        "height": 8
+      },
+      "boat-horizontal-b": {
+        "x": 233,
+        "y": 274,
+        "width": 24,
+        "height": 8
+      },
+      "flower-bed-horizontal": {
+        "x": 258,
+        "y": 274,
+        "width": 24,
+        "height": 8
+      },
+      "archive-fence-horizontal": {
+        "x": 283,
+        "y": 274,
+        "width": 16,
+        "height": 8
+      },
+      "archive-security-barrier": {
+        "x": 300,
+        "y": 274,
+        "width": 16,
+        "height": 8
+      },
+      "bench-horizontal": {
+        "x": 317,
+        "y": 274,
+        "width": 16,
+        "height": 8
+      },
+      "bicycle-rack": {
+        "x": 334,
+        "y": 274,
+        "width": 16,
+        "height": 8
+      },
+      "fence-horizontal": {
+        "x": 351,
+        "y": 274,
+        "width": 16,
+        "height": 8
+      },
+      "guardrail-horizontal": {
+        "x": 368,
+        "y": 274,
+        "width": 16,
+        "height": 8
+      },
+      "bollard": {
+        "x": 385,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "bush-berries": {
+        "x": 394,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "bush-dark": {
+        "x": 403,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "bush-light": {
+        "x": 412,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "fire-hydrant": {
+        "x": 421,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "flower-blue": {
+        "x": 430,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "flower-pink": {
+        "x": 439,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "flower-purple": {
+        "x": 448,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "flower-red": {
+        "x": 457,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "flower-white": {
+        "x": 466,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "flower-yellow": {
+        "x": 475,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "incident-flame-a": {
+        "x": 484,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "incident-flame-b": {
+        "x": 493,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "incident-flame-c": {
+        "x": 502,
+        "y": 274,
+        "width": 8,
+        "height": 8
+      },
+      "incident-flame-d": {
+        "x": 1,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "mailbox": {
+        "x": 10,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "planter-round": {
+        "x": 19,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "recycling-bin": {
+        "x": 28,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "rock-cluster": {
+        "x": 37,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "rock-small": {
+        "x": 46,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "shrub-dry": {
+        "x": 55,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "shrub-fern": {
+        "x": 64,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "shrub-flowering": {
+        "x": 73,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "shrub-hazel": {
+        "x": 82,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "shrub-hedge": {
+        "x": 91,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "shrub-juniper": {
+        "x": 100,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      },
+      "trash-bin": {
+        "x": 109,
+        "y": 291,
+        "width": 8,
+        "height": 8
+      }
+    }
+  },
+  "assetRevision": "f6c2d2d876b94c5b"
 }
