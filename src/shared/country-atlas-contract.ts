@@ -12,7 +12,7 @@ import type {
   WorkItemType,
 } from "./contracts";
 
-export const COUNTRY_ATLAS_TERRAIN_TILE_CELLS = 4;
+export const COUNTRY_ATLAS_TERRAIN_TILE_CELLS = 2;
 export const COUNTRY_ATLAS_SCHEMA_VERSION = 5 as const;
 
 export type CountryAtlasScale = 0.5 | 0.375 | 0.25 | 0.125 | 0.0625;

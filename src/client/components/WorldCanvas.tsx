@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
-import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Particle, ParticleContainer, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
+import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadMarkingAxis } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
@@ -961,8 +961,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
   const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin) : focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
-  const initialCityCameraBoundsRef = useRef(focusArea?.bounds);
-  const initialCityCenterRef = useRef(focusCity?.center);
   const initialCitySceneRef = useRef(initialCityScene);
 
   useEffect(() => {
@@ -1134,7 +1132,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       };
       world.addChild(...WORLD_LAYER_ORDER.map((name) => worldLayers[name]));
       app.stage.addChild(world);
-      type RenderNode = Container | Graphics | Sprite | ParticleContainer;
+      type RenderNode = Container | Graphics | Sprite;
       const worldObjectKinds = new WeakMap<RenderNode, WorldObjectKind>();
       const registerWorldObject = <T extends RenderNode>(view: T, kind: WorldObjectKind): T => {
         worldObjectKinds.set(view, kind);
@@ -1157,7 +1155,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       const incidentViews = new Map<string, IncidentView>();
       const decorationViews = new Map<string, EntityViewRecord<Sprite>>();
       const ambientDecorationViews = new Map<string, { view: Sprite; baseX: number; baseY: number; phase: number; kind: string }>();
-      let staticDecorationLayers: ParticleContainer[] = [];
+      let staticDecorationLayers: Container[] = [];
       let staticDecorationSignature = "";
       let staticDecorationParticleCount = 0;
       const propAtlasTextures = new Map<string, Texture>();
@@ -1167,7 +1165,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       });
       const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Container }>();
       let entityReplacementCount = 0;
-      let currentViewBounds = initialCityCameraBoundsRef.current ?? initialViewBoundsRef.current;
+      // `focusArea` controls only the opening composition. Navigation and
+      // visibility are bounded by the complete city supplied through
+      // `viewBounds`, otherwise the camera appears frozen at 160x100 cells.
+      let currentViewBounds = initialViewBoundsRef.current;
       let currentLod: MapLod = focusCityId ? "DETAIL" : world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
       let ambientAssetsReady = false;
       let ambientAssetsPromise: Promise<void> | undefined;
@@ -1230,9 +1231,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let nextDepthSortMs = 0;
       let nextSocialCheckMs = 700;
       let airportPoints: Array<{ x: number; y: number }> = [];
-      let minimumZoomReachedAt = 0;
       let airplane: {
-        view: Sprite;
+        view: Container;
         trail: Graphics;
         elapsed: number;
         duration: number;
@@ -1627,13 +1627,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             const model = Math.floor(takeRandom() * 8) + 1;
             const texture = cachedTexture(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
             if (texture) {
-              const view = new Sprite(texture);
-              view.texture.source.scaleMode = "nearest";
-              view.anchor.set(0.5);
+              const plane = new Sprite(texture);
+              plane.texture.source.scaleMode = "nearest";
+              plane.anchor.set(0.5);
               const trail = new Graphics()
                 .rect(-25, -1, 7, 2).fill({ color: 0xd9ecdf, alpha: .45 })
                 .rect(-30, -.5, 3, 1).fill({ color: 0xd9ecdf, alpha: .25 });
-              view.addChild(trail);
+              const view = new Container();
+              view.addChild(trail, plane);
               const airportPoint = airportPoints[Math.floor(takeRandom() * Math.max(1, airportPoints.length))];
               const side = Math.floor(takeRandom() * 4);
               const edgePosition = takeRandom();
@@ -1803,6 +1804,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let desiredKeys = new Set<string>();
       let dragging = false;
       let previous = { x: 0, y: 0 };
+      // ResizeObserver may deliver its first notification while this async
+      // startup routine is still suspended above the loader declarations.
+      // Do not enter the visibility pipeline until all of its lexical
+      // dependencies have been initialized.
+      let visibleLoaderReady = false;
       const clampCamera = () => {
         const minimumScale = cameraMinimumScale();
         if (world.scale.x < minimumScale) {
@@ -1813,10 +1819,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         }
         const clamped = clampCameraPosition(world.position, world.scale.x, app.screen, currentViewBounds, CELL_SIZE);
         world.position.set(clamped.x, clamped.y);
+        host.dataset.cameraWorldX = ((app.screen.width / 2 - world.position.x) / world.scale.x / CELL_SIZE).toFixed(2);
+        host.dataset.cameraWorldY = ((app.screen.height / 2 - world.position.y) / world.scale.y / CELL_SIZE).toFixed(2);
       };
       const scheduleVisibleLoad = () => {
         cancelAnimationFrame(panFrame);
-        panFrame = requestAnimationFrame(() => { void loadVisible(); });
+        panFrame = requestAnimationFrame(() => {
+          if (visibleLoaderReady) void loadVisible();
+        });
       };
       clampCamera();
       const scheduleResize = () => {
@@ -1832,7 +1842,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           screenSize = { width: app.screen.width, height: app.screen.height };
           app.stage.hitArea = app.screen;
           clampCamera();
-          void loadVisible();
+          if (visibleLoaderReady) void loadVisible();
         });
       };
       const resizeObserver = new ResizeObserver(scheduleResize);
@@ -2150,7 +2160,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           staticDecorationParticleCount = 0;
           if (staticDecorations.length > 0) {
             const atlasTexture = Texture.from(PROP_ATLAS.path);
-            const particlesByBaseline = new Map<number, Particle[]>();
+            const spritesByBaseline = new Map<number, Sprite[]>();
             for (const decoration of staticDecorations) {
               const metadata = PROP_CATALOG[decoration.kind];
               const frame = PROP_ATLAS.frames[decoration.kind];
@@ -2164,31 +2174,28 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 propAtlasTextures.set(decoration.kind, texture);
               }
               const baseline = decoration.origin.y + metadata.footprint.height;
-              const particles = particlesByBaseline.get(baseline) ?? [];
-              particles.push(new Particle({
-                texture,
-                x: decoration.origin.x * CELL_SIZE + metadata.footprint.width * CELL_SIZE / 2,
-                y: 0,
-                anchorX: metadata.anchor.x / metadata.size.width,
-                anchorY: metadata.anchor.y / metadata.size.height,
-              }));
-              particlesByBaseline.set(baseline, particles);
+              const view = new Sprite(texture);
+              view.position.set(
+                decoration.origin.x * CELL_SIZE + metadata.footprint.width * CELL_SIZE / 2,
+                0,
+              );
+              view.anchor.set(
+                metadata.anchor.x / metadata.size.width,
+                metadata.anchor.y / metadata.size.height,
+              );
+              view.roundPixels = true;
+              view.eventMode = "none";
+              const sprites = spritesByBaseline.get(baseline) ?? [];
+              sprites.push(view);
+              spritesByBaseline.set(baseline, sprites);
               staticDecorationParticleCount += 1;
             }
-            for (const [baseline, particles] of particlesByBaseline) {
-              const layer = registerWorldObject(new ParticleContainer({
-                texture: atlasTexture,
-                particles,
-                roundPixels: true,
-                dynamicProperties: { vertex: false, position: false, rotation: false, uvs: false, color: false },
-                boundsArea: new Rectangle(
-                  currentViewBounds.minX * CELL_SIZE,
-                  -PROP_ATLAS.size.height,
-                  (currentViewBounds.maxX - currentViewBounds.minX + 1) * CELL_SIZE,
-                  PROP_ATLAS.size.height * 2,
-                ),
+            for (const [baseline, sprites] of spritesByBaseline) {
+              const layer = registerWorldObject(new Container({
+                isRenderGroup: false,
                 label: `static-decoration-band:${baseline}`,
               }), "DECORATION");
+              layer.addChild(...sprites);
               layer.y = baseline * CELL_SIZE;
               worldObjectLayer.addChild(layer);
               staticDecorationLayers.push(layer);
@@ -2402,8 +2409,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               : { x: current.x * CELL_SIZE + CELL_SIZE / 2, y: current.y * CELL_SIZE + CELL_SIZE / 2 };
             const view = sprite(url, groundPosition.x, groundPosition.y);
             view.anchor.set(0.5, tallRoadUser ? 1 : 0.5);
-            const wheelView = motorAgent ? new Graphics() : undefined;
-            if (wheelView) view.addChild(wheelView);
+            // Pixi 8 deprecates children on Sprite. Vehicle sprites already
+            // contain authored wheels, so omit the optional one-pixel wheel
+            // glint instead of attaching a Graphics child to a Sprite.
+            const wheelView = undefined;
             worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
             const activityView = kind === "WALKER" ? new Graphics() : undefined;
             if (activityView) { activityView.visible = false; agentOverlayLayer.addChild(activityView); }
@@ -3139,7 +3148,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             });
             if (!covered) continue;
             if (cityScene && host!.dataset.citySceneCommit !== "atomic") {
-              app.render();
+              if (reducedMotion) app.render();
               setFirstFrameReady(true);
               paintedFrame = true;
               host!.dataset.citySceneCommit = "atomic";
@@ -3244,14 +3253,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         void drainVisibleLoads();
       }
 
+      visibleLoaderReady = true;
+
       runtimeRef.current = {
         setViewBounds(bounds) {
-          currentViewBounds = focusCityId
-            ? cityDetailFocusBounds(initialCityCenterRef.current ?? {
-              x: (bounds.minX + bounds.maxX) / 2,
-              y: (bounds.minY + bounds.maxY) / 2,
-            }, bounds)
-            : bounds;
+          currentViewBounds = bounds;
           redrawBackdrop();
           clampCamera();
           void loadVisible();
@@ -3445,11 +3451,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const minimumScale = cameraMinimumScale();
         const wasAtMinimum = cameraTargetScale <= minimumScale + 0.001;
         const direction = event.deltaY > 0 ? "OUT" : "IN";
-        if (direction === "IN") minimumZoomReachedAt = 0;
-        if (direction === "OUT" && wasAtMinimum && minimumZoomReachedAt === 0) minimumZoomReachedAt = wheelAt;
         const boundaryStep = advanceAtlasZoomBoundary(zoomBoundary, {
           at: wheelAt,
-          atBoundary: direction === "OUT" && Math.abs(event.deltaY) <= 600 && wasAtMinimum && wheelAt - minimumZoomReachedAt >= 900,
+          atBoundary: direction === "OUT" && Math.abs(event.deltaY) <= 600 && wasAtMinimum,
           direction,
         }, 1);
         zoomBoundary = boundaryStep.state;
@@ -3458,7 +3462,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           return;
         }
         cameraTargetScale = nextCameraTargetScale(cameraTargetScale, event.deltaY);
-        if (direction === "OUT" && !wasAtMinimum && cameraTargetScale <= minimumScale + 0.001) minimumZoomReachedAt = wheelAt;
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };

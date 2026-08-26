@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto } from "../shared/contracts";
-import type { CountryOverviewCityDto } from "../shared/country-overview-contract";
+import type { CountryAtlasCityDto } from "../shared/country-atlas-contract";
 import type { CitySceneDto } from "../shared/city-scene-contract";
 import { countryAtlasEventImpact, enqueueCountryAtlasEvent } from "../shared/country-atlas-events";
 import { presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
@@ -18,7 +18,7 @@ import { createAtlasTransition, withAtlasTransitionPhase, type AtlasTransition }
 import { eventInvalidation, type MapInvalidation } from "./map-invalidation";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
-const CountryOverviewCanvas = lazy(() => import("./components/CountryOverviewCanvas").then((module) => ({ default: module.CountryOverviewCanvas })));
+const CountryAtlasCanvas = lazy(() => import("./components/CountryAtlasCanvas").then((module) => ({ default: module.CountryAtlasCanvas })));
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
@@ -27,6 +27,14 @@ const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) =>
 type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
 type CityFocus = Pick<CityDto, "id" | "name" | "center" | "bounds">;
 type BuildingNavigationTarget = Pick<BuildingEventContext, "id" | "origin" | "city">;
+
+function TaskModalFallback() {
+  return <div className="modal-backdrop" role="presentation">
+    <section className="task-modal" role="dialog" aria-modal="true" aria-label="Загрузка задачи">
+      <div className="modal-loading" role="status">Загружаем задачу…</div>
+    </section>
+  </div>;
+}
 
 function playCompletionChime(): void {
   if (document.hidden) return;
@@ -67,6 +75,8 @@ export function App() {
   const mapTransitionAbortRef = useRef<AbortController | null>(null);
   const [focusCity, setFocusCity] = useState<CityFocus | null>(null);
   const [preparedCityScene, setPreparedCityScene] = useState<CitySceneDto | null>(null);
+  const [countryEntryCityId, setCountryEntryCityId] = useState<string | null>(null);
+  const [planetEntryCountryId, setPlanetEntryCountryId] = useState<string | null>(null);
   const [hoveredAtlasCity, setHoveredAtlasCity] = useState<CityFocus | null>(null);
   const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
   const deepLinkHandledRef = useRef(false);
@@ -129,7 +139,7 @@ export function App() {
       }
     }
   }, [mapMode]);
-  const hoverAtlasCity = useCallback((city: CountryOverviewCityDto | null) => {
+  const hoverAtlasCity = useCallback((city: CountryAtlasCityDto | null) => {
     setHoveredAtlasCity(city ? { id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds } : null);
   }, []);
   const acknowledgeAtlasEvents = useCallback((eventId: number) => {
@@ -363,22 +373,26 @@ export function App() {
     <section className="map-region">
       <Suspense fallback={<div className="app-loading" role="status"><div className="loader-square" /><span>Загружаем карту…</span></div>}>
           {effectiveMapMode === "PLANET"
-            ? <PlanetAtlasCanvas
+              ? <PlanetAtlasCanvas
                 userId={bootstrap.user.id}
                 activeCountryId={bootstrap.country.id}
+                initialFocusCountryId={planetEntryCountryId ?? undefined}
                 refreshToken={planetRevision}
                 onCountrySelect={async (selectedCountryId, focus = { x: .5, y: .5 }) => {
                   await transitionMap("COUNTRY", focus, async () => {
                     const next = await api<BootstrapDto>(`/api/countries/${selectedCountryId}/select`, { method: "POST" });
+                    setPlanetEntryCountryId(null);
+                    setCountryEntryCityId(null);
                     applyBootstrap(next, "COUNTRY");
                   });
                 }}
               />
             : effectiveMapMode === "COUNTRY" && bootstrap.stats.cities > 0
-              ? <CountryOverviewCanvas
+              ? <CountryAtlasCanvas
                 key={bootstrap.country.id}
                 countryId={bootstrap.country.id}
                 activeCityId={activeCity?.id}
+                initialFocusCityId={countryEntryCityId ?? undefined}
                 events={atlasEvents}
                 onEventsProcessed={acknowledgeAtlasEvents}
                 onCitySelect={(city, focus = { x: .5, y: .5 }, sourcePoint = city.sourceCenter) => {
@@ -391,6 +405,7 @@ export function App() {
                     if (signal.aborted) return;
                     const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
                     setPreparedCityScene(scene);
+                    setCountryEntryCityId(null);
                     setFocusCity({ id: city.id, name: city.name, center: sourcePoint, bounds: city.sourceBounds });
                     setHoveredAtlasCity(null);
                     setMapMode("CITY");
@@ -402,8 +417,26 @@ export function App() {
                     cityReadyResolverRef.current = null;
                   });
                 }}
+                onDistrictSelect={(city, district) => {
+                  void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
+                    const scene = await api<CitySceneDto>(`/api/countries/${bootstrap.country.id}/cities/${city.id}/scene`, {
+                      signal,
+                      cache: "no-cache",
+                      headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
+                    });
+                    if (signal.aborted) return;
+                    const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
+                    setPreparedCityScene(scene);
+                    setCountryEntryCityId(null);
+                    setFocusCity({ id: city.id, name: city.name, center: district.sourceCenter, bounds: city.sourceBounds });
+                    setHoveredAtlasCity(null);
+                    setMapMode("CITY");
+                    await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
+                    cityReadyResolverRef.current = null;
+                  });
+                }}
                 onCityHover={hoverAtlasCity}
-                onZoomOut={() => { void transitionMap("PLANET", { x: .5, y: .5 }, () => { setPreparedCityScene(null); setMapMode("PLANET"); }); }}
+                onZoomOut={() => { void transitionMap("PLANET", { x: .5, y: .5 }, () => { setPreparedCityScene(null); setPlanetEntryCountryId(bootstrap.country.id); setMapMode("PLANET"); }); }}
               />
               : effectiveMapMode === "CITY" && bootstrap.stats.cities > 0
                 ? <WorldCanvas key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onReady={() => {
@@ -418,7 +451,7 @@ export function App() {
                   setPreparedCityScene(null);
                   setMapMode("COUNTRY");
                   setMapTransitionError(message);
-                }} onZoomOutToCountry={() => { void transitionMap("COUNTRY", { x: .5, y: .5 }, () => { setPreparedCityScene(null); setMapMode("COUNTRY"); }); }} />
+                }} onZoomOutToCountry={() => { void transitionMap("COUNTRY", { x: .5, y: .5 }, () => { setPreparedCityScene(null); setCountryEntryCityId(activeCity?.id ?? null); setMapMode("COUNTRY"); }); }} />
                 : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>В стране пока нет городов</h2><p>Создайте первый город через MCP — он сразу появится на карте страны и планеты.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
       </Suspense>
       <MapLevelNav level={effectiveMapMode} hasCity={Boolean(activeCity)} onChange={(nextLevel) => {
@@ -426,6 +459,8 @@ export function App() {
         if (nextLevel === "CITY" && effectiveMapMode !== "CITY") return;
         void transitionMap(nextLevel, { x: .5, y: .5 }, () => {
           setPreparedCityScene(null);
+          if (effectiveMapMode === "CITY" && nextLevel === "COUNTRY") setCountryEntryCityId(activeCity?.id ?? null);
+          if (effectiveMapMode === "COUNTRY" && nextLevel === "PLANET") setPlanetEntryCountryId(bootstrap.country.id);
           setMapMode(nextLevel);
         });
       }} />
@@ -450,7 +485,7 @@ export function App() {
       }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
     </section>
 
-    {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} /></Suspense>}
+    {selectedTask && <Suspense fallback={<TaskModalFallback />}><TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} /></Suspense>}
     {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}

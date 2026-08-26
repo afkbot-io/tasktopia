@@ -11,7 +11,20 @@ const appVersion = (JSON.parse(readFileSync(new URL("./package.json", import.met
 export default defineConfig({
   base: staticOrigin ? `${staticOrigin}/` : "/",
   define: { __TASKTOPIA_VERSION__: JSON.stringify(appVersion) },
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: "same-origin-web-manifest",
+      enforce: "post",
+      transformIndexHtml(html) {
+        return html.replace(
+          /(<link\s+rel=["']manifest["']\s+href=["'])[^"']+(["']\s*\/?>)/,
+          "$1/site.webmanifest$2",
+        );
+      },
+    },
+  ],
   server: {
     port: devPort,
     strictPort: true,

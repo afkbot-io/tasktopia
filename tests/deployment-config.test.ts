@@ -154,6 +154,7 @@ describe("production reverse proxy", () => {
   it("publishes new immutable assets before the application can reference them", () => {
     const lockIndex = updateScript.indexOf('flock -n "$update_lock_fd"');
     const pullIndex = updateScript.indexOf('git pull --ff-only origin "$BRANCH"');
+    const revisionGuardIndex = updateScript.indexOf('checkout_head_after_pull" != "$EXPECTED_REVISION"');
     const reexecIndex = updateScript.indexOf('exec env TASKTOPIA_UPDATE_REEXEC="$checkout_head_after_pull"');
     const backupIndex = updateScript.indexOf("docker compose exec -T postgres pg_dump");
     const exportIndex = updateScript.indexOf("docker create --name");
@@ -164,6 +165,8 @@ describe("production reverse proxy", () => {
 
     expect(lockIndex).toBeGreaterThan(-1);
     expect(pullIndex).toBeGreaterThan(lockIndex);
+    expect(revisionGuardIndex).toBeGreaterThan(pullIndex);
+    expect(revisionGuardIndex).toBeLessThan(reexecIndex);
     expect(sourceIndex).toBeGreaterThan(pullIndex);
     expect(reexecIndex).toBeGreaterThan(pullIndex);
     expect(backupIndex).toBeGreaterThan(reexecIndex);
@@ -179,6 +182,55 @@ describe("production reverse proxy", () => {
     );
     expect(updateScript).toContain('docker tag "$previous_app_image_id" "$app_image_ref"');
     expect(updateScript).toContain("docker compose up -d --remove-orphans --force-recreate app");
+  });
+
+  it("blocks an update before backup and build when the pulled revision was not authorized", () => {
+    const root = mkdtempSync(join(tmpdir(), "tasktopia-updater-revision-"));
+    const app = join(root, "app");
+    const bin = join(root, "bin");
+    const updater = join(app, "deploy/update-server.sh");
+    const actualHead = "2222222222222222222222222222222222222222";
+    const expectedHead = "3333333333333333333333333333333333333333";
+
+    try {
+      mkdirSync(join(app, "deploy"), { recursive: true });
+      mkdirSync(bin, { recursive: true });
+      writeFileSync(updater, updateScript);
+      writeFileSync(join(bin, "git"), `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == "rev-parse" && "$2" == "HEAD" ]]; then
+  printf '%s' "$FAKE_GIT_HEAD"
+elif [[ "$1" == "pull" && "$2" == "--ff-only" ]]; then
+  exit 0
+else
+  echo "Unexpected git invocation: $*" >&2
+  exit 2
+fi
+`);
+      writeFileSync(join(bin, "flock"), "#!/usr/bin/env bash\nexit 0\n");
+      chmodSync(updater, 0o755);
+      chmodSync(join(bin, "git"), 0o755);
+      chmodSync(join(bin, "flock"), 0o755);
+
+      const result = spawnSync("bash", [updater], {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: `${bin}:${process.env.PATH ?? ""}`,
+          TASKTOPIA_APP_DIR: app,
+          TASKTOPIA_BRANCH: "main",
+          TASKTOPIA_EXPECTED_REVISION: expectedHead,
+          TASKTOPIA_UPDATE_LOCK_PATH: join(root, "update.lock"),
+          FAKE_GIT_HEAD: actualHead,
+        },
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`Expected revision ${expectedHead}, pulled ${actualHead}`);
+      expect(result.stderr).not.toContain("docker");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("executes the freshly pulled updater before taking a backup", () => {

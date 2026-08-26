@@ -263,10 +263,13 @@ curl -fsSIL 'https://store.tasktopia.online/game-assets/v5/revisions/<assetRevis
 
 ```bash
 git -C /srv/tasktopia/app pull --ff-only origin main
-/srv/tasktopia/app/deploy/update-server.sh
+TASKTOPIA_EXPECTED_REVISION="$(git -C /srv/tasktopia/app rev-parse HEAD)" \
+  /srv/tasktopia/app/deploy/update-server.sh
 ```
 
-Внешний fast-forward обязателен, чтобы Bash не продолжил уже открытую старую
+`TASKTOPIA_EXPECTED_REVISION` фиксирует ровно одобренный полный commit: если
+повторный pull увидит более новый `main`, updater остановится до backup/build и
+потребует новую проверку и authorization. Внешний fast-forward обязателен, чтобы Bash не продолжил уже открытую старую
 версию скрипта после замены файла. Сам скрипт повторно выполняет только
 fast-forward `git pull` и перезапускает себя, если между командами появился
 новый commit. Затем он проверяет свободное место,

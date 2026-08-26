@@ -4,13 +4,13 @@ import { layoutPlanetCountryLabels, planetHexPath, projectPlanetAtlas, projectPl
 import { planetAtlasCacheKey } from "../src/client/planet-atlas-cache";
 
 const fixture: PlanetAtlasDto = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   planetSeed: 782_441,
   revision: "planet-fixture",
   countries: [
-    { id: "country-a", name: "Атуаленда", seed: 11, worldVersion: 4, cityCount: 1, districtCount: 3, buildingCount: 12, unfinishedBuildingCount: 8, progress: 30 },
-    { id: "country-b", name: "Северия", seed: 22, worldVersion: 7, cityCount: 4, districtCount: 12, buildingCount: 80, unfinishedBuildingCount: 14, progress: 65 },
-    { id: "country-c", name: "Острова", seed: 33, worldVersion: 2, cityCount: 2, districtCount: 6, buildingCount: 25, unfinishedBuildingCount: 2, progress: 90 },
+    { id: "country-a", name: "Атуаленда", seed: 11, worldVersion: 4, cityCount: 1, districtCount: 3, buildingCount: 12, unfinishedBuildingCount: 8, progress: 30, worldBounds: { minX: -200, minY: -120, maxX: 240, maxY: 180 } },
+    { id: "country-b", name: "Северия", seed: 22, worldVersion: 7, cityCount: 4, districtCount: 12, buildingCount: 80, unfinishedBuildingCount: 14, progress: 65, worldBounds: { minX: 300, minY: 100, maxX: 700, maxY: 460 } },
+    { id: "country-c", name: "Острова", seed: 33, worldVersion: 2, cityCount: 2, districtCount: 6, buildingCount: 25, unfinishedBuildingCount: 2, progress: 90, worldBounds: { minX: -700, minY: 260, maxX: -320, maxY: 620 } },
   ],
 };
 

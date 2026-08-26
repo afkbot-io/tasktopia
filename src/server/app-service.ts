@@ -86,7 +86,6 @@ import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-a
 import { COUNTRY_ATLAS_SCHEMA_VERSION, type CountryAtlasDto } from "../shared/country-atlas-contract";
 import { COUNTRY_OVERVIEW_SCHEMA_VERSION, encodeCountryTerrain, type CountryOverviewDto, type CountryOverviewDistrictDto } from "../shared/country-overview-contract";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../shared/city-scene-contract";
-import { cityDetailFocusBounds } from "../shared/city-camera";
 import { countryAtlasEventImpact, patchCountryAtlasTaskProgress } from "../shared/country-atlas-events";
 import { meanCountryAtlasProgress } from "../shared/country-atlas-progress";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/planet-atlas-contract";
@@ -1058,7 +1057,11 @@ export class AppService {
         JOIN countries c ON c.id = membership.country_id
         WHERE membership.user_id = ?
       ), city_stats AS (
-        SELECT city.country_id, COUNT(*)::integer AS city_count
+        SELECT city.country_id, COUNT(*)::integer AS city_count,
+          MIN((city.bounds_json->>'minX')::integer) AS min_x,
+          MIN((city.bounds_json->>'minY')::integer) AS min_y,
+          MAX((city.bounds_json->>'maxX')::integer) AS max_x,
+          MAX((city.bounds_json->>'maxY')::integer) AS max_y
         FROM cities_v3 city
         JOIN accessible country ON country.id = city.country_id
         GROUP BY city.country_id
@@ -1080,6 +1083,7 @@ export class AppService {
       )
       SELECT country.id, country.name, country.seed, country.world_version, country.created_at,
         COALESCE(city_stats.city_count, 0) AS city_count,
+        city_stats.min_x, city_stats.min_y, city_stats.max_x, city_stats.max_y,
         COALESCE(district_stats.district_count, 0) AS district_count,
         COALESCE(task_stats.building_count, 0) AS building_count,
         COALESCE(task_stats.unfinished_building_count, 0) AS unfinished_building_count,
@@ -1095,8 +1099,11 @@ export class AppService {
       cityCount: Number(row.city_count), districtCount: Number(row.district_count), buildingCount: Number(row.building_count),
       unfinishedBuildingCount: Number(row.unfinished_building_count),
       progress: Math.max(0, Math.min(100, Number(row.progress))),
+      worldBounds: row.min_x == null ? null : {
+        minX: Number(row.min_x), minY: Number(row.min_y), maxX: Number(row.max_x), maxY: Number(row.max_y),
+      },
     }));
-    const revisionSource = countries.map((country) => `${country.id}:${country.name}:${country.worldVersion}:${country.cityCount}:${country.districtCount}:${country.buildingCount}:${country.unfinishedBuildingCount}:${country.progress}`).join("|");
+    const revisionSource = countries.map((country) => `${country.id}:${country.name}:${country.worldVersion}:${country.cityCount}:${country.districtCount}:${country.buildingCount}:${country.unfinishedBuildingCount}:${country.progress}:${JSON.stringify(country.worldBounds)}`).join("|");
     const revision = createHash("sha256").update(revisionSource).digest("hex").slice(0, 16);
     const planetSeed = createHash("sha256").update(`tasktopia-planet:${userId}`).digest().readUInt32LE(0) & 0x7fffffff;
     return { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed, revision, countries };
@@ -1643,7 +1650,11 @@ export class AppService {
       this.citySceneCache.set(cacheKey, cached);
       return cached;
     }
-    const sceneBounds = cityDetailFocusBounds(city.center, city.bounds);
+    // The fixed 160x100 frame is an opening camera composition, not a data
+    // boundary. A city scene is the atomic read model for the whole city so
+    // panning never exposes unloaded space or falls back to viewport/chunk
+    // endpoints.
+    const sceneBounds = city.bounds;
     const minChunkX = Math.floor(sceneBounds.minX / CHUNK_SIZE);
     const minChunkY = Math.floor(sceneBounds.minY / CHUNK_SIZE);
     const maxChunkX = Math.floor(sceneBounds.maxX / CHUNK_SIZE);
