@@ -1232,7 +1232,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let airportPoints: Array<{ x: number; y: number }> = [];
       let minimumZoomReachedAt = 0;
       let airplane: {
-        view: Sprite;
+        view: Container;
         trail: Graphics;
         elapsed: number;
         duration: number;
@@ -1627,13 +1627,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             const model = Math.floor(takeRandom() * 8) + 1;
             const texture = cachedTexture(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
             if (texture) {
-              const view = new Sprite(texture);
-              view.texture.source.scaleMode = "nearest";
-              view.anchor.set(0.5);
+              const plane = new Sprite(texture);
+              plane.texture.source.scaleMode = "nearest";
+              plane.anchor.set(0.5);
               const trail = new Graphics()
                 .rect(-25, -1, 7, 2).fill({ color: 0xd9ecdf, alpha: .45 })
                 .rect(-30, -.5, 3, 1).fill({ color: 0xd9ecdf, alpha: .25 });
-              view.addChild(trail);
+              const view = new Container();
+              view.addChild(trail, plane);
               const airportPoint = airportPoints[Math.floor(takeRandom() * Math.max(1, airportPoints.length))];
               const side = Math.floor(takeRandom() * 4);
               const edgePosition = takeRandom();
@@ -1803,6 +1804,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let desiredKeys = new Set<string>();
       let dragging = false;
       let previous = { x: 0, y: 0 };
+      // ResizeObserver may deliver its first notification while this async
+      // startup routine is still suspended above the loader declarations.
+      // Do not enter the visibility pipeline until all of its lexical
+      // dependencies have been initialized.
+      let visibleLoaderReady = false;
       const clampCamera = () => {
         const minimumScale = cameraMinimumScale();
         if (world.scale.x < minimumScale) {
@@ -1816,7 +1822,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       };
       const scheduleVisibleLoad = () => {
         cancelAnimationFrame(panFrame);
-        panFrame = requestAnimationFrame(() => { void loadVisible(); });
+        panFrame = requestAnimationFrame(() => {
+          if (visibleLoaderReady) void loadVisible();
+        });
       };
       clampCamera();
       const scheduleResize = () => {
@@ -1832,7 +1840,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           screenSize = { width: app.screen.width, height: app.screen.height };
           app.stage.hitArea = app.screen;
           clampCamera();
-          void loadVisible();
+          if (visibleLoaderReady) void loadVisible();
         });
       };
       const resizeObserver = new ResizeObserver(scheduleResize);
@@ -3139,7 +3147,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             });
             if (!covered) continue;
             if (cityScene && host!.dataset.citySceneCommit !== "atomic") {
-              app.render();
+              if (reducedMotion) app.render();
               setFirstFrameReady(true);
               paintedFrame = true;
               host!.dataset.citySceneCommit = "atomic";
@@ -3243,6 +3251,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         beginStreamingFeedback();
         void drainVisibleLoads();
       }
+
+      visibleLoaderReady = true;
 
       runtimeRef.current = {
         setViewBounds(bounds) {

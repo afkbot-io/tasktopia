@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../../shared/planet-atlas-contract";
 import { gameAssetUrl, TERRAIN_SPRITES } from "../../shared/catalog";
 import {
@@ -100,6 +100,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCou
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   const entryHysteresis = useRef(initialAtlasEntryHysteresis());
+  const atlasView = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -118,36 +119,22 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCou
   const labels = useMemo(() => map ? layoutPlanetCountryLabels(map.countries, map.width, map.height) : [], [map]);
   const countriesById = useMemo(() => new Map(map?.countries.map((country) => [country.id, country]) ?? []), [map]);
 
-  const selectCountry = async (countryId: string, focus?: { x: number; y: number }) => {
+  const selectCountry = useCallback(async (countryId: string, focus?: { x: number; y: number }) => {
     if (selectingCountryId) return;
     setSelectingCountryId(countryId);
     try { await onCountrySelect(countryId, focus); setError(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось открыть страну"); }
     finally { setSelectingCountryId(null); }
-  };
+  }, [onCountrySelect, selectingCountryId]);
 
-  if (!map && error) return <div className="atlas-state" role="alert"><strong>Планета недоступна</strong><span>{error}</span></div>;
-  if (!map) return <div className="atlas-state" role="status"><i /><span>Собираем материки…</span></div>;
-  const clipId = `planet-map-${atlas?.revision.replaceAll(/[^a-zA-Z0-9_-]/g, "-") ?? "atlas"}`;
-  const activeRoutes = [
-    ...map.routes.filter((route) => route.fromAirportId === null).slice(0, 7),
-    ...map.routes.filter((route) => route.fromAirportId !== null).slice(0, 5),
-  ];
-
-  return <div className="planet-atlas" data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={map.countries.length} data-planet-routes={map.routes.length} data-globe-zoom={camera.zoom.toFixed(2)} data-planet-renderer="square-pixel-map">
-    <svg viewBox={`0 0 ${map.width} ${map.height}`} role="group" aria-label={`Планета: ${atlas?.countries.length ?? map.countries.length} стран`} preserveAspectRatio="xMidYMid meet" tabIndex={0} onKeyDown={(event) => {
-      const movement = event.shiftKey ? .22 : .09;
-      if (event.key === "ArrowLeft") setCamera((value) => ({ ...value, panX: Math.max(-1.25, value.panX - movement) }));
-      else if (event.key === "ArrowRight") setCamera((value) => ({ ...value, panX: Math.min(1.25, value.panX + movement) }));
-      else if (event.key === "ArrowUp") setCamera((value) => ({ ...value, panY: Math.max(-1, value.panY - movement) }));
-      else if (event.key === "ArrowDown") setCamera((value) => ({ ...value, panY: Math.min(1, value.panY + movement) }));
-      else return;
-      event.preventDefault();
-    }} onWheel={(event) => {
+  useEffect(() => {
+    const view = atlasView.current;
+    if (!view || !map) return;
+    const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
       const direction = event.deltaY < 0 ? "IN" : "OUT";
       const nextZoom = continuousAtlasZoom(camera.zoom, event.deltaY, { min: MIN_MAP_ZOOM, max: MAX_MAP_ZOOM });
-      const bounds = event.currentTarget.getBoundingClientRect();
+      const bounds = view.getBoundingClientRect();
       const focus = { x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / Math.max(1, bounds.width))), y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / Math.max(1, bounds.height))) };
       const screenFocus = { x: focus.x * map.width, y: focus.y * map.height };
       const nextCamera = projectedAtlas ? zoomPlanetCameraAtFocus(projectedAtlas, camera, nextZoom, screenFocus) : { ...camera, zoom: nextZoom };
@@ -159,6 +146,28 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCou
       entryHysteresis.current = entry.state;
       setCamera(nextCamera);
       if (entry.triggered && country) void selectCountry(country.id, focus);
+    };
+    view.addEventListener("wheel", handleWheel, { passive: false });
+    return () => view.removeEventListener("wheel", handleWheel);
+  }, [camera, map, projectedAtlas, selectCountry]);
+
+  if (!map && error) return <div className="atlas-state" role="alert"><strong>Планета недоступна</strong><span>{error}</span></div>;
+  if (!map) return <div className="atlas-state" role="status"><i /><span>Собираем материки…</span></div>;
+  const clipId = `planet-map-${atlas?.revision.replaceAll(/[^a-zA-Z0-9_-]/g, "-") ?? "atlas"}`;
+  const activeRoutes = [
+    ...map.routes.filter((route) => route.fromAirportId === null).slice(0, 7),
+    ...map.routes.filter((route) => route.fromAirportId !== null).slice(0, 5),
+  ];
+
+  return <div className="planet-atlas" data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={map.countries.length} data-planet-routes={map.routes.length} data-globe-zoom={camera.zoom.toFixed(2)} data-planet-renderer="square-pixel-map">
+    <svg ref={atlasView} viewBox={`0 0 ${map.width} ${map.height}`} role="group" aria-label={`Планета: ${atlas?.countries.length ?? map.countries.length} стран`} preserveAspectRatio="xMidYMid meet" tabIndex={0} onKeyDown={(event) => {
+      const movement = event.shiftKey ? .22 : .09;
+      if (event.key === "ArrowLeft") setCamera((value) => ({ ...value, panX: Math.max(-1.25, value.panX - movement) }));
+      else if (event.key === "ArrowRight") setCamera((value) => ({ ...value, panX: Math.min(1.25, value.panX + movement) }));
+      else if (event.key === "ArrowUp") setCamera((value) => ({ ...value, panY: Math.max(-1, value.panY - movement) }));
+      else if (event.key === "ArrowDown") setCamera((value) => ({ ...value, panY: Math.min(1, value.panY + movement) }));
+      else return;
+      event.preventDefault();
     }} onPointerDown={(event) => {
       drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, panX: camera.panX, panY: camera.panY, moved: false };
       event.currentTarget.setPointerCapture(event.pointerId);
