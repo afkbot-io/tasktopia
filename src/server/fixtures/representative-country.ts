@@ -11,8 +11,6 @@ import type {
 } from "../../shared/contracts";
 
 export const REPRESENTATIVE_SEED = 987_321;
-export const METROPOLIS_TASKS = 200;
-export const TASKS_PER_DISTRICT = 10;
 
 type TaskTemplate = { title: string; description: string; estimate: Estimate };
 type DistrictTemplate = { name: string; archetype: DistrictArchetype };
@@ -100,7 +98,7 @@ const METROPOLIS_ARCHETYPES: DistrictArchetype[] = [
   "COMMERCIAL", "NEW_BUILD", "NEW_BUILD", "NEW_BUILD", "NEW_BUILD",
 ];
 
-export const REPRESENTATIVE_CITIES: CityTemplate[] = [
+const REPRESENTATIVE_CITIES: CityTemplate[] = [
   {
     key: "riverside-metropolis", name: "Riverside", morphology: "DENSE_CORE",
     description: "Большой плотный город на 200 задач с несколькими центрами новостроек.",
@@ -142,7 +140,7 @@ function targetStatus(role: "COMPLETED" | "ACTIVE" | "PLANNED", taskIndex: numbe
   return STATUS_ORDER[taskIndex % STATUS_ORDER.length]!;
 }
 
-export type RepresentativeCountryResult = { cities: CityDto[]; districts: DistrictDto[]; tasks: TaskDto[] };
+type RepresentativeCountryResult = { cities: CityDto[]; districts: DistrictDto[]; tasks: TaskDto[] };
 
 async function seedCountryFixture(
   service: AppService,
@@ -208,8 +206,4 @@ async function seedCountryFixture(
 
 export function seedDevelopmentCountry(service: AppService, countryId: string): Promise<RepresentativeCountryResult> {
   return seedCountryFixture(service, countryId, DEVELOPMENT_CITIES, 3);
-}
-
-export function seedRepresentativeCountry(service: AppService, countryId: string): Promise<RepresentativeCountryResult> {
-  return seedCountryFixture(service, countryId, REPRESENTATIVE_CITIES, TASKS_PER_DISTRICT);
 }

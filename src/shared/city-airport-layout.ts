@@ -33,7 +33,7 @@ export type AirportBuildingPlacement = {
   bottom: number;
 };
 
-export function airportCompoundBounds(feature: Pick<WorldFeatureDto, "origin" | "footprint">): AirportBounds {
+function airportCompoundBounds(feature: Pick<WorldFeatureDto, "origin" | "footprint">): AirportBounds {
   const cells = feature.footprint.length > 0 ? feature.footprint : [feature.origin];
   const minX = Math.min(...cells.map((cell) => cell.x));
   const minY = Math.min(...cells.map((cell) => cell.y));

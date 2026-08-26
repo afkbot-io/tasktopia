@@ -19,11 +19,6 @@ export function greenAreaDevelopmentStage(statuses: readonly TaskStatus[]): Gree
   );
 }
 
-/** A task-backed park follows exactly the same five milestones as its task. */
-export function greenAreaStageForTaskStatus(status: TaskStatus): GreenAreaDevelopmentStage {
-  return DEVELOPMENT_STAGE_BY_TASK_STATUS[status];
-}
-
 function cellKey(cell: Cell): string {
   return `${cell.x},${cell.y}`;
 }

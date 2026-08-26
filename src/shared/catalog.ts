@@ -113,10 +113,6 @@ export const TASK_BUILDING_CATALOG: BuildingCatalogEntry[] = BUILDING_CATALOG
     || entry.serviceRole && CORE_CITY_SERVICE_ROLES.has(entry.serviceRole))
   .filter((entry) => !entry.tags.includes("archive"));
 
-export function isTaskBuilding(entry: BuildingCatalogEntry): boolean {
-  return TASK_BUILDING_CATALOG.some((candidate) => candidate.key === entry.key);
-}
-
 /** Every apartment family uses its catalog pavement platform. */
 export function taskBuildingPlatform(entry: BuildingCatalogEntry): PlatformKind {
   return entry.tags.includes("new-build") ? "STONE" : entry.platform;

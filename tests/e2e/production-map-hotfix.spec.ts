@@ -56,7 +56,7 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
   await page.locator(".modal-close").click();
 
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  const country = page.locator(".country-atlas");
+  const country = page.locator(".country-overview");
   for (let step = 0; step < 12 && await country.count() === 0; step += 1) {
     await page.mouse.wheel(0, 240);
     await page.waitForTimeout(80);

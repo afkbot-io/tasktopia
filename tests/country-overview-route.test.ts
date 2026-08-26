@@ -5,7 +5,7 @@ import { AppService } from "../src/server/app-service";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
 
-describe("country atlas HTTP boundary", () => {
+describe("country overview HTTP boundary", () => {
   let db: Db;
   let app: FastifyInstance;
   let service: AppService;
@@ -24,34 +24,9 @@ describe("country atlas HTTP boundary", () => {
     await db.close();
   });
 
-  it("serves an authenticated, world-versioned atlas with an ETag", async () => {
-    expect((await app.inject({ method: "GET", url: "/api/country-atlas" })).statusCode).toBe(401);
-    const registered = await app.inject({
-      method: "POST",
-      url: "/api/auth/register",
-      payload: {
-        email: "atlas-route@example.test",
-        name: "Atlas Route",
-        password: "safe-password-123",
-        passwordConfirmation: "safe-password-123",
-        countryName: "Atlas Country",
-        cityName: "Atlas City",
-      },
-    });
-    const setCookie = registered.headers["set-cookie"]!;
-    const cookie = (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;
-    const response = await app.inject({ method: "GET", url: "/api/country-atlas", headers: { cookie } });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toContain("-atlas-5");
-    expect(response.headers["cache-control"]).toBe("private, max-age=30, stale-while-revalidate=300");
-    expect(response.json()).toMatchObject({ schemaVersion: 5, cities: [{ name: "Atlas City" }] });
-    expect((await app.inject({
-      method: "GET",
-      url: "/api/country-atlas",
-      headers: { cookie, "if-none-match": response.headers.etag! },
-    })).statusCode).toBe(304);
-  }, 90_000);
+  it("does not expose the removed schema-v5 country atlas route", async () => {
+    expect((await app.inject({ method: "GET", url: "/api/country-atlas" })).statusCode).toBe(404);
+  });
 
   it("serves a compact country overview without city cell geometry", async () => {
     const registered = await app.inject({

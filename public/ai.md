@@ -9,23 +9,21 @@ Tasktopia turns work into a living country. Countries contain cities, cities
 contain districts, and every task is represented by a building.
 
 The authenticated browser map requests compact `ChunkPayloadDto` responses with
-the version-2 vendor `Accept` header. The initial visible rectangle uses the
-internal `/api/world/viewport` batch endpoint; `/api/chunks/:x/:y` remains the
-rolling-deploy fallback. Terrain and ambient decorations are reconstructed
-client-side; these endpoints are not MCP resources and external agents should
-use the tools and resources below.
+the version-2 vendor `Accept` header. The active CITY client loads one complete
+`/api/countries/:countryId/cities/:cityId/scene` response; viewport and chunk
+routes are rolling-deploy compatibility paths. These endpoints are not MCP
+resources and external agents should use the tools and resources below.
 
-The country overview uses the internal authenticated `GET /api/country-atlas`
-read model (`schemaVersion: 5`). It carries the canonical `terrainSeed`, an
-attached `labelAnchor` for every city, and `progress` for every district; the
-browser reconstructs natural terrain rather than downloading terrain
-coordinates. This endpoint is private UI infrastructure, uses ETag plus
-conditional background revalidation, and is not an MCP resource. Agents must
-continue to use `country.get_current`, `city.list`, `district.list`, and the
-task tools below.
+The country overview uses the internal authenticated
+`GET /api/countries/:countryId/overview` read model (`schemaVersion: 3`).
+It carries planet-derived bounded terrain, aggregate district progress and a
+semantic city miniature; full buildings, roads, surfaces and props are absent.
+This endpoint is private UI infrastructure, uses ETag plus conditional
+background revalidation, and is not an MCP resource. Agents must continue to
+use `country.get_current`, `city.list`, `district.list`, and the task tools.
 
 The planet overview uses the authenticated browser-only `GET /api/planet-atlas`
-read model (`schemaVersion: 1`). It contains only countries visible to the
+read model (`schemaVersion: 3`). It contains only countries visible to the
 current account and compact city, district, building, and progress aggregates.
 The browser deterministically projects continents, coasts, water, routes, and
 atmosphere from `planetSeed`; coordinates are not stored or transferred. The

@@ -27,7 +27,7 @@ Capture PLANET, COUNTRY, and CITY at native `1x`; inspect nearest-neighbour `4x`
 - Scale: country cells are no larger than their planet counterparts at the transition boundary; city sprites preserve the `8x8 px` gameplay grid.
 - Geography: compare at least one mountain/coast/river/forest and one diagonal neighbour across all three levels. Identity and relative direction must remain stable.
 - City silhouette: no generic square marker; its occupied cells follow current city/district extents.
-- Fog: COUNTRY uses white side fields with stepped, hard-alpha pixel/cloud falloff. Reject soft ellipse walls or a water moat standing in for fog.
+- Boundary: COUNTRY inherits ocean, coast, or neighbouring land from PLANET. Reject white side walls, artificial water moats, soft ellipse masks, or textures outside the atlas bounds.
 - Planet aperture: it is one coherent world silhouette at every zoom and aspect ratio; reject circle-plus-rectangle/keyhole frames.
 - CITY: inspect the full navigable bounds, not only the opening viewport. Trees, shrubs and ambient objects must remain visible and correctly anchored.
 - Cohesion: hard alpha, muted palette, crisp nearest-neighbour scaling, upper-left light, blue-grey outlines, and no vector-smooth primitives that conflict with authored sprites.

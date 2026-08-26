@@ -26,13 +26,12 @@ Pixel city pack содержит 1 224 PNG: 5 079 376 bytes на диске и �
 
 - Whole-city JSON может стать parse/transfer bottleneck при росте выше 256 блоков; собирать bytes, request/parse/materialization p50/p95/p99 и long tasks на production плотностях.
 - 52 MB полного декодированного каталога не равно фактической residency одного города; контролировать `sceneAssets`, renderer count и browser memory между 10 циклами переходов.
-- Legacy endpoints и `CountryAtlasCanvas` намеренно остаются только для rollback. После окна совместимости подтвердить нулевое использование telemetry и удалить их отдельным MR.
+- Тяжёлые schema-v5 `/api/country-atlas`, `CountryAtlasCanvas` и связанные projection/terrain helpers удалены в cleanup-проходе Country Atlas v6.
 - PixiJS помечает Particle API стабильным, но experimental; обновление Pixi требует browser regression глубины, bounds/culling и texture-frame ownership.
 
 ## Активный COUNTRY runtime — 2026-08-27
 
-Основной маршрут приложения переключён с legacy `CountryAtlasCanvas` на
-`CountryOverviewCanvas` schema v3. COUNTRY получает `36×22` planet-derived
+Единственный COUNTRY runtime — `CountryOverviewCanvas` schema v3. COUNTRY получает `36×22` planet-derived
 terrain cells и семантическую миниатюру каждого города до `14×14`: только
 силуэт районов, плотность, прогресс и airport anchor. Дома, дороги, surfaces,
 props и исходные city footprints в overview payload не передаются. Между

@@ -121,7 +121,7 @@ test("ten country-city cycles keep one renderer and a stable asset residency", a
     await expect(host).toHaveAttribute("data-ambient-assets", "ready", { timeout: 30_000 });
     residentAssets.push(Number(await host.getAttribute("data-leased-assets") ?? 0));
     await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Страна" }).click();
-    await expect(page.locator(".country-atlas")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".country-overview")).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".map-region canvas")).toHaveCount(0);
     await page.locator(".atlas-city").first().click();
     host = page.locator(".world-canvas");

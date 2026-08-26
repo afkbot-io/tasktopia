@@ -3,7 +3,7 @@ import "pixi.js/unsafe-eval";
 import { useEffect, useRef, useState } from "react";
 import type { RealtimeEvent } from "../../shared/contracts";
 import { decodeCountryTerrain, type CountryOverviewCityDto, type CountryOverviewDto, type CountryOverviewTerrainKind } from "../../shared/country-overview-contract";
-import { countryAtlasEventBatchImpact } from "../../shared/country-atlas-events";
+import { countryOverviewEventBatchImpact } from "../../shared/country-overview-events";
 import { gameAssetUrl } from "../../shared/catalog";
 import { ATLAS_AIRPORT_POLYGON } from "../../shared/atlas-airport";
 import { api } from "../api";
@@ -84,7 +84,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       .sort((left, right) => left.id - right.id);
     if (pending.length === 0) return;
     const latestId = pending.at(-1)!.id;
-    if (countryAtlasEventBatchImpact(pending) === "NONE") {
+    if (countryOverviewEventBatchImpact(pending) === "NONE") {
       processedEventIdRef.current = latestId;
       onEventsProcessed(latestId);
       return;
@@ -120,6 +120,8 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
     const app = new Application();
     const scene = new Container();
     const flights: Flight[] = [];
+    const orderedCities = [...overview.cities].sort((left, right) => left.atlasCenter.y - right.atlasCenter.y || left.atlasCenter.x - right.atlasCenter.x);
+    let labelMetrics: Array<{ city: CountryOverviewCityDto; label: HTMLElement; width: number; height: number }> | null = null;
 
     const applyCamera = () => {
       frame = 0;
@@ -140,15 +142,17 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       scene.scale.set(scale);
       scene.position.set(width / 2 - camera.centerX * scale, height / 2 - camera.centerY * scale);
       const placedLabels: Array<{ minX: number; minY: number; maxX: number; maxY: number }> = [];
-      const orderedCities = [...overview.cities].sort((left, right) => left.atlasCenter.y - right.atlasCenter.y || left.atlasCenter.x - right.atlasCenter.x);
-      for (const city of orderedCities) {
+      // Read label geometry once and perform only compositor-friendly transform
+      // writes during camera frames. Interleaving offset reads and style writes
+      // forced a full document layout for every city on every wheel event.
+      labelMetrics ??= orderedCities.flatMap((city) => {
         const label = labels.querySelector<HTMLElement>(`[data-city-id="${city.id}"]`);
-        if (!label) continue;
+        return label ? [{ city, label, width: Math.max(116, label.offsetWidth), height: Math.max(34, label.offsetHeight) }] : [];
+      });
+      for (const { city, label, width: labelWidth, height: labelHeight } of labelMetrics) {
         const labelOffset = Math.max(28, (city.miniature.rows / 2 + 4) * scale);
         const anchorX = scene.position.x + city.atlasCenter.x * scale;
         const anchorY = scene.position.y + city.atlasCenter.y * scale;
-        const labelWidth = Math.max(116, label.offsetWidth);
-        const labelHeight = Math.max(34, label.offsetHeight);
         const candidates = [
           { x: anchorX, y: anchorY - labelOffset },
           { x: anchorX + labelWidth * .72, y: anchorY - labelHeight * .7 },
@@ -167,7 +171,6 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         label.style.transform = `translate3d(${chosen.x}px, ${chosen.y}px, 0) translate(-50%, -50%)`;
       }
       host.dataset.countryZoom = camera.zoom.toFixed(2);
-      app.render();
     };
     const scheduleCamera = () => {
       if (!frame) frame = requestAnimationFrame(applyCamera);
@@ -199,6 +202,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         }
       }
       scene.addChild(terrain);
+      terrain.cacheAsTexture({ resolution: 1, antialias: false });
 
       const cityById = new Map(overview.cities.map((city) => [city.id, city]));
       const cities = new Graphics();
@@ -223,6 +227,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         drawAirport(cities, left + airportCell.x + .5, top + airportCell.y + .5);
       }
       scene.addChild(cities);
+      cities.cacheAsTexture({ resolution: 1, antialias: false });
 
       const routeInputs = overview.connections.slice(0, 5).flatMap((connection, index) => {
         const from = cityById.get(connection.fromCityId)?.atlasCenter;
@@ -340,9 +345,9 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
 
   return <div
     ref={hostRef}
-    className="country-atlas country-overview"
+    className="country-overview"
     data-country-id={countryId}
-    data-country-atlas-cities={overview.cities.length}
+    data-country-overview-cities={overview.cities.length}
     data-country-renderer="pixi"
     data-country-grid-topology={overview.geography.topology}
     data-country-terrain-cells={overview.geography.terrainCodes.length}

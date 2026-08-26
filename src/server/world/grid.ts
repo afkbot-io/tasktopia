@@ -11,13 +11,13 @@ export function cellKey(cell: Cell): string {
   return `${cell.x},${cell.y}`;
 }
 
-export function parseCellKey(value: string): Cell {
+function parseCellKey(value: string): Cell {
   const [x, y] = value.split(",").map(Number);
   if (!Number.isInteger(x) || !Number.isInteger(y)) throw new Error(`Invalid cell key: ${value}`);
   return { x: x!, y: y! };
 }
 
-export function neighbor(cell: Cell, direction: number): Cell {
+function neighbor(cell: Cell, direction: number): Cell {
   const delta = GRID_DIRECTIONS[direction];
   if (!delta) throw new RangeError(`Invalid square-grid direction ${direction}`);
   return { x: cell.x + delta.x, y: cell.y + delta.y };
@@ -37,14 +37,6 @@ export function floorDiv(value: number, divisor: number): number {
 
 export function floorMod(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor;
-}
-
-export function rectCells(rect: Rect): Cell[] {
-  const cells: Cell[] = [];
-  for (let y = rect.minY; y <= rect.maxY; y += 1) {
-    for (let x = rect.minX; x <= rect.maxX; x += 1) cells.push({ x, y });
-  }
-  return cells;
 }
 
 export function contains(rect: Rect, cell: Cell): boolean {

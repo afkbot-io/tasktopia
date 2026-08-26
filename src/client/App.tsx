@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto } from "../shared/contracts";
 import type { CountryOverviewCityDto } from "../shared/country-overview-contract";
 import type { CitySceneDto } from "../shared/city-scene-contract";
-import { countryAtlasEventImpact, enqueueCountryAtlasEvent } from "../shared/country-atlas-events";
+import { countryOverviewEventImpact, enqueueCountryOverviewEvent } from "../shared/country-overview-events";
 import { presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
@@ -270,8 +270,8 @@ export function App() {
     if (event.countryId !== countryId || event.id <= lastWorldEventIdRef.current) return;
     lastWorldEventIdRef.current = event.id;
     setMapInvalidation(eventInvalidation(event));
-    setAtlasEvents((current) => enqueueCountryAtlasEvent(current, event));
-    if (countryAtlasEventImpact(event) === "STRUCTURE") setPlanetRevision((value) => value + 1);
+    setAtlasEvents((current) => enqueueCountryOverviewEvent(current, event));
+    if (countryOverviewEventImpact(event) === "STRUCTURE") setPlanetRevision((value) => value + 1);
     const notice = presentRealtimeNotice(event);
     if (notice) {
       setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));

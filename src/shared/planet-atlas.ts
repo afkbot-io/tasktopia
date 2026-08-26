@@ -101,7 +101,7 @@ function inside(cell: PlanetHex, columns: number, rows: number): boolean {
   return cell.q >= 2 && cell.r >= 2 && cell.q < columns - 2 && cell.r < rows - 2;
 }
 
-export function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
+function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
   return {
     x: cell.q * radius * 2 + radius,
     y: cell.r * radius * 2 + radius,

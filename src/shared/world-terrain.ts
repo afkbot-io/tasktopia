@@ -42,7 +42,7 @@ function macroFractal(seed: number, x: number, y: number, salt: number): number 
     + valueNoise(seed, x, y, 29, salt + 2) * 0.13;
 }
 
-export function elevationAt(seed: number, x: number, y: number): number {
+function elevationAt(seed: number, x: number, y: number): number {
   const broad = macroFractal(seed, x - 640, y + 410, 401);
   const ridgeNoise = valueNoise(seed, x + 210, y - 370, 96, 409);
   const ridge = 1 - Math.abs(ridgeNoise * 2 - 1);

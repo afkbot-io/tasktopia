@@ -13,7 +13,12 @@ async function loginAndOpenCountry(page: Page): Promise<void> {
     await page.locator(".country-title-button").click();
     await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button").filter({ hasText: "Федерация Новостроек" }).click();
   }
-  await expect(page.locator(".country-atlas")).toHaveAttribute("data-country-atlas-cities", "10", { timeout: 45_000 });
+  const overview = page.locator(".country-overview");
+  await expect(overview).toHaveAttribute("data-country-overview-cities", "10", { timeout: 45_000 });
+  // Loading the Pixi renderer and aircraft textures is startup work, not camera
+  // interaction. Begin interaction/performance assertions only after the first
+  // complete country frame has been committed.
+  await expect(overview).toHaveAttribute("data-country-ready", "true", { timeout: 45_000 });
 }
 
 test("country overview keeps projected city silhouettes and accessible controls", async ({ page }, testInfo) => {
@@ -24,7 +29,7 @@ test("country overview keeps projected city silhouettes and accessible controls"
   page.on("request", (request) => { if (request.url().includes("/overview")) atlasRequests.push(request.url()); });
 
   await loginAndOpenCountry(page);
-  const atlas = page.locator(".country-atlas");
+  const atlas = page.locator(".country-overview");
   await expect(atlas).toHaveAttribute("data-country-renderer", "pixi");
   await expect(atlas.locator("svg")).toHaveCount(0);
   await expect(atlas.locator("canvas")).toHaveCount(1);
@@ -40,7 +45,7 @@ test("country overview keeps projected city silhouettes and accessible controls"
   await expect(page.locator(".header-city")).toHaveCount(0);
 
   const metrics = await page.evaluate(async () => {
-    const countryId = document.querySelector<HTMLElement>(".country-atlas")!.dataset.countryId!;
+    const countryId = document.querySelector<HTMLElement>(".country-overview")!.dataset.countryId!;
     const response = await fetch(`/api/countries/${countryId}/overview`);
     const body = await response.arrayBuffer();
     return { status: response.status, bytes: body.byteLength, etag: response.headers.get("etag") };
@@ -60,7 +65,7 @@ test("country camera is RAF-driven and its zoom is intentionally bounded", async
     new PerformanceObserver((list) => target.__countryLongTasks!.push(...list.getEntries().map((entry) => entry.duration)))
       .observe({ type: "longtask", buffered: false });
   });
-  const atlas = page.locator(".country-atlas");
+  const atlas = page.locator(".country-overview");
   const box = await atlas.boundingBox();
   expect(box).not.toBeNull();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
@@ -127,16 +132,16 @@ test("planet, country and city transitions keep a single renderer mounted", asyn
   const levels = page.getByRole("navigation", { name: "Уровень карты" });
   await levels.getByRole("button", { name: "Планета" }).click();
   await expect(page.locator(".planet-atlas")).toBeVisible();
-  await expect(page.locator(".country-atlas, .world-canvas")).toHaveCount(0);
+  await expect(page.locator(".country-overview, .world-canvas")).toHaveCount(0);
   await page.locator(".planet-country-label").first().click();
-  await expect(page.locator(".country-atlas")).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator(".country-overview")).toBeVisible({ timeout: 45_000 });
   await expect(page.locator(".planet-atlas, .world-canvas")).toHaveCount(0);
   await page.locator(".country-overview-city").first().click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
-  await expect(page.locator(".planet-atlas, .country-atlas")).toHaveCount(0);
+  await expect(page.locator(".planet-atlas, .country-overview")).toHaveCount(0);
   await levels.getByRole("button", { name: "Страна" }).click();
-  await expect(page.locator(".country-atlas")).toBeVisible({ timeout: 45_000 });
-  await expect(page.locator(".country-atlas canvas")).toHaveCount(1);
+  await expect(page.locator(".country-overview")).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator(".country-overview canvas")).toHaveCount(1);
 });
 
 test("a failed city preload keeps the country interactive and supports retry", async ({ page }) => {
@@ -152,7 +157,7 @@ test("a failed city preload keeps the country interactive and supports retry", a
   });
   await loginAndOpenCountry(page);
   await page.locator(".country-overview-city").first().click();
-  await expect(page.locator(".country-atlas")).toBeVisible();
+  await expect(page.locator(".country-overview")).toBeVisible();
   await expect(page.locator(".world-canvas")).toHaveCount(0);
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("temporary");
@@ -171,7 +176,7 @@ test("distinct full-city visits release renderer heap before the next city", asy
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
     await expect(page.locator(".map-region canvas")).toHaveCount(1);
     await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Страна" }).click();
-    await expect(page.locator(".country-atlas")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".country-overview")).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(2_250);
     await cdp.send("HeapProfiler.collectGarbage");
     heapAfterEviction.push(await page.evaluate(() => (
