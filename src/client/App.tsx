@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto } from "../shared/contracts";
-import type { CountryAtlasCityDto } from "../shared/country-atlas-contract";
+import type { CountryOverviewCityDto } from "../shared/country-overview-contract";
+import type { CitySceneDto } from "../shared/city-scene-contract";
 import { countryAtlasEventImpact, enqueueCountryAtlasEvent } from "../shared/country-atlas-events";
 import { presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
 import { api, ApiError } from "./api";
@@ -13,11 +14,11 @@ import { Button, cx } from "./components/ui";
 import { MapLevelNav, type MapLevel } from "./components/MapLevelNav";
 import { MapLevelTransition } from "./components/MapLevelTransition";
 import { ProfilePresence } from "./components/ProfilePresence";
-import { createAtlasTransition, type AtlasTransition } from "./atlas-navigation-transition";
+import { createAtlasTransition, withAtlasTransitionPhase, type AtlasTransition } from "./atlas-navigation-transition";
 import { eventInvalidation, type MapInvalidation } from "./map-invalidation";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
-const CountryAtlasCanvas = lazy(() => import("./components/CountryAtlasCanvas").then((module) => ({ default: module.CountryAtlasCanvas })));
+const CountryOverviewCanvas = lazy(() => import("./components/CountryOverviewCanvas").then((module) => ({ default: module.CountryOverviewCanvas })));
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
@@ -63,7 +64,9 @@ export function App() {
   const [mapMode, setMapMode] = useState<MapLevel>("COUNTRY");
   const [mapTransition, setMapTransition] = useState<AtlasTransition | null>(null);
   const mapTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mapTransitionAbortRef = useRef<AbortController | null>(null);
   const [focusCity, setFocusCity] = useState<CityFocus | null>(null);
+  const [preparedCityScene, setPreparedCityScene] = useState<CitySceneDto | null>(null);
   const [hoveredAtlasCity, setHoveredAtlasCity] = useState<CityFocus | null>(null);
   const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
   const deepLinkHandledRef = useRef(false);
@@ -75,6 +78,7 @@ export function App() {
   const [atlasEvents, setAtlasEvents] = useState<RealtimeEvent[]>([]);
   const [online, setOnline] = useState(true);
   const [notices, setNotices] = useState<RealtimeNoticePresentation[]>([]);
+  const [mapTransitionError, setMapTransitionError] = useState("");
   const cityReadyResolverRef = useRef<(() => void) | null>(null);
   const countryId = bootstrap?.country.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
@@ -91,23 +95,41 @@ export function App() {
   const transitionMap = useCallback(async (
     to: MapLevel,
     focus: { x: number; y: number },
-    commit: () => Promise<void> | void,
+    commit: (signal: AbortSignal) => Promise<void> | void,
   ) => {
+    mapTransitionAbortRef.current?.abort();
+    const controller = new AbortController();
+    mapTransitionAbortRef.current = controller;
     if (mapTransitionTimerRef.current) clearTimeout(mapTransitionTimerRef.current);
     const transition = createAtlasTransition(mapMode, to, focus, performance.now());
+    setMapTransitionError("");
     setMapTransition(transition);
-    const startedAt = performance.now();
     try {
-      await commit();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      if (controller.signal.aborted) return;
+      setMapTransition((current) => current?.id === transition.id ? withAtlasTransitionPhase(current, "PREPARE") : current);
+      await commit(controller.signal);
+      if (controller.signal.aborted) return;
+      setMapTransition((current) => current?.id === transition.id ? withAtlasTransitionPhase(current, "FIRST_FRAME") : current);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      if (controller.signal.aborted) return;
+      setMapTransition((current) => current?.id === transition.id ? withAtlasTransitionPhase(current, "SWAP") : current);
+    } catch (error) {
+      if (!controller.signal.aborted) setMapTransitionError(error instanceof Error ? error.message : "Не удалось открыть карту");
     } finally {
-      const remaining = Math.max(0, transition.durationMs - (performance.now() - startedAt));
-      mapTransitionTimerRef.current = setTimeout(() => {
-        setMapTransition((current) => current?.id === transition.id ? null : current);
-        mapTransitionTimerRef.current = null;
-      }, remaining);
+      if (!controller.signal.aborted) {
+        mapTransitionTimerRef.current = setTimeout(() => {
+          setMapTransition((current) => current?.id === transition.id ? withAtlasTransitionPhase(current, "EVICT") : current);
+          mapTransitionTimerRef.current = setTimeout(() => {
+            setMapTransition((current) => current?.id === transition.id ? null : current);
+            if (mapTransitionAbortRef.current === controller) mapTransitionAbortRef.current = null;
+            mapTransitionTimerRef.current = null;
+          }, 120);
+        }, 180);
+      }
     }
   }, [mapMode]);
-  const hoverAtlasCity = useCallback((city: CountryAtlasCityDto | null) => {
+  const hoverAtlasCity = useCallback((city: CountryOverviewCityDto | null) => {
     setHoveredAtlasCity(city ? { id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds } : null);
   }, []);
   const acknowledgeAtlasEvents = useCallback((eventId: number) => {
@@ -118,6 +140,7 @@ export function App() {
     await api("/api/auth/logout", { method: "POST" });
     setBootstrap(null);
     setFocusCity(null);
+    setPreparedCityScene(null);
     setSessionState("ANONYMOUS");
     setAuthError("");
     setTokensOpen(false);
@@ -133,6 +156,7 @@ export function App() {
     }
     setBootstrap(next);
     setFocusCity(next.initialCity);
+    setPreparedCityScene(null);
     setHoveredAtlasCity(null);
     setMapMode(requestedMode ?? (next.stats.cities > 1 ? "COUNTRY" : "CITY"));
     setSelectedTask(null);
@@ -174,12 +198,28 @@ export function App() {
   }, [applyBootstrap]);
 
   const openBuilding = useCallback((target: BuildingNavigationTarget) => {
-    setFocusCity(target.city);
-    setHoveredAtlasCity(null);
-    setMapMode("CITY");
-    setFocusTask({ origin: target.origin, token: Date.now() });
-    setSelectedTask(target.id);
-  }, []);
+    const focus = () => {
+      setFocusTask({ origin: target.origin, token: Date.now() });
+      setSelectedTask(target.id);
+    };
+    if (mapMode === "CITY" && focusCity?.id === target.city.id) { focus(); return; }
+    void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
+      const scene = await api<CitySceneDto>(`/api/cities/${target.city.id}/scene`, {
+        signal,
+        cache: "no-cache",
+        headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+      });
+      if (signal.aborted) return;
+      const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
+      setPreparedCityScene(scene);
+      setFocusCity(target.city);
+      setHoveredAtlasCity(null);
+      setMapMode("CITY");
+      focus();
+      await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
+      cityReadyResolverRef.current = null;
+    });
+  }, [focusCity?.id, mapMode, transitionMap]);
 
   const openTaskFromSearch = useCallback((result: TaskSearchResultDto) => {
     openBuilding({
@@ -191,6 +231,7 @@ export function App() {
 
   useEffect(() => { void load().catch(() => undefined); }, [load]);
   useEffect(() => () => {
+    mapTransitionAbortRef.current?.abort();
     if (mapTransitionTimerRef.current) clearTimeout(mapTransitionTimerRef.current);
   }, []);
   useEffect(() => {
@@ -333,41 +374,23 @@ export function App() {
                 }}
               />
             : effectiveMapMode === "COUNTRY" && bootstrap.stats.cities > 0
-              ? <CountryAtlasCanvas
+              ? <CountryOverviewCanvas
                 key={bootstrap.country.id}
                 countryId={bootstrap.country.id}
                 activeCityId={activeCity?.id}
                 events={atlasEvents}
                 onEventsProcessed={acknowledgeAtlasEvents}
                 onCitySelect={(city, focus = { x: .5, y: .5 }, sourcePoint = city.sourceCenter) => {
-                  void transitionMap("CITY", focus, async () => {
+                  void transitionMap("CITY", focus, async (signal) => {
+                    const scene = await api<CitySceneDto>(`/api/cities/${city.id}/scene`, {
+                      signal,
+                      cache: "no-cache",
+                      headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+                    });
+                    if (signal.aborted) return;
                     const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
-                    const airportCells = city.features.filter((feature) => feature.kind === "AIRPORT").flatMap((feature) => feature.sourceFootprint);
-                    const airportBounds = airportCells.length === 0 ? null : {
-                      minX: Math.min(...airportCells.map((cell) => cell.x)),
-                      minY: Math.min(...airportCells.map((cell) => cell.y)),
-                      maxX: Math.max(...airportCells.map((cell) => cell.x)),
-                      maxY: Math.max(...airportCells.map((cell) => cell.y)),
-                    };
-                    const airportCenter = airportBounds ? {
-                      x: Math.round((airportBounds.minX + airportBounds.maxX) / 2),
-                      y: Math.round((airportBounds.minY + airportBounds.maxY) / 2),
-                    } : sourcePoint;
-                    // Retain the selected country-atlas point in view while
-                    // biasing the first city frame toward its real airport.
-                    // This makes the airfield and its road discoverable without
-                    // shrinking an entire mature city to an unreadable dot.
-                    const navigationCenter = {
-                      x: Math.round((sourcePoint.x + airportCenter.x * 4) / 5),
-                      y: Math.round((sourcePoint.y + airportCenter.y * 4) / 5),
-                    };
-                    const navigationBounds = airportBounds ? {
-                      minX: Math.min(sourcePoint.x - 36, airportBounds.minX - 4),
-                      minY: Math.min(sourcePoint.y - 28, airportBounds.minY - 4),
-                      maxX: Math.max(sourcePoint.x + 36, airportBounds.maxX + 4),
-                      maxY: Math.max(sourcePoint.y + 28, airportBounds.maxY + 4),
-                    } : city.sourceBounds;
-                    setFocusCity({ id: city.id, name: city.name, center: navigationCenter, bounds: navigationBounds });
+                    setPreparedCityScene(scene);
+                    setFocusCity({ id: city.id, name: city.name, center: sourcePoint, bounds: city.sourceBounds });
                     setHoveredAtlasCity(null);
                     setMapMode("CITY");
                     // Keep the cover in place until the city renderer has
@@ -378,32 +401,52 @@ export function App() {
                     cityReadyResolverRef.current = null;
                   });
                 }}
-                onDistrictSelect={(city, district) => {
-                  setFocusCity({ id: city.id, name: city.name, center: district.sourceCenter, bounds: district.sourceBounds });
-                  setHoveredAtlasCity(null);
-                  setSelectedTask(null);
-                  setMapMode("CITY");
-                }}
                 onCityHover={hoverAtlasCity}
-                onZoomOut={() => { void transitionMap("PLANET", { x: .5, y: .5 }, () => setMapMode("PLANET")); }}
+                onZoomOut={() => { void transitionMap("PLANET", { x: .5, y: .5 }, () => { setPreparedCityScene(null); setMapMode("PLANET"); }); }}
               />
               : effectiveMapMode === "CITY" && bootstrap.stats.cities > 0
-                ? <WorldCanvas key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity ? {
-                  minX: Math.min(bootstrap.viewBounds.minX, activeCity.bounds.minX), minY: Math.min(bootstrap.viewBounds.minY, activeCity.bounds.minY),
-                  maxX: Math.max(bootstrap.viewBounds.maxX, activeCity.bounds.maxX), maxY: Math.max(bootstrap.viewBounds.maxY, activeCity.bounds.maxY),
-                } : bootstrap.viewBounds} focusCity={activeCity} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onReady={() => {
+                ? <WorldCanvas key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onReady={() => {
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
-                }} onZoomOutToCountry={() => { void transitionMap("COUNTRY", { x: .5, y: .5 }, () => setMapMode("COUNTRY")); }} />
+                }} onFatalError={(message) => {
+                  if (!preparedCityScene) return;
+                  mapTransitionAbortRef.current?.abort();
+                  setMapTransition(null);
+                  cityReadyResolverRef.current?.();
+                  cityReadyResolverRef.current = null;
+                  setPreparedCityScene(null);
+                  setMapMode("COUNTRY");
+                  setMapTransitionError(message);
+                }} onZoomOutToCountry={() => { void transitionMap("COUNTRY", { x: .5, y: .5 }, () => { setPreparedCityScene(null); setMapMode("COUNTRY"); }); }} />
                 : <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>В стране пока нет городов</h2><p>Создайте первый город через MCP — он сразу появится на карте страны и планеты.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div>}
       </Suspense>
       <MapLevelNav level={effectiveMapMode} hasCity={Boolean(activeCity)} onChange={(nextLevel) => {
         setHoveredAtlasCity(null);
         if (nextLevel === "CITY" && effectiveMapMode !== "CITY") return;
-        setMapMode(nextLevel);
+        void transitionMap(nextLevel, { x: .5, y: .5 }, () => {
+          setPreparedCityScene(null);
+          setMapMode(nextLevel);
+        });
       }} />
       {mapTransition && <MapLevelTransition transition={mapTransition} />}
-      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => { setFocusCity(city); setMapMode("CITY"); setPlanOpen(false); }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
+      {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
+      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => {
+        setPlanOpen(false);
+        void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
+          const scene = await api<CitySceneDto>(`/api/cities/${city.id}/scene`, {
+            signal,
+            cache: "no-cache",
+            headers: { accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+          });
+          if (signal.aborted) return;
+          const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
+          setPreparedCityScene(scene);
+          setFocusCity(city);
+          setMapMode("CITY");
+          await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
+          cityReadyResolverRef.current = null;
+        });
+      }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
     </section>
 
     {selectedTask && <Suspense fallback={null}><TaskModal taskId={selectedTask} revision={revision} onClose={closeTask} /></Suspense>}

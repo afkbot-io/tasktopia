@@ -18,7 +18,7 @@ test("captures the real README showcase city", async ({ page }) => {
   await expect(page.getByText("Республика Аврора", { exact: true })).toBeVisible();
 
   const map = page.locator(".world-canvas");
-  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await expect.poll(async () => Number(await map.getAttribute("data-resident-chunks")), { timeout: 20_000 }).toBeGreaterThan(0);
   await canvas.hover();
   for (let step = 0; step < 8 && await map.getAttribute("data-map-lod") !== "detail"; step += 1) {

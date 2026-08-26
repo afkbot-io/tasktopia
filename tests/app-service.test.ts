@@ -604,6 +604,12 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(affected.maxX).toBeGreaterThanOrEqual(buildingBounds.maxX);
     expect(affected.maxY).toBeGreaterThanOrEqual(buildingBounds.maxY);
     expect((await service.completeDistrict(countryId, district.id, "complete-core")).status).toBe("COMPLETED");
+    const completedScene = await service.getCityScene(countryId, city.id);
+    expect(completedScene.completedDistrictSnapshots).toContainEqual(expect.objectContaining({
+      districtId: district.id,
+      revision: expect.stringMatching(/^[a-f0-9]{64}$/),
+      tasks: [expect.objectContaining({ id: task.id, buildingType: task.buildingType, origin: task.origin, footprint: task.footprint })],
+    }));
     await expect(service.activateDistrict(countryId, district.id, "reactivate-core")).rejects.toThrowError(/нельзя снова активировать/);
     await expect(service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Late task", estimate: 1, idempotencyKey: "late-task" }))
       .rejects.toThrowError(/завершённый район/);

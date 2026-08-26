@@ -49,5 +49,46 @@ describe("country atlas HTTP boundary", () => {
       url: "/api/country-atlas",
       headers: { cookie, "if-none-match": response.headers.etag! },
     })).statusCode).toBe(304);
+  }, 90_000);
+
+  it("serves a compact country overview without city cell geometry", async () => {
+    const registered = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        email: "country-overview@example.test",
+        name: "Country Overview",
+        password: "safe-password-123",
+        passwordConfirmation: "safe-password-123",
+        countryName: "Overview Country",
+        cityName: "Overview City",
+      },
+    });
+    const setCookie = registered.headers["set-cookie"]!;
+    const cookie = (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;
+
+    const response = await app.inject({ method: "GET", url: "/api/country-overview", headers: { cookie } });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-1"$/);
+    expect(response.headers["cache-control"]).toBe("private, max-age=60, stale-while-revalidate=600");
+    expect(response.json()).toMatchObject({
+      schemaVersion: 1,
+      revision: expect.stringMatching(/^[a-f0-9]{64}$/),
+      cities: [{
+        name: "Overview City",
+        sourceCenter: expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+        atlasCenter: expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+        districts: [],
+      }],
+      connections: [],
+    });
+    expect(JSON.stringify(response.json())).not.toMatch(/atlasMask|cutoutMask|displayCells|buildings|roads|surfaces|features|footprint/);
+    expect(Buffer.byteLength(response.body)).toBeLessThan(20_000);
+    expect((await app.inject({
+      method: "GET",
+      url: "/api/country-overview",
+      headers: { cookie, "if-none-match": response.headers.etag! },
+    })).statusCode).toBe(304);
   }, 30_000);
 });

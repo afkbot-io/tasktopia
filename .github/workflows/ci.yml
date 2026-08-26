@@ -1,7 +1,11 @@
 name: verify
 
 on:
+  # Feature branches are verified by pull_request. Restrict push verification
+  # to main so the same SHA does not run this stateful, asset-heavy job twice.
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:

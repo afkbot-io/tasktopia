@@ -201,6 +201,17 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 /* ── Compressed country atlas ─────────────────────────────── */
 .country-atlas { position: absolute; inset: 0; overflow: hidden; background-color: #557148; background-image: linear-gradient(45deg, #5e784b 25%, transparent 25%, transparent 75%, #5e784b 75%), linear-gradient(45deg, #5e784b 25%, #526d45 25%, #526d45 75%, #5e784b 75%); background-position: 0 0, 16px 16px; background-size: 32px 32px; }
 .country-atlas svg { display: block; width: 100%; height: 100%; touch-action: none; }
+.country-overview { touch-action: none; user-select: none; }
+.country-overview-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.country-overview-labels { position: absolute; inset: 0; pointer-events: none; }
+.country-overview-city { position: absolute; z-index: 2; display: grid; min-width: 116px; gap: 2px; padding: 7px 9px; border: 2px solid #13292b; background: #10272aeb; color: #eef0df; box-shadow: 3px 3px 0 #0717198f; pointer-events: auto; cursor: pointer; text-align: left; will-change: transform; }
+.country-overview-city strong { overflow: hidden; max-width: 150px; font: 900 12px/1.15 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.country-overview-city span { color: #aab9ae; font: 700 9px/1.1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
+.country-overview-city:hover, .country-overview-city:focus-visible, .country-overview-city[data-active="true"] { border-color: #f0cf56; background: #173438f2; outline: none; }
+.country-overview-loader { z-index: 5; background: #142629e8; pointer-events: none; }
+.country-overview-warning { position: absolute; right: 12px; bottom: 12px; z-index: 6; max-width: 360px; padding: 8px 10px; border: 1px solid #c58d55; background: #271d18e8; color: #f2dfca; font-size: 11px; }
+.map-transition-error { position: absolute; z-index: 35; top: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #a85b55; background: #28191bef; color: #f4d5cf; box-shadow: 0 8px 28px #0008; }
+.map-transition-error button { border: 1px solid #88514d; background: #402326; color: inherit; padding: 4px 8px; }
 .atlas-pixel { image-rendering: pixelated; }
 .atlas-ground { fill: var(--atlas-ground); }
 .atlas-macro-terrain rect { stroke: #102a29; stroke-width: .35px; stroke-opacity: .12; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }

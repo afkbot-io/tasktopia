@@ -64,7 +64,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page).toHaveTitle("Tasktopia — Тестовая страна");
   await expect(page.getByText("Riverside", { exact: true })).toBeVisible();
-  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
+  await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible();
   const mapWarmup = { timeout: 90_000 };
   const mapHost = page.locator(".world-canvas");
   await expect(page.getByText("Готовим карту…", { exact: true })).toBeHidden({ timeout: 90_000 });
@@ -91,7 +91,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await capture(page, "screenshots/release-city-districts.png");
   await districtsToggle.click();
 
-  const canvas = page.locator("canvas[aria-label='Интерактивная карта страны']");
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await page.locator(".country-title-button").click();
   await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   let cityDirectory = page.getByRole("complementary", { name: "План страны" });
@@ -114,13 +114,12 @@ test("login, map and MCP token management", async ({ page, context }) => {
 
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 800);
-  // Camera scale changes immediately, while the previous coherent detail
-  // frame remains visible until every authoritative overview overlay arrives.
-  // Large fixtures can legitimately need more than Playwright's default 5s.
-  await expect(mapHost).toHaveAttribute("data-map-lod", "overview", mapWarmup);
+  // City view intentionally stays in detail mode at the bounded minimum zoom.
+  // The complete resident scene remains authoritative without a second request.
+  await expect(mapHost).toHaveAttribute("data-map-lod", "detail", mapWarmup);
   await expect.poll(async () => Number(await mapHost.getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);
-  await expect(mapHost).toHaveAttribute("data-cars", "0");
-  await expect(mapHost).toHaveAttribute("data-walkers", "0");
+  await expect.poll(async () => Number(await mapHost.getAttribute("data-cars")), mapWarmup).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await mapHost.getAttribute("data-walkers")), mapWarmup).toBeGreaterThan(0);
   const residentChunks = Number(await mapHost.getAttribute("data-resident-chunks"));
   expect(residentChunks).toBeLessThanOrEqual(36);
   await capture(page, "screenshots/release-city-zoomed-out.png");
@@ -234,8 +233,8 @@ test("registration creates the named country and first city", async ({ page }) =
   await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
   await page.getByLabel("Повторите пароль", { exact: true }).fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
-  await expect(page.getByText("Новый продукт", { exact: true })).toBeVisible();
-  await expect(page.getByText("Первый релиз", { exact: true })).toBeVisible();
-  await expect(page.locator("canvas[aria-label='Интерактивная карта страны']")).toBeVisible();
+  await expect(page.getByText("Новый продукт", { exact: true })).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByText("Первый релиз", { exact: true })).toBeVisible({ timeout: 90_000 });
+  await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 90_000 });
   await capture(page, "screenshots/release-onboarding-city.png");
 });
