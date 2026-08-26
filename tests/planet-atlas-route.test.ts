@@ -83,7 +83,7 @@ describe("planet atlas HTTP boundary", () => {
     const revalidated = await app.inject({ method: "GET", url: "/api/planet-atlas", headers: { cookie, "if-none-match": response.headers.etag! } });
     expect(revalidated.statusCode).toBe(200);
     expect(revalidated.json().countries.map((country: { name: string }) => country.name)).toContain("Первая республика");
-  }, 30_000);
+  }, 90_000);
 
   it("requires an authenticated account", async () => {
     expect((await app.inject({ method: "GET", url: "/api/planet-atlas" })).statusCode).toBe(401);

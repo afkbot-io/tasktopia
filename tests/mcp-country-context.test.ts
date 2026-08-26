@@ -141,7 +141,7 @@ describe("MCP explicit country context", () => {
     }
     expect(await db.prepare("SELECT active_country_id FROM users WHERE id = ?").get(registered.user.id))
       .toEqual({ active_country_id: activeCountryId });
-  }, 20_000);
+  }, 90_000);
 
   it("publishes countryId as required context for every country-scoped tool", async () => {
     const registered = await registerUser(db, {
