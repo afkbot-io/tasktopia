@@ -204,7 +204,8 @@ export function App() {
     };
     if (mapMode === "CITY" && focusCity?.id === target.city.id) { focus(); return; }
     void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
-      const scene = await api<CitySceneDto>(`/api/cities/${target.city.id}/scene`, {
+      if (!countryId) throw new Error("Страна не выбрана");
+      const scene = await api<CitySceneDto>(`/api/countries/${countryId}/cities/${target.city.id}/scene`, {
         signal,
         cache: "no-cache",
         headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
@@ -219,7 +220,7 @@ export function App() {
       await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
       cityReadyResolverRef.current = null;
     });
-  }, [focusCity?.id, mapMode, transitionMap]);
+  }, [countryId, focusCity?.id, mapMode, transitionMap]);
 
   const openTaskFromSearch = useCallback((result: TaskSearchResultDto) => {
     openBuilding({
@@ -382,7 +383,7 @@ export function App() {
                 onEventsProcessed={acknowledgeAtlasEvents}
                 onCitySelect={(city, focus = { x: .5, y: .5 }, sourcePoint = city.sourceCenter) => {
                   void transitionMap("CITY", focus, async (signal) => {
-                    const scene = await api<CitySceneDto>(`/api/cities/${city.id}/scene`, {
+                    const scene = await api<CitySceneDto>(`/api/countries/${bootstrap.country.id}/cities/${city.id}/scene`, {
                       signal,
                       cache: "no-cache",
                       headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
@@ -433,7 +434,7 @@ export function App() {
       {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => {
         setPlanOpen(false);
         void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
-          const scene = await api<CitySceneDto>(`/api/cities/${city.id}/scene`, {
+          const scene = await api<CitySceneDto>(`/api/countries/${bootstrap.country.id}/cities/${city.id}/scene`, {
             signal,
             cache: "no-cache",
             headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },

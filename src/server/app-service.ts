@@ -84,14 +84,16 @@ import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
 import { generatedGreenAreaProfile, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
 import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
 import { COUNTRY_ATLAS_SCHEMA_VERSION, type CountryAtlasDto } from "../shared/country-atlas-contract";
-import { COUNTRY_OVERVIEW_SCHEMA_VERSION, type CountryOverviewDto, type CountryOverviewDistrictDto } from "../shared/country-overview-contract";
+import { COUNTRY_OVERVIEW_SCHEMA_VERSION, encodeCountryTerrain, type CountryOverviewDto, type CountryOverviewDistrictDto } from "../shared/country-overview-contract";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../shared/city-scene-contract";
 import { countryAtlasEventImpact, patchCountryAtlasTaskProgress } from "../shared/country-atlas-events";
 import { meanCountryAtlasProgress } from "../shared/country-atlas-progress";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/planet-atlas-contract";
+import { projectPlanetAtlas } from "../shared/planet-atlas";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import { projectCountryAtlas } from "./world/country-atlas";
 import { projectCountryOverview } from "./world/country-overview";
+import { buildCountryGeography, snapCountryCitiesToLand } from "./world/country-geography";
 import type { SharedWorldCache } from "./optional-redis-cache";
 import {
   ROAD_WIDTH,
@@ -868,7 +870,9 @@ export class AppService {
         cachedAtlas.atlas = patchCountryAtlasTaskProgress(cachedAtlas.atlas, event);
       }
     }
-    if (countryAtlasEventImpact(event) !== "NONE") this.countryOverviewCache.delete(event.countryId);
+    if (countryAtlasEventImpact(event) !== "NONE") {
+      for (const key of this.countryOverviewCache.keys()) if (key.includes(`:${event.countryId}:`)) this.countryOverviewCache.delete(key);
+    }
     if (this.chunkInvalidationScope(event) !== "NONE") {
       for (const key of this.citySceneCache.keys()) if (key.startsWith(`${event.countryId}:`)) this.citySceneCache.delete(key);
     }
@@ -1047,24 +1051,43 @@ export class AppService {
 
   async getPlanetAtlas(userId: string): Promise<PlanetAtlasDto> {
     const rows = await this.db.prepare(`
-      SELECT c.id, c.name, c.seed, c.world_version, c.created_at,
-        (SELECT COUNT(*) FROM cities_v3 city WHERE city.country_id = c.id) AS city_count,
-        (SELECT COUNT(*) FROM districts_v3 district
-          JOIN cities_v3 city ON city.id = district.city_id
-          WHERE city.country_id = c.id) AS district_count,
-        (SELECT COUNT(*) FROM tasks_v3 task
-          JOIN cities_v3 city ON city.id = task.city_id
-          WHERE city.country_id = c.id) AS building_count,
-        (SELECT COUNT(*) FROM tasks_v3 task
-          JOIN cities_v3 city ON city.id = task.city_id
-          WHERE city.country_id = c.id AND task.status <> 'COMPLETED') AS unfinished_building_count,
-        (SELECT COALESCE(ROUND(AVG(task.progress)), 0) FROM tasks_v3 task
-          JOIN cities_v3 city ON city.id = task.city_id
-          WHERE city.country_id = c.id) AS progress
-      FROM country_members membership
-      JOIN countries c ON c.id = membership.country_id
-      WHERE membership.user_id = ?
-      ORDER BY c.created_at, c.id
+      WITH accessible AS (
+        SELECT c.id, c.name, c.seed, c.world_version, c.created_at
+        FROM country_members membership
+        JOIN countries c ON c.id = membership.country_id
+        WHERE membership.user_id = ?
+      ), city_stats AS (
+        SELECT city.country_id, COUNT(*)::integer AS city_count
+        FROM cities_v3 city
+        JOIN accessible country ON country.id = city.country_id
+        GROUP BY city.country_id
+      ), district_stats AS (
+        SELECT city.country_id, COUNT(district.id)::integer AS district_count
+        FROM cities_v3 city
+        JOIN accessible country ON country.id = city.country_id
+        JOIN districts_v3 district ON district.city_id = city.id
+        GROUP BY city.country_id
+      ), task_stats AS (
+        SELECT city.country_id,
+          COUNT(task.id)::integer AS building_count,
+          COUNT(task.id) FILTER (WHERE task.status <> 'COMPLETED')::integer AS unfinished_building_count,
+          COALESCE(ROUND(AVG(task.progress)), 0)::integer AS progress
+        FROM cities_v3 city
+        JOIN accessible country ON country.id = city.country_id
+        JOIN tasks_v3 task ON task.city_id = city.id
+        GROUP BY city.country_id
+      )
+      SELECT country.id, country.name, country.seed, country.world_version, country.created_at,
+        COALESCE(city_stats.city_count, 0) AS city_count,
+        COALESCE(district_stats.district_count, 0) AS district_count,
+        COALESCE(task_stats.building_count, 0) AS building_count,
+        COALESCE(task_stats.unfinished_building_count, 0) AS unfinished_building_count,
+        COALESCE(task_stats.progress, 0) AS progress
+      FROM accessible country
+      LEFT JOIN city_stats ON city_stats.country_id = country.id
+      LEFT JOIN district_stats ON district_stats.country_id = country.id
+      LEFT JOIN task_stats ON task_stats.country_id = country.id
+      ORDER BY country.created_at, country.id
     `).all(userId) as Row[];
     const countries = rows.map((row) => ({
       id: String(row.id), name: String(row.name), seed: Number(row.seed), worldVersion: Number(row.world_version),
@@ -1546,11 +1569,13 @@ export class AppService {
     return atlas;
   }
 
-  async getCountryOverview(countryId: string): Promise<CountryOverviewDto> {
-    const cached = this.countryOverviewCache.get(countryId);
+  async getCountryOverview(userId: string, countryId: string): Promise<CountryOverviewDto> {
+    const planetAtlas = await this.getPlanetAtlas(userId);
+    const cacheKey = `${userId}:${countryId}:${planetAtlas.revision}`;
+    const cached = this.countryOverviewCache.get(cacheKey);
     if (cached) {
-      this.countryOverviewCache.delete(countryId);
-      this.countryOverviewCache.set(countryId, cached);
+      this.countryOverviewCache.delete(cacheKey);
+      this.countryOverviewCache.set(cacheKey, cached);
       return cached;
     }
     const [country, cities, districtRows] = await Promise.all([
@@ -1566,7 +1591,10 @@ export class AppService {
         GROUP BY d.id, d.city_id, d.name, d.status, d.color, d.created_at
         ORDER BY d.created_at, d.id`).all(countryId) as Promise<Row[]>,
     ]);
+    const macroCountry = projectPlanetAtlas(planetAtlas).countries.find((candidate) => candidate.id === countryId);
+    const geography = buildCountryGeography({ countryId, seed: Number(country.seed), macroCells: macroCountry?.cells ?? [] });
     const projection = projectCountryOverview(cities.map((city) => ({ id: city.id, sourceCenter: city.center })));
+    const cityAnchors = snapCountryCitiesToLand(geography, cities.map((city) => ({ id: city.id, atlasCenter: projection.centers.get(city.id)! })));
     const districtsByCity = new Map<string, CountryOverviewDistrictDto[]>();
     for (const row of districtRows) {
       const district: CountryOverviewDistrictDto = {
@@ -1578,19 +1606,24 @@ export class AppService {
     }
     const overviewWithoutRevision = {
       schemaVersion: COUNTRY_OVERVIEW_SCHEMA_VERSION,
+      countryId,
       terrainSeed: Number(country.seed),
       bounds: projection.bounds,
+      geography: {
+        ...geography.grid,
+        terrainCodes: encodeCountryTerrain(geography.cells.map((cell) => cell.terrain)),
+      },
       cities: cities.map((city) => {
         const districts = districtsByCity.get(city.id) ?? [];
         return {
           id: city.id, name: city.name, status: city.status, sourceCenter: city.center, sourceBounds: city.bounds,
-          atlasCenter: projection.centers.get(city.id)!, progress: meanCountryAtlasProgress(districts), districts,
+          atlasCenter: cityAnchors.get(city.id) ?? projection.centers.get(city.id)!, progress: meanCountryAtlasProgress(districts), districts,
         };
       }),
       connections: projection.connections,
     };
     const overview: CountryOverviewDto = { ...overviewWithoutRevision, revision: stableHash(overviewWithoutRevision) };
-    this.countryOverviewCache.set(countryId, overview);
+    this.countryOverviewCache.set(cacheKey, overview);
     while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);
     return overview;
   }
