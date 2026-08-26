@@ -50,6 +50,7 @@ import {
   progressiveChunkPlan,
   clampCameraPosition,
   fitCameraScale,
+  CITY_CAMERA_MIN_SCALE,
   cityDetailFocusBounds,
   minimumCameraScale,
   nextCameraTargetScale,
@@ -960,6 +961,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
   const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin) : focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
+  const initialCityCameraBoundsRef = useRef(focusArea?.bounds);
+  const initialCityCenterRef = useRef(focusCity?.center);
   const initialCitySceneRef = useRef(initialCityScene);
 
   useEffect(() => {
@@ -1164,7 +1167,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       });
       const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Container }>();
       let entityReplacementCount = 0;
-      let currentViewBounds = initialViewBoundsRef.current;
+      let currentViewBounds = initialCityCameraBoundsRef.current ?? initialViewBoundsRef.current;
       let currentLod: MapLod = focusCityId ? "DETAIL" : world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
       let ambientAssetsReady = false;
       let ambientAssetsPromise: Promise<void> | undefined;
@@ -1692,13 +1695,16 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         ? 1.25
         : fitCameraScale(app.screen, initialFocus.bounds, CELL_SIZE);
       const focus = initialFocus ? position(initialFocus.point) : { x: 0, y: 0 };
+      const cameraMinimumScale = () => focusCityId
+        ? CITY_CAMERA_MIN_SCALE
+        : minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
       const appliedInitialScale = pixelPerfectCameraScale(
         initialScale,
-        minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+        cameraMinimumScale(),
       );
       let cameraTargetScale = Math.max(
         initialScale,
-        minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+        cameraMinimumScale(),
       );
       let zoomBoundary = initialAtlasZoomBoundary();
       world.scale.set(appliedInitialScale);
@@ -1798,7 +1804,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let dragging = false;
       let previous = { x: 0, y: 0 };
       const clampCamera = () => {
-        const minimumScale = minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
+        const minimumScale = cameraMinimumScale();
         if (world.scale.x < minimumScale) {
           cameraTargetScale = Math.max(cameraTargetScale, minimumScale);
           const scale = pixelPerfectCameraScale(minimumScale, minimumScale);
@@ -3133,9 +3139,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             });
             if (!covered) continue;
             if (cityScene && host!.dataset.citySceneCommit !== "atomic") {
+              app.render();
               setFirstFrameReady(true);
               paintedFrame = true;
               host!.dataset.citySceneCommit = "atomic";
+              host!.dataset.cityFirstFrameRendered = "true";
               preloadAmbientAssets();
             }
             let removedEntities = false;
@@ -3238,7 +3246,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
 
       runtimeRef.current = {
         setViewBounds(bounds) {
-          currentViewBounds = bounds;
+          currentViewBounds = focusCityId
+            ? cityDetailFocusBounds(initialCityCenterRef.current ?? {
+              x: (bounds.minX + bounds.maxX) / 2,
+              y: (bounds.minY + bounds.maxY) / 2,
+            }, bounds)
+            : bounds;
           redrawBackdrop();
           clampCamera();
           void loadVisible();
@@ -3246,11 +3259,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         focus(area) {
           const scale = pixelPerfectCameraScale(
             fitCameraScale(app.screen, area.bounds, CELL_SIZE),
-            minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+            cameraMinimumScale(),
           );
           cameraTargetScale = Math.max(
             fitCameraScale(app.screen, area.bounds, CELL_SIZE),
-            minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+            cameraMinimumScale(),
           );
           const point = position(area.point);
           world.scale.set(scale);
@@ -3429,7 +3442,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         event.preventDefault();
         const wheelAt = performance.now();
         const oldScale = world.scale.x;
-        const minimumScale = minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
+        const minimumScale = cameraMinimumScale();
         const wasAtMinimum = cameraTargetScale <= minimumScale + 0.001;
         const direction = event.deltaY > 0 ? "OUT" : "IN";
         if (direction === "IN") minimumZoomReachedAt = 0;
@@ -3451,7 +3464,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };
         const appliedScale = pixelPerfectCameraScale(
           cameraTargetScale,
-          minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
+          cameraMinimumScale(),
         );
         world.scale.set(appliedScale);
         host.dataset.renderScale = String(appliedScale);

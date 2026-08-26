@@ -86,6 +86,7 @@ import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-a
 import { COUNTRY_ATLAS_SCHEMA_VERSION, type CountryAtlasDto } from "../shared/country-atlas-contract";
 import { COUNTRY_OVERVIEW_SCHEMA_VERSION, encodeCountryTerrain, type CountryOverviewDto, type CountryOverviewDistrictDto } from "../shared/country-overview-contract";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../shared/city-scene-contract";
+import { cityDetailFocusBounds } from "../shared/city-camera";
 import { countryAtlasEventImpact, patchCountryAtlasTaskProgress } from "../shared/country-atlas-events";
 import { meanCountryAtlasProgress } from "../shared/country-atlas-progress";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/planet-atlas-contract";
@@ -1642,10 +1643,11 @@ export class AppService {
       this.citySceneCache.set(cacheKey, cached);
       return cached;
     }
-    const minChunkX = Math.floor(city.bounds.minX / CHUNK_SIZE);
-    const minChunkY = Math.floor(city.bounds.minY / CHUNK_SIZE);
-    const maxChunkX = Math.floor(city.bounds.maxX / CHUNK_SIZE);
-    const maxChunkY = Math.floor(city.bounds.maxY / CHUNK_SIZE);
+    const sceneBounds = cityDetailFocusBounds(city.center, city.bounds);
+    const minChunkX = Math.floor(sceneBounds.minX / CHUNK_SIZE);
+    const minChunkY = Math.floor(sceneBounds.minY / CHUNK_SIZE);
+    const maxChunkX = Math.floor(sceneBounds.maxX / CHUNK_SIZE);
+    const maxChunkY = Math.floor(sceneBounds.maxY / CHUNK_SIZE);
     const chunkCount = (maxChunkX - minChunkX + 1) * (maxChunkY - minChunkY + 1);
     if (chunkCount > 256) throw new DomainError("INVALID_INPUT", "Город превышает лимит единой сцены");
     const chunks = await this.getViewportPayloads(countryId, minChunkX, minChunkY, maxChunkX, maxChunkY, "DETAIL");

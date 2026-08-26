@@ -11,15 +11,15 @@ import {
 } from "../src/client/world-camera";
 
 describe("world camera geometry", () => {
-  it("opens a huge city at a readable neighbourhood scale", () => {
+  it("opens every city through the same 160 by 100 cell camera territory", () => {
     expect(cityDetailFocusBounds(
       { x: 200, y: 140 },
       { minX: -40, minY: -80, maxX: 520, maxY: 420 },
-    )).toEqual({ minX: 140, minY: 100, maxX: 259, maxY: 179 });
+    )).toEqual({ minX: 120, minY: 90, maxX: 279, maxY: 189 });
     expect(cityDetailFocusBounds(
       { x: 20, y: 20 },
       { minX: 0, minY: 0, maxX: 49, maxY: 39 },
-    )).toEqual({ minX: 0, minY: 0, maxX: 49, maxY: 39 });
+    )).toEqual({ minX: -60, minY: -30, maxX: 99, maxY: 69 });
   });
 
   it("requests only chunks intersecting the visible viewport", () => {
