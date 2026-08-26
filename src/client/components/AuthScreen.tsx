@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { gameAssetUrl } from "../../shared/catalog";
 import { api } from "../api";
 import { Button, Field } from "./ui";
 
@@ -83,17 +84,24 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const canRetryCountry = countryLoadFailed || Boolean(initialError);
 
   return <main className="grid h-full overflow-y-auto bg-[#091518] lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
-    <section className="auth-visual relative min-h-[340px] overflow-hidden px-6 py-7 sm:px-10 lg:min-h-0 lg:px-14 lg:py-10" aria-label="Описание Tasktopia">
+    <section className="auth-visual relative min-h-[500px] overflow-hidden px-6 py-7 sm:px-10 lg:min-h-0 lg:px-14 lg:py-10" aria-label="Описание Tasktopia">
       <div className="brand-mark relative z-[2]"><span>▦</span> TASKTOPIA</div>
       <div className="relative z-[2] mt-16 max-w-3xl lg:mt-[14vh]">
         <p className="eyebrow">УПРАВЛЕНИЕ, КОТОРОЕ ВИДНО</p>
         <h1 className="m-0 max-w-3xl text-balance text-[clamp(42px,5.5vw,78px)] font-black leading-[.96] tracking-[-.055em] text-[#f4efdf]">Стройте планы.<br />Наблюдайте за страной.</h1>
         <p className="mt-6 max-w-xl text-[15px] leading-7 text-[#aec0bc] sm:text-[17px]">Tasktopia превращает ваши дела в живую страну. Развитие городов становится понятным без ещё одной таблицы.</p>
       </div>
-      <div className="auth-atlas" aria-hidden="true">
-        <i className="atlas-water" /><i className="atlas-road atlas-road-h" /><i className="atlas-road atlas-road-v" />
-        {Array.from({ length: 9 }, (_, index) => <i key={index} className={`atlas-building atlas-building-${index + 1}`} />)}
-        <i className="atlas-park" /><i className="atlas-pulse" />
+      <div className="auth-world" aria-hidden="true">
+        <i className="auth-world-water" /><i className="auth-world-road auth-world-road-h" /><i className="auth-world-road auth-world-road-v" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-city-hall" src={gameAssetUrl("buildings/civic/civic-city-hall/stage-5.png")} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-house-corner" src={gameAssetUrl("buildings/house/house-corner-apartments/stage-5.png")} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-house-green" src={gameAssetUrl("buildings/house/house-lowrise-green-roof/stage-5.png")} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-highrise" src={gameAssetUrl("buildings/highrise/highrise-green-terraces/stage-5.png")} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-oak" src={gameAssetUrl("props/tree-oak.png")} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-pine" src={gameAssetUrl("props/tree-pine.png")} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-bus" src={gameAssetUrl("props/city-bus-horizontal.png")} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-statue" src={gameAssetUrl("props/statue-hero.png")} alt="" />
+        <i className="auth-world-pulse" />
       </div>
     </section>
 
@@ -129,7 +137,6 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
         {(registrationEnabled || mode === "register") && <Button variant="quiet" className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
           {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
         </Button>}
-        <p className="mb-0 mt-4 border-t border-[#293d43] pt-4 text-[10px] leading-4 text-[#748b8f]">Сессия хранится в защищённой HTTP-only cookie. Пароль не передаётся интеграциям.</p>
       </div>
     </section>
   </main>;
