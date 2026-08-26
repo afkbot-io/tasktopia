@@ -1,5 +1,27 @@
 import { expect, test } from "@playwright/test";
 
+test("uses the game asset pack without exposing implementation notes", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByText(/HTTP-only|Пароль не передаётся интеграциям/i)).toHaveCount(0);
+  const sceneSprites = page.locator("[data-auth-scene-sprite]");
+  await expect(sceneSprites).toHaveCount(8);
+  for (const sprite of await sceneSprites.all()) {
+    await expect(sprite).toHaveAttribute("src", /\/game-assets\/v5\/revisions\/[a-f0-9]{16}\//);
+  }
+});
+
+test("keeps the mobile game scene below the hero copy", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  const copy = await page.getByText(/Tasktopia превращает ваши дела/).boundingBox();
+  const scene = await page.locator(".auth-world").boundingBox();
+  expect(copy).not.toBeNull();
+  expect(scene).not.toBeNull();
+  expect(scene!.y).toBeGreaterThanOrEqual(copy!.y + copy!.height - 4);
+});
+
 test("shows a clear duplicate-registration error and keeps the form usable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();

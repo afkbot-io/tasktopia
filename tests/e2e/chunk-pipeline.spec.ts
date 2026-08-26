@@ -5,10 +5,15 @@ test("starts the whole-city request before slow sprite downloads", async ({ page
   let sceneStartedAt = 0;
   let firstSpriteStartedAt = 0;
   let firstSpriteReleasedAt = 0;
+  let trackingCityLoad = false;
   page.on("request", (request) => {
     if (new URL(request.url()).pathname.endsWith("/scene") && sceneStartedAt === 0) sceneStartedAt = Date.now();
   });
   await page.route("**/game-assets/**", async (route) => {
+    if (!trackingCityLoad) {
+      await route.continue();
+      return;
+    }
     if (firstSpriteStartedAt === 0) {
       firstSpriteStartedAt = Date.now();
       await new Promise((resolve) => setTimeout(resolve, 2_000));
@@ -19,6 +24,7 @@ test("starts the whole-city request before slow sprite downloads", async ({ page
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
+  trackingCityLoad = true;
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect.poll(() => sceneStartedAt, { timeout: 15_000 }).toBeGreaterThan(0);
   await expect.poll(() => firstSpriteStartedAt, { timeout: 30_000 }).toBeGreaterThan(0);

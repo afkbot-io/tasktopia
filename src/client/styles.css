@@ -72,19 +72,23 @@ code { font-family: "SFMono-Regular", Consolas, monospace; }
 
 .auth-visual { position: relative; overflow: hidden; padding: 42px 54px; background: radial-gradient(circle at 28% 28%, #203a31 0, #11261f 38%, #091719 76%); }
 .auth-visual::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(#b4cf9a0a 1px, transparent 1px), linear-gradient(90deg, #b4cf9a0a 1px, transparent 1px); background-size: 24px 24px; mask-image: linear-gradient(to bottom right, #0008, transparent 70%); }
-.auth-atlas { position: absolute; right: -46px; bottom: -58px; z-index: 1; width: 510px; height: 390px; overflow: hidden; border: 1px solid #63827755; border-radius: 20px 0 0; background-color: #57783f; background-image: linear-gradient(#668548 1px, transparent 1px), linear-gradient(90deg, #668548 1px, transparent 1px), radial-gradient(circle at 70% 22%, #779552 0 2px, transparent 3px); background-size: 16px 16px, 16px 16px, 23px 19px; box-shadow: -20px -24px 80px #0007, inset 0 0 60px #18352655; transform: rotate(-2deg); opacity: .82; }
-.auth-atlas i { position: absolute; display: block; image-rendering: pixelated; }
-.auth-atlas .atlas-water { right: -26px; top: -18px; width: 132px; height: 430px; background: repeating-linear-gradient(0deg, #1f7194 0 4px, #287da0 4px 8px); clip-path: polygon(25% 0, 100% 0, 100% 100%, 10% 100%, 24% 86%, 12% 68%, 30% 51%, 14% 34%, 26% 18%); }
-.auth-atlas .atlas-road { z-index: 2; background: #35414f; box-shadow: inset 0 3px #778a91, inset 0 -3px #778a91; }
-.auth-atlas .atlas-road-h { left: 0; top: 220px; width: 430px; height: 42px; }
-.auth-atlas .atlas-road-v { left: 202px; top: 0; width: 42px; height: 390px; transform: rotate(0); box-shadow: inset 3px 0 #778a91, inset -3px 0 #778a91; }
-.auth-atlas .atlas-building { z-index: 3; width: 54px; height: 45px; border: 4px solid #23353b; border-bottom-width: 8px; border-radius: 3px; background: repeating-linear-gradient(90deg, #64b8cf 0 5px, #bfeaf0 5px 7px, #326f88 7px 11px), #56798a; box-shadow: 4px 6px 0 #20382e80; }
-.auth-atlas .atlas-building-1 { left: 68px; top: 72px; }.auth-atlas .atlas-building-2 { left: 124px; top: 72px; height: 58px; }.auth-atlas .atlas-building-3 { left: 68px; top: 132px; }
-.auth-atlas .atlas-building-4 { left: 124px; top: 132px; height: 67px; }.auth-atlas .atlas-building-5 { left: 272px; top: 70px; width: 66px; }.auth-atlas .atlas-building-6 { left: 340px; top: 70px; }
-.auth-atlas .atlas-building-7 { left: 272px; top: 128px; height: 64px; }.auth-atlas .atlas-building-8 { left: 340px; top: 128px; width: 58px; }.auth-atlas .atlas-building-9 { left: 115px; top: 292px; width: 72px; height: 48px; background-color: #9f6a4c; }
-.auth-atlas .atlas-park { left: 282px; top: 284px; z-index: 3; width: 94px; height: 62px; border: 3px solid #b69e68; background: radial-gradient(circle at 24px 22px, #254e32 0 7px, #6ba44f 8px 14px, transparent 15px), radial-gradient(circle at 66px 37px, #254e32 0 7px, #6ba44f 8px 14px, transparent 15px), #789449; }
-.auth-atlas .atlas-pulse { left: 216px; top: 231px; z-index: 5; width: 14px; height: 14px; border: 3px solid #f4ca48; border-radius: 50%; box-shadow: 0 0 0 7px #f4ca4830; animation: atlas-pulse 1.8s ease-out infinite; }
-@keyframes atlas-pulse { 70%, 100% { box-shadow: 0 0 0 20px #f4ca4800; } }
+.auth-world { position: absolute; right: -22px; bottom: -38px; z-index: 1; width: 590px; height: 430px; overflow: hidden; border: 1px solid #78926e66; border-radius: 28px 0 0; background-color: #668b4a; background-image: linear-gradient(#76995766 1px, transparent 1px), linear-gradient(90deg, #76995766 1px, transparent 1px), radial-gradient(circle at 18% 22%, #87aa5d 0 2px, transparent 3px), radial-gradient(circle at 68% 74%, #4c743d 0 26px, transparent 27px); background-size: 16px 16px, 16px 16px, 29px 25px, auto; box-shadow: -24px -30px 100px #0008, inset 0 0 70px #18352666; transform: rotate(-2deg); opacity: .94; }
+.auth-world i, .auth-world-sprite { position: absolute; display: block; image-rendering: pixelated; }
+.auth-world-water { right: -18px; top: -18px; width: 154px; height: 470px; background: repeating-linear-gradient(0deg, #1e6e91 0 4px, #2c84a7 4px 8px); clip-path: polygon(24% 0, 100% 0, 100% 100%, 10% 100%, 24% 87%, 12% 69%, 29% 52%, 13% 35%, 28% 17%); }
+.auth-world-road { z-index: 2; background: #35414f; box-shadow: inset 0 3px #83939a, inset 0 -3px #83939a; }
+.auth-world-road-h { left: 0; top: 270px; width: 495px; height: 44px; }
+.auth-world-road-v { left: 242px; top: 0; width: 44px; height: 430px; box-shadow: inset 3px 0 #83939a, inset -3px 0 #83939a; }
+.auth-world-sprite { z-index: 3; object-fit: contain; filter: drop-shadow(8px 10px 3px #17312078); }
+.auth-world-city-hall { left: 48px; top: 174px; width: 112px; height: 112px; }
+.auth-world-house-corner { left: 112px; top: 36px; width: 98px; height: 126px; }
+.auth-world-house-green { left: 300px; top: 65px; width: 142px; height: 174px; }
+.auth-world-highrise { left: 405px; top: -2px; width: 92px; height: 162px; }
+.auth-world-tree-oak { left: 18px; top: 236px; width: 32px; height: 64px; }
+.auth-world-tree-pine { left: 204px; top: 184px; width: 32px; height: 64px; }
+.auth-world-bus { left: 320px; top: 279px; z-index: 4; width: 84px; height: 36px; filter: drop-shadow(3px 4px 2px #10222999); }
+.auth-world-statue { left: 190px; top: 327px; width: 32px; height: 48px; }
+.auth-world-pulse { left: 256px; top: 284px; z-index: 5; width: 14px; height: 14px; border: 3px solid #f4ca48; border-radius: 50%; box-shadow: 0 0 0 7px #f4ca4830; animation: auth-world-pulse 1.8s ease-out infinite; }
+@keyframes auth-world-pulse { 70%, 100% { box-shadow: 0 0 0 20px #f4ca4800; } }
 .token-panel h2 { font-size: 34px; margin: 0; letter-spacing: -.035em; }
 label { display: grid; gap: 7px; color: #bcc8c8; font-size: 13px; font-weight: 700; }
 input { width: 100%; padding: 13px 14px; color: #eef2e8; background: #0b1417; border: 1px solid #31474e; border-radius: 9px; outline: none; }
@@ -482,8 +486,8 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .logout-button { min-height: 44px; margin: 18px 20px 20px; padding: 11px 16px; border: 1px solid #68494c; border-radius: 9px; background: #2c1b1f; color: #e5b9b9; cursor: pointer; }
 
 @media (max-width: 820px) {
-  .auth-visual { min-height: 40vh; padding: 28px; }
-  .auth-atlas { right: -120px; bottom: -190px; transform: scale(.72) rotate(-2deg); }
+  .auth-visual { min-height: 500px; padding: 28px; }
+  .auth-world { position: relative; left: -4px; right: auto; top: auto; bottom: auto; margin-top: 24px; margin-bottom: -138px; transform: scale(.68) rotate(-2deg); transform-origin: top left; }
   .country-title-button { max-width: 128px; display: grid; padding-left: 0; border-left: 0; }
   .country-title-button strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .country-switcher { left: -4px; }
