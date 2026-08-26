@@ -1,6 +1,6 @@
 import { Assets } from "pixi.js";
 
-type AssetRecord = { refs: number; timer?: ReturnType<typeof setTimeout> };
+type AssetRecord = { refs: number; loaded: boolean; timer?: ReturnType<typeof setTimeout> };
 
 const records = new Map<string, AssetRecord>();
 const pendingLoads = new Map<string, Promise<void>>();
@@ -18,7 +18,7 @@ function unloadWhenIdle(url: string): void {
 }
 
 function retain(url: string): void {
-  const record = records.get(url) ?? { refs: 0 };
+  const record = records.get(url) ?? { refs: 0, loaded: false };
   if (record.timer) clearTimeout(record.timer);
   record.timer = undefined;
   record.refs += 1;
@@ -47,7 +47,7 @@ export class AssetLease {
       const pending = pendingLoads.get(url);
       return pending ? [pending] : [];
     });
-    const fresh = next.filter((url) => !pendingLoads.has(url));
+    const fresh = next.filter((url) => !pendingLoads.has(url) && !records.get(url)?.loaded);
     let batch: Promise<void> | undefined;
     if (fresh.length > 0) {
       batch = loader(fresh);
@@ -56,7 +56,13 @@ export class AssetLease {
         for (const url of fresh) if (pendingLoads.get(url) === batch) pendingLoads.delete(url);
       }).catch(() => undefined);
     }
-    try { await Promise.all(batch ? [...existing, batch] : existing); }
+    try {
+      await Promise.all(batch ? [...existing, batch] : existing);
+      for (const url of fresh) {
+        const record = records.get(url);
+        if (record) record.loaded = true;
+      }
+    }
     catch (error) {
       for (const url of next) { this.owned.delete(url); release(url); }
       throw error;

@@ -47,6 +47,24 @@ describe("AssetLease", () => {
     expect(unload).toHaveBeenCalledWith("shared.png");
   });
 
+  it("reuses a loaded texture when a new scene acquires it during the unload grace period", async () => {
+    vi.useFakeTimers();
+    const loader = vi.fn(async () => undefined);
+    const first = new AssetLease();
+    await first.load(["warm.png"], loader);
+    first.dispose();
+
+    const second = new AssetLease();
+    await second.load(["warm.png"], loader);
+    expect(loader).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(unload).not.toHaveBeenCalledWith("warm.png");
+
+    second.dispose();
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(unload).toHaveBeenCalledWith("warm.png");
+  });
+
   it("does not unload an asset while its cancelled scene load is still pending", async () => {
     vi.useFakeTimers();
     let finish!: () => void;
