@@ -41,6 +41,10 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function jsonCompatiblePayload(payload: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
+}
+
 function jobFromRow(row: Row): WorldGenerationJob {
   return {
     id: String(row.id), countryId: String(row.country_id), operation: String(row.operation) as WorldGenerationOperation,
@@ -59,15 +63,16 @@ export async function enqueueWorldGenerationJob(
   payload: Record<string, unknown>,
 ): Promise<WorldGenerationJob> {
   const timestamp = now();
+  const normalizedPayload = jsonCompatiblePayload(payload);
   await db.prepare(`INSERT INTO world_generation_jobs_v1
     (id, country_id, operation, idempotency_key, payload_json, status, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?::jsonb, 'PENDING', ?, ?)
     ON CONFLICT (country_id, operation, idempotency_key) DO NOTHING`)
-    .run(randomUUID(), countryId, operation, idempotencyKey, JSON.stringify(payload), timestamp, timestamp);
+    .run(randomUUID(), countryId, operation, idempotencyKey, JSON.stringify(normalizedPayload), timestamp, timestamp);
   const row = await db.prepare(`SELECT * FROM world_generation_jobs_v1
     WHERE country_id = ? AND operation = ? AND idempotency_key = ?`).get(countryId, operation, idempotencyKey) as Row | undefined;
   if (!row) throw new Error("World generation job was not persisted");
-  if (canonicalJson(json(row.payload_json)) !== canonicalJson(payload)) {
+  if (canonicalJson(json(row.payload_json)) !== canonicalJson(normalizedPayload)) {
     throw new DomainError("CONFLICT", "Этот idempotencyKey уже использован с другими данными генерации");
   }
   return jobFromRow(row);
