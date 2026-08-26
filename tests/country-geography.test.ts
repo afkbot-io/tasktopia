@@ -14,8 +14,8 @@ describe("country geography LOD", () => {
     const second = buildCountryGeography({ countryId: "country", seed: 42, macroCells });
 
     expect(second).toEqual(first);
-    expect(first.grid).toEqual({ columns: 40, rows: 24, cellSize: 4, topology: "SQUARE_4" });
-    expect(first.cells).toHaveLength(40 * 24);
+    expect(first.grid).toEqual({ columns: 36, rows: 22, cellSize: 4, topology: "SQUARE_4" });
+    expect(first.cells).toHaveLength(36 * 22);
     expect(first.cells.every((cell) => cell.x % 4 === 0 && cell.y % 4 === 0)).toBe(true);
     expect(first.cells.filter((cell) => cell.macroCellId === "country:1:0" && ["mountain", "hill", "stone"].includes(cell.terrain)).length).toBeGreaterThan(4);
     expect(first.cells.some((cell) => cell.terrain === "deep_water")).toBe(true);

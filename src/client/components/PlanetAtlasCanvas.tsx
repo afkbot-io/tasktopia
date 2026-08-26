@@ -1,6 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../../shared/planet-atlas-contract";
 import { gameAssetUrl, TERRAIN_SPRITES } from "../../shared/catalog";
+import { ATLAS_AIRPORT_SVG_PATH } from "../../shared/atlas-airport";
 import {
   layoutPlanetCountryLabels,
   projectPlanetAtlas,
@@ -220,7 +221,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault(); void selectCountry(country.id);
         }}>{country.cells.map((cell) => <g key={cell.id}><image href={gameAssetUrl(terrainAsset(cell))} x={cell.x} y={cell.y} width={cell.width} height={cell.height} className="atlas-pixel planet-terrain-sprite" /><path d={pixelSquarePath(cell)} fill={country.color} className="planet-country-tint" /></g>)}
-          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map((airport) => <g key={airport.id} transform={`translate(${airport.center.x} ${airport.center.y})`}><rect x="-5" y="-5" width="10" height="10" /><path d="M-2 0h1l1-2h1L.5 0H2v1H.5L1 3H0l-1-2h-1Z" /></g>)}</g>
+          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map((airport) => <g key={airport.id} transform={`translate(${airport.center.x} ${airport.center.y})`}><rect x="-5" y="-5" width="10" height="10" /><path d={ATLAS_AIRPORT_SVG_PATH} /></g>)}</g>
         </g>)}</g>
         <g className="planet-routes" aria-hidden="true">{activeRoutes.map((route) => <g key={route.id}><path d={route.path} className="planet-route-line" /><AtlasAircraft path={route.path} durationSeconds={route.durationSeconds} delaySeconds={route.delaySeconds} kind={route.planeKind} size="planet" rotateWithPath visualScale={route.altitudeScale} startsAtAirport={route.fromAirportId !== null} endsAtAirport /></g>)}</g>
         <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><image href={gameAssetUrl(`atlas/clouds-v2/cloud-topdown-${index % 8 + 1}.png`)} x="-32" y="-16" width="64" height="32" className="atlas-pixel" /></g>)}</g>

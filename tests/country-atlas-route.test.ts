@@ -73,15 +73,15 @@ describe("country atlas HTTP boundary", () => {
     const response = await app.inject({ method: "GET", url: `/api/countries/${countryId}/overview`, headers: { cookie } });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-2"$/);
+    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-3"$/);
     expect(response.headers["cache-control"]).toBe("private, max-age=60, stale-while-revalidate=600");
     expect(response.json()).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       countryId: expect.any(String),
       revision: expect.stringMatching(/^[a-f0-9]{64}$/),
       geography: {
-        columns: 40,
-        rows: 24,
+        columns: 36,
+        rows: 22,
         cellSize: 4,
         topology: "SQUARE_4",
         terrainCodes: expect.any(String),
@@ -91,10 +91,16 @@ describe("country atlas HTTP boundary", () => {
         sourceCenter: expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
         atlasCenter: expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
         districts: [],
+        miniature: {
+          columns: expect.any(Number),
+          rows: expect.any(Number),
+          districtCodes: expect.any(String),
+          airportCell: expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+        },
       }],
       connections: [],
     });
-    expect(response.json().geography.terrainCodes).toHaveLength(40 * 24);
+    expect(response.json().geography.terrainCodes).toHaveLength(36 * 22);
     expect(JSON.stringify(response.json())).not.toMatch(/atlasMask|cutoutMask|displayCells|buildings|roads|surfaces|features|footprint/);
     expect(Buffer.byteLength(response.body)).toBeLessThan(24_000);
     expect((await app.inject({

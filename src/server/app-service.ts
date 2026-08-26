@@ -92,7 +92,7 @@ import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/plan
 import { projectPlanetAtlas } from "../shared/planet-atlas";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import { projectCountryAtlas } from "./world/country-atlas";
-import { projectCountryOverview } from "./world/country-overview";
+import { projectCountryCityMiniature, projectCountryOverview } from "./world/country-overview";
 import { buildCountryGeography, snapCountryCitiesToLand } from "./world/country-geography";
 import type { SharedWorldCache } from "./optional-redis-cache";
 import {
@@ -1589,7 +1589,7 @@ export class AppService {
     const [country, cities, districtRows] = await Promise.all([
       this.countryRow(countryId),
       this.listCities(countryId),
-      this.db.prepare(`SELECT d.id, d.city_id, d.name, d.status, d.color,
+      this.db.prepare(`SELECT d.id, d.city_id, d.name, d.status, d.color, d.cells_json,
         COUNT(t.id)::integer AS task_count,
         COALESCE(ROUND(AVG(t.progress)), 0)::integer AS progress
         FROM districts_v3 d
@@ -1604,6 +1604,7 @@ export class AppService {
     const projection = projectCountryOverview(cities.map((city) => ({ id: city.id, sourceCenter: city.center })));
     const cityAnchors = snapCountryCitiesToLand(geography, cities.map((city) => ({ id: city.id, atlasCenter: projection.centers.get(city.id)! })));
     const districtsByCity = new Map<string, CountryOverviewDistrictDto[]>();
+    const miniatureDistrictsByCity = new Map<string, Array<{ id: string; cells: Cell[] }>>();
     for (const row of districtRows) {
       const district: CountryOverviewDistrictDto = {
         id: String(row.id), name: String(row.name), status: String(row.status) as CountryOverviewDistrictDto["status"],
@@ -1611,6 +1612,10 @@ export class AppService {
       };
       const cityId = String(row.city_id);
       districtsByCity.set(cityId, [...districtsByCity.get(cityId) ?? [], district]);
+      miniatureDistrictsByCity.set(cityId, [...miniatureDistrictsByCity.get(cityId) ?? [], {
+        id: district.id,
+        cells: json<Cell[]>(row.cells_json),
+      }]);
     }
     const overviewWithoutRevision = {
       schemaVersion: COUNTRY_OVERVIEW_SCHEMA_VERSION,
@@ -1626,6 +1631,7 @@ export class AppService {
         return {
           id: city.id, name: city.name, status: city.status, sourceCenter: city.center, sourceBounds: city.bounds,
           atlasCenter: cityAnchors.get(city.id) ?? projection.centers.get(city.id)!, progress: meanCountryAtlasProgress(districts), districts,
+          miniature: projectCountryCityMiniature({ sourceBounds: city.bounds, districts: miniatureDistrictsByCity.get(city.id) ?? [] }),
         };
       }),
       connections: projection.connections,

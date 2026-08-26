@@ -1,6 +1,6 @@
 import type { Cell, CityDto, DistrictDto, Rect } from "./contracts";
 
-export const COUNTRY_OVERVIEW_SCHEMA_VERSION = 2 as const;
+export const COUNTRY_OVERVIEW_SCHEMA_VERSION = 3 as const;
 
 export const COUNTRY_TERRAIN_KINDS = [
   "grass", "meadow", "forest", "hill", "mountain", "coast", "river", "stone", "deep_water", "shallow_water",
@@ -34,6 +34,13 @@ export type CountryOverviewCityDto = {
   atlasCenter: Cell;
   progress: number;
   districts: CountryOverviewDistrictDto[];
+  /** A semantic city silhouette. Zero means empty; 1..f reference a district. */
+  miniature: {
+    columns: number;
+    rows: number;
+    districtCodes: string;
+    airportCell: Cell;
+  };
 };
 
 export type CountryOverviewDto = {

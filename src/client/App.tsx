@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto } from "../shared/contracts";
-import type { CountryAtlasCityDto } from "../shared/country-atlas-contract";
+import type { CountryOverviewCityDto } from "../shared/country-overview-contract";
 import type { CitySceneDto } from "../shared/city-scene-contract";
 import { countryAtlasEventImpact, enqueueCountryAtlasEvent } from "../shared/country-atlas-events";
 import { presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
@@ -18,7 +18,7 @@ import { createAtlasTransition, withAtlasTransitionPhase, type AtlasTransition }
 import { eventInvalidation, type MapInvalidation } from "./map-invalidation";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
-const CountryAtlasCanvas = lazy(() => import("./components/CountryAtlasCanvas").then((module) => ({ default: module.CountryAtlasCanvas })));
+const CountryOverviewCanvas = lazy(() => import("./components/CountryOverviewCanvas").then((module) => ({ default: module.CountryOverviewCanvas })));
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
@@ -139,7 +139,7 @@ export function App() {
       }
     }
   }, [mapMode]);
-  const hoverAtlasCity = useCallback((city: CountryAtlasCityDto | null) => {
+  const hoverAtlasCity = useCallback((city: CountryOverviewCityDto | null) => {
     setHoveredAtlasCity(city ? { id: city.id, name: city.name, center: city.sourceCenter, bounds: city.sourceBounds } : null);
   }, []);
   const acknowledgeAtlasEvents = useCallback((eventId: number) => {
@@ -388,7 +388,7 @@ export function App() {
                 }}
               />
             : effectiveMapMode === "COUNTRY" && bootstrap.stats.cities > 0
-              ? <CountryAtlasCanvas
+              ? <CountryOverviewCanvas
                 key={bootstrap.country.id}
                 countryId={bootstrap.country.id}
                 activeCityId={activeCity?.id}
@@ -417,29 +417,11 @@ export function App() {
                     cityReadyResolverRef.current = null;
                   });
                 }}
-                onDistrictSelect={(city, district) => {
-                  void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
-                    const scene = await api<CitySceneDto>(`/api/countries/${bootstrap.country.id}/cities/${city.id}/scene`, {
-                      signal,
-                      cache: "no-cache",
-                      headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
-                    });
-                    if (signal.aborted) return;
-                    const ready = new Promise<void>((resolve) => { cityReadyResolverRef.current = resolve; });
-                    setPreparedCityScene(scene);
-                    setCountryEntryCityId(null);
-                    setFocusCity({ id: city.id, name: city.name, center: district.sourceCenter, bounds: city.sourceBounds });
-                    setHoveredAtlasCity(null);
-                    setMapMode("CITY");
-                    await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
-                    cityReadyResolverRef.current = null;
-                  });
-                }}
                 onCityHover={hoverAtlasCity}
                 onZoomOut={() => { void transitionMap("PLANET", { x: .5, y: .5 }, () => { setPreparedCityScene(null); setPlanetEntryCountryId(bootstrap.country.id); setMapMode("PLANET"); }); }}
               />
               : effectiveMapMode === "CITY" && bootstrap.stats.cities > 0
-                ? <WorldCanvas key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onReady={() => {
+                ? <WorldCanvas key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidation={mapInvalidation} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onReady={() => {
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
                 }} onFatalError={(message) => {

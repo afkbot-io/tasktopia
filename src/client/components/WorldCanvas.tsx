@@ -917,13 +917,14 @@ function ambientDetailAssets(): string[] {
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onReady, onFatalError, onZoomOutToCountry }: {
+export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, startAtMinimumScale = false, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onReady, onFatalError, onZoomOutToCountry }: {
   countryId: string;
   chunkSize: number;
   worldManifest: WorldManifestDto;
   viewBounds: Rect;
   focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
   initialCityScene?: CitySceneDto;
+  startAtMinimumScale?: boolean;
   focusTask?: { origin: Cell; token: number } | null;
   invalidation?: MapInvalidation;
   showDistricts: boolean;
@@ -1692,13 +1693,15 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           }
         }
       });
-      const initialScale = !initialFocus
-        ? 1.25
-        : fitCameraScale(app.screen, initialFocus.bounds, CELL_SIZE);
-      const focus = initialFocus ? position(initialFocus.point) : { x: 0, y: 0 };
       const cameraMinimumScale = () => focusCityId
         ? CITY_CAMERA_MIN_SCALE
         : minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
+      const initialScale = startAtMinimumScale && focusCityId
+        ? cameraMinimumScale()
+        : !initialFocus
+          ? 1.25
+          : fitCameraScale(app.screen, initialFocus.bounds, CELL_SIZE);
+      const focus = initialFocus ? position(initialFocus.point) : { x: 0, y: 0 };
       const appliedInitialScale = pixelPerfectCameraScale(
         initialScale,
         cameraMinimumScale(),
@@ -3523,7 +3526,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       cleanupStartupResources();
       destroyApp();
     };
-  }, [chunkSize, countryId, focusCityId, terrainSeed, rendererAttempt]);
+  }, [chunkSize, countryId, focusCityId, rendererAttempt, startAtMinimumScale, terrainSeed]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />

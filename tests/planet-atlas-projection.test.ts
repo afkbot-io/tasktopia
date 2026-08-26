@@ -123,6 +123,18 @@ describe("planet atlas projection", () => {
     expect(dragged.countries.map((country) => country.center)).not.toEqual(still.countries.map((country) => country.center));
   });
 
+  it("grows the planet aperture with zoom while keeping drag independent", () => {
+    const projected = projectPlanetAtlas(fixture);
+    const still = projectProjectedPlanetMap(projected, { panX: 0, panY: 0, zoom: 1 });
+    const zoomed = projectProjectedPlanetMap(projected, { panX: 0, panY: 0, zoom: 4 });
+    const draggedAtZoom = projectProjectedPlanetMap(projected, { panX: .6, panY: -.4, zoom: 4 });
+    const width = (map: typeof still) => map.surface.maxX - map.surface.minX;
+
+    expect(width(zoomed)).toBeGreaterThan(width(still));
+    expect(draggedAtZoom.surface).toEqual(zoomed.surface);
+    expect(draggedAtZoom.countries.map((country) => country.center)).not.toEqual(zoomed.countries.map((country) => country.center));
+  });
+
   it("projects adjacent terrain cells onto one shared pixel edge without gaps", () => {
     const map = projectPlanetMap(fixture, { panX: .17, panY: -.11, zoom: 2.35 });
     const byGrid = new Map(map.countries.flatMap((country) => country.cells).map((cell) => [`${cell.q}:${cell.r}`, cell]));

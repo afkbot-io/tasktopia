@@ -1,7 +1,7 @@
 import type { PlanetTerrainCell, PlanetTerrainKind } from "../../shared/planet-atlas";
 
-export const COUNTRY_GEOGRAPHY_COLUMNS = 40;
-export const COUNTRY_GEOGRAPHY_ROWS = 24;
+export const COUNTRY_GEOGRAPHY_COLUMNS = 36;
+export const COUNTRY_GEOGRAPHY_ROWS = 22;
 export const COUNTRY_GEOGRAPHY_CELL_SIZE = 4;
 
 export type CountryTerrainKind = PlanetTerrainKind | "deep_water" | "shallow_water";

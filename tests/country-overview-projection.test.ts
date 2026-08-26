@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { projectCountryOverview } from "../src/server/world/country-overview";
+import { projectCountryCityMiniature, projectCountryOverview } from "../src/server/world/country-overview";
 
 describe("compact country overview projection", () => {
   it("preserves relative distances with one uniform transform", () => {
@@ -20,7 +20,67 @@ describe("compact country overview projection", () => {
 
   it("centers a single city and creates no synthetic connection", () => {
     const projected = projectCountryOverview([{ id: "only", sourceCenter: { x: 812, y: -93 } }]);
-    expect(projected.centers.get("only")).toEqual({ x: 80, y: 48 });
+    expect(projected.centers.get("only")).toEqual({ x: 72, y: 44 });
     expect(projected.connections).toEqual([]);
+  });
+});
+
+describe("semantic country city miniature", () => {
+  it("preserves an elongated non-rectangular silhouette without copying city objects", () => {
+    const miniature = projectCountryCityMiniature({
+      sourceBounds: { minX: 0, minY: 0, maxX: 99, maxY: 39 },
+      districts: [
+        { id: "west", cells: Array.from({ length: 28 }, (_, index) => ({ x: index, y: 14 + index % 3 })) },
+        { id: "east", cells: Array.from({ length: 34 }, (_, index) => ({ x: 48 + index, y: 18 + index % 4 })) },
+      ],
+    });
+    expect(miniature.columns).toBe(14);
+    expect(miniature.rows).toBeLessThan(miniature.columns);
+    expect(miniature.districtCodes).toHaveLength(miniature.columns * miniature.rows);
+    expect(new Set(miniature.districtCodes)).toEqual(new Set(["0", "1", "2"]));
+    expect(miniature.airportCell.y).toBeGreaterThanOrEqual(2);
+  });
+
+  it("creates a bounded fallback core before the first district is published", () => {
+    const miniature = projectCountryCityMiniature({
+      sourceBounds: { minX: -80, minY: -50, maxX: 79, maxY: 49 },
+      districts: [],
+    });
+    expect(miniature.columns).toBeLessThanOrEqual(14);
+    expect(miniature.rows).toBeLessThanOrEqual(14);
+    expect(miniature.districtCodes).toMatch(/1/);
+  });
+
+  it.each([
+    {
+      name: "compact",
+      cells: Array.from({ length: 64 }, (_, index) => ({ x: index % 8, y: Math.floor(index / 8) })),
+      orientation: "square",
+    },
+    {
+      name: "elongated",
+      cells: Array.from({ length: 72 }, (_, index) => ({ x: index, y: index % 3 })),
+      orientation: "wide",
+    },
+    {
+      name: "irregular",
+      cells: Array.from({ length: 80 }, (_, index) => index < 40
+        ? { x: index % 8, y: Math.floor(index / 8) }
+        : { x: 7 + Math.floor((index - 40) / 5), y: 4 + (index - 40) % 5 }),
+      orientation: "wide",
+    },
+  ])("keeps the $name city form in a deterministic bounded snapshot", ({ cells, orientation }) => {
+    const first = projectCountryCityMiniature({
+      sourceBounds: { minX: -100, minY: -100, maxX: 99, maxY: 99 },
+      districts: [{ id: "district", cells }],
+    });
+    const second = projectCountryCityMiniature({
+      sourceBounds: { minX: -100, minY: -100, maxX: 99, maxY: 99 },
+      districts: [{ id: "district", cells }],
+    });
+    expect(second).toEqual(first);
+    expect(first.columns * first.rows).toBeLessThanOrEqual(14 * 14);
+    if (orientation === "square") expect(Math.abs(first.columns - first.rows)).toBeLessThanOrEqual(1);
+    else expect(first.columns).toBeGreaterThan(first.rows);
   });
 });
