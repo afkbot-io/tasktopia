@@ -317,6 +317,25 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
             if not bottom_contact:
                 errors.append(f"{label}: trunk/root does not touch the planting-cell baseline")
 
+    prop_atlas = manifest.get("propAtlas", {})
+    atlas_relative = prop_atlas.get("path")
+    if not isinstance(atlas_relative, str):
+        errors.append("propAtlas: missing runtime path")
+    else:
+        audited_paths.add(atlas_relative)
+        atlas_path = runtime / atlas_relative
+        if not atlas_path.is_file():
+            errors.append(f"propAtlas: missing {atlas_relative}")
+        else:
+            atlas = Image.open(atlas_path).convert("RGBA")
+            if list(atlas.size) != prop_atlas.get("size"):
+                errors.append("propAtlas: manifest size does not match PNG")
+            alpha_colors = atlas.getchannel("A").getcolors(maxcolors=256) or []
+            if any(value not in (0, 255) for _, value in alpha_colors):
+                errors.append("propAtlas: soft alpha is forbidden")
+    if set(prop_atlas.get("frames", {})) != set(manifest.get("props", {})):
+        errors.append("propAtlas: frames must match the complete prop catalog")
+
     ai_prop_catalog = manifest_path.parent / "catalog" / "ai-authored-props.json"
     if ai_prop_catalog.exists():
         for authored in json.loads(ai_prop_catalog.read_text(encoding="utf-8")):

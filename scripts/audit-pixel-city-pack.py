@@ -195,6 +195,7 @@ def audit() -> dict[str, Any]:
             violations.append(f"props/{key}: manifest size does not match PNG")
         if prop.get("anchorPx") != [image.width // 2, image.height]:
             violations.append(f"props/{key}: anchor must be bottom-center")
+
         bounds = image.getchannel("A").getbbox()
         minimum_opaque_bounds = {
             "city-bus-horizontal": (44, 14),
@@ -216,6 +217,19 @@ def audit() -> dict[str, Any]:
             anchor_x = image.width / 2 - 0.5
             if not contact or abs(sum(contact) / len(contact) - anchor_x) > 1.5:
                 violations.append(f"props/{key}: tree ground contact is not centred on its 8x8 cell")
+
+    prop_atlas = manifest.get("propAtlas", {})
+    atlas_path = prop_atlas.get("path")
+    if not isinstance(atlas_path, str):
+        violations.append("propAtlas: missing runtime path")
+    else:
+        referenced.add(atlas_path)
+        atlas_image = load_image(atlas_path, "propAtlas", violations)
+        if atlas_image is not None and list(atlas_image.size) != prop_atlas.get("size"):
+            violations.append("propAtlas: manifest size does not match PNG")
+    atlas_frames = prop_atlas.get("frames", {})
+    if set(atlas_frames) != set(manifest.get("props", {})):
+        violations.append("propAtlas: frames must match the complete prop catalog")
 
     ai_prop_entries = json.loads(AI_PROP_CATALOG_PATH.read_text()) if AI_PROP_CATALOG_PATH.exists() else []
     for authored in ai_prop_entries:

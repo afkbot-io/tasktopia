@@ -22,12 +22,14 @@ import {
   updateAccountName,
 } from "./auth";
 import { BUILDING_CATALOG } from "../shared/catalog";
-import { MCP_SCOPES, type McpScope, type ViewportPayloadDto } from "../shared/contracts";
+import { MCP_SCOPES, type ChunkPayloadDto, type McpScope, type ViewportPayloadDto } from "../shared/contracts";
+import type { CitySceneDto } from "../shared/city-scene-contract";
 import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
 import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { config } from "./config";
 import { APP_VERSION } from "./version";
 import { GenerationPendingError, getWorldGenerationJob } from "./world-generation-jobs";
+import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -41,6 +43,30 @@ const registerSchema = z.object({
   message: "Пароли не совпадают",
   path: ["passwordConfirmation"],
 });
+
+function legacyCityScene(scene: CitySceneDto) {
+  const completedTasks = scene.completedDistrictSnapshots.flatMap((snapshot) => snapshot.tasks);
+  const completedTasksByChunk = new Map<string, Map<string, typeof completedTasks[number]>>();
+  for (const task of completedTasks) {
+    const chunkKeys = new Set([...task.footprint, ...task.accessPath].map((cell) => (
+      `${Math.floor(cell.x / scene.chunkSize)}:${Math.floor(cell.y / scene.chunkSize)}`
+    )));
+    for (const chunkKey of chunkKeys) {
+      const tasks = completedTasksByChunk.get(chunkKey) ?? new Map();
+      tasks.set(task.id, task);
+      completedTasksByChunk.set(chunkKey, tasks);
+    }
+  }
+  const chunks = scene.chunks.map((chunk): ChunkPayloadDto => {
+    const tasks = new Map(chunk.tasks.map((task) => [task.id, task]));
+    for (const [taskId, task] of completedTasksByChunk.get(`${chunk.chunkX}:${chunk.chunkY}`) ?? []) tasks.set(taskId, task);
+    const { contentHash, ...content } = chunk;
+    void contentHash;
+    const legacyContent = { ...content, tasks: [...tasks.values()] };
+    return { ...legacyContent, contentHash: chunkPayloadContentHash(legacyContent) } as ChunkPayloadDto;
+  });
+  return { ...scene, schemaVersion: 1 as const, chunks };
+}
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
   password: z.string().min(1, { message: "Введите пароль" }).max(128, { message: "Пароль слишком длинный" }),
@@ -256,7 +282,11 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
             const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
-            const scene = await service.getCityScene(user.countryId, cityId);
+            const currentScene = await service.getCityScene(user.countryId, cityId);
+            const accept = request.headers.accept ?? "";
+            const scene = accept.includes("version=1") && !accept.includes("version=2")
+              ? legacyCityScene(currentScene)
+              : currentScene;
             const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)

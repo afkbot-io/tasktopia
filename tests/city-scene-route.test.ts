@@ -46,10 +46,10 @@ describe("whole-city scene HTTP boundary", () => {
     const response = await app.inject({ method: "GET", url: `/api/cities/${cityId}/scene`, headers: { cookie } });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-1"$/);
+    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-2"$/);
     const scene = response.json();
     expect(scene).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       sceneRevision: expect.stringMatching(/^[a-f0-9]{64}$/),
       city: { id: cityId, bounds: bootstrap.initialCity.bounds },
       lod: "DETAIL",
@@ -62,6 +62,14 @@ describe("whole-city scene HTTP boundary", () => {
     const expectedChunks = (Math.floor(bounds.maxX / 64) - Math.floor(bounds.minX / 64) + 1)
       * (Math.floor(bounds.maxY / 64) - Math.floor(bounds.minY / 64) + 1);
     expect(scene.chunks).toHaveLength(expectedChunks);
+    const legacy = await app.inject({
+      method: "GET",
+      url: `/api/cities/${cityId}/scene`,
+      headers: { cookie, accept: "application/vnd.tasktopia.city-scene+json; version=1" },
+    });
+    expect(legacy.statusCode).toBe(200);
+    expect(legacy.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-1"$/);
+    expect(legacy.json()).toMatchObject({ schemaVersion: 1, city: { id: cityId } });
     expect((await app.inject({
       method: "GET",
       url: `/api/cities/${cityId}/scene`,

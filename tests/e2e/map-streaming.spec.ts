@@ -22,6 +22,14 @@ test("loads a complete city through one request and never calls chunk endpoints"
   const { host, canvas } = await openDemoCity(page);
   expect(dataRequests.filter((url) => url.endsWith("/scene"))).toHaveLength(1);
   expect(dataRequests.filter((url) => url.includes("/world/viewport") || url.includes("/chunks/"))).toEqual([]);
+  await expect(host).toHaveAttribute("data-city-scene-entity-commits", "1");
+  const staticDecorationParticles = Number(await host.getAttribute("data-static-decoration-particles") ?? 0);
+  const decorationSpriteViews = Number(await host.getAttribute("data-decoration-sprite-views") ?? 0);
+  const ambientAnimations = Number(await host.getAttribute("data-ambient-animations") ?? 0);
+  const worldObjects = Number(await host.getAttribute("data-world-objects") ?? 0);
+  expect(staticDecorationParticles).toBeGreaterThan(0);
+  expect(decorationSpriteViews).toBe(ambientAnimations);
+  expect(worldObjects).toBeLessThan(staticDecorationParticles / 4);
   expect(Number(await host.getAttribute("data-resident-chunks"))).toBe(Number(await host.getAttribute("data-city-scene-chunks")));
   await expect(host).toHaveAttribute("data-map-lod", "detail");
 

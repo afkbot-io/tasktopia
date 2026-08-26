@@ -32,6 +32,16 @@ const browserWorkerFactory: ChunkWorkerFactory = () => new Worker(
   { type: "module" },
 );
 
+/**
+ * City scenes can contain dozens of independent deterministic pages. Two
+ * workers left modern desktop CPUs idle and made the single city response
+ * wait behind a long decode queue. Keep low-core devices conservative while
+ * bounding the pool so worker heaps cannot grow with the host core count.
+ */
+export function recommendedChunkWorkerCount(hardwareConcurrency: number): number {
+  return Math.max(1, Math.min(4, Math.floor(Math.max(1, hardwareConcurrency) / 2)));
+}
+
 function abortError(): DOMException {
   return new DOMException("Chunk materialization aborted", "AbortError");
 }
@@ -50,7 +60,7 @@ export class ChunkMaterializer {
   private static readonly QUEUE_LIMIT = 32;
 
   constructor(
-    workerCount = Math.max(1, Math.min(2, (navigator.hardwareConcurrency || 2) - 1)),
+    workerCount = recommendedChunkWorkerCount(navigator.hardwareConcurrency || 2),
     workerFactory: ChunkWorkerFactory = browserWorkerFactory,
   ) {
     this.targetWorkerCount = workerCount;

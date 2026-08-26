@@ -2226,6 +2226,51 @@ def load_ai_authored_stage_files(
     return stages
 
 
+def build_prop_atlas(
+    generated_props: dict[str, Image.Image],
+    *,
+    width: int = 512,
+    padding: int = 1,
+) -> tuple[str, list[int], dict[str, dict[str, int]]]:
+    """Pack props into one deterministic source texture for Pixi particles."""
+    ordered = sorted(
+        generated_props.items(),
+        key=lambda item: (-item[1].height, -item[1].width, item[0]),
+    )
+    frames: dict[str, dict[str, int]] = {}
+    cursor_x = padding
+    cursor_y = padding
+    shelf_height = 0
+    for key, image in ordered:
+        if image.width + padding * 2 > width:
+            raise ValueError(f"{key}: prop is wider than the {width}px atlas")
+        if cursor_x + image.width + padding > width:
+            cursor_x = padding
+            cursor_y += shelf_height + padding
+            shelf_height = 0
+        frames[key] = {
+            "x": cursor_x,
+            "y": cursor_y,
+            "width": image.width,
+            "height": image.height,
+        }
+        cursor_x += image.width + padding
+        shelf_height = max(shelf_height, image.height)
+
+    used_height = cursor_y + shelf_height + padding
+    height = 1 << max(0, used_height - 1).bit_length()
+    if height > 2048:
+        raise ValueError(f"prop atlas height {height}px exceeds the 2048px runtime budget")
+    atlas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    for key, image in ordered:
+        frame = frames[key]
+        atlas.alpha_composite(image, (frame["x"], frame["y"]))
+    target = RUNTIME / "atlas" / "props-v1.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    save_runtime_png(atlas, target)
+    return str(target.relative_to(RUNTIME)), [width, height], frames
+
+
 def build_manifest(specs: list[HouseSpec]) -> dict:
     buildings: dict[str, dict] = {}
     if len({spec.key for spec in specs}) != len(specs):
@@ -2441,6 +2486,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             **({"occupiedSize": list(authored_entry["occupiedSize"])} if authored_entry and authored_entry.get("occupiedSize") else {}),
             **ai_prop_metadata.get(key, {}),
         }
+    prop_atlas_path, prop_atlas_size, prop_atlas_frames = build_prop_atlas(generated_props)
 
     ai_vehicle_entries = load_ai_authored_ambient_catalog("ai-authored-vehicles.json")
     vehicle_manifest: dict[str, dict] = {}
@@ -2542,6 +2588,11 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "buildings": buildings,
         "vehicles": vehicle_manifest,
         "props": prop_manifest,
+        "propAtlas": {
+            "path": prop_atlas_path,
+            "size": prop_atlas_size,
+            "frames": prop_atlas_frames,
+        },
     }
 
 

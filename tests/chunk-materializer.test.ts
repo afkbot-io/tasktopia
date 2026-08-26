@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ChunkMaterializer, type ChunkWorker } from "../src/client/chunk-materializer";
+import { ChunkMaterializer, recommendedChunkWorkerCount, type ChunkWorker } from "../src/client/chunk-materializer";
 import type { ChunkDto, ChunkPayloadDto } from "../src/shared/contracts";
 import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
 
@@ -42,6 +42,14 @@ class FakeChunkWorker implements ChunkWorker {
 }
 
 describe("ChunkMaterializer", () => {
+  it("uses additional desktop cores for a bounded whole-city decode", () => {
+    expect(recommendedChunkWorkerCount(1)).toBe(1);
+    expect(recommendedChunkWorkerCount(2)).toBe(1);
+    expect(recommendedChunkWorkerCount(4)).toBe(2);
+    expect(recommendedChunkWorkerCount(8)).toBe(4);
+    expect(recommendedChunkWorkerCount(32)).toBe(4);
+  });
+
   it("correlates out-of-order worker responses", async () => {
     const workers = [new FakeChunkWorker(), new FakeChunkWorker()];
     let cursor = 0;
