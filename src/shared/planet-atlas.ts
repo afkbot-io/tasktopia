@@ -1,4 +1,6 @@
 import type { PlanetAtlasDto, PlanetCountryDto } from "./planet-atlas-contract";
+import type { TerrainKind } from "./contracts";
+import { terrainAt } from "./world-terrain";
 
 export type PlanetHex = { q: number; r: number };
 export type PlanetPoint = { x: number; y: number };
@@ -179,6 +181,30 @@ function terrainForCell(cell: PlanetHex, countrySeed: number, center: PlanetPoin
   return value % 3 === 0 ? "meadow" : "grass";
 }
 
+function planetTerrainFromWorld(kind: TerrainKind): PlanetTerrainKind {
+  if (kind === "FOREST") return "forest";
+  if (kind === "HILL") return "hill";
+  if (kind === "MOUNTAIN") return "mountain";
+  if (kind === "STONE" || kind === "CLAY" || kind === "DIRT") return "stone";
+  if (kind === "SAND" || kind === "WET_SAND") return "coast";
+  if (kind === "SHALLOW_WATER" || kind === "DEEP_WATER") return "river";
+  if (kind === "MEADOW") return "meadow";
+  return "grass";
+}
+
+function projectedWorldTerrain(country: PlanetCountryDto, cell: PlanetHex, cells: readonly PlanetHex[]): PlanetTerrainKind | undefined {
+  if (!country.worldBounds || cells.length === 0) return undefined;
+  const minQ = Math.min(...cells.map((candidate) => candidate.q));
+  const maxQ = Math.max(...cells.map((candidate) => candidate.q));
+  const minR = Math.min(...cells.map((candidate) => candidate.r));
+  const maxR = Math.max(...cells.map((candidate) => candidate.r));
+  const x = Math.round(country.worldBounds.minX
+    + (cell.q - minQ) / Math.max(1, maxQ - minQ) * (country.worldBounds.maxX - country.worldBounds.minX));
+  const y = Math.round(country.worldBounds.minY
+    + (cell.r - minR) / Math.max(1, maxR - minR) * (country.worldBounds.maxY - country.worldBounds.minY));
+  return planetTerrainFromWorld(terrainAt(country.seed, x, y).terrain);
+}
+
 function buildAirports(country: PlanetCountryDto, cells: PlanetTerrainCell[], radius: number, seed: number): PlanetAirport[] {
   if (country.cityCount <= 0 || cells.length === 0) return [];
   const ordered = [...cells].sort((left, right) => hashText(left.id, seed) - hashText(right.id, seed) || left.id.localeCompare(right.id));
@@ -217,7 +243,11 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
     const preferred = { q: Math.round(anchor.q + Math.cos(angle) * distance), r: Math.round(anchor.r + Math.sin(angle) * distance) };
     const rawCells = growTerritory(nearestFreeAnchor(preferred, occupied, columns, rows), territorySize(country), occupied, columns, rows, countryHash);
     const center = countryCenter(rawCells, hexRadius);
-    const cells = rawCells.map((cell): PlanetTerrainCell => ({ ...cell, id: `${country.id}:${key(cell)}`, terrain: terrainForCell(cell, countryHash, center, hexRadius) }));
+    const cells = rawCells.map((cell): PlanetTerrainCell => ({
+      ...cell,
+      id: `${country.id}:${key(cell)}`,
+      terrain: projectedWorldTerrain(country, cell, rawCells) ?? terrainForCell(cell, countryHash, center, hexRadius),
+    }));
     const palette = COUNTRY_COLORS[countryHash % COUNTRY_COLORS.length]!;
     return { ...country, continent, cells, airports: buildAirports(country, cells, hexRadius, countryHash), center, color: palette[0], accent: palette[1] };
   });
@@ -363,9 +393,10 @@ function projectCell(cell: PlanetTerrainCell, base: ProjectedPlanetAtlas, camera
 }
 
 export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: PlanetMapCamera): ProjectedPlanetMap {
-  // Drag represents rotating the atlas content under a stationary planet
-  // aperture. Zoom still grows the aperture/fog/cloud layer with the planet.
-  const atmosphereCamera = { ...camera, panX: 0, panY: 0 };
+  // Drag and zoom move the atlas content under a stationary round planet
+  // aperture. Growing the aperture beyond the SVG viewport clips its sides
+  // and produces the intermittent circle-plus-rectangle ("keyhole") frame.
+  const atmosphereCamera = { panX: 0, panY: 0, zoom: 1 };
   const countries = base.countries.map((country): PlanetMapCountry => {
     const cells = country.cells.map((cell) => projectCell(cell, base, camera));
     const cellById = new Map(cells.map((cell) => [cell.id, cell]));
@@ -383,7 +414,7 @@ export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: Pl
     return { ...cloud, x: point.x, y: point.y, scale: cloud.scale * Math.min(1.25, .72 + camera.zoom * .16) };
   });
   const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
-  const fogScale = fit * Math.max(.82, Math.min(8.5, camera.zoom));
+  const fogScale = fit;
   const surfaceStart = affineProject({ x: 0, y: 0 }, base, atmosphereCamera);
   const surfaceEnd = affineProject({ x: base.width, y: base.height }, base, atmosphereCamera);
   return { width: MAP_WIDTH, height: MAP_HEIGHT, surface: { minX: surfaceStart.x, minY: surfaceStart.y, maxX: surfaceEnd.x, maxY: surfaceEnd.y }, countries, coastCells: base.coastCells.map((cell) => projectCell(cell, base, camera)), routes, clouds, stars: base.stars, edgeFog: base.edgeFog.map((fog) => ({ ...fog, point: affineProject(fog.point, base, atmosphereCamera), size: Math.max(4, Math.round(fog.size * fogScale)) })) };

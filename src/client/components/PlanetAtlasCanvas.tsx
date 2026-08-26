@@ -87,9 +87,10 @@ function CountryLabel({ country, x, y, width, height, active, selecting, onSelec
   />;
 }
 
-export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCountrySelect }: {
+export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountryId, refreshToken, onCountrySelect }: {
   userId: string;
   activeCountryId: string;
+  initialFocusCountryId?: string;
   refreshToken: number;
   onCountrySelect: (countryId: string, focus?: { x: number; y: number }) => Promise<void> | void;
 }) {
@@ -101,6 +102,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCou
   const suppressClick = useRef(false);
   const entryHysteresis = useRef(initialAtlasEntryHysteresis());
   const atlasView = useRef<SVGSVGElement>(null);
+  const initialFocusApplied = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -118,6 +120,23 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, refreshToken, onCou
   const map = useMemo(() => projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, camera) : null, [projectedAtlas, camera]);
   const labels = useMemo(() => map ? layoutPlanetCountryLabels(map.countries, map.width, map.height) : [], [map]);
   const countriesById = useMemo(() => new Map(map?.countries.map((country) => [country.id, country]) ?? []), [map]);
+
+  useEffect(() => {
+    initialFocusApplied.current = false;
+  }, [initialFocusCountryId]);
+
+  useEffect(() => {
+    if (!projectedAtlas || !initialFocusCountryId || initialFocusApplied.current) return;
+    const country = projectedAtlas.countries.find((candidate) => candidate.id === initialFocusCountryId);
+    if (!country) return;
+    initialFocusApplied.current = true;
+    entryHysteresis.current = { armed: false };
+    setCamera({
+      zoom: 2.15,
+      panX: Math.max(-1.25, Math.min(1.25, (country.center.x - projectedAtlas.width / 2) / (projectedAtlas.width * .32))),
+      panY: Math.max(-1, Math.min(1, (country.center.y - projectedAtlas.height / 2) / (projectedAtlas.height * .32))),
+    });
+  }, [initialFocusCountryId, projectedAtlas]);
 
   const selectCountry = useCallback(async (countryId: string, focus?: { x: number; y: number }) => {
     if (selectingCountryId) return;

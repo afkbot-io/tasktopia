@@ -8,6 +8,7 @@ if [[ -z "${TASKTOPIA_STATIC_DIR:-}" && -f "$APP_DIR/.env" ]]; then
 fi
 readonly STATIC_DIR="${TASKTOPIA_STATIC_DIR:-${persisted_static_dir:-/srv/tasktopia/static}}"
 readonly BRANCH="${TASKTOPIA_BRANCH:-main}"
+readonly EXPECTED_REVISION="${TASKTOPIA_EXPECTED_REVISION:-}"
 readonly BACKUP_RETENTION_COUNT="${BACKUP_RETENTION_COUNT:-14}"
 readonly STATIC_RETENTION_COUNT="${STATIC_RETENTION_COUNT:-3}"
 readonly FAILED_ASSET_RETENTION_COUNT="${FAILED_ASSET_RETENTION_COUNT:-3}"
@@ -29,6 +30,10 @@ if [[ ! "$STATIC_RETENTION_COUNT" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if [[ ! "$FAILED_ASSET_RETENTION_COUNT" =~ ^[1-9][0-9]*$ ]]; then
   echo "FAILED_ASSET_RETENTION_COUNT must be a positive integer" >&2
+  exit 2
+fi
+if [[ -n "$EXPECTED_REVISION" && ! "$EXPECTED_REVISION" =~ ^[a-f0-9]{40}$ ]]; then
+  echo "TASKTOPIA_EXPECTED_REVISION must be a full 40-character Git revision" >&2
   exit 2
 fi
 if [[ ! "$HEALTH_RETRY_COUNT" =~ ^[1-9][0-9]*$ ]]; then
@@ -62,6 +67,10 @@ cd "$APP_DIR"
 checkout_head_before_pull="$(git rev-parse HEAD)"
 git pull --ff-only origin "$BRANCH"
 checkout_head_after_pull="$(git rev-parse HEAD)"
+if [[ -n "$EXPECTED_REVISION" && "$checkout_head_after_pull" != "$EXPECTED_REVISION" ]]; then
+  echo "Expected revision $EXPECTED_REVISION, pulled $checkout_head_after_pull" >&2
+  exit 1
+fi
 if [[ "$checkout_head_before_pull" != "$checkout_head_after_pull" \
   && "${TASKTOPIA_UPDATE_REEXEC:-}" != "$checkout_head_after_pull" ]]; then
   exec env TASKTOPIA_UPDATE_REEXEC="$checkout_head_after_pull" \
