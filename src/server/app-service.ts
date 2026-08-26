@@ -126,6 +126,7 @@ const COUNTRY_ATLAS_DISTRICT_COLORS = [
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
 const ARCHIVE_COMPOUND = { width: 42, height: 28 } as const;
 const ARCHIVE_CITY_CLEARANCE = 24;
+const AIRPORT_COMPOUND = { width: 44, height: 22 } as const;
 
 function roadReachable(roads: ReadonlyMap<string, Cell>, start: Cell, target: Cell): boolean {
   const startKey = cellKey(start);
@@ -1045,6 +1046,9 @@ export class AppService {
         (SELECT COUNT(*) FROM tasks_v3 task
           JOIN cities_v3 city ON city.id = task.city_id
           WHERE city.country_id = c.id) AS building_count,
+        (SELECT COUNT(*) FROM tasks_v3 task
+          JOIN cities_v3 city ON city.id = task.city_id
+          WHERE city.country_id = c.id AND task.status <> 'COMPLETED') AS unfinished_building_count,
         (SELECT COALESCE(ROUND(AVG(task.progress)), 0) FROM tasks_v3 task
           JOIN cities_v3 city ON city.id = task.city_id
           WHERE city.country_id = c.id) AS progress
@@ -1056,9 +1060,10 @@ export class AppService {
     const countries = rows.map((row) => ({
       id: String(row.id), name: String(row.name), seed: Number(row.seed), worldVersion: Number(row.world_version),
       cityCount: Number(row.city_count), districtCount: Number(row.district_count), buildingCount: Number(row.building_count),
+      unfinishedBuildingCount: Number(row.unfinished_building_count),
       progress: Math.max(0, Math.min(100, Number(row.progress))),
     }));
-    const revisionSource = countries.map((country) => `${country.id}:${country.name}:${country.worldVersion}:${country.cityCount}:${country.districtCount}:${country.buildingCount}:${country.progress}`).join("|");
+    const revisionSource = countries.map((country) => `${country.id}:${country.name}:${country.worldVersion}:${country.cityCount}:${country.districtCount}:${country.buildingCount}:${country.unfinishedBuildingCount}:${country.progress}`).join("|");
     const revision = createHash("sha256").update(revisionSource).digest("hex").slice(0, 16);
     const planetSeed = createHash("sha256").update(`tasktopia-planet:${userId}`).digest().readUInt32LE(0) & 0x7fffffff;
     return { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed, revision, countries };
@@ -1384,7 +1389,7 @@ export class AppService {
           width: (city.bounds.maxX - city.bounds.minX + 1) * 8,
           height: (city.bounds.maxY - city.bounds.minY + 1) * 8,
         },
-        labelSizePx: { width: Math.max(208, city.name.length * 12 + 56), height: 48 },
+        labelSizePx: { width: 208, height: 48 },
         districts: (districtsByCity.get(city.id) ?? []).map((district) => ({ id: district.id, cells: district.cells })),
       })),
     });
@@ -1515,11 +1520,13 @@ export class AppService {
           surfaces: [...projectedSurfaces.values()],
           features: features.filter((feature) => feature.cityId === city.id).map((feature) => ({
             id: feature.id,
+            kind: feature.kind,
             districtId: feature.districtId,
             assetKind: feature.assetKind,
             assetKey: feature.assetKey,
             developmentStage: feature.developmentStage,
             sourceOrigin: feature.origin,
+            sourceFootprint: feature.footprint,
             atlasOrigin: projectCell(feature.origin, feature.districtId ?? ""),
             atlasFootprint: projectFootprint(feature.footprint, feature.districtId ?? ""),
           })),
@@ -2800,7 +2807,10 @@ export class AppService {
   }
 
   private async syncCountryArchiveComplex(
-    countryId: string, preferredAnchor?: Cell, snapshot?: GenerationSpatialSnapshot,
+    countryId: string,
+    preferredAnchor?: Cell,
+    snapshot?: GenerationSpatialSnapshot,
+    blockedOrigins = new Set<string>(),
   ): Promise<Rect | undefined> {
     const archive = await this.getArchive(countryId);
     let features = (snapshot?.features ?? await this.listWorldFeatures(countryId)).filter((feature) => feature.kind === "COUNTRY_ARCHIVE");
@@ -2871,6 +2881,7 @@ export class AppService {
       ]);
       for (const offset of candidates) {
         const origin = { x: anchor.x + offset.x, y: anchor.y + offset.y };
+        if (blockedOrigins.has(cellKey(origin))) continue;
         // Persist only the campus boundary. The secured rectangle is validated
         // below, while buildings/fences own their exact cells. Keeping 136
         // perimeter cells instead of 1,176 interior points prevents an
@@ -2932,7 +2943,21 @@ export class AppService {
           if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
         }
       }
-      if (!connector) throw new DomainError("ROUTE_BLOCKED", "Не удалось соединить Государственный архив с дорожной сетью");
+      if (!connector) {
+        // A buildable campus can still be isolated by the full two-lane road
+        // profile on a regenerated mature map. Retry another deterministic
+        // campus origin before rejecting the whole country replay.
+        if (blockedOrigins.size < 16) {
+          const blockedBounds = boundsOf([...compound.footprint, ...compound.accessPath]);
+          relocatedBounds = relocatedBounds ? unionRect(relocatedBounds, blockedBounds) : blockedBounds;
+          blockedOrigins.add(cellKey(compound.origin));
+          await this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?").run(compound.id);
+          if (snapshot) snapshot.features = snapshot.features.filter((feature) => feature.id !== compound!.id && feature.parentFeatureId !== compound!.id);
+          const retriedBounds = await this.syncCountryArchiveComplex(countryId, preferredAnchor, snapshot, blockedOrigins);
+          return relocatedBounds && retriedBounds ? unionRect(relocatedBounds, retriedBounds) : relocatedBounds ?? retriedBounds;
+        }
+        throw new DomainError("ROUTE_BLOCKED", "Не удалось соединить Государственный архив с дорожной сетью");
+      }
       await this.addRoadPath(countryId, seed, connector, "LOCAL", snapshot);
       await this.db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify(connector), compound.id);
       compound = { ...compound, accessPath: connector };
@@ -3003,6 +3028,197 @@ export class AppService {
     this.surfaceCache.delete(countryId);
     const currentBounds = boundsOf([...compound.footprint, ...compound.accessPath, ...infrastructure.flatMap((item) => item.footprint)]);
     return relocatedBounds ? unionRect(relocatedBounds, currentBounds) : currentBounds;
+  }
+
+  private async syncCityAirport(
+    countryId: string,
+    city: CityDto,
+    seed: number,
+    snapshot?: GenerationSpatialSnapshot,
+  ): Promise<WorldFeatureDto | undefined> {
+    let existing = (snapshot?.features ?? await this.listWorldFeatures(countryId))
+      .find((feature) => feature.kind === "AIRPORT" && feature.cityId === city.id && feature.assetKind === "AREA");
+    const legacyAirportId = existing?.id;
+    const connectToRoadNetwork = async (origin: Cell, footprint: Cell[], excludedFeatureId?: string): Promise<Cell[]> => {
+      const site = boundsOf(footprint);
+      const siteCenter = { x: Math.round((site.minX + site.maxX) / 2), y: Math.round((site.minY + site.maxY) / 2) };
+      const delta = { x: city.center.x - siteCenter.x, y: city.center.y - siteCenter.y };
+      const horizontal = Math.abs(delta.x) >= Math.abs(delta.y);
+      const step = horizontal
+        ? { x: delta.x < 0 ? -1 : 1, y: 0 }
+        : { x: 0, y: delta.y < 0 ? -1 : 1 };
+      const gate = horizontal
+        ? { x: step.x < 0 ? site.minX : site.maxX, y: siteCenter.y }
+        : { x: siteCenter.x, y: step.y < 0 ? site.minY : site.maxY };
+      // The road stops at the gate's outside neighbour. Airport perimeter
+      // cells remain fence/terminal-owned and never become asphalt.
+      const apron = Array.from({ length: 5 }, (_, index) => ({ x: gate.x + step.x * (index + 1), y: gate.y + step.y * (index + 1) }));
+      const routingSnapshot: GenerationSpatialSnapshot = snapshot
+        ? { ...snapshot, features: snapshot.features.filter((feature) => feature.id !== excludedFeatureId) }
+        : {
+            bounds: expandRect(unionRect(city.bounds, site), 160),
+            roads: await this.roadCells(countryId),
+            districts: await this.listDistricts(countryId),
+            cities: await this.listCities(countryId),
+            tasks: await this.listTasks(countryId),
+            features: (await this.listWorldFeatures(countryId)).filter((feature) => feature.id !== excludedFeatureId),
+          };
+      const exclusion = expandRect(site, 5);
+      const cityAvoid = routingSnapshot.cities.map((candidate) => expandRect(candidate.bounds, 3));
+      const allRoads = [...routingSnapshot.roads.values()].filter((road) => !contains(exclusion, road));
+      // Airports join the national/rural network outside urban envelopes.
+      // Routing straight to the nearest local street would reserve a long
+      // divider through land that later districts need to remain connected.
+      const ruralRoads = allRoads.filter((road) => !cityAvoid.some((bounds) => contains(bounds, road)));
+      const hasRuralTargets = ruralRoads.length > 0;
+      const roads = (hasRuralTargets ? ruralRoads : allRoads)
+        .sort((left, right) => manhattan(left, apron.at(-1)!) - manhattan(right, apron.at(-1)!));
+      let connector: Cell[] | undefined;
+      let connectorPublished = false;
+      const targetBatchSize = hasRuralTargets ? 64 : 1;
+      // Most airport drives need only one square bend. Trying those bounded,
+      // deterministic candidates first avoids asking A* to explore the whole
+      // country. Candidate order stays stable in small worlds so airport
+      // placement does not perturb established city-growth fixtures.
+      // A slightly wider deterministic window is still cheap for orthogonal
+      // candidates and avoids falling into the much heavier A* path on seeds
+      // whose nearest rural roads sit behind the city envelope.
+      for (const target of connector ? [] : roads.slice(0, 96)) {
+        for (const horizontalFirst of [true, false]) {
+          const direct = [...apron, ...orthogonalPath(apron.at(-1)!, target, horizontalFirst).slice(1)];
+          const corridor = this.roadCorridor(direct, "LOCAL");
+          if (corridor.some((cell) => contains(site, cell)
+            || cityAvoid.some((bounds) => contains(bounds, cell)))) continue;
+          try {
+            await this.addRoadPath(countryId, seed, direct, "LOCAL", routingSnapshot);
+            connector = direct;
+            connectorPublished = true;
+            break;
+          } catch (error) {
+            if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+          }
+        }
+        if (connector) break;
+      }
+      // Compatibility fallback for a fragmented mature map where neither
+      // square bend is safe. Keep it last so the usual airport remains O(n).
+      for (let offset = 0; !connector && offset < roads.length; offset += targetBatchSize) {
+        try {
+          // Keep the A* centreline far enough from the secured perimeter for
+          // the complete three-cell LOCAL profile. Without this explicit site
+          // exclusion a fragmented seed could loop the fallback behind its
+          // own gate and stamp one lateral asphalt cell under the terminal.
+          const routed = await this.route(
+            countryId,
+            seed,
+            apron.at(-1)!,
+            roads.slice(offset, offset + targetBatchSize),
+            [expandRect(site, 2), ...cityAvoid],
+            [],
+            2,
+            true,
+            routingSnapshot,
+          );
+          connector = [...apron, ...routed.slice(1)];
+          break;
+        } catch (error) {
+          if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+        }
+      }
+      if (!connector) throw new DomainError("ROUTE_BLOCKED", `Не удалось соединить аэропорт города ${city.name} с дорожной сетью`);
+      if (this.roadCorridor(connector, "LOCAL").some((cell) => contains(site, cell))) {
+        throw new DomainError("ROUTE_BLOCKED", `Подъездная дорога аэропорта города ${city.name} пересекает защищённый периметр`);
+      }
+      if (!connectorPublished) await this.addRoadPath(countryId, seed, connector, "LOCAL", routingSnapshot);
+      if (snapshot && routingSnapshot !== snapshot) snapshot.roads = routingSnapshot.roads;
+      return connector;
+    };
+    if (existing) {
+      if (existing.accessPath.length > 0) return existing;
+      try {
+        const connector = await connectToRoadNetwork(existing.origin, existing.footprint, existing.id);
+        await this.db.prepare("UPDATE world_features_v6 SET access_json = ? WHERE id = ?").run(JSON.stringify(connector), existing.id);
+        existing = { ...existing, accessPath: connector };
+        if (snapshot) snapshot.features = snapshot.features.map((feature) => feature.id === existing!.id ? existing! : feature);
+        return existing;
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== "ROUTE_BLOCKED") throw error;
+        // Early atlas builds could persist an airport inside later city growth
+        // without an access road. If that site can no longer accept a full
+        // road profile, relocate the legacy feature transactionally instead
+        // of keeping the world worker in a restart loop.
+        await this.db.prepare("DELETE FROM world_features_v6 WHERE id = ?").run(existing.id);
+        if (snapshot) snapshot.features = snapshot.features.filter((feature) => feature.id !== existing!.id && feature.parentFeatureId !== existing!.id);
+        existing = undefined;
+      }
+    }
+    const candidates: Cell[] = [];
+    const centeredX = city.center.x - Math.floor(AIRPORT_COMPOUND.width / 2);
+    const centeredY = city.center.y - Math.floor(AIRPORT_COMPOUND.height / 2);
+    // Keep the secured airfield outside the city's normal district expansion
+    // envelope. The city camera includes the airport explicitly, while this
+    // reserve prevents a nearby runway from turning every later district
+    // search into an obstacle-routing problem.
+    for (const distance of [64, 80, 96, 112]) candidates.push(
+      { x: centeredX, y: city.bounds.maxY + distance },
+      { x: city.bounds.maxX + distance, y: centeredY },
+      { x: centeredX, y: city.bounds.minY - AIRPORT_COMPOUND.height - distance },
+      { x: city.bounds.minX - AIRPORT_COMPOUND.width - distance, y: centeredY },
+    );
+    const cityExclusions = (snapshot?.cities ?? await this.listCities(countryId)).map((candidate) => expandRect(candidate.bounds, 4));
+    const placementRoads = [...(snapshot?.roads ?? await this.roadCells(countryId)).values()]
+      .filter((road) => !cityExclusions.some((bounds) => contains(bounds, road)));
+    const distanceToNetwork = (origin: Cell) => {
+      const center = { x: origin.x + Math.floor(AIRPORT_COMPOUND.width / 2), y: origin.y + Math.floor(AIRPORT_COMPOUND.height / 2) };
+      return placementRoads.reduce((best, road) => Math.min(best, manhattan(center, road)), Number.POSITIVE_INFINITY);
+    };
+    if (placementRoads.length >= 25_000) {
+      candidates.sort((left, right) => distanceToNetwork(left) - distanceToNetwork(right)
+        || manhattan(left, city.center) - manhattan(right, city.center));
+    }
+    for (const origin of candidates) {
+      const securedSite = rectangleFootprint(origin, AIRPORT_COMPOUND.width, AIRPORT_COMPOUND.height);
+      if (!await this.featurePlacementOpen(countryId, seed, securedSite, cityExclusions, snapshot)) continue;
+      let connector: Cell[];
+      try {
+        connector = await connectToRoadNetwork(origin, rectanglePerimeterFootprint(origin, AIRPORT_COMPOUND.width, AIRPORT_COMPOUND.height));
+      } catch (error) {
+        if (error instanceof DomainError && error.code === "ROUTE_BLOCKED") continue;
+        throw error;
+      }
+      return this.insertWorldFeature(countryId, {
+        cityId: city.id,
+        districtId: null,
+        parentFeatureId: null,
+        kind: "AIRPORT",
+        assetKind: "AREA",
+        assetKey: `city-airport-terminal-${Math.abs([...city.id].reduce((total, value) => total + value.charCodeAt(0), 0)) % 5 + 1}`,
+        origin,
+        footprint: rectanglePerimeterFootprint(origin, AIRPORT_COMPOUND.width, AIRPORT_COMPOUND.height),
+        orientation: "E",
+        accessPath: connector,
+      }, snapshot);
+    }
+    if (legacyAirportId) {
+      throw new DomainError("ROUTE_BLOCKED", `Не удалось безопасно перенести аэропорт города ${city.name}`);
+    }
+    return undefined;
+  }
+
+  async upgradeCityAirports(): Promise<number> {
+    const countries = await this.db.prepare(`SELECT country.id, country.seed
+      FROM countries country
+      WHERE EXISTS (SELECT 1 FROM cities_v3 city WHERE city.country_id = country.id)
+      ORDER BY country.created_at, country.id`).all<{ id: string; seed: number }>();
+    let upgraded = 0;
+    for (const country of countries) {
+      const cities = await this.listCities(country.id);
+      for (const city of cities) {
+        const airport = await this.db.transaction(async () => this.syncCityAirport(country.id, city, Number(country.seed)));
+        if (airport) upgraded += 1;
+      }
+    }
+    return upgraded;
   }
 
   async upgradeCountryArchiveInfrastructure(): Promise<number> {
@@ -3129,6 +3345,11 @@ export class AppService {
                       await this.normalizeUrbanHighways(countryId, bounds, generationSnapshot);
                       await this.publishCityGatewayFeatures(countryId, id, seed, bounds, gateway.cell, portal, connector, gateway.horizontalApproach, generationSnapshot);
                       const archiveBounds = await this.syncCountryArchiveComplex(countryId, hub, generationSnapshot);
+                      await this.syncCityAirport(countryId, {
+                        id, name, description: input.description?.trim().slice(0, 8000) ?? "", goal: input.goal?.trim().slice(0, 4000) ?? "",
+                        acceptanceCriteria: input.acceptanceCriteria?.trim().slice(0, 8000) ?? "", deadline: input.deadline ?? null,
+                        status: "ACTIVE", center, bounds, styleId, morphology, createdAt,
+                      }, seed, generationSnapshot);
 
                       // A wide corridor can cover a one-cell water pocket on
                       // its lateral edge. That cell is technically a bridge,
@@ -3507,7 +3728,7 @@ export class AppService {
     const sealed = new Set(snapshot.districts.filter((candidate) => candidate.status === "COMPLETED")
       .flatMap((candidate) => candidate.cells).map(cellKey));
     const institutionalRoads = new Set(snapshot.features
-      .filter((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")
+      .filter((feature) => (feature.kind === "COUNTRY_ARCHIVE" || feature.kind === "AIRPORT") && feature.assetKind === "AREA")
       .flatMap((feature) => stampRoadCorridor(feature.accessPath, "LOCAL", ROAD_WIDTH)).map(cellKey));
     // Streets are shared infrastructure: a connector may cross a still-growing
     // neighbour's empty territory (its future complexes simply avoid the road),
@@ -3526,8 +3747,18 @@ export class AppService {
     // territory lobe can sit away from them, so there the complex anchors to
     // the shared road network and reaches it with a longer access road.
     const nearDistrictRoads = districtRoads.filter((road) => contains(expandRect(searchBounds, 16), road));
-    const anchors = nearDistrictRoads.length > 0 ? nearDistrictRoads : safeRoads;
-    const proximityAnchors = nearDistrictRoads.length > 0 ? nearDistrictRoads : proximityRoads;
+    const localNetworkBounds = expandRect(searchBounds, 192);
+    const localSafeRoads = safeRoads.filter((road) => contains(localNetworkBounds, road));
+    const localProximityRoads = proximityRoads.filter((road) => contains(localNetworkBounds, road));
+    // Complex scoring and connector pairing are local operations. Feeding the
+    // complete national graph into every candidate made mature countries
+    // multiply thousands of rectangles by tens of thousands of remote roads.
+    const anchors = nearDistrictRoads.length > 0
+      ? nearDistrictRoads
+      : localSafeRoads.length > 0 ? localSafeRoads : safeRoads;
+    const proximityAnchors = nearDistrictRoads.length > 0
+      ? nearDistrictRoads
+      : localProximityRoads.length > 0 ? localProximityRoads : proximityRoads;
     // A later compact block may legitimately sit across the unbuilt half of a
     // large district territory. Limiting infill to eight cells from the first
     // street made a 10-district city box its active district after one block,
@@ -3891,13 +4122,16 @@ export class AppService {
   ): Promise<Array<{ origin: Cell; cells: Cell[] }>> {
     const roads = snapshot?.roads ?? await this.roadCells(countryId);
     const sourceFeatures = snapshot?.features ?? await this.listWorldFeatures(countryId);
-    const institutionalRoads = new Set(sourceFeatures
-      .filter((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")
-      .flatMap((feature) => stampRoadCorridor(feature.accessPath, "LOCAL", ROAD_WIDTH)).map(cellKey));
     const districts = snapshot?.districts ?? await this.listDistricts(countryId);
     const cityDistricts = districts.filter((district) => district.cityId === city.id);
-    // A national institution is connected for traffic, but its guarded access
-    // road is not public frontage and must never attract a residential sprint.
+    const institutionalRoads = new Set(sourceFeatures
+      .filter((feature) => (feature.kind === "COUNTRY_ARCHIVE"
+        || (feature.kind === "AIRPORT" && cityDistricts.length < 7)) && feature.assetKind === "AREA")
+      .flatMap((feature) => stampRoadCorridor(feature.accessPath, "LOCAL", ROAD_WIDTH)).map(cellKey));
+    // Institutional drives are connected for traffic, but archive and airport
+    // access roads are not normal frontage. A saturated 7+ district city may
+    // urbanise the city-side part of its airport connector as a last resort;
+    // archive security roads remain excluded forever.
     const preferredRoads = [...roads.values()].filter((road) => road.roadClass !== "HIGHWAY"
       && !institutionalRoads.has(cellKey(road)) && contains(expandRect(city.bounds, 24), road));
     const occupiedCells = districts.flatMap((district) => district.cells);
@@ -3987,10 +4221,11 @@ export class AppService {
       // put those sites first and keep a small deterministic fallback tail.
       const balanced = ranked.filter((candidate) => candidate.repeatedDirection === leastUsedDirectionCount);
       if (balanced.length > 0 || extension === 96) {
+        const candidateLimit = sourceFeatures.some((feature) => feature.kind === "AIRPORT" && feature.accessPath.length > 0) ? 32 : 16;
         const selected = [...balanced, ...ranked]
           .filter((candidate, index, all) => all.findIndex((other) =>
             other.origin.x === candidate.origin.x && other.origin.y === candidate.origin.y) === index)
-          .slice(0, 16);
+          .slice(0, candidateLimit);
         if (selected.length > 0) return selected;
       }
     }
@@ -4144,8 +4379,11 @@ export class AppService {
                         : Math.max(35, Math.min(42, Math.round(area / width)));
                       const id = randomUUID();
                       const existingRoads = generationSnapshot.roads;
+                      const airportRoads = new Set(generationSnapshot.features
+                        .filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA")
+                        .flatMap((feature) => stampRoadCorridor(feature.accessPath, "LOCAL", ROAD_WIDTH)).map(cellKey));
                       const occupied = new Set([
-                        ...existingRoads.keys(),
+                        ...[...existingRoads.keys()].filter((key) => !airportRoads.has(key)),
                         ...generationSnapshot.tasks.flatMap(taskOccupiedCells).map(cellKey),
                         ...generationSnapshot.features.filter((feature) => feature.kind !== "RUIN").flatMap((feature) => feature.footprint).map(cellKey),
                       ]);
@@ -4171,28 +4409,36 @@ export class AppService {
                         let connectedSite: typeof site | undefined;
                         const sealedCells = new Set(generationSnapshot.districts
                           .filter((district) => district.status === "COMPLETED").flatMap((district) => district.cells).map(cellKey));
-                        const institutionalRoads = new Set(generationSnapshot.features
+                        const archiveRoads = new Set(generationSnapshot.features
                           .filter((feature) => feature.kind === "COUNTRY_ARCHIVE" && feature.assetKind === "AREA")
                           .flatMap((feature) => stampRoadCorridor(feature.accessPath, "LOCAL", ROAD_WIDTH)).map(cellKey));
-                        const anchorRoads = [...existingRoads.values()].filter((road) =>
-                          road.roadClass !== "HIGHWAY" && !institutionalRoads.has(cellKey(road))
+                        const safeAnchorRoads = [...existingRoads.values()].filter((road) =>
+                          road.roadClass !== "HIGHWAY" && !archiveRoads.has(cellKey(road))
                           && (!sealedCells.has(cellKey(road)) || neighbors4(road).some((cell) => !sealedCells.has(cellKey(cell)))));
+                        const publicAnchorRoads = safeAnchorRoads.filter((road) => !airportRoads.has(cellKey(road)));
                         // Try every compact candidate with straight square
-                        // bends first. Only when none works do we pay for A*.
-                        for (const allowObstacleRouting of [false, true]) {
-                          for (const candidate of siteCandidates) {
-                            if (await this.connectDistrictSite(
-                              countryId, seed, candidate, occupied, existingRoads, sealedCells, anchorRoads,
-                              allowObstacleRouting,
-                              generationSnapshot,
-                            )) {
-                              connectedSite = candidate;
-                              break;
+                        // bends first. Airport drives are not normal frontage,
+                        // but in a saturated one-city plan they remain a valid
+                        // last-resort network branch; archive security roads
+                        // are never eligible.
+                        for (const anchorRoads of [publicAnchorRoads, safeAnchorRoads]) {
+                          if (anchorRoads.length === 0) continue;
+                          for (const allowObstacleRouting of [false, true]) {
+                            for (const candidate of siteCandidates) {
+                              if (await this.connectDistrictSite(
+                                countryId, seed, candidate, occupied, existingRoads, sealedCells, anchorRoads,
+                                allowObstacleRouting,
+                                generationSnapshot,
+                              )) {
+                                connectedSite = candidate;
+                                break;
+                              }
                             }
+                            if (connectedSite) break;
                           }
                           if (connectedSite) break;
                         }
-                        if (!connectedSite) throw new DomainError("ROUTE_BLOCKED", "Не удалось проложить полноширинный подъезд к району");
+                        if (!connectedSite) throw new DomainError("ROUTE_BLOCKED", `Не удалось проложить полноширинный подъезд к району ${existingDistricts.length + 1}`);
                         site = connectedSite;
                       }
                       const expandedCity = unionRect(city.bounds, expandRect(boundsOf(site.cells), 8));

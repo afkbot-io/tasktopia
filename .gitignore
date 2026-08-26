@@ -37,3 +37,6 @@ backups/
 /assets/pixel-city-pack/reference/rejected/
 /sprite-examples/
 /assets/generated-v2/
+
+# RepoWise derives this index locally for each worktree.
+/.repowise/

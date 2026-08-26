@@ -145,6 +145,34 @@ describe("published world chunk payload", () => {
     expect(first.decorations).toEqual(second.decorations);
   });
 
+  it("keeps every ambient and derived decoration outside an airport interior", () => {
+    const compact = payload("DETAIL");
+    compact.chunkX = 0;
+    compact.chunkY = 0;
+    const origin = { x: 8, y: 8 };
+    const width = 24;
+    const height = 16;
+    const perimeter = [
+      ...Array.from({ length: width }, (_, index) => ({ x: origin.x + index, y: origin.y })),
+      ...Array.from({ length: width }, (_, index) => ({ x: origin.x + index, y: origin.y + height - 1 })),
+      ...Array.from({ length: height - 2 }, (_, index) => ({ x: origin.x, y: origin.y + index + 1 })),
+      ...Array.from({ length: height - 2 }, (_, index) => ({ x: origin.x + width - 1, y: origin.y + index + 1 })),
+    ];
+    compact.worldFeatures = [{
+      id: "airport", cityId: "city", districtId: null, parentFeatureId: null,
+      kind: "AIRPORT", assetKind: "AREA", assetKey: "city-airport-terminal-1", origin,
+      footprint: perimeter, orientation: "E", accessPath: [{ x: 32, y: 15 }], developmentStage: 5,
+    }];
+
+    const chunk = materializeChunkPayload(compact);
+
+    expect(chunk.decorations.some((decoration) => decoration.id.startsWith("area:airport:"))).toBe(false);
+    expect(chunk.decorations.every((decoration) => decoration.origin.x < origin.x
+      || decoration.origin.x >= origin.x + width
+      || decoration.origin.y < origin.y
+      || decoration.origin.y >= origin.y + height)).toBe(true);
+  });
+
   it("keeps the full decoration output compatible across two adjacent chunks", () => {
     const districtCells = Array.from({ length: 128 * 64 }, (_, index) => ({
       x: index % 128,

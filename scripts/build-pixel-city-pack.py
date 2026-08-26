@@ -14,6 +14,7 @@ import hashlib
 import math
 import shutil
 from dataclasses import dataclass, replace
+from io import BytesIO
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -28,6 +29,8 @@ CATALOG = PACK / "catalog"
 AI_AUTHORED_ART = PACK / "reference"
 CELL = 8
 REGISTERED_RULES = {"STANDARD", "UNIQUE_SERVICE", "REQUIRES_COLLECTOR"}
+PRESERVED_RUNTIME_PNG: dict[str, bytes] = {}
+PINNED_REVIEWED_RUNTIME_PNG: set[str] = set()
 
 OUTLINE = "#263945ff"
 SHADOW = "#40515aff"
@@ -120,6 +123,35 @@ WATER_RIPPLE_PATTERNS = (
 
 def rgba(hex_color: str) -> tuple[int, int, int, int]:
     return tuple(bytes.fromhex(hex_color.removeprefix("#")))  # type: ignore[return-value]
+
+
+def save_runtime_png(image: Image.Image, target: Path) -> None:
+    """Keep reviewed PNG bytes stable when only the encoder differs.
+
+    Pillow/libpng can emit a different compressed byte stream for identical
+    pixels on another runner. Reuse the committed runtime file when its RGBA
+    payload is unchanged, while still replacing it whenever authored pixels
+    actually change.
+    """
+    relative = target.relative_to(RUNTIME).as_posix()
+    preserved = PRESERVED_RUNTIME_PNG.get(relative)
+    if preserved is not None:
+        # A reviewed stage is a checked-in visual artifact, not an encoder
+        # fixture. Its geometry.json pins the exact approved bytes while the
+        # catalog separately pins every authored source. Re-emitting the same
+        # source through Pillow's platform-dependent quantizer can change both
+        # pixels and PNG bytes on Linux, so retain the explicitly approved
+        # stage until a new visual review updates that pin.
+        if relative in PINNED_REVIEWED_RUNTIME_PNG:
+            target.write_bytes(preserved)
+            return
+        with Image.open(BytesIO(preserved)) as previous:
+            previous_rgba = previous.convert("RGBA")
+            current_rgba = image.convert("RGBA")
+            if previous_rgba.size == current_rgba.size and previous_rgba.tobytes() == current_rgba.tobytes():
+                target.write_bytes(preserved)
+                return
+    image.save(target, optimize=True)
 
 
 def color_components(image: Image.Image, color: str, minimum_size: int = 8) -> list[list[tuple[int, int]]]:
@@ -2267,7 +2299,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         for stage in range(1, 6):
             target = destination / f"stage-{stage}.png"
             stage_image = authored_stages[stage - 1]
-            stage_image.save(target, optimize=True)
+            save_runtime_png(stage_image, target)
             stages.append(str(target.relative_to(RUNTIME)))
             opaque = stage_image.getchannel("A").getbbox()
             if opaque is None:
@@ -2298,7 +2330,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         terrain[kind] = []
         for variant in range(5 if "WATER" in kind else 3):
             target = terrain_dir / f"{kind.lower()}-{variant}.png"
-            terrain_tile(kind, variant).save(target, optimize=True)
+            save_runtime_png(terrain_tile(kind, variant), target)
             terrain[kind].append(str(target.relative_to(RUNTIME)))
 
     transition_dir = RUNTIME / "transitions"
@@ -2308,7 +2340,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         transitions[material] = {}
         for direction in "NESW":
             target = transition_dir / f"{material}-{direction.lower()}.png"
-            edge_overlay(material, direction).save(target, optimize=True)
+            save_runtime_png(edge_overlay(material, direction), target)
             transitions[material][direction] = str(target.relative_to(RUNTIME))
 
     ai_prop_entries = load_ai_authored_ambient_catalog("ai-authored-props.json")
@@ -2389,7 +2421,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     prop_manifest: dict[str, dict] = {}
     for key, image in generated_props.items():
         target = prop_dir / f"{key}.png"
-        image.save(target, optimize=True)
+        save_runtime_png(image, target)
         if key in PARK_FEATURE_FOOTPRINTS: footprint = list(PARK_FEATURE_FOOTPRINTS[key])
         elif key == "playground-small": footprint = [3, 2]
         elif key in {"fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"}: footprint = [7, 3]
@@ -2455,7 +2487,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
                     strict_occupied_bounds=True,
                 )
                 target = vehicle_dir / f"{authored['key']}-{orientation}.png"
-                image.save(target, optimize=True)
+                save_runtime_png(image, target)
                 axes[orientation] = {
                     "path": str(target.relative_to(RUNTIME)),
                     "size": list(canvas_size),
@@ -2490,7 +2522,7 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     tile_manifest = {}
     for key, role in material_roles.items():
         target = tile_dir / f"{key}.png"
-        infrastructure_tile(key).save(target, optimize=True)
+        save_runtime_png(infrastructure_tile(key), target)
         tile_manifest[key] = {
             "path": str(target.relative_to(RUNTIME)),
             "size": [CELL, CELL],
@@ -2823,6 +2855,27 @@ def pending_building_style_sheet(manifest: dict) -> None:
 
 
 def main() -> None:
+    global PRESERVED_RUNTIME_PNG, PINNED_REVIEWED_RUNTIME_PNG
+    PRESERVED_RUNTIME_PNG = {
+        path.relative_to(RUNTIME).as_posix(): path.read_bytes()
+        for path in RUNTIME.rglob("*.png")
+    } if RUNTIME.exists() else {}
+    PINNED_REVIEWED_RUNTIME_PNG = set()
+    for review_path in AI_AUTHORED_ART.rglob("geometry.json"):
+        review = json.loads(review_path.read_text())
+        key = review.get("key")
+        approved_sha = review.get("doorVisualReview", {}).get("reviewedStage5Sha256")
+        if not isinstance(key, str) or not isinstance(approved_sha, str):
+            continue
+        for candidate in RUNTIME.glob(f"buildings/*/{key}/stage-5.png"):
+            relative = candidate.relative_to(RUNTIME).as_posix()
+            if hashlib.sha256(PRESERVED_RUNTIME_PNG[relative]).hexdigest() == approved_sha:
+                PINNED_REVIEWED_RUNTIME_PNG.add(relative)
+    public_atlas = PUBLIC / "atlas"
+    preserved_atlas = {
+        path.relative_to(public_atlas).as_posix(): path.read_bytes()
+        for path in public_atlas.rglob("*") if path.is_file()
+    } if public_atlas.exists() else {}
     if RUNTIME.exists(): shutil.rmtree(RUNTIME)
     RUNTIME.mkdir(parents=True, exist_ok=True)
     specs = load_generated_specs()
@@ -2839,6 +2892,10 @@ def main() -> None:
     pending_building_style_sheet(manifest)
     if PUBLIC.exists(): shutil.rmtree(PUBLIC)
     shutil.copytree(RUNTIME, PUBLIC)
+    for relative, content in preserved_atlas.items():
+        target = PUBLIC / "atlas" / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
     shutil.copy2(PACK / "manifest.json", PUBLIC / "manifest.json")
     print(json.dumps({
         "buildings": len(manifest["buildings"]), "terrainFamilies": len(manifest["terrain"]),

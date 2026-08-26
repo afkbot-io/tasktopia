@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
-import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadMarkingAxis } from "../../shared/road-profile";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
@@ -53,6 +53,7 @@ import {
   nextCameraTargetScale,
   pixelPerfectCameraScale,
 } from "../world-camera";
+import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
 import {
   buildingBadgePresentation,
@@ -68,6 +69,7 @@ import { compareWorldObjects, type WorldObjectKind } from "../world-object-depth
 import { overviewFromDetailChunk } from "../world-chunk-cache";
 import { greenAreaDecorStage, greenAreaSurfaceRole } from "../../shared/green-area";
 import { taskParkDecorLayout } from "../../shared/task-park";
+import { airportCompoundCells, cityAirportVisualLayout } from "../../shared/city-airport-layout";
 import {
   CONSTRUCTION_DETAIL_SPEC_BY_KEY,
   CONSTRUCTION_TILE_KEYS,
@@ -88,7 +90,12 @@ const CHUNK_ASSET_CONCURRENCY = 6;
 const CHUNK_DATA_CACHE_LIMIT = 48;
 const CHUNK_PAYLOAD_CACHE_LIMIT = 160;
 const OVERVIEW_GROUND_TEXTURE_RESOLUTION = 0.5;
-const GROUND_CACHE_LIMIT = 96;
+const GROUND_CACHE_LIMIT = 48;
+// Ultra-wide overview cameras can keep more than the base GPU-cache budget
+// visible at once. Bake those large offscreen surfaces at one pixel per eight
+// source pixels; nearest-neighbour upscaling preserves the pixel-art contract
+// while keeping the coherent LOD swap bounded on low-throughput GPUs.
+const ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION = 0.125;
 const TASK_STATUS_PATCH_LIMIT = 512;
 type MapLod = "DETAIL" | "OVERVIEW";
 const GROUND_PRESERVING_EVENTS = new Set([
@@ -199,6 +206,13 @@ function cachedTexture(url: string): Texture | undefined {
 
 function sprite(url: string, x: number, y: number): Sprite {
   const result = new Sprite(cachedTexture(url) ?? Texture.EMPTY);
+  result.texture.source.scaleMode = "nearest";
+  result.position.set(x, y);
+  return result;
+}
+
+function tiledSprite(url: string, x: number, y: number, width: number, height: number): TilingSprite {
+  const result = new TilingSprite({ texture: cachedTexture(url) ?? Texture.EMPTY, width, height });
   result.texture.source.scaleMode = "nearest";
   result.position.set(x, y);
   return result;
@@ -543,6 +557,54 @@ function drawWorldFeature(
   if (!includePlatform) return null;
   if (feature.assetKind === "AREA") {
     const platform = new Container();
+    if (feature.kind === "AIRPORT") {
+      const layout = cityAirportVisualLayout(feature);
+      const left = layout.bounds.minX * CELL_SIZE;
+      const top = layout.bounds.minY * CELL_SIZE;
+      platform.addChild(tiledSprite(
+        TILE_SPRITES.pavement!, left, top,
+        layout.bounds.width * CELL_SIZE, layout.bounds.height * CELL_SIZE,
+      ));
+      for (const [role, tileUrl] of [
+        ["APRON", TILE_SPRITES["construction-foundation"]!],
+        ["TAXIWAY", TILE_SPRITES["path-asphalt"]!],
+        ["RUNWAY", TILE_SPRITES["path-asphalt"]!],
+      ] as const) {
+        const cells = layout.surfaceTiles.filter((tile) => tile.role === role);
+        if (cells.length === 0) continue;
+        const minX = Math.min(...cells.map((tile) => tile.x));
+        const minY = Math.min(...cells.map((tile) => tile.y));
+        const maxX = Math.max(...cells.map((tile) => tile.x));
+        const maxY = Math.max(...cells.map((tile) => tile.y));
+        platform.addChild(tiledSprite(
+          tileUrl,
+          left + minX * CELL_SIZE, top + minY * CELL_SIZE,
+          (maxX - minX + 1) * CELL_SIZE, (maxY - minY + 1) * CELL_SIZE,
+        ));
+      }
+      const markings = new Graphics();
+      for (let x = layout.runway.left + 12; x < layout.runway.left + layout.runway.width - 10; x += 32) {
+        markings.rect(left + x, top + layout.runway.top + layout.runway.height / 2 - 2, 16, 4);
+      }
+      markings.fill(0xe4d8a0);
+      markings.rect(left + layout.runway.left + 8, top + layout.runway.top + 4, 3, layout.runway.height - 8)
+        .rect(left + layout.runway.left + layout.runway.width - 11, top + layout.runway.top + 4, 3, layout.runway.height - 8)
+        .fill(0xe9e4ca);
+      platform.addChild(markings);
+      for (const tile of layout.fenceTiles) {
+        const view = sprite(TILE_SPRITES[tile.key]!, left + (tile.x + .5) * CELL_SIZE, top + (tile.y + .5) * CELL_SIZE);
+        view.anchor.set(.5);
+        view.rotation = (tile.quarterTurns ?? 0) * Math.PI / 2;
+        platform.addChild(view);
+      }
+      for (const placement of [...layout.buildings].sort((a, b) => a.baselineY - b.baselineY)) {
+        const view = sprite(gameAssetUrl(placement.asset), left + placement.centerX, top + placement.baselineY);
+        view.anchor.set(.5, 1);
+        view.scale.set(placement.scale);
+        platform.addChild(view);
+      }
+      return { platform };
+    }
     for (const cell of feature.footprint) {
       const p = position(cell);
       const role = greenAreaSurfaceRole(feature.footprint, cell, feature.developmentStage, feature.assetKey);
@@ -777,6 +839,14 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[]
         urls.add(getBuilding(feature.assetKey).stages[4]!);
         if (lod === "DETAIL") urls.add(buildingPlatformUrl(getBuilding(feature.assetKey).platform));
       } else if (lod === "DETAIL") {
+        if (feature.kind === "AIRPORT") {
+          for (const placement of cityAirportVisualLayout(feature).buildings) urls.add(gameAssetUrl(placement.asset));
+          for (const key of ["construction-foundation", "construction-fence", "construction-fence-post", "construction-gate"] as const) {
+            urls.add(TILE_SPRITES[key]!);
+          }
+          urls.add(TILE_SPRITES["path-asphalt"]!);
+          urls.add(TILE_SPRITES.pavement!);
+        }
         urls.add(TILE_SPRITES["path-brown"]!);
         urls.add(TILE_SPRITES["path-pavers"]!);
         urls.add(assetUrl(TERRAIN_SPRITES.MEADOW![1]!));
@@ -811,11 +881,11 @@ function ambientDetailAssets(): string[] {
   for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
     for (const frame of ["a", "b", "c"] as const) urls.add(PROP_SPRITES[`animal-${species}-${direction}-${frame}`]!);
   }
-  for (const plane of ["airplane-small", "airplane-courier", "airplane-twin"] as const) urls.add(PROP_SPRITES[plane]!);
+  for (let model = 1; model <= 8; model += 1) urls.add(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
   return [...urls];
 }
 
-export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect }: {
+export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onReady, onZoomOutToCountry }: {
   countryId: string;
   chunkSize: number;
   worldManifest: WorldManifestDto;
@@ -826,6 +896,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
   onArchiveSelect: () => void;
+  onReady?: () => void;
+  onZoomOutToCountry?: () => void;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
   const [streaming, setStreaming] = useState(false);
@@ -838,6 +910,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const showDistrictsRef = useRef(showDistricts);
   const onTaskSelectRef = useRef(onTaskSelect);
   const onArchiveSelectRef = useRef(onArchiveSelect);
+  const onZoomOutToCountryRef = useRef(onZoomOutToCountry);
   const terrainSeed = worldManifest.terrainSeed;
   const focusArea = useMemo(() => {
     if (!focusCity) return undefined;
@@ -862,7 +935,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   useEffect(() => {
     onTaskSelectRef.current = onTaskSelect;
     onArchiveSelectRef.current = onArchiveSelect;
-  }, [onArchiveSelect, onTaskSelect]);
+    onZoomOutToCountryRef.current = onZoomOutToCountry;
+  }, [onArchiveSelect, onTaskSelect, onZoomOutToCountry]);
 
   useEffect(() => {
     if (focusX == null || focusY == null || focusMinX == null || focusMinY == null || focusMaxX == null || focusMaxY == null) return;
@@ -888,6 +962,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const [minX, minY, maxX, maxY] = viewBoundsKey.split(",").map(Number);
     runtimeRef.current?.setViewBounds({ minX: minX!, minY: minY!, maxX: maxX!, maxY: maxY! });
   }, [viewBoundsKey]);
+
+  useEffect(() => {
+    if (firstFrameReady) onReady?.();
+  }, [firstFrameReady, onReady]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -1088,8 +1166,22 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let nextTrafficTelemetryMs = 0;
       let nextDepthSortMs = 0;
       let nextSocialCheckMs = 700;
-      let airplane: { view: Sprite; speed: number; startY: number; phase: number; endX: number; nextTrailX: number; trail: Graphics[] } | undefined;
-      let nextFlybyMs = 20_000 + nextSeededRandom(sessionSeed).value * 35_000;
+      let airportPoints: Array<{ x: number; y: number }> = [];
+      let minimumZoomReachedAt = 0;
+      let airplane: {
+        view: Sprite;
+        trail: Graphics;
+        elapsed: number;
+        duration: number;
+        start: { x: number; y: number };
+        control: { x: number; y: number };
+        end: { x: number; y: number };
+        startsAtAirport: boolean;
+        endsAtAirport: boolean;
+      } | undefined;
+      // The first flight should make the airport feel alive shortly after the
+      // city becomes interactive. Later flights keep the quieter ambient pace.
+      let nextFlybyMs = 5_000 + nextSeededRandom(sessionSeed).value * 8_000;
       const celebrations: Array<{ particles: Array<{ view: Graphics; vx: number; vy: number }>; elapsed: number }> = [];
       const launchCelebration = (bounds: Rect) => {
         if (reducedMotion) return;
@@ -1464,39 +1556,69 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (!airplane) {
           nextFlybyMs -= elapsed;
           if (nextFlybyMs <= 0) {
-            const random = nextSeededRandom(spawnState);
-            spawnState = random.state;
-            const planeKeys = ["airplane-small", "airplane-courier", "airplane-twin"] as const;
-            const planeKey = planeKeys[Math.floor(random.value * planeKeys.length)]!;
-            const texture = cachedTexture(PROP_SPRITES[planeKey]!);
+            const takeRandom = () => {
+              const next = nextSeededRandom(spawnState);
+              spawnState = next.state;
+              return next.value;
+            };
+            const model = Math.floor(takeRandom() * 8) + 1;
+            const texture = cachedTexture(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
             if (texture) {
               const view = new Sprite(texture);
               view.texture.source.scaleMode = "nearest";
               view.anchor.set(0.5);
-              view.scale.set(1.35);
-              const startY = (currentViewBounds.minY + (currentViewBounds.maxY - currentViewBounds.minY) * (0.14 + random.value * 0.58)) * CELL_SIZE;
-              const startX = currentViewBounds.minX * CELL_SIZE - 40;
-              const endX = currentViewBounds.maxX * CELL_SIZE + 40;
-              view.position.set(startX, startY);
+              const trail = new Graphics()
+                .rect(-25, -1, 7, 2).fill({ color: 0xd9ecdf, alpha: .45 })
+                .rect(-30, -.5, 3, 1).fill({ color: 0xd9ecdf, alpha: .25 });
+              view.addChild(trail);
+              const airportPoint = airportPoints[Math.floor(takeRandom() * Math.max(1, airportPoints.length))];
+              const side = Math.floor(takeRandom() * 4);
+              const edgePosition = takeRandom();
+              const edge = side === 0
+                ? { x: currentViewBounds.minX * CELL_SIZE - 48, y: (currentViewBounds.minY + edgePosition * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
+                : side === 1
+                  ? { x: currentViewBounds.maxX * CELL_SIZE + 48, y: (currentViewBounds.minY + edgePosition * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
+                  : side === 2
+                    ? { x: (currentViewBounds.minX + edgePosition * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.minY * CELL_SIZE - 48 }
+                    : { x: (currentViewBounds.minX + edgePosition * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.maxY * CELL_SIZE + 48 };
+              const startsAtAirport = Boolean(airportPoint && takeRandom() > .5);
+              const endsAtAirport = Boolean(airportPoint && !startsAtAirport);
+              const start = startsAtAirport ? airportPoint! : edge;
+              const end = endsAtAirport ? airportPoint! : airportPoint && startsAtAirport
+                ? { x: currentViewBounds.maxX * CELL_SIZE + 48, y: currentViewBounds.minY * CELL_SIZE - 24 }
+                : { x: currentViewBounds.maxX * CELL_SIZE + 48, y: currentViewBounds.maxY * CELL_SIZE + 48 - edge.y };
+              const control = {
+                x: (start.x + end.x) / 2 + (takeRandom() - .5) * 224,
+                y: (start.y + end.y) / 2 + (takeRandom() - .5) * 192,
+              };
+              view.position.set(start.x, start.y);
               flightLayer.addChild(view);
-              airplane = { view, speed: 0.075 + random.value * 0.02, startY, phase: random.value, endX, nextTrailX: startX + 8, trail: [] };
+              airplane = { view, trail, elapsed: 0, duration: 9_000 + takeRandom() * 6_000, start, control, end, startsAtAirport, endsAtAirport };
               host.dataset.airplane = "flying";
-              host.dataset.airplaneVariant = planeKey;
+              host.dataset.airplaneVariant = `model-${model}`;
             }
           }
         } else {
-          airplane.view.x += elapsed * airplane.speed;
-          airplane.view.y = airplane.startY + Math.sin(simulationTimeMs * 0.002 + airplane.phase * Math.PI * 2) * 3;
-          if (airplane.view.x >= airplane.nextTrailX) {
-            const puff = new Graphics().rect(-5, -1, 6, 2).fill({ color: 0xf4f6ed, alpha: 0.48 });
-            puff.position.set(airplane.view.x - 20, airplane.view.y + 1); flightLayer.addChildAt(puff, 0); airplane.trail.push(puff); airplane.nextTrailX += 9;
-            while (airplane.trail.length > 12) airplane.trail.shift()?.destroy();
-          }
-          for (let index = 0; index < airplane.trail.length; index += 1) airplane.trail[index]!.alpha = (index + 1) / airplane.trail.length * 0.5;
-          if (airplane.view.x > airplane.endX) {
+          airplane.elapsed += elapsed;
+          const progress = Math.min(1, airplane.elapsed / airplane.duration);
+          const inverse = 1 - progress;
+          airplane.view.position.set(
+            inverse * inverse * airplane.start.x + 2 * inverse * progress * airplane.control.x + progress * progress * airplane.end.x,
+            inverse * inverse * airplane.start.y + 2 * inverse * progress * airplane.control.y + progress * progress * airplane.end.y,
+          );
+          const tangent = {
+            x: 2 * inverse * (airplane.control.x - airplane.start.x) + 2 * progress * (airplane.end.x - airplane.control.x),
+            y: 2 * inverse * (airplane.control.y - airplane.start.y) + 2 * progress * (airplane.end.y - airplane.control.y),
+          };
+          airplane.view.rotation = Math.atan2(tangent.y, tangent.x);
+          airplane.trail.alpha = .55 + Math.sin(airplane.elapsed * .018) * .22;
+          const takeoffScale = airplane.startsAtAirport ? Math.min(1, Math.max(.03, progress / .16)) : 1;
+          const landingScale = airplane.endsAtAirport ? Math.min(1, Math.max(.03, (1 - progress) / .16)) : 1;
+          const endpointScale = Math.min(takeoffScale, landingScale);
+          airplane.view.scale.set(1.35 * endpointScale);
+          if (progress >= 1) {
             airplane.view.removeFromParent();
             airplane.view.destroy();
-            for (const puff of airplane.trail) puff.destroy();
             airplane = undefined;
             delete host.dataset.airplane;
             delete host.dataset.airplaneVariant;
@@ -1518,6 +1640,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         initialScale,
         minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE),
       );
+      let zoomBoundary = initialAtlasZoomBoundary();
       world.scale.set(appliedInitialScale);
       host.dataset.renderScale = String(appliedInitialScale);
       currentLod = appliedInitialScale < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
@@ -1701,7 +1824,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const texture = app.renderer.textureGenerator.generateTexture({
           target: source,
           frame: new Rectangle(originX, originY, size * CELL_SIZE, size * CELL_SIZE),
-          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
+          resolution: lod === "OVERVIEW"
+            ? desiredKeys.size > GROUND_CACHE_LIMIT ? ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION : OVERVIEW_GROUND_TEXTURE_RESOLUTION
+            : 1,
           antialias: false,
         });
         host!.dataset.groundTextureResolution = String(texture.source.resolution);
@@ -1793,7 +1918,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const texture = app.renderer.textureGenerator.generateTexture({
           target: graphics,
           frame: new Rectangle(originX * CELL_SIZE, originY * CELL_SIZE, chunkSize * CELL_SIZE, chunkSize * CELL_SIZE),
-          resolution: lod === "OVERVIEW" ? OVERVIEW_GROUND_TEXTURE_RESOLUTION : 1,
+          resolution: lod === "OVERVIEW"
+            ? desiredKeys.size > GROUND_CACHE_LIMIT ? ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION : OVERVIEW_GROUND_TEXTURE_RESOLUTION
+            : 1,
           antialias: false,
         });
         texture.source.scaleMode = "nearest";
@@ -1892,6 +2019,30 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           for (const task of chunk.tasks) tasks.set(task.id, task);
           for (const decoration of chunk.decorations) decorations.set(decoration.id, decoration);
           for (const feature of chunk.worldFeatures) features.set(feature.id, feature);
+        }
+        const airportFeatures = [...features.values()].filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA");
+        airportPoints = airportFeatures.map((feature) => ({
+          x: (Math.min(...feature.footprint.map((cell) => cell.x)) + Math.max(...feature.footprint.map((cell) => cell.x)) + 1) * CELL_SIZE / 2,
+          y: (Math.min(...feature.footprint.map((cell) => cell.y)) + Math.max(...feature.footprint.map((cell) => cell.y)) + 1) * CELL_SIZE / 2,
+        }));
+        if (host) {
+          const airportCells = new Set(airportFeatures.flatMap(airportCompoundCells).map(key));
+          const decorationOverlapCount = [...decorations.values()].filter((decoration) => {
+            const metadata = PROP_CATALOG[decoration.kind];
+            const width = metadata?.footprint.width ?? 1;
+            const height = metadata?.footprint.height ?? 1;
+            return Array.from({ length: width * height }, (_, index) => ({
+              x: decoration.origin.x + index % width,
+              y: decoration.origin.y + Math.floor(index / width),
+            })).some((cell) => airportCells.has(key(cell)));
+          }).length;
+          const layouts = airportFeatures.map(cityAirportVisualLayout);
+          host.dataset.airports = String(airportPoints.length);
+          host.dataset.airportVisualStandard = "city-airport-v5";
+          host.dataset.airportSurfaceTiles = String(layouts.reduce((sum, layout) => sum + layout.surfaceTiles.length, 0));
+          host.dataset.airportFenceTiles = String(layouts.reduce((sum, layout) => sum + layout.fenceTiles.length, 0));
+          host.dataset.airportBuildings = String(layouts.reduce((sum, layout) => sum + layout.buildings.length, 0));
+          host.dataset.airportDecorationOverlaps = String(decorationOverlapCount);
         }
 
         const reconcile = <T extends RenderNode, D>(
@@ -2190,6 +2341,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               })))
           )),
           ...[...features.values()].filter((feature) => feature.assetKind !== "AREA").flatMap((feature) => feature.footprint),
+          ...[...features.values()].filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA").flatMap(airportCompoundCells),
           ...[...decorations.values()].flatMap((decoration) => {
             const prop = PROP_CATALOG[decoration.kind];
             if (!prop) return [decoration.origin];
@@ -2695,18 +2847,18 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 }
                 // The coherent ground swap is complete. Dynamic entities may
                 // now stream independently without leaving the old LOD visible.
-                await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
+                for (const [chunkX, chunkY] of wanted) {
                   const cacheKey = chunkKey(chunkX, chunkY);
                   const chunk = fetched.get(cacheKey);
-                  if (!chunk || !desiredKeys.has(cacheKey)) return;
-                  await publishEntityWhenReady(
+                  if (!chunk || !desiredKeys.has(cacheKey)) continue;
+                  void publishEntityWhenReady(
                     cacheKey,
                     chunk,
                     lod,
                     () => !disposed && generation === loadGeneration && desiredLod === lod && desiredKeys.has(cacheKey),
                     rebuildMovement,
-                  );
-                }));
+                  ).catch(() => undefined);
+                }
                 if (disposed || generation !== loadGeneration || desiredLod !== lod) continue;
               }
               discardPreparedGrounds();
@@ -3003,8 +3155,25 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       app.stage.on("pointerupoutside", finishDrag);
       const wheel = (event: WheelEvent) => {
         event.preventDefault();
+        const wheelAt = performance.now();
         const oldScale = world.scale.x;
+        const minimumScale = minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
+        const wasAtMinimum = cameraTargetScale <= minimumScale + 0.001;
+        const direction = event.deltaY > 0 ? "OUT" : "IN";
+        if (direction === "IN") minimumZoomReachedAt = 0;
+        if (direction === "OUT" && wasAtMinimum && minimumZoomReachedAt === 0) minimumZoomReachedAt = wheelAt;
+        const boundaryStep = advanceAtlasZoomBoundary(zoomBoundary, {
+          at: wheelAt,
+          atBoundary: direction === "OUT" && Math.abs(event.deltaY) <= 600 && wasAtMinimum && wheelAt - minimumZoomReachedAt >= 900,
+          direction,
+        }, 1);
+        zoomBoundary = boundaryStep.state;
+        if (boundaryStep.triggered) {
+          onZoomOutToCountryRef.current?.();
+          return;
+        }
         cameraTargetScale = nextCameraTargetScale(cameraTargetScale, event.deltaY);
+        if (direction === "OUT" && !wasAtMinimum && cameraTargetScale <= minimumScale + 0.001) minimumZoomReachedAt = wheelAt;
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };

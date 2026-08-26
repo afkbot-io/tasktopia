@@ -22,6 +22,11 @@ describe("task extras: numbers, MR links, attachments, search", () => {
     db = await createTestDb();
     uploadDir = await mkdtemp(join(tmpdir(), "tasktopia-uploads-"));
     countryId = (await registerUser(db, { email: "extras@example.com", name: "Extras", password: "password123" })).user.countryId;
+    // Attachment/link/search contracts must not depend on a cryptographically
+    // random world seed. Use the same reviewed city-generation fixture on
+    // every platform so a terrain outlier cannot mask the API behavior under
+    // test with an unrelated placement failure.
+    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
     service = new AppService(db, undefined, uploadDir);
     const city = await service.createCity(countryId, { name: "Extras City", idempotencyKey: "city" });
     cityId = city.id;

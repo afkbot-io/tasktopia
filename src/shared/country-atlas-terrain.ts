@@ -66,11 +66,15 @@ export function seededAtlasMacroTerrain(
 /** Reconstruct each city cutout's terrain from compact projection metadata. */
 export function seededAtlasCutoutTerrain(seed: number, city: AtlasCityCutout): CountryAtlasTerrainCellDto[] {
   return city.cutoutMask.map((atlasCell) => {
-    const district = [...city.districts].sort((left, right) => {
-      const leftDistance = (atlasCell.x - left.atlasCenter.x) ** 2 + (atlasCell.y - left.atlasCenter.y) ** 2;
-      const rightDistance = (atlasCell.x - right.atlasCenter.x) ** 2 + (atlasCell.y - right.atlasCenter.y) ** 2;
-      return leftDistance - rightDistance || left.id.localeCompare(right.id);
-    })[0];
+    let district = city.districts[0];
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (const candidate of city.districts) {
+      const distance = (atlasCell.x - candidate.atlasCenter.x) ** 2 + (atlasCell.y - candidate.atlasCenter.y) ** 2;
+      if (distance < nearestDistance || (distance === nearestDistance && candidate.id < (district?.id ?? ""))) {
+        district = candidate;
+        nearestDistance = distance;
+      }
+    }
     const sourceCell: Cell = district
       ? {
           x: Math.round(district.sourceCenter.x + (atlasCell.x - district.atlasCenter.x) / city.scale),

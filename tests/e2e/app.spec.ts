@@ -75,8 +75,10 @@ test("login, map and MCP token management", async ({ page, context }) => {
     expect(Number(await mapHost.getAttribute("data-cars"))).toBe(0);
     expect(Number(await mapHost.getAttribute("data-walkers"))).toBe(0);
   } else {
-    expect(Number(await mapHost.getAttribute("data-cars"))).toBeGreaterThan(0);
-    expect(Number(await mapHost.getAttribute("data-walkers"))).toBeGreaterThan(0);
+    // Ground readiness intentionally precedes dynamic-entity publication.
+    // Wait for that public stream instead of sampling the first coherent frame.
+    await expect.poll(async () => Number(await mapHost.getAttribute("data-cars")), { timeout: 30_000 }).toBeGreaterThan(0);
+    await expect.poll(async () => Number(await mapHost.getAttribute("data-walkers")), { timeout: 30_000 }).toBeGreaterThan(0);
     expect(Number(await mapHost.getAttribute("data-walkers"))).toBeLessThanOrEqual(24);
   }
   const districtsToggle = page.getByRole("button", { name: "Границы" });

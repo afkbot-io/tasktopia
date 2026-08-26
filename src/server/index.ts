@@ -125,6 +125,8 @@ const worldEventSubscription = config.runtimeRole === "web"
 if (config.runtimeRole === "combined" || config.runtimeRole === "world") {
   const upgradedArchives = await service.upgradeCountryArchiveInfrastructure();
   if (upgradedArchives > 0) app.log.info({ countries: upgradedArchives }, "State archive infrastructure synchronized");
+  const upgradedAirports = await service.upgradeCityAirports();
+  if (upgradedAirports > 0) app.log.info({ cities: upgradedAirports }, "City airports synchronized");
 }
 const mcpHandler = servesMcp ? registerMcpHttp(app, db, service, config.APP_ORIGIN) : undefined;
 
