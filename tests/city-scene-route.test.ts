@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
+import { cityDetailFocusBounds } from "../src/shared/city-camera";
 
 describe("whole-city scene HTTP boundary", () => {
   let db: Db;
@@ -58,10 +59,11 @@ describe("whole-city scene HTTP boundary", () => {
     expect(scene.chunks.length).toBeGreaterThan(0);
     expect(scene.chunks.every((chunk: { payloadVersion: number; lod: string }) => chunk.payloadVersion === 2 && chunk.lod === "DETAIL")).toBe(true);
     expect(batch).toHaveBeenCalledTimes(1);
-    const bounds = bootstrap.initialCity.bounds as { minX: number; minY: number; maxX: number; maxY: number };
+    const bounds = cityDetailFocusBounds(bootstrap.initialCity.center, bootstrap.initialCity.bounds);
     const expectedChunks = (Math.floor(bounds.maxX / 64) - Math.floor(bounds.minX / 64) + 1)
       * (Math.floor(bounds.maxY / 64) - Math.floor(bounds.minY / 64) + 1);
     expect(scene.chunks).toHaveLength(expectedChunks);
+    expect(scene.chunks.length).toBeLessThanOrEqual(12);
     const legacy = await app.inject({
       method: "GET",
       url: `/api/cities/${cityId}/scene`,

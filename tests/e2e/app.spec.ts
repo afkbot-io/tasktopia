@@ -114,7 +114,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
 
   await canvas.hover();
   for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 800);
-  // City view intentionally stays in detail mode at the bounded minimum zoom.
+  // City view stays in detail mode at the shared 0.8 minimum zoom.
   // The complete resident scene remains authoritative without a second request.
   await expect(mapHost).toHaveAttribute("data-map-lod", "detail", mapWarmup);
   await expect.poll(async () => Number(await mapHost.getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);

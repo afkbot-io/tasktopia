@@ -47,6 +47,19 @@ test("loads a complete city through one request and never calls chunk endpoints"
   await expect(page.getByText("Подгружаем карту…", { exact: true })).toHaveCount(0);
 });
 
+test("renders the normalized city frame before input and reaches the shared zoom-out limit", async ({ page }) => {
+  test.setTimeout(120_000);
+  const { host, canvas } = await openDemoCity(page);
+  await expect(host).toHaveAttribute("data-city-first-frame-rendered", "true");
+  expect(Number(await host.getAttribute("data-render-scale"))).toBeLessThanOrEqual(1);
+
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  for (let step = 0; step < 12; step += 1) await page.mouse.wheel(0, 800);
+  await expect.poll(async () => Number(await host.getAttribute("data-render-scale"))).toBeCloseTo(.8, 2);
+});
+
 test("keeps the loader visible until the delayed whole-city scene commits", async ({ page }) => {
   test.setTimeout(120_000);
   let sceneStarted = false;
@@ -105,6 +118,7 @@ test("ten country-city cycles keep one renderer and a stable asset residency", a
   const residentAssets: number[] = [];
   for (let cycle = 0; cycle < 10; cycle += 1) {
     await expect(page.locator(".map-region canvas")).toHaveCount(1);
+    await expect(host).toHaveAttribute("data-ambient-assets", "ready", { timeout: 30_000 });
     residentAssets.push(Number(await host.getAttribute("data-leased-assets") ?? 0));
     await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Страна" }).click();
     await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true", { timeout: 30_000 });
