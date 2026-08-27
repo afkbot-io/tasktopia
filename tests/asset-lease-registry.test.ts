@@ -40,10 +40,10 @@ describe("AssetLease", () => {
     expect(leasedAssetCount()).toBeGreaterThanOrEqual(1);
 
     first.dispose();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).not.toHaveBeenCalledWith("shared.png");
     second.dispose();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).toHaveBeenCalledWith("shared.png");
   });
 
@@ -57,11 +57,11 @@ describe("AssetLease", () => {
     const second = new AssetLease();
     await second.load(["warm.png"], loader);
     expect(loader).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).not.toHaveBeenCalledWith("warm.png");
 
     second.dispose();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).toHaveBeenCalledWith("warm.png");
   });
 
@@ -73,7 +73,7 @@ describe("AssetLease", () => {
     const first = new AssetLease();
     await first.load(["return.png"], loader);
     first.dispose();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
 
     const second = new AssetLease();
     const reloading = second.load(["return.png"], loader);
@@ -92,7 +92,7 @@ describe("AssetLease", () => {
     const loading = lease.load(["slow.png"], () => pending);
     lease.dispose();
 
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).not.toHaveBeenCalledWith("slow.png");
     finish();
     await loading;

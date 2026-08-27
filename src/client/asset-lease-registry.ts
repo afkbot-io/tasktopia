@@ -5,7 +5,12 @@ type AssetRecord = { refs: number; loaded: boolean; timer?: ReturnType<typeof se
 const records = new Map<string, AssetRecord>();
 const pendingLoads = new Map<string, Promise<void>>();
 const pendingUnloads = new Map<string, Promise<void>>();
-const UNLOAD_GRACE_MS = 2_000;
+// A country transition can take several seconds on a cold or CPU-constrained
+// client. Keep shared map textures warm long enough for an immediate return to
+// the city to cancel their release instead of racing Pixi unload/load work.
+// The registry remains bounded: an asset with no owners is still unloaded once
+// the navigation grace window expires.
+const UNLOAD_GRACE_MS = 30_000;
 
 function unloadWhenIdle(url: string): void {
   const latest = records.get(url);
