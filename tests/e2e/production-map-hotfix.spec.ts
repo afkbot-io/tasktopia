@@ -56,15 +56,15 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
   await page.locator(".modal-close").click();
 
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  const country = page.locator(".country-atlas");
+  const country = page.locator(".country-overview");
   for (let step = 0; step < 12 && await country.count() === 0; step += 1) {
     await page.mouse.wheel(0, 240);
     await page.waitForTimeout(80);
   }
   await expect(country).toBeVisible({ timeout: 5_000 });
-  await expect(country.locator(".atlas-city")).toHaveCount(1);
-  await expect(country.locator(".atlas-air-routes")).toHaveCount(0);
-  await expect(country.locator(".country-side-fog")).toHaveCount(2);
+  await expect(country.locator(".country-overview-city")).toHaveCount(1);
+  expect(Number(await country.getAttribute("data-country-flights"))).toBeGreaterThan(0);
+  await expect(country.locator(".country-side-fog")).toHaveCount(0);
   expect(Number(await country.getAttribute("data-country-zoom"))).toBeGreaterThan(1);
   await page.screenshot({ path: testInfo.outputPath("country.png"), fullPage: true });
 

@@ -4,7 +4,13 @@ type AssetRecord = { refs: number; loaded: boolean; timer?: ReturnType<typeof se
 
 const records = new Map<string, AssetRecord>();
 const pendingLoads = new Map<string, Promise<void>>();
-const UNLOAD_GRACE_MS = 2_000;
+const pendingUnloads = new Map<string, Promise<void>>();
+// A country transition can take several seconds on a cold or CPU-constrained
+// client. Keep shared map textures warm long enough for an immediate return to
+// the city to cancel their release instead of racing Pixi unload/load work.
+// The registry remains bounded: an asset with no owners is still unloaded once
+// the navigation grace window expires.
+const UNLOAD_GRACE_MS = 30_000;
 
 function unloadWhenIdle(url: string): void {
   const latest = records.get(url);
@@ -14,7 +20,11 @@ function unloadWhenIdle(url: string): void {
     return;
   }
   records.delete(url);
-  void Assets.unload(url).catch(() => undefined);
+  const unloading = Assets.unload(url).then(() => undefined, () => undefined);
+  pendingUnloads.set(url, unloading);
+  void unloading.finally(() => {
+    if (pendingUnloads.get(url) === unloading) pendingUnloads.delete(url);
+  });
 }
 
 function retain(url: string): void {
@@ -50,7 +60,14 @@ export class AssetLease {
     const fresh = next.filter((url) => !pendingLoads.has(url) && !records.get(url)?.loaded);
     let batch: Promise<void> | undefined;
     if (fresh.length > 0) {
-      batch = loader(fresh);
+      const unloads = [...new Set(fresh.flatMap((url) => {
+        const pending = pendingUnloads.get(url);
+        return pending ? [pending] : [];
+      }))];
+      // Pixi may leave Assets.load unresolved when it races Assets.unload for
+      // the same alias. A new scene waits for the old GPU/cache release, then
+      // performs one fresh batch load.
+      batch = unloads.length > 0 ? Promise.all(unloads).then(() => loader(fresh)) : loader(fresh);
       for (const url of fresh) pendingLoads.set(url, batch);
       void batch.finally(() => {
         for (const url of fresh) if (pendingLoads.get(url) === batch) pendingLoads.delete(url);

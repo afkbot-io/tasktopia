@@ -101,7 +101,7 @@ function inside(cell: PlanetHex, columns: number, rows: number): boolean {
   return cell.q >= 2 && cell.r >= 2 && cell.q < columns - 2 && cell.r < rows - 2;
 }
 
-export function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
+function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
   return {
     x: cell.q * radius * 2 + radius,
     y: cell.r * radius * 2 + radius,
@@ -393,10 +393,15 @@ function projectCell(cell: PlanetTerrainCell, base: ProjectedPlanetAtlas, camera
 }
 
 export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: PlanetMapCamera): ProjectedPlanetMap {
-  // Drag and zoom move the atlas content under a stationary round planet
-  // aperture. Growing the aperture beyond the SVG viewport clips its sides
-  // and produces the intermittent circle-plus-rectangle ("keyhole") frame.
-  const atmosphereCamera = { panX: 0, panY: 0, zoom: 1 };
+  // The atmosphere and its clip aperture scale with the globe. Pan remains a
+  // content operation, so the user can still explore the surface without the
+  // planet itself sliding through space. The bounded scale prevents the old
+  // circle-plus-rectangle ("keyhole") frame at extreme zoom.
+  const atmosphereCamera = {
+    panX: 0,
+    panY: 0,
+    zoom: Math.max(.96, Math.min(1.45, 1 + (camera.zoom - 1) * .12)),
+  };
   const countries = base.countries.map((country): PlanetMapCountry => {
     const cells = country.cells.map((cell) => projectCell(cell, base, camera));
     const cellById = new Map(cells.map((cell) => [cell.id, cell]));

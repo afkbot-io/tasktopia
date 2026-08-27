@@ -1,10 +1,60 @@
 import type { Cell, Rect } from "../../shared/contracts";
 
-const OVERVIEW_WIDTH = 160;
-const OVERVIEW_HEIGHT = 96;
-const OVERVIEW_PADDING = 12;
+const OVERVIEW_WIDTH = 144;
+const OVERVIEW_HEIGHT = 88;
+const OVERVIEW_PADDING = 10;
 
 type CityCenter = { id: string; sourceCenter: Cell };
+
+export type CountryCityMiniature = {
+  columns: number;
+  rows: number;
+  districtCodes: string;
+  airportCell: Cell;
+};
+
+/**
+ * Reduces canonical district ownership to a tiny semantic silhouette. It does
+ * not copy buildings, roads or terrain and always uses one uniform scale, so a
+ * long city stays long instead of being squeezed into a square thumbnail.
+ */
+export function projectCountryCityMiniature(input: {
+  sourceBounds: Rect;
+  districts: ReadonlyArray<{ id: string; cells: readonly Cell[] }>;
+}): CountryCityMiniature {
+  const publishedCells = input.districts.flatMap((district) => district.cells);
+  const silhouetteBounds = publishedCells.length > 0 ? {
+    minX: Math.min(...publishedCells.map((cell) => cell.x)),
+    minY: Math.min(...publishedCells.map((cell) => cell.y)),
+    maxX: Math.max(...publishedCells.map((cell) => cell.x)),
+    maxY: Math.max(...publishedCells.map((cell) => cell.y)),
+  } : input.sourceBounds;
+  const sourceWidth = Math.max(1, silhouetteBounds.maxX - silhouetteBounds.minX + 1);
+  const sourceHeight = Math.max(1, silhouetteBounds.maxY - silhouetteBounds.minY + 1);
+  const scale = Math.min(14 / sourceWidth, 14 / sourceHeight);
+  const columns = Math.max(5, Math.min(14, Math.round(sourceWidth * scale)));
+  const rows = Math.max(5, Math.min(14, Math.round(sourceHeight * scale)));
+  const codes = Array.from({ length: columns * rows }, () => 0);
+  const ordered = [...input.districts].sort((left, right) => left.id.localeCompare(right.id));
+  for (let districtIndex = 0; districtIndex < ordered.length; districtIndex += 1) {
+    for (const cell of ordered[districtIndex]!.cells) {
+      const column = Math.max(0, Math.min(columns - 1, Math.floor((cell.x - silhouetteBounds.minX) * columns / sourceWidth)));
+      const row = Math.max(0, Math.min(rows - 1, Math.floor((cell.y - silhouetteBounds.minY) * rows / sourceHeight)));
+      codes[row * columns + column] = districtIndex % 15 + 1;
+    }
+  }
+  // A city without published district cells still has a stable compact core.
+  if (!codes.some(Boolean)) {
+    const centerX = Math.floor(columns / 2);
+    const centerY = Math.floor(rows / 2);
+    for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
+      if (Math.abs(column - centerX) + Math.abs(row - centerY) <= 2) codes[row * columns + column] = 1;
+    }
+  }
+  const occupied = codes.flatMap((code, index) => code ? [{ x: index % columns, y: Math.floor(index / columns) }] : []);
+  const airportCell = [...occupied].sort((left, right) => right.y - left.y || right.x - left.x)[0] ?? { x: Math.floor(columns / 2), y: Math.floor(rows / 2) };
+  return { columns, rows, districtCodes: codes.map((code) => code.toString(16)).join(""), airportCell };
+}
 
 /**
  * Projects canonical city centers with one uniform affine transform. Unlike

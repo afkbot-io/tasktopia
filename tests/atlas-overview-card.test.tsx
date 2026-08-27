@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
   AtlasOverviewCard,
-  cityOverviewCardModel,
   planetOverviewCardModel,
 } from "../src/client/components/AtlasOverviewCard";
 
@@ -25,24 +24,7 @@ describe("atlas overview cards", () => {
     });
   });
 
-  it("uses the same card contract for a city and counts only unfinished buildings", () => {
-    const model = cityOverviewCardModel({
-      name: "Главный город",
-      buildings: [
-        { status: "PLANNING", progress: 0 },
-        { status: "IN_PROGRESS", progress: 40 },
-        { status: "COMPLETED", progress: 100 },
-      ],
-    });
-
-    expect(model).toEqual({
-      title: "Главный город",
-      progress: 47,
-      metrics: [{ label: "В работе", value: 2 }],
-    });
-  });
-
-  it("renders both variants through one accessible SVG component", () => {
+  it("renders the accessible SVG component", () => {
     const markup = renderToStaticMarkup(<svg><AtlasOverviewCard
       model={{ title: "Северия", progress: 65, metrics: [{ label: "В работе", value: 4 }] }}
       width={144}

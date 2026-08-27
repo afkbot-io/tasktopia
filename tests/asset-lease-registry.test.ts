@@ -40,10 +40,10 @@ describe("AssetLease", () => {
     expect(leasedAssetCount()).toBeGreaterThanOrEqual(1);
 
     first.dispose();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).not.toHaveBeenCalledWith("shared.png");
     second.dispose();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).toHaveBeenCalledWith("shared.png");
   });
 
@@ -57,12 +57,31 @@ describe("AssetLease", () => {
     const second = new AssetLease();
     await second.load(["warm.png"], loader);
     expect(loader).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).not.toHaveBeenCalledWith("warm.png");
 
     second.dispose();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).toHaveBeenCalledWith("warm.png");
+  });
+
+  it("waits for an in-flight unload before loading the same texture again", async () => {
+    vi.useFakeTimers();
+    let finishUnload!: () => void;
+    unload.mockImplementationOnce(() => new Promise<undefined>((resolve) => { finishUnload = () => resolve(undefined); }));
+    const loader = vi.fn(async () => undefined);
+    const first = new AssetLease();
+    await first.load(["return.png"], loader);
+    first.dispose();
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    const second = new AssetLease();
+    const reloading = second.load(["return.png"], loader);
+    expect(loader).toHaveBeenCalledTimes(1);
+    finishUnload();
+    await reloading;
+    expect(loader).toHaveBeenCalledTimes(2);
+    second.dispose();
   });
 
   it("does not unload an asset while its cancelled scene load is still pending", async () => {
@@ -73,7 +92,7 @@ describe("AssetLease", () => {
     const loading = lease.load(["slow.png"], () => pending);
     lease.dispose();
 
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(unload).not.toHaveBeenCalledWith("slow.png");
     finish();
     await loading;

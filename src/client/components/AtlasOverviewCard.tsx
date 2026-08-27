@@ -1,5 +1,4 @@
 import type { SVGProps } from "react";
-import type { CountryAtlasBuildingDto } from "../../shared/country-atlas-contract";
 
 export type AtlasOverviewCardModel = {
   title: string;
@@ -24,23 +23,6 @@ export function planetOverviewCardModel(country: {
       { label: "Города", value: country.cityCount },
       { label: "В работе", value: country.unfinishedBuildingCount },
     ],
-  };
-}
-
-export function cityOverviewCardModel(city: {
-  name: string;
-  buildings: Array<Pick<CountryAtlasBuildingDto, "status" | "progress">>;
-}): AtlasOverviewCardModel {
-  const progress = city.buildings.length > 0
-    ? city.buildings.reduce((total, building) => total + building.progress, 0) / city.buildings.length
-    : 0;
-  return {
-    title: city.name,
-    progress: boundedProgress(progress),
-    metrics: [{
-      label: "В работе",
-      value: city.buildings.filter((building) => building.status !== "COMPLETED").length,
-    }],
   };
 }
 

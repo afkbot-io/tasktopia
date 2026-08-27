@@ -83,16 +83,13 @@ import { bridgeComponentsWithoutTwoLandPortals, roadCorridorBlockers, stampRoadC
 import { pairedBusStopCandidates, type TransitRoadAxis } from "./world/transit";
 import { generatedGreenAreaProfile, greenAreaSizeCandidates, greenAreaTarget } from "./green-area-planner";
 import { greenAreaDevelopmentStage, greenAreaPathCells } from "../shared/green-area";
-import { COUNTRY_ATLAS_SCHEMA_VERSION, type CountryAtlasDto } from "../shared/country-atlas-contract";
 import { COUNTRY_OVERVIEW_SCHEMA_VERSION, encodeCountryTerrain, type CountryOverviewDto, type CountryOverviewDistrictDto } from "../shared/country-overview-contract";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../shared/city-scene-contract";
-import { countryAtlasEventImpact, patchCountryAtlasTaskProgress } from "../shared/country-atlas-events";
-import { meanCountryAtlasProgress } from "../shared/country-atlas-progress";
+import { countryOverviewEventImpact } from "../shared/country-overview-events";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/planet-atlas-contract";
 import { projectPlanetAtlas } from "../shared/planet-atlas";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
-import { projectCountryAtlas } from "./world/country-atlas";
-import { projectCountryOverview } from "./world/country-overview";
+import { projectCountryCityMiniature, projectCountryOverview } from "./world/country-overview";
 import { buildCountryGeography, snapCountryCitiesToLand } from "./world/country-geography";
 import type { SharedWorldCache } from "./optional-redis-cache";
 import {
@@ -122,12 +119,6 @@ const CITY_SIZE = 100;
 const CITY_SPACING = 320;
 const COUNTRY_VIEW_MARGIN = 54;
 const SPRINT_COLORS = ["#52a8d8", "#dfa94b", "#9877c7", "#69ad67", "#c86f67", "#4fb49f", "#d585b4"];
-const COUNTRY_ATLAS_DISTRICT_COLORS = [
-  "#5db8e5", "#e1ad52", "#a88adb", "#79c67b", "#e27d73", "#58c1ae", "#d990c2", "#78a5e6",
-  "#e28e58", "#8f82d7", "#b7c765", "#d37bab", "#65b8c1", "#d7c15f", "#b49ad8", "#d87462",
-  "#83c19a", "#82aac8", "#c99a5a", "#9a83bf", "#70b2a1", "#d88c78", "#79b5d2", "#aebb67",
-  "#c37e95", "#6fbfcb", "#d6a66b", "#978fd0", "#75b777", "#c684c3", "#6ba3b3", "#cf8e55",
-] as const;
 const ROAD_CLASS_RANK: Record<RoadCellDto["roadClass"], number> = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
 const ARCHIVE_COMPOUND = { width: 42, height: 28 } as const;
 const ARCHIVE_CITY_CLEARANCE = 24;
@@ -726,7 +717,6 @@ export class AppService {
   private readonly chunkCache = new Map<string, ChunkPayloadDto>();
   private readonly pendingChunkBuilds = new Map<string, Promise<ChunkPayloadDto>>();
   private readonly knownWorldVersions = new Map<string, number>();
-  private readonly countryAtlasCache = new Map<string, { atlas: CountryAtlasDto }>();
   private readonly countryOverviewCache = new Map<string, CountryOverviewDto>();
   private readonly citySceneCache = new Map<string, CitySceneDto>();
   // A desktop viewport can hold a few dozen chunks in two LODs. Keeping only
@@ -862,15 +852,7 @@ export class AppService {
    * disposable projections that could otherwise mix old roads with new tasks.
    */
   acceptExternalEvent(event: RealtimeEvent): void {
-    const cachedAtlas = this.countryAtlasCache.get(event.countryId);
-    if (!cachedAtlas || event.worldVersion > cachedAtlas.atlas.worldVersion) {
-      const atlasImpact = countryAtlasEventImpact(event);
-      if (atlasImpact === "STRUCTURE") this.countryAtlasCache.delete(event.countryId);
-      else if (atlasImpact === "TASK_PROGRESS" && cachedAtlas) {
-        cachedAtlas.atlas = patchCountryAtlasTaskProgress(cachedAtlas.atlas, event);
-      }
-    }
-    if (countryAtlasEventImpact(event) !== "NONE") {
+    if (countryOverviewEventImpact(event) !== "NONE") {
       for (const key of this.countryOverviewCache.keys()) if (key.includes(`:${event.countryId}:`)) this.countryOverviewCache.delete(key);
     }
     if (this.chunkInvalidationScope(event) !== "NONE") {
@@ -1396,187 +1378,6 @@ export class AppService {
     return (rows as Row[]).map(districtDto);
   }
 
-  async getCountryAtlas(countryId: string): Promise<CountryAtlasDto> {
-    const cached = this.countryAtlasCache.get(countryId);
-    if (cached) return cached.atlas;
-    const countrySnapshot = await this.getCountry(countryId);
-    const [countryRow, country, cities, districts, tasks, features, roadMap, surfaceMap] = await Promise.all([
-      this.countryRow(countryId),
-      Promise.resolve(countrySnapshot),
-      this.listCities(countryId),
-      this.listDistricts(countryId),
-      this.listTasks(countryId),
-      this.listWorldFeatures(countryId),
-      this.roadCells(countryId),
-      this.surfaceCells(countryId),
-    ]);
-    const districtsByCity = new Map<string, DistrictDto[]>();
-    const tasksByCity = new Map<string, TaskDto[]>();
-    const tasksByDistrict = new Map<string, TaskDto[]>();
-    for (const district of districts) {
-      districtsByCity.set(district.cityId, [...districtsByCity.get(district.cityId) ?? [], district]);
-    }
-    for (const task of tasks) {
-      tasksByCity.set(task.cityId, [...tasksByCity.get(task.cityId) ?? [], task]);
-      tasksByDistrict.set(task.districtId, [...tasksByDistrict.get(task.districtId) ?? [], task]);
-    }
-
-    const projection = projectCountryAtlas({
-      cities: cities.map((city) => ({
-        id: city.id,
-        sourceCenter: city.center,
-        sourceVisualSizePx: {
-          width: (city.bounds.maxX - city.bounds.minX + 1) * 8,
-          height: (city.bounds.maxY - city.bounds.minY + 1) * 8,
-        },
-        labelSizePx: { width: 208, height: 48 },
-        districts: (districtsByCity.get(city.id) ?? []).map((district) => ({ id: district.id, cells: district.cells })),
-      })),
-    });
-    const cityById = new Map(cities.map((city) => [city.id, city]));
-    const districtById = new Map(districts.map((district) => [district.id, district]));
-    const atlasDistrictColorById = new Map(districts.map((district, index) => [
-      district.id,
-      COUNTRY_ATLAS_DISTRICT_COLORS[index % COUNTRY_ATLAS_DISTRICT_COLORS.length]!,
-    ]));
-    const districtOwnerByCell = new Map(districts.flatMap((district) => district.cells.map((cell) => [cellKey(cell), district.id] as const)));
-    const roadsByCity = new Map<string, RoadCellDto[]>();
-    const surfacesByCity = new Map<string, SurfaceCellDto[]>();
-    for (const road of roadMap.values()) {
-      const districtId = districtOwnerByCell.get(cellKey(road));
-      const cityId = districtId ? districtById.get(districtId)?.cityId : undefined;
-      if (cityId) {
-        const cityRoads = roadsByCity.get(cityId);
-        if (cityRoads) cityRoads.push(road);
-        else roadsByCity.set(cityId, [road]);
-      }
-    }
-    for (const surface of surfaceMap.values()) {
-      const districtId = districtOwnerByCell.get(cellKey(surface));
-      const cityId = districtId ? districtById.get(districtId)?.cityId : undefined;
-      if (cityId) {
-        const citySurfaces = surfacesByCity.get(cityId);
-        if (citySurfaces) citySurfaces.push(surface);
-        else surfacesByCity.set(cityId, [surface]);
-      }
-    }
-
-    const atlas: CountryAtlasDto = {
-      schemaVersion: COUNTRY_ATLAS_SCHEMA_VERSION,
-      worldVersion: country.worldVersion,
-      terrainSeed: Number(countryRow.seed),
-      bounds: projection.bounds,
-      connections: projection.connections,
-      cities: projection.cities.map((projected) => {
-        const city = cityById.get(projected.id)!;
-        const projectedDistrictById = new Map(projected.districts.map((district) => [district.id, district]));
-        const projectCell = (cell: Cell, districtId: string): Cell => {
-          const district = projectedDistrictById.get(districtId);
-          if (!district) {
-            return {
-              x: projected.atlasCenter.x + Math.round((cell.x - city.center.x) * projected.scale),
-              y: projected.atlasCenter.y + Math.round((cell.y - city.center.y) * projected.scale),
-            };
-          }
-          return {
-            x: district.atlasCenter.x + Math.round((cell.x - district.sourceCenter.x) * projected.scale),
-            y: district.atlasCenter.y + Math.round((cell.y - district.sourceCenter.y) * projected.scale),
-          };
-        };
-        const projectFootprint = (cells: Cell[], districtId: string): Cell[] => [...new Map(cells.map((cell) => {
-          const atlasCell = projectCell(cell, districtId);
-          return [cellKey(atlasCell), atlasCell] as const;
-        })).values()];
-        const projectedRoads = new Map<string, CountryAtlasDto["cities"][number]["roads"][number]>();
-        for (const road of roadsByCity.get(city.id) ?? []) {
-          const districtId = districtOwnerByCell.get(cellKey(road));
-          if (!districtId) continue;
-          const atlasCell = projectCell(road, districtId);
-          const projectedKey = cellKey(atlasCell);
-          if (!projectedRoads.has(projectedKey)) projectedRoads.set(projectedKey, {
-            sourceCell: { x: road.x, y: road.y }, atlasCell, structure: road.structure, roadClass: road.roadClass,
-          });
-        }
-        const projectedSurfaces = new Map<string, CountryAtlasDto["cities"][number]["surfaces"][number]>();
-        for (const surface of surfacesByCity.get(city.id) ?? []) {
-          const districtId = districtOwnerByCell.get(cellKey(surface));
-          if (!districtId) continue;
-          const atlasCell = projectCell(surface, districtId);
-          const projectedKey = `${cellKey(atlasCell)}:${surface.kind}`;
-          if (!projectedSurfaces.has(projectedKey)) projectedSurfaces.set(projectedKey, {
-            sourceCell: { x: surface.x, y: surface.y }, atlasCell, kind: surface.kind,
-            ...(surface.orientation ? { orientation: surface.orientation } : {}),
-            ...(surface.finish ? { finish: surface.finish } : {}),
-          });
-        }
-        return {
-          id: city.id,
-          name: city.name,
-          status: city.status,
-          sourceCenter: city.center,
-          sourceBounds: city.bounds,
-          atlasCenter: projected.atlasCenter,
-          atlasBounds: projected.atlasBounds,
-          labelBounds: projected.labelBounds,
-          labelAnchor: projected.labelAnchor,
-          scale: projected.scale,
-          miniatureSizePx: projected.miniatureSizePx,
-          atlasMask: projected.atlasMask,
-          cutoutMask: projected.cutoutMask,
-          districts: projected.districts.map((district) => {
-            const source = districtById.get(district.id)!;
-            const districtTasks = tasksByDistrict.get(source.id) ?? [];
-            return {
-              id: source.id,
-              name: source.name,
-              status: source.status,
-              color: atlasDistrictColorById.get(source.id) ?? source.color,
-              progress: meanCountryAtlasProgress(districtTasks),
-              sourceCenter: district.sourceCenter,
-              sourceBounds: boundsOf(source.cells),
-              atlasCenter: district.atlasCenter,
-              atlasCells: district.atlasCells,
-              displayCells: district.displayCells,
-            };
-          }),
-          buildings: (tasksByCity.get(city.id) ?? []).map((task) => ({
-            id: task.id,
-            taskNumber: task.taskNumber,
-            districtId: task.districtId,
-            title: task.title,
-            workItemType: task.workItemType,
-            status: task.status,
-            progress: task.progress,
-            stage: task.stage,
-            buildingType: task.buildingType,
-            visualKind: task.visualKind,
-            visualAssetKey: task.visualAssetKey,
-            platformType: task.platformType,
-            sourceOrigin: task.origin,
-            atlasOrigin: projectCell(task.origin, task.districtId),
-            atlasFootprint: projectFootprint(task.footprint, task.districtId),
-          })),
-          roads: [...projectedRoads.values()],
-          surfaces: [...projectedSurfaces.values()],
-          features: features.filter((feature) => feature.cityId === city.id).map((feature) => ({
-            id: feature.id,
-            kind: feature.kind,
-            districtId: feature.districtId,
-            assetKind: feature.assetKind,
-            assetKey: feature.assetKey,
-            developmentStage: feature.developmentStage,
-            sourceOrigin: feature.origin,
-            sourceFootprint: feature.footprint,
-            atlasOrigin: projectCell(feature.origin, feature.districtId ?? ""),
-            atlasFootprint: projectFootprint(feature.footprint, feature.districtId ?? ""),
-          })),
-        };
-      }),
-    };
-    this.countryAtlasCache.set(countryId, { atlas });
-    return atlas;
-  }
-
   async getCountryOverview(userId: string, countryId: string): Promise<CountryOverviewDto> {
     const planetAtlas = await this.getPlanetAtlas(userId);
     const cacheKey = `${userId}:${countryId}:${planetAtlas.revision}`;
@@ -1589,7 +1390,7 @@ export class AppService {
     const [country, cities, districtRows] = await Promise.all([
       this.countryRow(countryId),
       this.listCities(countryId),
-      this.db.prepare(`SELECT d.id, d.city_id, d.name, d.status, d.color,
+      this.db.prepare(`SELECT d.id, d.city_id, d.name, d.status, d.color, d.cells_json,
         COUNT(t.id)::integer AS task_count,
         COALESCE(ROUND(AVG(t.progress)), 0)::integer AS progress
         FROM districts_v3 d
@@ -1604,6 +1405,7 @@ export class AppService {
     const projection = projectCountryOverview(cities.map((city) => ({ id: city.id, sourceCenter: city.center })));
     const cityAnchors = snapCountryCitiesToLand(geography, cities.map((city) => ({ id: city.id, atlasCenter: projection.centers.get(city.id)! })));
     const districtsByCity = new Map<string, CountryOverviewDistrictDto[]>();
+    const miniatureDistrictsByCity = new Map<string, Array<{ id: string; cells: Cell[] }>>();
     for (const row of districtRows) {
       const district: CountryOverviewDistrictDto = {
         id: String(row.id), name: String(row.name), status: String(row.status) as CountryOverviewDistrictDto["status"],
@@ -1611,6 +1413,10 @@ export class AppService {
       };
       const cityId = String(row.city_id);
       districtsByCity.set(cityId, [...districtsByCity.get(cityId) ?? [], district]);
+      miniatureDistrictsByCity.set(cityId, [...miniatureDistrictsByCity.get(cityId) ?? [], {
+        id: district.id,
+        cells: json<Cell[]>(row.cells_json),
+      }]);
     }
     const overviewWithoutRevision = {
       schemaVersion: COUNTRY_OVERVIEW_SCHEMA_VERSION,
@@ -1625,7 +1431,12 @@ export class AppService {
         const districts = districtsByCity.get(city.id) ?? [];
         return {
           id: city.id, name: city.name, status: city.status, sourceCenter: city.center, sourceBounds: city.bounds,
-          atlasCenter: cityAnchors.get(city.id) ?? projection.centers.get(city.id)!, progress: meanCountryAtlasProgress(districts), districts,
+          atlasCenter: cityAnchors.get(city.id) ?? projection.centers.get(city.id)!,
+          progress: districts.length === 0
+            ? 0
+            : Math.round(districts.reduce((total, district) => total + district.progress, 0) / districts.length),
+          districts,
+          miniature: projectCountryCityMiniature({ sourceBounds: city.bounds, districts: miniatureDistrictsByCity.get(city.id) ?? [] }),
         };
       }),
       connections: projection.connections,

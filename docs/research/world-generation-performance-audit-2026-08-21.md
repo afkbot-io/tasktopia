@@ -191,9 +191,9 @@ Chunk L1 защищён лучше: каждый read сначала получ�
 
 ### P1 — atlas cold path остаётся full-country request-time rebuild
 
-**Evidence:** `src/server/app-service.ts:1174-1343`. Atlas miss загружает все cities/districts/tasks/features, всю road map и весь surface map, строит `districtOwnerByCell`, сканирует roads/surfaces и формирует full DTO. Client действительно генерирует macro/cutout terrain по seed (`src/client/components/CountryAtlasCanvas.tsx:162-177`, `src/shared/country-atlas-terrain.ts:13-84`), но roads/surfaces/buildings всё равно приходят как coordinate arrays (`src/shared/country-atlas-contract.ts:49-119`, `src/client/components/CountryAtlasCanvas.tsx:276-340`).
+**Historical evidence (removed in Country Atlas v6):** прежний atlas miss загружал все cities/districts/tasks/features, road map и surface map, строил `districtOwnerByCell` и формировал full schema-v5 DTO. Указанные ранее `CountryAtlasCanvas`, contract, terrain и projection modules удалены после перехода на bounded overview v3.
 **Impact:** первый atlas request после restart/eviction платит за whole-country surface generation. Cache keyed глобальным worldVersion (`src/server/app-service.ts:1174-1177`), а `createEvent` увеличивает его даже для comments/profile (`src/server/app-service.ts:798-805`), поэтому негеометрическое событие может инициировать полный rebuild.
-**Fix:** отдельный `atlas_revision` только для render/spatial changes и disposable `country_atlas_payloads_v1` с content hash. Публиковать compact atlas snapshot в world worker/mutation projection, а request path только читает готовый payload. Удалить `sourceCell` из render-only road/surface wire contract, если он не нужен интеракциям; клиент сейчас использует его только в React key (`src/client/components/CountryAtlasCanvas.tsx:282-283`). Terrain оставить полностью client-seeded.
+**Implemented direction:** compact country overview использует planet-derived bounded terrain, semantic city miniatures, revision hash и scoped cache. Полные road/surface/building arrays и `sourceCell` отсутствуют в COUNTRY wire contract.
 
 **Verification:** atlas cold/warm after process restart, comment, assignee change, task stage, road mutation и full regeneration; size/parse/render p95 на largest country.
 

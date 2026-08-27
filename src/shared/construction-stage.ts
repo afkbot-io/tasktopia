@@ -315,5 +315,3 @@ export const CONSTRUCTION_TILE_KEYS: ConstructionTileKey[] = [
   "construction-fence-post",
   "construction-gate",
 ];
-
-export const CONSTRUCTION_DETAIL_KEYS = CONSTRUCTION_DETAIL_SPECS.map((detail) => detail.key);
