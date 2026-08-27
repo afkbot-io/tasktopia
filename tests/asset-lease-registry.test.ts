@@ -65,6 +65,25 @@ describe("AssetLease", () => {
     expect(unload).toHaveBeenCalledWith("warm.png");
   });
 
+  it("waits for an in-flight unload before loading the same texture again", async () => {
+    vi.useFakeTimers();
+    let finishUnload!: () => void;
+    unload.mockImplementationOnce(() => new Promise<undefined>((resolve) => { finishUnload = () => resolve(undefined); }));
+    const loader = vi.fn(async () => undefined);
+    const first = new AssetLease();
+    await first.load(["return.png"], loader);
+    first.dispose();
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    const second = new AssetLease();
+    const reloading = second.load(["return.png"], loader);
+    expect(loader).toHaveBeenCalledTimes(1);
+    finishUnload();
+    await reloading;
+    expect(loader).toHaveBeenCalledTimes(2);
+    second.dispose();
+  });
+
   it("does not unload an asset while its cancelled scene load is still pending", async () => {
     vi.useFakeTimers();
     let finish!: () => void;
