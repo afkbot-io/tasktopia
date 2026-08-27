@@ -7,4 +7,4 @@ Generated for Tasktopia task #2 on 2026-08-25 with the built-in OpenAI ImageGen 
 - `aircraft-topdown-v2-frame-2-reference.png`: authored propeller/light animation variation.
 - `clouds-topdown-v2.png`: eight lower-contrast orthographic cloud silhouettes.
 
-Runtime derivatives live in `public/game-assets/v5/atlas/{terrain-v2,aircraft-v2,clouds-v2}`. They are nearest-neighbour normalized to fixed canvases with binary alpha. Validate them with `python3 scripts/verify-atlas-assets.py`.
+Historical runtime derivatives live in `public/game-assets/v5/atlas/{terrain-v2,terrain-v3,aircraft-v2,clouds-v2}`. Active terrain is generated deterministically by `scripts/build-atlas-terrain-v4.py` into level-native CITY `8×8`, COUNTRY `16×16` and PLANET `8×8` directional sheets. Validate all atlas families with `python3 scripts/verify-atlas-assets.py`.

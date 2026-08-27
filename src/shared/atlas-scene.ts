@@ -1,24 +1,17 @@
-import { TERRAIN_SPRITES } from "./catalog";
-
 export type AtlasPoint = { x: number; y: number };
 export type AtlasTerrainKind = "grass" | "meadow" | "forest" | "hill" | "mountain" | "coast" | "river" | "stone" | "deep_water" | "shallow_water" | "unknown";
-export type AtlasFlightGeometry = { from: AtlasPoint; control: AtlasPoint; to: AtlasPoint; path: string };
-
-const TERRAIN_FAMILY: Record<AtlasTerrainKind, keyof typeof TERRAIN_SPRITES> = {
-  grass: "GRASS",
-  meadow: "MEADOW",
-  forest: "FOREST",
-  hill: "HILL",
-  mountain: "MOUNTAIN",
-  coast: "SAND",
-  river: "SHALLOW_WATER",
-  stone: "STONE",
-  deep_water: "DEEP_WATER",
-  shallow_water: "SHALLOW_WATER",
-  // Unknown country context is rendered as the same deep atlas background as
-  // PLANET instead of inventing a white frame or a new vector texture.
-  unknown: "DEEP_WATER",
+export type AtlasTerrainLevel = "city" | "country" | "planet";
+export type AtlasTerrainTile = {
+  url: string;
+  tileSize: 8 | 16;
+  sheetWidth: number;
+  sheetHeight: number;
+  sourceX: number;
+  sourceY: number;
+  mask: number;
+  variant: number;
 };
+export type AtlasFlightGeometry = { from: AtlasPoint; control: AtlasPoint; to: AtlasPoint; path: string };
 
 function hashText(value: string): number {
   let hash = 2_166_136_261;
@@ -29,10 +22,73 @@ function hashText(value: string): number {
   return hash >>> 0;
 }
 
-/** Select a deterministic existing Pixel City terrain tile for every atlas level. */
-export function atlasTerrainAsset(kind: AtlasTerrainKind, column: number, row: number): string {
-  const sprites = TERRAIN_SPRITES[TERRAIN_FAMILY[kind]] ?? TERRAIN_SPRITES.GRASS!;
-  return sprites[Math.abs(column * 31 + row * 17) % sprites.length] ?? sprites[0]!;
+function normalizedAtlasTerrain(kind: AtlasTerrainKind): Exclude<AtlasTerrainKind, "unknown"> {
+  return kind === "unknown" ? "deep_water" : kind;
+}
+
+function atlasTerrainVariantCount(kind: AtlasTerrainKind): number {
+  const normalized = normalizedAtlasTerrain(kind);
+  return normalized === "deep_water" || normalized === "shallow_water" || normalized === "river" ? 5 : 3;
+}
+
+/** N=1, E=2, S=4 and W=8. Exact-family masks keep authored joins deterministic. */
+export function atlasTerrainConnectionMask(
+  kind: AtlasTerrainKind,
+  column: number,
+  row: number,
+  terrainAt: (column: number, row: number) => AtlasTerrainKind | undefined,
+): number {
+  const normalized = normalizedAtlasTerrain(kind);
+  let mask = 0;
+  if (terrainAt(column, row - 1) && normalizedAtlasTerrain(terrainAt(column, row - 1)!) === normalized) mask |= 1;
+  if (terrainAt(column + 1, row) && normalizedAtlasTerrain(terrainAt(column + 1, row)!) === normalized) mask |= 2;
+  if (terrainAt(column, row + 1) && normalizedAtlasTerrain(terrainAt(column, row + 1)!) === normalized) mask |= 4;
+  if (terrainAt(column - 1, row) && normalizedAtlasTerrain(terrainAt(column - 1, row)!) === normalized) mask |= 8;
+  return mask;
+}
+
+/** Collapse the detailed CITY simulation vocabulary into shared visual families. */
+export function atlasTerrainKindFromWorld(kind: string): Exclude<AtlasTerrainKind, "unknown"> {
+  switch (kind) {
+    case "MEADOW": return "meadow";
+    case "FOREST": return "forest";
+    case "HILL": return "hill";
+    case "MOUNTAIN": return "mountain";
+    case "SAND":
+    case "WET_SAND": return "coast";
+    case "SHALLOW_WATER": return "shallow_water";
+    case "DEEP_WATER": return "deep_water";
+    case "STONE":
+    case "CLAY": return "stone";
+    case "DIRT":
+    case "GRASS":
+    default: return "grass";
+  }
+}
+
+/** Resolve one native atlas sprite-sheet cell without scaling another map level. */
+export function atlasTerrainTile(
+  kind: AtlasTerrainKind,
+  level: AtlasTerrainLevel,
+  column: number,
+  row: number,
+  connectionMask: number,
+): AtlasTerrainTile {
+  const normalized = normalizedAtlasTerrain(kind);
+  const tileSize = level === "country" ? 16 : 8;
+  const mask = Math.max(0, Math.min(15, connectionMask | 0));
+  const variants = atlasTerrainVariantCount(normalized);
+  const variant = hashText(`${level}:${normalized}:${column}:${row}`) % variants;
+  return {
+    url: `atlas/terrain-v4/${level}/${normalized}.png`,
+    tileSize,
+    sheetWidth: tileSize * 16,
+    sheetHeight: tileSize * variants,
+    sourceX: mask * tileSize,
+    sourceY: variant * tileSize,
+    mask,
+    variant,
+  };
 }
 
 export function atlasRoutePath(from: AtlasPoint, control: AtlasPoint, to: AtlasPoint): string {

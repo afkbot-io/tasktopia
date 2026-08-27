@@ -4,7 +4,7 @@ import { decodeCountryTerrain, type CountryOverviewCityDto, type CountryOverview
 import { countryOverviewEventBatchImpact } from "../../shared/country-overview-events";
 import { gameAssetUrl, TILE_SPRITES } from "../../shared/catalog";
 import { ATLAS_AIRPORT_POLYGON } from "../../shared/atlas-airport";
-import { atlasAircraftEndpointScale, atlasTerrainAsset, buildAtlasFlightGeometry, sampleAtlasFlight, type AtlasFlightGeometry } from "../../shared/atlas-scene";
+import { atlasAircraftEndpointScale, atlasTerrainConnectionMask, atlasTerrainTile, buildAtlasFlightGeometry, sampleAtlasFlight, type AtlasFlightGeometry } from "../../shared/atlas-scene";
 import { api } from "../api";
 import { smoothCameraScale } from "../world-camera";
 
@@ -217,17 +217,22 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
 
     void (async () => {
       const { columns, rows, cellSize, terrainCodes, territoryCodes } = overview.geography;
-      const terrainAssets = Array.from({ length: terrainCodes.length }, (_, index) => atlasTerrainAsset(
-        decodeCountryTerrain(terrainCodes[index] ?? "0"),
-        index % columns,
-        Math.floor(index / columns),
-      ));
-      const assetUrls = new Set(terrainAssets.map(gameAssetUrl));
+      const terrainKinds = Array.from({ length: terrainCodes.length }, (_, index) => decodeCountryTerrain(terrainCodes[index] ?? "0"));
+      const terrainAt = (column: number, row: number) => column >= 0 && row >= 0 && column < columns && row < rows
+        ? terrainKinds[row * columns + column]
+        : undefined;
+      const terrainTiles = terrainKinds.map((kind, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        return atlasTerrainTile(kind, "country", column, row, atlasTerrainConnectionMask(kind, column, row, terrainAt));
+      });
+      const assetUrls = new Set(terrainTiles.map((tile) => gameAssetUrl(tile.url)));
       assetUrls.add(TILE_SPRITES.pavement!);
       const textures = new Map(await Promise.all([...assetUrls].map(async (url) => [url, await loadAtlasImage(url)] as const)));
+      if (disposed) return;
       // Compose immutable atlas tiles on a small CPU canvas. At four pixels
       // per world unit every 4-unit terrain cell is exactly 16x16 pixels; the
-      // WebGL scene then moves one texture instead of hundreds of textured
+      // compositor scene then moves one texture instead of hundreds of textured
       // primitives, avoiding driver stalls during continuous zoom.
       const rasterScale = 4;
       const staticCanvas = document.createElement("canvas");
@@ -251,8 +256,9 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
           const territory = territoryCodes[index] ?? "0";
           const x = column * cellSize;
           const y = row * cellSize;
-          const source = textures.get(gameAssetUrl(terrainAssets[index]!))!;
-          context.drawImage(source, x * rasterScale, y * rasterScale, cellSize * rasterScale, cellSize * rasterScale);
+          const tile = terrainTiles[index]!;
+          const source = textures.get(gameAssetUrl(tile.url))!;
+          context.drawImage(source, tile.sourceX, tile.sourceY, tile.tileSize, tile.tileSize, x * rasterScale, y * rasterScale, cellSize * rasterScale, cellSize * rasterScale);
           if (territory === "1") {
             selectedCellCount += 1;
             context.fillStyle = "#c6d98412";
@@ -266,7 +272,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
           else if (kind === "unknown") unknownCellCount += 1;
         }
       }
-      host.dataset.countryTerrainRender = "shared-pixel-tiles";
+      host.dataset.countryTerrainRender = "directional-16px-sheets";
       host.dataset.countrySelectedCells = String(selectedCellCount);
       host.dataset.countryNeighborCells = String(neighborCellCount);
       host.dataset.countryWaterCells = String(waterCellCount);
@@ -292,6 +298,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         airportPoints.set(city.id, airportPoint);
         drawAirport(context, airportPoint.x, airportPoint.y, rasterScale);
       }
+      if (disposed) return;
       host.prepend(staticCanvas);
       host.dataset.countryCityRender = "filled-16x16-atlas-tiles";
 
@@ -307,6 +314,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         startsAtAirport: false,
       });
       const planeTextures = await Promise.all(routeInputs.map((route) => loadAtlasImage(gameAssetUrl(`atlas/aircraft-v4/airplane-topdown-${route.index % 8 + 1}.png`))));
+      if (disposed) return;
       for (let index = 0; index < routeInputs.length; index += 1) {
         const route = routeInputs[index]!;
         const view = planeTextures[index]!;

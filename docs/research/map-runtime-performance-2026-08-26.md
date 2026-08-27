@@ -37,6 +37,6 @@ terrain, силуэт районов, плотность, прогресс и ai
 props и исходные city footprints в overview payload не передаются. Между
 городами не рисуются синтетические дороги; те же top-down aircraft и общий
 airport glyph используются на PLANET и COUNTRY. Статическая карта компонуется
-один раз из существующих Pixel City tiles при `16×16 px` на geography-клетку;
+один раз из directional COUNTRY sheets при `16×16 px` на geography-клетку;
 camera и aircraft используют DOM/compositor transforms, поэтому wheel-серия не
 перерисовывает WebGL texture layers.

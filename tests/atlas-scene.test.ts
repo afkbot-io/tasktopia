@@ -2,17 +2,43 @@ import { describe, expect, it } from "vitest";
 import {
   ATLAS_AIRCRAFT_ENDPOINT_KEYFRAMES,
   atlasAircraftEndpointScale,
-  atlasTerrainAsset,
+  atlasTerrainConnectionMask,
+  atlasTerrainKindFromWorld,
+  atlasTerrainTile,
   buildAtlasFlightGeometry,
   sampleAtlasFlight,
 } from "../src/shared/atlas-scene";
 
 describe("shared atlas scene primitives", () => {
-  it("selects the same existing pixel terrain family for PLANET and COUNTRY", () => {
-    expect(atlasTerrainAsset("forest", 4, 7)).toMatch(/^terrain\/forest-[0-9]+\.png$/);
-    expect(atlasTerrainAsset("deep_water", 4, 7)).toMatch(/^terrain\/deep_water-[0-9]+\.png$/);
-    expect(atlasTerrainAsset("unknown", 4, 7)).toMatch(/^terrain\/deep_water-[0-9]+\.png$/);
-    expect(atlasTerrainAsset("forest", 4, 7)).toBe(atlasTerrainAsset("forest", 4, 7));
+  it("selects native atlas sheets and deterministic directional variants per level", () => {
+    const country = atlasTerrainTile("mountain", "country", 4, 7, 0b1010);
+    const planet = atlasTerrainTile("mountain", "planet", 4, 7, 0b1010);
+
+    expect(country.url).toBe("atlas/terrain-v4/country/mountain.png");
+    expect(country).toMatchObject({ tileSize: 16, sourceX: 160, mask: 0b1010 });
+    expect(country.sourceY % 16).toBe(0);
+    expect(planet.url).toBe("atlas/terrain-v4/planet/mountain.png");
+    expect(planet).toMatchObject({ tileSize: 8, sourceX: 80, mask: 0b1010 });
+    expect(planet.sourceY % 8).toBe(0);
+    expect(atlasTerrainTile("unknown", "planet", 4, 7, 15).url).toContain("deep_water.png");
+    expect(atlasTerrainTile("mountain", "planet", 4, 7, 0b1010)).toEqual(planet);
+    expect(atlasTerrainTile("mountain", "city", 4, 7, 0b1010)).toMatchObject({
+      url: "atlas/terrain-v4/city/mountain.png",
+      tileSize: 8,
+    });
+    expect(atlasTerrainKindFromWorld("WET_SAND")).toBe("coast");
+    expect(atlasTerrainKindFromWorld("CLAY")).toBe("stone");
+  });
+
+  it("builds N/E/S/W connection masks from matching terrain neighbours", () => {
+    const terrain = new Map<string, "mountain" | "grass">([
+      ["0:-1", "mountain"],
+      ["1:0", "mountain"],
+      ["0:1", "grass"],
+      ["-1:0", "mountain"],
+    ]);
+    expect(atlasTerrainConnectionMask("mountain", 0, 0, (column, row) => terrain.get(`${column}:${row}`))).toBe(0b1011);
+    expect(atlasTerrainConnectionMask("grass", 0, 0, (column, row) => terrain.get(`${column}:${row}`))).toBe(0b0100);
   });
 
   it("shares curved route geometry and airport endpoint lifecycle", () => {

@@ -36,7 +36,7 @@ test("country overview keeps projected city silhouettes and accessible controls"
   await expect(atlas.locator(".country-overview-city")).toHaveCount(10);
   await expect(atlas.locator(".country-side-fog")).toHaveCount(0);
   await expect(atlas).toHaveAttribute("data-country-terrain-cells", "792");
-  await expect(atlas).toHaveAttribute("data-country-terrain-render", "shared-pixel-tiles");
+  await expect(atlas).toHaveAttribute("data-country-terrain-render", "directional-16px-sheets");
   await expect(atlas).toHaveAttribute("data-country-city-render", "filled-16x16-atlas-tiles");
   expect(Number(await atlas.getAttribute("data-country-selected-cells"))).toBeGreaterThan(0);
   expect(Number(await atlas.getAttribute("data-country-airports"))).toBe(10);
@@ -171,6 +171,13 @@ test("planet, country and city transitions keep a single renderer mounted", asyn
   const levels = page.getByRole("navigation", { name: "Уровень карты" });
   await levels.getByRole("button", { name: "Планета" }).click();
   await expect(page.locator(".planet-atlas")).toBeVisible();
+  const planetTerrainSheets = page.locator('.planet-terrain-sprite image[href*="atlas/terrain-v4/planet/"]');
+  await expect(planetTerrainSheets.first()).toBeVisible();
+  expect(await planetTerrainSheets.count()).toBeGreaterThan(20);
+  if (process.env.PLANET_SCREENSHOT_PATH) {
+    await expect(page.locator(".map-level-transition")).toHaveCount(0);
+    await page.screenshot({ path: process.env.PLANET_SCREENSHOT_PATH, fullPage: true });
+  }
   await expect(page.locator(".country-overview, .world-canvas")).toHaveCount(0);
   await page.locator(".planet-country-label").first().click();
   await expect(page.locator(".country-overview")).toBeVisible({ timeout: 45_000 });
