@@ -1,4 +1,5 @@
 import type { Cell, Rect } from "../../shared/contracts";
+import { boundsOf } from "./grid";
 
 const OVERVIEW_WIDTH = 144;
 const OVERVIEW_HEIGHT = 88;
@@ -23,12 +24,9 @@ export function projectCountryCityMiniature(input: {
   districts: ReadonlyArray<{ id: string; cells: readonly Cell[] }>;
 }): CountryCityMiniature {
   const publishedCells = input.districts.flatMap((district) => district.cells);
-  const silhouetteBounds = publishedCells.length > 0 ? {
-    minX: Math.min(...publishedCells.map((cell) => cell.x)),
-    minY: Math.min(...publishedCells.map((cell) => cell.y)),
-    maxX: Math.max(...publishedCells.map((cell) => cell.x)),
-    maxY: Math.max(...publishedCells.map((cell) => cell.y)),
-  } : input.sourceBounds;
+  const silhouetteBounds = publishedCells.length > 0
+    ? boundsOf(publishedCells)
+    : input.sourceBounds;
   const sourceWidth = Math.max(1, silhouetteBounds.maxX - silhouetteBounds.minX + 1);
   const sourceHeight = Math.max(1, silhouetteBounds.maxY - silhouetteBounds.minY + 1);
   const scale = Math.min(14 / sourceWidth, 14 / sourceHeight);

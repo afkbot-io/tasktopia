@@ -51,6 +51,23 @@ describe("semantic country city miniature", () => {
     expect(miniature.districtCodes).toMatch(/1/);
   });
 
+  it("projects a production-scale city without overflowing the JavaScript call stack", () => {
+    const cells = Array.from({ length: 125_223 }, (_, index) => ({
+      x: index % 501,
+      y: Math.floor(index / 501),
+    }));
+
+    const miniature = projectCountryCityMiniature({
+      sourceBounds: { minX: 0, minY: 0, maxX: 500, maxY: 249 },
+      districts: [{ id: "large-district", cells }],
+    });
+
+    expect(miniature.columns).toBe(14);
+    expect(miniature.rows).toBe(7);
+    expect(miniature.districtCodes).toHaveLength(98);
+    expect(new Set(miniature.districtCodes)).toEqual(new Set(["1"]));
+  });
+
   it.each([
     {
       name: "compact",
