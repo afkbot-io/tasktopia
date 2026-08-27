@@ -21,8 +21,8 @@ max-age=60, stale-while-revalidate=600`; клиентский snapshot хран�
 Аутентифицированный браузер получает обзор страны через
 `GET /api/countries/:countryId/overview`.
 Это не MCP resource и не замена `country.get_current`/`city.list`: endpoint
-предназначен только для UI. Контракт `schemaVersion: 3` содержит `terrainSeed`,
-bounded terrain `36×22`, города с исходными и обзорными центрами, агрегаты
+предназначен только для UI. Контракт `schemaVersion: 4` содержит `terrainSeed`,
+bounded terrain/ownership `36×22`, города с исходными и обзорными центрами, агрегаты
 районов и semantic miniatures. Полная городская геометрия, задачи, дороги,
 surfaces, props и sprite URL в ответ не входят.
 

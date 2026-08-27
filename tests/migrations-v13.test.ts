@@ -21,8 +21,20 @@ describe("PostgreSQL migrations", () => {
       "0017_world_generation_jobs.sql",
       "0018_compact_spatial_indexes.sql",
       "0019_seeded_area_decor.sql",
+      "0020_country_overview_snapshots.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("stores one replaceable semantic country overview snapshot per viewer and country", async () => {
+    expect(await db.prepare("SELECT to_regclass('country_overview_snapshots_v1') AS table_name").get())
+      .toMatchObject({ table_name: "country_overview_snapshots_v1" });
+    const columns = await db.prepare(`SELECT column_name FROM information_schema.columns
+      WHERE table_schema = current_schema() AND table_name = 'country_overview_snapshots_v1' ORDER BY column_name`)
+      .all<{ column_name: string }>();
+    expect(columns.map((column) => column.column_name)).toEqual(expect.arrayContaining([
+      "country_id", "payload_json", "planet_revision", "schema_version", "user_id",
+    ]));
   });
 
   it("forbids durable rows for seed-derived park interiors", async () => {

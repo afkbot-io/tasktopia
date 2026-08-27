@@ -8,6 +8,7 @@ import {
   nextCameraTargetScale,
   pixelPerfectCameraScale,
   progressiveChunkPlan,
+  smoothCameraScale,
 } from "../src/client/world-camera";
 
 describe("world camera geometry", () => {
@@ -49,12 +50,23 @@ describe("world camera geometry", () => {
     expect(110 * 8 * tallScale).toBeLessThanOrEqual(screen.height - 96);
   });
 
-  it("uses only integer scales while detailed pixel sprites are visible", () => {
-    expect(pixelPerfectCameraScale(1.25, 0.8)).toBe(1);
-    expect(pixelPerfectCameraScale(1.55, 0.8)).toBe(2);
-    expect(pixelPerfectCameraScale(2.37, 0.8)).toBe(2);
-    expect(pixelPerfectCameraScale(1.25, 1.3)).toBe(2);
+  it("keeps continuous scales while nearest sampling preserves hard pixel edges", () => {
+    expect(pixelPerfectCameraScale(1.25, 0.8)).toBe(1.25);
+    expect(pixelPerfectCameraScale(1.55, 0.8)).toBe(1.55);
+    expect(pixelPerfectCameraScale(2.37, 0.8)).toBe(2.37);
+    expect(pixelPerfectCameraScale(1.25, 1.3)).toBe(1.3);
     expect(pixelPerfectCameraScale(0.88, 0.8)).toBeCloseTo(0.88);
+  });
+
+  it("uses real wheel magnitude and interpolates toward the target", () => {
+    const trackpad = nextCameraTargetScale(1, -24);
+    const wheel = nextCameraTargetScale(1, -120);
+    expect(trackpad).toBeGreaterThan(1);
+    expect(wheel).toBeGreaterThan(trackpad);
+    const firstFrame = smoothCameraScale(1, wheel, 16);
+    expect(firstFrame).toBeGreaterThan(1);
+    expect(firstFrame).toBeLessThan(wheel);
+    expect(smoothCameraScale(firstFrame, wheel, 64)).toBeGreaterThan(firstFrame);
   });
 
   it("accumulates wheel zoom on an unrounded target so integer scales are not sticky", () => {
@@ -64,7 +76,7 @@ describe("world camera geometry", () => {
     expect(pixelPerfectCameraScale(target, 0.8)).toBe(0.8);
     for (let step = 0; step < 8; step += 1) target = nextCameraTargetScale(target, -800);
     expect(target).toBeGreaterThan(1);
-    expect(Number.isInteger(pixelPerfectCameraScale(target, 0.8))).toBe(true);
+    expect(pixelPerfectCameraScale(target, 0.8)).toBeCloseTo(target);
   });
 
   it("loads a center-first critical window and leaves the prefetch ring in background", () => {

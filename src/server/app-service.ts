@@ -90,7 +90,7 @@ import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/plan
 import { projectPlanetAtlas } from "../shared/planet-atlas";
 import { compactLotsAfterPlacement, nextOrganicComplexLotTarget, organicComplexLotTarget, planComplex } from "./world/complex-planner";
 import { projectCountryCityMiniature, projectCountryOverview } from "./world/country-overview";
-import { buildCountryGeography, snapCountryCitiesToLand } from "./world/country-geography";
+import { buildCountryGeography, countryMacroContext, snapCountryCitiesToLand } from "./world/country-geography";
 import type { SharedWorldCache } from "./optional-redis-cache";
 import {
   ROAD_WIDTH,
@@ -1387,6 +1387,17 @@ export class AppService {
       this.countryOverviewCache.set(cacheKey, cached);
       return cached;
     }
+    const storedSnapshot = await this.db.prepare(`SELECT payload_json FROM country_overview_snapshots_v1
+      WHERE user_id = ? AND country_id = ? AND schema_version = ? AND planet_revision = ?`)
+      .get<{ payload_json: CountryOverviewDto }>(userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, planetAtlas.revision);
+    const storedOverview = storedSnapshot?.payload_json;
+    if (storedOverview?.schemaVersion === COUNTRY_OVERVIEW_SCHEMA_VERSION
+      && storedOverview.countryId === countryId
+      && storedOverview.geography.terrainCodes.length === storedOverview.geography.columns * storedOverview.geography.rows
+      && storedOverview.geography.territoryCodes.length === storedOverview.geography.columns * storedOverview.geography.rows) {
+      this.countryOverviewCache.set(cacheKey, storedOverview);
+      return storedOverview;
+    }
     const [country, cities, districtRows] = await Promise.all([
       this.countryRow(countryId),
       this.listCities(countryId),
@@ -1400,8 +1411,12 @@ export class AppService {
         GROUP BY d.id, d.city_id, d.name, d.status, d.color, d.created_at
         ORDER BY d.created_at, d.id`).all(countryId) as Promise<Row[]>,
     ]);
-    const macroCountry = projectPlanetAtlas(planetAtlas).countries.find((candidate) => candidate.id === countryId);
-    const geography = buildCountryGeography({ countryId, seed: Number(country.seed), macroCells: macroCountry?.cells ?? [] });
+    const projectedPlanet = projectPlanetAtlas(planetAtlas);
+    const geography = buildCountryGeography({
+      countryId,
+      seed: Number(country.seed),
+      macroCells: countryMacroContext(projectedPlanet, countryId),
+    });
     const projection = projectCountryOverview(cities.map((city) => ({ id: city.id, sourceCenter: city.center })));
     const cityAnchors = snapCountryCitiesToLand(geography, cities.map((city) => ({ id: city.id, atlasCenter: projection.centers.get(city.id)! })));
     const districtsByCity = new Map<string, CountryOverviewDistrictDto[]>();
@@ -1426,6 +1441,7 @@ export class AppService {
       geography: {
         ...geography.grid,
         terrainCodes: encodeCountryTerrain(geography.cells.map((cell) => cell.terrain)),
+        territoryCodes: geography.cells.map((cell) => cell.selected ? "1" : cell.ownerCountryId ? "2" : "0").join(""),
       },
       cities: cities.map((city) => {
         const districts = districtsByCity.get(city.id) ?? [];
@@ -1436,12 +1452,26 @@ export class AppService {
             ? 0
             : Math.round(districts.reduce((total, district) => total + district.progress, 0) / districts.length),
           districts,
-          miniature: projectCountryCityMiniature({ sourceBounds: city.bounds, districts: miniatureDistrictsByCity.get(city.id) ?? [] }),
+          miniature: projectCountryCityMiniature({
+            sourceBounds: city.bounds,
+            districts: miniatureDistrictsByCity.get(city.id) ?? [],
+            terrainSeed: Number(country.seed),
+          }),
         };
       }),
       connections: projection.connections,
     };
     const overview: CountryOverviewDto = { ...overviewWithoutRevision, revision: stableHash(overviewWithoutRevision) };
+    await this.db.prepare(`INSERT INTO country_overview_snapshots_v1
+      (user_id, country_id, schema_version, planet_revision, payload_json, generated_at)
+      VALUES (?, ?, ?, ?, ?::jsonb, now())
+      ON CONFLICT (user_id, country_id) DO UPDATE SET
+        schema_version = EXCLUDED.schema_version,
+        planet_revision = EXCLUDED.planet_revision,
+        payload_json = EXCLUDED.payload_json,
+        generated_at = EXCLUDED.generated_at`).run(
+      userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, planetAtlas.revision, JSON.stringify(overview),
+    );
     this.countryOverviewCache.set(cacheKey, overview);
     while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);
     return overview;

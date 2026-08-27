@@ -13,16 +13,10 @@ export type ProgressiveChunkPlan = { critical: ChunkCoordinate[]; background: Ch
 // retains recently crossed chunks for smooth reverse pans.
 export const PREFETCH_VIEWPORT_RATIO = 0;
 
-/**
- * Detailed pixel sprites may only be shown at an integer CSS scale. Nearest
- * sampling cannot make a 1.25x pixel occupy a stable number of screen pixels:
- * the raster alternates between one- and two-pixel columns as a sprite moves,
- * which looks like frame stretching. Overview ground remains free to fit.
- */
+/** Clamp the continuous camera scale; sprite textures remain nearest-sampled. */
 export function pixelPerfectCameraScale(requested: number, minimum: number, detailThreshold = 1): number {
-  const bounded = Math.max(requested, minimum);
-  if (bounded < detailThreshold && minimum < detailThreshold) return bounded;
-  return Math.max(Math.ceil(minimum), Math.round(bounded), 1);
+  void detailThreshold;
+  return Math.max(requested, minimum);
 }
 
 /**
@@ -31,8 +25,16 @@ export function pixelPerfectCameraScale(requested: number, minimum: number, deta
  * to 2 forever), so a user can never cross the detail/overview boundary.
  */
 export function nextCameraTargetScale(currentTarget: number, deltaY: number, minimum = 0.8, maximum = 4): number {
-  const factor = deltaY > 0 ? 0.88 : 1.12;
+  const factor = Math.exp(-deltaY * .0015);
   return Math.max(minimum, Math.min(maximum, currentTarget * factor));
+}
+
+/** Exponential, frame-rate independent interpolation for wheel and trackpad zoom. */
+export function smoothCameraScale(current: number, target: number, deltaMs: number, responseMs = 110): number {
+  if (Math.abs(target - current) < .0005) return target;
+  const blend = 1 - Math.exp(-Math.max(0, deltaMs) / Math.max(1, responseMs));
+  const next = current + (target - current) * blend;
+  return Math.abs(target - next) < .0005 ? target : next;
 }
 
 export function minimumCameraScale(screen: ScreenSize, bounds: Rect, cellSize: number, configuredMinimum = 0.8): number {

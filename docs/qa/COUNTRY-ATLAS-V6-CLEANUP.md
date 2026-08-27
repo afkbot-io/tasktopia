@@ -16,7 +16,7 @@ build scripts, tests, and repository-wide exact-name searches.
 - rollback-only tests for those modules.
 
 The active COUNTRY path is now uniquely:
-`App -> CountryOverviewCanvas -> /api/countries/:countryId/overview -> schema v3`.
+`App -> CountryOverviewCanvas -> /api/countries/:countryId/overview -> schema v4`.
 
 ## Static code checks
 
@@ -40,8 +40,6 @@ All deleted binary files remain recoverable from Git history.
 
 ## RepoWise status
 
-The connected RepoWise MCP currently indexes
-`/Users/kikasnikita/PycharmProjects/doc/chat`, not this Game3 checkout.
-Its findings were therefore rejected and no unrelated deletion was applied.
-To enable a second independent RepoWise pass, run `repowise init --yes` once
-in the Game3 repository root and reconnect the RepoWise MCP.
+RepoWise is refreshed against the exact Game3 revision before analysis and
+again after large structural changes. Findings from another repository or a
+stale revision are rejected rather than used as deletion evidence.

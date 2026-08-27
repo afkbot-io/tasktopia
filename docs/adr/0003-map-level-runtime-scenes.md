@@ -12,7 +12,7 @@
 Каждый уровень карты имеет собственный ограниченный контракт и ровно один активный renderer.
 
 - Планета сохраняет существующий агрегированный atlas.
-- Страна читает scoped `country overview` v3 с одной компактной строкой из 792 кодов квадратных клеток `SQUARE_4`, semantic miniatures до `14×14` и без полной городской геометрии. Один WebGL canvas рисует terrain batch и миниатюры городов.
+- Страна читает scoped `country overview` v4: 792 terrain/ownership-кода `SQUARE_4`, semantic miniatures с фиксированным коэффициентом CITY `8×8` и без полной городской геометрии. Новый браузер запрашивает v4 vendor `Accept`, а запрос без него получает bounded v3-проекцию на время rolling deploy. Один WebGL canvas рисует terrain и миниатюры городов как nearest/rounded Graphics без растягиваемой cache-текстуры.
 - Город читает `city-scene` одним запросом в своих канонических bounds. Серверные chunk payload остаются disposable внутренней проекцией, но клиент не запрашивает их во время pan/zoom.
 - Завершённые районы дополнительно имеют компактный task/building snapshot внутри сцены. Нормализованные задачи остаются каноническими; snapshot — удаляемая render-проекция. В scene v2 завершённая задача присутствует только в snapshot, а не повторяется в каждом пересекаемом внутреннем блоке.
 - Внутренние блоки города материализуются ограниченным пулом до четырёх workers, после чего сущности публикуются одним batch commit и проходят ровно один full reconcile.
@@ -22,7 +22,7 @@
 
 ## Последствия и границы
 
-Первичное открытие большого города передаёт больше данных одним ответом, поэтому endpoint ограничен 256 внутренними блоками, имеет ETag, loader, payload/latency бюджеты и cache invalidation по world revision. Канонические JSONB-агрегаты районов не добавляются: измеренный cold bottleneck находится в browser materialization/reconcile, а активный район всё равно изменяем. Persisted snapshot допустим позже только как versioned disposable projection после отдельного server/DB профиля. Для существенно более крупных городов следующим шагом будет не возврат к сетевому pan-streaming, а versioned scene manifest с заранее опубликованными бинарными/static asset группами.
+Первичное открытие большого города передаёт больше данных одним ответом, поэтому endpoint ограничен 256 внутренними блоками, имеет ETag, loader, payload/latency бюджеты и cache invalidation по world revision. Канонические задачи и геометрия районов остаются нормализованными. Для COUNTRY добавлен отдельный versioned disposable JSONB-снимок: он хранит только агрегат `8×8`, безопасно заменяется по planet revision и не становится источником истины. Для существенно более крупных CITY следующим шагом будет не возврат к сетевому pan-streaming, а versioned scene manifest с заранее опубликованными бинарными/static asset группами.
 
 Тяжёлый `/api/country-atlas` удалён вместе со schema-v5 DTO и SVG-клиентом.
 `/api/world/viewport` и `/api/chunks/*` временно остаются rolling-deploy

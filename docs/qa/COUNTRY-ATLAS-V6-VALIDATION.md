@@ -40,12 +40,17 @@ silhouette occupancy and aspect-ratio drift.
   COUNTRY cell retains its owning macro-cell ID and terrain family.
 - COUNTRY has no synthetic inter-city roads and never transfers CITY roads,
   surfaces, buildings, props, trees or full district cell lists.
-- A city overview is a bounded semantic snapshot: `8×8` to `16×16` cells,
-  non-rectangular silhouette, district/density class, progress and airport
+- A city overview is a bounded semantic snapshot where one overview cell
+  represents one fixed `8×8` CITY block. Parallel code strings retain dominant
+  terrain/district, coverage and four-quadrant occupancy plus the airport
   anchor. It preserves aspect ratio and never bitmap-compresses the CITY scene.
-- The payload contains at most `800` terrain cells, at most `256` overview cells
-  per city, is below `200 KB` uncompressed for the ten-city fixture and is
+- The payload contains at most `800` country terrain cells; each city contains
+  exactly `ceil(width/8) × ceil(height/8)` semantic cells instead of per-object
+  geometry. The ten-city fixture remains below `200 KB` uncompressed and is
   served by exactly one scoped overview request.
+- The built projection is stored in `country_overview_snapshots_v1` and reused
+  only when user, country, schema and PLANET revision match. CITY rows remain
+  canonical and no overview mutation is written back into them.
 - CITY entry still performs exactly one city-scene request. Pan and zoom perform
   zero `/api/world/viewport` and `/api/chunks/*` requests.
 
@@ -54,7 +59,8 @@ silhouette occupancy and aspect-ratio drift.
 - COUNTRY scene contains one Pixi canvas, zero scene SVG nodes and no per-cell
   React elements. Labels are the only DOM overlay.
 - Pointer movement mutates a local camera and schedules at most one RAF; it does
-  not call React state setters.
+  not call React state setters. Wheel zoom passes through observable intermediate
+  values and converges independently of display refresh rate.
 - Twenty wheel events and an 18-step drag produce no long task over `50 ms` on
   the ten-city fixture. First coherent frame is below `2 s` on a cold browser.
 - The static terrain/city graphics are built once per overview revision.

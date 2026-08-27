@@ -166,6 +166,10 @@ await transaction(db, async () => {
     .run("Федерация Новостроек", 915_731, user.countryId);
   await db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(user.countryId);
+  // The fixture deliberately rewrites canonical entities and resets
+  // world_version outside normal mutations, so its disposable read models
+  // must be removed in the same transaction.
+  await db.prepare("DELETE FROM country_overview_snapshots_v1 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM cities_v3 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM events WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM idempotency WHERE country_id = ?").run(user.countryId);
