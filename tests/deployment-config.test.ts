@@ -394,14 +394,18 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
       writeFileSync(join(active, "game-assets/v5/manifest.json"), JSON.stringify({ assetRevision: previousRevision }));
       writeFileSync(join(incoming, "assets/new-bundle.js"), "new bundle");
       writeFileSync(join(incoming, "assets/existing-bundle.js"), "existing immutable bytes");
+      writeFileSync(join(incoming, "assets/existing-bundle.js.map"), "new release source map");
       writeFileSync(join(incoming, `game-assets/v5/revisions/${currentRevision}/tile.png`), "revision b");
       writeFileSync(join(active, "assets/existing-bundle.js"), "existing immutable bytes");
+      writeFileSync(join(active, "assets/existing-bundle.js.map"), "previous release source map");
       writeFileSync(join(active, "assets/old-lazy-bundle.js"), "old lazy bundle");
 
       execFileSync("bash", ["-c", 'source "$1"; prepare_static_release_paths "$2" "$3" "$4" 3 "$5"', "bash", staticScript, incoming, active, currentRevision, journal]);
 
       expect(readFileSync(join(active, "assets/new-bundle.js"), "utf8")).toBe("new bundle");
       expect(readFileSync(join(active, "assets/existing-bundle.js"), "utf8")).toBe("existing immutable bytes");
+      expect(readFileSync(join(active, "assets/existing-bundle.js.map"), "utf8")).toBe("previous release source map");
+      expect(readFileSync(join(incoming, "assets/existing-bundle.js.map"), "utf8")).toBe("new release source map");
       expect(readFileSync(join(incoming, "assets/old-lazy-bundle.js"), "utf8")).toBe("old lazy bundle");
       expect(readFileSync(join(incoming, ".tasktopia/current-assets.list"), "utf8").trim().split("\n")).toEqual([
         "existing-bundle.js",

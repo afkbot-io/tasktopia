@@ -28,10 +28,22 @@ prepublish_immutable_dir() {
           target_parent="$(dirname "$target_parent")"
         done
       fi
-    done < <(find "$source_dir" -type f -print0)
+    done < <(find "$source_dir" -type f ! -name '*.map' -print0)
   fi
 
-  cp -an "$source_dir/." "$target_dir/" || true
+  while IFS= read -r -d '' source_file; do
+    relative_path="${source_file#"$source_dir"/}"
+    install -d -m 0755 "$target_dir/$relative_path"
+  done < <(find "$source_dir" -mindepth 1 -type d -print0)
+
+  while IFS= read -r -d '' source_file; do
+    relative_path="${source_file#"$source_dir"/}"
+    target_file="$target_dir/$relative_path"
+    if [[ ! -e "$target_file" ]]; then
+      install -d -m 0755 "$(dirname "$target_file")"
+      cp -p -- "$source_file" "$target_file"
+    fi
+  done < <(find "$source_dir" -type f ! -name '*.map' -print0)
 
   while IFS= read -r -d '' source_file; do
     relative_path="${source_file#"$source_dir"/}"
@@ -40,7 +52,7 @@ prepublish_immutable_dir() {
       echo "Immutable asset collision or incomplete copy: $relative_path" >&2
       return 1
     fi
-  done < <(find "$source_dir" -type f -print0)
+  done < <(find "$source_dir" -type f ! -name '*.map' -print0)
 }
 
 prepublish_immutable_file() {
@@ -200,6 +212,7 @@ retain_failed_asset_generations() {
     while IFS= read -r relative_path; do
       safe_asset_relative_path "$relative_path" || return 1
       [[ "$relative_path" == assets/* ]] || return 1
+      [[ "$relative_path" != *.map ]] || continue
       source_file="$active_dir/$relative_path"
       [[ -f "$source_file" ]] || {
         echo "Retained failed-generation asset is missing: $relative_path" >&2
@@ -285,7 +298,7 @@ record_current_asset_generation() {
   {
     while IFS= read -r -d '' asset_file; do
       printf '%s\n' "${asset_file#"$asset_root"/}"
-    done < <(find "$asset_root" -type f -print0)
+    done < <(find "$asset_root" -type f ! -name '*.map' -print0)
   } | LC_ALL=C sort > "$metadata_dir/current-assets.list"
 }
 
@@ -334,7 +347,7 @@ retain_active_asset_generation() {
       {
         while IFS= read -r -d '' asset_file; do
           printf '%s\n' "${asset_file#"$active_dir/assets"/}"
-        done < <(find "$active_dir/assets" -type f -print0)
+        done < <(find "$active_dir/assets" -type f ! -name '*.map' -print0)
       } | LC_ALL=C sort > "$previous_list"
     fi
     return
@@ -345,6 +358,7 @@ retain_active_asset_generation() {
       echo "Unsafe asset generation path: $relative_path" >&2
       return 1
     }
+    [[ "$relative_path" != *.map ]] || continue
     source_file="$active_dir/assets/$relative_path"
     [[ -f "$source_file" ]] || {
       echo "Active asset generation is incomplete: $relative_path" >&2
