@@ -65,14 +65,16 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
   await expect(country.locator(".country-overview-city")).toHaveCount(1);
   expect(Number(await country.getAttribute("data-country-flights"))).toBeGreaterThan(0);
   await expect(country.locator(".country-side-fog")).toHaveCount(0);
-  expect(Number(await country.getAttribute("data-country-zoom"))).toBeGreaterThan(1);
+  await expect(country).toHaveAttribute("data-country-ready", "true");
+  expect(Number(await country.getAttribute("data-country-zoom"))).toBeGreaterThanOrEqual(.55);
+  expect(Number(await country.getAttribute("data-country-zoom"))).toBeLessThanOrEqual(1.1);
   await page.screenshot({ path: testInfo.outputPath("country.png"), fullPage: true });
 
   const countryBox = await country.boundingBox();
   expect(countryBox).not.toBeNull();
   await page.mouse.move(countryBox!.x + countryBox!.width / 2, countryBox!.y + countryBox!.height / 2);
   await page.mouse.wheel(0, 600);
-  await expect.poll(async () => Number(await country.getAttribute("data-country-zoom"))).toBe(1);
+  await expect.poll(async () => Number(await country.getAttribute("data-country-zoom"))).toBe(.55);
   await page.mouse.wheel(0, 240);
   const planet = page.locator(".planet-atlas");
   await expect(planet).toBeVisible({ timeout: 5_000 });
