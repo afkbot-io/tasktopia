@@ -1,4 +1,5 @@
 import { gameAssetUrl } from "../../shared/catalog";
+import { ATLAS_AIRCRAFT_ENDPOINT_KEYFRAMES } from "../../shared/atlas-scene";
 
 const AIRCRAFT_MODELS = Array.from({ length: 8 }, (_, index) => ({ body: `atlas/aircraft/airplane-model-${index + 1}-frame-1.png` }));
 const PLANET_AIRCRAFT_MODELS = Array.from({ length: 8 }, (_, index) => ({ body: `atlas/aircraft-v4/airplane-topdown-${index + 1}.png` }));
@@ -20,7 +21,9 @@ export function AtlasAircraft({ path, durationSeconds, delaySeconds, kind, facin
   const width = size === "planet" ? 24 : 36;
   const height = size === "planet" ? 16 : 24;
   const lifecycle = startsAtAirport || endsAtAirport
-    ? `${startsAtAirport ? "0.05" : "1"};1;1;${endsAtAirport ? "0.05" : "1"}`
+    ? startsAtAirport && endsAtAirport
+      ? ATLAS_AIRCRAFT_ENDPOINT_KEYFRAMES
+      : `${startsAtAirport ? "0.05" : "1"};1;1;${endsAtAirport ? "0.05" : "1"}`
     : null;
   return <g className="atlas-aircraft-flight" data-facing={facing}>
     <animateMotion path={path} dur={`${durationSeconds}s`} begin={`${delaySeconds}s`} repeatCount="indefinite" rotate={rotateWithPath ? "auto" : undefined} />

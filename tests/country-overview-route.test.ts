@@ -75,7 +75,7 @@ describe("country overview HTTP boundary", () => {
         miniature: {
           columns: expect.any(Number),
           rows: expect.any(Number),
-          blockSize: 8,
+          blockSize: 16,
           districtCodes: expect.any(String),
           coverageCodes: expect.any(String),
           shapeCodes: expect.any(String),

@@ -1,5 +1,6 @@
 import type { PlanetAtlasDto, PlanetCountryDto } from "./planet-atlas-contract";
 import type { TerrainKind } from "./contracts";
+import { atlasRoutePath, buildAtlasFlightGeometry } from "./atlas-scene";
 import { terrainAt } from "./world-terrain";
 
 export type PlanetHex = { q: number; r: number };
@@ -214,10 +215,6 @@ function buildAirports(country: PlanetCountryDto, cells: PlanetTerrainCell[], ra
   });
 }
 
-function pathForRoute(from: PlanetPoint, control: PlanetPoint, to: PlanetPoint): string {
-  return `M${from.x.toFixed(1)} ${from.y.toFixed(1)} Q${control.x.toFixed(1)} ${control.y.toFixed(1)} ${to.x.toFixed(1)} ${to.y.toFixed(1)}`;
-}
-
 export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas {
   const count = Math.max(1, atlas.countries.length);
   const columns = Math.max(92, Math.ceil(Math.sqrt(count) * 30));
@@ -287,11 +284,7 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
     const offset = 1 + hashText(`airport-route-offset:${index}`, atlas.planetSeed) % (airports.length - 1);
     const to = airports[(index + offset) % airports.length]!;
     const routeKey = `${from.id}:${to.id}:${index}`;
-    const dx = to.point.x - from.point.x;
-    const dy = to.point.y - from.point.y;
-    const distance = Math.max(1, Math.hypot(dx, dy));
-    const bend = ((hashText(routeKey, atlas.planetSeed) % 2) * 2 - 1) * Math.min(68, 16 + distance * .2);
-    const control = { x: (from.point.x + to.point.x) / 2 - dy / distance * bend, y: (from.point.y + to.point.y) / 2 + dx / distance * bend };
+    const geometry = buildAtlasFlightGeometry(from.point, to.point, routeKey, 68);
     routes.push({
       id: `planet-route-${index}`,
       fromCountryId: from.countryId,
@@ -299,9 +292,9 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
       fromAirportId: from.id,
       toAirportId: to.id,
       from: from.point,
-      control,
+      control: geometry.control,
       to: to.point,
-      path: pathForRoute(from.point, control, to.point),
+      path: geometry.path,
       durationSeconds: 12 + hashText(routeKey) % 11,
       delaySeconds: -(hashText(routeKey, 91) % 17),
       planeKind: hashText(routeKey, 47) % 8,
@@ -320,11 +313,7 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
         : side === 2
           ? { x: random01(edgeSeed ^ 0x33) * pixelWidth, y: 0 }
           : { x: random01(edgeSeed ^ 0x44) * pixelWidth, y: pixelHeight };
-    const dx = to.point.x - from.x;
-    const dy = to.point.y - from.y;
-    const distance = Math.max(1, Math.hypot(dx, dy));
-    const bend = ((edgeSeed & 1) === 0 ? -1 : 1) * Math.min(110, 24 + distance * .18);
-    const control = { x: (from.x + to.point.x) / 2 - dy / distance * bend, y: (from.y + to.point.y) / 2 + dx / distance * bend };
+    const geometry = buildAtlasFlightGeometry(from, to.point, `planet-edge:${to.id}`, 110);
     routes.push({
       id: `planet-edge-route-${index}`,
       fromCountryId: null,
@@ -332,9 +321,9 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
       fromAirportId: null,
       toAirportId: to.id,
       from,
-      control,
+      control: geometry.control,
       to: to.point,
-      path: pathForRoute(from, control, to.point),
+      path: geometry.path,
       durationSeconds: 14 + edgeSeed % 12,
       delaySeconds: -(edgeSeed % 29),
       planeKind: edgeSeed % 8,
@@ -412,7 +401,7 @@ export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: Pl
     const from = affineProject(route.from, base, camera);
     const control = affineProject(route.control, base, camera);
     const to = affineProject(route.to, base, camera);
-    return { ...route, from, control, to, path: pathForRoute(from, control, to) };
+    return { ...route, from, control, to, path: atlasRoutePath(from, control, to) };
   });
   const clouds = base.clouds.map((cloud) => {
     const point = affineProject(cloud, base, atmosphereCamera);

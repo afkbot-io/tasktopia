@@ -30,15 +30,21 @@ test("country overview keeps projected city silhouettes and accessible controls"
 
   await loginAndOpenCountry(page);
   const atlas = page.locator(".country-overview");
-  await expect(atlas).toHaveAttribute("data-country-renderer", "pixi");
+  await expect(atlas).toHaveAttribute("data-country-renderer", "raster-dom");
   await expect(atlas.locator("svg")).toHaveCount(0);
   await expect(atlas.locator("canvas")).toHaveCount(1);
   await expect(atlas.locator(".country-overview-city")).toHaveCount(10);
   await expect(atlas.locator(".country-side-fog")).toHaveCount(0);
   await expect(atlas).toHaveAttribute("data-country-terrain-cells", "792");
-  await expect(atlas).toHaveAttribute("data-country-terrain-render", "graphics");
-  await expect(atlas).toHaveAttribute("data-country-city-render", "semantic-graphics");
+  await expect(atlas).toHaveAttribute("data-country-terrain-render", "shared-pixel-tiles");
+  await expect(atlas).toHaveAttribute("data-country-city-render", "filled-16x16-atlas-tiles");
   expect(Number(await atlas.getAttribute("data-country-selected-cells"))).toBeGreaterThan(0);
+  expect(Number(await atlas.getAttribute("data-country-airports"))).toBe(10);
+  const aircraft = atlas.locator(".country-atlas-aircraft");
+  await expect(aircraft).toHaveCount(5);
+  const flightBefore = await aircraft.first().getAttribute("style");
+  await page.waitForTimeout(160);
+  await expect.poll(() => aircraft.first().getAttribute("style")).not.toBe(flightBefore);
   expect(atlasRequests.length).toBeGreaterThan(0);
 
   const activeLabel = atlas.locator('.country-overview-city[data-active="true"]');
@@ -66,10 +72,11 @@ test("country overview keeps projected city silhouettes and accessible controls"
       hasRawGeometry: /buildings|roads|surfaces|features|footprint/.test(new TextDecoder().decode(body)),
     };
   });
-  expect(metrics).toMatchObject({ status: 200, etag: expect.any(String), schemaVersion: 4, semanticBlockSize: 8, hasRawGeometry: false });
+  expect(metrics).toMatchObject({ status: 200, etag: expect.any(String), schemaVersion: 4, semanticBlockSize: 16, hasRawGeometry: false });
   expect(metrics.terrainCells).toBe(metrics.semanticCells);
   expect(metrics.bytes).toBeLessThan(200_000);
   await testInfo.attach("country-overview-metrics", { body: Buffer.from(JSON.stringify(metrics, null, 2)), contentType: "application/json" });
+  await expect(atlas).toHaveAttribute("data-country-ready", "true");
   if (process.env.ATLAS_SCREENSHOT_PATH) await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH, fullPage: true });
   expect(browserErrors.filter((message) => !message.includes("401 (Unauthorized)"))).toEqual([]);
 });
@@ -90,6 +97,7 @@ test("country camera is RAF-driven and its zoom is intentionally bounded", async
   await expect.poll(async () => Number(await atlas.getAttribute("data-country-zoom"))).toBeLessThanOrEqual(2.6);
   expect(await atlas.locator(".country-overview-city").count()).toBe(10);
   await page.waitForTimeout(250);
+  expect(Number(await atlas.getAttribute("data-country-camera-frame-max-ms"))).toBeLessThan(50);
   const longTasks = await page.evaluate(() => (window as typeof window & { __countryLongTasks?: number[] }).__countryLongTasks ?? []);
   expect(longTasks).toEqual([]);
   await testInfo.attach("country-interaction-performance", { body: Buffer.from(JSON.stringify({ longTasks, zoom: await atlas.getAttribute("data-country-zoom") }, null, 2)), contentType: "application/json" });
@@ -205,7 +213,8 @@ test("distinct full-city visits release renderer heap before the next city", asy
   for (let cityIndex = 0; cityIndex < 3; cityIndex += 1) {
     await page.locator(".country-overview-city").nth(cityIndex).dispatchEvent("click");
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
-    await expect(page.locator(".map-region canvas")).toHaveCount(1);
+    await expect(page.locator(".world-canvas-element")).toHaveCount(1);
+    await expect(page.locator(".country-overview-raster")).toHaveCount(0);
     await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Страна" }).click();
     await expect(page.locator(".country-overview")).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(2_250);
@@ -213,7 +222,8 @@ test("distinct full-city visits release renderer heap before the next city", asy
     heapAfterEviction.push(await page.evaluate(() => (
       performance as Performance & { memory?: { usedJSHeapSize: number } }
     ).memory?.usedJSHeapSize ?? 0));
-    await expect(page.locator(".map-region canvas")).toHaveCount(1);
+    await expect(page.locator(".world-canvas-element")).toHaveCount(0);
+    await expect(page.locator(".country-overview-raster")).toHaveCount(1);
   }
   const heapDrift = heapAfterEviction.at(-1)! - heapAfterEviction[0]!;
   // Full-city scenes intentionally retain a small decoded payload/cache

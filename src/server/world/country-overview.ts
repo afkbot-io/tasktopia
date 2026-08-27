@@ -6,7 +6,7 @@ import { boundsOf } from "./grid";
 const OVERVIEW_WIDTH = 144;
 const OVERVIEW_HEIGHT = 88;
 const OVERVIEW_PADDING = 10;
-export const COUNTRY_CITY_LOD_BLOCK_SIZE = 8;
+export const COUNTRY_CITY_LOD_BLOCK_SIZE = 16;
 
 type CityCenter = { id: string; sourceCenter: Cell };
 
@@ -24,9 +24,9 @@ export type CountryCityMiniature = {
 };
 
 /**
- * Reduces canonical district ownership to fixed 8x8-cell semantic blocks. It
+ * Reduces canonical district ownership to fixed 16x16-cell semantic blocks. It
  * does not copy buildings, roads or props. The stable block size preserves the
- * city's proportions and makes snapshot cost proportional to area / 64 rather
+ * city's proportions and makes snapshot cost proportional to area / 256 rather
  * than to every simulation cell.
  */
 export function projectCountryCityMiniature(input: {

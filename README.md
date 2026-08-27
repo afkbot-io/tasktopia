@@ -217,7 +217,7 @@ sudo /srv/tasktopia/app/deploy/update-server.sh
 
 ```mermaid
 flowchart LR
-    Team["Команда"] --> Web["React + PixiJS"]
+    Team["Команда"] --> Web["React + SVG/Canvas/PixiJS"]
     Agent["AI-агент"] --> MCP["MCP runtime :3002"]
     Web --> API["Web API + Socket.IO :3000"]
     Operator["Полный replay"] --> World["World runtime :3003"]
@@ -241,7 +241,7 @@ flowchart LR
 - **Durable generation jobs** изолируют CPU/geometry work от карты и MCP; bounded timeout возвращает polling ID, не теряя принятую команду.
 - **Redis** необязателен и используется только как fail-open content-addressed cache/singleflight; PostgreSQL остаётся источником истины.
 - **React** отвечает за управление проектом и карточки задач.
-- **PixiJS** рисует отдельные сцены планеты, страны и города; серверные чанки остаются внутренней проекцией хранения, но не единицей сетевой навигации внутри города.
+- **SVG/Canvas/PixiJS** разделяют уровни карты: PLANET использует SVG, COUNTRY — статический pixel-raster и DOM aircraft, CITY — PixiJS; серверные чанки остаются внутренней проекцией хранения, но не единицей сетевой навигации внутри города.
 - **Socket.IO** доставляет изменения только в затронутые области города.
 
 Подробнее: [архитектура](docs/ARCHITECTURE.md), [генерация мира](docs/WORLD-GENERATION.md), [здания](docs/BUILDINGS.md), [страны и доступ](docs/COUNTRIES-AND-ACCESS.md).

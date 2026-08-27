@@ -1,7 +1,8 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../../shared/planet-atlas-contract";
-import { gameAssetUrl, TERRAIN_SPRITES } from "../../shared/catalog";
+import { gameAssetUrl } from "../../shared/catalog";
 import { ATLAS_AIRPORT_SVG_PATH } from "../../shared/atlas-airport";
+import { atlasTerrainAsset } from "../../shared/atlas-scene";
 import {
   layoutPlanetCountryLabels,
   projectPlanetAtlas,
@@ -10,7 +11,6 @@ import {
   type PlanetMapCamera,
   type PlanetMapCell,
   type PlanetMapCountry,
-  type PlanetTerrainKind,
 } from "../../shared/planet-atlas";
 import { api } from "../api";
 import { advanceAtlasEntryHysteresis, atlasTargetCoverage, continuousAtlasZoom, initialAtlasEntryHysteresis } from "../atlas-zoom-navigation";
@@ -23,20 +23,8 @@ const MIN_MAP_ZOOM = .82;
 const MAX_MAP_ZOOM = 8.5;
 const COUNTRY_ENTRY_COVERAGE = .56;
 const COUNTRY_ENTRY_REARM_ZOOM = 1.08;
-const TERRAIN_FAMILY: Record<PlanetTerrainKind, keyof typeof TERRAIN_SPRITES> = {
-  grass: "GRASS",
-  meadow: "MEADOW",
-  forest: "FOREST",
-  hill: "HILL",
-  mountain: "MOUNTAIN",
-  coast: "SAND",
-  river: "SHALLOW_WATER",
-  stone: "STONE",
-};
-
 function terrainAsset(cell: PlanetMapCell): string {
-  const sprites = TERRAIN_SPRITES[TERRAIN_FAMILY[cell.terrain]] ?? TERRAIN_SPRITES.GRASS!;
-  return sprites[Math.abs(cell.q * 31 + cell.r * 17) % sprites.length] ?? sprites[0]!;
+  return atlasTerrainAsset(cell.terrain, cell.q, cell.r);
 }
 
 function countryScreenBounds(country: PlanetMapCountry) {
