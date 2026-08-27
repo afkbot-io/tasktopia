@@ -7,9 +7,11 @@ import { countryOverviewEventBatchImpact } from "../../shared/country-overview-e
 import { gameAssetUrl } from "../../shared/catalog";
 import { ATLAS_AIRPORT_POLYGON } from "../../shared/atlas-airport";
 import { api } from "../api";
+import { smoothCameraScale } from "../world-camera";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 2.6;
+const CITY_LOD_CELL_SIZE = .36;
 
 type Camera = { zoom: number; centerX: number; centerY: number };
 type Flight = { view: Sprite; baseScaleX: number; baseScaleY: number; elapsed: number; duration: number; delay: number; from: { x: number; y: number }; control: { x: number; y: number }; to: { x: number; y: number } };
@@ -21,8 +23,8 @@ function colorNumber(value: string | undefined, fallback: number): number {
 }
 
 function drawAirport(graphics: Graphics, x: number, y: number): void {
-  const glyphScale = .36;
-  graphics.rect(x - 1.35, y - 1.35, 2.7, 2.7).fill(0x102427).stroke({ color: 0xe5cf72, width: .28 });
+  const glyphScale = .24;
+  graphics.rect(x - .95, y - .95, 1.9, 1.9).fill(0x102427).stroke({ color: 0xe5cf72, width: .2 });
   graphics.poly(ATLAS_AIRPORT_POLYGON.map((coordinate, index) => coordinate * glyphScale + (index % 2 === 0 ? x : y - .18))).fill(0xf2eee0);
 }
 
@@ -38,6 +40,7 @@ function terrainColor(kind: CountryOverviewTerrainKind, seed: number, x: number,
     case "stone": return value % 3 === 0 ? 0x858b82 : 0x747e79;
     case "river": return value % 3 === 0 ? 0x2b7192 : 0x317f9e;
     case "meadow": return value % 3 === 0 ? 0x83a457 : 0x789852;
+    case "unknown": return value % 3 === 0 ? 0x17353c : 0x142e35;
     default: return value % 3 === 0 ? 0x789852 : 0x71904d;
   }
 }
@@ -66,9 +69,12 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
     setOverview(null);
     setRenderReady(false);
     setError("");
-    void api<CountryOverviewDto>(`/api/countries/${countryId}/overview`, { signal: controller.signal })
+    void api<CountryOverviewDto>(`/api/countries/${countryId}/overview`, {
+      signal: controller.signal,
+      headers: { accept: "application/vnd.tasktopia.country-overview+json; version=4" },
+    })
       .then((next) => {
-        if (next.schemaVersion !== 3 || next.countryId !== countryId) throw new Error("Сервер вернул карту другой страны");
+        if (next.schemaVersion !== 4 || next.countryId !== countryId) throw new Error("Сервер вернул карту другой страны");
         setOverview(next);
       })
       .catch((reason) => {
@@ -90,9 +96,13 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       return;
     }
     const controller = new AbortController();
-    void api<CountryOverviewDto>(`/api/countries/${countryId}/overview`, { signal: controller.signal, cache: "reload" })
+    void api<CountryOverviewDto>(`/api/countries/${countryId}/overview`, {
+      signal: controller.signal,
+      cache: "reload",
+      headers: { accept: "application/vnd.tasktopia.country-overview+json; version=4" },
+    })
       .then((next) => {
-        if (next.schemaVersion !== 3 || next.countryId !== countryId) throw new Error("Сервер вернул карту другой страны");
+        if (next.schemaVersion !== 4 || next.countryId !== countryId) throw new Error("Сервер вернул карту другой страны");
         setOverview(next);
         processedEventIdRef.current = latestId;
         onEventsProcessed(latestId);
@@ -110,6 +120,8 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
     setRenderReady(false);
     let disposed = false;
     let frame = 0;
+    let zoomFrame = 0;
+    let lastZoomFrame = 0;
     let dragging: { x: number; y: number; centerX: number; centerY: number } | null = null;
     const entryCity = overview.cities.find((city) => city.id === initialFocusCityId);
     const camera: Camera = {
@@ -117,6 +129,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       centerX: entryCity?.atlasCenter.x ?? (overview.bounds.minX + overview.bounds.maxX) / 2,
       centerY: entryCity?.atlasCenter.y ?? (overview.bounds.minY + overview.bounds.maxY) / 2,
     };
+    const targetCamera: Camera = { ...camera };
     const app = new Application();
     const scene = new Container();
     const flights: Flight[] = [];
@@ -150,7 +163,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         return label ? [{ city, label, width: Math.max(116, label.offsetWidth), height: Math.max(34, label.offsetHeight) }] : [];
       });
       for (const { city, label, width: labelWidth, height: labelHeight } of labelMetrics) {
-        const labelOffset = Math.max(28, (city.miniature.rows / 2 + 4) * scale);
+        const labelOffset = Math.max(28, (city.miniature.rows * CITY_LOD_CELL_SIZE / 2 + 3) * scale);
         const anchorX = scene.position.x + city.atlasCenter.x * scale;
         const anchorY = scene.position.y + city.atlasCenter.y * scale;
         const candidates = [
@@ -175,6 +188,24 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
     const scheduleCamera = () => {
       if (!frame) frame = requestAnimationFrame(applyCamera);
     };
+    const animateZoom = (timestamp: number) => {
+      zoomFrame = 0;
+      if (disposed) return;
+      const deltaMs = lastZoomFrame ? timestamp - lastZoomFrame : 16;
+      lastZoomFrame = timestamp;
+      camera.zoom = smoothCameraScale(camera.zoom, targetCamera.zoom, deltaMs);
+      camera.centerX = smoothCameraScale(camera.centerX, targetCamera.centerX, deltaMs);
+      camera.centerY = smoothCameraScale(camera.centerY, targetCamera.centerY, deltaMs);
+      applyCamera();
+      if (camera.zoom !== targetCamera.zoom || camera.centerX !== targetCamera.centerX || camera.centerY !== targetCamera.centerY) {
+        zoomFrame = requestAnimationFrame(animateZoom);
+      } else {
+        lastZoomFrame = 0;
+      }
+    };
+    const scheduleZoom = () => {
+      if (!zoomFrame) zoomFrame = requestAnimationFrame(animateZoom);
+    };
 
     void (async () => {
       await app.init({ resizeTo: host, backgroundColor: 0x205f82, antialias: false, autoDensity: true, resolution: Math.min(devicePixelRatio, 2), preference: "webgl" });
@@ -185,14 +216,29 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       app.stage.addChild(scene);
 
       const terrain = new Graphics();
-      const { columns, rows, cellSize, terrainCodes } = overview.geography;
+      terrain.roundPixels = true;
+      const { columns, rows, cellSize, terrainCodes, territoryCodes } = overview.geography;
+      let selectedCellCount = 0;
+      let neighborCellCount = 0;
+      let waterCellCount = 0;
+      let unknownCellCount = 0;
       for (let row = 0; row < rows; row += 1) {
         for (let column = 0; column < columns; column += 1) {
           const index = row * columns + column;
           const kind = decodeCountryTerrain(terrainCodes[index] ?? "0");
+          const territory = territoryCodes[index] ?? "0";
           const x = column * cellSize;
           const y = row * cellSize;
           terrain.rect(x, y, cellSize, cellSize).fill(terrainColor(kind, overview.terrainSeed, column, row));
+          if (territory === "1") {
+            selectedCellCount += 1;
+            terrain.rect(x, y, cellSize, cellSize).fill({ color: 0xc6d984, alpha: .07 });
+          } else if (territory === "2") {
+            neighborCellCount += 1;
+            terrain.rect(x, y, cellSize, cellSize).fill({ color: 0x31515a, alpha: .14 });
+          }
+          if (kind === "deep_water" || kind === "shallow_water") waterCellCount += 1;
+          else if (kind === "unknown") unknownCellCount += 1;
           const detail = (overview.terrainSeed ^ Math.imul(column + 11, 73856093) ^ Math.imul(row + 19, 19349663)) >>> 0;
           if (kind === "forest" && detail % 3 !== 0) terrain.rect(x + 1, y + 1, 2, 2).fill(0x214d34);
           else if (kind === "mountain") terrain.poly([x, y + 4, x + 2, y, x + 4, y + 4]).fill(0x475456).poly([x + 2, y, x + 3, y + 2, x + 1, y + 2]).fill(0xc2c8bd);
@@ -202,32 +248,57 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         }
       }
       scene.addChild(terrain);
-      terrain.cacheAsTexture({ resolution: 1, antialias: false });
+      host.dataset.countryTerrainRender = "graphics";
+      host.dataset.countrySelectedCells = String(selectedCellCount);
+      host.dataset.countryNeighborCells = String(neighborCellCount);
+      host.dataset.countryWaterCells = String(waterCellCount);
+      host.dataset.countryUnknownCells = String(unknownCellCount);
 
       const cityById = new Map(overview.cities.map((city) => [city.id, city]));
       const cities = new Graphics();
+      cities.roundPixels = true;
       for (const city of overview.cities) {
-        const { columns: miniatureColumns, rows: miniatureRows, districtCodes, airportCell } = city.miniature;
-        const left = Math.round(city.atlasCenter.x - miniatureColumns / 2);
-        const top = Math.round(city.atlasCenter.y - miniatureRows / 2);
+        const { columns: miniatureColumns, rows: miniatureRows, districtCodes, coverageCodes, shapeCodes, terrainCodes: cityTerrainCodes, airportCell } = city.miniature;
+        const left = city.atlasCenter.x - miniatureColumns * CITY_LOD_CELL_SIZE / 2;
+        const top = city.atlasCenter.y - miniatureRows * CITY_LOD_CELL_SIZE / 2;
         for (let index = 0; index < districtCodes.length; index += 1) {
           const districtCode = Number.parseInt(districtCodes[index] ?? "0", 16);
-          if (!districtCode) continue;
-          const x = left + index % miniatureColumns;
-          const y = top + Math.floor(index / miniatureColumns);
+          const coverage = Number.parseInt(coverageCodes[index] ?? "0", 16);
+          const shape = Number.parseInt(shapeCodes[index] ?? "0", 16);
+          if (!districtCode || !coverage) continue;
+          const x = left + index % miniatureColumns * CITY_LOD_CELL_SIZE;
+          const y = top + Math.floor(index / miniatureColumns) * CITY_LOD_CELL_SIZE;
           const district = city.districts[(districtCode - 1) % Math.max(1, city.districts.length)];
-          const base = colorNumber(district?.color, 0x80905b);
-          cities.rect(x, y, 1, 1).fill(base);
+          const base = terrainColor(decodeCountryTerrain(cityTerrainCodes[index] ?? "0"), overview.terrainSeed, index % miniatureColumns, Math.floor(index / miniatureColumns));
+          for (let quadrant = 0; quadrant < 4; quadrant += 1) if (shape & 1 << quadrant) {
+            cities.rect(
+              x + quadrant % 2 * CITY_LOD_CELL_SIZE / 2,
+              y + Math.floor(quadrant / 2) * CITY_LOD_CELL_SIZE / 2,
+              CITY_LOD_CELL_SIZE / 2,
+              CITY_LOD_CELL_SIZE / 2,
+            ).fill(base);
+          }
+          if (city.id === activeCityId) cities.rect(x, y, CITY_LOD_CELL_SIZE, CITY_LOD_CELL_SIZE)
+            .stroke({ color: 0xf0cf56, width: .06, alpha: .7 });
           const detail = (overview.terrainSeed ^ Math.imul(index + 3, 2_654_435_761) ^ city.id.length) >>> 0;
           const roofFrequency = Math.max(2, 7 - Math.min(5, district?.taskCount ?? 0));
-          if (detail % roofFrequency === 0) cities.rect(x + .15, y + .1, .65, .5).fill(city.id === activeCityId ? 0xf0cf56 : 0xd5c08a);
-          else if (detail % 3 === 0) cities.rect(x + .2, y + .2, .6, .6).fill(0x52666a);
+          if (coverage >= 8 && detail % roofFrequency === 0) cities.rect(
+            x + CITY_LOD_CELL_SIZE * .2, y + CITY_LOD_CELL_SIZE * .15,
+            CITY_LOD_CELL_SIZE * .6, CITY_LOD_CELL_SIZE * .45,
+          ).fill(city.id === activeCityId ? 0xf0cf56 : colorNumber(district?.color, 0xd5c08a));
+          else if (coverage >= 5 && detail % 3 === 0) cities.rect(
+            x + CITY_LOD_CELL_SIZE * .25, y + CITY_LOD_CELL_SIZE * .25,
+            CITY_LOD_CELL_SIZE * .5, CITY_LOD_CELL_SIZE * .5,
+          ).fill(0x52666a);
         }
-        cities.rect(left - .5, top - .5, miniatureColumns + 1, miniatureRows + 1).stroke({ color: city.id === activeCityId ? 0xf0cf56 : 0x102427, width: .55, alpha: .9 });
-        drawAirport(cities, left + airportCell.x + .5, top + airportCell.y + .5);
+        drawAirport(
+          cities,
+          left + (airportCell.x + .5) * CITY_LOD_CELL_SIZE,
+          top + (airportCell.y + .5) * CITY_LOD_CELL_SIZE,
+        );
       }
       scene.addChild(cities);
-      cities.cacheAsTexture({ resolution: 1, antialias: false });
+      host.dataset.countryCityRender = "semantic-graphics";
 
       const routeInputs = overview.connections.slice(0, 5).flatMap((connection, index) => {
         const from = cityById.get(connection.fromCityId)?.atlasCenter;
@@ -302,14 +373,40 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
     observer.observe(host);
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-      const next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * Math.exp(-event.deltaY * .0015)));
-      if (next === MIN_ZOOM && camera.zoom === MIN_ZOOM && event.deltaY > 0) { onZoomOut(); return; }
-      camera.zoom = next;
-      scheduleCamera();
+      const next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetCamera.zoom * Math.exp(-event.deltaY * .0015)));
+      if (next === MIN_ZOOM && targetCamera.zoom === MIN_ZOOM && camera.zoom <= MIN_ZOOM + .001 && event.deltaY > 0) { onZoomOut(); return; }
+      if (!app.renderer) return;
+      const rect = host.getBoundingClientRect();
+      const width = app.renderer.width / app.renderer.resolution;
+      const height = app.renderer.height / app.renderer.resolution;
+      const screenX = (event.clientX - rect.left) / Math.max(1, rect.width) * width;
+      const screenY = (event.clientY - rect.top) / Math.max(1, rect.height) * height;
+      const worldX = (screenX - scene.position.x) / Math.max(.001, scene.scale.x);
+      const worldY = (screenY - scene.position.y) / Math.max(.001, scene.scale.y);
+      const worldWidth = overview.bounds.maxX - overview.bounds.minX;
+      const worldHeight = overview.bounds.maxY - overview.bounds.minY;
+      const nextScale = Math.min(width / worldWidth, height / worldHeight) * next;
+      targetCamera.zoom = next;
+      targetCamera.centerX = worldX + (width / 2 - screenX) / nextScale;
+      targetCamera.centerY = worldY + (height / 2 - screenY) / nextScale;
+      const halfVisibleWidth = width / nextScale / 2;
+      const halfVisibleHeight = height / nextScale / 2;
+      targetCamera.centerX = halfVisibleWidth * 2 >= worldWidth
+        ? (overview.bounds.minX + overview.bounds.maxX) / 2
+        : Math.max(overview.bounds.minX + halfVisibleWidth, Math.min(overview.bounds.maxX - halfVisibleWidth, targetCamera.centerX));
+      targetCamera.centerY = halfVisibleHeight * 2 >= worldHeight
+        ? (overview.bounds.minY + overview.bounds.maxY) / 2
+        : Math.max(overview.bounds.minY + halfVisibleHeight, Math.min(overview.bounds.maxY - halfVisibleHeight, targetCamera.centerY));
+      scheduleZoom();
     };
     const onPointerDown = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest(".country-overview-city")) return;
       dragging = { x: event.clientX, y: event.clientY, centerX: camera.centerX, centerY: camera.centerY };
+      targetCamera.zoom = camera.zoom;
+      targetCamera.centerX = camera.centerX;
+      targetCamera.centerY = camera.centerY;
+      if (zoomFrame) cancelAnimationFrame(zoomFrame);
+      zoomFrame = 0;
       host.setPointerCapture(event.pointerId);
     };
     const onPointerMove = (event: PointerEvent) => {
@@ -319,6 +416,8 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       const scale = Math.min((app.renderer.width / app.renderer.resolution) / worldWidth, (app.renderer.height / app.renderer.resolution) / worldHeight) * camera.zoom;
       camera.centerX = dragging.centerX - (event.clientX - dragging.x) / scale;
       camera.centerY = dragging.centerY - (event.clientY - dragging.y) / scale;
+      targetCamera.centerX = camera.centerX;
+      targetCamera.centerY = camera.centerY;
       scheduleCamera();
     };
     const endDrag = () => { dragging = null; };
@@ -331,6 +430,7 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       disposed = true;
       observer.disconnect();
       if (frame) cancelAnimationFrame(frame);
+      if (zoomFrame) cancelAnimationFrame(zoomFrame);
       host.removeEventListener("wheel", onWheel);
       host.removeEventListener("pointerdown", onPointerDown);
       host.removeEventListener("pointermove", onPointerMove);

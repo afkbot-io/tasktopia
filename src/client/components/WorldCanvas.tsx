@@ -55,6 +55,7 @@ import {
   minimumCameraScale,
   nextCameraTargetScale,
   pixelPerfectCameraScale,
+  smoothCameraScale,
 } from "../world-camera";
 import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
@@ -1710,6 +1711,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         initialScale,
         cameraMinimumScale(),
       );
+      let cameraZoomAnchor: { screenX: number; screenY: number; localX: number; localY: number } | undefined;
       let zoomBoundary = initialAtlasZoomBoundary();
       world.scale.set(appliedInitialScale);
       host.dataset.renderScale = String(appliedInitialScale);
@@ -1831,6 +1833,25 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           if (visibleLoaderReady) void loadVisible();
         });
       };
+      const animateCameraZoom = (ticker: { deltaMS: number }) => {
+        if (!cameraZoomAnchor) return;
+        const nextScale = reducedMotion
+          ? cameraTargetScale
+          : smoothCameraScale(world.scale.x, cameraTargetScale, ticker.deltaMS);
+        world.scale.set(nextScale);
+        host.dataset.renderScale = String(nextScale);
+        world.position.set(
+          cameraZoomAnchor.screenX - cameraZoomAnchor.localX * nextScale,
+          cameraZoomAnchor.screenY - cameraZoomAnchor.localY * nextScale,
+        );
+        clampCamera();
+        if (nextScale === cameraTargetScale) {
+          cameraZoomAnchor = undefined;
+          void loadVisible();
+        }
+      };
+      app.ticker.add(animateCameraZoom);
+      startupDisposers.push(() => app.ticker.remove(animateCameraZoom));
       clampCamera();
       const scheduleResize = () => {
         cancelAnimationFrame(resizeFrame);
@@ -3468,15 +3489,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };
-        const appliedScale = pixelPerfectCameraScale(
-          cameraTargetScale,
-          cameraMinimumScale(),
-        );
-        world.scale.set(appliedScale);
-        host.dataset.renderScale = String(appliedScale);
-        world.position.set(mouse.x - local.x * appliedScale, mouse.y - local.y * appliedScale);
-        clampCamera();
-        void loadVisible();
+        cameraZoomAnchor = { screenX: mouse.x, screenY: mouse.y, localX: local.x, localY: local.y };
+        if (reducedMotion) animateCameraZoom({ deltaMS: 1_000 });
       };
       canvas.addEventListener("wheel", wheel, { passive: false });
       startupDisposers.push(() => canvas.removeEventListener("wheel", wheel));

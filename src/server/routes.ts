@@ -24,6 +24,7 @@ import {
 import { BUILDING_CATALOG } from "../shared/catalog";
 import { MCP_SCOPES, type ChunkPayloadDto, type McpScope, type ViewportPayloadDto } from "../shared/contracts";
 import type { CitySceneDto } from "../shared/city-scene-contract";
+import { legacyCountryOverview, type CountryOverviewDto } from "../shared/country-overview-contract";
 import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
 import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { config } from "./config";
@@ -66,6 +67,15 @@ function legacyCityScene(scene: CitySceneDto) {
     return { ...legacyContent, contentHash: chunkPayloadContentHash(legacyContent) } as ChunkPayloadDto;
   });
   return { ...scene, schemaVersion: 1 as const, chunks };
+}
+
+const COUNTRY_OVERVIEW_V4_MEDIA_TYPE = "application/vnd.tasktopia.country-overview+json";
+
+function negotiatedCountryOverview(overview: CountryOverviewDto, accept: string | undefined) {
+  const wantsV4 = accept?.split(",").some((entry) => (
+    entry.includes(COUNTRY_OVERVIEW_V4_MEDIA_TYPE) && /(?:^|;)\s*version\s*=\s*4(?:\s*;|\s*$)/i.test(entry)
+  ));
+  return wantsV4 ? overview : legacyCountryOverview(overview);
 }
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
@@ -259,8 +269,12 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
   app.get("/api/country-overview", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
-            const overview = await service.getCountryOverview(user.id, user.countryId);
+            const overview = negotiatedCountryOverview(
+              await service.getCountryOverview(user.id, user.countryId),
+              request.headers.accept,
+            );
             const etag = `"${overview.revision}-country-overview-${overview.schemaVersion}"`;
+            reply.header("Vary", "Accept");
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
               .header("Cache-Control", "private, max-age=60, stale-while-revalidate=600")
@@ -272,8 +286,12 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (!user) return reply;
             const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
             if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
-            const overview = await service.getCountryOverview(user.id, countryId);
+            const overview = negotiatedCountryOverview(
+              await service.getCountryOverview(user.id, countryId),
+              request.headers.accept,
+            );
             const etag = `"${overview.revision}-country-overview-${overview.schemaVersion}"`;
+            reply.header("Vary", "Accept");
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
               .header("Cache-Control", "private, max-age=60, stale-while-revalidate=600")

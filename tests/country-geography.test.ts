@@ -3,10 +3,12 @@ import { buildCountryGeography, countryGridNeighbors, snapCountryCitiesToLand } 
 
 describe("country geography LOD", () => {
   const macroCells = [
-    { q: 0, r: 0, id: "country:0:0", terrain: "grass" as const },
-    { q: 1, r: 0, id: "country:1:0", terrain: "mountain" as const },
-    { q: 0, r: 1, id: "country:0:1", terrain: "forest" as const },
-    { q: 1, r: 1, id: "country:1:1", terrain: "river" as const },
+    { q: 0, r: 0, id: "country:0:0", terrain: "grass" as const, ownerCountryId: "country" },
+    { q: 1, r: 0, id: "country:1:0", terrain: "mountain" as const, ownerCountryId: "country" },
+    { q: 0, r: 1, id: "country:0:1", terrain: "forest" as const, ownerCountryId: "country" },
+    { q: 1, r: 1, id: "country:1:1", terrain: "river" as const, ownerCountryId: "country" },
+    { q: 2, r: 0, id: "neighbor:2:0", terrain: "forest" as const, ownerCountryId: "neighbor" },
+    { q: -1, r: 0, id: "ocean:-1:0", terrain: "deep_water" as const, ownerCountryId: null },
   ];
 
   it("expands one deterministic macro geography into bounded square meso cells", () => {
@@ -20,6 +22,15 @@ describe("country geography LOD", () => {
     expect(first.cells.filter((cell) => cell.macroCellId === "country:1:0" && ["mountain", "hill", "stone"].includes(cell.terrain)).length).toBeGreaterThan(4);
     expect(first.cells.some((cell) => cell.terrain === "deep_water")).toBe(true);
     expect(first.cells.some((cell) => cell.terrain === "coast")).toBe(true);
+  });
+
+  it("keeps adjacent foreign land instead of synthesizing an ocean moat", () => {
+    const geography = buildCountryGeography({ countryId: "country", seed: 42, macroCells });
+    const neighbor = geography.cells.filter((cell) => cell.ownerCountryId === "neighbor");
+    expect(neighbor.length).toBeGreaterThan(0);
+    expect(neighbor.every((cell) => cell.land)).toBe(true);
+    expect(neighbor.every((cell) => !["deep_water", "shallow_water", "coast"].includes(cell.terrain))).toBe(true);
+    expect(geography.cells.some((cell) => cell.terrain === "unknown")).toBe(true);
   });
 
   it("uses the same four-neighbour square topology as the city world", () => {
@@ -63,6 +74,6 @@ describe("country geography LOD", () => {
       macroCells: macroCells.map((cell) => ({ ...cell, q: cell.q + 47, r: cell.r + 61 })),
     });
     expect(translated.cells.filter((cell) => cell.land)).toHaveLength(base.cells.filter((cell) => cell.land).length);
-    expect(translated.cells.filter((cell) => cell.land).length).toBeGreaterThan(300);
+    expect(translated.cells.filter((cell) => cell.land).length).toBeGreaterThan(250);
   });
 });

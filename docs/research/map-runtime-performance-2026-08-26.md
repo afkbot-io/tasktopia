@@ -31,9 +31,9 @@ Pixel city pack содержит 1 224 PNG: 5 079 376 bytes на диске и �
 
 ## Активный COUNTRY runtime — 2026-08-27
 
-Единственный COUNTRY runtime — `CountryOverviewCanvas` schema v3. COUNTRY получает `36×22` planet-derived
-terrain cells и семантическую миниатюру каждого города до `14×14`: только
-силуэт районов, плотность, прогресс и airport anchor. Дома, дороги, surfaces,
+Единственный COUNTRY runtime — `CountryOverviewCanvas` schema v4. COUNTRY получает `36×22` planet-derived
+terrain/ownership cells и семантическую миниатюру каждого города с фиксированным CITY-блоком `8×8`: только
+terrain, силуэт районов, плотность, прогресс и airport anchor. Дома, дороги, surfaces,
 props и исходные city footprints в overview payload не передаются. Между
 городами не рисуются синтетические дороги; те же top-down aircraft и общий
 airport glyph используются на PLANET и COUNTRY.

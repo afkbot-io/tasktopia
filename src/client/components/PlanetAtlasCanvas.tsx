@@ -15,6 +15,7 @@ import {
 import { api } from "../api";
 import { advanceAtlasEntryHysteresis, atlasTargetCoverage, continuousAtlasZoom, initialAtlasEntryHysteresis } from "../atlas-zoom-navigation";
 import { planetAtlasCacheKey } from "../planet-atlas-cache";
+import { smoothCameraScale } from "../world-camera";
 import { AtlasAircraft } from "./AtlasAircraft";
 import { AtlasOverviewCard, planetOverviewCardModel } from "./AtlasOverviewCard";
 
@@ -97,6 +98,10 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
 }) {
   const [atlas, setAtlas] = useState<PlanetAtlasDto | null>(() => readCachedPlanet(userId));
   const [camera, setCamera] = useState<PlanetMapCamera>({ panX: 0, panY: 0, zoom: 1 });
+  const cameraRef = useRef<PlanetMapCamera>(camera);
+  const targetCameraRef = useRef<PlanetMapCamera>(camera);
+  const cameraFrameRef = useRef(0);
+  const cameraFrameAtRef = useRef(0);
   const [error, setError] = useState("");
   const [selectingCountryId, setSelectingCountryId] = useState<string | null>(null);
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number; moved: boolean } | null>(null);
@@ -104,6 +109,45 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const entryHysteresis = useRef(initialAtlasEntryHysteresis());
   const atlasView = useRef<SVGSVGElement>(null);
   const initialFocusApplied = useRef(false);
+
+  const scheduleCameraMotion = useCallback(() => {
+    if (cameraFrameRef.current) return;
+    const animate = (timestamp: number) => {
+      const deltaMs = cameraFrameAtRef.current ? timestamp - cameraFrameAtRef.current : 16;
+      cameraFrameAtRef.current = timestamp;
+      const current = cameraRef.current;
+      const target = targetCameraRef.current;
+      const next = {
+        zoom: smoothCameraScale(current.zoom, target.zoom, deltaMs),
+        panX: smoothCameraScale(current.panX, target.panX, deltaMs),
+        panY: smoothCameraScale(current.panY, target.panY, deltaMs),
+      };
+      cameraRef.current = next;
+      setCamera(next);
+      if (next.zoom !== target.zoom || next.panX !== target.panX || next.panY !== target.panY) {
+        cameraFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        cameraFrameRef.current = 0;
+        cameraFrameAtRef.current = 0;
+      }
+    };
+    cameraFrameRef.current = requestAnimationFrame(animate);
+  }, []);
+  const updateCameraImmediately = useCallback((updater: (current: PlanetMapCamera) => PlanetMapCamera) => {
+    if (cameraFrameRef.current) cancelAnimationFrame(cameraFrameRef.current);
+    cameraFrameRef.current = 0;
+    cameraFrameAtRef.current = 0;
+    setCamera((current) => {
+      const next = updater(current);
+      cameraRef.current = next;
+      targetCameraRef.current = next;
+      return next;
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (cameraFrameRef.current) cancelAnimationFrame(cameraFrameRef.current);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -132,11 +176,14 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     if (!country) return;
     initialFocusApplied.current = true;
     entryHysteresis.current = { armed: false };
-    setCamera({
+    const nextCamera = {
       zoom: 2.15,
       panX: Math.max(-1.25, Math.min(1.25, (country.center.x - projectedAtlas.width / 2) / (projectedAtlas.width * .32))),
       panY: Math.max(-1, Math.min(1, (country.center.y - projectedAtlas.height / 2) / (projectedAtlas.height * .32))),
-    });
+    };
+    cameraRef.current = nextCamera;
+    targetCameraRef.current = nextCamera;
+    setCamera(nextCamera);
   }, [initialFocusCountryId, projectedAtlas]);
 
   const selectCountry = useCallback(async (countryId: string, focus?: { x: number; y: number }) => {
@@ -153,23 +200,25 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
       const direction = event.deltaY < 0 ? "IN" : "OUT";
-      const nextZoom = continuousAtlasZoom(camera.zoom, event.deltaY, { min: MIN_MAP_ZOOM, max: MAX_MAP_ZOOM });
+      const baseCamera = targetCameraRef.current;
+      const nextZoom = continuousAtlasZoom(baseCamera.zoom, event.deltaY, { min: MIN_MAP_ZOOM, max: MAX_MAP_ZOOM });
       const bounds = view.getBoundingClientRect();
       const focus = { x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / Math.max(1, bounds.width))), y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / Math.max(1, bounds.height))) };
       const screenFocus = { x: focus.x * map.width, y: focus.y * map.height };
-      const nextCamera = projectedAtlas ? zoomPlanetCameraAtFocus(projectedAtlas, camera, nextZoom, screenFocus) : { ...camera, zoom: nextZoom };
+      const nextCamera = projectedAtlas ? zoomPlanetCameraAtFocus(projectedAtlas, baseCamera, nextZoom, screenFocus) : { ...baseCamera, zoom: nextZoom };
       const nextMap = projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, nextCamera) : map;
       const point = { x: focus.x * nextMap.width, y: focus.y * nextMap.height };
       const country = [...nextMap.countries].sort((left, right) => Math.hypot(left.center.x - point.x, left.center.y - point.y) - Math.hypot(right.center.x - point.x, right.center.y - point.y))[0];
       const coverage = country ? atlasTargetCoverage(countryScreenBounds(country), { minX: 0, minY: 0, maxX: nextMap.width, maxY: nextMap.height }) : 0;
       const entry = advanceAtlasEntryHysteresis(entryHysteresis.current, { direction, zoom: nextZoom, rearmZoom: COUNTRY_ENTRY_REARM_ZOOM, coverage, enterCoverage: COUNTRY_ENTRY_COVERAGE });
       entryHysteresis.current = entry.state;
-      setCamera(nextCamera);
+      targetCameraRef.current = nextCamera;
+      scheduleCameraMotion();
       if (entry.triggered && country) void selectCountry(country.id, focus);
     };
     view.addEventListener("wheel", handleWheel, { passive: false });
     return () => view.removeEventListener("wheel", handleWheel);
-  }, [camera, map, projectedAtlas, selectCountry]);
+  }, [map, projectedAtlas, scheduleCameraMotion, selectCountry]);
 
   if (!map && error) return <div className="atlas-state" role="alert"><strong>Планета недоступна</strong><span>{error}</span></div>;
   if (!map) return <div className="atlas-state" role="status"><i /><span>Собираем материки…</span></div>;
@@ -182,10 +231,10 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   return <div className="planet-atlas" data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={map.countries.length} data-planet-routes={map.routes.length} data-globe-zoom={camera.zoom.toFixed(2)} data-planet-renderer="square-pixel-map">
     <svg ref={atlasView} viewBox={`0 0 ${map.width} ${map.height}`} role="group" aria-label={`Планета: ${atlas?.countries.length ?? map.countries.length} стран`} preserveAspectRatio="xMidYMid meet" tabIndex={0} onKeyDown={(event) => {
       const movement = event.shiftKey ? .22 : .09;
-      if (event.key === "ArrowLeft") setCamera((value) => ({ ...value, panX: Math.max(-1.25, value.panX - movement) }));
-      else if (event.key === "ArrowRight") setCamera((value) => ({ ...value, panX: Math.min(1.25, value.panX + movement) }));
-      else if (event.key === "ArrowUp") setCamera((value) => ({ ...value, panY: Math.max(-1, value.panY - movement) }));
-      else if (event.key === "ArrowDown") setCamera((value) => ({ ...value, panY: Math.min(1, value.panY + movement) }));
+      if (event.key === "ArrowLeft") updateCameraImmediately((value) => ({ ...value, panX: Math.max(-1.25, value.panX - movement) }));
+      else if (event.key === "ArrowRight") updateCameraImmediately((value) => ({ ...value, panX: Math.min(1.25, value.panX + movement) }));
+      else if (event.key === "ArrowUp") updateCameraImmediately((value) => ({ ...value, panY: Math.max(-1, value.panY - movement) }));
+      else if (event.key === "ArrowDown") updateCameraImmediately((value) => ({ ...value, panY: Math.min(1, value.panY + movement) }));
       else return;
       event.preventDefault();
     }} onPointerDown={(event) => {
@@ -197,7 +246,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       const deltaX = event.clientX - active.x;
       const deltaY = event.clientY - active.y;
       active.moved ||= Math.abs(deltaX) + Math.abs(deltaY) > 5;
-      setCamera((value) => ({ ...value, panX: Math.max(-1.25, Math.min(1.25, active.panX - deltaX * .0045 / value.zoom)), panY: Math.max(-1, Math.min(1, active.panY - deltaY * .0045 / value.zoom)) }));
+      updateCameraImmediately((value) => ({ ...value, panX: Math.max(-1.25, Math.min(1.25, active.panX - deltaX * .0045 / value.zoom)), panY: Math.max(-1, Math.min(1, active.panY - deltaY * .0045 / value.zoom)) }));
     }} onPointerUp={(event) => {
       suppressClick.current = Boolean(drag.current?.moved); drag.current = null;
       if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);

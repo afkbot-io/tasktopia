@@ -34,11 +34,17 @@ describe("semantic country city miniature", () => {
         { id: "east", cells: Array.from({ length: 34 }, (_, index) => ({ x: 48 + index, y: 18 + index % 4 })) },
       ],
     });
-    expect(miniature.columns).toBe(14);
+    expect(miniature.blockSize).toBe(8);
+    expect(miniature.columns).toBe(11);
     expect(miniature.rows).toBeLessThan(miniature.columns);
     expect(miniature.districtCodes).toHaveLength(miniature.columns * miniature.rows);
+    expect(miniature.coverageCodes).toHaveLength(miniature.columns * miniature.rows);
+    expect(miniature.shapeCodes).toHaveLength(miniature.columns * miniature.rows);
+    expect(miniature.terrainCodes).toHaveLength(miniature.columns * miniature.rows);
     expect(new Set(miniature.districtCodes)).toEqual(new Set(["0", "1", "2"]));
-    expect(miniature.airportCell.y).toBeGreaterThanOrEqual(2);
+    expect(miniature.coverageCodes).toMatch(/[1-9a-f]/);
+    expect(miniature.shapeCodes).toMatch(/[1-9a-f]/);
+    expect(miniature.airportCell.y).toBeGreaterThanOrEqual(0);
   });
 
   it("creates a bounded fallback core before the first district is published", () => {
@@ -46,8 +52,8 @@ describe("semantic country city miniature", () => {
       sourceBounds: { minX: -80, minY: -50, maxX: 79, maxY: 49 },
       districts: [],
     });
-    expect(miniature.columns).toBeLessThanOrEqual(14);
-    expect(miniature.rows).toBeLessThanOrEqual(14);
+    expect(miniature.columns).toBe(20);
+    expect(miniature.rows).toBe(13);
     expect(miniature.districtCodes).toMatch(/1/);
   });
 
@@ -62,9 +68,13 @@ describe("semantic country city miniature", () => {
       districts: [{ id: "large-district", cells }],
     });
 
-    expect(miniature.columns).toBe(14);
-    expect(miniature.rows).toBe(7);
-    expect(miniature.districtCodes).toHaveLength(98);
+    expect(miniature.blockSize).toBe(8);
+    expect(miniature.columns).toBe(63);
+    expect(miniature.rows).toBe(32);
+    expect(miniature.districtCodes).toHaveLength(2_016);
+    expect(miniature.coverageCodes).toHaveLength(2_016);
+    expect(miniature.shapeCodes).toHaveLength(2_016);
+    expect(miniature.terrainCodes).toHaveLength(2_016);
     expect(new Set(miniature.districtCodes)).toEqual(new Set(["1"]));
   });
 
@@ -96,8 +106,9 @@ describe("semantic country city miniature", () => {
       districts: [{ id: "district", cells }],
     });
     expect(second).toEqual(first);
-    expect(first.columns * first.rows).toBeLessThanOrEqual(14 * 14);
+    expect(first.columns * first.rows).toBeLessThanOrEqual(Math.ceil(200 / 8) ** 2);
     if (orientation === "square") expect(Math.abs(first.columns - first.rows)).toBeLessThanOrEqual(1);
-    else expect(first.columns).toBeGreaterThan(first.rows);
+    else expect(first.columns).toBeGreaterThanOrEqual(first.rows);
+    expect(first.shapeCodes).toMatch(/[1-9a-f]/);
   });
 });

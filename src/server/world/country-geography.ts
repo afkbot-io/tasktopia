@@ -1,10 +1,14 @@
-import type { PlanetTerrainCell, PlanetTerrainKind } from "../../shared/planet-atlas";
+import type { PlanetTerrainCell, PlanetTerrainKind, ProjectedPlanetAtlas } from "../../shared/planet-atlas";
 
 export const COUNTRY_GEOGRAPHY_COLUMNS = 36;
 export const COUNTRY_GEOGRAPHY_ROWS = 22;
 export const COUNTRY_GEOGRAPHY_CELL_SIZE = 4;
 
-export type CountryTerrainKind = PlanetTerrainKind | "deep_water" | "shallow_water";
+export type CountryTerrainKind = PlanetTerrainKind | "deep_water" | "shallow_water" | "unknown";
+export type CountryMacroCell = Pick<PlanetTerrainCell, "q" | "r" | "id"> & {
+  terrain: CountryTerrainKind;
+  ownerCountryId: string | null;
+};
 export type CountryGridPoint = { column: number; row: number };
 export type CountryGeographyCell = CountryGridPoint & {
   id: string;
@@ -14,6 +18,8 @@ export type CountryGeographyCell = CountryGridPoint & {
   land: boolean;
   coast: boolean;
   macroCellId: string | null;
+  ownerCountryId: string | null;
+  selected: boolean;
 };
 
 export type CountryGeography = {
@@ -27,6 +33,28 @@ export type CountryGeography = {
 };
 
 export type CountryCityAnchor = { id: string; atlasCenter: { x: number; y: number } };
+
+/** Select one country's planet cells plus the immediately visible world ring. */
+export function countryMacroContext(atlas: ProjectedPlanetAtlas, countryId: string, padding = 1): CountryMacroCell[] {
+  const selected = atlas.countries.find((country) => country.id === countryId);
+  if (!selected || selected.cells.length === 0) return [];
+  const minQ = Math.min(...selected.cells.map((cell) => cell.q)) - padding;
+  const maxQ = Math.max(...selected.cells.map((cell) => cell.q)) + padding;
+  const minR = Math.min(...selected.cells.map((cell) => cell.r)) - padding;
+  const maxR = Math.max(...selected.cells.map((cell) => cell.r)) + padding;
+  const inside = (cell: { q: number; r: number }) => cell.q >= minQ && cell.q <= maxQ && cell.r >= minR && cell.r <= maxR;
+  const context = new Map<string, CountryMacroCell>();
+  for (const cell of atlas.oceanCells) if (inside(cell)) context.set(`${cell.q}:${cell.r}`, {
+    ...cell, id: `ocean:${cell.q}:${cell.r}`, terrain: "deep_water", ownerCountryId: null,
+  });
+  for (const cell of atlas.coastCells) if (inside(cell)) context.set(`${cell.q}:${cell.r}`, {
+    ...cell, ownerCountryId: null,
+  });
+  for (const country of atlas.countries) for (const cell of country.cells) if (inside(cell)) context.set(`${cell.q}:${cell.r}`, {
+    ...cell, ownerCountryId: country.id,
+  });
+  return [...context.values()].sort((left, right) => left.r - right.r || left.q - right.q);
+}
 
 export function countryGridNeighbors(cell: CountryGridPoint): CountryGridPoint[] {
   return [
@@ -99,7 +127,7 @@ function detailedTerrain(base: PlanetTerrainKind, value: number): PlanetTerrainK
 export function buildCountryGeography(input: {
   countryId: string;
   seed: number;
-  macroCells: ReadonlyArray<Pick<PlanetTerrainCell, "q" | "r" | "id" | "terrain">>;
+  macroCells: ReadonlyArray<CountryMacroCell>;
 }): CountryGeography {
   const macroByKey = new Map(input.macroCells.map((cell) => [`${cell.q}:${cell.r}`, cell]));
   const minQ = input.macroCells.length > 0 ? Math.min(...input.macroCells.map((cell) => cell.q)) : 0;
@@ -108,14 +136,17 @@ export function buildCountryGeography(input: {
   const maxR = input.macroCells.length > 0 ? Math.max(...input.macroCells.map((cell) => cell.r)) : 0;
   const macroWidth = Math.max(1, maxQ - minQ + 1);
   const macroHeight = Math.max(1, maxR - minR + 1);
-  const paddingX = 3;
-  const paddingY = 3;
-  const landColumns = COUNTRY_GEOGRAPHY_COLUMNS - paddingX * 2;
-  const landRows = COUNTRY_GEOGRAPHY_ROWS - paddingY * 2;
+  // Preserve the PLANET macro aspect ratio. Unused cells are explicit
+  // unknown context, never an invented ocean border.
+  const macroScale = Math.min(COUNTRY_GEOGRAPHY_COLUMNS / macroWidth, COUNTRY_GEOGRAPHY_ROWS / macroHeight);
+  const landColumns = Math.max(1, Math.min(COUNTRY_GEOGRAPHY_COLUMNS, Math.floor(macroWidth * macroScale)));
+  const landRows = Math.max(1, Math.min(COUNTRY_GEOGRAPHY_ROWS, Math.floor(macroHeight * macroScale)));
+  const paddingX = Math.floor((COUNTRY_GEOGRAPHY_COLUMNS - landColumns) / 2);
+  const paddingY = Math.floor((COUNTRY_GEOGRAPHY_ROWS - landRows) / 2);
 
   const owners = new Map<string, (typeof input.macroCells)[number]>();
-  for (let row = paddingY; row < COUNTRY_GEOGRAPHY_ROWS - paddingY; row += 1) {
-    for (let column = paddingX; column < COUNTRY_GEOGRAPHY_COLUMNS - paddingX; column += 1) {
+  for (let row = paddingY; row < paddingY + landRows; row += 1) {
+    for (let column = paddingX; column < paddingX + landColumns; column += 1) {
       const q = minQ + Math.min(macroWidth - 1, Math.floor((column - paddingX) * macroWidth / landColumns));
       const r = minR + Math.min(macroHeight - 1, Math.floor((row - paddingY) * macroHeight / landRows));
       const owner = macroByKey.get(`${q}:${r}`);
@@ -123,17 +154,21 @@ export function buildCountryGeography(input: {
     }
   }
 
-  const isLand = (column: number, row: number) => owners.has(`${column}:${row}`);
+  const isLandMacro = (cell: CountryMacroCell | undefined) => Boolean(cell?.ownerCountryId);
+  const isWaterMacro = (cell: CountryMacroCell | undefined) => cell?.terrain === "deep_water" || cell?.terrain === "shallow_water" || cell?.terrain === "coast";
   const cells: CountryGeographyCell[] = [];
   for (let row = 0; row < COUNTRY_GEOGRAPHY_ROWS; row += 1) {
     for (let column = 0; column < COUNTRY_GEOGRAPHY_COLUMNS; column += 1) {
       const owner = owners.get(`${column}:${row}`);
-      const nearLand = countryGridNeighbors({ column, row }).some((neighbor) => isLand(neighbor.column, neighbor.row));
-      const coast = Boolean(owner) && countryGridNeighbors({ column, row }).some((neighbor) => !isLand(neighbor.column, neighbor.row));
+      const land = isLandMacro(owner);
+      const coast = land && countryGridNeighbors({ column, row })
+        .some((neighbor) => isWaterMacro(owners.get(`${neighbor.column}:${neighbor.row}`)));
       const value = hashText(`${input.countryId}:${column}:${row}`, input.seed);
-      const terrain: CountryTerrainKind = owner
-        ? coast ? "coast" : detailedTerrain(owner.terrain, value)
-        : nearLand ? "shallow_water" : "deep_water";
+      const terrain: CountryTerrainKind = !owner
+        ? "unknown"
+        : land
+          ? coast ? "coast" : detailedTerrain(owner.terrain as PlanetTerrainKind, value)
+          : owner.terrain;
       cells.push({
         id: `${input.countryId}:country-cell:${column}:${row}`,
         column,
@@ -141,9 +176,11 @@ export function buildCountryGeography(input: {
         x: column * COUNTRY_GEOGRAPHY_CELL_SIZE,
         y: row * COUNTRY_GEOGRAPHY_CELL_SIZE,
         terrain,
-        land: Boolean(owner),
+        land,
         coast,
         macroCellId: owner?.id ?? null,
+        ownerCountryId: owner?.ownerCountryId ?? null,
+        selected: owner?.ownerCountryId === input.countryId,
       });
     }
   }

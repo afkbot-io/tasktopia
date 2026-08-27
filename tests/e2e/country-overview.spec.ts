@@ -36,6 +36,9 @@ test("country overview keeps projected city silhouettes and accessible controls"
   await expect(atlas.locator(".country-overview-city")).toHaveCount(10);
   await expect(atlas.locator(".country-side-fog")).toHaveCount(0);
   await expect(atlas).toHaveAttribute("data-country-terrain-cells", "792");
+  await expect(atlas).toHaveAttribute("data-country-terrain-render", "graphics");
+  await expect(atlas).toHaveAttribute("data-country-city-render", "semantic-graphics");
+  expect(Number(await atlas.getAttribute("data-country-selected-cells"))).toBeGreaterThan(0);
   expect(atlasRequests.length).toBeGreaterThan(0);
 
   const activeLabel = atlas.locator('.country-overview-city[data-active="true"]');
@@ -46,11 +49,25 @@ test("country overview keeps projected city silhouettes and accessible controls"
 
   const metrics = await page.evaluate(async () => {
     const countryId = document.querySelector<HTMLElement>(".country-overview")!.dataset.countryId!;
-    const response = await fetch(`/api/countries/${countryId}/overview`);
+    const response = await fetch(`/api/countries/${countryId}/overview`, {
+      headers: { accept: "application/vnd.tasktopia.country-overview+json; version=4" },
+    });
     const body = await response.arrayBuffer();
-    return { status: response.status, bytes: body.byteLength, etag: response.headers.get("etag") };
+    const json = JSON.parse(new TextDecoder().decode(body));
+    const miniature = json.cities[0]?.miniature;
+    return {
+      status: response.status,
+      bytes: body.byteLength,
+      etag: response.headers.get("etag"),
+      schemaVersion: json.schemaVersion,
+      semanticBlockSize: miniature?.blockSize,
+      semanticCells: miniature?.districtCodes?.length,
+      terrainCells: miniature?.terrainCodes?.length,
+      hasRawGeometry: /buildings|roads|surfaces|features|footprint/.test(new TextDecoder().decode(body)),
+    };
   });
-  expect(metrics).toMatchObject({ status: 200, etag: expect.any(String) });
+  expect(metrics).toMatchObject({ status: 200, etag: expect.any(String), schemaVersion: 4, semanticBlockSize: 8, hasRawGeometry: false });
+  expect(metrics.terrainCells).toBe(metrics.semanticCells);
   expect(metrics.bytes).toBeLessThan(200_000);
   await testInfo.attach("country-overview-metrics", { body: Buffer.from(JSON.stringify(metrics, null, 2)), contentType: "application/json" });
   if (process.env.ATLAS_SCREENSHOT_PATH) await page.screenshot({ path: process.env.ATLAS_SCREENSHOT_PATH, fullPage: true });
@@ -104,10 +121,24 @@ test("city opens with one atomic scene request and pan performs no data I/O", as
   expect(requests.filter((url) => url.includes("/world/viewport") || url.includes("/chunks/"))).toEqual([]);
   expect(sceneBytes).toBeLessThan(10_000_000);
 
+  const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
+  const zoomFrames = await canvas.evaluate(async (element) => {
+    const host = element.closest<HTMLElement>(".world-canvas")!;
+    const before = Number(host.dataset.renderScale);
+    element.dispatchEvent(new WheelEvent("wheel", { deltaY: -300, clientX: 400, clientY: 300, bubbles: true, cancelable: true }));
+    const immediate = Number(host.dataset.renderScale);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const firstFrame = Number(host.dataset.renderScale);
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    return { before, immediate, firstFrame, settled: Number(host.dataset.renderScale) };
+  });
+  expect(zoomFrames.immediate).toBe(zoomFrames.before);
+  expect(zoomFrames.firstFrame).toBeGreaterThan(zoomFrames.before);
+  expect(zoomFrames.firstFrame).toBeLessThan(zoomFrames.settled);
+
   requests.length = 0;
   const residentBeforePan = await host.getAttribute("data-resident-chunks");
   const skippedBeforePan = Number(await host.getAttribute("data-skipped-reconciles") ?? 0);
-  const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   await page.mouse.move(box!.x + box!.width * .75, box!.y + box!.height / 2);
