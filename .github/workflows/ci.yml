@@ -40,7 +40,10 @@ jobs:
       - run: npm run assets:setup && npm run assets:build && npm run assets:verify
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test
+      # Stateful PostgreSQL fixtures share one seeded database. File-parallel
+      # execution makes unrelated MCP/deployment cases contend and intermittently
+      # exceed their per-test timeout on hosted runners.
+      - run: npm test -- --no-file-parallelism
       - run: npm run build
       - name: MCP protocol and authentication smoke
         run: |
