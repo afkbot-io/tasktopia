@@ -484,6 +484,15 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .token-list .revoked { opacity: .55; }
 .profile-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; padding: 20px; }
 .profile-form button { min-height: 46px; }
+.push-card-body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 18px 20px; }
+.push-card-body strong { color: #edf0e6; font-size: 14px; }
+.push-card-body p { margin: 5px 0 0; color: #91a6a9; font-size: 12px; line-height: 1.45; }
+.push-card-body button { min-height: 42px; }
+.push-card-error { color: #ffc1c1 !important; }
+.push-disable-button { padding: 9px 14px; border: 1px solid #52666b; border-radius: 9px; background: #16262a; color: #d6e0de; cursor: pointer; }
+.push-card-compact { position: fixed; z-index: 40; right: 18px; bottom: 76px; width: min(430px, calc(100vw - 24px)); overflow: hidden; border: 1px solid #786b36; border-radius: 13px; background: #102025; box-shadow: 0 18px 52px #0009; }
+.push-card-compact .push-card-body { padding-right: 48px; }
+.push-dismiss { position: absolute; top: 8px; right: 8px; min-width: 32px; min-height: 32px !important; border: 0; background: transparent; color: #9aabad; font-size: 20px; cursor: pointer; }
 .danger-section { border-color: #513a3f; }
 .country-regeneration-card { border-style: dashed; }
 .country-regeneration-success { margin-top: 12px !important; color: #8fd48a !important; }
@@ -550,6 +559,10 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   .token-list article > button { grid-column: 1 / -1; justify-self: start; min-height: 44px; }
   .profile-form { grid-template-columns: 1fr; padding: 16px 14px; }
   .profile-form button { width: 100%; }
+  .push-card-body { grid-template-columns: 1fr; padding: 16px 14px; }
+  .push-card-body > button:not(.push-dismiss) { width: 100%; }
+  .push-card-compact { right: 12px; bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .push-card-compact .push-card-body { padding-right: 46px; }
   .logout-button { min-height: 46px; margin: 16px 14px; }
 }
 

@@ -26,6 +26,12 @@ const schema = z.object({
   MAX_ATTACHMENT_BYTES: z.coerce.number().int().min(1024).max(50 * 1024 * 1024).default(10 * 1024 * 1024),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(5).max(1000).default(10),
   REGISTRATION_ENABLED: z.enum(["true", "false"]).optional(),
+  VAPID_SUBJECT: z.preprocess((value) => value === "" ? undefined : value, z.string().regex(/^(mailto:|https:\/\/)/).optional()),
+  VAPID_PUBLIC_KEY: z.preprocess((value) => value === "" ? undefined : value, z.string().min(80).max(120).optional()),
+  VAPID_PRIVATE_KEY: z.preprocess((value) => value === "" ? undefined : value, z.string().min(40).max(60).optional()),
+}).superRefine((value, context) => {
+  const count = [value.VAPID_SUBJECT, value.VAPID_PUBLIC_KEY, value.VAPID_PRIVATE_KEY].filter(Boolean).length;
+  if (count !== 0 && count !== 3) context.addIssue({ code: "custom", message: "VAPID_SUBJECT, VAPID_PUBLIC_KEY и VAPID_PRIVATE_KEY задаются вместе" });
 });
 
 const raw = schema.parse(process.env);
@@ -47,4 +53,9 @@ export const config = {
   registrationEnabled: raw.REGISTRATION_ENABLED === undefined
     ? raw.NODE_ENV !== "production"
     : raw.REGISTRATION_ENABLED === "true",
+  pushVapid: raw.VAPID_SUBJECT && raw.VAPID_PUBLIC_KEY && raw.VAPID_PRIVATE_KEY ? {
+    subject: raw.VAPID_SUBJECT,
+    publicKey: raw.VAPID_PUBLIC_KEY,
+    privateKey: raw.VAPID_PRIVATE_KEY,
+  } : undefined,
 };

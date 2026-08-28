@@ -209,6 +209,9 @@ APP_ORIGIN=https://tasktopia.online
 POSTGRES_PASSWORD=<длинный-случайный-пароль>
 SESSION_COOKIE_SECURE=true
 REGISTRATION_ENABLED=false
+VAPID_SUBJECT=mailto:admin@tasktopia.online
+VAPID_PUBLIC_KEY=<public key from web-push>
+VAPID_PRIVATE_KEY=<private key from web-push>
 LOG_LEVEL=info
 APP_MEMORY_LIMIT=1536m
 APP_CPU_LIMIT=2.00
@@ -224,6 +227,15 @@ MIN_FREE_SPACE_MB=1024
 командой `docker compose exec app npm run user:create -- ...`. Для открытого
 экземпляра самостоятельная регистрация включается только явным значением
 `REGISTRATION_ENABLED=true` и пересозданием app-контейнера.
+
+Web Push является optional/fail-open подсистемой. Один раз создайте пару командой
+`npx web-push generate-vapid-keys`, сохраните public/private key и `VAPID_SUBJECT`
+в secret manager и передайте все три значения вместе. Private key нельзя
+выводить в release-логи или отдавать клиенту; обычный release не должен ротировать
+эту пару. Без полного набора `/health` и task workflow остаются рабочими, а UI
+показывает, что уведомления не настроены. После миграции `0021_web_push.sql`
+проверьте `GET /api/push/status`, opt-in из профиля, одну delivery на событие,
+удаление endpoint после отключения/logout и отсутствие endpoint/ключей в логах.
 
 `STATIC_ORIGIN` одновременно встраивается в клиент во время
 `docker compose build` и добавляется в CSP приложения, поэтому client/runtime

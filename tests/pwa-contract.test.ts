@@ -21,7 +21,11 @@ describe("PWA public/private cache boundary", () => {
     expect(worker).toContain("tasktopia-shell-rev-123");
     expect(worker).toContain("event.request.mode === \"navigate\"");
     expect(worker).not.toContain('"/api/bootstrap"');
-    expect(worker).not.toContain("notificationclick");
+    expect(worker).toContain('addEventListener("push"');
+    expect(worker).toContain('addEventListener("notificationclick"');
+    expect(worker).toContain('addEventListener("pushsubscriptionchange"');
+    expect(worker).toContain('url.origin !== self.location.origin');
+    expect(worker).toContain("showNotification");
   });
 });
 

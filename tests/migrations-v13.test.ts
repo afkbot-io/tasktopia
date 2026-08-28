@@ -22,8 +22,24 @@ describe("PostgreSQL migrations", () => {
       "0018_compact_spatial_indexes.sql",
       "0019_seeded_area_decor.sql",
       "0020_country_overview_snapshots.sql",
+      "0021_web_push.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("stores owned subscriptions and idempotent event deliveries", async () => {
+    expect(await db.prepare("SELECT to_regclass('push_subscriptions_v1') AS table_name").get())
+      .toMatchObject({ table_name: "push_subscriptions_v1" });
+    expect(await db.prepare("SELECT to_regclass('push_deliveries_v1') AS table_name").get())
+      .toMatchObject({ table_name: "push_deliveries_v1" });
+    const indexes = await db.prepare(`SELECT indexname FROM pg_indexes
+      WHERE schemaname = current_schema() AND tablename IN ('push_subscriptions_v1', 'push_deliveries_v1')`)
+      .all<{ indexname: string }>();
+    expect(indexes.map((entry) => entry.indexname)).toEqual(expect.arrayContaining([
+      "push_subscriptions_v1_endpoint_uidx",
+      "push_deliveries_v1_event_subscription_uidx",
+      "push_deliveries_v1_claim_idx",
+    ]));
   });
 
   it("stores one replaceable semantic country overview snapshot per viewer and country", async () => {

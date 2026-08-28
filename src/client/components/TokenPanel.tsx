@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { MCP_READ_SCOPES, MCP_SCOPES, type BootstrapDto, type McpScope, type McpTokenDto } from "../../shared/contracts";
 import { api, ApiError } from "../api";
+import { PushNotificationCard } from "./PushNotificationCard";
 
 const scopeLabels: Record<McpScope, string> = {
   "country:read": "Читать страну", "cities:write": "Создавать города", "districts:write": "Управлять районами",
@@ -191,6 +192,7 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
               <button className="primary-button" disabled={pending || accountName.trim().length < 2 || accountName.trim() === bootstrap.user.name}>{pending ? "Сохраняем…" : "Сохранить изменения"}</button>
             </form>
           </section>
+          <PushNotificationCard />
           <section className="settings-section danger-section" aria-labelledby="session-title">
             <div className="settings-section-heading"><div><h3 id="session-title">Текущая сессия</h3><p>Завершите сессию на этом устройстве.</p></div></div>
             <button type="button" className="logout-button" onClick={() => void onLogout()}>Выйти из аккаунта</button>

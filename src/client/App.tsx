@@ -16,6 +16,8 @@ import { MapLevelTransition } from "./components/MapLevelTransition";
 import { ProfilePresence } from "./components/ProfilePresence";
 import { createAtlasTransition, withAtlasTransitionPhase, type AtlasTransition } from "./atlas-navigation-transition";
 import { eventInvalidation, type MapInvalidation } from "./map-invalidation";
+import { clearPushSubscriptionForLogout } from "./push-notifications";
+import { PushNotificationCard } from "./components/PushNotificationCard";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
 const CountryOverviewCanvas = lazy(() => import("./components/CountryOverviewCanvas").then((module) => ({ default: module.CountryOverviewCanvas })));
@@ -89,6 +91,7 @@ export function App() {
   const [online, setOnline] = useState(true);
   const [notices, setNotices] = useState<RealtimeNoticePresentation[]>([]);
   const [mapTransitionError, setMapTransitionError] = useState("");
+  const [pushOfferDismissed, setPushOfferDismissed] = useState(() => localStorage.getItem("tasktopia:push-offer-dismissed") === "1");
   const cityReadyResolverRef = useRef<(() => void) | null>(null);
   const countryId = bootstrap?.country.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
@@ -147,6 +150,7 @@ export function App() {
   }, []);
 
   const logout = useCallback(async () => {
+    await clearPushSubscriptionForLogout();
     await api("/api/auth/logout", { method: "POST" });
     setBootstrap(null);
     setFocusCity(null);
@@ -474,6 +478,10 @@ export function App() {
     {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={applyBootstrap} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
+    {!pushOfferDismissed && <PushNotificationCard compact onDismiss={() => {
+      localStorage.setItem("tasktopia:push-offer-dismissed", "1");
+      setPushOfferDismissed(true);
+    }} />}
     <aside className="realtime-notices" aria-live="polite" aria-label="События страны">
       {notices.map((notice) => <article key={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`}>
         <button className="realtime-notice-content" type="button" disabled={!notice.target} onClick={() => {
