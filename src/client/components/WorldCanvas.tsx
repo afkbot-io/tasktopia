@@ -81,6 +81,7 @@ import {
   type ConstructionDetailPlacement,
   type ConstructionTile,
 } from "../../shared/construction-stage";
+import { atlasTerrainConnectionMask, atlasTerrainKindFromWorld, atlasTerrainTile, type AtlasTerrainKind } from "../../shared/atlas-scene";
 
 const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1;
@@ -208,6 +209,27 @@ function cachedTexture(url: string): Texture | undefined {
   return Cache.has(url) ? Cache.get<Texture>(url) : undefined;
 }
 
+// A sheet frame is immutable and shared by every matching terrain cell. This
+// bounds derived Pixi textures to the authored atlas vocabulary instead of
+// allocating one wrapper per cell and per visited city.
+const atlasTerrainTextureCache = new Map<string, Texture>();
+
+function atlasTerrainTexture(url: string, sourceX: number, sourceY: number, size: number): Texture {
+  const cacheKey = `${url}:${sourceX}:${sourceY}:${size}`;
+  const cached = atlasTerrainTextureCache.get(cacheKey);
+  const sheet = cachedTexture(url);
+  if (cached && sheet && cached.source === sheet.source) return cached;
+  if (cached) atlasTerrainTextureCache.delete(cacheKey);
+  if (!sheet) return Texture.EMPTY;
+  const texture = new Texture({
+    source: sheet.source,
+    frame: new Rectangle(sourceX, sourceY, size, size),
+  });
+  texture.source.scaleMode = "nearest";
+  atlasTerrainTextureCache.set(cacheKey, texture);
+  return texture;
+}
+
 function sprite(url: string, x: number, y: number): Sprite {
   const result = new Sprite(cachedTexture(url) ?? Texture.EMPTY);
   result.texture.source.scaleMode = "nearest";
@@ -222,10 +244,14 @@ function tiledSprite(url: string, x: number, y: number, width: number, height: n
   return result;
 }
 
-function terrainSprite(cell: ChunkDto["terrain"][number]): Sprite {
-  const variants = TERRAIN_SPRITES[cell.terrain] ?? TERRAIN_SPRITES.GRASS!;
+function terrainSprite(cell: ChunkDto["terrain"][number], terrainAtCell: (column: number, row: number) => AtlasTerrainKind | undefined): Sprite {
+  const kind = atlasTerrainKindFromWorld(cell.terrain);
+  const tile = atlasTerrainTile(kind, "city", cell.x, cell.y, atlasTerrainConnectionMask(kind, cell.x, cell.y, terrainAtCell));
+  const texture = atlasTerrainTexture(gameAssetUrl(tile.url), tile.sourceX, tile.sourceY, tile.tileSize);
   const p = position(cell);
-  return sprite(gameAssetUrl(variants[cell.variant % variants.length]!), p.x, p.y);
+  const result = new Sprite(texture);
+  result.position.set(p.x, p.y);
+  return result;
 }
 
 function edgeSprite(url: string, cell: Cell, direction: number): Sprite {
@@ -815,10 +841,9 @@ function requiredGroundAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[]
     TILE_SPRITES["road-marking-horizontal"]!, TILE_SPRITES["road-marking-vertical"]!,
     TILE_SPRITES["bridge-side-horizontal"]!, TILE_SPRITES["bridge-side-vertical"]!,
   ]);
-  for (const chunk of chunks) for (const cell of chunk.terrain) {
-    const variants = TERRAIN_SPRITES[cell.terrain] ?? TERRAIN_SPRITES.GRASS!;
-    urls.add(assetUrl(variants[cell.variant % variants.length]!));
-  }
+  for (const chunk of chunks) for (const cell of chunk.terrain) urls.add(gameAssetUrl(
+    atlasTerrainTile(atlasTerrainKindFromWorld(cell.terrain), "city", cell.x, cell.y, 0).url,
+  ));
   return [...urls];
 }
 
@@ -1944,7 +1969,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         source.eventMode = "none";
         if (lod === "DETAIL") {
           const terrain = new Container();
-          for (const cell of chunk.terrain) terrain.addChild(terrainSprite(cell));
+          const terrainAtCell = (column: number, row: number) => atlasTerrainKindFromWorld(terrainAt(terrainSeed, column, row).terrain);
+          for (const cell of chunk.terrain) terrain.addChild(terrainSprite(cell, terrainAtCell));
           source.addChild(terrain);
         } else {
           const terrainGraphics = new Graphics();

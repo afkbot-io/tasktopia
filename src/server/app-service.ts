@@ -1394,7 +1394,8 @@ export class AppService {
     if (storedOverview?.schemaVersion === COUNTRY_OVERVIEW_SCHEMA_VERSION
       && storedOverview.countryId === countryId
       && storedOverview.geography.terrainCodes.length === storedOverview.geography.columns * storedOverview.geography.rows
-      && storedOverview.geography.territoryCodes.length === storedOverview.geography.columns * storedOverview.geography.rows) {
+      && storedOverview.geography.territoryCodes.length === storedOverview.geography.columns * storedOverview.geography.rows
+      && storedOverview.cities.every((city) => city.miniature.blockSize === 16)) {
       this.countryOverviewCache.set(cacheKey, storedOverview);
       return storedOverview;
     }

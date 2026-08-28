@@ -34,8 +34,8 @@ describe("semantic country city miniature", () => {
         { id: "east", cells: Array.from({ length: 34 }, (_, index) => ({ x: 48 + index, y: 18 + index % 4 })) },
       ],
     });
-    expect(miniature.blockSize).toBe(8);
-    expect(miniature.columns).toBe(11);
+    expect(miniature.blockSize).toBe(16);
+    expect(miniature.columns).toBe(6);
     expect(miniature.rows).toBeLessThan(miniature.columns);
     expect(miniature.districtCodes).toHaveLength(miniature.columns * miniature.rows);
     expect(miniature.coverageCodes).toHaveLength(miniature.columns * miniature.rows);
@@ -52,8 +52,8 @@ describe("semantic country city miniature", () => {
       sourceBounds: { minX: -80, minY: -50, maxX: 79, maxY: 49 },
       districts: [],
     });
-    expect(miniature.columns).toBe(20);
-    expect(miniature.rows).toBe(13);
+    expect(miniature.columns).toBe(10);
+    expect(miniature.rows).toBe(7);
     expect(miniature.districtCodes).toMatch(/1/);
   });
 
@@ -68,13 +68,13 @@ describe("semantic country city miniature", () => {
       districts: [{ id: "large-district", cells }],
     });
 
-    expect(miniature.blockSize).toBe(8);
-    expect(miniature.columns).toBe(63);
-    expect(miniature.rows).toBe(32);
-    expect(miniature.districtCodes).toHaveLength(2_016);
-    expect(miniature.coverageCodes).toHaveLength(2_016);
-    expect(miniature.shapeCodes).toHaveLength(2_016);
-    expect(miniature.terrainCodes).toHaveLength(2_016);
+    expect(miniature.blockSize).toBe(16);
+    expect(miniature.columns).toBe(32);
+    expect(miniature.rows).toBe(16);
+    expect(miniature.districtCodes).toHaveLength(512);
+    expect(miniature.coverageCodes).toHaveLength(512);
+    expect(miniature.shapeCodes).toHaveLength(512);
+    expect(miniature.terrainCodes).toHaveLength(512);
     expect(new Set(miniature.districtCodes)).toEqual(new Set(["1"]));
   });
 
@@ -106,7 +106,7 @@ describe("semantic country city miniature", () => {
       districts: [{ id: "district", cells }],
     });
     expect(second).toEqual(first);
-    expect(first.columns * first.rows).toBeLessThanOrEqual(Math.ceil(200 / 8) ** 2);
+    expect(first.columns * first.rows).toBeLessThanOrEqual(Math.ceil(200 / 16) ** 2);
     if (orientation === "square") expect(Math.abs(first.columns - first.rows)).toBeLessThanOrEqual(1);
     else expect(first.columns).toBeGreaterThanOrEqual(first.rows);
     expect(first.shapeCodes).toMatch(/[1-9a-f]/);

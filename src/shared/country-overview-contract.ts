@@ -42,7 +42,7 @@ export type CountryOverviewCityDto = {
     districtCodes: string;
     coverageCodes: string;
     shapeCodes: string;
-    /** Dominant canonical terrain for each 8x8 semantic block. */
+    /** Dominant canonical terrain for each 16x16 semantic block. */
     terrainCodes: string;
     airportCell: Cell;
   };

@@ -56,8 +56,11 @@ silhouette occupancy and aspect-ratio drift.
 
 ## Renderer and performance gates
 
-- COUNTRY scene contains one Pixi canvas, zero scene SVG nodes and no per-cell
+- COUNTRY scene contains one immutable raster canvas, zero scene SVG nodes and no per-cell
   React elements. Labels are the only DOM overlay.
+- PLANET and CITY use native `8×8` terrain sheets and COUNTRY uses native
+  `16×16` sheets. All four principal families (mountain, water, plain and sand)
+  expose deterministic N/E/S/W joins; no level scales another level's sheet.
 - Pointer movement mutates a local camera and schedules at most one RAF; it does
   not call React state setters. Wheel zoom passes through observable intermediate
   values and converges independently of display refresh rate.
@@ -68,7 +71,7 @@ silhouette occupancy and aspect-ratio drift.
 - Textures remain inside the planet/country mask. There are no white side bars,
   square cut-outs, WebGL buffer errors, passive-listener warnings or Pixi
   deprecation warnings.
-- Ten PLANET ↔ COUNTRY ↔ CITY cycles keep exactly one active map canvas and do
+- Ten PLANET ↔ COUNTRY ↔ CITY cycles keep exactly one active map renderer and do
   not grow renderer count or retained texture owners.
 
 ## Interaction gates

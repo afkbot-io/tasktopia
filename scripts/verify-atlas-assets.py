@@ -16,6 +16,15 @@ def verify(path, size):
     return image.tobytes()
 
 
+def verify_directional_sheet(path: Path, tile_size: int, variants: int) -> None:
+    image = Image.open(path).convert("RGBA")
+    expected = (tile_size * 16, tile_size * variants)
+    assert image.size == expected, f"{path}: expected {expected}, got {image.size}"
+    assert set(image.getchannel("A").getdata()) == {255}, f"{path}: every atlas tile must be opaque"
+    first_row = [image.crop((mask * tile_size, 0, (mask + 1) * tile_size, tile_size)).tobytes() for mask in range(16)]
+    assert len(set(first_row)) >= 12, f"{path}: directional masks collapsed into too few silhouettes"
+
+
 def main() -> None:
     aircraft = []
     for model in range(1, 9):
@@ -49,7 +58,12 @@ def main() -> None:
     assert len(set(planet_clouds)) == 8, "planet V2 clouds must be distinct"
     aircraft_v4 = [verify(ATLAS / "aircraft-v4" / f"airplane-topdown-{variant}.png", (24, 16)) for variant in range(1, 9)]
     assert len(set(aircraft_v4)) == 8, "planet V4 aircraft must be distinct"
-    print("atlas assets: V1 + V2/V3 terrain, 8 V4 top-down aircraft and 8 shared top-down clouds verified")
+    terrain_v4 = ("grass", "meadow", "forest", "hill", "mountain", "coast", "river", "stone", "deep_water", "shallow_water")
+    for level, tile_size in (("city", 8), ("country", 16), ("planet", 8)):
+        for name in terrain_v4:
+            verify_directional_sheet(ATLAS / "terrain-v4" / level / f"{name}.png", tile_size, 5 if name in {"river", "deep_water", "shallow_water"} else 3)
+        verify(ATLAS / "terrain-v4" / level / "ocean.png", (tile_size, tile_size))
+    print("atlas assets: legacy families, directional terrain V4, V4 aircraft and shared top-down clouds verified")
 
 
 if __name__ == "__main__":

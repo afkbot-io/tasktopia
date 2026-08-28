@@ -1,7 +1,8 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../../shared/planet-atlas-contract";
-import { gameAssetUrl, TERRAIN_SPRITES } from "../../shared/catalog";
+import { gameAssetUrl } from "../../shared/catalog";
 import { ATLAS_AIRPORT_SVG_PATH } from "../../shared/atlas-airport";
+import { atlasTerrainConnectionMask, atlasTerrainTile } from "../../shared/atlas-scene";
 import {
   layoutPlanetCountryLabels,
   projectPlanetAtlas,
@@ -10,7 +11,6 @@ import {
   type PlanetMapCamera,
   type PlanetMapCell,
   type PlanetMapCountry,
-  type PlanetTerrainKind,
 } from "../../shared/planet-atlas";
 import { api } from "../api";
 import { advanceAtlasEntryHysteresis, atlasTargetCoverage, continuousAtlasZoom, initialAtlasEntryHysteresis } from "../atlas-zoom-navigation";
@@ -23,20 +23,11 @@ const MIN_MAP_ZOOM = .82;
 const MAX_MAP_ZOOM = 8.5;
 const COUNTRY_ENTRY_COVERAGE = .56;
 const COUNTRY_ENTRY_REARM_ZOOM = 1.08;
-const TERRAIN_FAMILY: Record<PlanetTerrainKind, keyof typeof TERRAIN_SPRITES> = {
-  grass: "GRASS",
-  meadow: "MEADOW",
-  forest: "FOREST",
-  hill: "HILL",
-  mountain: "MOUNTAIN",
-  coast: "SAND",
-  river: "SHALLOW_WATER",
-  stone: "STONE",
-};
-
-function terrainAsset(cell: PlanetMapCell): string {
-  const sprites = TERRAIN_SPRITES[TERRAIN_FAMILY[cell.terrain]] ?? TERRAIN_SPRITES.GRASS!;
-  return sprites[Math.abs(cell.q * 31 + cell.r * 17) % sprites.length] ?? sprites[0]!;
+function AtlasTerrainImage({ cell, mask }: { cell: PlanetMapCell; mask: number }) {
+  const tile = atlasTerrainTile(cell.terrain, "planet", cell.q, cell.r, mask);
+  return <svg x={cell.x} y={cell.y} width={cell.width} height={cell.height} viewBox={`${tile.sourceX} ${tile.sourceY} ${tile.tileSize} ${tile.tileSize}`} preserveAspectRatio="none" className="atlas-pixel planet-terrain-sprite" aria-hidden="true">
+    <image href={gameAssetUrl(tile.url)} width={tile.sheetWidth} height={tile.sheetHeight} className="atlas-pixel" />
+  </svg>;
 }
 
 function countryScreenBounds(country: PlanetMapCountry) {
@@ -165,6 +156,18 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const map = useMemo(() => projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, camera) : null, [projectedAtlas, camera]);
   const labels = useMemo(() => map ? layoutPlanetCountryLabels(map.countries, map.width, map.height) : [], [map]);
   const countriesById = useMemo(() => new Map(map?.countries.map((country) => [country.id, country]) ?? []), [map]);
+  const terrainByCoordinate = useMemo(() => {
+    const lookup = new Map<string, PlanetMapCell>();
+    for (const cell of map?.coastCells ?? []) lookup.set(`${cell.q}:${cell.r}`, cell);
+    for (const country of map?.countries ?? []) for (const cell of country.cells) lookup.set(`${cell.q}:${cell.r}`, cell);
+    return lookup;
+  }, [map]);
+  const terrainMask = useCallback((cell: PlanetMapCell) => atlasTerrainConnectionMask(
+    cell.terrain,
+    cell.q,
+    cell.r,
+    (column, row) => terrainByCoordinate.get(`${column}:${row}`)?.terrain,
+  ), [terrainByCoordinate]);
 
   useEffect(() => {
     initialFocusApplied.current = false;
@@ -256,20 +259,20 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     }}>
       <defs>
         <clipPath id={clipId}><ellipse cx={(map.surface.minX + map.surface.maxX) / 2} cy={(map.surface.minY + map.surface.maxY) / 2} rx={(map.surface.maxX - map.surface.minX) / 2} ry={(map.surface.maxY - map.surface.minY) / 2} /></clipPath>
-        <pattern id="planet-ocean-pixels" width="8" height="8" patternUnits="userSpaceOnUse"><image href={gameAssetUrl("terrain/deep_water-2.png")} width="8" height="8" className="atlas-pixel" /></pattern>
+        <pattern id="planet-ocean-pixels" width="8" height="8" patternUnits="userSpaceOnUse"><image href={gameAssetUrl("atlas/terrain-v4/planet/ocean.png")} width="8" height="8" className="atlas-pixel" /></pattern>
       </defs>
       <rect className="planet-space" width={map.width} height={map.height} />
       <g className="planet-stars" aria-hidden="true">{map.stars.map((star) => <rect key={star.id} data-star-group={star.group} x={`${star.xPercent}%`} y={`${star.yPercent}%`} width={star.size} height={star.size} opacity={star.opacity} style={{ "--star-delay": `${star.delaySeconds}s` } as CSSProperties} />)}</g>
       <g clipPath={`url(#${clipId})`}>
         <rect className="planet-map-ocean" x={map.surface.minX} y={map.surface.minY} width={map.surface.maxX - map.surface.minX} height={map.surface.maxY - map.surface.minY} fill="url(#planet-ocean-pixels)" />
-        <g className="planet-coast" aria-hidden="true">{map.coastCells.map((cell) => <image key={cell.id} href={gameAssetUrl(terrainAsset(cell))} x={cell.x} y={cell.y} width={cell.width} height={cell.height} className="atlas-pixel planet-terrain-sprite" />)}</g>
+        <g className="planet-coast" aria-hidden="true">{map.coastCells.map((cell) => <AtlasTerrainImage key={cell.id} cell={cell} mask={terrainMask(cell)} />)}</g>
         <g className="planet-countries">{map.countries.map((country) => <g key={country.id} className="planet-country" data-country-id={country.id} data-active={country.id === activeCountryId ? "true" : "false"} data-selecting={country.id === selectingCountryId ? "true" : "false"} role="button" tabIndex={0} aria-label={`Открыть страну ${country.name}`} onClick={() => {
           if (suppressClick.current) { suppressClick.current = false; return; }
           void selectCountry(country.id);
         }} onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault(); void selectCountry(country.id);
-        }}>{country.cells.map((cell) => <g key={cell.id}><image href={gameAssetUrl(terrainAsset(cell))} x={cell.x} y={cell.y} width={cell.width} height={cell.height} className="atlas-pixel planet-terrain-sprite" /><path d={pixelSquarePath(cell)} fill={country.color} className="planet-country-tint" /></g>)}
+        }}>{country.cells.map((cell) => <g key={cell.id}><AtlasTerrainImage cell={cell} mask={terrainMask(cell)} /><path d={pixelSquarePath(cell)} fill={country.color} className="planet-country-tint" /></g>)}
           <g className="planet-airport-markers" aria-hidden="true">{country.airports.map((airport) => <g key={airport.id} transform={`translate(${airport.center.x} ${airport.center.y})`}><rect x="-5" y="-5" width="10" height="10" /><path d={ATLAS_AIRPORT_SVG_PATH} /></g>)}</g>
         </g>)}</g>
         <g className="planet-routes" aria-hidden="true">{activeRoutes.map((route) => <g key={route.id}><path d={route.path} className="planet-route-line" /><AtlasAircraft path={route.path} durationSeconds={route.durationSeconds} delaySeconds={route.delaySeconds} kind={route.planeKind} size="planet" rotateWithPath visualScale={route.altitudeScale} startsAtAirport={route.fromAirportId !== null} endsAtAirport /></g>)}</g>

@@ -203,13 +203,14 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .world-empty .primary-button { margin-top: 4px; pointer-events: auto; }
 
 /* ── Compressed country atlas ─────────────────────────────── */
-.country-overview { position: absolute; inset: 0; overflow: hidden; background: #f1f4eb; }
+.country-overview { position: absolute; inset: 0; overflow: hidden; background: #205f82; }
 .country-side-fog { position: absolute; top: 0; bottom: 0; z-index: 2; width: clamp(72px, 11vw, 180px); pointer-events: none; image-rendering: pixelated; }
 .country-side-fog::after { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(0deg, transparent 0 8px, #f5f7f044 8px 16px), repeating-linear-gradient(90deg, transparent 0 8px, #f5f7f033 8px 16px); background-size: 16px 16px; }
 .country-side-fog-left { left: 0; background: linear-gradient(90deg, #f5f7f0 0 38%, #f5f7f0e8 38% 52%, #f5f7f0a8 52% 66%, #f5f7f066 66% 78%, #f5f7f026 78% 88%, transparent 88%); }
 .country-side-fog-right { right: 0; background: linear-gradient(270deg, #f5f7f0 0 38%, #f5f7f0e8 38% 52%, #f5f7f0a8 52% 66%, #f5f7f066 66% 78%, #f5f7f026 78% 88%, transparent 88%); }
 .country-overview { touch-action: none; user-select: none; }
-.country-overview-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.country-overview-raster { position: absolute; top: 0; left: 0; display: block; transform-origin: 0 0; image-rendering: pixelated; pointer-events: none; will-change: transform; }
+.country-atlas-aircraft { position: absolute; top: 0; left: 0; z-index: 1; object-fit: contain; image-rendering: pixelated; pointer-events: none; will-change: transform; }
 .country-overview-labels { position: absolute; inset: 0; pointer-events: none; }
 .country-overview-city { position: absolute; z-index: 2; display: grid; min-width: 116px; gap: 2px; padding: 7px 9px; border: 2px solid #13292b; background: #10272aeb; color: #eef0df; box-shadow: 3px 3px 0 #0717198f; pointer-events: auto; cursor: pointer; text-align: left; will-change: transform; }
 .country-overview-city strong { overflow: hidden; max-width: 150px; font: 900 12px/1.15 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
@@ -552,6 +553,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .atlas-aircraft-flight { display: none; }
+  .country-atlas-aircraft { display: none; }
   .planet-clouds > g { animation: none !important; }
   .planet-stars rect { animation: none !important; }
   .atlas-clouds > g { animation: none !important; }
