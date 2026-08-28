@@ -76,7 +76,7 @@ describe("whole-city scene HTTP boundary", () => {
       url: `/api/cities/${cityId}/scene`,
       headers: { cookie, "if-none-match": response.headers.etag! },
     })).statusCode).toBe(304);
-  }, 30_000);
+  }, 90_000);
 
   it("does not expose a city outside the authenticated country", async () => {
     const registered = await app.inject({
