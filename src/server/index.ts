@@ -19,6 +19,8 @@ import { isStaticAssetRequest } from "./static-path";
 import { consumeDurableWorldEvents, publishWorldEvent } from "./world-event-relay";
 import { PostgresWorldGenerationDispatcher, startWorldGenerationWorker } from "./world-generation-jobs";
 import { createOptionalRedisWorldCache } from "./optional-redis-cache";
+import { createWebPushGateway } from "./push-gateway";
+import { startPushDeliveryWorker } from "./push-delivery";
 
 const app = Fastify({
   logger: {
@@ -132,10 +134,15 @@ if (config.runtimeRole === "combined" || config.runtimeRole === "world") {
   if (upgradedAirports > 0) app.log.info({ cities: upgradedAirports }, "City airports synchronized");
 }
 const mcpHandler = servesMcp ? registerMcpHttp(app, db, service, config.APP_ORIGIN) : undefined;
+const pushGateway = createWebPushGateway(config.pushVapid);
+const pushDeliveryWorker = servesWeb
+  ? startPushDeliveryWorker(db, pushGateway, (error) => app.log.error({ err: error }, "Push delivery worker pump failed"))
+  : undefined;
 
 if (servesApiRoutes) await registerRoutes(app, db, service, servesWeb ? {
   registrationEnabled: config.registrationEnabled,
   worldOperationsEnabled: true,
+  pushPublicKey: config.pushVapid?.publicKey,
   async onCountryAccessRevoked(countryId, userId) {
     const sockets = await io!.in(`country:${countryId}`).fetchSockets();
     for (const socket of sockets) {
@@ -218,6 +225,7 @@ const close = async () => {
   await mcpHandler?.close();
   await worldEventSubscription?.close();
   await worldGenerationWorker?.close();
+  await pushDeliveryWorker?.close();
   await sharedWorldCache?.close();
   await app.close();
   await db.close();

@@ -34,5 +34,47 @@ self.addEventListener("fetch", (event) => {
     return response;
   })());
 });
+self.addEventListener("push", (event) => event.waitUntil((async () => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch { payload = {}; }
+  const title = typeof payload.title === "string" ? payload.title.slice(0, 160) : "Tasktopia";
+  const body = typeof payload.body === "string" ? payload.body.slice(0, 240) : "В стране есть обновление";
+  let url = new URL("/", self.location.origin);
+  try {
+    const candidate = new URL(typeof payload.url === "string" ? payload.url : "/", self.location.origin);
+    if (candidate.origin === self.location.origin) url = candidate;
+  } catch { /* Keep the safe root target. */ }
+  await self.registration.showNotification(title, {
+    body, tag: typeof payload.tag === "string" ? payload.tag.slice(0, 64) : undefined,
+    icon: "/pwa-icon-192.png", badge: "/pwa-icon-192.png", data: { url: url.href },
+  });
+})()));
+self.addEventListener("notificationclick", (event) => event.waitUntil((async () => {
+  event.notification.close();
+  let url = new URL("/", self.location.origin);
+  try {
+    const candidate = new URL(event.notification.data?.url || "/", self.location.origin);
+    if (candidate.origin !== self.location.origin) return;
+    url = candidate;
+  } catch { return; }
+  for (const client of await self.clients.matchAll({ type: "window", includeUncontrolled: true })) {
+    if (new URL(client.url).origin !== self.location.origin) continue;
+    await client.navigate(url.href);
+    return client.focus();
+  }
+  return self.clients.openWindow(url.href);
+})()));
+self.addEventListener("pushsubscriptionchange", (event) => event.waitUntil((async () => {
+  try {
+    const subscription = event.newSubscription || await self.registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: event.oldSubscription?.options?.applicationServerKey,
+    });
+    await fetch("/api/push/subscriptions", {
+      method: "POST", credentials: "include", headers: { "content-type": "application/json" },
+      body: JSON.stringify(subscription.toJSON()),
+    });
+  } catch { /* The next foreground readiness check repairs the subscription. */ }
+})()));
 `;
 }

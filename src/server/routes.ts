@@ -32,6 +32,7 @@ import { APP_VERSION } from "./version";
 import { GenerationPendingError, getWorldGenerationJob } from "./world-generation-jobs";
 import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { z } from "zod";
+import { hasPushSubscription, removePushSubscription, savePushSubscription } from "./push-subscriptions";
 
 const registerSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
@@ -136,6 +137,7 @@ const attachmentSchema = z.object({
   contentBase64: z.string().min(1), idempotencyKey: z.string().min(4).max(160),
 }).strict();
 const attachmentDeleteSchema = z.object({ idempotencyKey: z.string().min(4).max(160) }).strict();
+const pushDeleteSchema = z.object({ endpoint: z.string().max(2048) }).strict();
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -164,6 +166,7 @@ export type RouteRuntimeHooks = {
   onUserSessionRevoked?: (userId: string) => Promise<void> | void;
   registrationEnabled?: boolean;
   worldOperationsEnabled?: boolean;
+  pushPublicKey?: string;
 };
 
 export async function registerRoutes(app: FastifyInstance, db: Db, service: AppService, hooks: RouteRuntimeHooks = {}): Promise<void> {
@@ -254,6 +257,40 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     if (user) await hooks.onUserSessionRevoked?.(user.id);
     reply.clearCookie(SESSION_COOKIE, { path: "/" });
     return { ok: true };
+  });
+
+  app.get("/api/push/status", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    return reply.header("Cache-Control", "no-store").send({
+      configured: Boolean(hooks.pushPublicKey),
+      publicKey: hooks.pushPublicKey ?? null,
+      subscribed: await hasPushSubscription(db, user.id),
+    });
+  });
+
+  app.post("/api/push/subscriptions", { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    if (!hooks.pushPublicKey) return reply.code(503).send({ error: "PUSH_NOT_CONFIGURED", message: "Push-уведомления временно недоступны" });
+    try {
+      await savePushSubscription(db, user.id, request.body);
+    } catch (error) {
+      if (error instanceof Error && error.message === "PUSH_ENDPOINT_OWNED") {
+        throw new DomainError("CONFLICT", "Эта push-подписка уже связана с другим аккаунтом");
+      }
+      throw new DomainError("INVALID_INPUT", error instanceof Error ? error.message : "Некорректная push-подписка");
+    }
+    return reply.code(201).send({ subscribed: true });
+  });
+
+  app.delete("/api/push/subscriptions", { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const body = parse(pushDeleteSchema, request.body);
+    try { await removePushSubscription(db, user.id, body.endpoint); }
+    catch (error) { throw new DomainError("INVALID_INPUT", error instanceof Error ? error.message : "Некорректный push endpoint"); }
+    return { subscribed: false };
   });
 
   app.get("/api/bootstrap", async (request, reply) => {

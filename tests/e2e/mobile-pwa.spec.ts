@@ -178,3 +178,55 @@ test("installable shell registers a revisioned worker and survives offline navig
     await context.setOffline(false);
   }
 });
+
+test("push opt-in waits for a user gesture and can be disabled from the mobile profile", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "The deterministic PushManager test double targets Chromium's PWA container");
+  const subscription = {
+    endpoint: "https://updates.push.services.mozilla.com/wpush/v2/e2e-mobile",
+    expirationTime: null,
+    keys: {
+      p256dh: "BOr5I6ZBqj9iU2DKzZL6SXjZ1hP0vH2_aCNJjvW7f3OYPxLkbZJf0dQ5m2LFN5BkjP1KrMa_XPpxdtEbYqCVkX0",
+      auth: "MDEyMzQ1Njc4OWFiY2RlZg",
+    },
+  };
+  await page.addInitScript((pushSubscription) => {
+    let current: typeof pushSubscription | null = null;
+    const state = window as typeof window & { __pushPromptCalls?: number };
+    state.__pushPromptCalls = 0;
+    Object.defineProperty(window, "Notification", { configurable: true, value: {
+      permission: "default",
+      requestPermission: async () => { state.__pushPromptCalls = (state.__pushPromptCalls ?? 0) + 1; return "granted"; },
+    } });
+    Object.defineProperty(window, "PushManager", { configurable: true, value: class PushManager {} });
+    Object.defineProperty(navigator.serviceWorker, "getRegistration", { configurable: true, value: async () => ({
+      pushManager: {
+        getSubscription: async () => current && ({
+          endpoint: current.endpoint,
+          toJSON: () => current,
+          unsubscribe: async () => { current = null; return true; },
+        }),
+        subscribe: async () => {
+          current = pushSubscription;
+          return { endpoint: current.endpoint, toJSON: () => current, unsubscribe: async () => { current = null; return true; } };
+        },
+      },
+    }) });
+  }, subscription);
+  const methods: string[] = [];
+  page.on("request", (request) => { if (request.url().includes("/api/push/subscriptions")) methods.push(request.method()); });
+  await login(page);
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { __pushPromptCalls?: number }).__pushPromptCalls)).toBe(0);
+  const offer = page.locator(".push-card-compact");
+  await expect(offer).toBeVisible();
+  await offer.getByRole("button", { name: "Включить" }).click();
+  await expect(offer).toBeHidden();
+  expect(await page.evaluate(() => (window as typeof window & { __pushPromptCalls?: number }).__pushPromptCalls)).toBe(1);
+  expect(methods).toContain("POST");
+
+  await page.getByRole("button", { name: /Настройки аккаунта/ }).click();
+  const settings = page.getByRole("dialog", { name: "Аккаунт и интеграции" });
+  await expect(settings.getByText("Уведомления включены", { exact: true })).toBeVisible();
+  await settings.getByRole("button", { name: "Отключить" }).click();
+  await expect(settings.getByText("Push-уведомления отключены на этом устройстве.")).toBeVisible();
+  expect(methods).toContain("DELETE");
+});
