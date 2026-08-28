@@ -85,11 +85,14 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
   await page.getByRole("option").first().click();
   const taskDialog = page.getByRole("dialog");
   await expect(taskDialog).toBeVisible();
-  const taskBox = await taskDialog.boundingBox();
-  expect(taskBox!.x).toBeGreaterThanOrEqual(0);
-  expect(taskBox!.y).toBeGreaterThanOrEqual(0);
-  expect(taskBox!.x + taskBox!.width).toBeLessThanOrEqual(viewport.width + 1);
-  expect(taskBox!.y + taskBox!.height).toBeLessThanOrEqual(viewport.height + 1);
+  const taskBox = await taskDialog.evaluate((element) => {
+    const { x, y, width, height } = element.getBoundingClientRect();
+    return { x, y, width, height };
+  });
+  expect(taskBox.x).toBeGreaterThanOrEqual(0);
+  expect(taskBox.y).toBeGreaterThanOrEqual(0);
+  expect(taskBox.x + taskBox.width).toBeLessThanOrEqual(viewport.width + 1);
+  expect(taskBox.y + taskBox.height).toBeLessThanOrEqual(viewport.height + 1);
   await taskDialog.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(taskDialog).toBeHidden();
 
