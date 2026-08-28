@@ -61,7 +61,7 @@ jobs:
           NODE_ENV: production
           SESSION_COOKIE_SECURE: "false"
           APP_ORIGIN: http://127.0.0.1:3000
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
         env:
           CI: "true"

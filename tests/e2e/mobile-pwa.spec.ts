@@ -1,7 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-async function dispatchPinch(page: Page, target: Locator, factor: number): Promise<void> {
-  await target.evaluate((element, zoomFactor) => {
+type GestureInterval = { startedAt: number; endedAt: number };
+type LongTaskEntry = { startTime: number; duration: number };
+
+async function dispatchPinch(page: Page, target: Locator, factor: number): Promise<GestureInterval> {
+  return target.evaluate((element, zoomFactor) => {
     const box = element.getBoundingClientRect();
     const center = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
     const startRadius = Math.min(box.width, box.height) * .08;
@@ -15,6 +18,7 @@ async function dispatchPinch(page: Page, target: Locator, factor: number): Promi
       clientX: x,
       clientY: center.y,
     }));
+    const startedAt = performance.now();
     emit("pointerdown", 1, center.x - startRadius);
     emit("pointerdown", 2, center.x + startRadius);
     for (let step = 1; step <= 4; step += 1) {
@@ -24,6 +28,7 @@ async function dispatchPinch(page: Page, target: Locator, factor: number): Promi
     }
     emit("pointerup", 1, center.x - endRadius);
     emit("pointerup", 2, center.x + endRadius);
+    return { startedAt, endedAt: performance.now() };
   }, factor);
 }
 
@@ -43,18 +48,25 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   await login(page);
   await page.evaluate(() => {
-    const state = window as typeof window & { __mobileLongTasks?: number[] };
+    const state = window as typeof window & { __mobileLongTasks?: LongTaskEntry[] };
     state.__mobileLongTasks = [];
     if ("PerformanceObserver" in window && PerformanceObserver.supportedEntryTypes?.includes("longtask")) {
-      new PerformanceObserver((list) => state.__mobileLongTasks!.push(...list.getEntries().map((entry) => entry.duration)))
+      new PerformanceObserver((list) => state.__mobileLongTasks!.push(...list.getEntries().map((entry) => ({
+        startTime: entry.startTime,
+        duration: entry.duration,
+      }))))
         .observe({ type: "longtask", buffered: false });
     }
   });
   const measurePinch = async (target: Locator, factor: number) => {
-    await page.evaluate(() => { (window as typeof window & { __mobileLongTasks?: number[] }).__mobileLongTasks = []; });
-    await dispatchPinch(page, target, factor);
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await page.evaluate(() => { (window as typeof window & { __mobileLongTasks?: LongTaskEntry[] }).__mobileLongTasks = []; });
+    const interval = await dispatchPinch(page, target, factor);
     await page.waitForTimeout(180);
-    return page.evaluate(() => (window as typeof window & { __mobileLongTasks?: number[] }).__mobileLongTasks ?? []);
+    return page.evaluate(({ startedAt, endedAt }) => (
+      (window as typeof window & { __mobileLongTasks?: LongTaskEntry[] }).__mobileLongTasks ?? []
+    ).filter((entry) => entry.startTime <= endedAt && entry.startTime + entry.duration >= startedAt)
+      .map((entry) => entry.duration), interval);
   };
 
   const viewport = page.viewportSize()!;
