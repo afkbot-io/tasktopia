@@ -82,6 +82,7 @@ import {
   type ConstructionTile,
 } from "../../shared/construction-stage";
 import { atlasTerrainConnectionMask, atlasTerrainKindFromWorld, atlasTerrainTile, type AtlasTerrainKind } from "../../shared/atlas-scene";
+import { bindMapPointerGestures } from "../map-pointer-gesture";
 
 const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1;
@@ -1042,6 +1043,13 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     let disposed = false;
     let paintedFrame = false;
     let streamingTimer = 0;
+    let suppressSelectionUntil = 0;
+    const selectTask = (taskId: string) => {
+      if (performance.now() >= suppressSelectionUntil) onTaskSelectRef.current(taskId);
+    };
+    const selectArchive = () => {
+      if (performance.now() >= suppressSelectionUntil) onArchiveSelectRef.current();
+    };
     const beginStreamingFeedback = () => {
       window.clearTimeout(streamingTimer);
       if (!paintedFrame) return;
@@ -1832,8 +1840,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       let desiredLod = currentLod;
       let desiredWanted: Array<[number, number]> = [];
       let desiredKeys = new Set<string>();
-      let dragging = false;
-      let previous = { x: 0, y: 0 };
       // ResizeObserver may deliver its first notification while this async
       // startup routine is still suspended above the loader declarations.
       // Do not enter the visibility pipeline until all of its lexical
@@ -1901,15 +1907,34 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       startupDisposers.push(() => window.removeEventListener("resize", scheduleResize));
       app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
-      app.stage.on("pointerdown", (event) => { dragging = true; previous = { x: event.global.x, y: event.global.y }; });
-      app.stage.on("pointermove", (event) => {
-        if (!dragging) return;
-        world.position.x += event.global.x - previous.x;
-        world.position.y += event.global.y - previous.y;
+      const disposeGestures = bindMapPointerGestures(canvas, (gesture) => {
+        if (gesture.pointers > 1 || Math.abs(gesture.panX) + Math.abs(gesture.panY) > 2 || Math.abs(gesture.scale - 1) > .006) {
+          // Pixi receives the same pointer stream and may synthesize a
+          // pointertap on the sprite below the pinch center. Keep navigation
+          // gestures from opening a task or archive card after pointerup.
+          suppressSelectionUntil = performance.now() + 500;
+        }
+        const oldScale = world.scale.x;
+        if (gesture.scale !== 1) {
+          const rect = canvas.getBoundingClientRect();
+          const screenX = gesture.center.x - rect.left;
+          const screenY = gesture.center.y - rect.top;
+          const localX = (screenX - gesture.panX - world.position.x) / oldScale;
+          const localY = (screenY - gesture.panY - world.position.y) / oldScale;
+          cameraTargetScale = nextCameraTargetScale(cameraTargetScale, -Math.log(gesture.scale) / .0015);
+          world.scale.set(cameraTargetScale);
+          world.position.set(screenX - localX * cameraTargetScale, screenY - localY * cameraTargetScale);
+          cameraZoomAnchor = undefined;
+          host.dataset.renderScale = String(cameraTargetScale);
+        } else {
+          world.position.x += gesture.panX;
+          world.position.y += gesture.panY;
+        }
         clampCamera();
-        previous = { x: event.global.x, y: event.global.y };
         scheduleVisibleLoad();
-      });
+        host.dataset.gesturePointers = String(gesture.pointers);
+      }, { onEnd: () => { delete host.dataset.gesturePointers; void loadVisible(); } });
+      startupDisposers.push(disposeGestures);
 
       function destroyGroundView(view: Sprite): void {
         const texture = view.texture;
@@ -2267,8 +2292,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           taskBuildingViews,
           worldObjectLayer,
           (task) => currentLod === "DETAIL"
-            ? drawBuilding(task, (taskId) => onTaskSelectRef.current(taskId), buildingTooltipLayer)
-            : drawOverviewBuilding(task, (taskId) => onTaskSelectRef.current(taskId)),
+            ? drawBuilding(task, selectTask, buildingTooltipLayer)
+            : drawOverviewBuilding(task, selectTask),
           (task) => `${currentLod}:${JSON.stringify(task)}`,
           "BUILDING",
         );
@@ -2356,7 +2381,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             current.visual?.removeFromParent(); current.visual?.destroy({ children: true });
           }
           const parent = feature.parentFeatureId ? features.get(feature.parentFeatureId) : undefined;
-          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", () => onArchiveSelectRef.current(), parent);
+          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", selectArchive, parent);
           if (!drawn) { featureViews.delete(id); continue; }
           if (drawn.platform && currentLod === "DETAIL") featurePlatformLayer.addChild(drawn.platform);
           else if (drawn.platform) drawn.platform.destroy({ children: true });
@@ -3491,9 +3516,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         },
       };
 
-      const finishDrag = () => { dragging = false; void loadVisible(); };
-      app.stage.on("pointerup", finishDrag);
-      app.stage.on("pointerupoutside", finishDrag);
       const wheel = (event: WheelEvent) => {
         event.preventDefault();
         const wheelAt = performance.now();

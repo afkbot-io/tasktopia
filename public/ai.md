@@ -15,7 +15,7 @@ routes are rolling-deploy compatibility paths. These endpoints are not MCP
 resources and external agents should use the tools and resources below.
 
 The country overview uses the internal authenticated
-`GET /api/countries/:countryId/overview` read model (`schemaVersion: 3`).
+`GET /api/countries/:countryId/overview` read model (`schemaVersion: 4`).
 It carries planet-derived bounded terrain, aggregate district progress and a
 semantic city miniature; full buildings, roads, surfaces and props are absent.
 This endpoint is private UI infrastructure, uses ETag plus conditional

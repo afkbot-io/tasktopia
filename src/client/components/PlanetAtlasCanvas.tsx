@@ -16,6 +16,7 @@ import { api } from "../api";
 import { advanceAtlasEntryHysteresis, atlasTargetCoverage, continuousAtlasZoom, initialAtlasEntryHysteresis } from "../atlas-zoom-navigation";
 import { planetAtlasCacheKey } from "../planet-atlas-cache";
 import { smoothCameraScale } from "../world-camera";
+import { bindMapPointerGestures } from "../map-pointer-gesture";
 import { AtlasAircraft } from "./AtlasAircraft";
 import { AtlasOverviewCard, planetOverviewCardModel } from "./AtlasOverviewCard";
 
@@ -95,7 +96,6 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const cameraFrameAtRef = useRef(0);
   const [error, setError] = useState("");
   const [selectingCountryId, setSelectingCountryId] = useState<string | null>(null);
-  const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   const entryHysteresis = useRef(initialAtlasEntryHysteresis());
   const atlasView = useRef<SVGSVGElement>(null);
@@ -223,6 +223,33 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     return () => view.removeEventListener("wheel", handleWheel);
   }, [map, projectedAtlas, scheduleCameraMotion, selectCountry]);
 
+  useEffect(() => {
+    const view = atlasView.current;
+    if (!view || !projectedAtlas) return;
+    return bindMapPointerGestures(view, (gesture) => {
+      updateCameraImmediately((current) => {
+        const rect = view.getBoundingClientRect();
+        const focus = {
+          x: Math.max(0, Math.min(1, (gesture.center.x - rect.left) / Math.max(1, rect.width))),
+          y: Math.max(0, Math.min(1, (gesture.center.y - rect.top) / Math.max(1, rect.height))),
+        };
+        const currentMap = projectProjectedPlanetMap(projectedAtlas, current);
+        const zoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, current.zoom * gesture.scale));
+        const zoomed = gesture.scale === 1
+          ? current
+          : zoomPlanetCameraAtFocus(projectedAtlas, current, zoom, { x: focus.x * currentMap.width, y: focus.y * currentMap.height });
+        return {
+          ...zoomed,
+          panX: Math.max(-1.25, Math.min(1.25, zoomed.panX - gesture.panX * .0045 / zoomed.zoom)),
+          panY: Math.max(-1, Math.min(1, zoomed.panY - gesture.panY * .0045 / zoomed.zoom)),
+        };
+      });
+    }, {
+      onEnd: (moved) => { suppressClick.current = moved; },
+      shouldStart: (event) => !(event.target instanceof Element && event.target.closest(".planet-country-label, button, a, input, select, textarea")),
+    });
+  }, [projectedAtlas, updateCameraImmediately]);
+
   if (!map && error) return <div className="atlas-state" role="alert"><strong>Планета недоступна</strong><span>{error}</span></div>;
   if (!map) return <div className="atlas-state" role="status"><i /><span>Собираем материки…</span></div>;
   const clipId = `planet-map-${atlas?.revision.replaceAll(/[^a-zA-Z0-9_-]/g, "-") ?? "atlas"}`;
@@ -240,22 +267,6 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       else if (event.key === "ArrowDown") updateCameraImmediately((value) => ({ ...value, panY: Math.min(1, value.panY + movement) }));
       else return;
       event.preventDefault();
-    }} onPointerDown={(event) => {
-      drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, panX: camera.panX, panY: camera.panY, moved: false };
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }} onPointerMove={(event) => {
-      const active = drag.current;
-      if (!active || active.pointerId !== event.pointerId) return;
-      const deltaX = event.clientX - active.x;
-      const deltaY = event.clientY - active.y;
-      active.moved ||= Math.abs(deltaX) + Math.abs(deltaY) > 5;
-      updateCameraImmediately((value) => ({ ...value, panX: Math.max(-1.25, Math.min(1.25, active.panX - deltaX * .0045 / value.zoom)), panY: Math.max(-1, Math.min(1, active.panY - deltaY * .0045 / value.zoom)) }));
-    }} onPointerUp={(event) => {
-      suppressClick.current = Boolean(drag.current?.moved); drag.current = null;
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    }} onPointerCancel={(event) => {
-      drag.current = null;
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     }}>
       <defs>
         <clipPath id={clipId}><ellipse cx={(map.surface.minX + map.surface.maxX) / 2} cy={(map.surface.minY + map.surface.maxY) / 2} rx={(map.surface.maxX - map.surface.minX) / 2} ry={(map.surface.maxY - map.surface.minY) / 2} /></clipPath>

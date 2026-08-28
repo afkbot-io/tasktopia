@@ -47,6 +47,9 @@ await app.register(fastifyHelmet, {
       scriptSrc: ["'self'", staticOrigin],
       styleSrc: ["'self'", staticOrigin, "'unsafe-inline'"],
       fontSrc: ["'self'", staticOrigin, "data:"],
+      // WebKit applies this directive to loopback subresources as well. Keep
+      // local mobile QA on HTTP while production retains the HTTPS upgrade.
+      upgradeInsecureRequests: config.APP_ORIGIN.startsWith("https:") ? [] : null,
     },
   },
 });
@@ -179,6 +182,10 @@ if (servesWeb && config.NODE_ENV === "production" && existsSync(publicRoot)) {
       // Versioned game assets and Vite-hashed bundles are immutable; cache for one year.
       if (path.includes("/game-assets/") || isHashedBundle) {
         reply.header("Cache-Control", "public, max-age=31536000, immutable");
+        return;
+      }
+      if (path === "/sw.js" || path.endsWith("/site.webmanifest")) {
+        reply.header("Cache-Control", "no-cache, no-store, must-revalidate");
         return;
       }
       // HTML and unhashed entry files must never be cached by the browser.

@@ -55,6 +55,9 @@
 
 * { box-sizing: border-box; }
 html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+html { height: 100%; background: #081316; }
+body { min-height: 100%; min-height: 100dvh; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+.app-shell { width: 100%; height: 100%; height: 100dvh; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 button, input, select { font: inherit; }
 button { color: inherit; }
 button:disabled { opacity: .48; cursor: not-allowed !important; }
@@ -345,7 +348,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 @media (max-width: 560px) {
   .map-level-nav { bottom: 10px; grid-template-columns: repeat(3, minmax(74px, 1fr)); width: calc(100% - 20px); }
-  .map-level-button { padding-inline: 7px; }
+  .map-level-button { min-height: 44px; padding-inline: 7px; }
 }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: clamp(16px, 4vh, 32px); background: #020607c7; backdrop-filter: blur(6px); }
@@ -522,7 +525,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   .government-list article > button { grid-column: 1 / -1; justify-self: start; }
   .country-create-form { margin: 8px auto; padding: 20px 16px; }
   .token-panel.settings-panel { width: 100%; height: 100dvh; border: 0; border-radius: 0; }
-  .settings-header { padding: 18px 54px 0 16px; }
+  .settings-header { padding: max(18px, env(safe-area-inset-top)) max(54px, calc(16px + env(safe-area-inset-right))) 0 max(16px, env(safe-area-inset-left)); }
   .settings-header h2 { font-size: 24px; }
   .settings-tabs { width: calc(100% + 38px); gap: 2px; margin-top: 14px; }
   .settings-tabs button { flex: 1; padding: 0 8px; }
@@ -590,6 +593,8 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 @media (max-width: 767px) {
   .app-header { height: auto; min-height: var(--layout-header-mobile-height); }
   .app-header .header-search { padding-top: 2px; }
+  .app-header .header-control { min-width: 44px; min-height: 44px; height: 44px; }
+  .app-header .account-button { width: 44px !important; min-width: 44px !important; height: 44px !important; min-height: 44px !important; flex-basis: 44px; }
 }
 
 /* ── Realtime country events ──────────────────────────────── */
@@ -655,7 +660,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 /* ── Small-screen polish ───────────────────────────────────── */
 @media (max-width: 600px) {
-  .realtime-notices { top: 126px; right: 14px; }
+  .realtime-notices { top: calc(126px + env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); }
   .plan-archive-records { grid-column: auto; }
   .task-modal { width: 100%; height: 100dvh; max-height: none; padding: 20px 16px 28px; border: 0; border-radius: 0; }
   .task-header { flex-wrap: wrap; gap: 12px; padding-right: 40px; }

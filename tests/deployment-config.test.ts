@@ -49,6 +49,10 @@ describe("production reverse proxy", () => {
     expect(tls).toContain("root __STATIC_DIR__/current;");
     expect(bootstrap.match(/location ~\* \^\/\(game-assets\|assets\)\/ \{([\s\S]*?)\n\s*\}/)?.[1]).not.toContain("proxy_pass");
     expect(tls.match(/location ~\* \^\/\(game-assets\|assets\)\/ \{([\s\S]*?)\n\s*\}/)?.[1]).not.toContain("proxy_pass");
+    expect(nginx).toContain("sw\\.js|site\\.webmanifest|pwa-icon-");
+    expect(bootstrap).toContain("sw\\.js|site\\.webmanifest|pwa-icon-");
+    expect(tls).toContain("sw\\.js|site\\.webmanifest|pwa-icon-");
+    expect(tls).toContain('Cache-Control "no-cache, no-store, must-revalidate"');
     expect(installScript).toContain('s|__STATIC_DIR__|$static_dir|g');
     expect(updateScript).toContain("refresh_self_host_nginx_static_config");
     expect(updateScript).toContain("is_managed_self_host_nginx_config");

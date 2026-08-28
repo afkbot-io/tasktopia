@@ -7,6 +7,7 @@ import { ATLAS_AIRPORT_POLYGON } from "../../shared/atlas-airport";
 import { atlasAircraftEndpointScale, atlasTerrainConnectionMask, atlasTerrainTile, buildAtlasFlightGeometry, sampleAtlasFlight, type AtlasFlightGeometry } from "../../shared/atlas-scene";
 import { api } from "../api";
 import { smoothCameraScale } from "../world-camera";
+import { bindMapPointerGestures } from "../map-pointer-gesture";
 
 const MIN_ZOOM = .55;
 const MAX_ZOOM = 2.6;
@@ -60,6 +61,11 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
   const labelsRef = useRef<HTMLDivElement>(null);
   const processedEventIdRef = useRef(0);
   const mountedAtRef = useRef(0);
+  const onZoomOutRef = useRef(onZoomOut);
+
+  useEffect(() => {
+    onZoomOutRef.current = onZoomOut;
+  }, [onZoomOut]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -124,7 +130,6 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
     let readyTimer = 0;
     let maxCameraFrameMs = 0;
     let rasterCanvas: HTMLCanvasElement | null = null;
-    let dragging: { x: number; y: number; centerX: number; centerY: number } | null = null;
     const entryCity = overview.cities.find((city) => city.id === initialFocusCityId);
     const camera: Camera = {
       zoom: entryCity ? 1.1 : .72,
@@ -366,8 +371,9 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
     const observer = new ResizeObserver(scheduleCamera);
     observer.observe(host);
     const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
       const next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetCamera.zoom * Math.exp(-event.deltaY * .0015)));
-      if (next === MIN_ZOOM && targetCamera.zoom === MIN_ZOOM && camera.zoom <= MIN_ZOOM + .001 && event.deltaY > 0) { onZoomOut(); return; }
+      if (next === MIN_ZOOM && targetCamera.zoom === MIN_ZOOM && camera.zoom <= MIN_ZOOM + .001 && event.deltaY > 0) { onZoomOutRef.current(); return; }
       const rect = host.getBoundingClientRect();
       const width = host.clientWidth;
       const height = host.clientHeight;
@@ -391,35 +397,28 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         : Math.max(overview.bounds.minY + halfVisibleHeight, Math.min(overview.bounds.maxY - halfVisibleHeight, targetCamera.centerY));
       scheduleZoom();
     };
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Element && event.target.closest(".country-overview-city")) return;
-      dragging = { x: event.clientX, y: event.clientY, centerX: camera.centerX, centerY: camera.centerY };
+    const disposeGestures = bindMapPointerGestures(host, (gesture) => {
+      if (zoomFrame) cancelAnimationFrame(zoomFrame);
+      zoomFrame = 0;
+      const rect = host.getBoundingClientRect();
+      const screenX = gesture.center.x - rect.left;
+      const screenY = gesture.center.y - rect.top;
+      const previousScreenX = screenX - gesture.panX;
+      const previousScreenY = screenY - gesture.panY;
+      const worldX = (previousScreenX - sceneX) / Math.max(.001, sceneScale);
+      const worldY = (previousScreenY - sceneY) / Math.max(.001, sceneScale);
+      const worldWidth = overview.bounds.maxX - overview.bounds.minX;
+      const worldHeight = overview.bounds.maxY - overview.bounds.minY;
+      camera.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * gesture.scale));
+      const scale = Math.min(host.clientWidth / worldWidth, host.clientHeight / worldHeight) * camera.zoom;
+      camera.centerX = worldX + (host.clientWidth / 2 - screenX) / scale;
+      camera.centerY = worldY + (host.clientHeight / 2 - screenY) / scale;
       targetCamera.zoom = camera.zoom;
       targetCamera.centerX = camera.centerX;
       targetCamera.centerY = camera.centerY;
-      if (zoomFrame) cancelAnimationFrame(zoomFrame);
-      zoomFrame = 0;
-      host.setPointerCapture(event.pointerId);
-    };
-    const onPointerMove = (event: PointerEvent) => {
-      if (!dragging) return;
-      const worldWidth = overview.bounds.maxX - overview.bounds.minX;
-      const worldHeight = overview.bounds.maxY - overview.bounds.minY;
-      const scale = Math.min(host.clientWidth / worldWidth, host.clientHeight / worldHeight) * camera.zoom;
-      camera.centerX = dragging.centerX - (event.clientX - dragging.x) / scale;
-      camera.centerY = dragging.centerY - (event.clientY - dragging.y) / scale;
-      targetCamera.centerX = camera.centerX;
-      targetCamera.centerY = camera.centerY;
       scheduleCamera();
-    };
-    const endDrag = () => { dragging = null; };
-    // The atlas occupies a fixed, non-scrollable viewport. Keeping wheel
-    // passive avoids Chrome's compositor wait while zoom remains RAF-driven.
-    host.addEventListener("wheel", onWheel, { passive: true });
-    host.addEventListener("pointerdown", onPointerDown);
-    host.addEventListener("pointermove", onPointerMove);
-    host.addEventListener("pointerup", endDrag);
-    host.addEventListener("pointercancel", endDrag);
+    }, { shouldStart: (event) => !(event.target instanceof Element && event.target.closest(".country-overview-city")) });
+    host.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       disposed = true;
       observer.disconnect();
@@ -428,14 +427,11 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
       if (flightFrame) cancelAnimationFrame(flightFrame);
       if (readyTimer) clearTimeout(readyTimer);
       host.removeEventListener("wheel", onWheel);
-      host.removeEventListener("pointerdown", onPointerDown);
-      host.removeEventListener("pointermove", onPointerMove);
-      host.removeEventListener("pointerup", endDrag);
-      host.removeEventListener("pointercancel", endDrag);
+      disposeGestures();
       for (const flight of flights) flight.view.remove();
       rasterCanvas?.remove();
     };
-  }, [countryId, initialFocusCityId, onZoomOut, overview]);
+  }, [countryId, initialFocusCityId, overview]);
 
   if (error && !overview) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
   if (!overview) return <div className="atlas-state" role="status"><i /><span>Загружаем города страны…</span></div>;
