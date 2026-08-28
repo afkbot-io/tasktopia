@@ -191,11 +191,16 @@ test("push opt-in waits for a user gesture and can be disabled from the mobile p
   };
   await page.addInitScript((pushSubscription) => {
     let current: typeof pushSubscription | null = null;
+    let permission: NotificationPermission = "default";
     const state = window as typeof window & { __pushPromptCalls?: number };
     state.__pushPromptCalls = 0;
     Object.defineProperty(window, "Notification", { configurable: true, value: {
-      permission: "default",
-      requestPermission: async () => { state.__pushPromptCalls = (state.__pushPromptCalls ?? 0) + 1; return "granted"; },
+      get permission() { return permission; },
+      requestPermission: async () => {
+        state.__pushPromptCalls = (state.__pushPromptCalls ?? 0) + 1;
+        permission = "granted";
+        return permission;
+      },
     } });
     Object.defineProperty(window, "PushManager", { configurable: true, value: class PushManager {} });
     Object.defineProperty(navigator.serviceWorker, "getRegistration", { configurable: true, value: async () => ({
