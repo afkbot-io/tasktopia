@@ -45,7 +45,12 @@ describe("durable world generation jobs", { timeout: 20_000 }, () => {
     const result = dispatcher.execute<{ name: string }>(countryId, "city.create", "retry-city", {
       name: "Retry city", idempotencyKey: "retry-city",
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    await vi.waitFor(async () => {
+      const queued = await db.prepare(`SELECT status FROM world_generation_jobs_v1
+        WHERE country_id = ? AND operation = ? AND idempotency_key = ?`)
+        .get<{ status: string }>(countryId, "city.create", "retry-city");
+      expect(queued?.status).toBe("PENDING");
+    }, { timeout: 5_000, interval: 10 });
     await processNextWorldGenerationJob(db, new AppService(db), "worker-retry");
 
     await expect(result).resolves.toMatchObject({ name: "Retry city" });
