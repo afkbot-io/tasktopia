@@ -125,6 +125,9 @@ Production-схема: системный nginx принимает `80/443`; web
 через `/srv/tasktopia/static/current`. Поэтому nginx и `store.tasktopia.online`
 продолжают отдавать предыдущую полную ревизию во время пересоздания app-контейнера,
 а пользователи не получают частично обновлённый набор чанков и спрайтов.
+В тот же atomic release входят `sw.js`, `site.webmanifest` и PWA-иконки. Основной
+origin отдаёт их из `static/current` с обязательным revalidate; это не позволяет
+service worker прежней ревизии закрепиться поверх нового bundle.
 
 ## Первый запуск на Ubuntu/Debian
 

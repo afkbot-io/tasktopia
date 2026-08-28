@@ -7,6 +7,9 @@ describe("isStaticAssetRequest", () => {
     "/game-assets/v5/missing.png?revision=old",
     "/assets/missing-bundle.js",
     "/assets",
+    "/sw.js?revision=old",
+    "/site.webmanifest",
+    "/pwa-icon-192.png",
   ])("keeps missing static files out of the SPA fallback: %s", (url) => {
     expect(isStaticAssetRequest(url)).toBe(true);
   });

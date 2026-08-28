@@ -254,9 +254,12 @@ export function App() {
   // screen first and land on the card after signing in.
   useEffect(() => {
     if (!bootstrap || deepLinkHandledRef.current) return;
+    // Deep links are a one-shot bootstrap concern. Mark the initial location
+    // handled even when it is `/`, otherwise a task URL written by TaskModal
+    // can be mistaken for a new incoming link and reopen after the user closes it.
+    deepLinkHandledRef.current = true;
     const match = /^\/task\/(\d{1,9})\/?$/.exec(window.location.pathname);
     if (!match) return;
-    deepLinkHandledRef.current = true;
     const number = Number(match[1]);
     void api<TaskSearchResultDto[]>(`/api/tasks/search?q=${number}&limit=1`)
       .then((found) => {
@@ -341,7 +344,7 @@ export function App() {
   const activeCity = focusCity ?? bootstrap.initialCity;
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "COUNTRY" ? hoveredAtlasCity : effectiveMapMode === "CITY" ? activeCity : null;
-  return <main className="grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
+  return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
     <header className="app-header relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 py-1.5 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:grid-cols-[minmax(0,1fr)_minmax(240px,380px)_minmax(0,1fr)] md:gap-3 md:px-4 md:py-0" aria-label="Панель управления страной">
       <div className="order-1 flex min-w-0 items-center gap-2.5 md:gap-4">
         <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
