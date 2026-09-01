@@ -4,6 +4,7 @@ import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { compileBlockLayout } from "../src/server/world/block-layout-compiler";
 import { activateBlockLayout, persistReadyBlockLayout } from "../src/server/world/block-layout-store";
+import { blockSurfacePlanForKind } from "../src/shared/block-surface";
 
 describe("block-v1 layout compiler", () => {
   const input = {
@@ -34,6 +35,15 @@ describe("block-v1 layout compiler", () => {
       variant: "north",
       width: 32,
       height: 32,
+      parameters: {
+        surface: {
+          schemaVersion: 1,
+          profile: "TASKTOPIA_BLOCK_V1_MICRO_SURFACES_2026",
+          cellPx: 4,
+          kind: "LAWN",
+          tileKey: "block-lawn",
+        },
+      },
     });
     expect(first.placements.map((placement) => [placement.taskId, placement.slotKey])).toEqual([
       ["task-a", "lot-0"],
@@ -46,6 +56,13 @@ describe("block-v1 layout compiler", () => {
       ...input,
       tasks: [{ ...input.tasks[0]!, constructionStage: 6 as 5 }],
     })).toThrow(/stage/i);
+  });
+
+  it("reserves water only for WATER blocks and keeps all current ordinary blocks on lawn", () => {
+    expect(blockSurfacePlanForKind("WATER")).toMatchObject({ kind: "WATER", tileKey: "block-water", cellPx: 4 });
+    for (const kind of ["RESIDENTIAL", "CIVIC", "PARK", "INDUSTRIAL", "TRANSPORT"] as const) {
+      expect(blockSurfacePlanForKind(kind), kind).toMatchObject({ kind: "LAWN", tileKey: "block-lawn", cellPx: 4 });
+    }
   });
 });
 

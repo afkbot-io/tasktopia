@@ -4,6 +4,7 @@ import {
   type CompiledBlockLayoutV1,
   type ConstructionStage,
 } from "../../shared/block-world";
+import { blockSurfacePlanForKind } from "../../shared/block-surface";
 import { auditSemanticRoadNetwork, SEMANTIC_ROAD_SCHEMA_VERSION, type SemanticRoadNetwork } from "../../shared/semantic-road";
 
 export type BlockLayoutTaskInput = {
@@ -87,6 +88,8 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
     checksum: createHash("sha256").update(canonicalJson(semanticRoadNetwork)).digest("hex"),
   };
 
+  const starterBlockKind = "RESIDENTIAL" as const;
+
   const semanticLayout = {
     id: layoutId,
     countryId: input.countryId,
@@ -107,7 +110,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       id: blockId,
       districtLayoutId,
       sequence: 0,
-      kind: "RESIDENTIAL" as const,
+      kind: starterBlockKind,
       templateKey: "mixed-urban-grid",
       templateVersion: 1,
       variant: "north",
@@ -115,7 +118,13 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       origin: { x: 0, y: 0 },
       width: 32,
       height: 32,
-      parameters: { renderCellPx: 4, sidewalkWidthCells: 1, localRoadWidthCells: 3, slotCount: 8 },
+      parameters: {
+        renderCellPx: 4,
+        sidewalkWidthCells: 1,
+        localRoadWidthCells: 3,
+        slotCount: 8,
+        surface: blockSurfacePlanForKind(starterBlockKind),
+      },
       summary: { occupiedSlots: tasks.length, taskCount: tasks.length },
     }],
     placements: tasks.map((task, index) => ({

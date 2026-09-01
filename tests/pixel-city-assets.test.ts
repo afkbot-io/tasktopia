@@ -134,6 +134,45 @@ describe("Pixel City active asset contract", () => {
     expect(materialManifest.tiles).not.toHaveProperty("curb");
   });
 
+  it("publishes only full 4px lawn and water surfaces for block-v1 interiors", () => {
+    const blockSurfaceManifest = manifest as typeof manifest & {
+      blockSurfaces?: {
+        schemaVersion: number;
+        cellPx: number;
+        visualProfile: string;
+        tiles: Record<string, {
+          path: string;
+          size: [number, number];
+          opaque: boolean;
+          materialRole: string;
+        }>;
+      };
+    };
+    expect(blockSurfaceManifest.blockSurfaces).toEqual({
+      schemaVersion: 1,
+      cellPx: 4,
+      visualProfile: "TASKTOPIA_BLOCK_V1_MICRO_SURFACES_2026",
+      tiles: {
+        "block-lawn": {
+          path: "block-surfaces/block-lawn.png",
+          size: [4, 4],
+          opaque: true,
+          materialRole: "LAWN",
+        },
+        "block-water": {
+          path: "block-surfaces/block-water.png",
+          size: [4, 4],
+          opaque: true,
+          materialRole: "WATER",
+        },
+      },
+    });
+    expect(Object.keys(blockSurfaceManifest.blockSurfaces!.tiles)).toEqual(["block-lawn", "block-water"]);
+    for (const surface of Object.values(blockSurfaceManifest.blockSurfaces!.tiles)) {
+      expect(existsSync(resolve(runtime, surface.path)), surface.path).toBe(true);
+    }
+  });
+
   it("publishes every planned building as five distinct runtime stages", () => {
     for (const key of new Set([...expansionKeys, ...buildingCatalog.buildings.map((entry) => entry.key)])) {
       const building = buildings[key];

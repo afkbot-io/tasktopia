@@ -189,6 +189,10 @@ export const TILE_SPRITES = Object.fromEntries(
   Object.entries(manifest.tiles).map(([key, value]) => [key, gameAssetUrl((value as { path: string }).path)]),
 ) as Record<string, string>;
 
+export const BLOCK_SURFACE_SPRITES = Object.fromEntries(
+  Object.entries(manifest.blockSurfaces.tiles).map(([key, value]) => [key, gameAssetUrl((value as { path: string }).path)]),
+) as Record<"block-lawn" | "block-water", string>;
+
 export const VEHICLE_SPRITES = Object.fromEntries(
   Object.entries(manifest.vehicles).map(([color, axes]) => [color, Object.fromEntries(
     Object.entries(axes as Record<string, { path: string }>).map(([axis, value]) => [axis, gameAssetUrl(value.path)]),

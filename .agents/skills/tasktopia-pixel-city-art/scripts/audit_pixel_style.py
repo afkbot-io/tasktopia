@@ -88,7 +88,13 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
     category_signatures: dict[str, dict[bytes, list[str]]] = defaultdict(lambda: defaultdict(list))
     audited_paths: set[str] = set()
 
-    def audit_image(relative: str, label: str, *, expected_size: tuple[int, int] | None = None) -> Image.Image | None:
+    def audit_image(
+        relative: str,
+        label: str,
+        *,
+        expected_size: tuple[int, int] | None = None,
+        grid_unit: int = CELL,
+    ) -> Image.Image | None:
         path = runtime / relative
         audited_paths.add(relative)
         if not path.is_file():
@@ -97,8 +103,8 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         image = Image.open(path).convert("RGBA")
         if expected_size is not None and image.size != expected_size:
             errors.append(f"{label}: expected {expected_size}, got {image.size}")
-        if min(image.size) <= 0 or any(value % CELL for value in image.size):
-            errors.append(f"{label}: canvas must use positive {CELL}px units")
+        if min(image.size) <= 0 or any(value % grid_unit for value in image.size):
+            errors.append(f"{label}: canvas must use positive {grid_unit}px units")
         colors = image.getcolors(maxcolors=65_536) or []
         if len(colors) > PALETTE_BUDGET:
             errors.append(f"{label}: {len(colors)} colors exceeds {PALETTE_BUDGET}")
@@ -359,6 +365,16 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
 
     for key, tile in sorted(manifest.get("tiles", {}).items()):
         audit_image(str(tile.get("path", "")), f"tiles/{key}", expected_size=(CELL, CELL))
+
+    for key, tile in sorted(manifest.get("blockSurfaces", {}).get("tiles", {}).items()):
+        image = audit_image(
+            str(tile.get("path", "")),
+            f"blockSurfaces/{key}",
+            expected_size=(4, 4),
+            grid_unit=4,
+        )
+        if image is not None and image.getchannel("A").getextrema() != (255, 255):
+            errors.append(f"blockSurfaces/{key}: full base tile must be opaque")
 
     for material, directions in sorted(manifest.get("transitions", {}).items()):
         for direction, relative in sorted(directions.items()):

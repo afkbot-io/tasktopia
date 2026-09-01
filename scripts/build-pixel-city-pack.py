@@ -28,6 +28,7 @@ SCREENSHOTS = ROOT / "screenshots"
 CATALOG = PACK / "catalog"
 AI_AUTHORED_ART = PACK / "reference"
 CELL = 8
+BLOCK_SURFACE_CELL = 4
 REGISTERED_RULES = {"STANDARD", "UNIQUE_SERVICE", "REQUIRES_COLLECTOR"}
 PRESERVED_RUNTIME_PNG: dict[str, bytes] = {}
 PINNED_REVIEWED_RUNTIME_PNG: set[str] = set()
@@ -87,6 +88,7 @@ def load_generated_specs() -> list[HouseSpec]:
 
 
 MATERIAL_PROFILE = "TASKTOPIA_V5_CITY_MATERIALS_2026"
+BLOCK_SURFACE_PROFILE = "TASKTOPIA_BLOCK_V1_MICRO_SURFACES_2026"
 
 # The city materials share the buildings' muted blue-green shadows and warm
 # highlights.  Tiny authored clusters replace the old high-contrast diagonal
@@ -317,6 +319,43 @@ def terrain_tile(kind: str, variant: int) -> Image.Image:
             draw.line((x, y, x + 2, y), fill=rgba(fish))
             draw.point((x - 1, y - 1), fill=rgba(fish))
             draw.point((x - 1, y + 1), fill=rgba(fish))
+    return image
+
+
+def block_surface_tile(kind: str) -> Image.Image:
+    """Author one full, opaque, tile-safe 4px substrate for block-v1."""
+    palettes = {
+        "block-lawn": {
+            "B": rgba("#667f4bff"),
+            "L": rgba("#748d55ff"),
+            "D": rgba("#587142ff"),
+        },
+        "block-water": {
+            "B": rgba("#307f9dff"),
+            "L": rgba("#4292aeff"),
+            "D": rgba("#256d8cff"),
+        },
+    }
+    matrices = {
+        "block-lawn": (
+            "BBBB",
+            "BLBB",
+            "BBDB",
+            "BBBB",
+        ),
+        "block-water": (
+            "BBBB",
+            "BLLB",
+            "BDBB",
+            "BBBB",
+        ),
+    }
+    palette = palettes[kind]
+    image = Image.new("RGBA", (BLOCK_SURFACE_CELL, BLOCK_SURFACE_CELL), palette["B"])
+    draw = ImageDraw.Draw(image)
+    for y, row in enumerate(matrices[kind]):
+        for x, color in enumerate(row):
+            draw.point((x, y), fill=palette[color])
     return image
 
 
@@ -2576,6 +2615,19 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
             "materialRole": role,
             "visualProfile": MATERIAL_PROFILE,
         }
+
+    block_surface_dir = RUNTIME / "block-surfaces"
+    block_surface_dir.mkdir(parents=True, exist_ok=True)
+    block_surface_tiles = {}
+    for key, role in (("block-lawn", "LAWN"), ("block-water", "WATER")):
+        target = block_surface_dir / f"{key}.png"
+        save_runtime_png(block_surface_tile(key), target)
+        block_surface_tiles[key] = {
+            "path": str(target.relative_to(RUNTIME)),
+            "size": [BLOCK_SURFACE_CELL, BLOCK_SURFACE_CELL],
+            "opaque": True,
+            "materialRole": role,
+        }
     return {
         "version": 5,
         "gridPx": CELL,
@@ -2585,6 +2637,12 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         "terrain": terrain,
         "transitions": transitions,
         "tiles": tile_manifest,
+        "blockSurfaces": {
+            "schemaVersion": 1,
+            "cellPx": BLOCK_SURFACE_CELL,
+            "visualProfile": BLOCK_SURFACE_PROFILE,
+            "tiles": block_surface_tiles,
+        },
         "buildings": buildings,
         "vehicles": vehicle_manifest,
         "props": prop_manifest,
@@ -2615,6 +2673,22 @@ def validate(manifest: dict) -> None:
             "GROUND", "ROAD", "FOOTWAY", "MARKING", "BRIDGE",
             "CONSTRUCTION", "CONSTRUCTION_OVERLAY",
         }, key
+    block_surfaces = manifest["blockSurfaces"]
+    assert block_surfaces["schemaVersion"] == 1
+    assert block_surfaces["cellPx"] == BLOCK_SURFACE_CELL
+    assert block_surfaces["visualProfile"] == BLOCK_SURFACE_PROFILE
+    assert list(block_surfaces["tiles"]) == ["block-lawn", "block-water"]
+    for key, tile in block_surfaces["tiles"].items():
+        image = Image.open(RUNTIME / tile["path"]).convert("RGBA")
+        assert image.size == (BLOCK_SURFACE_CELL, BLOCK_SURFACE_CELL), (key, image.size)
+        assert tile["size"] == [BLOCK_SURFACE_CELL, BLOCK_SURFACE_CELL]
+        assert tile["opaque"] is True
+        assert tile["materialRole"] in {"LAWN", "WATER"}
+        assert image.getchannel("A").getextrema() == (255, 255), (key, "not fully opaque")
+        assert len(image.getcolors(maxcolors=256) or ()) <= 3, (key, "palette too large")
+        pixels = image.load()
+        assert all(pixels[x, 0] == pixels[x, BLOCK_SURFACE_CELL - 1] for x in range(BLOCK_SURFACE_CELL)), (key, "vertical seam")
+        assert all(pixels[0, y] == pixels[BLOCK_SURFACE_CELL - 1, y] for y in range(BLOCK_SURFACE_CELL)), (key, "horizontal seam")
     assert len(manifest["buildings"]) >= 44
     for key, building in manifest["buildings"].items():
         assert len(building["stages"]) == 5, key

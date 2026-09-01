@@ -187,6 +187,25 @@ def audit() -> dict[str, Any]:
         relative_path = value["path"] if isinstance(value, dict) else value
         audit_grid_asset(relative_path, f"tiles/{key}", (CELL, CELL))
 
+    block_surfaces = manifest.get("blockSurfaces", {})
+    if block_surfaces.get("cellPx") != 4:
+        violations.append("blockSurfaces: cellPx must be 4")
+    if block_surfaces.get("visualProfile") != "TASKTOPIA_BLOCK_V1_MICRO_SURFACES_2026":
+        violations.append("blockSurfaces: wrong visual profile")
+    if list(block_surfaces.get("tiles", {})) != ["block-lawn", "block-water"]:
+        violations.append("blockSurfaces: expected only block-lawn and block-water")
+    for key, value in block_surfaces.get("tiles", {}).items():
+        image = audit_grid_asset(value["path"], f"blockSurfaces/{key}", (4, 4))
+        if image is None:
+            continue
+        if image.getchannel("A").getextrema() != (255, 255):
+            violations.append(f"blockSurfaces/{key}: full base tile must be opaque")
+        pixels = image.load()
+        if any(pixels[x, 0] != pixels[x, 3] for x in range(4)):
+            violations.append(f"blockSurfaces/{key}: vertical repeated-field seam")
+        if any(pixels[0, y] != pixels[3, y] for y in range(4)):
+            violations.append(f"blockSurfaces/{key}: horizontal repeated-field seam")
+
     for key, prop in manifest.get("props", {}).items():
         image = audit_grid_asset(prop["path"], f"props/{key}")
         if image is None:

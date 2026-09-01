@@ -342,6 +342,31 @@
       "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
     }
   },
+  "blockSurfaces": {
+    "schemaVersion": 1,
+    "cellPx": 4,
+    "visualProfile": "TASKTOPIA_BLOCK_V1_MICRO_SURFACES_2026",
+    "tiles": {
+      "block-lawn": {
+        "path": "block-surfaces/block-lawn.png",
+        "size": [
+          4,
+          4
+        ],
+        "opaque": true,
+        "materialRole": "LAWN"
+      },
+      "block-water": {
+        "path": "block-surfaces/block-water.png",
+        "size": [
+          4,
+          4
+        ],
+        "opaque": true,
+        "materialRole": "WATER"
+      }
+    }
+  },
   "buildings": {
     "highrise-glass": {
       "label": "Стеклянная высотка",
@@ -22138,5 +22163,5 @@
       }
     }
   },
-  "assetRevision": "f6c2d2d876b94c5b"
+  "assetRevision": "726e53d1674d20a7"
 }
