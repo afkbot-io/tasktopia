@@ -11,7 +11,7 @@ Treat PLANET, COUNTRY, and CITY as three projections of one world, never as inde
 
 - PLANET owns the stable macro-cell identity and terrain family.
 - COUNTRY expands the selected country plus its visible neighbouring macro cells. Do not synthesize water merely because a cell belongs to another country.
-- CITY keeps the square `8x8 px` simulation grid, but every macro landmark affecting its territory keeps its terrain family and relative position.
+- CITY block-v1 keeps logical simulation coordinates independent of pixels and presents one cell as `4x4 px`; homogeneous terrain may be batched into native `16x16 px` macros while exact mixed boundaries remain detail cells. Every macro landmark affecting its territory keeps its terrain family and relative position.
 - A city's country silhouette is derived deterministically from its current city/district bounds. It must change when those bounds change and must not be a generic square marker.
 - Terrain seeds add detail inside an inherited family; they may not move a mountain, river, coast, forest, or neighbouring landmass to another macro region.
 - Country maps do not draw synthetic roads between cities. Show city silhouettes and their own internal detail only.
