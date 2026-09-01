@@ -23,8 +23,94 @@ describe("PostgreSQL migrations", () => {
       "0019_seeded_area_decor.sql",
       "0020_country_overview_snapshots.sql",
       "0021_web_push.sql",
+      "0022_block_v1_shadow_layouts.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
+  });
+
+  it("stores block-v1 layouts, semantic roads, and exclusive slot occupancy", async () => {
+    const registered = await registerUser(db, {
+      email: "block-v1-migration@tasktopia.local",
+      name: "Block v1",
+      password: "migration-password",
+    });
+    const cityId = randomUUID();
+    const districtId = randomUUID();
+    const layoutId = randomUUID();
+    const districtLayoutId = randomUUID();
+    const blockId = randomUUID();
+    const networkId = randomUUID();
+    const timestamp = new Date().toISOString();
+    await db.prepare(`INSERT INTO cities_v3
+      (id,country_id,name,status,center_x,center_y,bounds_json,style_id,created_at)
+      VALUES (?,?,'Block city','ACTIVE',0,0,?::jsonb,'block-v1',?)`)
+      .run(cityId, registered.user.countryId, JSON.stringify({ minX: 0, minY: 0, maxX: 31, maxY: 31 }), timestamp);
+    await db.prepare(`INSERT INTO districts_v3
+      (id,city_id,name,status,cells_json,lots_json,growth_direction,color,created_at)
+      VALUES (?,?,'Block district','ACTIVE','[]'::jsonb,'[]'::jsonb,'E','#fff',?)`)
+      .run(districtId, cityId, timestamp);
+    await db.prepare(`INSERT INTO city_layouts_v1
+      (id,country_id,city_id,generator_version,seed,revision,status,bounds_json,checksum,created_at,updated_at)
+      VALUES (?,?,?,'block-v1',17,1,'GENERATING',?::jsonb,NULL,?,?)`)
+      .run(layoutId, registered.user.countryId, cityId, JSON.stringify({ minX: 0, minY: 0, maxX: 31, maxY: 31 }), timestamp, timestamp);
+    await db.prepare("UPDATE city_layouts_v1 SET status='VALIDATING' WHERE id=?").run(layoutId);
+    await db.prepare("UPDATE city_layouts_v1 SET status='READY',checksum=repeat('a',64) WHERE id=?").run(layoutId);
+    await db.prepare("UPDATE city_layouts_v1 SET status='ACTIVE', activated_at=? WHERE id=?").run(timestamp, layoutId);
+    await expect(db.prepare(`INSERT INTO city_layouts_v1
+      (id,country_id,city_id,generator_version,seed,revision,status,bounds_json,checksum,created_at,updated_at,activated_at)
+      VALUES (?,?,?,'block-v1',18,2,'ACTIVE',?::jsonb,repeat('b',64),?,?,?)`)
+      .run(randomUUID(), registered.user.countryId, cityId,
+        JSON.stringify({ minX: 0, minY: 0, maxX: 31, maxY: 31 }), timestamp, timestamp, timestamp))
+      .rejects.toThrow();
+    await expect(db.prepare("UPDATE city_layouts_v1 SET status='GENERATING' WHERE id=?").run(layoutId))
+      .rejects.toThrow();
+
+    await db.prepare(`INSERT INTO district_layouts_v1
+      (id,layout_id,district_id,sequence,archetype,bounds_json,created_at)
+      VALUES (?,?,?,0,'MIXED_URBAN',?::jsonb,?)`)
+      .run(districtLayoutId, layoutId, districtId,
+        JSON.stringify({ minX: 0, minY: 0, maxX: 31, maxY: 31 }), timestamp);
+    await db.prepare(`INSERT INTO city_blocks_v1
+      (id,layout_id,district_layout_id,sequence,kind,template_key,template_version,variant,seed,
+       origin_x,origin_y,width,height,parameters_json,summary_json,created_at)
+      VALUES (?,?,?,0,'RESIDENTIAL','residential-grid',1,'north',17,0,0,16,16,'{}'::jsonb,'{}'::jsonb,?)`)
+      .run(blockId, layoutId, districtLayoutId, timestamp);
+    await db.prepare(`INSERT INTO road_networks_v1
+      (id,layout_id,schema_version,nodes_json,segments_json,checksum,created_at)
+      VALUES (?,?,1,?::jsonb,?::jsonb,repeat('c',64),?)`)
+      .run(networkId, layoutId,
+        JSON.stringify([{ id: "west", x: 0, y: 8 }, { id: "east", x: 15, y: 8 }]),
+        JSON.stringify([{ id: "main", fromNodeId: "west", toNodeId: "east", widthCells: 3,
+          runs: [{ direction: "E", length: 15 }] }]),
+        timestamp);
+
+    await db.prepare(`INSERT INTO task_placements_v1
+      (task_id,layout_id,block_id,slot_key,building_family,facade_variant,construction_stage,created_at,updated_at)
+      SELECT id,?,?,?,'residential','north',1,?,? FROM tasks_v3 LIMIT 0`)
+      .run(layoutId, blockId, "lot-0", timestamp, timestamp);
+    await db.prepare(`INSERT INTO site_markers_v1
+      (id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at)
+      VALUES (?,?,?,?,'RUINED','{}'::jsonb,'residential-ruin',?,?)`)
+      .run(randomUUID(), layoutId, blockId, "lot-0", timestamp, timestamp);
+
+    const taskId = randomUUID();
+    await db.prepare(`INSERT INTO tasks_v3
+      (id,task_number,city_id,district_id,title,estimate,building_type,platform_type,origin_x,origin_y,
+       footprint_json,access_json,created_at,updated_at)
+      VALUES (?,1,?,?,'Block task',1,'house-small','GRASS',0,0,'[]'::jsonb,'[]'::jsonb,?,?)`)
+      .run(taskId, cityId, districtId, timestamp, timestamp);
+    await expect(db.prepare(`INSERT INTO task_placements_v1
+      (task_id,layout_id,block_id,slot_key,building_family,facade_variant,construction_stage,created_at,updated_at)
+      VALUES (?,?,?,?,'residential','north',1,?,?)`)
+      .run(taskId, layoutId, blockId, "lot-0", timestamp, timestamp)).rejects.toThrow();
+    const relocatedMarkerId = randomUUID();
+    await db.prepare(`INSERT INTO site_markers_v1
+      (id,layout_id,block_id,slot_key,kind,target_task_id,snapshot_json,asset_variant,created_at,updated_at)
+      VALUES (?,?,?,'lot-1','RELOCATED',?,'{}'::jsonb,'residential-relocated',?,?)`)
+      .run(relocatedMarkerId, layoutId, blockId, taskId, timestamp, timestamp);
+    await db.prepare("DELETE FROM tasks_v3 WHERE id=?").run(taskId);
+    expect(await db.prepare("SELECT kind,target_task_id FROM site_markers_v1 WHERE id=?").get(relocatedMarkerId))
+      .toEqual({ kind: "RELOCATED", target_task_id: null });
   });
 
   it("stores owned subscriptions and idempotent event deliveries", async () => {
