@@ -20,73 +20,11 @@ BUILDING_DEPTH_CELLS = 16
 BUILDING_HEIGHT_CELLS = 35
 BUILDING_ORIGIN_X = (SITE_COLUMNS - BUILDING_WIDTH_CELLS) // 2
 BUILDING_ORIGIN_Y = (SITE_ROWS - BUILDING_DEPTH_CELLS) // 2
-PAVEMENT = ROOT / "assets/pixel-city-pack/runtime/tiles/pavement.png"
-PAVEMENT_MODES = ("reference-grid", "runtime")
-
-# The reference sidewalk is still orthogonal to the map. Its apparent viewing
-# angle comes from the bevel on every slab: light reaches the top/left edges,
-# while the bottom/right edges fall into shadow. Keeping this as an explicit
-# 8x8 matrix makes the seam and lighting contract reviewable pixel by pixel.
-REFERENCE_PAVEMENT_PALETTE = {
-    "J": (88, 103, 110, 255),    # narrow recessed joint
-    "S": (120, 134, 140, 255),   # rare lower-right shadow cluster
-    "B": (132, 145, 149, 255),   # slab face
-    "A": (136, 149, 153, 255),   # quiet aggregate variation
-    "L": (143, 155, 158, 255),   # soft upper-left light
-    "H": (149, 160, 161, 255),   # rare stone highlight
-}
-REFERENCE_PAVEMENT_VARIANTS = (
-    (
-        "JJJJJJJJ",
-        "JLLLLLLL",
-        "JLABBBBB",
-        "JLBBBBAB",
-        "JABBBBBB",
-        "JLABBBBB",
-        "JABBABBB",
-        "JBBBBBSS",
-    ),
-    (
-        "JJJJJJJJ",
-        "JLLLLLLL",
-        "JLBBBBBB",
-        "JABBBABB",
-        "JLBBBBBB",
-        "JLABBBBB",
-        "JBBHBBBB",
-        "JBBBBBBS",
-    ),
-    (
-        "JJJJJJJJ",
-        "JLLLLLLL",
-        "JLABBBBB",
-        "JLBBBBBB",
-        "JABBBBBB",
-        "JLBBHBBB",
-        "JBBBBABB",
-        "JBBBBBSS",
-    ),
-    (
-        "JJJJJJJJ",
-        "JLLLLLLL",
-        "JLBBBBBB",
-        "JLABBBBB",
-        "JABBBBBB",
-        "JLBBBABB",
-        "JABBBBBB",
-        "JBBBBBBS",
-    ),
-    (
-        "JJJJJJJJ",
-        "JLLLLLLL",
-        "JLABBABB",
-        "JLBBBBBB",
-        "JABHBBBB",
-        "JLBBBBBB",
-        "JABBBBBB",
-        "JBBBBBSS",
-    ),
-)
+PAVEMENT_ATLAS = ROOT / "public/game-assets/v5/atlas/road-v2/surface.png"
+PAVEMENT_MODES = ("road-v2",)
+PAVEMENT_VARIANTS = 3
+PAVEMENT_FAMILY_ROW = 0
+PAVEMENT_CONNECTED_MASK = 15
 
 
 @dataclass(frozen=True)
@@ -168,42 +106,28 @@ def normalize_building(source: Path, width: int, height: int) -> Image.Image:
 def pavement_contract() -> dict[str, object]:
     return {
         "tileSizePx": {"width": CELL_SIZE, "height": CELL_SIZE},
-        "variantCount": len(REFERENCE_PAVEMENT_VARIANTS),
-        "paletteColorCount": len(REFERENCE_PAVEMENT_PALETTE),
-        "projection": "orthogonal-frontal-top",
+        "variantCount": PAVEMENT_VARIANTS,
+        "paletteColorCount": 4,
+        "projection": "terrain-v4-cartoon",
         "lightDirection": "upper-left",
-        "seams": "single shared one-pixel top-and-left joint",
+        "seams": "opaque mask-driven stepped edge",
     }
 
 
-def reference_pavement_tile(variant_index: int = 0) -> Image.Image:
-    matrix = REFERENCE_PAVEMENT_VARIANTS[variant_index % len(REFERENCE_PAVEMENT_VARIANTS)]
-    if len(matrix) != CELL_SIZE or any(
-        len(row) != CELL_SIZE for row in matrix
-    ):
-        raise ValueError("reference pavement matrix must be exactly 8x8")
-    pavement = Image.new("RGBA", (CELL_SIZE, CELL_SIZE), (0, 0, 0, 0))
-    pixels = pavement.load()
-    for y, row in enumerate(matrix):
-        for x, key in enumerate(row):
-            pixels[x, y] = REFERENCE_PAVEMENT_PALETTE[key]
-    if pavement.getchannel("A").getextrema() != (255, 255):
-        raise ValueError("reference pavement must be fully opaque")
-    return pavement
-
-
 def pavement_tile(mode: str, variant_index: int = 0) -> Image.Image:
-    if mode == "reference-grid":
-        return reference_pavement_tile(variant_index)
-    if mode == "runtime":
-        return Image.open(PAVEMENT).convert("RGBA")
+    if mode == "road-v2":
+        atlas = Image.open(PAVEMENT_ATLAS).convert("RGBA")
+        variant = variant_index % PAVEMENT_VARIANTS
+        left = PAVEMENT_CONNECTED_MASK * CELL_SIZE
+        top = (PAVEMENT_FAMILY_ROW * PAVEMENT_VARIANTS + variant) * CELL_SIZE
+        return atlas.crop((left, top, left + CELL_SIZE, top + CELL_SIZE))
     raise ValueError(f"unknown pavement mode: {mode}")
 
 
 def pavement_variant_index(column: int, row: int) -> int:
     # A deterministic spatial hash avoids a diagonal/wallpaper repeat while
     # keeping rerenders stable for visual comparison.
-    return ((column * 37) ^ (row * 53) ^ (column * row * 11)) % len(REFERENCE_PAVEMENT_VARIANTS)
+    return ((column * 37) ^ (row * 53) ^ (column * row * 11)) % PAVEMENT_VARIANTS
 
 
 def tiled_platform(mode: str, columns: int = SITE_COLUMNS, rows: int = SITE_ROWS) -> Image.Image:
@@ -212,7 +136,7 @@ def tiled_platform(mode: str, columns: int = SITE_COLUMNS, rows: int = SITE_ROWS
         platform = Image.new("RGBA", (columns * CELL_SIZE, rows * CELL_SIZE), (0, 0, 0, 0))
     for row in range(rows):
         for column in range(columns):
-            variant_index = pavement_variant_index(column, row) if mode == "reference-grid" else 0
+            variant_index = pavement_variant_index(column, row)
             pavement = pavement_tile(mode, variant_index)
             if pavement.size != (CELL_SIZE, CELL_SIZE):
                 raise ValueError(f"pavement tile must be 8x8, got {pavement.size}")
@@ -322,7 +246,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-preview-output", type=Path, default=ROOT / "tmp/building-grid-layout-4x.png")
     parser.add_argument("--pavement-output", type=Path, default=ROOT / "tmp/pavement-grid-swatch.png")
     parser.add_argument("--pavement-preview-output", type=Path, default=ROOT / "tmp/pavement-grid-swatch-6x.png")
-    parser.add_argument("--pavement-mode", choices=PAVEMENT_MODES, default="reference-grid")
+    parser.add_argument("--pavement-mode", choices=PAVEMENT_MODES, default="road-v2")
     parser.add_argument("--preview-scale", type=int, default=4)
     parser.add_argument("--describe-layout", action="store_true")
     parser.add_argument("--describe-pavement", action="store_true")

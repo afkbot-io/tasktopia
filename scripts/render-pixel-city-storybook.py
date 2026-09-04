@@ -220,10 +220,10 @@ def html_document(data: dict[str, Any]) -> str:
     .badges {{ display:flex; flex-wrap:wrap; gap:5px; margin-top:10px }}
     .badge {{ padding:2px 6px; border-radius:999px; border:1px solid #45616a; background:#11272d; color:#bcd0cd; font-size:10px }}
     .badge.ok {{ color:#8ce58e; border-color:#397341 }} .badge.queue {{ color:#f0c84b; border-color:#806c31 }}
-    .stage-street {{ min-width:0; display:flex; gap:16px; align-items:end; overflow:auto; padding:20px 28px 22px; border-bottom:calc(3 * var(--cell)) solid transparent; border-image:url('../../assets/pixel-city-pack/runtime/tiles/road.png') 8 repeat }}
-    .plot {{ position:relative; flex:0 0 auto; display:flex; align-items:end; justify-content:center; min-width:calc(var(--w) * 1px * var(--zoom) + 2 * var(--cell)); height:calc(var(--h) * 1px * var(--zoom) + 4 * var(--cell)); padding:var(--cell); background-image:url('../../assets/pixel-city-pack/runtime/tiles/pavement.png'); background-size:var(--cell) var(--cell); border:1px solid #78909866 }}
+    .stage-street {{ min-width:0; display:flex; gap:16px; align-items:end; overflow:auto; padding:20px 28px 22px; border-bottom:calc(3 * var(--cell)) solid #263540 }}
+    .plot {{ position:relative; flex:0 0 auto; display:flex; align-items:end; justify-content:center; min-width:calc(var(--w) * 1px * var(--zoom) + 2 * var(--cell)); height:calc(var(--h) * 1px * var(--zoom) + 4 * var(--cell)); padding:var(--cell); background:#849195; border:1px solid #58676e }}
     .plot[data-platform="YARD"] {{ background-image:url('../../assets/pixel-city-pack/runtime/terrain/meadow-0.png') }}
-    .plot[data-platform="ASPHALT"] {{ background-image:url('../../assets/pixel-city-pack/runtime/tiles/road.png') }}
+    .plot[data-platform="ASPHALT"] {{ background:#3d4856 }}
     .grid-on .plot::after,.grid-on .park-canvas::after {{ content:""; position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(#f0c84b28 1px,transparent 1px),linear-gradient(90deg,#f0c84b28 1px,transparent 1px); background-size:var(--cell) var(--cell) }}
     .stage-img {{ display:block; width:calc(var(--w) * 1px * var(--zoom)); height:calc(var(--h) * 1px * var(--zoom)); object-fit:contain }}
     .stage-no {{ position:absolute; left:5px; top:5px; z-index:3; width:20px; height:20px; display:grid; place-items:center; border-radius:5px; background:#071418e8; border:1px solid #557079; color:var(--accent); font:700 11px ui-monospace,monospace }}
@@ -231,12 +231,12 @@ def html_document(data: dict[str, Any]) -> str:
     .atlas {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px }}
     .asset-card {{ min-width:0; border:1px solid var(--line); border-radius:12px; background:var(--panel); overflow:hidden }}
     .asset-card-info {{ padding:10px 12px; border-bottom:1px solid var(--line) }}
-    .asset-card-stage {{ min-height:240px; display:flex; align-items:end; justify-content:center; overflow:auto; padding:14px; background-image:url('../../assets/pixel-city-pack/runtime/tiles/pavement.png'); background-size:var(--cell) var(--cell) }}
+    .asset-card-stage {{ min-height:240px; display:flex; align-items:end; justify-content:center; overflow:auto; padding:14px; background:#849195 }}
     .compare {{ overflow:auto; border:1px solid var(--line); border-radius:12px }}
     .compare-row {{ min-width:980px; display:grid; grid-template-columns:250px repeat(5,minmax(140px,1fr)); border-bottom:1px solid var(--line); background:var(--panel) }}
     .compare-row:last-child {{ border-bottom:0 }}
     .compare-meta {{ padding:12px; position:sticky; left:0; z-index:3; background:#102126 }}
-    .compare-stage {{ position:relative; min-height:180px; display:flex; align-items:end; justify-content:center; padding:12px; border-left:1px solid var(--line); background-image:url('../../assets/pixel-city-pack/runtime/tiles/pavement.png'); background-size:var(--cell) var(--cell); overflow:hidden }}
+    .compare-stage {{ position:relative; min-height:180px; display:flex; align-items:end; justify-content:center; padding:12px; border-left:1px solid var(--line); background:#849195; overflow:hidden }}
     .compare-stage img {{ max-width:100%; max-height:360px; object-fit:contain }}
     .park-grid,.transport-grid,.prop-groups,.tile-grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px }}
     .park-grid {{ grid-template-columns:1fr }}
@@ -245,7 +245,7 @@ def html_document(data: dict[str, Any]) -> str:
     .park-canvas {{ position:relative; display:grid; grid-template-columns:repeat(var(--cols),var(--cell)); grid-template-rows:repeat(var(--rows),var(--cell)); flex:0 0 auto; border:1px solid #648087 }}
     .park-cell {{ width:var(--cell); height:var(--cell); background-size:var(--cell) var(--cell) }}
     .park-prop {{ position:absolute; z-index:2; image-rendering:pixelated; transform:translate(-50%,-100%) scale(var(--zoom)); transform-origin:bottom center }}
-    .view-row {{ display:flex; align-items:end; gap:18px; min-height:116px; padding:14px; margin-top:10px; background-image:url('../../assets/pixel-city-pack/runtime/tiles/road.png'); background-size:var(--cell) var(--cell) }}
+    .view-row {{ display:flex; align-items:end; gap:18px; min-height:116px; padding:14px; margin-top:10px; background:#3d4856 }}
     .view {{ text-align:center; min-width:64px }} .view img {{ display:block; margin:auto; transform:scale(4); transform-origin:center bottom; margin-bottom:26px }}
     .view small {{ color:var(--muted) }}
     .prop-rack {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:8px; margin-top:12px }}

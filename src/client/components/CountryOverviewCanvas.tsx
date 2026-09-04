@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import type { RealtimeEvent } from "../../shared/contracts";
 import { decodeCountryTerrain, type CountryOverviewCityDto, type CountryOverviewDto } from "../../shared/country-overview-contract";
 import { countryOverviewEventBatchImpact } from "../../shared/country-overview-events";
-import { gameAssetUrl, TILE_SPRITES } from "../../shared/catalog";
+import { gameAssetUrl } from "../../shared/catalog";
 import { ATLAS_AIRPORT_POLYGON } from "../../shared/atlas-airport";
 import { atlasAircraftEndpointScale, atlasTerrainConnectionMask, atlasTerrainTile, buildAtlasFlightGeometry, sampleAtlasFlight, type AtlasFlightGeometry } from "../../shared/atlas-scene";
+import { roadAtlasSurfaceTile } from "../../shared/road-atlas";
 import { api } from "../api";
 import { smoothCameraScale } from "../world-camera";
 import { bindMapPointerGestures } from "../map-pointer-gesture";
@@ -232,7 +233,8 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
         return atlasTerrainTile(kind, "country", column, row, atlasTerrainConnectionMask(kind, column, row, terrainAt));
       });
       const assetUrls = new Set(terrainTiles.map((tile) => gameAssetUrl(tile.url)));
-      assetUrls.add(TILE_SPRITES.pavement!);
+      const citySurface = roadAtlasSurfaceTile("PAVEMENT", 0, 0, 15);
+      assetUrls.add(gameAssetUrl(citySurface.url));
       const textures = new Map(await Promise.all([...assetUrls].map(async (url) => [url, await loadAtlasImage(url)] as const)));
       if (disposed) return;
       // Compose immutable atlas tiles on a small CPU canvas. At four pixels
@@ -293,8 +295,12 @@ export function CountryOverviewCanvas({ countryId, activeCityId, initialFocusCit
           if (!districtCode) continue;
           const x = left + index % miniatureColumns * CITY_LOD_CELL_SIZE;
           const y = top + Math.floor(index / miniatureColumns) * CITY_LOD_CELL_SIZE;
-          const pavement = textures.get(TILE_SPRITES.pavement!)!;
-          context.drawImage(pavement, x * rasterScale, y * rasterScale, CITY_LOD_CELL_SIZE * rasterScale, CITY_LOD_CELL_SIZE * rasterScale);
+          const pavement = textures.get(gameAssetUrl(citySurface.url))!;
+          context.drawImage(
+            pavement,
+            citySurface.sourceX, citySurface.sourceY, citySurface.tileSize, citySurface.tileSize,
+            x * rasterScale, y * rasterScale, CITY_LOD_CELL_SIZE * rasterScale, CITY_LOD_CELL_SIZE * rasterScale,
+          );
         }
         const airportPoint = {
           x: left + (airportCell.x + .5) * CITY_LOD_CELL_SIZE,

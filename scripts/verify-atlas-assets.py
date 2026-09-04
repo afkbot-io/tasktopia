@@ -29,7 +29,7 @@ def verify_road_directional_sheet(path: Path, families: int) -> None:
     image = Image.open(path).convert("RGBA")
     expected = (8 * 16, 8 * families * 3)
     assert image.size == expected, f"{path}: expected {expected}, got {image.size}"
-    assert set(image.getchannel("A").getdata()) <= {0, 255}, f"{path}: soft alpha"
+    assert set(image.getchannel("A").getdata()) == {255}, f"{path}: every road and surface cell must be opaque"
     family_samples = []
     for family in range(families):
         row = family * 3
@@ -86,10 +86,10 @@ def main() -> None:
         for name in terrain_v4:
             verify_directional_sheet(ATLAS / "terrain-v4" / level / f"{name}.png", tile_size, 5 if name in {"river", "deep_water", "shallow_water"} else 3)
         verify(ATLAS / "terrain-v4" / level / "ocean.png", (tile_size, tile_size))
-    verify_road_directional_sheet(ATLAS / "road-v1" / "road.png", 5)
-    verify_road_directional_sheet(ATLAS / "road-v1" / "surface.png", 5)
-    verify_road_overlays(ATLAS / "road-v1" / "overlay.png")
-    print("atlas assets: legacy families, directional terrain V4, road V1, V4 aircraft and shared top-down clouds verified")
+    verify_road_directional_sheet(ATLAS / "road-v2" / "road.png", 5)
+    verify_road_directional_sheet(ATLAS / "road-v2" / "surface.png", 5)
+    verify_road_overlays(ATLAS / "road-v2" / "overlay.png")
+    print("atlas assets: legacy families, directional terrain V4, road V2, V4 aircraft and shared top-down clouds verified")
 
 
 if __name__ == "__main__":

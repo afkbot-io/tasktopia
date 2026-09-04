@@ -2,11 +2,11 @@
 """Build deterministic mask-driven Tasktopia road and footway atlases."""
 
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageColor, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "public" / "game-assets" / "v5" / "atlas" / "road-v1"
-REVIEW = ROOT / "screenshots" / "road-atlas-v1-contact-sheet.png"
+OUTPUT = ROOT / "public" / "game-assets" / "v5" / "atlas" / "road-v2"
+REVIEW = ROOT / "screenshots" / "road-atlas-v2-contact-sheet.png"
 CELL = 8
 MASKS = range(16)
 VARIANTS = range(3)
@@ -36,18 +36,6 @@ def stable(seed: str) -> int:
     return value
 
 
-def clear_corner(image: Image.Image, corner: str) -> None:
-    transparent = (0, 0, 0, 0)
-    points = {
-        "NW": ((0, 0), (1, 0), (0, 1)),
-        "NE": ((7, 0), (6, 0), (7, 1)),
-        "SE": ((7, 7), (6, 7), (7, 6)),
-        "SW": ((0, 7), (1, 7), (0, 6)),
-    }
-    for point in points[corner]:
-        image.putpixel(point, transparent)
-
-
 def directional_material(
     family: str,
     mask: int,
@@ -56,37 +44,38 @@ def directional_material(
     edge: str,
     light: str,
     detail: str,
-    rounded: bool,
 ) -> Image.Image:
-    image = Image.new("RGBA", (CELL, CELL), base)
+    # Terrain V4 never cuts transparent holes into a terrain cell. Roads use
+    # the same grammar: an opaque edge field, a compact centre and cardinal
+    # arms selected by the NESW mask. Corners stay deliberately blocky.
+    image = Image.new("RGBA", (CELL, CELL), edge)
     draw = ImageDraw.Draw(image)
+    draw.rectangle((2, 2, 5, 5), fill=base)
+    if mask & 1: draw.rectangle((2, 0, 5, 2), fill=base)
+    if mask & 2: draw.rectangle((5, 2, 7, 5), fill=base)
+    if mask & 4: draw.rectangle((2, 5, 5, 7), fill=base)
+    if mask & 8: draw.rectangle((0, 2, 2, 5), fill=base)
 
+    # A one-pixel, stepped upper-left highlight and lower-right shade replaces
+    # the old continuous rounded bevel. It matches grass/coast/water clusters.
     if not mask & 1:
-        draw.line((1, 0, 6, 0), fill=edge)
-    if not mask & 2:
-        draw.line((7, 1, 7, 6), fill=edge)
-    if not mask & 4:
-        draw.line((1, 7, 6, 7), fill=edge)
+        draw.line((2, 2, 5, 2), fill=light)
     if not mask & 8:
-        draw.line((0, 1, 0, 6), fill=edge)
-
-    if rounded:
-        if not mask & 1 and not mask & 8:
-            clear_corner(image, "NW")
-        if not mask & 1 and not mask & 2:
-            clear_corner(image, "NE")
-        if not mask & 4 and not mask & 2:
-            clear_corner(image, "SE")
-        if not mask & 4 and not mask & 8:
-            clear_corner(image, "SW")
+        draw.line((2, 2, 2, 5), fill=light)
+    if not mask & 2:
+        draw.line((5, 2, 5, 5), fill=detail)
+    if not mask & 4:
+        draw.line((2, 5, 5, 5), fill=detail)
 
     seed = stable(f"{family}:{mask}:{variant}")
     candidates = ((2, 2), (5, 1), (3, 5), (6, 6), (1, 4), (5, 4))
     first = seed % len(candidates)
     second = (seed >> 5) % len(candidates)
-    draw.point(candidates[first], fill=light if variant == 2 else detail)
-    if variant > 0 and second != first:
-        draw.point(candidates[second], fill=detail)
+    for index, point in enumerate((candidates[first], candidates[second])):
+        if index == 1 and (variant == 0 or second == first):
+            continue
+        if image.getpixel(point)[:3] == ImageColor.getrgb(base):
+            draw.point(point, fill=light if variant == 2 and index == 0 else detail)
 
     if family == "PAVEMENT":
         # Quiet slab joints, aligned to the same top-left light as terrain V4.
@@ -101,13 +90,13 @@ def directional_material(
     return image
 
 
-def build_directional_sheet(families, target: Path, rounded: bool) -> None:
+def build_directional_sheet(families, target: Path) -> None:
     sheet = Image.new("RGBA", (CELL * 16, CELL * len(families) * 3), (0, 0, 0, 0))
     for family_index, palette in enumerate(families):
         family, base, edge, light, detail = palette
         for variant in VARIANTS:
             for mask in MASKS:
-                tile = directional_material(family, mask, variant, base, edge, light, detail, rounded)
+                tile = directional_material(family, mask, variant, base, edge, light, detail)
                 sheet.alpha_composite(tile, (mask * CELL, (family_index * 3 + variant) * CELL))
     target.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(target, optimize=True)
@@ -183,11 +172,11 @@ def build_review() -> None:
 
 
 def main() -> None:
-    build_directional_sheet(ROAD_FAMILIES, OUTPUT / "road.png", rounded=True)
-    build_directional_sheet(SURFACE_FAMILIES, OUTPUT / "surface.png", rounded=True)
+    build_directional_sheet(ROAD_FAMILIES, OUTPUT / "road.png")
+    build_directional_sheet(SURFACE_FAMILIES, OUTPUT / "surface.png")
     build_overlay_sheet()
     build_review()
-    print("road atlas v1: 5 road families, 5 surface families and 12 overlays built")
+    print("road atlas v2: 5 road families, 5 surface families and 12 overlays built")
 
 
 if __name__ == "__main__":

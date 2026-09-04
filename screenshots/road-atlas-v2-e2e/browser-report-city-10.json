@@ -15,12 +15,12 @@
     "wrongWayCars": 0,
     "wrongWayBuses": 0,
     "trafficUnsafePairs": 0,
-    "trafficMovingVehicles": 21,
-    "trafficMaxWaitMs": 2960,
+    "trafficMovingVehicles": 22,
+    "trafficMaxWaitMs": 392,
     "worldObjectDepthErrors": 0,
     "residentCenterErrors": 0,
-    "trafficSteps": 360,
-    "trafficLifetimeSteps": 156,
-    "residentWalkFrames": "walker-east-a,walker-east-b,walker-north-a,walker-north-b,walker-north-c,walker-south-a,walker-south-b,walker-west-a,walker-west-b"
+    "trafficSteps": 345,
+    "trafficLifetimeSteps": 189,
+    "residentWalkFrames": "walker-east-a,walker-east-b,walker-east-c,walker-north-a,walker-north-b,walker-north-c,walker-south-a,walker-south-b,walker-west-a,walker-west-b,walker-west-c"
   }
 ]

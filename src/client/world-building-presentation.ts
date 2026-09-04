@@ -3,6 +3,7 @@ import type { Cell } from "../shared/contracts";
 import type { BuildingCatalogEntry } from "../shared/catalog";
 import { taskBuildingPlatform } from "../shared/catalog";
 import { constructionPadDepth } from "../shared/construction-stage";
+import type { RoadAtlasSurface } from "../shared/road-atlas";
 
 const BUILDING_STAGE_COLORS = [0x9b72d2, 0xd6a13d, 0xf2c84b, 0x4fa5d7, 0x69ad67] as const;
 
@@ -49,15 +50,14 @@ export function buildingBadgePresentation(taskNumber: number, stage: number): Bu
 }
 
 export type BuildingPlatformPresentation =
-  | { family: "tile"; key: "pavement" | "road" | "path-asphalt" }
-  | { family: "tile"; key: "path-brown" }
+  | { family: "surface"; key: RoadAtlasSurface }
   | { family: "terrain"; key: "GRASS" | "MEADOW" | "DIRT"; variant: 0 | 1 | 2 };
 
 export function buildingPlatformPresentation(platform: PlatformKind): BuildingPlatformPresentation {
   switch (platform) {
-    case "ASPHALT": return { family: "tile", key: "road" };
+    case "ASPHALT": return { family: "surface", key: "DRIVEWAY" };
     case "STONE":
-    case "SERVICE": return { family: "tile", key: "pavement" };
+    case "SERVICE": return { family: "surface", key: "PAVEMENT" };
     case "PARK": return { family: "terrain", key: "MEADOW", variant: 1 };
     case "YARD": return { family: "terrain", key: "GRASS", variant: 1 };
   }
@@ -70,7 +70,7 @@ export function taskPlatformPresentation(entry: BuildingCatalogEntry): BuildingP
     && entry.footprint.width <= 10
     && entry.spriteSize.height <= 96;
   if (entry.platform === "YARD" && !ordinaryResidentialParcel) {
-    return { family: "tile", key: "pavement" };
+    return { family: "surface", key: "PAVEMENT" };
   }
   return buildingPlatformPresentation(taskBuildingPlatform(entry));
 }
@@ -133,7 +133,7 @@ export function taskPlatformCellPresentation(
     // One contiguous four-cell-deep pad follows the full authored station
     // width. It reads as a centred forecourt with a small transparent-canvas
     // margin, instead of two disconnected slabs above and below the building.
-    if (cell.y >= Math.max(minY, maxY - 3)) return { family: "tile", key: "path-asphalt" };
+    if (cell.y >= Math.max(minY, maxY - 3)) return { family: "surface", key: "PATH_ASPHALT" };
 
     return { family: "terrain", key: "GRASS", variant: yardVariant(cell.x, cell.y, seed + 97) };
   }
@@ -153,7 +153,7 @@ export function taskPlatformCellPresentation(
   const accessDepth = Math.min(2, maxY - minY + 1);
 
   if (localX === entranceX && cell.y >= maxY - accessDepth + 1) {
-    return { family: "tile", key: "path-brown" };
+    return { family: "surface", key: "PATH_EARTH" };
   }
 
   const variant = yardVariant(cell.x, cell.y, seed + Math.max(1, Math.round(stage)) * 11);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ROAD_ATLAS_VISUAL_PROFILE,
   roadAtlasConnectionMask,
   roadAtlasOverlayTile,
   roadAtlasSurfaceTile,
@@ -7,12 +8,16 @@ import {
 } from "../src/shared/road-atlas";
 
 describe("procedural road atlas", () => {
+  it("uses the approved terrain-v4 cartoon material profile", () => {
+    expect(ROAD_ATLAS_VISUAL_PROFILE).toBe("TASKTOPIA_TERRAIN_V4_CARTOON_2026");
+  });
+
   it("selects one deterministic directional frame for every road class and bridges", () => {
     const local = roadAtlasTile({ x: 12, y: -7, mask: 0b1011, structure: "ROAD", roadClass: "LOCAL" });
     const highway = roadAtlasTile({ x: 12, y: -7, mask: 0b1011, structure: "ROAD", roadClass: "HIGHWAY" });
     const bridge = roadAtlasTile({ x: 12, y: -7, mask: 0b1011, structure: "BRIDGE", roadClass: "ARTERIAL" });
 
-    expect(local).toMatchObject({ url: "atlas/road-v1/road.png", tileSize: 8, sourceX: 88, mask: 0b1011 });
+    expect(local).toMatchObject({ url: "atlas/road-v2/road.png", tileSize: 8, sourceX: 88, mask: 0b1011 });
     expect(local.sourceY).toBeLessThan(24);
     expect(highway.sourceY).toBeGreaterThanOrEqual(72);
     expect(highway.sourceY).toBeLessThan(96);
@@ -35,14 +40,14 @@ describe("procedural road atlas", () => {
   it("selects masked surface frames without mixing pavement and paths", () => {
     const pavement = roadAtlasSurfaceTile("PAVEMENT", 4, 9, 15);
     const driveway = roadAtlasSurfaceTile("DRIVEWAY", 4, 9, 3);
-    expect(pavement).toMatchObject({ url: "atlas/road-v1/surface.png", tileSize: 8, sourceX: 120, mask: 15 });
+    expect(pavement).toMatchObject({ url: "atlas/road-v2/surface.png", tileSize: 8, sourceX: 120, mask: 15 });
     expect(pavement.sourceY).toBeLessThan(24);
     expect(driveway.sourceY).toBeGreaterThanOrEqual(96);
     expect(driveway.sourceY).toBeLessThan(120);
   });
 
   it("maps markings, crossings, bridge rails and portals to immutable overlay frames", () => {
-    expect(roadAtlasOverlayTile("CROSSWALK_H")).toMatchObject({ url: "atlas/road-v1/overlay.png", sourceX: 0 });
+    expect(roadAtlasOverlayTile("CROSSWALK_H")).toMatchObject({ url: "atlas/road-v2/overlay.png", sourceX: 0 });
     expect(roadAtlasOverlayTile("MARKING_V")).toMatchObject({ sourceX: 24 });
     expect(roadAtlasOverlayTile("BRIDGE_RAIL_W")).toMatchObject({ sourceX: 56 });
     expect(roadAtlasOverlayTile("BRIDGE_PORTAL_S")).toMatchObject({ sourceX: 80, tileSize: 8 });

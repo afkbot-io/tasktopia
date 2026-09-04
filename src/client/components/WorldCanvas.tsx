@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
-import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
-import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
+import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadMarkingAxis } from "../../shared/road-profile";
 import {
   roadAtlasConnectionMask,
@@ -10,9 +10,8 @@ import {
   roadAtlasTile,
   type RoadAtlasOverlay,
   type RoadAtlasSurface,
-  type RoadAtlasTile,
 } from "../../shared/road-atlas";
-import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
+import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
 import type { CitySceneDto } from "../../shared/city-scene-contract";
 import { terrainAt } from "../../shared/world-terrain";
 import { encodeTerrainSample } from "../../shared/world-chunk-payload";
@@ -172,12 +171,6 @@ function parkStage(stage: number): 1 | 2 | 3 | 4 | 5 {
   return Math.max(1, Math.min(5, Math.round(stage))) as 1 | 2 | 3 | 4 | 5;
 }
 
-function buildingPlatformUrl(platform: PlatformKind): string {
-  const presentation = buildingPlatformPresentation(platform);
-  return presentation.family === "tile"
-    ? TILE_SPRITES[presentation.key]!
-    : gameAssetUrl(TERRAIN_SPRITES[presentation.key]![presentation.variant]!);
-}
 const TASK_STATUS_LABEL: Record<ChunkTaskDto["status"], string> = {
   PLANNING: "Планируется", STARTED: "Начата", IN_PROGRESS: "В работе", TESTING: "Проверяется", COMPLETED: "Завершена",
 };
@@ -247,13 +240,6 @@ function sprite(url: string, x: number, y: number): Sprite {
   return result;
 }
 
-function tiledSprite(url: string, x: number, y: number, width: number, height: number): TilingSprite {
-  const result = new TilingSprite({ texture: cachedTexture(url) ?? Texture.EMPTY, width, height });
-  result.texture.source.scaleMode = "nearest";
-  result.position.set(x, y);
-  return result;
-}
-
 function terrainSprite(cell: ChunkDto["terrain"][number], terrainAtCell: (column: number, row: number) => AtlasTerrainKind | undefined): Sprite {
   const kind = atlasTerrainKindFromWorld(cell.terrain);
   const tile = atlasTerrainTile(kind, "city", cell.x, cell.y, atlasTerrainConnectionMask(kind, cell.x, cell.y, terrainAtCell));
@@ -264,11 +250,32 @@ function terrainSprite(cell: ChunkDto["terrain"][number], terrainAtCell: (column
   return result;
 }
 
-function atlasSprite(tile: RoadAtlasTile, cell: Cell): Sprite {
+function atlasSprite(tile: { url: string; sourceX: number; sourceY: number; tileSize: number }, cell: Cell): Sprite {
   const p = position(cell);
   const result = new Sprite(atlasFrameTexture(gameAssetUrl(tile.url), tile.sourceX, tile.sourceY, tile.tileSize));
   result.position.set(p.x, p.y);
   return result;
+}
+
+type SurfacePlacement = Cell & { family: RoadAtlasSurface };
+type TerrainPlacement = Cell & { kind: AtlasTerrainKind };
+
+function addSurfacePlacements(group: Container, placements: SurfacePlacement[]): void {
+  const families = new Map(placements.map((cell) => [key(cell), cell.family]));
+  const unique = new Map(placements.map((cell) => [key(cell), cell]));
+  for (const cell of unique.values()) {
+    const mask = roadAtlasConnectionMask(cell.family, cell.x, cell.y, (column, row) => families.get(key({ x: column, y: row })));
+    group.addChild(atlasSprite(roadAtlasSurfaceTile(cell.family, cell.x, cell.y, mask), cell));
+  }
+}
+
+function addTerrainPlacements(group: Container, placements: TerrainPlacement[]): void {
+  const kinds = new Map(placements.map((cell) => [key(cell), cell.kind]));
+  for (const cell of placements) {
+    const mask = atlasTerrainConnectionMask(cell.kind, cell.x, cell.y, (column, row) => kinds.get(key({ x: column, y: row })));
+    const tile = atlasTerrainTile(cell.kind, "city", cell.x, cell.y, mask);
+    group.addChild(atlasSprite(tile, cell));
+  }
 }
 
 function surfaceAtlasFamily(cell: SurfaceCellDto): RoadAtlasSurface | undefined {
@@ -375,26 +382,27 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
 
 function drawPlatform(task: ChunkTaskDto): Container {
   const group = new Container();
+  const surfaces: SurfacePlacement[] = [];
+  const terrain: TerrainPlacement[] = [];
   if (task.visualKind === "PARK") {
     for (const cell of task.footprint) {
-      const p = position(cell);
       const role = greenAreaSurfaceRole(task.footprint, cell, parkStage(task.stage), task.visualAssetKey);
-      const tile = role === "EARTH" ? gameAssetUrl(TERRAIN_SPRITES.DIRT![1]!)
-        : role === "MEADOW" ? gameAssetUrl(TERRAIN_SPRITES.MEADOW![1]!)
-          : TILE_SPRITES[role === "BOUNDARY" ? "pavement" : "path-pavers"]!;
-      group.addChild(sprite(tile, p.x, p.y));
+      if (role === "BOUNDARY") surfaces.push({ ...cell, family: "PAVEMENT" });
+      else if (role === "PATH") surfaces.push({ ...cell, family: "PATH_PAVERS" });
+      else terrain.push({ ...cell, kind: role === "MEADOW" ? "meadow" : "grass" });
     }
+    addTerrainPlacements(group, terrain);
+    addSurfacePlacements(group, surfaces);
     return group;
   }
   const entry = getBuilding(task.buildingType);
   for (const cell of taskPlatformCells(task.footprint, task.stage, entry)) {
-    const p = position(cell);
     const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
-    const tile = presentation.family === "tile"
-      ? TILE_SPRITES[presentation.key]!
-      : gameAssetUrl(TERRAIN_SPRITES[presentation.key]![presentation.variant]!);
-    group.addChild(sprite(tile, p.x, p.y));
+    if (presentation.family === "surface") surfaces.push({ ...cell, family: presentation.key });
+    else terrain.push({ ...cell, kind: atlasTerrainKindFromWorld(presentation.key) });
   }
+  addTerrainPlacements(group, terrain);
+  addSurfacePlacements(group, surfaces);
   return group;
 }
 
@@ -622,26 +630,23 @@ function drawWorldFeature(
       const layout = cityAirportVisualLayout(feature);
       const left = layout.bounds.minX * CELL_SIZE;
       const top = layout.bounds.minY * CELL_SIZE;
-      platform.addChild(tiledSprite(
-        TILE_SPRITES.pavement!, left, top,
-        layout.bounds.width * CELL_SIZE, layout.bounds.height * CELL_SIZE,
-      ));
-      for (const [role, tileUrl] of [
-        ["APRON", TILE_SPRITES["construction-foundation"]!],
-        ["TAXIWAY", TILE_SPRITES["path-asphalt"]!],
-        ["RUNWAY", TILE_SPRITES["path-asphalt"]!],
-      ] as const) {
-        const cells = layout.surfaceTiles.filter((tile) => tile.role === role);
-        if (cells.length === 0) continue;
-        const minX = Math.min(...cells.map((tile) => tile.x));
-        const minY = Math.min(...cells.map((tile) => tile.y));
-        const maxX = Math.max(...cells.map((tile) => tile.x));
-        const maxY = Math.max(...cells.map((tile) => tile.y));
-        platform.addChild(tiledSprite(
-          tileUrl,
-          left + minX * CELL_SIZE, top + minY * CELL_SIZE,
-          (maxX - minX + 1) * CELL_SIZE, (maxY - minY + 1) * CELL_SIZE,
-        ));
+      const airportSurfaces: SurfacePlacement[] = [];
+      const airportAprons: Cell[] = [];
+      for (let y = 0; y < layout.bounds.height; y += 1) for (let x = 0; x < layout.bounds.width; x += 1) {
+        airportSurfaces.push({ x: layout.bounds.minX + x, y: layout.bounds.minY + y, family: "PAVEMENT" });
+      }
+      for (const tile of layout.surfaceTiles) {
+        const cell = { x: layout.bounds.minX + tile.x, y: layout.bounds.minY + tile.y };
+        if (tile.role === "APRON") {
+          airportAprons.push(cell);
+        } else {
+          airportSurfaces.push({ ...cell, family: "PATH_ASPHALT" });
+        }
+      }
+      addSurfacePlacements(platform, airportSurfaces);
+      for (const cell of airportAprons) {
+        const p = position(cell);
+        platform.addChild(sprite(TILE_SPRITES["construction-foundation"]!, p.x, p.y));
       }
       const markings = new Graphics();
       for (let x = layout.runway.left + 12; x < layout.runway.left + layout.runway.width - 10; x += 32) {
@@ -666,16 +671,16 @@ function drawWorldFeature(
       }
       return { platform };
     }
+    const areaSurfaces: SurfacePlacement[] = [];
+    const areaTerrain: TerrainPlacement[] = [];
     for (const cell of feature.footprint) {
-      const p = position(cell);
       const role = greenAreaSurfaceRole(feature.footprint, cell, feature.developmentStage, feature.assetKey);
-      const tile = role === "EARTH" ? gameAssetUrl(TERRAIN_SPRITES.DIRT![1]!)
-        : role === "MEADOW" ? gameAssetUrl(TERRAIN_SPRITES.MEADOW![1]!)
-          : role === "BOUNDARY" ? TILE_SPRITES.pavement!
-            : feature.assetKey === "urban-grove" ? TILE_SPRITES["path-brown"]!
-            : TILE_SPRITES["path-pavers"]!;
-      platform.addChild(sprite(tile, p.x, p.y));
+      if (role === "BOUNDARY") areaSurfaces.push({ ...cell, family: "PAVEMENT" });
+      else if (role === "PATH") areaSurfaces.push({ ...cell, family: feature.assetKey === "urban-grove" ? "PATH_EARTH" : "PATH_PAVERS" });
+      else areaTerrain.push({ ...cell, kind: role === "MEADOW" ? "meadow" : "grass" });
     }
+    addTerrainPlacements(platform, areaTerrain);
+    addSurfacePlacements(platform, areaSurfaces);
     return { platform };
   }
   if (feature.assetKind === "PROP") {
@@ -709,9 +714,11 @@ function drawWorldFeature(
   const entry = getBuilding(feature.assetKey);
   const platform = includePlatform ? new Container() : undefined;
   if (platform) {
-    for (const cell of feature.footprint) {
-      const p = position(cell);
-      platform.addChild(sprite(buildingPlatformUrl(entry.platform), p.x, p.y));
+    const presentation = buildingPlatformPresentation(entry.platform);
+    if (presentation.family === "surface") {
+      addSurfacePlacements(platform, feature.footprint.map((cell) => ({ ...cell, family: presentation.key })));
+    } else {
+      addTerrainPlacements(platform, feature.footprint.map((cell) => ({ ...cell, kind: atlasTerrainKindFromWorld(presentation.key) })));
     }
   }
   const visual = sprite(entry.stages[4]!, feature.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2, feature.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE);
@@ -737,10 +744,6 @@ function drawWorldFeature(
     visual.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onArchiveSelect(); });
   }
   return { platform, visual };
-}
-
-function assetUrl(path: string): string {
-  return gameAssetUrl(path);
 }
 
 const FIRE_ENGINE_KEYS = ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"] as const;
@@ -845,9 +848,9 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
 function requiredGroundAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   if (lod !== "DETAIL") return [];
   const urls = new Set<string>([
-    gameAssetUrl("atlas/road-v1/road.png"),
-    gameAssetUrl("atlas/road-v1/surface.png"),
-    gameAssetUrl("atlas/road-v1/overlay.png"),
+    gameAssetUrl("atlas/road-v2/road.png"),
+    gameAssetUrl("atlas/road-v2/surface.png"),
+    gameAssetUrl("atlas/road-v2/overlay.png"),
   ]);
   for (const chunk of chunks) for (const cell of chunk.terrain) urls.add(gameAssetUrl(
     atlasTerrainTile(atlasTerrainKindFromWorld(cell.terrain), "city", cell.x, cell.y, 0).url,
@@ -864,10 +867,6 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
       const entry = getBuilding(task.buildingType);
       if (lod === "DETAIL") {
         if (task.visualKind === "PARK") {
-          urls.add(assetUrl(TERRAIN_SPRITES.DIRT![1]!));
-          urls.add(assetUrl(TERRAIN_SPRITES.MEADOW![1]!));
-          urls.add(TILE_SPRITES.pavement!);
-          urls.add(TILE_SPRITES["path-pavers"]!);
           for (const placement of taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)) {
             const metadata = PROP_CATALOG[placement.kind];
             if (metadata) urls.add(metadata.path);
@@ -882,9 +881,9 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
           if (task.stage > 2) urls.add(entry.stages[task.stage - 1]!);
           for (const cell of taskPlatformCells(task.footprint, task.stage, entry)) {
             const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
-            urls.add(presentation.family === "tile"
-              ? TILE_SPRITES[presentation.key]!
-              : gameAssetUrl(TERRAIN_SPRITES[presentation.key]![presentation.variant]!));
+            if (presentation.family === "terrain") urls.add(gameAssetUrl(
+              atlasTerrainTile(atlasTerrainKindFromWorld(presentation.key), "city", cell.x, cell.y, 0).url,
+            ));
           }
         }
         if (incidentMode(task) !== "NONE") for (const key of INCIDENT_ASSET_KEYS) urls.add(PROP_SPRITES[key]!);
@@ -900,19 +899,13 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
         if (metadata) urls.add(metadata.path);
       } else if (feature.assetKind === "BUILDING") {
         urls.add(getBuilding(feature.assetKey).stages[4]!);
-        if (lod === "DETAIL") urls.add(buildingPlatformUrl(getBuilding(feature.assetKey).platform));
       } else if (lod === "DETAIL") {
         if (feature.kind === "AIRPORT") {
           for (const placement of cityAirportVisualLayout(feature).buildings) urls.add(gameAssetUrl(placement.asset));
           for (const key of ["construction-foundation", "construction-fence", "construction-fence-post", "construction-gate"] as const) {
             urls.add(TILE_SPRITES[key]!);
           }
-          urls.add(TILE_SPRITES["path-asphalt"]!);
-          urls.add(TILE_SPRITES.pavement!);
         }
-        urls.add(TILE_SPRITES["path-brown"]!);
-        urls.add(TILE_SPRITES["path-pavers"]!);
-        urls.add(assetUrl(TERRAIN_SPRITES.MEADOW![1]!));
       }
     }
     if (lod !== "DETAIL") continue;
@@ -925,8 +918,8 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
   }
   if (lod === "DETAIL") {
     if (hasStaticDecorations) urls.add(PROP_ATLAS.path);
-    urls.add(assetUrl(TERRAIN_SPRITES.DIRT![1]!));
-    for (const path of Object.values(TILE_SPRITES)) urls.add(path);
+    urls.add(gameAssetUrl(atlasTerrainTile("grass", "city", 0, 0, 0).url));
+    urls.add(gameAssetUrl(atlasTerrainTile("meadow", "city", 0, 0, 0).url));
     urls.add(PROP_SPRITES["traffic-light-red"]!);
     urls.add(PROP_SPRITES["traffic-light-green"]!);
   }

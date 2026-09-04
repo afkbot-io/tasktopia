@@ -67,24 +67,24 @@ describe("building platform presentation", () => {
 
   it("keeps world buildings on the platform declared by their catalog entry", () => {
     expect(buildingPlatformPresentation("YARD")).toEqual({ family: "terrain", key: "GRASS", variant: 1 });
-    expect(buildingPlatformPresentation("STONE")).toEqual({ family: "tile", key: "pavement" });
-    expect(buildingPlatformPresentation("ASPHALT")).toEqual({ family: "tile", key: "road" });
-    expect(buildingPlatformPresentation("SERVICE")).toEqual({ family: "tile", key: "pavement" });
+    expect(buildingPlatformPresentation("STONE")).toEqual({ family: "surface", key: "PAVEMENT" });
+    expect(buildingPlatformPresentation("ASPHALT")).toEqual({ family: "surface", key: "DRIVEWAY" });
+    expect(buildingPlatformPresentation("SERVICE")).toEqual({ family: "surface", key: "PAVEMENT" });
     expect(buildingPlatformPresentation("PARK")).toEqual({ family: "terrain", key: "MEADOW", variant: 1 });
   });
 
   it("renders every new-build task on continuous pavement", () => {
     expect(taskPlatformPresentation(getBuilding("house-apartment-walkup")))
-      .toEqual({ family: "tile", key: "pavement" });
+      .toEqual({ family: "surface", key: "PAVEMENT" });
     expect(taskPlatformPresentation(getBuilding("highrise-glass")))
-      .toEqual({ family: "tile", key: "pavement" });
+      .toEqual({ family: "surface", key: "PAVEMENT" });
   });
 
   it("keeps both low- and mid-rise residential complexes on pavement", () => {
     expect(taskPlatformPresentation(getBuilding("house-small-apartments")))
-      .toEqual({ family: "tile", key: "pavement" });
+      .toEqual({ family: "surface", key: "PAVEMENT" });
     expect(taskPlatformPresentation(getBuilding("house-lowrise-gallery")))
-      .toEqual({ family: "tile", key: "pavement" });
+      .toEqual({ family: "surface", key: "PAVEMENT" });
   });
 
   it("paves every low-rise residential footprint cell", () => {
@@ -105,7 +105,7 @@ describe("building platform presentation", () => {
       3,
     ));
 
-    expect(presentations).toEqual(footprint.map(() => ({ family: "tile", key: "pavement" })));
+    expect(presentations).toEqual(footprint.map(() => ({ family: "surface", key: "PAVEMENT" })));
     expect(footprint.map((cell) => taskPlatformCellPresentation(entry, footprint, cell, 17, 3)))
       .toEqual(presentations);
   });
@@ -114,7 +114,7 @@ describe("building platform presentation", () => {
     const entry = getBuilding("house-apartment-walkup");
     const footprint = [{ x: 4, y: 8 }, { x: 5, y: 8 }, { x: 4, y: 9 }, { x: 5, y: 9 }];
     expect(footprint.map((cell) => taskPlatformCellPresentation(entry, footprint, cell, 4, 1)))
-      .toEqual(footprint.map(() => ({ family: "tile", key: "pavement" })));
+      .toEqual(footprint.map(() => ({ family: "surface", key: "PAVEMENT" })));
   });
 
   it("builds a compact fuel forecourt instead of a full road-tile rectangle", () => {
@@ -124,9 +124,9 @@ describe("building platform presentation", () => {
     ).flat();
 
     expect(taskPlatformCellPresentation(entry, footprint, { x: 26, y: 35 }, 9, 5))
-      .toEqual({ family: "tile", key: "path-asphalt" });
+      .toEqual({ family: "surface", key: "PATH_ASPHALT" });
     expect(taskPlatformCellPresentation(entry, footprint, { x: 20, y: 35 }, 9, 5))
-      .toEqual({ family: "tile", key: "path-asphalt" });
+      .toEqual({ family: "surface", key: "PATH_ASPHALT" });
     expect(taskPlatformCellPresentation(entry, footprint, { x: 26, y: 30 }, 9, 5))
       .toEqual({ family: "terrain", key: "GRASS", variant: expect.any(Number) });
   });

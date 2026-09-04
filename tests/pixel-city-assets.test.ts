@@ -44,6 +44,19 @@ const retainedAuthoredBatch = [
 ] as const;
 
 describe("Pixel City active asset contract", () => {
+  it("does not publish superseded standalone road and footway sprites", () => {
+    const obsolete = [
+      "road", "pavement", "path-brown", "path-pavers", "path-asphalt",
+      "crosswalk-horizontal", "crosswalk-vertical",
+      "road-marking-horizontal", "road-marking-vertical",
+      "bridge-side-horizontal", "bridge-side-vertical",
+    ];
+    for (const key of obsolete) {
+      expect(manifest.tiles).not.toHaveProperty(key);
+      expect(existsSync(resolve(runtime, "tiles", `${key}.png`)), key).toBe(false);
+    }
+  });
+
   it("packs every prop into one immutable particle atlas", () => {
     const assetManifest = manifest as typeof manifest & {
       propAtlas?: {

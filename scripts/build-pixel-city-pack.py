@@ -364,25 +364,17 @@ def transparent_tile() -> Image.Image:
 
 
 def infrastructure_tile(key: str) -> Image.Image:
-    """Author the complete road/footway material family in one palette."""
+    """Author base terrain aliases and the construction-site tile family."""
     if key == "grass":
         return terrain_tile("GRASS", 0)
     if key == "water":
         return terrain_tile("SHALLOW_WATER", 0)
 
     overlay = key in {
-        "crosswalk-horizontal", "crosswalk-vertical",
-        "road-marking-horizontal", "road-marking-vertical",
-        "bridge-side-horizontal", "bridge-side-vertical",
         "construction-foundation-edge", "construction-rebar", "construction-survey-marker",
         "construction-fence", "construction-fence-post", "construction-gate",
     }
     image = transparent_tile() if overlay else Image.new("RGBA", (CELL, CELL), rgba({
-        "road": "#3d4856ff",
-        "pavement": "#849195ff",
-        "path-brown": "#8d7152ff",
-        "path-pavers": "#808d89ff",
-        "path-asphalt": "#5c676dff",
         "construction-earth-a": "#9a7754ff",
         "construction-earth-b": "#8f6d4cff",
         "construction-earth-c": "#a17e58ff",
@@ -392,45 +384,7 @@ def infrastructure_tile(key: str) -> Image.Image:
     }[key]))
     draw = ImageDraw.Draw(image)
 
-    if key == "road":
-        # Quiet aggregate clusters match the authored towers without turning
-        # every repeated cell into a visible checkerboard.
-        for x, y, color in ((1, 1, "#495462ff"), (6, 2, "#303b48ff"), (3, 6, "#46515fff"), (7, 7, "#323d4aff")):
-            draw.point((x, y), fill=rgba(color))
-    elif key == "pavement":
-        # One 8x8 slab per world cell. A recessed top/left joint plus a soft
-        # lower/right shadow makes the plane readable from the same frontal-top
-        # camera as the balcony tower; the grid itself remains orthogonal.
-        palette = {
-            "J": rgba("#58676eff"), "S": rgba("#78868cff"),
-            "B": rgba("#849195ff"), "A": rgba("#889599ff"),
-            "L": rgba("#8f9b9eff"), "H": rgba("#95a0a1ff"),
-        }
-        matrix = (
-            "JJJJJJJJ", "JLLLLLLL", "JLABBBBB", "JLBBBBAB",
-            "JABBBBBB", "JLABBBBB", "JABBABBB", "JBBBBBSS",
-        )
-        for y, row in enumerate(matrix):
-            for x, color in enumerate(row):
-                draw.point((x, y), fill=palette[color])
-    elif key == "path-brown":
-        draw.line((0, 7, 7, 7), fill=rgba("#735b44ff"))
-        draw.line((1, 1, 2, 1), fill=rgba("#9f815dff"))
-        draw.point((6, 4), fill=rgba("#725b45ff"))
-        draw.point((3, 6), fill=rgba("#a58965ff"))
-    elif key == "path-pavers":
-        draw.line((0, 2, 7, 2), fill=rgba("#687572ff"))
-        draw.line((0, 6, 7, 6), fill=rgba("#687572ff"))
-        draw.line((3, 0, 3, 2), fill=rgba("#687572ff"))
-        draw.line((1, 3, 1, 6), fill=rgba("#687572ff"))
-        draw.line((6, 3, 6, 6), fill=rgba("#687572ff"))
-        draw.point((5, 1), fill=rgba("#939e99ff"))
-        draw.point((3, 4), fill=rgba("#919c97ff"))
-    elif key == "path-asphalt":
-        draw.line((0, 0, 7, 0), fill=rgba("#6a7578ff"))
-        draw.line((0, 7, 7, 7), fill=rgba("#465157ff"))
-        for x, y in ((2, 3), (6, 5), (4, 1)): draw.point((x, y), fill=rgba("#4b565cff"))
-    elif key.startswith("construction-earth-"):
+    if key.startswith("construction-earth-"):
         # Surveyed soil: one readable module per grid cell without a noisy
         # checkerboard when a large tower pad repeats it dozens of times.
         draw.line((0, 0, 7, 0), fill=rgba("#76593fff"))
@@ -485,32 +439,6 @@ def infrastructure_tile(key: str) -> Image.Image:
         draw.line((0, 2, 7, 2), fill=rgba("#e0b34dff"))
         draw.line((0, 3, 7, 3), fill=rgba("#4b4640ff"))
         for x in (1, 5): draw.line((x, 1, min(7, x + 1), 4), fill=rgba("#e7d6a3ff"))
-    elif key.startswith("crosswalk-"):
-        paint, shade = "#d6d7cfff", "#aeb5b1ff"
-        if key.endswith("horizontal"):
-            for x in (0, 3, 6):
-                draw.rectangle((x, 0, min(7, x + 1), 7), fill=rgba(paint))
-                draw.point((x, 7), fill=rgba(shade))
-        else:
-            for y in (0, 3, 6):
-                draw.rectangle((0, y, 7, min(7, y + 1)), fill=rgba(paint))
-                draw.point((7, y), fill=rgba(shade))
-    elif key.startswith("road-marking-"):
-        paint = rgba("#d6bd6cff")
-        if key.endswith("horizontal"):
-            draw.line((1, 3, 6, 3), fill=paint)
-        else:
-            draw.line((3, 1, 3, 6), fill=paint)
-    elif key.startswith("bridge-side-"):
-        rail, highlight, post = rgba("#526a71ff"), rgba("#a8b8b4ff"), rgba("#263945ff")
-        if key.endswith("horizontal"):
-            draw.line((0, 4, 7, 4), fill=rail)
-            draw.line((0, 3, 7, 3), fill=highlight)
-            for x in (0, 4, 7): draw.line((x, 2, x, 6), fill=post)
-        else:
-            draw.line((4, 0, 4, 7), fill=rail)
-            draw.line((3, 0, 3, 7), fill=highlight)
-            for y in (0, 4, 7): draw.line((2, y, 6, y), fill=post)
     return image
 
 
@@ -2590,12 +2518,6 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
     tile_dir.mkdir(parents=True, exist_ok=True)
     material_roles = {
         "grass": "GROUND", "water": "GROUND",
-        "road": "ROAD",
-        "pavement": "FOOTWAY", "path-brown": "FOOTWAY",
-        "path-pavers": "FOOTWAY", "path-asphalt": "FOOTWAY",
-        "crosswalk-horizontal": "MARKING", "crosswalk-vertical": "MARKING",
-        "road-marking-horizontal": "MARKING", "road-marking-vertical": "MARKING",
-        "bridge-side-horizontal": "BRIDGE", "bridge-side-vertical": "BRIDGE",
         "construction-earth-a": "CONSTRUCTION", "construction-earth-b": "CONSTRUCTION",
         "construction-earth-c": "CONSTRUCTION", "construction-earth-d": "CONSTRUCTION",
         "construction-foundation": "CONSTRUCTION", "construction-foundation-alt": "CONSTRUCTION",

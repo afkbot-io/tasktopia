@@ -36,9 +36,9 @@ describe("active building catalog", () => {
     }
   });
   it("content-addresses every game asset URL for immutable CDN caching", () => {
-    expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/tiles\/road\.png$/);
+    expect(gameAssetUrl("atlas/road-v2/road.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/atlas\/road-v2\/road\.png$/);
     expect(gameAssetUrl("/game-assets/v5/props/gazebo.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/props\/gazebo\.png$/);
-    const versioned = gameAssetUrl("tiles/road.png");
+    const versioned = gameAssetUrl("atlas/road-v2/road.png");
     expect(gameAssetUrl(versioned)).toBe(versioned);
   });
   it("contains a diverse, data-driven catalog with valid assets", () => {

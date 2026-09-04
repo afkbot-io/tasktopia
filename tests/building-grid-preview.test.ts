@@ -24,7 +24,7 @@ describe("standalone building grid preview", () => {
     });
   });
 
-  it("uses five quiet 8x8 pavement variants with frontal-top lighting", () => {
+  it("uses the three opaque road-v2 pavement variants from the terrain-v4 profile", () => {
     const stdout = execFileSync(
       ".venv-assets/bin/python",
       ["scripts/render-building-grid-preview.py", "--describe-pavement"],
@@ -33,11 +33,11 @@ describe("standalone building grid preview", () => {
 
     expect(JSON.parse(stdout)).toEqual({
       tileSizePx: { width: 8, height: 8 },
-      variantCount: 5,
-      paletteColorCount: 6,
-      projection: "orthogonal-frontal-top",
+      variantCount: 3,
+      paletteColorCount: 4,
+      projection: "terrain-v4-cartoon",
       lightDirection: "upper-left",
-      seams: "single shared one-pixel top-and-left joint",
+      seams: "opaque mask-driven stepped edge",
     });
   });
 });

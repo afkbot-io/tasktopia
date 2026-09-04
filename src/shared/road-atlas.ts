@@ -7,8 +7,10 @@ export type RoadAtlasOverlay =
   | "BRIDGE_RAIL_N" | "BRIDGE_RAIL_E" | "BRIDGE_RAIL_S" | "BRIDGE_RAIL_W"
   | "BRIDGE_PORTAL_N" | "BRIDGE_PORTAL_E" | "BRIDGE_PORTAL_S" | "BRIDGE_PORTAL_W";
 
+export const ROAD_ATLAS_VISUAL_PROFILE = "TASKTOPIA_TERRAIN_V4_CARTOON_2026" as const;
+
 export type RoadAtlasTile = {
-  url: "atlas/road-v1/road.png" | "atlas/road-v1/surface.png" | "atlas/road-v1/overlay.png";
+  url: "atlas/road-v2/road.png" | "atlas/road-v2/surface.png" | "atlas/road-v2/overlay.png";
   tileSize: 8;
   sheetWidth: number;
   sheetHeight: number;
@@ -64,7 +66,7 @@ function directionalTile(
 export function roadAtlasTile(cell: Pick<RoadCellDto, "x" | "y" | "mask" | "structure" | "roadClass">): RoadAtlasTile {
   const family = cell.structure === "BRIDGE" ? "BRIDGE" : cell.roadClass;
   return directionalTile(
-    "atlas/road-v1/road.png",
+    "atlas/road-v2/road.png",
     ROAD_FAMILIES.indexOf(family),
     family,
     cell.x,
@@ -80,7 +82,7 @@ export function roadAtlasSurfaceTile(
   connectionMask: number,
 ): RoadAtlasTile {
   return directionalTile(
-    "atlas/road-v1/surface.png",
+    "atlas/road-v2/surface.png",
     SURFACE_FAMILIES.indexOf(family),
     family,
     column,
@@ -107,7 +109,7 @@ export function roadAtlasOverlayTile(kind: RoadAtlasOverlay): RoadAtlasTile {
   const frame = OVERLAY_FRAMES.indexOf(kind);
   if (frame < 0) throw new Error(`Unknown road atlas overlay: ${String(kind)}`);
   return {
-    url: "atlas/road-v1/overlay.png",
+    url: "atlas/road-v2/overlay.png",
     tileSize: 8,
     sheetWidth: 96,
     sheetHeight: 8,

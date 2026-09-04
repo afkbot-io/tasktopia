@@ -7,14 +7,14 @@ describe("loadGameAssets", () => {
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(undefined);
     const add = vi.fn<GameAssetLoader["add"]>();
-    const url = "https://store.tasktopia.online/game-assets/v5/revisions/f6e6cd231e7003ac/tiles/path-pavers.png";
+    const url = "https://store.tasktopia.online/game-assets/v5/revisions/f6e6cd231e7003ac/atlas/road-v2/surface.png";
 
     await loadGameAssets({ load, add }, [url], "https://tasktopia.online");
 
     expect(load).toHaveBeenNthCalledWith(1, [url]);
     expect(add).toHaveBeenCalledWith([{
       alias: url,
-      src: "/game-assets/v5/revisions/f6e6cd231e7003ac/tiles/path-pavers.png",
+      src: "/game-assets/v5/revisions/f6e6cd231e7003ac/atlas/road-v2/surface.png",
     }]);
     expect(load).toHaveBeenNthCalledWith(2, [url]);
   });
