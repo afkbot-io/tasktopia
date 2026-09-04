@@ -304,6 +304,14 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                 errors.append(f"{label}: standard V6 tree footprint must be 1x1")
             if prop.get("anchorPx") != [8, 32]:
                 errors.append(f"{label}: standard V6 tree anchor must be [8, 32]")
+            visible_bounds = image.getbbox()
+            visible_height = visible_bounds[3] - visible_bounds[1] if visible_bounds else 0
+            minimum_height, maximum_height = (8, 12) if key == "tree-deadwood" else (11, 23)
+            if not minimum_height <= visible_height <= maximum_height:
+                errors.append(
+                    f"{label}: high-45 visible height must be {minimum_height}..{maximum_height}px, "
+                    f"got {visible_height}px"
+                )
             # A high-45 crown keeps most occupied rows close to its maximum
             # width. Front-facing cones and round icons narrow for too long.
             # Deadwood is intentionally a low stump and shares only the

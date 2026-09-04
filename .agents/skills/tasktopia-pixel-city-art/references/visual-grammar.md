@@ -103,9 +103,11 @@ Review on transparent checkerboard, dark pack background, meadow, stone, and asp
   `8×8 px` rectangle `x=4..11`, `y=24..31`. The trunk/root must touch row
   `31`, and every opaque pixel in the two ground-contact rows `30..31` must
   remain inside `x=4..11`. The crown may overhang neighbouring cells above
-  that contact band without changing gameplay occupancy. The visible crown
-  should reach roughly `24–32 px` (3–4 cells) while remaining narrow enough to
-  avoid hiding a full facade. The camera is the same high orthographic `45°`
+  that contact band without changing gameplay occupancy. Under the V6 high
+  camera, a living tree's complete visible subject occupies `11–23 px` inside
+  the `16×32` canvas; deadwood occupies `8–12 px`. This keeps the crown below
+  the old frontal-tree height and avoids hiding a full facade. The camera is
+  the same high orthographic `45°`
   convention as building roofs: the crown's upper plane dominates, while the
   front/lower crown and trunk are vertically compressed near the anchor.
   The outer silhouette is a compact square or rectangle with only `1–2 px`

@@ -26,6 +26,52 @@ describe("procedural decoration footprints", () => {
     expect(clustered.length / forestTrees.length).toBeGreaterThan(0.82);
   });
 
+  it("places palms only on dry coastal sand and willows only on green shoreline", () => {
+    const terrain: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 96, 96).map((cell) => ({
+      ...cell,
+      terrain: cell.x < 8 ? "SHALLOW_WATER" as const
+        : cell.x < 10 ? "WET_SAND" as const
+          : cell.x < 14 ? "SAND" as const
+            : cell.x < 18 ? "GRASS" as const
+              : cell.x < 40 ? "MEADOW" as const
+                : cell.x < 56 ? "SAND" as const
+                : "MEADOW" as const,
+      variant: 0,
+    }));
+    const generated = Array.from({ length: 8 }, (_, index) => generateWorldDecorations(
+      73100 + index,
+      terrain,
+      new Set(),
+      [],
+      [],
+      [],
+      [],
+    )).flat();
+    const palms = generated.filter((item) => item.kind === "tree-palm");
+    const willows = generated.filter((item) => item.kind === "tree-willow");
+
+    expect(palms.length).toBeGreaterThan(0);
+    expect(palms.every((item) => item.origin.x >= 10 && item.origin.x < 14)).toBe(true);
+    expect(willows.length).toBeGreaterThan(0);
+    expect(willows.every((item) => item.origin.x >= 14 && item.origin.x < 18)).toBe(true);
+  });
+
+  it("keeps cypress in forest groves and deadwood on hills", () => {
+    const forest: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 96, 96)
+      .map((cell) => ({ ...cell, terrain: "FOREST" as const, variant: 0 }));
+    const hills: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 160, 96)
+      .map((cell) => ({ ...cell, terrain: "HILL" as const, variant: 0 }));
+    const forestKinds = new Set(Array.from({ length: 12 }, (_, index) => generateWorldDecorations(
+      81000 + index, forest, new Set(), [], [], [], [],
+    )).flat().map((item) => item.kind));
+    const hillKinds = new Set(Array.from({ length: 12 }, (_, index) => generateWorldDecorations(
+      91000 + index, hills, new Set(), [], [], [], [],
+    )).flat().map((item) => item.kind));
+
+    expect(forestKinds.has("tree-cypress")).toBe(true);
+    expect(hillKinds.has("tree-deadwood")).toBe(true);
+  });
+
   it("keeps crop fields in the seed-ground layer and only emits grouped shrub/rock props", () => {
     const terrain: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 160, 128)
       .map((cell) => ({ ...cell, terrain: "MEADOW" as const, variant: 0 }));

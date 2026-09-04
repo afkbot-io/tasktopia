@@ -205,6 +205,6 @@ describe("published world chunk payload", () => {
     const fingerprint = createHash("sha256").update(JSON.stringify(decorations)).digest("hex");
 
     expect(decorations.filter((item) => item.kind === "fence-vertical" && (item.origin.x === 63 || item.origin.x === 64))).toEqual([]);
-    expect(fingerprint).toBe("a0c9091f69b9c59948c18ff81bc10102093d41daca390335c5952e3cff6835f7");
+    expect(fingerprint).toBe("359c743f057ee2a8486d33d03b078559e8c3004f52193d5e8863ec3514715250");
   });
 });

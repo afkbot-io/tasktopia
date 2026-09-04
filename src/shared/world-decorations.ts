@@ -41,6 +41,7 @@ type SeededNaturePatch = "SHRUB" | "ROCK";
 const FOREST_TREE_SPECIES = [
   "tree-conifer", "tree-pine", "tree-cedar", "tree-oak", "tree-round",
   "tree-birch", "tree-aspen", "tree-redwood", "tree-maple", "tree-cherry",
+  "tree-cypress",
 ] as const;
 
 /** Pick one species from a jittered world-space grove, stable across chunks. */
@@ -134,9 +135,9 @@ export function generateWorldDecorations(
     }
     return false;
   };
-  const waterDirection = (cell: Cell): "north" | "east" | "south" | "west" | undefined => {
+  const waterDirection = (cell: Cell, maximumDistance = 4): "north" | "east" | "south" | "west" | undefined => {
     const names = ["north", "east", "south", "west"] as const;
-    for (let distance = 1; distance <= 4; distance += 1) for (let index = 0; index < DIRECTIONS.length; index += 1) {
+    for (let distance = 1; distance <= maximumDistance; distance += 1) for (let index = 0; index < DIRECTIONS.length; index += 1) {
       const direction = DIRECTIONS[index]!;
       const nearby = terrainByCell.get(key({ x: cell.x + direction.x * distance, y: cell.y + direction.y * distance }));
       if (nearby && isWater(nearby.terrain)) return names[index];
@@ -151,6 +152,12 @@ export function generateWorldDecorations(
     let clearance = 0;
     const district = districtByCell.get(key(cell));
     const shoreDirection = (cell.terrain === "SAND" || cell.terrain === "WET_SAND") && closeToCity(cell) ? waterDirection(cell) : undefined;
+    const palmCandidate = !district && cell.terrain === "SAND"
+      && hashCoordinate(seed, cell.x, cell.y, 751) < 0.018;
+    const willowCandidate = !district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW")
+      && hashCoordinate(seed, cell.x, cell.y, 757) < 0.012;
+    const naturalShoreDirection = palmCandidate ? waterDirection(cell, 8)
+      : willowCandidate ? waterDirection(cell, 10) : undefined;
     const naturePatch = !district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && !closeToCity(cell, 24)
       ? seededNaturePatch(seed, cell) : undefined;
     if (naturePatch === "SHRUB") {
@@ -163,6 +170,10 @@ export function generateWorldDecorations(
       kind = `boat-${horizontal ? "horizontal" : "vertical"}-${hashCoordinate(seed, cell.x, cell.y, 727) < 0.5 ? "a" : "b"}`;
     } else if (shoreDirection && !closeToBlocked(cell, 1) && ambientCounts.fishers < 2 && chance < 0.0028) {
       kind = `fisher-${shoreDirection}`;
+    } else if (palmCandidate && naturalShoreDirection && !closeToBlocked(cell, 1)) {
+      kind = "tree-palm";
+    } else if (willowCandidate && naturalShoreDirection && !closeToBlocked(cell, 1)) {
+      kind = "tree-willow";
     } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && closeToCity(cell, 24) && adjacentToSurface(cell) && chance < 0.01) {
       const lampByArchetype: Record<DistrictArchetype, string> = {
         PRIVATE: "streetlamp-vintage", NEW_BUILD: "streetlamp-modern", MIXED_URBAN: "streetlamp-double",
@@ -177,7 +188,7 @@ export function generateWorldDecorations(
       const grove = forestGrove(seed, cell);
       if (chance < grove.density) kind = grove.species;
     } else if (cell.terrain === "HILL" && chance < 0.085) {
-      kind = chance < 0.035 ? "hill-rocky" : chance < 0.06 ? "hill-small" : "tree-pine";
+      kind = chance < 0.035 ? "hill-rocky" : chance < 0.06 ? "hill-small" : chance < 0.067 ? "tree-deadwood" : "tree-pine";
     } else if (cell.terrain === "MOUNTAIN" && chance < 0.075) {
       kind = chance < 0.03 ? "mountain-peak" : chance < 0.052 ? "mountain-ridge" : "rock-cluster";
     } else if (!district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW")
