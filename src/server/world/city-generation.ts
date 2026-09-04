@@ -330,27 +330,22 @@ export function buildSurfaceMap(input: {
     ...input.tasks.flatMap((task) => task.footprint).map(cellKey),
     ...activeFeatures.flatMap((feature) => feature.footprint).map(cellKey),
   ]);
-  const completedOwners = new Map<string, string>();
-  for (const district of input.districts.filter((item) => item.status === "COMPLETED")) {
-    for (const cell of district.cells) completedOwners.set(cellKey(cell), district.id);
-  }
-  const persistedAccess = new Set([
-    ...input.tasks.flatMap((task) => [task.entrance, ...task.accessPath]),
-    ...input.features.flatMap((feature) => feature.accessPath),
-  ].map(cellKey));
+  const pavementNeighbors = (cell: Cell): Cell[] => {
+    const result: Cell[] = [];
+    for (let y = -1; y <= 1; y += 1) for (let x = -1; x <= 1; x += 1) {
+      if (x !== 0 || y !== 0) result.push({ x: cell.x + x, y: cell.y + y });
+    }
+    return result;
+  };
 
   for (const road of input.roads.values()) {
-    const roadOwner = completedOwners.get(cellKey(road));
-    for (const cell of neighbors4(road)) {
+    // Pavement is part of the road right-of-way. The full eight-neighbour
+    // envelope supplies diagonal corner slabs and end caps, so a road never
+    // exposes a grass notch at a bend or beside street furniture. District
+    // lifecycle may stop new lots, but it must not cut an existing footway.
+    for (const cell of pavementNeighbors(road)) {
       const key = cellKey(cell);
       if (input.roads.has(key) || blocked.has(key) || !input.isSurfaceTerrain(cell)) continue;
-      const targetOwner = completedOwners.get(key);
-      // New external roads must never synthesize fresh sidewalk inside a
-      // completed district. Only its already published internal streets own it.
-      // Do not synthesize arbitrary new sidewalk across a sealed boundary, but
-      // preserve an access anchor that was explicitly committed while the
-      // district was active (park entrance or building approach).
-      if (targetOwner && targetOwner !== roadOwner && !persistedAccess.has(key)) continue;
       const insideCity = input.cities.some((city) => contains(city.bounds, cell));
       const kind: SurfaceCellDto["kind"] = road.roadClass === "HIGHWAY" && !insideCity ? "SHOULDER" : "SIDEWALK";
       const existing = surfaces.get(key);

@@ -164,16 +164,21 @@ describe("V6 city morphology and access planning", () => {
     expect(buildingCompatibleWithArchetype(high, "NEW_BUILD")).toBe(true);
   });
 
-  it("publishes sidewalks around city streets but does not leak new sidewalk into a completed district", () => {
+  it("publishes an unbroken eight-neighbour pavement envelope around city streets", () => {
     const roads = new Map<string, RoadCellDto>();
     for (let x = -3; x <= 3; x += 1) roads.set(`${x},0`, { x, y: 0, mask: 0, structure: "ROAD", roadClass: "LOCAL" });
     const sealed = district("sealed", "PRIVATE", "COMPLETED");
     const surfaces = buildSurfaceMap({ roads, cities: [city()], districts: [sealed], tasks: [], features: [], isSurfaceTerrain: () => true });
     expect(surfaces.get("0,-1")?.kind).toBe("SIDEWALK");
+    expect(surfaces.get("-4,-1")?.kind).toBe("SIDEWALK");
+    expect(surfaces.get("-4,1")?.kind).toBe("SIDEWALK");
+    expect(surfaces.get("4,-1")?.kind).toBe("SIDEWALK");
+    expect(surfaces.get("4,1")?.kind).toBe("SIDEWALK");
     const externalRoads = new Map(roads);
     externalRoads.set("10,0", { x: 10, y: 0, mask: 0, structure: "ROAD", roadClass: "LOCAL" });
     const guarded = buildSurfaceMap({ roads: externalRoads, cities: [city()], districts: [sealed], tasks: [], features: [], isSurfaceTerrain: () => true });
-    expect(guarded.has("9,0")).toBe(false);
+    expect(guarded.get("9,0")?.kind).toBe("SIDEWALK");
+    expect(guarded.get("9,-1")?.kind).toBe("SIDEWALK");
   });
 
   it("connects opposite sidewalks with sparse oriented crosswalk cells", () => {

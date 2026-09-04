@@ -47,9 +47,12 @@ describe("procedural road atlas", () => {
   });
 
   it("maps markings, crossings, bridge rails and portals to immutable overlay frames", () => {
-    expect(roadAtlasOverlayTile("CROSSWALK_H")).toMatchObject({ url: "atlas/road-v2/overlay.png", sourceX: 0 });
-    expect(roadAtlasOverlayTile("MARKING_V")).toMatchObject({ sourceX: 24 });
-    expect(roadAtlasOverlayTile("BRIDGE_RAIL_W")).toMatchObject({ sourceX: 56 });
-    expect(roadAtlasOverlayTile("BRIDGE_PORTAL_S")).toMatchObject({ sourceX: 80, tileSize: 8 });
+    const crossing = roadAtlasOverlayTile("CROSSWALK_H", 12, -7);
+    expect(crossing).toMatchObject({ url: "atlas/road-v2/overlay.png", sourceX: 0, variant: expect.any(Number) });
+    expect(crossing.sourceY).toBeLessThan(24);
+    expect(roadAtlasOverlayTile("MARKING_V", 12, -7)).toMatchObject({ sourceX: 24 });
+    expect(roadAtlasOverlayTile("BRIDGE_RAIL_W", 12, -7)).toMatchObject({ sourceX: 56 });
+    expect(roadAtlasOverlayTile("BRIDGE_PORTAL_S", 12, -7)).toMatchObject({ sourceX: 80, tileSize: 8 });
+    expect(roadAtlasOverlayTile("CROSSWALK_H", 12, -7)).toEqual(crossing);
   });
 });

@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
 """Build deterministic mask-driven Tasktopia road and footway atlases."""
 
+import hashlib
+import json
 from pathlib import Path
 from PIL import Image, ImageColor, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "public" / "game-assets" / "v5" / "atlas" / "road-v2"
+PUBLIC_PACK = ROOT / "public" / "game-assets" / "v5"
+OUTPUT = PUBLIC_PACK / "atlas" / "road-v2"
+SOURCE_MANIFEST = ROOT / "assets" / "pixel-city-pack" / "manifest.json"
 REVIEW = ROOT / "screenshots" / "road-atlas-v2-contact-sheet.png"
 CELL = 8
 MASKS = range(16)
 VARIANTS = range(3)
 
 ROAD_FAMILIES = (
-    ("LOCAL", "#3d4856", "#263540", "#53606d", "#758087"),
-    ("COLLECTOR", "#394754", "#243440", "#4d5c68", "#707d84"),
-    ("ARTERIAL", "#35434f", "#22313d", "#495864", "#6b7880"),
-    ("HIGHWAY", "#303e4b", "#1d2c37", "#44535f", "#65727a"),
-    ("BRIDGE", "#3b4853", "#22313b", "#53636b", "#91a19f"),
+    ("LOCAL", "#46545a", "#2d3c43", "#627077", "#38484f"),
+    ("COLLECTOR", "#435159", "#2a3941", "#5e6c73", "#35454c"),
+    ("ARTERIAL", "#404e56", "#27363e", "#5a686f", "#324249"),
+    ("HIGHWAY", "#3b4952", "#22323a", "#55636a", "#2e3e46"),
+    ("BRIDGE", "#46535a", "#29383f", "#647279", "#37474e"),
 )
 
 SURFACE_FAMILIES = (
@@ -64,14 +68,16 @@ def directional_material(
     if not mask & 4: draw.line((2, 7, 6, 7), fill=detail)
 
     seed = stable(f"{family}:{mask}:{variant}")
-    candidates = ((2, 2), (5, 1), (3, 5), (6, 6), (1, 4), (5, 4))
+    candidates = ((1, 2), (4, 1), (2, 5), (5, 6), (1, 4), (5, 4))
     first = seed % len(candidates)
     second = (seed >> 5) % len(candidates)
     for index, point in enumerate((candidates[first], candidates[second])):
         if index == 1 and (variant == 0 or second == first):
             continue
         if image.getpixel(point)[:3] == ImageColor.getrgb(base):
-            draw.point(point, fill=light if variant == 2 and index == 0 else detail)
+            # Two-pixel clusters echo grass and sand instead of producing the
+            # old salt-and-pepper asphalt noise.
+            draw.line((point[0], point[1], min(6, point[0] + 1), point[1]), fill=light if variant == 2 and index == 0 else detail)
 
     if family == "PAVEMENT":
         # Quiet slab joints, aligned to the same top-left light as terrain V4.
@@ -98,22 +104,30 @@ def build_directional_sheet(families, target: Path) -> None:
     sheet.save(target, optimize=True)
 
 
-def overlay_tile(kind: str) -> Image.Image:
+def overlay_tile(kind: str, variant: int) -> Image.Image:
     image = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    paint, shade = "#d6d7cf", "#aeb5b1"
+    paint, shade, worn = "#c3c5bd", "#919c9a", "#aeb3ad"
     if kind == "CROSSWALK_H":
         for x in (0, 3, 6):
             draw.rectangle((x, 0, min(7, x + 1), 7), fill=paint)
-            draw.point((x, 7), fill=shade)
+            draw.point((x, (variant * 3 + x) % 7), fill=worn)
+            draw.point((min(7, x + 1), 7), fill=shade)
     elif kind == "CROSSWALK_V":
         for y in (0, 3, 6):
             draw.rectangle((0, y, 7, min(7, y + 1)), fill=paint)
-            draw.point((7, y), fill=shade)
+            draw.point(((variant * 3 + y) % 7, y), fill=worn)
+            draw.point((7, min(7, y + 1)), fill=shade)
     elif kind == "MARKING_H":
-        draw.line((1, 3, 6, 3), fill="#d6bd6c")
+        start = 1 + (variant % 2)
+        end = 5 + (1 if variant == 2 else 0)
+        draw.line((start, 3, end, 3), fill="#b7aa6d")
+        draw.point((end, 4), fill="#766f52")
     elif kind == "MARKING_V":
-        draw.line((3, 1, 3, 6), fill="#d6bd6c")
+        start = 1 + (variant % 2)
+        end = 5 + (1 if variant == 2 else 0)
+        draw.line((3, start, 3, end), fill="#b7aa6d")
+        draw.point((4, end), fill="#766f52")
     elif kind.startswith("BRIDGE_RAIL_"):
         direction = kind[-1]
         if direction == "N":
@@ -147,9 +161,10 @@ def build_overlay_sheet() -> None:
         "BRIDGE_RAIL_N", "BRIDGE_RAIL_E", "BRIDGE_RAIL_S", "BRIDGE_RAIL_W",
         "BRIDGE_PORTAL_N", "BRIDGE_PORTAL_E", "BRIDGE_PORTAL_S", "BRIDGE_PORTAL_W",
     )
-    sheet = Image.new("RGBA", (CELL * len(kinds), CELL), (0, 0, 0, 0))
-    for index, kind in enumerate(kinds):
-        sheet.alpha_composite(overlay_tile(kind), (index * CELL, 0))
+    sheet = Image.new("RGBA", (CELL * len(kinds), CELL * len(VARIANTS)), (0, 0, 0, 0))
+    for variant in VARIANTS:
+        for index, kind in enumerate(kinds):
+            sheet.alpha_composite(overlay_tile(kind, variant), (index * CELL, variant * CELL))
     sheet.save(OUTPUT / "overlay.png", optimize=True)
 
 
@@ -159,7 +174,7 @@ def build_review() -> None:
     overlay = Image.open(OUTPUT / "overlay.png").convert("RGBA")
     scale = 4
     margin = 12
-    image = Image.new("RGBA", (16 * CELL * scale + margin * 2, 176), "#102126")
+    image = Image.new("RGBA", (16 * CELL * scale + margin * 2, 248), "#102126")
     image.alpha_composite(road.crop((0, 0, 16 * CELL, 3 * CELL)).resize((16 * CELL * scale, 3 * CELL * scale), Image.Resampling.NEAREST), (margin, 8))
     image.alpha_composite(surface.crop((0, 0, 16 * CELL, 3 * CELL)).resize((16 * CELL * scale, 3 * CELL * scale), Image.Resampling.NEAREST), (margin, 8 + 3 * CELL * scale + 8))
     image.alpha_composite(overlay.resize((overlay.width * scale, overlay.height * scale), Image.Resampling.NEAREST), (margin, 144))
@@ -167,11 +182,25 @@ def build_review() -> None:
     image.save(REVIEW, optimize=True)
 
 
+def update_published_revision() -> None:
+    """Include externally maintained atlases in immutable asset URLs."""
+    digest = hashlib.sha256()
+    for path in sorted(PUBLIC_PACK.rglob("*.png")):
+        digest.update(path.relative_to(PUBLIC_PACK).as_posix().encode())
+        digest.update(path.read_bytes())
+    revision = digest.hexdigest()[:16]
+    for path in (PUBLIC_PACK / "manifest.json", SOURCE_MANIFEST):
+        manifest = json.loads(path.read_text())
+        manifest["assetRevision"] = revision
+        path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+
+
 def main() -> None:
     build_directional_sheet(ROAD_FAMILIES, OUTPUT / "road.png")
     build_directional_sheet(SURFACE_FAMILIES, OUTPUT / "surface.png")
     build_overlay_sheet()
     build_review()
+    update_published_revision()
     print("road atlas v2: 5 road families, 5 surface families and 12 overlays built")
 
 

@@ -91,6 +91,8 @@ import {
 } from "../../shared/construction-stage";
 import { atlasTerrainConnectionMask, atlasTerrainKindFromWorld, atlasTerrainTile, type AtlasTerrainKind } from "../../shared/atlas-scene";
 import { bindMapPointerGestures } from "../map-pointer-gesture";
+import { decorationWorldAnchor } from "../decoration-placement";
+import { stopPixiApplication } from "../pixi-app-lifecycle";
 
 const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1;
@@ -302,7 +304,7 @@ function drawSurface(cell: SurfaceCellDto, surfaces: Map<string, SurfaceCellDto>
 function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, roads: Map<string, RoadCellDto>): Container {
   const group = new Container();
   group.addChild(atlasSprite(roadAtlasTile(cell), cell));
-  const addOverlay = (kind: RoadAtlasOverlay) => group.addChild(atlasSprite(roadAtlasOverlayTile(kind), cell));
+  const addOverlay = (kind: RoadAtlasOverlay) => group.addChild(atlasSprite(roadAtlasOverlayTile(kind, cell.x, cell.y), cell));
   const crossing = surfaces.get(key(cell));
   if (crossing?.kind === "CROSSWALK") {
     addOverlay(crossing.orientation === "V" ? "CROSSWALK_V" : "CROSSWALK_H");
@@ -587,10 +589,11 @@ function drawOverviewBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => 
 function drawDecoration(decoration: ChunkDto["decorations"][number]): Sprite | null {
   const metadata = PROP_CATALOG[decoration.kind];
   if (!metadata) return null;
+  const anchor = decorationWorldAnchor(decoration.kind, decoration.origin, metadata.footprint, CELL_SIZE);
   const result = sprite(
     metadata.path,
-    decoration.origin.x * CELL_SIZE + metadata.footprint.width * CELL_SIZE / 2,
-    decoration.origin.y * CELL_SIZE + metadata.footprint.height * CELL_SIZE,
+    anchor.x,
+    anchor.y,
   );
   result.anchor.set(metadata.anchor.x / metadata.size.width, metadata.anchor.y / metadata.size.height);
   return result;
@@ -1073,7 +1076,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     const destroyApp = () => {
       if (appDestroyed) return;
       appDestroyed = true;
-      try { app.stop(); } catch (error) { console.error("Failed to stop partial world renderer", error); }
+      try { stopPixiApplication(app); } catch (error) { console.error("Failed to stop partial world renderer", error); }
       try {
         if (app.renderer) app.destroy({ removeView: true }, { children: true });
       } catch (error) {
@@ -2252,10 +2255,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 propAtlasTextures.set(decoration.kind, texture);
               }
               const baseline = decoration.origin.y + metadata.footprint.height;
+              const anchorPosition = decorationWorldAnchor(decoration.kind, decoration.origin, metadata.footprint, CELL_SIZE);
               const view = new Sprite(texture);
               view.position.set(
-                decoration.origin.x * CELL_SIZE + metadata.footprint.width * CELL_SIZE / 2,
-                0,
+                anchorPosition.x,
+                anchorPosition.y - baseline * CELL_SIZE,
               );
               view.anchor.set(
                 metadata.anchor.x / metadata.size.width,

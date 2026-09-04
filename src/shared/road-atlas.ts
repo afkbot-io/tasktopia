@@ -105,15 +105,17 @@ export function roadAtlasConnectionMask<T extends string>(
   return mask;
 }
 
-export function roadAtlasOverlayTile(kind: RoadAtlasOverlay): RoadAtlasTile {
+export function roadAtlasOverlayTile(kind: RoadAtlasOverlay, column = 0, row = 0): RoadAtlasTile {
   const frame = OVERLAY_FRAMES.indexOf(kind);
   if (frame < 0) throw new Error(`Unknown road atlas overlay: ${String(kind)}`);
+  const variant = hashText(`${kind}:${column}:${row}`) % 3;
   return {
     url: "atlas/road-v2/overlay.png",
     tileSize: 8,
     sheetWidth: 96,
-    sheetHeight: 8,
+    sheetHeight: 24,
     sourceX: frame * 8,
-    sourceY: 0,
+    sourceY: variant * 8,
+    variant,
   };
 }

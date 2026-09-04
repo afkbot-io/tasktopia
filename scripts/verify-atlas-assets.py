@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Read-only validation for generated atlas aircraft, cloud and airport sprites."""
 
+import hashlib
+import json
 from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 ATLAS = ROOT / "public" / "game-assets" / "v5" / "atlas"
+PUBLIC_PACK = ROOT / "public" / "game-assets" / "v5"
+SOURCE_MANIFEST = ROOT / "assets" / "pixel-city-pack" / "manifest.json"
 
 
 def verify(path, size):
@@ -49,11 +53,25 @@ def verify_road_directional_sheet(path: Path, families: int) -> None:
 
 def verify_road_overlays(path: Path) -> None:
     image = Image.open(path).convert("RGBA")
-    assert image.size == (8 * 12, 8), f"{path}: expected {(8 * 12, 8)}, got {image.size}"
+    assert image.size == (8 * 12, 8 * 3), f"{path}: expected {(8 * 12, 8 * 3)}, got {image.size}"
     assert set(image.getchannel("A").getdata()) <= {0, 255}, f"{path}: soft alpha"
     frames = [image.crop((frame * 8, 0, (frame + 1) * 8, 8)) for frame in range(12)]
     assert all(frame.getchannel("A").getbbox() for frame in frames), f"{path}: empty overlay frame"
     assert len({frame.tobytes() for frame in frames}) == 12, f"{path}: overlay frames must be distinct"
+    for frame in range(4):
+        variants = [image.crop((frame * 8, variant * 8, (frame + 1) * 8, (variant + 1) * 8)).tobytes() for variant in range(3)]
+        assert len(set(variants)) == 3, f"{path}: crossing/marking frame {frame} must publish three material variants"
+
+
+def verify_published_revision() -> None:
+    digest = hashlib.sha256()
+    for path in sorted(PUBLIC_PACK.rglob("*.png")):
+        digest.update(path.relative_to(PUBLIC_PACK).as_posix().encode())
+        digest.update(path.read_bytes())
+    expected = digest.hexdigest()[:16]
+    for path in (PUBLIC_PACK / "manifest.json", SOURCE_MANIFEST):
+        manifest = json.loads(path.read_text())
+        assert manifest.get("assetRevision") == expected, f"{path}: stale assetRevision for published atlas content"
 
 
 def main() -> None:
@@ -97,6 +115,7 @@ def main() -> None:
     verify_road_directional_sheet(ATLAS / "road-v2" / "road.png", 5)
     verify_road_directional_sheet(ATLAS / "road-v2" / "surface.png", 5)
     verify_road_overlays(ATLAS / "road-v2" / "overlay.png")
+    verify_published_revision()
     print("atlas assets: legacy families, directional terrain V4, road V2, V4 aircraft and shared top-down clouds verified")
 
 
