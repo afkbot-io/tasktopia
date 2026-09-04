@@ -5,6 +5,27 @@ import { generateWorldDecorations } from "../src/shared/world-decorations";
 import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 
 describe("procedural decoration footprints", () => {
+  it("forms dense mostly single-species forest clusters and keeps plain grass trees rare", () => {
+    const forest: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 64, 64)
+      .map((cell) => ({ ...cell, terrain: "FOREST" as const, variant: 0 }));
+    const grass: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 64, 64)
+      .map((cell) => ({ ...cell, terrain: "GRASS" as const, variant: 0 }));
+    const forestTrees = generateWorldDecorations(91357, forest, new Set(), [], [], [], [])
+      .filter((item) => item.kind.startsWith("tree-"));
+    const grassTrees = generateWorldDecorations(91357, grass, new Set(), [], [], [], [])
+      .filter((item) => item.kind.startsWith("tree-"));
+
+    expect(forestTrees.length).toBeGreaterThan(900);
+    expect(grassTrees.length).toBeGreaterThan(0);
+    expect(grassTrees.length).toBeLessThan(32);
+
+    const clustered = forestTrees.filter((tree) => forestTrees.some((other) => other.id !== tree.id
+      && other.kind === tree.kind
+      && Math.abs(other.origin.x - tree.origin.x) <= 2
+      && Math.abs(other.origin.y - tree.origin.y) <= 2));
+    expect(clustered.length / forestTrees.length).toBeGreaterThan(0.82);
+  });
+
   it("keeps crop fields in the seed-ground layer and only emits grouped shrub/rock props", () => {
     const terrain: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 160, 128)
       .map((cell) => ({ ...cell, terrain: "MEADOW" as const, variant: 0 }));

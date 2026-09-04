@@ -297,13 +297,30 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                     )
                 if bounds[3] != image.height:
                     errors.append(f"{label}: micromobility contact point must share the bottom baseline")
-        if prop.get("visualProfile") == "TASKTOPIA_V5_TREE_FRONTAL_TOP":
+        if prop.get("visualProfile") == "TASKTOPIA_V6_TREE_HIGH_45_GRID":
             if image.size != (16, 32):
-                errors.append(f"{label}: standard V5 tree canvas must be 16x32")
+                errors.append(f"{label}: standard V6 tree canvas must be 16x32")
             if footprint != [1, 1]:
-                errors.append(f"{label}: standard V5 tree footprint must be 1x1")
+                errors.append(f"{label}: standard V6 tree footprint must be 1x1")
             if prop.get("anchorPx") != [8, 32]:
-                errors.append(f"{label}: standard V5 tree anchor must be [8, 32]")
+                errors.append(f"{label}: standard V6 tree anchor must be [8, 32]")
+            # A high-45 crown keeps most occupied rows close to its maximum
+            # width. Front-facing cones and round icons narrow for too long.
+            # Deadwood is intentionally a low stump and shares only the
+            # anchor/planting-cell checks below.
+            if key != "tree-deadwood":
+                crown_widths = []
+                for y in range(0, image.height - 6):
+                    occupied_x = [x for x in range(image.width) if image.getpixel((x, y))[3]]
+                    if occupied_x:
+                        crown_widths.append(max(occupied_x) - min(occupied_x) + 1)
+                maximum_crown_width = max(crown_widths, default=0)
+                broad_rows = sum(width >= maximum_crown_width - 2 for width in crown_widths)
+                if maximum_crown_width < 10 or broad_rows < max(3, round(len(crown_widths) * 0.55)):
+                    errors.append(
+                        f"{label}: crown must remain a broad square/rectangle in the high-45 view; "
+                        f"max width {maximum_crown_width}px, broad rows {broad_rows}/{len(crown_widths)}"
+                    )
             planting_top = image.height - 2
             outside_planting_cell = [
                 (x, y)
@@ -341,6 +358,17 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                 errors.append("propAtlas: soft alpha is forbidden")
     if set(prop_atlas.get("frames", {})) != set(manifest.get("props", {})):
         errors.append("propAtlas: frames must match the complete prop catalog")
+    elif isinstance(atlas_relative, str) and (runtime / atlas_relative).is_file():
+        atlas = Image.open(runtime / atlas_relative).convert("RGBA")
+        for key, prop in manifest.get("props", {}).items():
+            frame = prop_atlas["frames"][key]
+            atlas_frame = atlas.crop((
+                frame["x"], frame["y"],
+                frame["x"] + frame["width"], frame["y"] + frame["height"],
+            ))
+            prop_image = Image.open(runtime / prop["path"]).convert("RGBA")
+            if atlas_frame.size != prop_image.size or atlas_frame.tobytes() != prop_image.tobytes():
+                errors.append(f"propAtlas: {key} frame differs from {prop['path']}")
 
     ai_prop_catalog = manifest_path.parent / "catalog" / "ai-authored-props.json"
     if ai_prop_catalog.exists():

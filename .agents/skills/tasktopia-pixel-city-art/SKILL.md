@@ -113,7 +113,7 @@ The audit must cover the complete pack, not only newly created files:
 - stable centre/ground line and plausible footprint coverage;
 - distinct completed silhouettes within a category;
 - props, terrain, transitions, tiles, and vehicles for grid size, palette, alpha, anchors, and visually distinct variants;
-- every `TASKTOPIA_V5_TREE_FRONTAL_TOP` prop for its exact `16×32` canvas,
+- every `TASKTOPIA_V6_TREE_HIGH_45_GRID` prop for its exact `16×32` canvas,
   `[8,32]` anchor, `1×1` footprint and lower-centre `8×8` planting cell
   with a centred two-row ground contact;
 - authored ambient provenance, paired directional consistency, semantic readability at `1x`, and silhouette diversity inside each vehicle/prop family;

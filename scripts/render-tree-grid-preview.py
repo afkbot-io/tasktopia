@@ -32,12 +32,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=ROOT / "tmp/v5-tree-planting-grid.png",
+        default=ROOT / "tmp/v6-tree-planting-grid.png",
     )
     parser.add_argument(
         "--preview-output",
         type=Path,
-        default=ROOT / "tmp/v5-tree-planting-grid-4x.png",
+        default=ROOT / "tmp/v6-tree-planting-grid-4x.png",
     )
     return parser.parse_args()
 
@@ -49,7 +49,7 @@ def main() -> None:
         (
             (key, value)
             for key, value in manifest["props"].items()
-            if value.get("visualProfile") == "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+            if value.get("visualProfile") == "TASKTOPIA_V6_TREE_HIGH_45_GRID"
         ),
         key=lambda item: item[0],
     )
@@ -63,9 +63,10 @@ def main() -> None:
         (SHEET_COLUMNS * panel_size[0], rows * panel_size[1]),
         (71, 94, 64, 255),
     )
-    pavement = Image.open(
-        args.runtime / manifest["tiles"]["pavement"]["path"]
-    ).convert("RGBA")
+    # Pavement moved into the shared road V2 directional atlas. Use its fully
+    # connected mask so this review exercises the production material.
+    road_surface = ROOT / "public/game-assets/v5/atlas/road-v2/surface.png"
+    pavement = Image.open(road_surface).convert("RGBA").crop((15 * CELL, 0, 16 * CELL, CELL))
     if pavement.size != (CELL, CELL):
         raise SystemExit(f"pavement must be 8x8, got {pavement.size}")
 

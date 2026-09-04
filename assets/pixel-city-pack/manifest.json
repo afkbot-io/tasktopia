@@ -18633,8 +18633,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-deciduous-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-deciduous-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2179f319b65ccedfea6386f034379d27e68ab46d03db96ae99af2ec0ef9d3be2"
     },
     "tree-maple": {
       "label": "Клён",
@@ -18652,8 +18653,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-deciduous-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-deciduous-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2179f319b65ccedfea6386f034379d27e68ab46d03db96ae99af2ec0ef9d3be2"
     },
     "tree-round": {
       "label": "Городское дерево",
@@ -18671,8 +18673,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-deciduous-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-deciduous-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2179f319b65ccedfea6386f034379d27e68ab46d03db96ae99af2ec0ef9d3be2"
     },
     "tree-aspen": {
       "label": "Осина",
@@ -18690,8 +18693,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-deciduous-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-deciduous-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2179f319b65ccedfea6386f034379d27e68ab46d03db96ae99af2ec0ef9d3be2"
     },
     "tree-birch": {
       "label": "Берёза",
@@ -18709,8 +18713,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-deciduous-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-deciduous-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2179f319b65ccedfea6386f034379d27e68ab46d03db96ae99af2ec0ef9d3be2"
     },
     "tree-apple": {
       "label": "Яблоня",
@@ -18728,8 +18733,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-special-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-special-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "a6fc43615843c98a1ced3d8a73a751da814d35b19f88037ace59f9625a52d3bf"
     },
     "tree-cherry": {
       "label": "Цветущая вишня",
@@ -18747,8 +18753,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-special-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-special-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "a6fc43615843c98a1ced3d8a73a751da814d35b19f88037ace59f9625a52d3bf"
     },
     "tree-magnolia": {
       "label": "Магнолия",
@@ -18766,8 +18773,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-special-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-special-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "a6fc43615843c98a1ced3d8a73a751da814d35b19f88037ace59f9625a52d3bf"
     },
     "tree-willow": {
       "label": "Ива",
@@ -18785,8 +18793,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-special-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-special-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "a6fc43615843c98a1ced3d8a73a751da814d35b19f88037ace59f9625a52d3bf"
     },
     "tree-deadwood": {
       "label": "Сухостой",
@@ -18804,8 +18813,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-special-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-special-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "a6fc43615843c98a1ced3d8a73a751da814d35b19f88037ace59f9625a52d3bf"
     },
     "tree-conifer": {
       "label": "Ель",
@@ -18823,8 +18833,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-conifers-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-conifers-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2813ebf281ae1a63b4548082d3c2447411bf0cb3287a88f250fdac6372f367fc"
     },
     "tree-pine": {
       "label": "Сосна",
@@ -18842,8 +18853,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-conifers-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-conifers-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2813ebf281ae1a63b4548082d3c2447411bf0cb3287a88f250fdac6372f367fc"
     },
     "tree-cedar": {
       "label": "Кедр",
@@ -18861,8 +18873,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-conifers-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-conifers-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2813ebf281ae1a63b4548082d3c2447411bf0cb3287a88f250fdac6372f367fc"
     },
     "tree-cypress": {
       "label": "Кипарис",
@@ -18880,8 +18893,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-conifers-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-conifers-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2813ebf281ae1a63b4548082d3c2447411bf0cb3287a88f250fdac6372f367fc"
     },
     "tree-redwood": {
       "label": "Секвойя",
@@ -18899,8 +18913,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/trees-conifers-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/trees-conifers-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "2813ebf281ae1a63b4548082d3c2447411bf0cb3287a88f250fdac6372f367fc"
     },
     "tree-palm": {
       "label": "Пальма",
@@ -18918,8 +18933,9 @@
         32
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/tree-palm-v3.png",
-      "visualProfile": "TASKTOPIA_V5_TREE_FRONTAL_TOP"
+      "sourceSheet": "ai-authored/ambient/tree-palm-v6.png",
+      "visualProfile": "TASKTOPIA_V6_TREE_HIGH_45_GRID",
+      "sourceSha256": "447bc07c640cb0abb554cd39bc33beb19693032365d68d417b956d08eac72b40"
     },
     "walker-north-a": {
       "label": "Пешеход — север, шаг A",
@@ -22053,5 +22069,5 @@
       }
     }
   },
-  "assetRevision": "f6763e62eb8b084e"
+  "assetRevision": "432b737ea4003ff6"
 }

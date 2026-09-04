@@ -6,7 +6,7 @@ Use this contract for vehicles, transit stops, residents, micromobility, playgro
 
 Tasktopia V4 uses dense hand-authored city-builder pixel art rendered on an `8 px` logical grid. Shapes are compact and deliberately chunky, but not crude: large material planes are broken into controlled clusters of two to five pixels, with selective single-pixel highlights only at functional edges. The outline is a continuous dark blue-grey, normally one artistic pixel thick. Interior shadows use a related muted tone rather than black. Light always comes from the upper left, producing a narrow light top plane and a restrained darker lower/right plane.
 
-The camera is orthographic frontal-top. Buildings and upright street furniture face the screen with vertical verticals and horizontal levels; only a shallow top surface is visible. Road vehicles use a consistent near-top orthographic road view: their roof, windscreens and hood are readable, but no cinematic perspective or foreshortened vanishing point is allowed. Trees use a front-facing trunk with a shallow top-lit crown, not a flat icon and not an isometric tree.
+The camera is orthographic frontal-top for buildings and upright street furniture. Road vehicles use a consistent near-top orthographic road view: their roof, windscreens and hood are readable, but no cinematic perspective or foreshortened vanishing point is allowed. Trees use the matching high `45°` roof convention: a broad square/rectangular crown top plane, a compressed striped lower/front band and only a short trunk contact. They are not frontal icons and not isometric diamonds.
 
 The palette is muted urban-natural: slate outlines, dusty masonry, warm ochres, restrained brick, cool cyan glass, desaturated greens, and small warm service accents. Saturated colors are reserved for semantic cues such as a vehicle body, playground equipment, flowers, or transit marker. No object may rely on text or a logo to explain its function.
 
@@ -72,13 +72,20 @@ Reject the source before catalog registration when any item applies:
   above that contact band because y-sorting is anchored at the trunk. Signature
   trees require a separate
   explicit contract; never silently reuse the standard profile at another size.
-- The crown may overhang the planting cell only above the ground-contact band. It must use
-  readable clustered masses with at least three tones: outline/shadow, body,
-  upper-left highlight, plus a shallow top-lit plane matching the building
-  camera rather than a flat circular side icon.
-- Species differ by silhouette as well as color: columnar, conical, umbrella, weeping, round, spreading, multi-stem, or sparse/deadwood.
+- The crown may overhang the planting cell only above the ground-contact band.
+  Its upper plane occupies about 75–85% of the readable volume. The outer
+  silhouette is a compact square or rectangle with only `1–2 px` corner steps.
+  Use `2–4 px` blocks and `2–3` parallel horizontal highlight/shadow stripes
+  aligned with the roof and terrain-grid axes. Keep the lower/front crown and
+  trunk compressed at the anchor. At least three tones are required:
+  outline/shadow, body and upper-left highlight.
+- Species differ inside the same square grammar by width, height, band spacing,
+  top-plane pattern and palette. They must not switch to round, conical,
+  triangular, radial or long-branch silhouettes.
 - Do not bake grass or a circular ground shadow into the tree.
-- Reject crowns made from one flat blob, random confetti pixels, symmetric lollipops, or foliage that merges into an unreadable square at `1x`.
+- Reject crowns made from one flat unbanded blob, random confetti pixels,
+  lollipops, long frontal trunks, realistic leaf texture, smooth circular
+  shading, or any silhouette that stops reading as a striped square at `1x`.
 - Render every accepted tree on an actual `8x8` pavement grid at native `1x`
   and nearest-neighbour `4x`. Reject a tree whose ground contact appears to sit
   between cells, whose lower foliage covers neighbouring tiles, or whose camera

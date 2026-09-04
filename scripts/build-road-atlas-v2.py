@@ -45,27 +45,23 @@ def directional_material(
     light: str,
     detail: str,
 ) -> Image.Image:
-    # Terrain V4 never cuts transparent holes into a terrain cell. Roads use
-    # the same grammar: an opaque edge field, a compact centre and cardinal
-    # arms selected by the NESW mask. Corners stay deliberately blocky.
-    image = Image.new("RGBA", (CELL, CELL), edge)
+    # Road footprints are already selected by the world topology. A runtime
+    # tile therefore represents one *full* material cell; the mask only says
+    # which perimeter sides are external and need a curb. The previous centre
+    # plus four arms model carved a 2x2 staircase into every turn.
+    image = Image.new("RGBA", (CELL, CELL), base)
     draw = ImageDraw.Draw(image)
-    draw.rectangle((2, 2, 5, 5), fill=base)
-    if mask & 1: draw.rectangle((2, 0, 5, 2), fill=base)
-    if mask & 2: draw.rectangle((5, 2, 7, 5), fill=base)
-    if mask & 4: draw.rectangle((2, 5, 5, 7), fill=base)
-    if mask & 8: draw.rectangle((0, 2, 2, 5), fill=base)
+    if not mask & 1: draw.line((0, 0, 7, 0), fill=edge)
+    if not mask & 2: draw.line((7, 0, 7, 7), fill=edge)
+    if not mask & 4: draw.line((0, 7, 7, 7), fill=edge)
+    if not mask & 8: draw.line((0, 0, 0, 7), fill=edge)
 
-    # A one-pixel, stepped upper-left highlight and lower-right shade replaces
-    # the old continuous rounded bevel. It matches grass/coast/water clusters.
-    if not mask & 1:
-        draw.line((2, 2, 5, 2), fill=light)
-    if not mask & 8:
-        draw.line((2, 2, 2, 5), fill=light)
-    if not mask & 2:
-        draw.line((5, 2, 5, 5), fill=detail)
-    if not mask & 4:
-        draw.line((2, 5, 5, 5), fill=detail)
+    # A few curb pixels carry the same upper-left light direction as terrain
+    # without creating a second inner contour.
+    if not mask & 1: draw.line((1, 0, 5, 0), fill=light)
+    if not mask & 8: draw.line((0, 1, 0, 5), fill=light)
+    if not mask & 2: draw.line((7, 2, 7, 6), fill=detail)
+    if not mask & 4: draw.line((2, 7, 6, 7), fill=detail)
 
     seed = stable(f"{family}:{mask}:{variant}")
     candidates = ((2, 2), (5, 1), (3, 5), (6, 6), (1, 4), (5, 4))

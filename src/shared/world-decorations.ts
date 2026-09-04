@@ -38,6 +38,38 @@ function footprint(origin: Cell, width: number, height: number): Cell[] {
 
 type SeededNaturePatch = "SHRUB" | "ROCK";
 
+const FOREST_TREE_SPECIES = [
+  "tree-conifer", "tree-pine", "tree-cedar", "tree-oak", "tree-round",
+  "tree-birch", "tree-aspen", "tree-redwood", "tree-maple", "tree-cherry",
+] as const;
+
+/** Pick one species from a jittered world-space grove, stable across chunks. */
+function forestGrove(seed: number, cell: Cell): { species: string; density: number } {
+  const size = 14;
+  const macroX = Math.floor(cell.x / size);
+  const macroY = Math.floor(cell.y / size);
+  let selectedX = macroX;
+  let selectedY = macroY;
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let y = macroY - 1; y <= macroY + 1; y += 1) for (let x = macroX - 1; x <= macroX + 1; x += 1) {
+    const centerX = x * size + 3 + Math.floor(hashCoordinate(seed, x, y, 731) * (size - 6));
+    const centerY = y * size + 3 + Math.floor(hashCoordinate(seed, x, y, 733) * (size - 6));
+    const dx = cell.x - centerX;
+    const dy = cell.y - centerY;
+    const distance = dx * dx + dy * dy;
+    if (distance < nearest) {
+      nearest = distance;
+      selectedX = x;
+      selectedY = y;
+    }
+  }
+  const pick = hashCoordinate(seed, selectedX, selectedY, 737);
+  return {
+    species: FOREST_TREE_SPECIES[Math.floor(pick * FOREST_TREE_SPECIES.length)]!,
+    density: 0.31 + hashCoordinate(seed, selectedX, selectedY, 739) * 0.13,
+  };
+}
+
 /**
  * Macro-cell patches are evaluated from world coordinates, not chunk-local
  * iteration state. Adjacent chunks therefore reproduce the same field edge.
@@ -141,13 +173,17 @@ export function generateWorldDecorations(
       const own = districtCellKeys.get(district.id)!;
       const edge = DIRECTIONS.findIndex((direction) => !own.has(key({ x: cell.x + direction.x, y: cell.y + direction.y })));
       if (edge >= 0) kind = edge % 2 === 0 ? "fence-horizontal" : "fence-vertical";
-    } else if (cell.terrain === "FOREST" && chance < 0.17) {
-      const forestTrees = ["tree-conifer", "tree-round", "tree-birch", "tree-pine", "tree-oak", "tree-cherry", "tree-maple", "tree-cedar", "tree-aspen", "tree-redwood", "tree-deadwood"];
-      kind = forestTrees[Math.floor(hashCoordinate(seed, cell.x, cell.y, 739) * forestTrees.length)];
+    } else if (cell.terrain === "FOREST") {
+      const grove = forestGrove(seed, cell);
+      if (chance < grove.density) kind = grove.species;
     } else if (cell.terrain === "HILL" && chance < 0.085) {
       kind = chance < 0.035 ? "hill-rocky" : chance < 0.06 ? "hill-small" : "tree-pine";
     } else if (cell.terrain === "MOUNTAIN" && chance < 0.075) {
       kind = chance < 0.03 ? "mountain-peak" : chance < 0.052 ? "mountain-ridge" : "rock-cluster";
+    } else if (!district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW")
+      && hashCoordinate(seed, cell.x, cell.y, 743) < (cell.terrain === "MEADOW" ? 0.005 : 0.003)) {
+      const sparseTrees = ["tree-oak", "tree-round", "tree-birch", "tree-aspen", "tree-pine"];
+      kind = sparseTrees[Math.floor(hashCoordinate(seed, cell.x, cell.y, 747) * sparseTrees.length)];
     } else if ((cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < 0.016) {
       const variants = ["flower-white", "flower-yellow", "flower-red", "flower-purple"];
       kind = variants[Math.floor(hashCoordinate(seed, cell.x, cell.y, 709) * variants.length)];

@@ -1948,6 +1948,16 @@ def normalize_ai_authored_ambient(
     return canvas
 
 
+def constrain_tree_ground_contact(image: Image.Image) -> Image.Image:
+    """Trim source fringe outside the one-cell trunk anchor, without repainting art."""
+    constrained = image.copy()
+    for y in range(constrained.height - 2, constrained.height):
+        for x in range(constrained.width):
+            if x < 4 or x >= 12:
+                constrained.putpixel((x, y), (0, 0, 0, 0))
+    return constrained
+
+
 def opaque_component_count(image: Image.Image) -> int:
     """Count hard-alpha 4-neighbour components without mutating source art."""
     alpha = image.getchannel("A")
@@ -2377,12 +2387,15 @@ def build_manifest(specs: list[HouseSpec]) -> dict:
         )
         if authored.get("mirrorX"):
             source_segment = source_segment.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-        generated_props[authored["key"]] = normalize_ai_authored_ambient(
+        normalized_prop = normalize_ai_authored_ambient(
             source_segment,
             tuple(authored["size"]),
             occupied_size=tuple(authored["occupiedSize"]) if authored.get("occupiedSize") else None,
             strict_occupied_bounds=bool(authored.get("strictOccupiedBounds")),
         )
+        if authored.get("visualProfile") == "TASKTOPIA_V6_TREE_HIGH_45_GRID":
+            normalized_prop = constrain_tree_ground_contact(normalized_prop)
+        generated_props[authored["key"]] = normalized_prop
         ai_prop_metadata[authored["key"]] = {
             "artSource": authored.get("artSource", "AI_AUTHORED"),
             "sourceSheet": str(source.relative_to(AI_AUTHORED_ART)),
@@ -2919,9 +2932,15 @@ def main() -> None:
             if hashlib.sha256(PRESERVED_RUNTIME_PNG[relative]).hexdigest() == approved_sha:
                 PINNED_REVIEWED_RUNTIME_PNG.add(relative)
     public_atlas = PUBLIC / "atlas"
+    # Terrain atlases may be maintained outside this builder, but props-v1 is
+    # produced from generated_props above and must never be restored from the
+    # previous public tree. Restoring it made individual prop PNGs update while
+    # Pixi kept rendering stale frames from the old atlas.
+    generated_atlas_paths = {"props-v1.png"}
     preserved_atlas = {
         path.relative_to(public_atlas).as_posix(): path.read_bytes()
-        for path in public_atlas.rglob("*") if path.is_file()
+        for path in public_atlas.rglob("*")
+        if path.is_file() and path.relative_to(public_atlas).as_posix() not in generated_atlas_paths
     } if public_atlas.exists() else {}
     if RUNTIME.exists(): shutil.rmtree(RUNTIME)
     RUNTIME.mkdir(parents=True, exist_ok=True)

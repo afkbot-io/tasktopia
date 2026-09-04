@@ -309,14 +309,14 @@ describe("Pixel City active asset contract", () => {
     }
   });
 
-  it("anchors every V5 tree inside one eight-pixel planting cell", () => {
+  it("anchors every V6 high-45 square tree inside one eight-pixel planting cell", () => {
     const props = manifest.props as Record<string, {
       size: number[];
       footprintCells: number[];
       anchorPx: number[];
       visualProfile?: string;
     }>;
-    const trees = Object.entries(props).filter(([, prop]) => prop.visualProfile === "TASKTOPIA_V5_TREE_FRONTAL_TOP");
+    const trees = Object.entries(props).filter(([, prop]) => prop.visualProfile === "TASKTOPIA_V6_TREE_HIGH_45_GRID");
     expect(trees).toHaveLength(16);
     for (const [key, tree] of trees) {
       expect(tree, key).toMatchObject({

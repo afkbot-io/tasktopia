@@ -35,6 +35,14 @@ def verify_road_directional_sheet(path: Path, families: int) -> None:
         row = family * 3
         masks = [image.crop((mask * 8, row * 8, (mask + 1) * 8, (row + 1) * 8)).tobytes() for mask in range(16)]
         assert len(set(masks)) >= 12, f"{path}: family {family} directional masks collapsed"
+        family_edge = image.getpixel((0, row * 8))
+        # A directional cell is a full material cell. Missing neighbours may
+        # add a one-pixel perimeter curb, but may never carve the old 2x2
+        # square/stepped corner into the road or pavement interior.
+        for mask in (0b0011, 0b0110, 0b1100, 0b1001):
+            tile = image.crop((mask * 8, row * 8, (mask + 1) * 8, (row + 1) * 8))
+            interior = [tile.getpixel((x, y)) for y in range(1, 7) for x in range(1, 7)]
+            assert interior.count(family_edge) < 4, f"{path}: family {family} mask {mask} contains a stepped inner corner"
         family_samples.append(masks[15])
     assert len(set(family_samples)) == families, f"{path}: material families must remain visually distinct"
 

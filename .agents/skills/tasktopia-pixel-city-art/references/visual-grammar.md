@@ -105,5 +105,13 @@ Review on transparent checkerboard, dark pack background, meadow, stone, and asp
   remain inside `x=4..11`. The crown may overhang neighbouring cells above
   that contact band without changing gameplay occupancy. The visible crown
   should reach roughly `24–32 px` (3–4 cells) while remaining narrow enough to
-  avoid hiding a full facade. Tree trunks, benches, fences and traffic lights
-  participate in y-sorting; overlays/tooltips remain above them.
+  avoid hiding a full facade. The camera is the same high orthographic `45°`
+  convention as building roofs: the crown's upper plane dominates, while the
+  front/lower crown and trunk are vertically compressed near the anchor.
+  The outer silhouette is a compact square or rectangle with only `1–2 px`
+  corner steps. Build its broad top plane and `2–3` parallel horizontal depth
+  bands from `2–4 px` blocks aligned with roof and terrain-grid axes. Circular,
+  oval, conical, triangular and stacked-round crowns, a long frontal trunk, or
+  realistic leaf texture are projection failures.
+  Tree trunks, benches, fences and traffic lights participate in y-sorting;
+  overlays/tooltips remain above them.
