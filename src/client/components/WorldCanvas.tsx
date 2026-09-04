@@ -3,6 +3,15 @@ import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture, TilingSprite } from "pixi.js";
 import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TERRAIN_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
 import { roadMarkingAxis } from "../../shared/road-profile";
+import {
+  roadAtlasConnectionMask,
+  roadAtlasOverlayTile,
+  roadAtlasSurfaceTile,
+  roadAtlasTile,
+  type RoadAtlasOverlay,
+  type RoadAtlasSurface,
+  type RoadAtlasTile,
+} from "../../shared/road-atlas";
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlatformKind, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
 import type { CitySceneDto } from "../../shared/city-scene-contract";
 import { terrainAt } from "../../shared/world-terrain";
@@ -210,24 +219,24 @@ function cachedTexture(url: string): Texture | undefined {
   return Cache.has(url) ? Cache.get<Texture>(url) : undefined;
 }
 
-// A sheet frame is immutable and shared by every matching terrain cell. This
+// A sheet frame is immutable and shared by every matching terrain or road cell. This
 // bounds derived Pixi textures to the authored atlas vocabulary instead of
 // allocating one wrapper per cell and per visited city.
-const atlasTerrainTextureCache = new Map<string, Texture>();
+const atlasFrameTextureCache = new Map<string, Texture>();
 
-function atlasTerrainTexture(url: string, sourceX: number, sourceY: number, size: number): Texture {
+function atlasFrameTexture(url: string, sourceX: number, sourceY: number, size: number): Texture {
   const cacheKey = `${url}:${sourceX}:${sourceY}:${size}`;
-  const cached = atlasTerrainTextureCache.get(cacheKey);
+  const cached = atlasFrameTextureCache.get(cacheKey);
   const sheet = cachedTexture(url);
   if (cached && sheet && cached.source === sheet.source) return cached;
-  if (cached) atlasTerrainTextureCache.delete(cacheKey);
+  if (cached) atlasFrameTextureCache.delete(cacheKey);
   if (!sheet) return Texture.EMPTY;
   const texture = new Texture({
     source: sheet.source,
     frame: new Rectangle(sourceX, sourceY, size, size),
   });
   texture.source.scaleMode = "nearest";
-  atlasTerrainTextureCache.set(cacheKey, texture);
+  atlasFrameTextureCache.set(cacheKey, texture);
   return texture;
 }
 
@@ -248,62 +257,62 @@ function tiledSprite(url: string, x: number, y: number, width: number, height: n
 function terrainSprite(cell: ChunkDto["terrain"][number], terrainAtCell: (column: number, row: number) => AtlasTerrainKind | undefined): Sprite {
   const kind = atlasTerrainKindFromWorld(cell.terrain);
   const tile = atlasTerrainTile(kind, "city", cell.x, cell.y, atlasTerrainConnectionMask(kind, cell.x, cell.y, terrainAtCell));
-  const texture = atlasTerrainTexture(gameAssetUrl(tile.url), tile.sourceX, tile.sourceY, tile.tileSize);
+  const texture = atlasFrameTexture(gameAssetUrl(tile.url), tile.sourceX, tile.sourceY, tile.tileSize);
   const p = position(cell);
   const result = new Sprite(texture);
   result.position.set(p.x, p.y);
   return result;
 }
 
-function edgeSprite(url: string, cell: Cell, direction: number): Sprite {
+function atlasSprite(tile: RoadAtlasTile, cell: Cell): Sprite {
   const p = position(cell);
-  const result = sprite(url, p.x + CELL_SIZE / 2, p.y + CELL_SIZE / 2);
-  result.anchor.set(0.5);
-  if (direction === 0) result.scale.y = -1;
-  else if (direction === 1) result.rotation = -Math.PI / 2;
-  else if (direction === 3) result.rotation = Math.PI / 2;
+  const result = new Sprite(atlasFrameTexture(gameAssetUrl(tile.url), tile.sourceX, tile.sourceY, tile.tileSize));
+  result.position.set(p.x, p.y);
   return result;
 }
 
-function drawSurface(cell: SurfaceCellDto): Sprite {
-  const p = position(cell);
-  const url = cell.kind === "SIDEWALK" ? TILE_SPRITES.pavement!
-    : cell.kind === "PATH" ? TILE_SPRITES[cell.finish === "PAVERS" ? "path-pavers" : cell.finish === "ASPHALT" ? "path-asphalt" : "path-brown"]!
-      : cell.kind === "DRIVEWAY" ? TILE_SPRITES.road!
-        : cell.kind === "CROSSWALK" ? TILE_SPRITES[cell.orientation === "V" ? "crosswalk-vertical" : "crosswalk-horizontal"]!
-          : gameAssetUrl(TERRAIN_SPRITES.DIRT![1]!);
-  return sprite(url, p.x, p.y);
+function surfaceAtlasFamily(cell: SurfaceCellDto): RoadAtlasSurface | undefined {
+  if (cell.kind === "SIDEWALK") return "PAVEMENT";
+  if (cell.kind === "DRIVEWAY") return "DRIVEWAY";
+  if (cell.kind === "PATH") {
+    if (cell.finish === "PAVERS") return "PATH_PAVERS";
+    if (cell.finish === "ASPHALT") return "PATH_ASPHALT";
+    return "PATH_EARTH";
+  }
+  return undefined;
+}
+
+function drawSurface(cell: SurfaceCellDto, surfaces: Map<string, SurfaceCellDto>): Sprite | undefined {
+  const family = surfaceAtlasFamily(cell);
+  if (!family) return undefined;
+  const mask = roadAtlasConnectionMask(family, cell.x, cell.y, (column, row) => {
+    const neighbor = surfaces.get(key({ x: column, y: row }));
+    return neighbor ? surfaceAtlasFamily(neighbor) : undefined;
+  });
+  return atlasSprite(roadAtlasSurfaceTile(family, cell.x, cell.y, mask), cell);
 }
 
 function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, roads: Map<string, RoadCellDto>): Container {
   const group = new Container();
-  const p = position(cell);
-  group.addChild(sprite(TILE_SPRITES.road!, p.x, p.y));
+  group.addChild(atlasSprite(roadAtlasTile(cell), cell));
+  const addOverlay = (kind: RoadAtlasOverlay) => group.addChild(atlasSprite(roadAtlasOverlayTile(kind), cell));
   const crossing = surfaces.get(key(cell));
   if (crossing?.kind === "CROSSWALK") {
-    group.addChild(sprite(TILE_SPRITES[crossing.orientation === "V" ? "crosswalk-vertical" : "crosswalk-horizontal"]!, p.x, p.y));
+    addOverlay(crossing.orientation === "V" ? "CROSSWALK_V" : "CROSSWALK_H");
   } else {
     const markingAxis = roadMarkingAxis(roads, cell);
-    if (markingAxis) {
-      group.addChild(sprite(TILE_SPRITES[markingAxis === "H" ? "road-marking-horizontal" : "road-marking-vertical"]!, p.x, p.y));
-    }
+    if (markingAxis) addOverlay(markingAxis === "H" ? "MARKING_H" : "MARKING_V");
   }
+  const directionNames = ["N", "E", "S", "W"] as const;
   for (let direction = 0; direction < GRID_DIRECTIONS.length; direction += 1) {
     const config = GRID_DIRECTIONS[direction]!;
+    const directionName = directionNames[direction]!;
     const neighborRoad = roads.get(key({ x: cell.x + config.x, y: cell.y + config.y }));
     if (cell.structure === "ROAD" && neighborRoad?.structure === "BRIDGE") {
-      const portal = new Graphics();
-      if (direction === 0 || direction === 2) portal.rect(p.x + 1, p.y + (direction === 0 ? 0 : 6), 6, 2);
-      else portal.rect(p.x + (direction === 1 ? 6 : 0), p.y + 1, 2, 6);
-      portal.fill(0xb7c4c2);
-      group.addChild(portal);
+      addOverlay(`BRIDGE_PORTAL_${directionName}`);
     }
     if (cell.mask & config.bit) continue;
-    if (cell.structure === "BRIDGE") {
-      const edgeUrl = (cell.mask & (2 | 8)) ? TILE_SPRITES["bridge-side-horizontal"]! : TILE_SPRITES["bridge-side-vertical"]!;
-      group.addChild(edgeSprite(edgeUrl, cell, direction));
-      continue;
-    }
+    if (cell.structure === "BRIDGE") addOverlay(`BRIDGE_RAIL_${directionName}`);
   }
   return group;
 }
@@ -836,11 +845,9 @@ function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE"
 function requiredGroundAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
   if (lod !== "DETAIL") return [];
   const urls = new Set<string>([
-    assetUrl(TERRAIN_SPRITES.DIRT![1]!),
-    TILE_SPRITES.pavement!, TILE_SPRITES["path-pavers"]!, TILE_SPRITES["path-asphalt"]!, TILE_SPRITES["path-brown"]!,
-    TILE_SPRITES.road!, TILE_SPRITES["crosswalk-vertical"]!, TILE_SPRITES["crosswalk-horizontal"]!,
-    TILE_SPRITES["road-marking-horizontal"]!, TILE_SPRITES["road-marking-vertical"]!,
-    TILE_SPRITES["bridge-side-horizontal"]!, TILE_SPRITES["bridge-side-vertical"]!,
+    gameAssetUrl("atlas/road-v1/road.png"),
+    gameAssetUrl("atlas/road-v1/surface.png"),
+    gameAssetUrl("atlas/road-v1/overlay.png"),
   ]);
   for (const chunk of chunks) for (const cell of chunk.terrain) urls.add(gameAssetUrl(
     atlasTerrainTile(atlasTerrainKindFromWorld(cell.terrain), "city", cell.x, cell.y, 0).url,
@@ -2018,7 +2025,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           const surfaces = new Container();
           const roads = new Container();
           const surfaceMap = new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
-          for (const surface of chunk.surfaces) surfaces.addChild(drawSurface(surface));
+          for (const surface of chunk.surfaces) {
+            const view = drawSurface(surface, surfaceMap);
+            if (view) surfaces.addChild(view);
+          }
           const roadMap = new Map(chunk.roads.map((road) => [key(road), road]));
           for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap, roadMap));
           source.addChild(surfaces, roads);
