@@ -257,6 +257,8 @@ TASKTOPIA_EXPECTED_REVISION=<тот_же_SHA> \
 Recovery повторно закрывает трафик/останавливает writers, восстанавливает
 проверенную БД, uploads/asset volume/статику и прежние роли по сохранённому
 Compose с pinned image. `ROLLED_BACK_CLOSED` тоже требует `accept` с planDigest.
+Запуск сохранённого локального image ID использует `--pull never --no-build`:
+ни registry download, ни новая сборка не могут заменить образ плана.
 После любого возможного открытия старый dump автоматически восстанавливать
 нельзя: он потеряет новые пользовательские записи. При неудаче восстановления
 оставить maintenance и private evidence; не запускать старый runtime с новой БД.

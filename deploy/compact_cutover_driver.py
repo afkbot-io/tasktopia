@@ -217,7 +217,8 @@ class HostDriver:
         record = self.b["previousCompose" if previous else "candidateCompose"]
         self.r.verify(record)
         self.command(["compose", "--project-directory", self.b["appDir"], "--project-name", self.j.plan["project"],
-            "-f", str(self.r.directory / record["artifact"]), "up", "-d", "--no-deps", "--force-recreate", *ROLES], timeout=300)
+            "-f", str(self.r.directory / record["artifact"]), "up", "-d", "--no-deps", "--no-build", "--pull", "never",
+            "--force-recreate", *ROLES], timeout=300)
 
     def health(self, previous=False):
         expected = self.j.plan["previousImage" if previous else "candidateImage"]
