@@ -44,6 +44,10 @@ jobs:
       # execution makes unrelated MCP/deployment cases contend and intermittently
       # exceed their per-test timeout on hosted runners.
       - run: npm test -- --no-file-parallelism
+      - name: Compact database backup and recovery
+        run: |
+          pg_image_id="$(docker image inspect postgres:16-alpine --format '{{.Id}}')"
+          python3 tests/compact_cutover_database_integration.py --pg-image "$pg_image_id"
       - run: npm run build
       - name: MCP protocol and authentication smoke
         run: |

@@ -55,3 +55,28 @@ compact-release-preflight.sh, docker-compose.yml и существующей р�
 Автомат состояний сам не выполняет Docker/SSH/SQL. Он задаёт проверяемый
 контракт adapter; готовность adapter и сквозной репетиции фиксируется отдельно.
 Наличие этого модуля не даёт права запускать неподготовленный production cutover.
+
+### Исполняемый PostgreSQL backend
+
+`deploy/compact_cutover_database.py` реализует DB-часть пункта 2:
+`capture`, `prove_restore`, `restore_verified`. Команды ограничены по времени,
+размеру вывода и точному container/image/volume ID. Копия публикуется только
+после сравнения до/после; доказательство restore — только после независимого
+восстановления и остановки проверочного контейнера. Откат существующей БД
+требует архив, baseline и checksum успешного независимого proof.
+
+Проверка охватывает все строки public-таблиц, схему `pg_dump --schema-only`,
+metadata БД и состояния sequences. Неизвестные client sessions, незавершённые
+generation jobs, prepared transactions, расширения кроме plpgsql, replication,
+дополнительные схемы и large objects останавливают исполнение. Это осознанная
+граница первого перехода, не попытка незаметно пропустить неизвестные данные.
+
+Восстановление DB уже проверено на отдельной реальной копии; это **не** полная
+репетиция host cutover. Backend не включает Nginx maintenance, общий updater lock,
+остановку/проверку app/mcp/world, config/uploads/static/image rollback,
+запуск candidate CLI и допуск внешнего трафика. Он не является CLI деплоя.
+Вызывающий host adapter обязан проверить состояние journal перед `restore_verified`:
+после возможного открытия трафика восстановление старой копии запрещено.
+Глобальные PostgreSQL roles/credentials не изменяются и этим DB-backup не заменяются.
+
+Доказательства и команда изолированной проверки: [QA-COMPACT-MAINTENANCE-DATABASE.md](QA-COMPACT-MAINTENANCE-DATABASE.md).
