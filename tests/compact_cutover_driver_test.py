@@ -11,6 +11,18 @@ from compact_cutover_state import CutoverError
 
 
 class DriverTests(unittest.TestCase):
+    def test_start_uses_only_saved_local_image_without_pull_or_build(self):
+        driver = object.__new__(HostDriver)
+        driver.r = SimpleNamespace(verify=lambda record: None, directory=Path("/private/audit"))
+        driver.b = {"appDir": "/srv/tasktopia/app", "previousCompose": {"artifact": "previous.json"}}
+        driver.j = SimpleNamespace(plan={"project": "app"})
+        commands = []
+        driver.command = lambda args, **kw: commands.append(args)
+        driver.start_roles(previous=True)
+        self.assertIn("--no-build", commands[0])
+        index = commands[0].index("--pull")
+        self.assertEqual(commands[0][index + 1], "never")
+
     def test_recovery_only_retires_exact_completed_export_not_runtime(self):
         image = "sha256:" + "b" * 64
         info = {"Name": "/tasktopia-compact-export-" + "a" * 32, "Image": image, "Mounts": [],
