@@ -18,10 +18,20 @@ class DriverTests(unittest.TestCase):
         driver.j = SimpleNamespace(plan={"project": "app"})
         commands = []
         driver.command = lambda args, **kw: commands.append(args)
+        driver.roles = lambda: {}
         driver.start_roles(previous=True)
         self.assertIn("--no-build", commands[0])
         index = commands[0].index("--pull")
         self.assertEqual(commands[0][index + 1], "never")
+
+    def test_recovery_restarts_exact_existing_old_roles_without_recreation(self):
+        driver = object.__new__(HostDriver)
+        driver.j = SimpleNamespace(plan={"previousImage": "old"})
+        driver.roles = lambda: {role: {"Id": role + "-id", "Image": "old"} for role in ("app", "mcp", "world")}
+        commands = []
+        driver.command = lambda args, **kw: commands.append(args)
+        driver.start_roles(previous=True)
+        self.assertEqual(commands, [["start", "app-id", "mcp-id", "world-id"]])
 
     def test_recovery_only_retires_exact_completed_export_not_runtime(self):
         image = "sha256:" + "b" * 64

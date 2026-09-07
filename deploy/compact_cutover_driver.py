@@ -214,6 +214,13 @@ class HostDriver:
         fsync_directory(root)
 
     def start_roles(self, previous=False):
+        if previous:
+            existing = self.roles()
+            if set(existing) == set(ROLES) and all(v["Image"] == self.j.plan["previousImage"] for v in existing.values()):
+                # Original containers retain their verified configuration and
+                # rootfs even if retagging removed an image-store reference.
+                self.command(["start"] + [existing[r]["Id"] for r in ROLES], timeout=90)
+                return
         record = self.b["previousCompose" if previous else "candidateCompose"]
         self.r.verify(record)
         self.command(["compose", "--project-directory", self.b["appDir"], "--project-name", self.j.plan["project"],
