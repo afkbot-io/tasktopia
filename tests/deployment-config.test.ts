@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -449,6 +449,8 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
         currentRevision,
         "eeeeeeeeeeeeeeee",
       ]);
+      // Retention must use the original publication time, not copy timing.
+      expect(statSync(join(incoming, "game-assets/v5/revisions/eeeeeeeeeeeeeeee")).mtimeMs).toBe(4_000);
       expect(readFileSync(journal).toString().split("\0").filter(Boolean).sort()).toEqual([
         join(active, "assets/new-bundle.js"),
         join(active, `game-assets/v5/revisions/${currentRevision}/tile.png`),

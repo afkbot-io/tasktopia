@@ -455,7 +455,7 @@ prepare_static_release_paths() {
   local current_revision="$3"
   local retained_count="${4:-3}"
   local journal_path="${5:-}"
-  local previous_revision="" failed_revision_file failed_revision
+  local previous_revision="" failed_revision_file failed_revision revision_path revision
   local -a failed_revisions
 
   previous_revision="$(asset_revision_from_manifest "$active_dir/game-assets/v5/manifest.json" || true)"
@@ -483,6 +483,14 @@ prepare_static_release_paths() {
   prepublish_immutable_dir \
     "$active_dir/game-assets/v5/revisions" \
     "$incoming_dir/game-assets/v5/revisions"
+  # Directory creation/copy changes mtime. Retention must compare original
+  # publication times rather than whichever directory copy crossed a second.
+  for revision_path in "$active_dir/game-assets/v5/revisions"/*; do
+    [[ -d "$revision_path" && ! -L "$revision_path" ]] || continue
+    revision="${revision_path##*/}"
+    [[ "$revision" =~ ^[a-f0-9]{16}$ && "$revision" != "$current_revision" ]] || continue
+    touch -r "$revision_path" "$incoming_dir/game-assets/v5/revisions/$revision" || return 1
+  done
   prune_asset_revisions \
     "$incoming_dir/game-assets/v5/revisions" \
     "$current_revision" \
