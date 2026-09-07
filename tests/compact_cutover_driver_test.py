@@ -5,12 +5,35 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "deploy"))
-from compact_cutover_driver import HostDriver, validate_cli_log, external_compose
+from compact_cutover_driver import HostDriver, validate_cli_log, external_compose, completed_export, validate_controller
 from compact_cutover_database import CommandRunner
 from compact_cutover_state import CutoverError
 
 
 class DriverTests(unittest.TestCase):
+    def test_recovery_only_retires_exact_completed_export_not_runtime(self):
+        image = "sha256:" + "b" * 64
+        info = {"Name": "/tasktopia-compact-export-" + "a" * 32, "Image": image, "Mounts": [],
+                "Config": {"Entrypoint": ["node"], "Cmd": ["dist/synchronize-assets.mjs"]},
+                "State": {"Running": False, "ExitCode": 0},
+                "HostConfig": {"NetworkMode": "none", "RestartPolicy": {"Name": "no"}}}
+        self.assertTrue(completed_export(info, image))
+        for key, value in [("Name", "/app-app-1"), ("Image", "sha256:" + "c" * 64),
+                           ("State", {"Running": True, "ExitCode": 0}), ("Mounts", [{"Type": "volume"}]),
+                           ("Config", {"Entrypoint": ["node"], "Cmd": ["dist/index.mjs"]})]:
+            changed = dict(info)
+            changed[key] = value
+            self.assertFalse(completed_export(changed, image))
+
+    def test_new_controller_can_only_recover_explicit_old_plan(self):
+        old, new = "a" * 40, "b" * 40
+        validate_controller("recover", new, old, old, "RECOVERY_REQUIRED")
+        validate_controller("accept", new, old, old, "ROLLED_BACK_CLOSED")
+        for action, declared, status in [("prepare", old, "NEW"), ("recover", None, "RECOVERY_REQUIRED"),
+                                          ("accept", old, "READY"), ("accept", old, "OPENING")]:
+            with self.assertRaises(CutoverError):
+                validate_controller(action, new, old, declared, status)
+
     def test_changed_environment_mount_or_network_is_rejected_before_stop(self):
         with tempfile.TemporaryDirectory() as tmp:
             runner = CommandRunner(Path(tmp))

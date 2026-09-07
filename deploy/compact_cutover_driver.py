@@ -26,6 +26,26 @@ STATIC = Path("/srv/tasktopia/static")
 ROLES = ("app", "mcp", "world")
 
 
+def completed_export(info, image):
+    return (bool(re.fullmatch(r"/tasktopia-compact-export-[a-f0-9]{32}", info.get("Name", "")))
+            and info.get("Image") == image and info.get("Config", {}).get("Entrypoint") == ["node"]
+            and info.get("Config", {}).get("Cmd") == ["dist/synchronize-assets.mjs"]
+            and info.get("State", {}).get("Running") is False and info.get("State", {}).get("ExitCode") == 0
+            and info.get("HostConfig", {}).get("NetworkMode") == "none"
+            and info.get("Mounts") == []
+            and info.get("HostConfig", {}).get("RestartPolicy", {}).get("Name") == "no")
+
+
+def validate_controller(action, revision, plan_revision, recovery_revision, status):
+    if revision == plan_revision:
+        require(recovery_revision is None, "Recovery override is unnecessary")
+        return
+    require(recovery_revision == plan_revision and
+            ((action == "recover" and status in ("RECOVERY_REQUIRED", "RECOVERING", "PREPARING", "READY"))
+             or (action == "accept" and status == "ROLLED_BACK_CLOSED")),
+            "Different controller may only recover an explicitly bound prior plan")
+
+
 def external_compose(source, image):
     result = json.loads(canonical(source))
     for role in ROLES:
@@ -165,7 +185,8 @@ class HostDriver:
             stream.flush()
             os.fsync(stream.fileno())
         self.r.publish_json(name + "-intent.json", {"image": self.j.plan["candidateImage"], "entry": entry})
-        ident = self.command(["create", "--name", name, "--label", "tasktopia.cutover-run=" + self.j.plan["runId"],
+        ident = self.command(["create", "--name", name, "--label", "com.docker.compose.project=tasktopia-cutover-tools",
+            "--label", "com.docker.compose.service=cli", "--label", "tasktopia.cutover-run=" + self.j.plan["runId"],
             "--network", self.b["network"], "--read-only", "--tmpfs", "/tmp:rw,nosuid,noexec,size=64m",
             "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1536m", "--cpus", "2",
             "--pids-limit", "128", "--env-file", str(self.r.directory / env_name), "--entrypoint", "node",
@@ -236,7 +257,8 @@ class HostDriver:
             result = {"operation": operation}
             if operation == "prepare_candidate_assets":
                 export = "tasktopia-compact-export-" + uuid.uuid4().hex
-                ident = self.command(["create", "--name", export, "--network", "none", "--entrypoint", "node",
+                ident = self.command(["create", "--name", export, "--label", "com.docker.compose.project=tasktopia-cutover-tools",
+                    "--label", "com.docker.compose.service=export", "--network", "none", "--entrypoint", "node",
                     plan["candidateImage"], "dist/synchronize-assets.mjs"]).decode().strip()
                 revision = self.command(["start", "--attach", ident]).decode().strip()
                 require(re.fullmatch(r"[a-f0-9]{16}", revision), "Invalid candidate asset revision")
@@ -252,6 +274,18 @@ class HostDriver:
             elif operation == "stop_writers":
                 self.maintenance.assert_closed(nginx)
                 self.stop_run_commands()
+                # Older Compose-built images carried project labels into this
+                # completed, network-none export container. Retire only the
+                # exact candidate exporter after its static-copy evidence exists.
+                if "prepare_candidate_assets" in evidence:
+                    self.evidence(evidence, "prepare_candidate_assets")
+                    ids = self.command(["ps", "-aq", "--no-trunc", "--filter",
+                                        "label=com.docker.compose.project=" + plan["project"]]).decode().split()
+                    for info in json.loads(self.command(["inspect"] + ids)) if ids else []:
+                        if completed_export(info, plan["candidateImage"]):
+                            self.r.publish_json("retired-export-" + uuid.uuid4().hex + ".json",
+                                                {"id": info["Id"], "image": info["Image"], "name": info["Name"]})
+                            self.command(["rm", info["Id"]])
                 if self.j.state["status"] == "PREPARING":
                     WriterFreeze(self.j, self.lock, self.r, self.docker, self.maintenance, nginx).stop(inspected["writers"])
                 else:
@@ -407,6 +441,7 @@ def main():
     parser.add_argument("run_id")
     parser.add_argument("--previous-revision")
     parser.add_argument("--plan-digest")
+    parser.add_argument("--recovery-revision")
     args = parser.parse_args()
     require(os.getuid() == 0 and Path(__file__).resolve().parent == APP / "deploy", "Use the installed managed target")
     require(re.fullmatch(r"compact-[a-z0-9-]{8,48}", args.run_id), "Invalid run ID")
@@ -433,8 +468,13 @@ def main():
         else:
             plan = read_json(runner, runner.describe("plan.json"))
             binding = read_json(runner, runner.describe("binding.json"))
-        require(plan["revision"] == revision and plan["targetId"] == hashlib.sha256(canonical(binding)).hexdigest(), "Plan binding changed")
+        require(plan["targetId"] == hashlib.sha256(canonical(binding)).hexdigest(), "Plan binding changed")
         with Journal(directory / "journal", plan) as journal:
+            validate_controller(args.action, revision, plan["revision"], args.recovery_revision, journal.state["status"])
+            if plan["revision"] != revision:
+                runner.run(["git", "-C", str(APP), "merge-base", "--is-ancestor", plan["revision"], revision])
+                runner.publish_json("recovery-controller-" + uuid.uuid4().hex + ".json",
+                                    {"revision": revision, "planRevision": plan["revision"], "action": args.action})
             driver = HostDriver(journal, lock, runner, binding)
             if args.action == "prepare":
                 prepare(journal, driver)

@@ -261,6 +261,22 @@ Compose с pinned image. `ROLLED_BACK_CLOSED` тоже требует `accept` �
 нельзя: он потеряет новые пользовательские записи. При неудаче восстановления
 оставить maintenance и private evidence; не запускать старый runtime с новой БД.
 
+Если ошибку recovery исправляет новый проверенный merged commit, выполнить
+новый Builder preflight для этого controller SHA и обычный ff-only pull.
+`recover` и последующий `accept` допускают явный `--recovery-revision <SHA
+исходного plan>` при `TASKTOPIA_EXPECTED_REVISION=<новый controller SHA>`.
+Исходный SHA должен быть предком controller; plan, backup, образы и digest
+не меняются. Такой controller не может продолжить forward или принять READY
+кандидата старого плана: только восстановить прежний runtime и принять
+`ROLLED_BACK_CLOSED`. Каждое применение записывается в private evidence.
+После восстановления создаётся новый уникальный prepare run без override.
+
+Временные export/CLI контейнеры имеют отдельный Compose project label.
+Для уже прерванного старого run recovery может удалить только завершённый
+network-none exporter точного candidate image без mounts, после подтверждённой
+копии ресурсов. Его identity сохраняется; volumes, рабочие роли и архивы
+этот cleanup не удаляет.
+
 После открытия: проверить public health/HTML/manifest/hashed assets/PWA/MCP auth,
 вход и открытие задач, карты CITY/COUNTRY/PLANET; наблюдать 5 минут за health,
 5xx, ошибками runtime, OOM/restarts и generation jobs. Любая новая ошибка —
