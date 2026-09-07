@@ -46,6 +46,22 @@ def validate_controller(action, revision, plan_revision, recovery_revision, stat
             "Different controller may only recover an explicitly bound prior plan")
 
 
+def recovery_image(plan, binding):
+    return binding.get("previousRecoveryImage", plan["previousImage"])
+
+
+def retain_image(command, runner, image, run_id, kind):
+    require(kind in ("previous", "candidate") and re.fullmatch(r"sha256:[a-f0-9]{64}", image), "Invalid retained image")
+    tag = "tasktopia-cutover:" + run_id + "-" + kind
+    command(["tag", image, tag])
+    require(json.loads(command(["image", "inspect", tag]))[0]["Id"] == image, "Retained image changed")
+    archive = command(["image", "save", tag], output_name=kind + "-image.tar", timeout=900, max_bytes=8 * 1024 ** 3)
+    runner.verify(archive)
+    command(["image", "load", "--input", str(runner.directory / archive["artifact"])], timeout=900)
+    require(json.loads(command(["image", "inspect", tag]))[0]["Id"] == image, "Image archive restore differs")
+    return {"image": image, "tag": tag, "archive": archive}
+
+
 def external_compose(source, image):
     result = json.loads(canonical(source))
     for role in ROLES:
@@ -128,9 +144,9 @@ class HostDriver:
             if role in ROLES:
                 require(role not in result and labels.get("com.docker.compose.oneoff", "false").lower() == "false"
                         and labels.get("com.docker.compose.project.working_dir") == self.b["appDir"]
-                        and info["Image"] in (self.j.plan["previousImage"], self.j.plan["candidateImage"])
+                        and info["Image"] in (self.j.plan["previousImage"], self.j.plan["candidateImage"], recovery_image(self.j.plan, self.b))
                         and info["HostConfig"]["RestartPolicy"]["Name"] == "unless-stopped", "Unexpected role container")
-                record = self.b["previousCompose" if info["Image"] == self.j.plan["previousImage"] else "candidateCompose"]
+                record = self.b["candidateCompose" if info["Image"] == self.j.plan["candidateImage"] else "previousCompose"]
                 definition = read_json(self.r, record)
                 service = definition["services"][role]
                 env = dict(item.split("=", 1) for item in info["Config"]["Env"])
@@ -216,7 +232,7 @@ class HostDriver:
     def start_roles(self, previous=False):
         if previous:
             existing = self.roles()
-            if set(existing) == set(ROLES) and all(v["Image"] == self.j.plan["previousImage"] for v in existing.values()):
+            if set(existing) == set(ROLES) and all(v["Image"] in (self.j.plan["previousImage"], recovery_image(self.j.plan, getattr(self, "b", {}))) for v in existing.values()):
                 # Original containers retain their verified configuration and
                 # rootfs even if retagging removed an image-store reference.
                 self.command(["start"] + [existing[r]["Id"] for r in ROLES], timeout=90)
@@ -228,12 +244,12 @@ class HostDriver:
             "--force-recreate", *ROLES], timeout=300)
 
     def health(self, previous=False):
-        expected = self.j.plan["previousImage" if previous else "candidateImage"]
+        expected = {self.j.plan["previousImage"], recovery_image(self.j.plan, self.b)} if previous else {self.j.plan["candidateImage"]}
         deadline = time.monotonic() + 180
         while True:
             try:
                 roles = self.roles()
-                require(set(roles) == set(ROLES) and all(info["Image"] == expected and info["State"]["Running"]
+                require(set(roles) == set(ROLES) and len({info["Image"] for info in roles.values()}) == 1 and all(info["Image"] in expected and info["State"]["Running"]
                     and info["State"].get("Health", {}).get("Status") == "healthy" for info in roles.values()), "Roles not healthy")
                 for port in self.b["healthPorts"]:
                     self.r.run([shutil.which("curl"), "--disable", "--fail", "--silent", "--show-error", "--noproxy", "*",
@@ -404,10 +420,25 @@ def prepare_binding(runner, app, previous_revision, revision, run_id):
         actual = dict(item.split("=", 1) for item in roles[role]["Config"]["Env"])
         require(all(actual.get(k) == str(v) for k, v in previous_config["services"][role]["environment"].items()),
                 "Previous runtime environment differs from recovery compose")
-    previous_compose = runner.publish_json("previous-compose.json", external_compose(previous_config, previous))
+    available = command(["image", "ls", "-aq", "--no-trunc"]).decode().split()
+    recovered_image = previous
+    if previous not in available:
+        # A containerd index reference may disappear when latest is replaced.
+        # Rebuild the exact previous source, never pretend it is the lost digest.
+        source = runner.directory / "previous-source"
+        runner.run(["git", "-C", str(app), "worktree", "add", "--detach", str(source), previous_revision], timeout=300)
+        tag = "tasktopia-cutover:" + run_id + "-rebuilt-previous"
+        static_origin = previous_config["services"]["app"]["environment"].get("STATIC_ORIGIN", "")
+        command(["build", "--tag", tag, "--build-arg", "STATIC_ORIGIN=" + static_origin, str(source)], timeout=1800)
+        recovered_image = json.loads(command(["image", "inspect", tag]))[0]["Id"]
+        runner.publish_json("previous-image-rebuild.json", {"revision": previous_revision, "originalImage": previous,
+                                                            "rebuiltImage": recovered_image})
+    previous_retained = retain_image(command, runner, recovered_image, run_id, "previous")
+    previous_compose = runner.publish_json("previous-compose.json", external_compose(previous_config, recovered_image))
     command(["compose", "--project-directory", str(app), "-f", str(app / "docker-compose.yml"), "build", "app"], timeout=1800)
     candidate = json.loads(command(["image", "inspect", config["services"]["app"]["image"]]))[0]["Id"]
     require(previous != candidate, "Candidate image equals previous runtime")
+    candidate_retained = retain_image(command, runner, candidate, run_id, "candidate")
     candidate_compose = runner.publish_json("candidate-compose.json", external_compose(config, candidate))
     pg = roles["postgres"]
     pg_mount = [m for m in pg["Mounts"] if m["Destination"] == "/var/lib/postgresql/data"]
@@ -432,6 +463,7 @@ def prepare_binding(runner, app, previous_revision, revision, run_id):
     binding = {"appDir": str(app), "daemon": daemon, "envSha256": file_hash(app / ".env"), "network": networks[0],
         "database": {"id": pg["Id"], "image": pg["Image"], "volume": pg_mount[0]["Name"]},
         "volumes": volumes, "previousCompose": previous_compose, "candidateCompose": candidate_compose,
+        "previousRecoveryImage": recovered_image, "retainedImages": [previous_retained, candidate_retained],
         "environmentBackup": runner.describe("previous.env"),
         "staticRoot": str(STATIC), "candidateStatic": str(STATIC / "releases" / run_id), "healthPorts": [3000, 3002, 3003],
         "nginx": {"site": site, "enabled": "/etc/nginx/sites-enabled/tasktopia.online.conf", "prefix": "/etc/nginx",
