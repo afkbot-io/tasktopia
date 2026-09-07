@@ -126,14 +126,15 @@ class NginxMaintenance:
             yield text
 
     def _is_canonical(self, text):
-        # Exact deployed official vhost at 135bb4cc; no arbitrary config adoption.
+        # Exact installed 2026-08-21 official vhost, reviewed against current:
+        # only the separate PWA static location is absent. No custom adoption.
         previous_official = (self.spec["domain"] == "tasktopia.online"
             and self.spec["staticRoot"] == "/srv/tasktopia/static"
             and self.spec["certRoot"] == "/etc/letsencrypt"
             and (self.spec["httpPort"], self.spec["httpsPort"]) == (80, 443)
             and not self.spec["loopbackOnly"]
             and hashlib.sha256(text.encode()).hexdigest()
-                == "144b5886784c8518a80efd9b4bd88aa3c2b3a93d43eefc099d67d2e86a4393e9")
+                == "fe826405068ce80d6c55f17677cfa3987955f4662c8cf6aa947f1664305c8a1d")
         return previous_official or text in tuple(self._canonical_sites())
 
     def capture(self):
