@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { BootstrapDto } from "../../src/shared/contracts";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../../src/shared/city-scene-contract";
+import { armWarmCityTiming } from "./helpers/warm-city-timing";
 
 async function expectVisibleGround(page: Page): Promise<{ missingShare: number; sampled: number }> {
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
@@ -96,11 +97,13 @@ test("renders every compact city ground chunk, opens its task, and survives coun
   await expect(host).toHaveAttribute("data-map-active", "false");
   await expect(host).toHaveAttribute("data-animation-active", "false");
   expect(await retainedCanvas!.evaluate(node => node.isConnected)).toBe(true);
-  const warmStart = await page.evaluate(() => performance.now());
+  await expect(page.locator(".map-level-transition")).toHaveCount(0);
+  await armWarmCityTiming(page);
   await country.locator(".country-overview-city").first().click();
   await ready(page);
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
-  const warmReturnMs = await page.evaluate(start => performance.now() - start, warmStart);
+  await expect(host).toHaveAttribute("data-qa-warm-return-ms", /\d/);
+  const warmReturnMs = Number(await host.getAttribute("data-qa-warm-return-ms"));
   expect(warmReturnMs).toBeLessThan(1_000);
   expect(await retainedCanvas!.evaluate(node => node === document.querySelector("canvas[aria-label='Интерактивная карта города']"))).toBe(true);
   expect(sceneRequests.length).toBe(initialSceneRequests);

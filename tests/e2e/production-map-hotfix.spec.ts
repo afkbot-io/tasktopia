@@ -57,13 +57,13 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
 
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   const country = page.locator(".country-overview");
-  for (let step = 0; step < 12 && await country.count() === 0; step += 1) {
-    await page.mouse.wheel(0, 240);
-    await page.waitForTimeout(80);
-  }
+  await page.mouse.wheel(0, 4_000);
   await expect(country).toBeVisible({ timeout: 5_000 });
   await expect(country.locator(".country-overview-city")).toHaveCount(1);
-  expect(Number(await country.getAttribute("data-country-flights"))).toBeGreaterThan(0);
+  // This fixture has one city: there is no second airport for an intercity
+  // flight. The dedicated country-overview fixture covers an actual route.
+  await expect(country).toHaveAttribute("data-country-flights", "0");
+  await expect(country.locator(".country-atlas-aircraft")).toHaveCount(0);
   await expect(country.locator(".country-side-fog")).toHaveCount(0);
   await expect(country).toHaveAttribute("data-country-ready", "true");
   expect(Number(await country.getAttribute("data-country-zoom"))).toBeGreaterThanOrEqual(.55);
@@ -72,10 +72,12 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
 
   const countryBox = await country.boundingBox();
   expect(countryBox).not.toBeNull();
+  await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await page.mouse.move(countryBox!.x + countryBox!.width / 2, countryBox!.y + countryBox!.height / 2);
-  await page.mouse.wheel(0, 600);
-  await expect.poll(async () => Number(await country.getAttribute("data-country-zoom"))).toBe(.55);
-  await page.mouse.wheel(0, 240);
+  // A deliberate new gesture crosses COUNTRY -> PLANET on its first boundary
+  // delta. Do not depend on driver latency to split or join wheel bursts.
+  await page.waitForTimeout(300);
+  await page.mouse.wheel(0, 4_000);
   const planet = page.locator(".planet-atlas");
   await expect(planet).toBeVisible({ timeout: 5_000 });
   expect(Number(await planet.getAttribute("data-globe-zoom"))).toBeGreaterThan(1);
