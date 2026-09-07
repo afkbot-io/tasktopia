@@ -9,12 +9,21 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "deploy"))
-from compact_cutover_host import DeploymentLock, NginxMaintenance, maintenance_config
+from compact_cutover_host import DeploymentLock, NginxMaintenance, maintenance_config, mount_fingerprint
 from compact_cutover_database import CommandRunner
 from compact_cutover_state import CutoverError
 
 
 class HostBoundaryTests(unittest.TestCase):
+    def test_mount_order_is_not_a_configuration_change(self):
+        mounts = [{"Type": "volume", "Name": "uploads", "Destination": "/data/uploads", "RW": True},
+                  {"Type": "volume", "Name": "assets", "Destination": "/app/revisions", "RW": True}]
+        self.assertEqual(mount_fingerprint(mounts), mount_fingerprint(list(reversed(mounts))))
+        changed = [dict(mount) for mount in mounts]
+        changed[0]["RW"] = False
+        self.assertNotEqual(mount_fingerprint(mounts), mount_fingerprint(changed))
+        self.assertNotEqual(mount_fingerprint(mounts), mount_fingerprint(mounts + [mounts[0]]))
+
     def test_uses_same_exclusive_lock_as_updater(self):
         with tempfile.TemporaryDirectory() as temporary:
             app = Path(temporary) / "app"

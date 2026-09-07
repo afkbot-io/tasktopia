@@ -229,6 +229,12 @@ class NginxMaintenance:
         self._reload()
 
 
+def mount_fingerprint(mounts):
+    # Docker inspect returns mount arrays in an unspecified order. Preserve
+    # every field and duplicate, but compare the set order deterministically.
+    return hashlib.sha256(canonical(sorted(mounts, key=canonical))).hexdigest()
+
+
 class WriterFreeze:
     """Остановка только заранее зафиксированных app/mcp/world контейнеров.
 
@@ -268,7 +274,7 @@ class WriterFreeze:
             require(environment.get("RUNTIME_ROLE") == self.ROLES[role], "Unexpected runtime role")
             result[role] = {"id": info["Id"], "image": info["Image"],
                             "configSha256": hashlib.sha256(canonical(info["Config"])).hexdigest(),
-                            "mountsSha256": hashlib.sha256(canonical(info["Mounts"])).hexdigest(),
+                            "mountsSha256": mount_fingerprint(info["Mounts"]),
                             "restartPolicy": info["HostConfig"]["RestartPolicy"]["Name"],
                             "running": info["State"]["Running"]}
         require(set(result) == set(self.ROLES), "Missing app/mcp/world role")
