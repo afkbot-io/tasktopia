@@ -33,7 +33,7 @@ const expectedTools = [
   "archive.get", "archive.record_list", "archive.record_create", "archive.record_update", "archive.record_delete",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
   "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
-  "task.list", "task.get", "task.create", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
+  "task.list", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
   "task.activity", "task.dependency_add", "task.dependency_remove",
   "task.document_list", "task.document_upsert", "task.document_delete", "task.checklist_replace", "task.checklist_item_update",
   "task.link_add", "task.link_remove", "task.attachment_add", "task.attachment_list",
@@ -52,6 +52,7 @@ try {
     ["city.rename", { countryId, cityId: missingId, name: "Renamed city", idempotencyKey: "smoke-rename-city" }],
     ["district.rename", { countryId, districtId: missingId, name: "Renamed district", idempotencyKey: "smoke-rename-district" }],
     ["task.rename", { countryId, taskId: missingId, title: "Renamed task", idempotencyKey: "smoke-rename-task" }],
+    ["task.transfer", { countryId, taskId: missingId, targetDistrictId: missingId, idempotencyKey: "smoke-transfer-task" }],
     ["task.document_upsert", { countryId, taskId: missingId, fileName: "architecture.md", content: "# Missing", idempotencyKey: "smoke-document-upsert" }],
     ["task.document_delete", { countryId, taskId: missingId, documentId: missingId, idempotencyKey: "smoke-document-delete" }],
     ["task.checklist_replace", { countryId, taskId: missingId, items: [{ title: "Missing task" }], idempotencyKey: "smoke-checklist-replace" }],
@@ -184,6 +185,16 @@ try {
     arguments: { countryId, taskId: "00000000-0000-4000-8000-000000000001", confirmTitle: "Missing task", idempotencyKey: "scope-delete-task" },
   });
   if (!forbiddenDelete.isError || !JSON.stringify(forbiddenDelete.content).includes("FORBIDDEN_SCOPE")) throw new Error("Read-only token reached task.delete");
+  const forbiddenTransfer = await readOnlyClient.callTool({
+    name: "task.transfer",
+    arguments: {
+      countryId,
+      taskId: "00000000-0000-4000-8000-000000000001",
+      targetDistrictId: "00000000-0000-4000-8000-000000000001",
+      idempotencyKey: "scope-transfer-task",
+    },
+  });
+  if (!forbiddenTransfer.isError || !JSON.stringify(forbiddenTransfer.content).includes("FORBIDDEN_SCOPE")) throw new Error("Read-only token reached task.transfer");
   console.log("Read-only MCP scopes were enforced as expected.");
 } finally {
   await readOnlyClient.close().catch(() => undefined);
