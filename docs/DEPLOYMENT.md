@@ -221,6 +221,8 @@ Compose не меняют классификацию. Требуются точ�
 private journal и совместное восстановление. Поддерживается только установленный
 `/srv/tasktopia/app` с точной канонической official Nginx/CDN конфигурацией;
 неизвестный конфиг, дополнительные writers/volumes или изменённая `.env` дают отказ.
+Порядок mounts в ответе Docker не является изменением: inventory сортирует
+полные записи перед fingerprint, сохраняя все поля и дубликаты.
 
 После managed merge и успешного Builder preflight выполнить обычный внешний
 `git pull --ff-only origin main`, затем:
