@@ -290,6 +290,14 @@ image ID и проверенными environment/mount/network, запускаю
 `ROLLED_BACK_CLOSED`. Каждое применение записывается в private evidence.
 После восстановления создаётся новый уникальный prepare run без override.
 
+Если старый static publisher изменил mode private run-каталога с 0700 на 0755,
+`recover` с новым проверенным controller возвращает 0700 только для owned
+regular directory внутри по-прежнему private owned parent. Другие режимы,
+symlink и открытый parent дают отказ. Исправление записывается отдельно;
+plan/digest/evidence не меняются, все проверки восстановления обязательны.
+`accept` не исправляет права и не принимает старый READY другим controller.
+Публикация статики больше не меняет права существующего каталога журнала.
+
 Временные export/CLI контейнеры имеют отдельный Compose project label.
 Для уже прерванного старого run recovery может удалить только завершённый
 network-none exporter точного candidate image без mounts, после подтверждённой

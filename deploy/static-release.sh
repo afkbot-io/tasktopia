@@ -16,7 +16,10 @@ prepublish_immutable_dir() {
   install -d -m 0755 "$target_dir"
 
   if [[ -n "$journal_path" ]]; then
-    install -d -m 0755 "$(dirname "$journal_path")"
+    # Release evidence is private; do not broaden an existing backup parent.
+    if [[ ! -d "$(dirname "$journal_path")" ]]; then
+      install -d -m 0700 "$(dirname "$journal_path")"
+    fi
     while IFS= read -r -d '' source_file; do
       relative_path="${source_file#"$source_dir"/}"
       target_file="$target_dir/$relative_path"

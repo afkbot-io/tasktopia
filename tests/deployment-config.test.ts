@@ -422,6 +422,7 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
         utimesSync(revisionPath, index + 1, index + 1);
       }
       mkdirSync(join(active, "game-assets/v5"), { recursive: true });
+      chmodSync(root, 0o700);
       writeFileSync(join(active, "game-assets/v5/manifest.json"), JSON.stringify({ assetRevision: previousRevision }));
       writeFileSync(join(incoming, "assets/new-bundle.js"), "new bundle");
       writeFileSync(join(incoming, "assets/existing-bundle.js"), "existing immutable bytes");
@@ -432,6 +433,8 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
       writeFileSync(join(active, "assets/old-lazy-bundle.js"), "old lazy bundle");
 
       execFileSync("bash", ["-c", 'source "$1"; prepare_static_release_paths "$2" "$3" "$4" 3 "$5"', "bash", staticScript, incoming, active, currentRevision, journal]);
+
+      expect(statSync(root).mode & 0o777).toBe(0o700);
 
       expect(readFileSync(join(active, "assets/new-bundle.js"), "utf8")).toBe("new bundle");
       expect(readFileSync(join(active, "assets/existing-bundle.js"), "utf8")).toBe("existing immutable bytes");
