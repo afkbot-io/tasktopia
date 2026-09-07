@@ -10,6 +10,9 @@ import {
   illuminatedPropKey,
   taskBuildingPlatform,
 } from "../src/shared/catalog";
+import { MICRO_ANIMAL_SPECIES, MICRO_CAR_VARIANTS, MICRO_DIRECTIONS, microAmbientSprite } from "../src/shared/micro-ambient";
+import authoredCatalog from "../assets/pixel-city-pack/catalog/buildings.json";
+import { compactBuildingShapeFamily, STRUCTURAL_BUILDING_FAMILIES_V2 } from "../src/shared/compact-building-families";
 
 const assetDiskPath = (url: string) => resolve(
   "public",
@@ -19,33 +22,33 @@ const assetDiskPath = (url: string) => resolve(
 );
 
 describe("active building catalog", () => {
-  it("exposes reviewed residential families without mixing archive buildings into tasks", () => {
-    const residential = BUILDING_CATALOG.filter((entry) => entry.category === "HOUSE");
-    expect(TASK_BUILDING_CATALOG).toEqual(expect.arrayContaining(residential));
-    expect(TASK_BUILDING_CATALOG.every((entry) => entry.stages.length === 5)).toBe(true);
-    expect(TASK_BUILDING_CATALOG.some((entry) => entry.key === "house-lowrise-gallery")).toBe(true);
-    expect(TASK_BUILDING_CATALOG.some((entry) => entry.tags.includes("archive"))).toBe(false);
-    expect(TASK_BUILDING_CATALOG.some((entry) => entry.tags.includes("private-residential"))).toBe(false);
-    expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.key === "house-lowrise-gallery")!)).toBe("STONE");
-    expect(taskBuildingPlatform(TASK_BUILDING_CATALOG.find((entry) => entry.tags.includes("new-build"))!)).toBe("STONE");
+  it("exposes reviewed compact geometry and the independent fire family without stretching", () => {
+    expect(BUILDING_CATALOG.map((entry) => entry.key)).toEqual(authoredCatalog.buildings.map(entry => entry.key).sort());
+    expect(TASK_BUILDING_CATALOG).toEqual(BUILDING_CATALOG);
+    const entry = TASK_BUILDING_CATALOG.find(entry => entry.key === "compact-apartment-v1")!;
+    expect(entry.footprint).toEqual({ width: 6, height: 6 });
+    expect(entry.spriteSize).toEqual({ width: 48, height: 48 });
+    expect(entry.estimates).toEqual([1, 2, 3, 6]);
+    expect(taskBuildingPlatform(entry)).toBe("STONE");
+    expect(TASK_BUILDING_CATALOG.filter(entry => STRUCTURAL_BUILDING_FAMILIES_V2.some(key => key === entry.key)).map(({ footprint, spriteSize, anchor }) => ({ footprint, spriteSize, anchor }))).toEqual([
+      { footprint: { width: 6, height: 6 }, spriteSize: { width: 48, height: 48 }, anchor: { x: 24, y: 48 } },
+      { footprint: { width: 6, height: 3 }, spriteSize: { width: 48, height: 24 }, anchor: { x: 24, y: 24 } },
+      { footprint: { width: 6, height: 4 }, spriteSize: { width: 48, height: 32 }, anchor: { x: 24, y: 32 } },
+    ]);
   });
 
-  it("keeps the reviewed city-service facades available to the task scheduler", () => {
-    for (const role of ["health-service", "fire-service", "police-service", "parking-service"]) {
-      expect(TASK_BUILDING_CATALOG.some((entry) => entry.serviceRole === role), role).toBe(true);
-    }
-  });
   it("content-addresses every game asset URL for immutable CDN caching", () => {
-    expect(gameAssetUrl("tiles/road.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/tiles\/road\.png$/);
+    expect(gameAssetUrl("atlas/road-v2/road.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/atlas\/road-v2\/road\.png$/);
     expect(gameAssetUrl("/game-assets/v5/props/gazebo.png")).toMatch(/^\/game-assets\/v5\/revisions\/[a-f0-9]{16}\/props\/gazebo\.png$/);
-    const versioned = gameAssetUrl("tiles/road.png");
+    const versioned = gameAssetUrl("atlas/road-v2/road.png");
     expect(gameAssetUrl(versioned)).toBe(versioned);
   });
-  it("contains a diverse, data-driven catalog with valid assets", () => {
-    expect(BUILDING_CATALOG.length).toBeGreaterThanOrEqual(44);
+  it("publishes valid compact building files and placement rules", () => {
+    expect(BUILDING_CATALOG).toHaveLength(authoredCatalog.buildings.length);
     expect(new Set(BUILDING_CATALOG.map((entry) => entry.key)).size).toBe(BUILDING_CATALOG.length);
-    expect(BUILDING_CATALOG.filter((entry) => entry.category === "HOUSE").length).toBeGreaterThanOrEqual(16);
+    expect(BUILDING_CATALOG.find(entry => entry.key === "compact-apartment-v1")?.category).toBe("HOUSE");
     for (const entry of BUILDING_CATALOG) {
+      expect(compactBuildingShapeFamily(entry.key), entry.key).toBeDefined();
       expect(entry.key).toMatch(/^[a-z][a-z0-9-]+$/);
       expect(entry.estimates.length).toBeGreaterThan(0);
       expect(entry.footprint.width).toBeGreaterThan(0);
@@ -57,13 +60,6 @@ describe("active building catalog", () => {
       for (const rule of entry.ruleIds) expect(REGISTERED_BUILDING_RULES.has(rule), `${entry.key}: ${rule}`).toBe(true);
       for (const stage of entry.stages) expect(existsSync(assetDiskPath(stage)), stage).toBe(true);
     }
-  });
-
-  it("offers service and commercial variants without duplicating runtime logic", () => {
-    expect(BUILDING_CATALOG.filter((entry) => entry.serviceRole === "fire-service").length).toBeGreaterThanOrEqual(2);
-    expect(BUILDING_CATALOG.filter((entry) => entry.serviceRole === "police-service").length).toBeGreaterThanOrEqual(2);
-    expect(BUILDING_CATALOG.filter((entry) => entry.key.includes("gas-station") || entry.key.includes("service-plaza")).length).toBeGreaterThanOrEqual(3);
-    expect(BUILDING_CATALOG.some((entry) => entry.key === "highrise-mixed-use-market" && entry.tags.includes("mixed-use"))).toBe(true);
   });
 
   it("registers grid-aligned park furniture and a multi-cell playground", () => {
@@ -108,64 +104,46 @@ describe("active building catalog", () => {
     }
   });
 
-  it("registers six-cell buses for three-cell transit roads", () => {
-    expect(PROP_CATALOG["city-bus-horizontal"]).toMatchObject({ size: { width: 56, height: 24 }, footprint: { width: 7, height: 3 } });
-    expect(PROP_CATALOG["city-bus-north"]).toMatchObject({ size: { width: 24, height: 56 }, footprint: { width: 3, height: 7 } });
-    expect(PROP_CATALOG["city-bus-south"]).toMatchObject({ size: { width: 24, height: 56 }, footprint: { width: 3, height: 7 } });
-    expect(PROP_CATALOG["city-bus-vertical"]).toBeUndefined();
-  });
-
-  it("registers three crisp world-space flyby variants", () => {
-    for (const key of ["airplane-small", "airplane-courier", "airplane-twin"]) {
-      expect(PROP_CATALOG[key]).toMatchObject({ size: { width: 32, height: 16 }, footprint: { width: 1, height: 1 } });
-      expect(existsSync(assetDiskPath(PROP_CATALOG[key]!.path))).toBe(true);
+  it("uses native directional micro cars without a retired oversized bus fallback", () => {
+    for (const heading of ["horizontal", "vertical", "north", "south"]) {
+      expect(PROP_CATALOG[`city-bus-${heading}`]).toBeUndefined();
     }
-    for (const species of ["fox", "deer", "rabbit", "boar"]) for (const frame of ["a", "b", "c"]) {
-      expect(PROP_CATALOG[`animal-${species}-east-${frame}`]).toBeDefined();
-    }
-    expect(PROP_CATALOG["animal-fox-north-a"]?.size).toEqual({ width: 16, height: 16 });
-    expect(PROP_CATALOG["animal-fox-east-a"]?.size).toEqual({ width: 16, height: 16 });
-    expect(PROP_CATALOG["animal-deer-north-a"]?.size).toEqual({ width: 16, height: 24 });
-    expect(PROP_CATALOG["animal-deer-east-a"]?.size).toEqual({ width: 16, height: 24 });
-  });
-
-  it("registers crisp incident-response sprites on the same pixel grid", () => {
-    for (const key of ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]) {
-      expect(PROP_CATALOG[key], key).toMatchObject({
-        size: { width: 56, height: 24 },
-        footprint: { width: 7, height: 3 },
-      });
-    }
-    for (const key of ["incident-flame-a", "incident-flame-b", "incident-smoke-a", "incident-smoke-b"]) {
-      expect(PROP_CATALOG[key]?.size.width, key).toBe(8);
-      expect(PROP_CATALOG[key]?.size.height % 8, key).toBe(0);
-      expect(existsSync(assetDiskPath(PROP_CATALOG[key]!.path)), key).toBe(true);
+    for (const variant of MICRO_CAR_VARIANTS) for (const direction of MICRO_DIRECTIONS) {
+      const sprite = microAmbientSprite("car", variant, direction);
+      expect(sprite).toMatchObject({ width: 8, height: 8, anchor: { x: 4, y: 4 }, direction, frameCount: 1 });
+      expect(existsSync(assetDiskPath(sprite.url))).toBe(true);
     }
   });
 
-  it("keeps moving residents on the enlarged authored scale and gives crewed boats a slender footprint", () => {
-    const walkerSize = PROP_CATALOG["walker-south-a"]?.size;
-    expect(walkerSize).toEqual({ width: 16, height: 24 });
-    for (const direction of ["north", "east", "south", "west"]) {
-      for (const frame of ["a", "b", "c"]) {
-        expect(PROP_CATALOG[`walker-${direction}-${frame}`]?.size).toEqual(walkerSize);
+  it("registers directional micro aircraft and one static native pose per animal", () => {
+    for (const direction of MICRO_DIRECTIONS) {
+      const sprite = microAmbientSprite("aircraft", "regional", direction);
+      expect(sprite).toMatchObject({ width: 16, height: 16, anchor: { x: 8, y: 8 }, direction, frameCount: 1 });
+      expect(existsSync(assetDiskPath(sprite.url))).toBe(true);
+    }
+    for (const species of MICRO_ANIMAL_SPECIES) {
+      const sprite = microAmbientSprite("animal", species);
+      expect(sprite).toMatchObject({ width: 8, height: 8, anchor: { x: 4, y: 4 }, direction: "static", frameCount: 1 });
+      expect(existsSync(assetDiskPath(sprite.url))).toBe(true);
+      for (const direction of MICRO_DIRECTIONS) {
+        expect(microAmbientSprite("animal", species, direction)).toBe(sprite);
+        for (const frame of ["a", "b", "c"]) expect(PROP_CATALOG[`animal-${species}-${direction}-${frame}`]).toBeUndefined();
       }
     }
-    for (const key of ["fisher-north", "fisher-east", "fisher-south", "fisher-west", "resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"]) {
-      expect(PROP_CATALOG[key]?.size, key).toEqual({ width: 16, height: 24 });
-      expect(PROP_CATALOG[key]?.footprint, key).toEqual({ width: 1, height: 1 });
-    }
+  });
+
+  it("keeps retired incident PNGs and oversized engines out of the active catalog", () => {
+    expect(Object.keys(PROP_CATALOG).filter(key => key.startsWith("fire-engine-"))).toEqual([]);
+    expect(Object.keys(PROP_CATALOG).filter(key => /^incident-(flame|smoke)-/.test(key))).toEqual([]);
+  });
+
+  it("does not expose retired moving people through the static prop catalog", () => {
+    expect(Object.keys(PROP_CATALOG).filter((key) => /^(walker|resident|fisher)-/.test(key))).toEqual([]);
     expect(PROP_CATALOG["boat-horizontal-a"]).toMatchObject({ size: { width: 24, height: 8 }, footprint: { width: 3, height: 1 } });
     expect(PROP_CATALOG["boat-vertical-a"]).toMatchObject({ size: { width: 8, height: 24 }, footprint: { width: 1, height: 3 } });
   });
 
-  it("registers three authored animation frames for each bicycle and scooter view", () => {
-    for (const family of ["cyclist", "scooter"] as const) {
-      for (const frame of ["a", "b", "c"] as const) {
-        expect(PROP_CATALOG[`${family}-horizontal-${frame}`]).toMatchObject({ size: { width: 24, height: 24 }, footprint: { width: 2, height: 1 } });
-        expect(PROP_CATALOG[`${family}-north-${frame}`]).toMatchObject({ size: { width: 16, height: 24 }, footprint: { width: 1, height: 1 } });
-        expect(PROP_CATALOG[`${family}-south-${frame}`]).toMatchObject({ size: { width: 16, height: 24 }, footprint: { width: 1, height: 1 } });
-      }
-    }
+  it("does not expose old rider gait frames or oversized buses", () => {
+    expect(Object.keys(PROP_CATALOG).filter((key) => /^(cyclist|scooter|city-bus)-/.test(key))).toEqual([]);
   });
 });

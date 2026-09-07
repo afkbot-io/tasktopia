@@ -1,0 +1,42 @@
+{
+  "key": "compact-blue-bay-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Separate source, native48x48 and nearest-neighbour8x inspection of stages5,4,3; shared-baseline sequence inspected afterwards. Quantitative mask evidence is in report.json.",
+  "projection": {
+    "camera": "High45-degree frontal-top art projection; orthogonal roof/floor axes and no receding side facade.",
+    "roofDepthPx": 30,
+    "roofRegionBoundsPx": [0, 3, 48, 33],
+    "facadeHeightPx": 15,
+    "floorStepPx": 5,
+    "windowPaneSizePx": [2, 2],
+    "doorLeafSizePx": [4, 3],
+    "doorFrameSizePx": [7, 5],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "65da390a341f772d2e088e0399cb77d1be1dbee5777a4bf053d2ea41b626fb26",
+      "runtimeSha256": "fe3ba736548afe294f6ce2175133bdd93ce6a73901400cfc75d328f488e0efb4",
+      "notes": "Distinct blue facade, repeated cream balcony rails, three skylights and a right-side inset terrace; broad slate roof remains dominant. No scenery, construction kit or black baseline."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "53d0ccea180257e20f856ebf6fa1a26607befd025d8bf9c20642e5b2499c7f45",
+      "runtimeSha256": "c9ba4f4e4636c9e79b485ec280566b9d7c31c8433fac635dd8ab8bdd4d72ece2",
+      "notes": "Left half of bare roof remains, right half exposes opaque rooms and materials. Rooftop equipment and finished window glass are absent. Same balconies, entrance and foundation."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "f0107ff9236c37973322891d789469a364bf539e1c78c530e96b6c7f8d0cef2d",
+      "runtimeSha256": "40b1dd21ef97fc0d7dce4b6d38b2cd200735e49f6bb60b181cce8ddaeee651fe",
+      "notes": "No roof; opaque deep room floors, parallel cream partitions, brick/material piles and incomplete stepped upper masonry. Two lower balcony levels remain structural. Native foundation mask exactly matches5; source outlines vary by sub-native-pixel amounts, not claimed identical."
+    }
+  },
+  "runtimeIntegrationReviewOwner": "Live map QA covers composed stages0–2, fences, entrances, neighboring lots, badges and zoom."
+}

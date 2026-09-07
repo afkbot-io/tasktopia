@@ -1,0 +1,58 @@
+{
+  "key": "compact-row-v1",
+  "reviewedAt": "2026-09-05",
+  "reviewMethod": "Native pixels and nearest-neighbour8x per-stage and shared-baseline sequence inspection, independently reviewed by parent agent. Numeric alpha/foundation registration audited separately. Runtime landscape remains integration gate.",
+  "projection": {
+    "camera": "Accepted high45-degree frontal-top orthographic; all structural lines axis aligned; no receding side facade.",
+    "roofDepthPx": 17,
+    "facadeHeightPx": 5,
+    "floorStepPx": 5,
+    "floorCount": 1,
+    "windowPaneSizePx": [
+      2,
+      2
+    ],
+    "doorLeafSizePx": [
+      4,
+      4
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true,
+    "windowOpeningSizePx": [
+      2,
+      2
+    ],
+    "windowGroupWithSillPx": [
+      3,
+      3
+    ]
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "runtimeSha256": "d3b03d6233cab654a328adfd437282c87fc65a6dd3e08aba6aa092c821abb292",
+      "sourceSha256": "6c54c3dd9e1e7362439f213a1070a3560084800ab3c1f5e86618c840799ebcf5",
+      "notes": "Roof absent; opaque shaded rooms, axis-aligned simplified wall caps, rough facade masonry patches and internal materials. About half assembled by missing roof/finish, not shrinking the physical floor. Foundation/centre/baseline exact on native grid."
+    },
+    "4": {
+      "accepted": true,
+      "runtimeSha256": "7cbc873e50ef6ab9a6ea3dc2004b7366940012fd910ea0f5cedb969ded41d19e",
+      "sourceSha256": "a8e86236f2e6ffa34f184d11194c36fb56338577c21334de7aff8515267c9894",
+      "notes": "Same frame and openings; approximately55% left roof retained, dark unfinished window apertures; no finished rooftop equipment. Right interior stays opaque and material piles contained."
+    },
+    "5": {
+      "accepted": true,
+      "runtimeSha256": "9aca1fd61ea972e56098125c39b85137e267366450140bf3b1ab38f3d0849a0b",
+      "sourceSha256": "87d85dba5abe0c3677f27ba7ed4445a38fc642cd9f58ab54b72c9c18f7eeaa7a",
+      "notes": "Finished low-rise building with muted beige/olive bands, slate dominant roof, restrained warm rim and tiny teal windows; no heavy baseline."
+    }
+  }
+}

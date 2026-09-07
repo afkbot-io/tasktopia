@@ -1,0 +1,117 @@
+{
+  "key": "compact-rust-loft-v1",
+  "reviewedAt": "2026-09-07",
+  "reviewScope": "All3 source/native stages and complete reverse sequence independently approved. Source-family freeze only; no catalog/runtime publication in this slice.",
+  "reviewMethod": "Parent independently viewed native1x and8x for each stage, then the complete3/4/5 sequence; measurement and exact source/native hashes recorded.",
+  "projection": {
+    "camera": "High45axisaligned frontal-top compactindustrialloft, no receding sidefacade.",
+    "roofDepthPx": 30,
+    "openPrimaryRoofDepthPx": 25,
+    "roofRegionBoundsPx": [
+      0,
+      4,
+      48,
+      34
+    ],
+    "openPrimaryRoofBoundsPx": [
+      1,
+      6,
+      47,
+      31
+    ],
+    "facadeHeightPx": 14,
+    "floorStepPx": 4,
+    "windowPaneSizePxRange": [
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "windowRowsPx": [
+      [
+        36,
+        37
+      ],
+      [
+        40,
+        41
+      ],
+      [
+        44,
+        45
+      ]
+    ],
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "doorLeafBoundsPx": [
+      22,
+      44,
+      26,
+      47
+    ],
+    "doorFrameBoundsPx": [
+      20,
+      43,
+      27,
+      48
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "sameCameraAssertionScope": "Parent independently compared and accepted all3 native stages; same high45 screen axes, full opaque lot, baseline and entrance.",
+    "noHeavyBlackBaseline": true,
+    "stage3WindowRowsPx": [
+      [
+        40,
+        41
+      ],
+      [
+        44,
+        45
+      ]
+    ],
+    "stage3WindowCount": 14
+  },
+  "backgroundRecovery": {
+    "mode": "existing magenta-chroma-family",
+    "sourceAdditionalRemovedPixels": 954,
+    "enclosedRemovedPixels": 0,
+    "maxSourceBoundaryDepth": 1,
+    "allRemovedComponentsTouchExterior": true,
+    "evidence": "stage5F-measurements.json",
+    "newThreshold": false
+  },
+  "paletteReview": "Parent explicitly accepted brightergoldroofstairhousing/MAXCOVERAGE materialaccent andtealseparatepanes; originalindustrialbrickpiers/steelbands retained. No sourcepainting.",
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "03324a2bf12c4a06a2faf1f48a76b15e1531f070ef01dc3adca99a83be3f019b",
+      "runtimeSha256": "130d76793395dfcae09add458d54ad1c8e67458099a6a20f2c8ebe7df0561506",
+      "notes": "Parent approved native1x/8x and all3 sequence: full opaque parcel with eight roofless rooms, partial upperfront masonry and one incomplete north cap, retained14 small lower windows/exact4x3 door inside7x5 frame, same foundation. AI-only cap removal cleans exterior fringe; no frame/key/geometry relaxation."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "ac6b136c1722c4ac0ab7eacfc4de4b60bed60b59ec107d81363dc49107bc8c2d",
+      "runtimeSha256": "bfb7daf2c5ad196f60a300d682f1946dd1b9df75e9245da7c860ae907184d323",
+      "notes": "Parent independently approvednative1x/8x: lefthalfroof/rightfouropaquerooms+partitions/nofinishedroofgear; tinydarkaligned22openings, flat7x5portal4x3leaf; samefootprint/facade/camera."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "4630de22ad6eee6c5bf273c327b6be936ddd4f6451b8760bc1439fb4e4333102",
+      "runtimeSha256": "27b8eaa21d168277b8f9fdf6fe9d472ef1a9e8bd50255f2d583adeac15d04d19",
+      "notes": "Parent approvedroofdominantcompressed3floorloft, brickpiers/steelbands/separatepanes/flat7x5portal4x3leaf; native/windowregistration andexistingbroadsourcekey proof reviewed."
+    }
+  }
+}

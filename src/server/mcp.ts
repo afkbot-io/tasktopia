@@ -1,6 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 import { createMcpHandler, McpServer, ResourceTemplate, type AuthInfo, type McpHttpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { TASK_PARK_VARIANTS } from "../shared/task-park-catalog";
 import { BUILDING_CATALOG } from "../shared/catalog";
 import type { AppService } from "./app-service";
 import { DomainError } from "./app-service";
@@ -15,8 +16,8 @@ export type McpIdentity = { userId: string; tokenId: string; scopes: McpScope[] 
 export type McpAuthentication = { identity: McpIdentity; authInfo: AuthInfo };
 
 /** Shareable web link to the task card; humans open it in the app. */
-function taskUrl(task: Pick<TaskDto, "taskNumber">): string {
-  return `${config.APP_ORIGIN}/task/${task.taskNumber}`;
+function taskUrl(countryId: string, task: Pick<TaskDto, "id" | "taskNumber">): string {
+  return `${config.APP_ORIGIN}/task/${task.taskNumber}?${new URLSearchParams({ countryId, taskId: task.id })}`;
 }
 
 function response(data: unknown) {
@@ -74,7 +75,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "The State Archive is a compact country-level reference, not a city or task backlog. Use archive records for durable project rules, repository/environment links, architecture summaries and reusable templates; keep active work in tasks.",
       "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
       "Task implementation materials are Markdown documents. Use task.document_upsert for the four standard files and any extra .md files; use task.checklist_replace and task.checklist_item_update to keep execution progress current.",
-      "Every task has a human-facing number and url; share the url when reporting to people. Attach merge request links with task.link_add and binary evidence with task.attachment_add. The human UI is read-only; agents own task mutations.",
+      "Every task has a human-facing number and canonical country/UUID url; share the url when reporting to people. Attach merge request links with task.link_add and binary evidence with task.attachment_add.",
+      "Use task.transfer to move an existing task between sprints of the same city. Identity and history survive; every former site remains permanently reserved with a link to the task. Deleting a task leaves permanent ruins, never a reusable parcel.",
       "Use task.dependency_add to express task order (must be in the same city); task.activity returns the full audit trail of events, comments, defects, attachments and dependencies.",
       "Linked defects use OPEN -> IN_PROGRESS -> VERIFYING -> FIXED. Keep the parent task in TESTING while an ordinary linked defect is repaired; completion is blocked until every linked defect is FIXED.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
@@ -123,7 +125,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       await requireCountryAccess(db, identity, countryId, "country:read");
       const job = await getWorldGenerationJob(db, jobId);
       if (!job || job.countryId !== countryId) throw new DomainError("NOT_FOUND", "Операция генерации не найдена");
-      return response(job);
+      return response(job.status === "COMPLETED" ? { ...job, result: await service.rehydrateGenerationResult(countryId, job.operation, job.result) } : job);
     } catch (error) { return failure(error); }
   });
 
@@ -190,7 +192,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.delete", { description: "Безвозвратно удалить город со всеми районами, задачами и городскими объектами. Для защиты передайте точное текущее название.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
+  server.registerTool("city.delete", { description: "Безвозвратно удалить город, районы и задачи; постоянная история занятых участков остаётся в стране. Для защиты передайте точное текущее название.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
     try { await requireCountryAccess(db, identity, input.countryId, "cities:write"); return response(await service.deleteCity(input.countryId, input)); }
     catch (error) { return failure(error); }
   });
@@ -227,7 +229,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.delete", { description: "Безвозвратно удалить район и все его задачи. Для защиты передайте точное текущее название; если район был активным, сервер активирует следующий плановый.", inputSchema: z.object({ countryId: countryIdSchema, districtId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
+  server.registerTool("district.delete", { description: "Безвозвратно удалить район и все его задачи, сохранив постоянные руины на прежних участках. Для защиты передайте точное текущее название; если район был активным, сервер активирует следующий плановый.", inputSchema: z.object({ countryId: countryIdSchema, districtId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
     try { await requireCountryAccess(db, identity, input.countryId, "districts:write"); return response(await service.deleteDistrict(input.countryId, input)); }
     catch (error) { return failure(error); }
   });
@@ -251,7 +253,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     try {
       await requireCountryAccess(db, identity, countryId, "tasks:read");
       const task = await service.getTask(countryId, taskId);
-      return response({ ...task, url: taskUrl(task) });
+      return response({ ...task, url: taskUrl(countryId, task) });
     }
     catch (error) { return failure(error); }
   });
@@ -269,7 +271,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().optional(),
       buildingHint: z.string().max(100).optional(), assigneeEmail: z.string().email().optional(),
       visualKind: z.enum(["BUILDING", "PARK"]).optional().describe("PARK создаёт привязанный к задаче парк с теми же пятью стадиями"),
-      parkVariant: z.enum(["urban-formal", "urban-community", "urban-central", "urban-botanical", "urban-amusement", "urban-park"]).optional(),
+      parkVariant: z.enum(TASK_PARK_VARIANTS).optional().describe("Вид общественного пространства: urban-pocket — малый сквер, urban-large — большой парк, urban-fountain/monument — площадь с фонтаном/памятником; каждый занимает слот задачи и проходит пять стадий"),
       assigneeRole: z.string().max(80).optional().describe("Роль ответственного, например backend-lead, ai-agent:hermes, qa"),
       forUserEmail: z.string().email().optional().describe("Заказчик/владелец задачи — для кого делается работа"),
       idempotencyKey: z.string().min(4).max(160),
@@ -287,7 +289,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.countryId, input.assigneeEmail), assigneeRole: input.assigneeRole,
                                                 forUserId: await resolveMember(input.countryId, input.forUserEmail), idempotencyKey: input.idempotencyKey,
                                               });
-      return response({ ...task, url: taskUrl(task), workload: await service.getDistrictWorkload(input.countryId, task.districtId) });
+      return response({ ...task, url: taskUrl(input.countryId, task), workload: await service.getDistrictWorkload(input.countryId, task.districtId) });
     } catch (error) { return failure(error); }
   });
 
@@ -298,6 +300,20 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   }, async (input) => {
     try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); return response(await service.renameTask(input.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
     catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.transfer", {
+    description: "Перенести существующую задачу в другой спринт того же города. ID, номер, стадия и история сохраняются; прежний участок навсегда остаётся занят маркером со ссылкой на текущую задачу.",
+    inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), targetDistrictId: z.string().uuid(),
+      comment: z.string().trim().max(4000).optional(), idempotencyKey: z.string().min(4).max(160) }).strict(),
+    annotations: { idempotentHint: true, destructiveHint: true },
+  }, async (input) => {
+    try {
+      await requireCountryAccess(db, identity, input.countryId, "tasks:write");
+      const { countryId, ...command } = input;
+      const task = await service.transferTask(countryId, { ...command, actor: actorName, actorUserId: identity.userId });
+      return response({ ...task, url: taskUrl(input.countryId, task) });
+    } catch (error) { return failure(error); }
   });
 
   server.registerTool("task.update_fields", {
@@ -353,7 +369,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("task.delete", {
-    description: "Безвозвратно удалить задачу и освободить её участок под новую задачу. Для защиты передайте точный текущий заголовок.",
+    description: "Безвозвратно удалить задачу, сохранив постоянные руины и краткую историю на её участке. Участок никогда не используется повторно. Для защиты передайте точный текущий заголовок.",
     inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), confirmTitle: z.string().min(2).max(160), idempotencyKey: z.string().min(4).max(160) }),
     annotations: { destructiveHint: true, idempotentHint: true },
   }, async (input) => {
@@ -525,7 +541,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     try {
       await requireCountryAccess(db, identity, input.countryId, "tasks:write");
       const task = await service.addTaskLink(input.countryId, { ...input, actor: actorName, actorUserId: identity.userId });
-      return response({ taskNumber: task.taskNumber, mergeRequests: task.mergeRequests, url: taskUrl(task) });
+      return response({ taskNumber: task.taskNumber, mergeRequests: task.mergeRequests, url: taskUrl(input.countryId, task) });
     } catch (error) { return failure(error); }
   });
 
@@ -537,7 +553,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     try {
       await requireCountryAccess(db, identity, input.countryId, "tasks:write");
       const task = await service.removeTaskLink(input.countryId, { ...input, actor: actorName, actorUserId: identity.userId });
-      return response({ taskNumber: task.taskNumber, mergeRequests: task.mergeRequests, url: taskUrl(task) });
+      return response({ taskNumber: task.taskNumber, mergeRequests: task.mergeRequests, url: taskUrl(input.countryId, task) });
     } catch (error) { return failure(error); }
   });
 

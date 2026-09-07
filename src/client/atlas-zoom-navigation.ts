@@ -1,16 +1,50 @@
-export type AtlasZoomDirection = "IN" | "OUT";
 export type AtlasRect = { minX: number; minY: number; maxX: number; maxY: number };
-export type AtlasEntryHysteresisState = { armed: boolean };
-export type AtlasZoomBoundaryState = {
-  direction: AtlasZoomDirection | null;
-  count: number;
-  lastEventAt: number;
-};
+type AtlasWheelInput = { at: number; deltaY: number };
+export type AtlasWheelNavigation = ReturnType<typeof createAtlasWheelNavigation>;
 
-export function initialAtlasZoomBoundary(): AtlasZoomBoundaryState {
-  return { direction: null, count: 0, lastEventAt: 0 };
+/** Shared by all three levels and App capture, including renderer preload.
+ * The gap recognizes a new input burst; it never delays the first transition.
+ */
+export function createAtlasWheelNavigation() {
+  let lastAt = -Infinity;
+  let direction = 0;
+  let consumed = false;
+  const observe = (event: AtlasWheelInput) => {
+    if (!Number.isFinite(event.at) || !Number.isFinite(event.deltaY) || event.deltaY === 0) return;
+    const nextDirection = Math.sign(event.deltaY);
+    if (nextDirection !== direction || event.at - lastAt > 220) consumed = false;
+    direction = nextDirection; lastAt = event.at;
+  };
+  return {
+    observe,
+    consume(event: AtlasWheelInput, eligible: boolean): boolean {
+      observe(event);
+      if (!eligible || consumed || !Number.isFinite(event.deltaY) || event.deltaY === 0) return false;
+      consumed = true;
+      return true;
+    },
+  };
 }
 
+export function atlasHitTarget<T>(point: { x: number; y: number }, targets: readonly T[], rectangles: (target: T) => readonly AtlasRect[]): T | undefined {
+  return targets.find(target => rectangles(target).some(rect => point.x >= rect.minX && point.x < rect.maxX && point.y >= rect.minY && point.y < rect.maxY));
+}
+
+export function atlasPointInsideEllipse(point: { x: number; y: number }, ellipse: AtlasRect): boolean {
+  const rx = Math.max(1, (ellipse.maxX - ellipse.minX) / 2);
+  const ry = Math.max(1, (ellipse.maxY - ellipse.minY) / 2);
+  return ((point.x - ellipse.minX - rx) / rx) ** 2 + ((point.y - ellipse.minY - ry) / ry) ** 2 <= 1;
+}
+
+/** Client pixels -> SVG xMidYMid meet coordinates, including its letterbox. */
+export function atlasViewBoxPoint(point: { x: number; y: number }, viewport: AtlasRect, viewBox: { width: number; height: number }): { x: number; y: number } {
+  const width = viewport.maxX - viewport.minX, height = viewport.maxY - viewport.minY;
+  const scale = Math.max(.001, Math.min(width / viewBox.width, height / viewBox.height));
+  return {
+    x: (point.x - viewport.minX - (width - viewBox.width * scale) / 2) / scale,
+    y: (point.y - viewport.minY - (height - viewBox.height * scale) / 2) / scale,
+  };
+}
 export function continuousAtlasZoom(
   current: number,
   deltaY: number,
@@ -29,36 +63,6 @@ export function atlasTargetCoverage(target: AtlasRect, viewport: AtlasRect): num
   return Math.max(0, Math.min(1, Math.max(width / viewportWidth, height / viewportHeight)));
 }
 
-export function initialAtlasEntryHysteresis(): AtlasEntryHysteresisState {
-  return { armed: true };
-}
-
-export function returnedParentEntryHysteresis(): AtlasEntryHysteresisState {
-  return { armed: false };
-}
-
-export function advanceAtlasEntryHysteresis(
-  state: AtlasEntryHysteresisState,
-  event: {
-    direction: AtlasZoomDirection;
-    zoom: number;
-    rearmZoom: number;
-    coverage: number;
-    enterCoverage: number;
-  },
-): { state: AtlasEntryHysteresisState; triggered: boolean } {
-  if (!state.armed) {
-    if (event.direction === "OUT" && event.zoom <= event.rearmZoom) {
-      return { state: initialAtlasEntryHysteresis(), triggered: false };
-    }
-    return { state, triggered: false };
-  }
-  if (event.direction === "IN" && event.coverage >= event.enterCoverage) {
-    return { state: returnedParentEntryHysteresis(), triggered: true };
-  }
-  return { state, triggered: false };
-}
-
 function rectSpan(min: number, max: number): number {
   return Math.max(1, max - min + 1);
 }
@@ -67,24 +71,7 @@ export function mapAtlasFocusPoint(point: { x: number; y: number }, from: AtlasR
   const normalizedX = Math.max(0, Math.min(1, (point.x - from.minX) / rectSpan(from.minX, from.maxX)));
   const normalizedY = Math.max(0, Math.min(1, (point.y - from.minY) / rectSpan(from.minY, from.maxY)));
   return {
-    x: Math.round(to.minX + normalizedX * rectSpan(to.minX, to.maxX)),
-    y: Math.round(to.minY + normalizedY * rectSpan(to.minY, to.maxY)),
-  };
-}
-
-export function advanceAtlasZoomBoundary(
-  state: AtlasZoomBoundaryState,
-  event: { at: number; atBoundary: boolean; direction: AtlasZoomDirection },
-  requiredSteps = 2,
-  resetAfterMs = 700,
-): { state: AtlasZoomBoundaryState; triggered: boolean } {
-  if (!event.atBoundary) return { state: initialAtlasZoomBoundary(), triggered: false };
-  const continues = state.direction === event.direction
-    && event.at - state.lastEventAt <= resetAfterMs;
-  const count = continues ? state.count + 1 : 1;
-  if (count >= requiredSteps) return { state: initialAtlasZoomBoundary(), triggered: true };
-  return {
-    state: { direction: event.direction, count, lastEventAt: event.at },
-    triggered: false,
+    x: Math.min(to.maxX, Math.round(to.minX + normalizedX * rectSpan(to.minX, to.maxX))),
+    y: Math.min(to.maxY, Math.round(to.minY + normalizedY * rectSpan(to.minY, to.maxY))),
   };
 }

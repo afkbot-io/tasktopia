@@ -1,0 +1,193 @@
+{
+  "key": "compact-police-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    314,
+    180,
+    1228,
+    846
+  ],
+  "uniformScale": 0.04804804804804805,
+  "targetSize": [
+    44,
+    32
+  ],
+  "offset": [
+    2,
+    0
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "ba1cdb72addb88fedfea902d919e685d99b10f158f941050580d5e974b29673c",
+      "runtimeSha256": "ccf19ef0769db40c6f9542da4336897d388c99f66f032c0bdec74afd7721ed64",
+      "sourceBounds": [
+        314,
+        180,
+        1228,
+        846
+      ],
+      "occupiedBoundsPx": [
+        2,
+        0,
+        46,
+        32
+      ],
+      "occupiedSizePx": [
+        44,
+        32
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "8e695625b4867167eb7eae48a2dd6fbaa64bdc2105796896e6398774a5049668",
+      "runtimeSha256": "4d41cba4e6fb4e635ba53b1e7c5af0d467100b3b3dd992376065b2108cd18174",
+      "sourceBounds": [
+        314,
+        182,
+        1227,
+        846
+      ],
+      "occupiedBoundsPx": [
+        2,
+        0,
+        46,
+        32
+      ],
+      "occupiedSizePx": [
+        44,
+        32
+      ],
+      "paletteColors": 29,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "b48d1c29974ecef601503a1382345c574d8a5003e6fe353823993e099beb3763",
+      "runtimeSha256": "1811919185fdcb93b36af92243dbc19b5018bd89dd08123768b76e6c30df62fd",
+      "sourceBounds": [
+        313,
+        203,
+        1227,
+        846
+      ],
+      "occupiedBoundsPx": [
+        2,
+        1,
+        46,
+        32
+      ],
+      "occupiedSizePx": [
+        44,
+        31
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-police-v1",
+    "reviewedAt": "2026-09-06",
+    "reviewMethod": "Main agent inspected native per-stage previews, nearest-neighbour8x3/4/5sequences and center-entrance pixel rows. Per-family architecture envelope is approved independently before publication; no transformation other than common-frame normalization.",
+    "projection": {
+      "camera": "High45-degree frontal-top orthographic convention; axis-aligned structural edges, no side facade.",
+      "roofDepthPx": 22,
+      "facadeHeightPx": 10,
+      "floorStepPx": 5,
+      "floorCount": 2,
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        6,
+        5
+      ],
+      "doorLeafRectPx": [
+        22,
+        29,
+        4,
+        3
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "b48d1c29974ecef601503a1382345c574d8a5003e6fe353823993e099beb3763",
+        "runtimeSha256": "1811919185fdcb93b36af92243dbc19b5018bd89dd08123768b76e6c30df62fd",
+        "notes": "Independent narrow44pxpolice shell centered in6x4parcel; two transparent columns on either side are deliberate side clearance, not stage drift. Blue facade bands, stepped parapet and badge distinguish the finished roof. Reverse stages preserve facade and have no finished badge/antenna. No roof, opaque rooms, incomplete masonry and internal materials."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "8e695625b4867167eb7eae48a2dd6fbaa64bdc2105796896e6398774a5049668",
+        "runtimeSha256": "4d41cba4e6fb4e635ba53b1e7c5af0d467100b3b3dd992376065b2108cd18174",
+        "notes": "Independent narrow44pxpolice shell centered in6x4parcel; two transparent columns on either side are deliberate side clearance, not stage drift. Blue facade bands, stepped parapet and badge distinguish the finished roof. Reverse stages preserve facade and have no finished badge/antenna. Approximately half bare roof, dark unglazed facade openings; no completed roof equipment."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "ba1cdb72addb88fedfea902d919e685d99b10f158f941050580d5e974b29673c",
+        "runtimeSha256": "ccf19ef0769db40c6f9542da4336897d388c99f66f032c0bdec74afd7721ed64",
+        "notes": "Independent narrow44pxpolice shell centered in6x4parcel; two transparent columns on either side are deliberate side clearance, not stage drift. Blue facade bands, stepped parapet and badge distinguish the finished roof. Reverse stages preserve facade and have no finished badge/antenna. Finished unique service design."
+      }
+    },
+    "pendingIntegration": [
+      "Freeze and approve the exact production release revision/environment; local visual acceptance is not deployment authorization."
+    ],
+    "runtimeReview": {
+      "reviewedAt": "2026-09-06",
+      "acceptedStages": [
+        5
+      ],
+      "screenshot": "screenshots/compact-rc-service-art/compact-police-v1.png",
+      "screenshotSha256": "af76dcc3b6d1e8ac665acbcf44b506069fa1d98d0ab21cc7db06ed816b58a8b2",
+      "evidence": "docs/evidence/compact-rc/service-art-browser.json",
+      "method": "Main agent inspected the actual completed authored family in the 480-task city after Playwright verified its buildingType and clicked through to the correct task. Cohesive native scale, clear frontage and no sprite/lot overflow. Stage 3/4 acceptance remains the separate native sequence review above."
+    }
+  }
+}

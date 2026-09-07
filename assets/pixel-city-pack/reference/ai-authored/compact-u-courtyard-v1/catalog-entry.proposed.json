@@ -1,0 +1,52 @@
+{
+  "key": "compact-u-courtyard-v1",
+  "label": "П-образный дом с внутренним двором",
+  "category": "HOUSE",
+  "rarity": "RARE",
+  "spriteSize": [
+    96,
+    64
+  ],
+  "footprintCells": [
+    12,
+    8
+  ],
+  "anchorPx": [
+    48,
+    64
+  ],
+  "platform": "STONE",
+  "estimates": [
+    3,
+    6
+  ],
+  "tags": [
+    "residential",
+    "low-rise-residential",
+    "compact-building",
+    "u-courtyard"
+  ],
+  "ruleIds": [
+    "STANDARD"
+  ],
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 6
+    }
+  ],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-u-courtyard-v1/sources/stage-3.png",
+    "ai-authored/compact-u-courtyard-v1/sources/stage-4.png",
+    "ai-authored/compact-u-courtyard-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "2c81a30f2f2564dfb9be2173c6706896abdbef0efd1d848a7d0f102ac5002cc4",
+    "7919945cbef2b7ded72211b9ae3e71125da67b2590eba955aa503df3dc628d56",
+    "2aa115e5c9384e61efe57827f65c5499197dea1122f9d8456859ef000dedd1c6"
+  ],
+  "reviewed": true
+}

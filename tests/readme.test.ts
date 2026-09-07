@@ -8,7 +8,7 @@ const manifest = JSON.parse(
 ) as {
   buildings: Record<string, { stages: string[] }>;
   props: Record<string, unknown>;
-  vehicles: Record<string, unknown>;
+  microAmbient: { sprites: Record<string, { kind: string; variant: string }> };
   terrain: Record<string, unknown>;
 };
 
@@ -26,7 +26,10 @@ describe("open-source README", () => {
     expect(readme).toContain(`| Семейства зданий | ${buildingCount} |`);
     expect(readme).toContain(`| Строительные стадии зданий | ${stageCount} |`);
     expect(readme).toContain(`| Props и городской декор | ${Object.keys(manifest.props).length} |`);
-    expect(readme).toContain(`| Модели транспорта | ${Object.keys(manifest.vehicles).length} |`);
+    const microSprites = Object.values(manifest.microAmbient.sprites);
+    const carModels = new Set(microSprites.filter((sprite) => sprite.kind === "car").map((sprite) => sprite.variant));
+    expect(readme).toContain(`| Модели транспорта | ${carModels.size} |`);
+    expect(readme).toContain(`| Микроизображения людей, машин, животных и самолёта | ${microSprites.length} |`);
     expect(readme).toContain(`| Terrain families | ${Object.keys(manifest.terrain).length} |`);
     const formattedPngCount = pngCount.toLocaleString("ru-RU").replaceAll("\u00a0", " ");
     expect(readme).toContain(`| Все runtime PNG | ${formattedPngCount} |`);
@@ -34,7 +37,8 @@ describe("open-source README", () => {
   });
 
   it("links the reproducible showcase and every public self-hosting contract", () => {
-    expect(readme).toContain("screenshots/tasktopia-showcase.png");
+    expect(readme).toContain("screenshots/dense-city-final/city-blocks.png");
+    expect(readdirSync(new URL("../screenshots/dense-city-final/", import.meta.url))).toContain("city-blocks.png");
     expect(readme).toContain("deploy/.env.self-host.example");
     expect(readme).toContain("deploy/install-server.sh");
     expect(readme).toContain("docs/DEPLOYMENT.md");

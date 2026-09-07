@@ -1,0 +1,49 @@
+{
+  "key": "compact-sand-balcony-v1",
+  "reviewedAt": "2026-09-07",
+  "reviewScope": "Stages5H4,4A,3A and the complete sequence independently accepted by parent at native1x/8x. Frozen authoring family; no publication or actual-map approval claimed.",
+  "reviewMethod": "Author and parent independently inspected actual48x48 native and8x grid. Source authored by built-in ImageGen; one frozen legal outward-only frame, uniform NN, existing broad magenta recovery and MEDIANCUT31-color normalization. No opaque crop, geometric repaint, warp or per-stage recentering.",
+  "projection": {
+    "camera": "High45-degree orthographic frontal-top; axis-aligned roof/facade, no receding side wall.",
+    "roofDepthPx": 28,
+    "roofRegionBoundsPx": [0,4,47,32],
+    "facadeHeightPx": 16,
+    "floorStepPx": 5,
+    "windowPaneSizePxRange": [[2,2],[3,2]],
+    "windowRowsPx": [[33,34],[38,39],[43,44]],
+    "doorLeafSizePx": [4,3],
+    "doorLeafBoundsPx": [22,45,26,48],
+    "doorFrameSizePx": [7,5],
+    "doorFrameBoundsPx": [20,43,27,48],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "sameCameraAssertionScope": "All3 actual natives and sequence independently reviewed. Shared47x44 occupied envelope/24,48 anchor/foundation; no per-stage frame. Stage3 has new left room arrangement and removed upperfront, not pixel-identical masonry.",
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "1f7debe239526f949bd4bc1560657742ba092f0ad68c06d8a7ba4bd0a9316066",
+      "runtimeSha256": "e1cc1a8bfb24ca20ef3982535768f8947ed1cd8f8f4fd88f06eea9aea3e538ad",
+      "retainedRoofAreaApproxPercent": 0,
+      "notes": "Parent independently approved native1x/8x and whole sequence: ALL roof absent; full opaque interior floors, raised axis-aligned partitions and internal materials. Upper6 facade apertures and most upperfront masonry removed, leaving rough partial columns/lintels; lower10 dark-aperture ROIs remain at old two-row positions. Left room plan is newly authored with axis-aligned offset partitions; right room axes remain coherent, not exact pixel identity. Same47x44 occupied native,31colors,0holes,0centre/baseline drift and0foundation alpha differences. North sourceposts extend5sourcepx above5 bounds, inside the frozen frame; occupied native top unchanged. Exact4x3 leaf/7x5 flat portal at5ROIs. No final roof gear, finished glazing, external fence/scenery or heavy black baseline."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "23e253f14895d80c806505644ae8545981609364bb278f8db51dcf7df9ee8a27",
+      "runtimeSha256": "90d9a7281348afd50672943872b7ce5cdd90ebd6c67acafb401e243b6ad14902",
+      "retainedRoofAreaApproxPercent": 51,
+      "notes": "Parent independently accepted exact native1x/8x: retained LEFT half roof (~51%) and six RIGHT opaque rooms with raised axis-parallel partitions/materials; all final hut/skylight/vents absent. Recessed balcony identity/floor grid/door remain stable, window glass and glints replaced by dark unfinished openings. One upper second-left aperture is3x2 instead of5's2x2 (right boundary+1px); explicitly accepted within existing size/registration allowance, not pixel-identical aperture geometry. Same occupied47x44/frame/anchor,0centre/baseline drift,0foundation alpha differences acrossrows46/47; source rightbound1123 vs5's1122 is1sourcepx only. Leaf4x3/flatportal7x5 at exact5ROIs, hardalpha/0holes/32colors."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "f8564996afceaa76935ab815b24ca3c8285db613bf49ef49de1dd96fc07af805",
+      "runtimeSha256": "84a7410435697185516442f344da3387ab2ac11cc0a767c81d3422b5f31218db",
+      "notes": "Parent independently approved exact H4 native/8x+report: distinct recessed slate/cream balcony facade, roof-dominant compressed3floor rhythm, flat7x5portal/4x3leaf, all16pane envelopes legible and2–3x2. Roof28/front16, floorpitch5/5; occupied47x44 within48x48canvas/6x6physicalfootprint, anchor24,48, leaf axis24. Source bounds127,163,1122,1069 wholly contained by frame127,155,1135,1069: top8px/right13px margins only (<2%); no opaque crop. Hardalpha,0holes,32colors including transparency. Native foundation rows46/47 both47opaque pixels. Window envelope checks preserve muted glints without claiming identical glass hue on every pixel. Earlier original/A–H3 sources remain unapproved and preserved."
+    }
+  },
+  "runtimeIntegrationReviewOwner": "Parent owns global catalog/publisher after complete3/4/5 acceptance."
+}

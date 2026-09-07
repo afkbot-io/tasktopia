@@ -16,7 +16,7 @@ describe("green area paths", () => {
     const complete = taskParkDecorLayout(footprint, 5, "urban-formal", 81);
     expect(planted.length).toBeGreaterThanOrEqual(4);
     expect(furnished.length).toBeGreaterThan(planted.length);
-    expect(complete.some((placement) => placement.kind === "fountain-large")).toBe(true);
+    expect(complete.some((placement) => placement.kind === "compact-park-fountain-stage-5")).toBe(true);
     expect(taskParkDecorLayout(footprint, 5, "urban-formal", 81)).toEqual(complete);
   });
   it("uses the same perimeter and central cross for rendering and navigation", () => {

@@ -1,0 +1,28 @@
+{
+  "key": "compact-olive-cafe-v1",
+  "label": "Дом с кафе на террасе",
+  "category": "HOUSE",
+  "rarity": "COMMON",
+  "spriteSize": [48,48],
+  "footprintCells": [6,6],
+  "anchorPx": [24,48],
+  "platform": "STONE",
+  "estimates": [1,2,3,6],
+  "tags": ["residential","low-rise-residential","compact-building"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side":"S","offset":3}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-olive-cafe-v1/sources/stage-3.png",
+    "ai-authored/compact-olive-cafe-v1/sources/stage-4.png",
+    "ai-authored/compact-olive-cafe-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "60438bf0459eda540547df0faffe3cda555955ff751e8118a6a032039064e141",
+    "6ab832636728dd855129bcb1dcd09e90bcf68a57babf5b69486c15af08d53308",
+    "86750cbaf33815aca72fb126764cbdb7abcac452c8079f1c8e6d9cd6cc21b14a"
+  ],
+  "reviewed": true
+}

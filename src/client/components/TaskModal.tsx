@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { getBuilding } from "../../shared/catalog";
+import { TASK_PARK_LABELS } from "../../shared/task-park-catalog";
 import type { TaskDocumentDto, TaskDto } from "../../shared/contracts";
-import { api } from "../api";
+import { loadTaskDetail, peekTaskDetail } from "../task-detail-cache";
+import { taskLink } from "../task-navigation";
+import { ApiError } from "../api";
 import { Markdown } from "./Markdown";
+import { TaskTransferPanel } from "./TaskTransferPanel";
 
 const statusLabel: Record<TaskDto["status"], string> = {
   PLANNING: "Планирование", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
 };
 const priorityLabel: Record<TaskDto["priority"], string> = { LOW: "Низкий", NORMAL: "Обычный", HIGH: "Высокий", CRITICAL: "Критический" };
 const workItemLabel: Record<TaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
-const parkLabel: Record<string, string> = {
-  "urban-formal": "Формальный парк", "urban-community": "Общественный парк", "urban-central": "Центральный сквер",
-  "urban-botanical": "Ботанический сад", "urban-amusement": "Парк развлечений", "urban-park": "Городской парк",
+const serviceLabel: Record<NonNullable<TaskDto["serviceRole"]>, string> = {
+  SHOP: "Магазин", EDUCATION: "Школа / детский сад", MEDICAL: "Медицинский центр",
+  FIRE: "Пожарная часть", POLICE: "Полиция", RAILWAY: "Железнодорожная станция", AIRPORT: "Аэропорт",
+  CIVIC: "Администрация города",
 };
+const parkLabel: Readonly<Record<string, string>> = TASK_PARK_LABELS;
 const defectStatusLabel: Record<NonNullable<TaskDto["defects"]>[number]["status"], string> = {
   OPEN: "Зафиксирован", IN_PROGRESS: "Исправляется", VERIFYING: "Проверяется", FIXED: "Исправлен",
 };
@@ -33,8 +39,11 @@ const dateTime = (value: string) => new Date(value).toLocaleString("ru-RU", { da
 const fileSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} МБ` : bytes >= 1024 ? `${Math.round(bytes / 1024)} КБ` : `${bytes} Б`;
 
 type TaskModalProps = {
+  countryId: string;
   taskId: string;
   revision: number;
+  canEdit: boolean;
+  onTransferred: (task: TaskDto) => void;
   onClose: () => void;
 };
 
@@ -81,31 +90,40 @@ function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
   </section>;
 }
 
-export function TaskModal({ taskId, revision, onClose }: TaskModalProps) {
-  const [task, setTask] = useState<TaskDto | null>(null);
+export function TaskModal({ countryId, taskId, revision, canEdit, onTransferred, onClose }: TaskModalProps) {
+  const [task, setTask] = useState<TaskDto | null>(() => peekTaskDetail(countryId, taskId) ?? null);
+  const [error, setError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setTask(null);
-    void api<TaskDto>(`/api/tasks/${taskId}`).then((loaded) => { if (!cancelled) setTask(loaded); });
+    setTask(current => current?.id === taskId ? current : peekTaskDetail(countryId, taskId) ?? null);
+    setError("");
+    void loadTaskDetail(countryId, taskId).then((loaded) => { if (!cancelled) setTask(loaded); })
+      .catch((reason) => {
+        if (cancelled) return;
+        // A deleted/inaccessible task must not retain its detail body or write
+        // actions. Keep the loaded card only for recoverable service failures.
+        if (reason instanceof ApiError && (reason.status === 404 || reason.status === 403)) setTask(null);
+        setError(reason instanceof Error ? reason.message : "Не удалось открыть задачу");
+      });
     closeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => { cancelled = true; window.removeEventListener("keydown", onKey); };
-  }, [taskId, revision, onClose]);
+  }, [countryId, taskId, revision, onClose]);
 
   useEffect(() => {
     if (!task) return;
-    const sharePath = `/task/${task.taskNumber}`;
-    if (window.location.pathname !== sharePath) window.history.replaceState(null, "", sharePath);
-    return () => { if (window.location.pathname === sharePath) window.history.replaceState(null, "", "/"); };
-  }, [task]);
+    const sharePath = taskLink(countryId, task);
+    if (`${window.location.pathname}${window.location.search}` !== sharePath) window.history.replaceState(null, "", sharePath);
+    return () => { if (`${window.location.pathname}${window.location.search}` === sharePath) window.history.replaceState(null, "", "/"); };
+  }, [countryId, task]);
 
   const copyShareLink = async () => {
     if (!task) return;
-    const url = `${window.location.origin}/task/${task.taskNumber}`;
+    const url = `${window.location.origin}${taskLink(countryId, task)}`;
     try {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);
@@ -114,15 +132,17 @@ export function TaskModal({ taskId, revision, onClose }: TaskModalProps) {
   };
 
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-    <section className="task-modal" role="dialog" aria-modal="true" aria-labelledby="task-title">
+    <section className="task-modal" role="dialog" aria-modal="true" aria-labelledby={task ? "task-title" : undefined} aria-label={task ? undefined : error ? "Задача недоступна" : "Загрузка задачи"}>
       <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
-      {!task ? <div className="modal-loading">Загружаем задачу…</div> : <>
+      {task && error && <p role="alert">{error}</p>}
+      {!task ? <div className="modal-loading" role={error ? "alert" : "status"}>{error || "Загружаем задачу…"}</div> : <>
         <header className="task-header">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
-          <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
+          <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
           <button className="task-share" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "🔗 Ссылка"}</button>
         </header>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
+        {canEdit && <TaskTransferPanel countryId={countryId} task={task} onTransferred={moved => { setTask(moved); onTransferred(moved); }} />}
         <div className="task-grid">
           <div><span>Приоритет</span><strong>{priorityLabel[task.priority]}</strong></div><div><span>Срок</span><strong>{task.dueAt ? new Date(task.dueAt).toLocaleDateString("ru-RU") : "Не задан"}</strong></div>
           <div><span>Создатель</span><strong>{task.creator?.name ?? "Система страны"}</strong></div><div><span>Ответственный</span><strong>{task.assignee?.name ?? "Не назначен"}</strong></div>

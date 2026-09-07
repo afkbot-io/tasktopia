@@ -1,0 +1,12 @@
+Use case: precise-object-edit. Edit target is rack-C.
+Change ONLY the three hoop top corners: make them perfectly square solid90degree
+outside corners, not chamfered, rounded or stepped. Each horizontal cap must
+extend the FULL outside width of its two vertical legs, with no diagonal-only
+contact. At the topmost opaque row, all columns between each leg's outside edge
+must be opaque. Make the full-width top bar two coarse artistic pixels thick.
+Keep exactly3 teal U-hoops, all6 complete legs,3 open holes, same low slate base,
+muted materials and high frontal-top camera. Keep whole rack compact, isolated,
+transparent background, max20colors, hard coarse square pixels. No thin slivers,
+new props, text, bikes, ground, gradients, shadow or side perspective.
+Its native16x8 reduction must have3 unbroken rectangular arch outlines, each
+top bar connected edge-to-edge to BOTH legs, not merely touching corners.

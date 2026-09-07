@@ -22,12 +22,51 @@ Realtime Socket.IO работает только в открытой вклад�
   ограниченный retry до трёх попыток. Отсутствующие VAPID secrets полностью
   отключают worker, но не API, health и task workflow.
 - Payload содержит только заголовок, строку `страна · город · район`, same-origin
-  `/task/<номер>` и стабильный event tag. Service worker всегда показывает
+  `/task/<номер>?countryId=<страна>&taskId=<задача>` и стабильный event tag.
+  Номер задачи локален для страны; `taskId` позволяет клиенту запросить
+  авторизованное текущее положение задачи, а не координаты из старого события.
+  Service worker всегда показывает
   user-visible notification, отклоняет cross-origin click URL и восстанавливает
   изменившуюся browser subscription.
 - Permission запрашивается только обработчиком кнопки. На iOS/iPadOS показывается
   инструкция Home Screen до standalone-режима. Отключение и logout удаляют
   серверную и локальную подписку текущего устройства.
+
+## Уточнение границ безопасности — 2026-09-05
+
+- Сохранение подписки и фактическая отправка принимают только HTTPS endpoints
+  проверенных push-провайдеров: `fcm.googleapis.com`, прежний
+  `android.googleapis.com`, `updates.push.services.mozilla.com`, поддомены
+  `push.apple.com` и `notify.windows.com`. Запрещены пользовательские credentials,
+  нестандартный порт и fragment. Это явная политика допустимых провайдеров, а не
+  предварительный DNS-check с возможностью rebinding между проверкой и отправкой.
+  Поддержка собственного push-сервера требует отдельного security review;
+  универсального разрешения произвольного HTTPS egress нет.
+- Домены сверены с первичными источниками:
+  [Chrome FCM](https://developer.chrome.com/blog/push-notifications-on-the-open-web?hl=en),
+  [прежний Google endpoint](https://developer.chrome.com/blog/web-push-interop-wins),
+  [Mozilla Autopush](https://mozilla-services.github.io/autopush-rs/),
+  [Apple Web Push](https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers),
+  [Microsoft WNS](https://learn.microsoft.com/en-us/windows/apps/develop/notifications/push-notifications/wns-overview).
+- `web-push` формирует зашифрованный запрос и VAPID, транспорт отправляет его с
+  абсолютным дедлайном 5 секунд и `AbortSignal`. Redirect не выполняется, тело
+  ответа провайдера не буферизуется. Логи ошибок не включают endpoint или ключи.
+  HTTP 3xx считается окончательной ошибкой, а не новым адресом доставки.
+- Владение endpoint проверяется атомарным `INSERT … ON CONFLICT … WHERE
+  user_id=EXCLUDED.user_id`. Одновременная первая регистрация двумя пользователями
+  не может заменить чужие ключи. Удаление своей прежней неподдерживаемой подписки
+  остаётся доступным.
+- Во время медленной отправки polling не накапливает очередь циклов. Остановка
+  worker завершает только текущую отправку, ограниченную дедлайном транспорта,
+  и не начинает остальные элементы пакета.
+- Уже поставленный в очередь `/task/<номер>` при отправке получает явные
+  идентификаторы из исходного durable event. Если проверяемой идентичности в
+  событии нет, ссылка ведёт на `/`, а не в произвольно выбранную страну. История
+  события и сохранённый payload очереди не переписываются; заголовок, текст и tag
+  сохраняются.
+
+Регрессии используют заглушки транспорта и изолированную тестовую БД: реальные
+push-сообщения, production-подписки и развёртывание для этой проверки не нужны.
 
 ## Последствия
 

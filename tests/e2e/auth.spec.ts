@@ -8,6 +8,14 @@ test("uses the game asset pack without exposing implementation notes", async ({ 
   await expect(sceneSprites).toHaveCount(8);
   for (const sprite of await sceneSprites.all()) {
     await expect(sprite).toHaveAttribute("src", /\/game-assets\/v5\/revisions\/[a-f0-9]{16}\//);
+    await expect.poll(() => sprite.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+  }
+  for (const building of await page.locator(".auth-world-building").all()) {
+    expect(await building.evaluate((image: HTMLImageElement) => ({
+      width: image.width, height: image.height,
+      naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight,
+      rendering: getComputedStyle(image).imageRendering,
+    }))).toEqual({ width: 96, height: 96, naturalWidth: 48, naturalHeight: 48, rendering: "pixelated" });
   }
 });
 

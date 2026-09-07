@@ -1,0 +1,85 @@
+{
+  "key": "compact-glass-stair-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected each native-grid preview and the3/4/5nearest-neighbour8xsequence. Numeric source-frame registration is a separate automated gate. Actual CITY stages3–5 reviewed; see runtimeReview.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention; parallel axis-aligned structural edges.",
+    "roofDepthPx": 21,
+    "facadeHeightPx": 11,
+    "floorStepPx": 5,
+    "floorCount": 2,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "8fc9aac4246f2818dfe52b9df3f3681669b5d28e74c852b8049e80883ea98ba1",
+      "runtimeSha256": "5e5d8334b3ff3669cb851be54b3386c9f614c23dd119f65432379c8e21941cc9",
+      "notes": "Central teal staircase distinguishes this family; finished roof pavilion becomes an unglazed structural frame in4 and is fully absent in3. Left plain slab covers approximately45% in4. Exterior windows and lower staircase position remain aligned."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "d6fb56d3008538f41a22c4cb5f07bdef5040a15843d44dc69abb1192c127160f",
+      "runtimeSha256": "5ec1286020e870b39d53df0651e883be9ce6670347db8b1aeb3863114a5503d1",
+      "notes": "Central teal staircase distinguishes this family; finished roof pavilion becomes an unglazed structural frame in4 and is fully absent in3. Left plain slab covers approximately45% in4. Exterior windows and lower staircase position remain aligned."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "826952c06148ca402ab4dcb0c88503f4a8b5d1aaffdd57d399a37cb917aa5cc4",
+      "runtimeSha256": "69bbc9b2cc07438c605556ed2da1a2e428e078e91d4c4efcaee7fdcd8b24b323",
+      "notes": "Central teal staircase distinguishes this family; finished roof pavilion becomes an unglazed structural frame in4 and is fully absent in3. Left plain slab covers approximately45% in4. Exterior windows and lower staircase position remain aligned."
+    }
+  },
+  "pendingIntegration": [
+    "Final frozen-revision QA/deployment approval; stages0–2 use shared construction geometry, not separately AI-authored art."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+    "acceptedStages": [
+      3,
+      4,
+      5
+    ],
+    "fixture": "compact_release_20260906:480tasks/20sprints",
+    "evidence": "docs/evidence/compact-rc/final-browser.json",
+    "checks": [
+      "Same footprint and south entrance across3/4/5",
+      "Shaded opaque interior and aligned partitions at3",
+      "Partial bare roof and unfinished openings at4",
+      "Completed unique roof and facade at5",
+      "Tree/crown and sidewalk clearance",
+      "All30real building clicks opened the matching task"
+    ],
+    "captures": [
+      {
+        "stage": 3,
+        "path": "screenshots/compact-rc-final/compact-glass-stair-v1-stage-3.png",
+        "sha256": "5497bbf47822ba728f38733ef556a04c871ee9870a533f61953f69b137e33e01"
+      },
+      {
+        "stage": 4,
+        "path": "screenshots/compact-rc-final/compact-glass-stair-v1-stage-4.png",
+        "sha256": "22f94123a73fe8dfca66c1374e2c7237ba950a8b79d9e0c040efe9a9059b55d8"
+      },
+      {
+        "stage": 5,
+        "path": "screenshots/compact-rc-final/compact-glass-stair-v1-stage-5.png",
+        "sha256": "941740f0eb4b327aeb4d531f3ff9d03de92d8e81d83f14dda778d2f297acecc8"
+      }
+    ]
+  }
+}

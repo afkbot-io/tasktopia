@@ -1,0 +1,65 @@
+{
+  "key": "compact-shop-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected native per-stage previews, nearest-neighbour8x3/4/5sequences and center-entrance pixel rows. Per-family architecture envelope is approved independently before publication; no transformation other than common-frame normalization.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention; axis-aligned structural edges, no side facade.",
+    "roofDepthPx": 17,
+    "facadeHeightPx": 10,
+    "floorStepPx": 6,
+    "floorCount": 1,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "doorLeafRectPx": [
+      22,
+      29,
+      4,
+      3
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "fa6e58c7a222c676c5056996180efeabc0bc6fcdca7ebe68c63a14a42ded0a4b",
+      "runtimeSha256": "af062d9e7055ad7a67a8bb34c7904b99ba73c0066e23e4a853e0089354239f4f",
+      "notes": "Single6pxshopfloor below4pxstriped architectural canopy band, not two tall residential floors. Occupied48x27inside6x4parcel with5pxtopclearance. Roof17pxremains larger than whole10pxfacade/canopy. Wide display windows are shopfront groups; central4x3door leaf is separate from dark6x4jamb assembly and8pxcream surround. No roof, opaque rooms, incomplete masonry and internal materials."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "8569c7315f7e84872a9b3ded83a0526868db9dee09e95dee7e6e7359f4b57e11",
+      "runtimeSha256": "a92493c82f9e0b9dbc8059ea527a5af2f103a876448ae5ace24a480faf3016d8",
+      "notes": "Single6pxshopfloor below4pxstriped architectural canopy band, not two tall residential floors. Occupied48x27inside6x4parcel with5pxtopclearance. Roof17pxremains larger than whole10pxfacade/canopy. Wide display windows are shopfront groups; central4x3door leaf is separate from dark6x4jamb assembly and8pxcream surround. Approximately half bare roof, dark unglazed facade openings; no completed roof equipment."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "15da80957c689d0e8901f635badf02748c9c302dfe2ab1f4e890a29a6da7a522",
+      "runtimeSha256": "7c1bc12dfbdc5c4f4b571930b893233911962a40cd422ccf176c10c932bbcc21",
+      "notes": "Single6pxshopfloor below4pxstriped architectural canopy band, not two tall residential floors. Occupied48x27inside6x4parcel with5pxtopclearance. Roof17pxremains larger than whole10pxfacade/canopy. Wide display windows are shopfront groups; central4x3door leaf is separate from dark6x4jamb assembly and8pxcream surround. Finished unique service design."
+    }
+  },
+  "pendingIntegration": [
+    "Freeze and approve the exact production release revision/environment; local visual acceptance is not deployment authorization."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "acceptedStages": [
+      5
+    ],
+    "screenshot": "screenshots/compact-rc-service-art/compact-shop-v1.png",
+    "screenshotSha256": "0a14bef247bae259e9529c393f075ea266e4ce238b5cb6b6746b1bbb72f2485a",
+    "evidence": "docs/evidence/compact-rc/service-art-browser.json",
+    "method": "Main agent inspected the actual completed authored family in the 480-task city after Playwright verified its buildingType and clicked through to the correct task. Cohesive native scale, clear frontage and no sprite/lot overflow. Stage 3/4 acceptance remains the separate native sequence review above."
+  }
+}

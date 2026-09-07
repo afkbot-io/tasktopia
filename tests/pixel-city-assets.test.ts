@@ -13,37 +13,20 @@ const buildings = manifest.buildings as Record<string, {
   ruleIds: string[];
 }>;
 
-const expansionKeys = [
-  "landmark-ferris-wheel", "landmark-megatall-tower", "landmark-monument",
-  "house-garden-apartment", "house-apartment-walkup",
-  "shop-cafe", "shop-butcher", "shop-electronics", "shop-furniture", "shop-bookstore",
-  "shop-clothing", "shop-restaurant", "shop-bar", "office-small", "hotel-small",
-  "commercial-market-stalls", "commercial-storage", "commercial-gas-station-electric",
-  "commercial-gas-station-truck", "commercial-gas-station-cafe", "commercial-gas-station-wash",
-  "civic-museum", "civic-hospital", "civic-university", "civic-courthouse", "civic-embassy",
-  "civic-community-center", "civic-aquatic-center", "civic-transport-hub",
-  "civic-waste-station", "civic-power-substation", "civic-memorial-hall", "civic-youth-center",
-  "highrise-residential-tower", "highrise-hotel", "highrise-office",
-  "highrise-medical-tower", "highrise-luxury-tower", "highrise-sustainable-tower",
-] as const;
-
-const retainedAuthoredBatch = [
-  "shop-bakery-long", "shop-warehouse", "commercial-shopping-plaza", "commercial-corner-cafe",
-  "commercial-pharmacy", "commercial-auto-repair",
-  "commercial-gas-station-compact", "commercial-highway-service-plaza", "commercial-gas-station-electric",
-  "commercial-gas-station-truck", "commercial-gas-station-cafe", "commercial-gas-station-wash",
-  "landmark-ferris-wheel", "house-student-residence", "house-senior-living",
-  "house-mediterranean-courtyard", "house-warehouse-lofts", "house-social-housing",
-  "commercial-food-hall", "commercial-bowling",
-  "commercial-bank-branch", "commercial-coworking", "commercial-tech-workshop",
-  "commercial-car-dealership", "commercial-garden-center", "commercial-night-market",
-  "commercial-department-store", "commercial-office-courtyard", "commercial-logistics-hub",
-  "commercial-cold-storage", "commercial-maker-market", "commercial-rooftop-restaurant",
-  "commercial-marina-office", "commercial-farmers-market", "commercial-hotel-boutique",
-  "landmark-stadium", "civic-clinic", "civic-police", "civic-bank", "civic-post-office", "civic-theatre",
-] as const;
-
 describe("Pixel City active asset contract", () => {
+  it("does not publish superseded standalone road and footway sprites", () => {
+    const obsolete = [
+      "road", "pavement", "path-brown", "path-pavers", "path-asphalt",
+      "crosswalk-horizontal", "crosswalk-vertical",
+      "road-marking-horizontal", "road-marking-vertical",
+      "bridge-side-horizontal", "bridge-side-vertical",
+    ];
+    for (const key of obsolete) {
+      expect(manifest.tiles).not.toHaveProperty(key);
+      expect(existsSync(resolve(runtime, "tiles", `${key}.png`)), key).toBe(false);
+    }
+  });
+
   it("packs every prop into one immutable particle atlas", () => {
     const assetManifest = manifest as typeof manifest & {
       propAtlas?: {
@@ -63,47 +46,6 @@ describe("Pixel City active asset contract", () => {
       expect(frame, key).toMatchObject({ width: prop.size[0], height: prop.size[1] });
       expect(frame!.x + frame!.width, key).toBeLessThanOrEqual(atlas!.size[0]);
       expect(frame!.y + frame!.height, key).toBeLessThanOrEqual(atlas!.size[1]);
-    }
-  });
-
-  it("keeps every fuel-service family on the shared V6 grid with a centred full-size entrance", () => {
-    const fuelStations = buildingCatalog.buildings.filter((building) => building.serviceRole === "fuel-service");
-    expect(fuelStations).toHaveLength(7);
-    for (const station of fuelStations) {
-      expect(station.stageSourceGrid, station.key).toEqual([4, 2]);
-      expect(station.stageSourceSegment, station.key).toBeTypeOf("number");
-      expect(station.spriteSize[0], station.key).toBeGreaterThanOrEqual(96);
-      expect(station.spriteSize[1], station.key).toBeGreaterThanOrEqual(72);
-      expect(station.footprintCells[0], station.key).toBeGreaterThanOrEqual(12);
-      expect(station.footprintCells[1], station.key).toBeGreaterThanOrEqual(7);
-      expect(station.anchorPx, station.key).toEqual([station.spriteSize[0] / 2, station.spriteSize[1]]);
-      expect(station.entrances[0], station.key).toEqual({
-        side: "S",
-        offset: Math.floor(station.footprintCells[0] / 2),
-      });
-    }
-  });
-
-  it("publishes the city parking garage as a full-scale finished building", () => {
-    const parking = buildingCatalog.buildings.find((building) => building.key === "commercial-parking-lot");
-    expect(parking).toMatchObject({
-      spriteSize: [96, 72],
-      footprintCells: [12, 7],
-      anchorPx: [48, 72],
-      entrances: [{ side: "S", offset: 6 }],
-      serviceRole: "parking-service",
-    });
-  });
-
-  it("keeps retained families from the historical authored batch pinned to independent stages", () => {
-    const catalog = new Map(buildingCatalog.buildings.map((building) => [building.key, building]));
-    for (const key of retainedAuthoredBatch) {
-      const building = catalog.get(key);
-      expect(building, key).toMatchObject({ reviewed: true });
-      expect(building, key).not.toHaveProperty("sheet");
-      expect(building, key).not.toHaveProperty("sheetSha256");
-      expect(building?.stageSources, key).toHaveLength(3);
-      expect(building?.stageSha256, key).toHaveLength(3);
     }
   });
 
@@ -134,20 +76,52 @@ describe("Pixel City active asset contract", () => {
     expect(materialManifest.tiles).not.toHaveProperty("curb");
   });
 
+  it("publishes only full 4px lawn and water surfaces for block-v1 interiors", () => {
+    const blockSurfaceManifest = manifest as typeof manifest & {
+      blockSurfaces?: {
+        schemaVersion: number;
+        cellPx: number;
+        visualProfile: string;
+        tiles: Record<string, {
+          path: string;
+          size: [number, number];
+          opaque: boolean;
+          materialRole: string;
+        }>;
+      };
+    };
+    expect(blockSurfaceManifest.blockSurfaces).toEqual({
+      schemaVersion: 1,
+      cellPx: 4,
+      visualProfile: "TASKTOPIA_BLOCK_V1_MICRO_SURFACES_2026",
+      tiles: {
+        "block-lawn": {
+          path: "block-surfaces/block-lawn.png",
+          size: [4, 4],
+          opaque: true,
+          materialRole: "LAWN",
+        },
+        "block-water": {
+          path: "block-surfaces/block-water.png",
+          size: [4, 4],
+          opaque: true,
+          materialRole: "WATER",
+        },
+      },
+    });
+    expect(Object.keys(blockSurfaceManifest.blockSurfaces!.tiles)).toEqual(["block-lawn", "block-water"]);
+    for (const surface of Object.values(blockSurfaceManifest.blockSurfaces!.tiles)) {
+      expect(existsSync(resolve(runtime, surface.path)), surface.path).toBe(true);
+    }
+  });
+
   it("publishes every planned building as five distinct runtime stages", () => {
-    for (const key of new Set([...expansionKeys, ...buildingCatalog.buildings.map((entry) => entry.key)])) {
+    for (const key of buildingCatalog.buildings.map((entry) => entry.key)) {
       const building = buildings[key];
       expect(building, key).toBeDefined();
       expect(building.stages, key).toHaveLength(5);
       expect(new Set(building.stages).size, key).toBe(5);
       for (const stage of building.stages) expect(existsSync(resolve(runtime, stage)), `${key}: ${stage}`).toBe(true);
-    }
-  });
-
-  it("keeps city landmarks unique in both the city and district", () => {
-    for (const key of Object.keys(buildings).filter((key) => key.startsWith("landmark-"))) {
-      expect(buildings[key]).toMatchObject({ maxPerCity: 1, maxPerDistrict: 1 });
-      expect(buildings[key]!.ruleIds).toContain("UNIQUE_SERVICE");
     }
   });
 
@@ -164,7 +138,7 @@ describe("Pixel City active asset contract", () => {
     for (const key of [
       "tree-birch", "tree-pine", "tree-willow", "tree-oak", "tree-apple", "tree-cherry",
       "tree-maple", "tree-cedar", "tree-cypress", "tree-palm", "tree-aspen", "tree-deadwood", "tree-magnolia", "tree-redwood",
-      "shrub-hazel", "shrub-fern", "shrub-flowering", "shrub-dry", "shrub-hedge", "shrub-juniper",
+      "shrub-flowering",
       "streetlamp-vintage", "streetlamp-modern", "streetlamp-solar",
       "streetlamp-industrial", "streetlamp-double", "streetlamp-festive",
       "fountain-large", "gazebo", "bandstand", "statue-hero", "statue-abstract",
@@ -173,7 +147,6 @@ describe("Pixel City active asset contract", () => {
       "park-path-circle", "playground-slide", "playground-carousel",
       "playground-climbing", "playground-swing", "park-pond", "park-sculpture",
       "park-flower-clock", "park-bandstand", "bus-stop-horizontal", "bus-stop-vertical",
-      "city-bus-horizontal", "city-bus-north", "city-bus-south",
     ]) expect(props[key], key).toBeDefined();
     expect(props["fountain-large"]?.footprintCells).toEqual([4, 4]);
     expect(props["gazebo"]?.footprintCells).toEqual([4, 3]);
@@ -210,11 +183,7 @@ describe("Pixel City active asset contract", () => {
       });
     }
     for (const key of [
-      "flower-white", "flower-yellow", "flower-red", "flower-pink", "flower-purple", "flower-blue",
-      "bush-dark", "bush-light", "bush-berries", "rock-small", "rock-cluster",
-      "reed-green", "reed-cattail", "shrub-hazel", "shrub-fern", "shrub-flowering",
-      "shrub-dry", "shrub-hedge", "shrub-juniper", "tree-flowering",
-      "crop-wheat-a", "crop-wheat-b", "crop-corn-a", "crop-corn-b",
+      "flower-white", "flower-yellow", "flower-pink", "shrub-flowering",
     ]) {
       expect(props[key], key).toMatchObject({
         artSource: "AI_AUTHORED",
@@ -224,116 +193,50 @@ describe("Pixel City active asset contract", () => {
     }
   });
 
-  it("publishes the complete AI-authored construction kit for the two composable site stages", () => {
-    const props = manifest.props as Record<string, {
-      size: number[];
-      footprintCells: number[];
-      artSource?: string;
-      visualProfile?: string;
-      anchorPx: number[];
-    }>;
-    const details = Object.entries(props).filter(([key]) => key.startsWith("construction-plan-") || key.startsWith("construction-build-"));
-    expect(details).toHaveLength(23);
-    expect(details.filter(([key]) => key.startsWith("construction-plan-"))).toHaveLength(10);
-    expect(details.filter(([key]) => key.startsWith("construction-build-"))).toHaveLength(13);
+  it("publishes the compact shared construction kit and no oversized legacy pieces", () => {
+    const props = manifest.props as Record<string, { size: number[]; footprintCells: number[]; artSource?: string; anchorPx: number[] }>;
+    const details = Object.entries(props).filter(([key]) => key.startsWith("compact-construction-"));
+    expect(details).toHaveLength(4);
+    expect(Object.keys(props).some((key) => key.startsWith("construction-"))).toBe(false);
     for (const [key, detail] of details) {
-      expect(detail.artSource, key).toBe("AI_AUTHORED");
+      expect(detail.artSource, key).toBe("PROCEDURAL_TILE_KIT");
       expect(detail.anchorPx, key).toEqual([detail.size[0] / 2, detail.size[1]]);
-      expect(detail.footprintCells[0] * 8, key).toBeLessThanOrEqual(detail.size[0]);
-      expect(detail.footprintCells[1] * 8, key).toBeLessThanOrEqual(detail.size[1]);
+      expect(Math.max(...detail.size), key).toBeLessThanOrEqual(24);
+      expect(Math.max(...detail.footprintCells), key).toBeLessThanOrEqual(2);
     }
   });
 
-  it("ships a compact three-frame resident walk cycle in every direction", () => {
-    const props = manifest.props as Record<string, { size: number[]; footprintCells: number[] }>;
-    for (const direction of ["north", "east", "south", "west"]) {
-      for (const frame of ["a", "b", "c"]) {
-        expect(props[`walker-${direction}-${frame}`], `${direction}-${frame}`).toMatchObject({
-          size: [16, 24],
-          footprintCells: [1, 1],
-          sourceSheet: "ai-authored/ambient/resident-walkers-v5.png",
-        });
-      }
-    }
-  });
 
-  it("anchors every V5 tree inside one eight-pixel planting cell", () => {
+  it("anchors every compact high-45 tree inside one eight-pixel planting cell", () => {
     const props = manifest.props as Record<string, {
       size: number[];
       footprintCells: number[];
       anchorPx: number[];
       visualProfile?: string;
     }>;
-    const trees = Object.entries(props).filter(([, prop]) => prop.visualProfile === "TASKTOPIA_V5_TREE_FRONTAL_TOP");
-    expect(trees).toHaveLength(16);
+    const trees = Object.entries(props).filter(([key]) => key.startsWith("tree-"));
+    expect(trees).toHaveLength(17);
     for (const [key, tree] of trees) {
       expect(tree, key).toMatchObject({
-        size: [16, 32],
+        visualProfile: "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+        size: [16, 16],
         footprintCells: [1, 1],
-        anchorPx: [8, 32],
+        anchorPx: [8, 16],
       });
     }
   });
 
-  it("publishes eight independently authored directional vehicle models", () => {
-    const vehicles = manifest.vehicles as Record<string, Record<"horizontal" | "north" | "south", { size: number[]; artSource?: string; sourceSheet?: string; visualProfile?: string; baseFacing?: string }>>;
-    expect(Object.keys(vehicles)).toHaveLength(8);
-    for (const [key, orientations] of Object.entries(vehicles)) {
-      expect(orientations.horizontal, key).toMatchObject({ size: [24, 16], artSource: "AI_AUTHORED" });
-      expect(orientations.north, key).toMatchObject({ size: [16, 24], artSource: "AI_AUTHORED" });
-      expect(orientations.south, key).toMatchObject({ size: [16, 24], artSource: "AI_AUTHORED" });
-      expect(orientations.horizontal.sourceSheet, key).toBe(orientations.north.sourceSheet);
-      expect(orientations.horizontal.sourceSheet, key).toBe(orientations.south.sourceSheet);
-      expect(orientations.horizontal, key).toMatchObject({ visualProfile: "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE", baseFacing: "EAST" });
-      expect(orientations.north, key).toMatchObject({ visualProfile: "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE", baseFacing: "NORTH" });
-      expect(orientations.south, key).toMatchObject({ visualProfile: "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE", baseFacing: "SOUTH" });
-    }
+  it("publishes only the micro moving-ambient profile with no old bus, gait or car paths", () => {
+    expect(manifest).not.toHaveProperty("vehicles");
+    expect(manifest.microAmbient.visualProfile).toBe("TASKTOPIA_MICRO_TOPDOWN_CARTOON_V1");
+    expect(Object.keys(manifest.microAmbient.sprites)).toHaveLength(36);
+    expect(Object.keys(manifest.props).filter((key) => /^(walker|resident|fisher|animal|cyclist|scooter|city-bus)-/.test(key))).toEqual([]);
   });
 
-  it("keeps the human, car, bus and door scale hierarchy in native pixels", () => {
-    const props = manifest.props as Record<string, { size: number[]; occupiedSize?: number[] }>;
-    const vehicles = manifest.vehicles as Record<string, Record<"horizontal" | "north" | "south", { size: number[]; occupiedSize?: number[] }>>;
-    for (const orientations of Object.values(vehicles)) {
-      expect(orientations.horizontal.size).toEqual([24, 16]);
-      expect(orientations.horizontal.occupiedSize?.[0]).toBeGreaterThanOrEqual(21);
-      expect(orientations.horizontal.occupiedSize?.[1]).toBeGreaterThanOrEqual(12);
-      expect(orientations.north.size).toEqual([16, 24]);
-      expect(orientations.south.size).toEqual([16, 24]);
-    }
-    expect(props["city-bus-horizontal"]?.size).toEqual([56, 24]);
-    expect(props["city-bus-horizontal"]?.occupiedSize?.[0]).toBeGreaterThanOrEqual(52);
-    expect(props["city-bus-horizontal"]?.occupiedSize?.[1]).toBeGreaterThanOrEqual(20);
-    expect(props["walker-south-a"]?.occupiedSize?.[1]).toBeLessThan(20);
-  });
-
-  it("publishes four incident animation frames, three proportional engine silhouettes, and eight animal species", () => {
+  it("does not publish the superseded incident PNG animation path", () => {
     const props = manifest.props as Record<string, { size: number[]; occupiedSize?: number[]; footprintCells: number[]; artSource?: string; sourceSheet?: string; sourceSha256?: string; visualProfile?: string; baseFacing?: string }>;
-    const fireSources: Record<string, string> = Object.fromEntries(
-      ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"]
-        .map((key) => [key, "ai-authored/ambient/fire-engines-v7.png"]),
-    );
-    for (const [key, sourceSheet] of Object.entries(fireSources)) {
-      expect(props[key], key).toMatchObject({
-        size: [56, 24],
-        occupiedSize: [54, 22],
-        footprintCells: [7, 3],
-        artSource: "AI_AUTHORED",
-        sourceSheet,
-        sourceSha256: "28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8",
-        visualProfile: "TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP",
-        baseFacing: "EAST",
-      });
-    }
-    for (const prefix of ["incident-flame", "incident-smoke"]) {
-      for (const suffix of ["a", "b", "c", "d"]) expect(props[`${prefix}-${suffix}`], `${prefix}-${suffix}`).toBeDefined();
-    }
-    for (const species of ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"]) {
-      for (const direction of ["north", "east", "south", "west"]) for (const frame of ["a", "b", "c"]) {
-        expect(props[`animal-${species}-${direction}-${frame}`], `${species}-${direction}-${frame}`).toBeDefined();
-      }
-    }
-    for (const family of ["cyclist", "scooter"]) for (const view of ["horizontal", "north", "south"]) for (const frame of ["a", "b", "c"]) {
-      expect(props[`${family}-${view}-${frame}`], `${family}-${view}-${frame}`).toBeDefined();
-    }
+    expect(Object.keys(props).filter(key => key.startsWith("fire-engine-"))).toEqual([]);
+    expect(Object.keys(props).filter(key => /^incident-(flame|smoke)-/.test(key))).toEqual([]);
+
   });
 });

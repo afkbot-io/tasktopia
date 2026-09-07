@@ -29,7 +29,7 @@ test("captures a deterministic city growth checkpoint", async ({ page }) => {
   await expect(map).toHaveAttribute("data-traffic-blocked-vehicles", /\d+/);
   await expect(map).toHaveAttribute("data-traffic-unsafe-pairs", "0");
   await expect(map).toHaveAttribute("data-wrong-way-cars", "0");
-  await expect(map).toHaveAttribute("data-wrong-way-buses", "0");
+  await expect(map).toHaveAttribute("data-buses", "0");
   // Anonymous bootstrap/token requests before login are expected to return 401.
   consoleErrors.length = 0;
 

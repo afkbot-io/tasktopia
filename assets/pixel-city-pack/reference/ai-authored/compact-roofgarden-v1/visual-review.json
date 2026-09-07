@@ -1,0 +1,98 @@
+{
+  "key": "compact-roofgarden-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected native previews, nearest-neighbour8x stage3/4/5 and common-baseline sequence. Numeric mask checks separate from artistic judgment; actual-world acceptance pending.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention, rectangular roof and axis-aligned walls, no receding side facade.",
+    "roofDepthPx": 21,
+    "facadeHeightPx": 11,
+    "floorStepPx": 6,
+    "floorCount": 2,
+    "windowPaneSizePx": [
+      2,
+      3
+    ],
+    "windowOpeningSizePx": [
+      2,
+      3
+    ],
+    "windowGroupWithSillPx": [
+      2,
+      4
+    ],
+    "doorLeafSizePx": [
+      4,
+      4
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true,
+    "measurementNote": "Two compressed floors span11px total (5/6px bands); balcony windows use wider groups, most ordinary upper openings2x3px and lower2x2px. Family-specific opening range explicitly recorded, not borrowed from another house."
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "fbb3586442c15d37fbc3c54a201730192a8129e6ee9f4547ae912d195fda43da",
+      "runtimeSha256": "9924cab58fb8fe59c869f7f74b7ff72708e7fd8dd251d32c6d0b26b5fe33e48a",
+      "notes": "All roof absent; opaque shaded interior and L-shaped partitions, small ochre material stacks, rough cream masonry. Outer footprint/facade/door unchanged; native foundation/center/baseline zero drift."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "9412ea6827e6f665e1c26cc0f1718fc3a74222b31dd064eb8b753c9771b83cdf",
+      "runtimeSha256": "858948b3f832ebd7653166ec0ef9bf171296f57a5aec3d397de139ff80fa9224",
+      "notes": "About53% simple left roof slab remains, right rooms opaque; dark unglazed openings. No final roof garden, pavilions or equipment. Exact native foundation/center/baseline."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "f96d3ebfb499d5d64f2f97da2c64854e6fc7c655c1ba95f472c38f94c7af1f07",
+      "runtimeSha256": "8e5a45a021ba4b4f71c8f0d787dc1757acb4d8dc406980ec7a466a363461ea47",
+      "notes": "Distinct garden roof with left planted area, right pavilion/planters and paving, cream facade with paired outer balconies. No black baseline; occupies44x32inside48x32physical6x4lot."
+    }
+  },
+  "pendingIntegration": [
+    "Final frozen-revision QA/deployment approval; stages0–2 use shared construction geometry, not separately AI-authored art."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+    "acceptedStages": [
+      3,
+      4,
+      5
+    ],
+    "fixture": "compact_release_20260906:480tasks/20sprints",
+    "evidence": "docs/evidence/compact-rc/final-browser.json",
+    "checks": [
+      "Same footprint and south entrance across3/4/5",
+      "Shaded opaque interior and aligned partitions at3",
+      "Partial bare roof and unfinished openings at4",
+      "Completed unique roof and facade at5",
+      "Tree/crown and sidewalk clearance",
+      "All30real building clicks opened the matching task"
+    ],
+    "captures": [
+      {
+        "stage": 3,
+        "path": "screenshots/compact-rc-final/compact-roofgarden-v1-stage-3.png",
+        "sha256": "238440a31efd43a697feb912deb639be78993d61e92734711f6332e8923c2c79"
+      },
+      {
+        "stage": 4,
+        "path": "screenshots/compact-rc-final/compact-roofgarden-v1-stage-4.png",
+        "sha256": "d8db6b0ee0cbd8ce2201dde0ce7fd3057e21950e448edbfef9745f410cde18a9"
+      },
+      {
+        "stage": 5,
+        "path": "screenshots/compact-rc-final/compact-roofgarden-v1-stage-5.png",
+        "sha256": "a238545e42932b7bf0a9ea16a09fc2f0cc5ab451c82f171209d66856b762a429"
+      }
+    ]
+  }
+}

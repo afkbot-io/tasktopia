@@ -1,0 +1,28 @@
+{
+  "key": "compact-garden-house-v1",
+  "label": "Дом с садом на крыше",
+  "category": "HOUSE",
+  "rarity": "COMMON",
+  "spriteSize": [48, 48],
+  "footprintCells": [6, 6],
+  "anchorPx": [24, 48],
+  "platform": "STONE",
+  "estimates": [1, 2, 3, 6],
+  "tags": ["residential", "low-rise-residential", "compact-building"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side": "S", "offset": 3}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-garden-house-v1/sources/stage-3.png",
+    "ai-authored/compact-garden-house-v1/sources/stage-4.png",
+    "ai-authored/compact-garden-house-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "6630e25bfda1b24b0bbecbda2605a52d5b6fdbcac199b8f755822c891c8ac40f",
+    "f5b2560aca459b02158f5b3418b8d96b6715fbb2cab4940bc9d79a006831d0ba",
+    "963f90cdb5220a68b5c9a1813d6d5e57bc1898181733abc9f28214b41c65c484"
+  ],
+  "reviewed": true
+}

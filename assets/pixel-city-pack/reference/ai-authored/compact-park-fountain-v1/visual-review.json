@@ -1,0 +1,68 @@
+{
+  "key": "compact-park-fountain-v1",
+  "reviewedAt": "2026-09-05",
+  "reviewMethod": "Author viewed original sources and all native/8x outputs. Parent independently accepted stage5 on meadow grid and then the complete3/4/5 sequence.",
+  "axisAlignedHigh45": true,
+  "noBakedTerrain": true,
+  "stageProgressionDistinct": true,
+  "sameFoundationIdentity": true,
+  "projection": {
+    "camera": "High45 frontal-top art convention, screen-aligned square basin, no diagonal side face.",
+    "spriteSize": [
+      16,
+      16
+    ],
+    "occupiedBoundsPx": [
+      0,
+      1,
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "frontStoneBandRowsPx": [
+      12,
+      13,
+      14,
+      15
+    ],
+    "basinPlaneRegionPx": [
+      1,
+      2,
+      15,
+      12
+    ],
+    "foundationMaskRowsPx": [
+      14,
+      15
+    ],
+    "roofAndRoomRulesApplicable": false
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "f1bd1b16c849dd7745528c05856fa02aabd9e384eb1449ed379dd2bdbfd6a223",
+      "runtimeSha256": "f20572b06c61c1ceae1936d725cd93a024a5ece96540a890d5c7c6d872917857",
+      "notes": "Rough dry basin foundation, mostly unfinished rim and plain front stonework, low nozzle mounting rather than completed bowl. Two spare masonry pieces remain inside. Two earlier geometrically drifting sources were rejected."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "4a40ba1c696313d54bd132785abff29c149016d1c73de9b2e07d97bb90fdbb49",
+      "runtimeSha256": "f6d9e0076462a9cc5e70879d465030cd806aed130260d0e1dd703ef39a524967",
+      "notes": "Same basin and nozzle bowl, dry opaque floor, a small missing rim-cladding segment and two materials inside. No water or working jet."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "2834676a47673444849d078409fdf567081608632ef0334b278b0b9ae57ab122",
+      "runtimeSha256": "4ac98ff646f3c4026e18f241629e62687d573307c6698b911541d69d199dd1a1",
+      "notes": "Finished low square stone fountain with a broad teal water plane and a small central spout. No terrain, fence, text or external presentation shadow."
+    }
+  },
+  "numericScope": "All three normalized foundation masks, baselines and centers match exactly. Source4 differs by1 source pixel, source3 by2 source pixels at outer edges (<0.061 native pixel); one common frame remains unchanged. Hard alpha, zero interior holes,19/20/20 colors, and teal-water pixels86/0/0 for5/4/3. Color threshold is a conservative raster check, not proof of fountain semantics.",
+  "pendingIntegration": [
+    "Root serial publisher and full asset audit",
+    "Actual map placement and task-backed stages0–2 construction composition"
+  ]
+}

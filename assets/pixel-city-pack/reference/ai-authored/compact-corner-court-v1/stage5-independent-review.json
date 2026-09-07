@@ -1,0 +1,12 @@
+{
+  "key": "compact-corner-court-v1",
+  "stage": 5,
+  "reviewedAt": "2026-09-07",
+  "reviewer": "Parent agent, independent of source author",
+  "accepted": true,
+  "scope": "Finished stage5 source geometry and native visual style only; not runtime/catalog/map approval.",
+  "sourceSha256": "e96727be1bdebaec1d089de9e06846ed2ba07ccb586c166d200f1a53443a4044",
+  "runtimeSha256": "30d6588186da59da3afd31d4f36ca21d72347bbcb5197da633d993be5ba15ac0",
+  "reviewEvidence": ["normalized/stage-5.png", "previews/stage-5-grid-8x.png", "opening-observation.json"],
+  "decision": "Parent inspected G at native and8x: L roof mass and opaque court, two frontage rows, axis projection and the small centered square opening are consistent. Approves these exact hashes and authorizes sequential4then3derivation preserving the same geometry. All-three sequence requires another independent review before catalog integration."
+}

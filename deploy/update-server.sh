@@ -16,6 +16,17 @@ readonly MIN_FREE_SPACE_MB="${MIN_FREE_SPACE_MB:-1024}"
 readonly HEALTH_RETRY_COUNT="${HEALTH_RETRY_COUNT:-90}"
 readonly UPDATE_LOCK_PATH="${TASKTOPIA_UPDATE_LOCK_PATH:-$APP_DIR/.git/tasktopia-update.lock}"
 
+# Explicit first-transition protocol owns the SAME lock and full DB/file
+# recovery. The normal image-only updater below retains both compact guards.
+if [[ "${1:-}" == "compact-cutover" ]]; then
+  shift
+  exec python3 "$APP_DIR/deploy/compact_cutover_driver.py" "$@"
+fi
+if (( $# != 0 )); then
+  echo "Unknown updater mode" >&2
+  exit 2
+fi
+
 if [[ ! "$BACKUP_RETENTION_COUNT" =~ ^[1-9][0-9]*$ ]]; then
   echo "BACKUP_RETENTION_COUNT must be a positive integer" >&2
   exit 2
@@ -107,6 +118,12 @@ if [[ -n "$previous_app_container_id" ]]; then
   previous_app_image_id="$(docker inspect --format '{{.Image}}' "$previous_app_container_id")"
   app_was_running="$(docker inspect --format '{{.State.Running}}' "$previous_app_container_id")"
 fi
+
+# This updater's automatic rollback only restores images. Contract migrations
+# 0023/0024 need an explicitly prepared maintenance cutover and joint DB restore.
+source "$APP_DIR/deploy/compact-release-preflight.sh"
+check_compact_release_database
+check_compact_rollback_image
 
 app_image_ref="$(docker compose config --format json \
   | python3 -c 'import json, sys; print(json.load(sys.stdin)["services"]["app"]["image"])')"

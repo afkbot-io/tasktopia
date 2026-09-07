@@ -1,0 +1,28 @@
+{
+  "key": "compact-clinic-v1",
+  "label": "Компактная клиника",
+  "category": "CIVIC",
+  "rarity": "UNCOMMON",
+  "spriteSize": [48, 32],
+  "footprintCells": [6, 4],
+  "anchorPx": [24, 32],
+  "platform": "STONE",
+  "estimates": [1, 2, 3, 6],
+  "tags": ["civic", "clinic", "compact-building"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side": "S", "offset": 3}],
+  "maxPerCity": null,
+  "maxPerDistrict": 1,
+  "serviceRole": "MEDICAL",
+  "stageSources": [
+    "ai-authored/compact-clinic-v1/sources/stage-3.png",
+    "ai-authored/compact-clinic-v1/sources/stage-4.png",
+    "ai-authored/compact-clinic-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "a6378ca5c844b2f0133a49b339d24dbe6732ef264c6cc647276f262af19f980c",
+    "99656e241c58472d873857b72ba7f9f7be0924b514e9d713335c8f92c5962562",
+    "3d59da517abcec24f6d33f3c975c034180ea64db3ca8685c1a4decc9e1f1d17f"
+  ],
+  "reviewed": true
+}

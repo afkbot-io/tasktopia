@@ -1,6 +1,6 @@
-import type { Rect } from "./contracts";
+import type { Cell, Rect } from "./contracts";
 
-export const PLANET_ATLAS_SCHEMA_VERSION = 3 as const;
+export const PLANET_ATLAS_SCHEMA_VERSION = 4 as const;
 
 export type PlanetCountryDto = {
   id: string;
@@ -14,6 +14,11 @@ export type PlanetCountryDto = {
   progress: number;
   /** Canonical world extent sampled by every coarser map projection. */
   worldBounds: Rect | null;
+  cities: Array<{
+    id: string; center: Cell;
+    districts: Array<{ id: string; center: Cell }>;
+    airports: Array<{ taskId: string; center: Cell }>;
+  }>;
 };
 
 export type PlanetAtlasDto = {

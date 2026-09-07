@@ -1,10 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
-import { AppService, DomainError } from "../src/server/app-service";
-import { loginUser, registerUser, type AuthUser } from "../src/server/auth";
+import { AppService } from "../src/server/app-service";
+import { createCountry, listAccessibleCountries, loginUser, registerUser, setActiveCountry, type AuthUser } from "../src/server/auth";
 import { createDb, transaction } from "../src/server/db";
 import { auditWorld } from "../src/server/world/world-audit";
-import { taskBuildingCompatibleWithArchetype } from "../src/server/world/city-generation";
 import { TASK_BUILDING_CATALOG, taskBuildingPlatform } from "../src/shared/catalog";
 import type { CityMorphology, DistrictDto, TaskDto, TaskStatus } from "../src/shared/contracts";
 
@@ -32,21 +31,6 @@ const CITY_SPECS: Array<{ name: string; morphology: CityMorphology; seedOffset: 
   { name: "Стальные Башни", morphology: "POLYCENTRIC", seedOffset: 97 },
   { name: "Город Будущего", morphology: "DENSE_CORE", seedOffset: 109 },
 ];
-
-const BUILDING_KEYS = TASK_BUILDING_CATALOG
-  .filter((entry) => !entry.maxPerCity && !entry.maxPerDistrict && entry.ruleIds.every((rule) => rule === "STANDARD"))
-  .filter((entry) => taskBuildingCompatibleWithArchetype(entry, "NEW_BUILD"))
-  .map((entry) => entry.key);
-const COMPACT_BUILDING_KEYS = TASK_BUILDING_CATALOG
-  .filter((entry) => !entry.maxPerCity && !entry.maxPerDistrict && entry.ruleIds.every((rule) => rule === "STANDARD")
-    && taskBuildingCompatibleWithArchetype(entry, "NEW_BUILD")
-    && entry.footprint.width <= 14 && entry.footprint.height <= 12)
-  .map((entry) => entry.key);
-const PLANNED_BUILDING_KEYS = TASK_BUILDING_CATALOG
-  .filter((entry) => !entry.maxPerCity && !entry.maxPerDistrict && entry.ruleIds.every((rule) => rule === "STANDARD")
-    && taskBuildingCompatibleWithArchetype(entry, "NEW_BUILD")
-    && entry.footprint.width <= 12 && entry.footprint.height <= 10)
-  .map((entry) => entry.key);
 
 const STATUS_PATHS: Record<Exclude<TaskStatus, "PLANNING">, TaskStatus[]> = {
   STARTED: ["STARTED"],
@@ -97,7 +81,6 @@ async function addDistrict(input: {
   activate: boolean;
   complete: boolean;
   district?: DistrictDto;
-  buildingKeys?: string[];
 }): Promise<{ district: DistrictDto; tasks: TaskDto[] }> {
   const prefix = `world-validation-${input.cityIndex}-${input.districtIndex}`;
   let district = input.district ?? await input.service.createDistrict(input.countryId, {
@@ -106,7 +89,7 @@ async function addDistrict(input: {
       ? ["Завершённый центр", "Завершённая набережная", "Строящийся квартал", "Район будущего"][input.districtIndex]!
       : `Квартал ${input.districtIndex + 1}`,
     description: "Проверочный район новой плотной застройки.",
-    goal: "Проверить дороги шириной 2–3 клетки, плитку и разные стадии новостроек.",
+    goal: "Проверить дороги шириной 3 клетки, плитку и разные стадии новостроек.",
     archetype: "NEW_BUILD",
     capacitySp: 32,
     activate: input.activate,
@@ -117,29 +100,16 @@ async function addDistrict(input: {
   }
   const tasks: TaskDto[] = [];
   for (let taskIndex = 0; taskIndex < input.taskCount; taskIndex += 1) {
-    const buildingKeys = input.buildingKeys ?? BUILDING_KEYS;
-    const catalogIndex = (input.cityIndex * 11 + input.districtIndex * 7 + taskIndex) % buildingKeys.length;
     const target = input.targets[taskIndex % input.targets.length]!;
     const taskInput = {
       cityId: input.cityId,
       districtId: district.id,
       title: `Новостройка ${input.cityIndex + 1}.${input.districtIndex + 1}.${taskIndex + 1}`,
-      description: "Жилой комплекс проверочного города: авторская V5-графика и каменная площадь под зданием.",
+      description: "Автоматический компактный корпус 6×3–6×6: авторские стадии 3–5 и процедурная стройплощадка 1–2.",
       estimate: ([1, 2, 3, 6] as const)[(input.cityIndex + input.districtIndex + taskIndex) % 4]!,
-      buildingHint: buildingKeys[catalogIndex]!,
       idempotencyKey: `${prefix}-task-${taskIndex}`,
     };
-    let task: TaskDto;
-    try {
-      task = await input.service.createTask(input.countryId, taskInput);
-    } catch (error) {
-      if (!(error instanceof DomainError) || error.code !== "PLACEMENT_BLOCKED") throw error;
-      // Exact visual hints are intentionally strict. A model that cannot fit
-      // this deterministic terrain must not invalidate the whole atlas fixture:
-      // retry the same task through the normal compatible-building picker.
-      const fallbackInput = { ...taskInput, buildingHint: undefined };
-      task = await input.service.createTask(input.countryId, fallbackInput);
-    }
+    let task = await input.service.createTask(input.countryId, taskInput);
     task = await advanceTask(input.service, input.countryId, task, target, `${prefix}-task-${taskIndex}`);
     tasks.push(task);
   }
@@ -164,8 +134,6 @@ try {
 await transaction(db, async () => {
   await db.prepare("UPDATE countries SET name = ?, seed = ?, world_version = 1 WHERE id = ?")
     .run("Федерация Новостроек", 915_731, user.countryId);
-  await db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(user.countryId);
-  await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(user.countryId);
   // The fixture deliberately rewrites canonical entities and resets
   // world_version outside normal mutations, so its disposable read models
   // must be removed in the same transaction.
@@ -186,22 +154,25 @@ for (let cityIndex = 0; cityIndex < CITY_SPECS.length; cityIndex += 1) {
     idempotencyKey: `world-validation-city-${cityIndex}-${spec.seedOffset}`,
   });
 
-  if (cityIndex === 9) {
+  if (cityIndex === 0 || cityIndex === 9) {
     // Reserve the full urban plan before any district grows. Trying to place
     // the planned fourth district after three six-building districts have
     // annexed land does not represent how the product is used and needlessly
     // turns a planning-only district into an intercity search problem.
     const reserved: DistrictDto[] = [];
-    for (let districtIndex = 0; districtIndex < 4; districtIndex += 1) {
+    for (let districtIndex = 0; districtIndex < (cityIndex === 9 ? 4 : 3); districtIndex += 1) {
       reserved.push((await addDistrict({
         service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex,
         taskCount: 0, targets: ["PLANNING"], activate: false, complete: false,
       })).district);
     }
-    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 0, taskCount: 4, targets: ["COMPLETED"], activate: true, complete: true, district: reserved[0], buildingKeys: COMPACT_BUILDING_KEYS });
-    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 1, taskCount: 4, targets: ["COMPLETED"], activate: true, complete: true, district: reserved[1], buildingKeys: COMPACT_BUILDING_KEYS });
-    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 2, taskCount: 4, targets: ["COMPLETED", "IN_PROGRESS"], activate: true, complete: false, district: reserved[2], buildingKeys: COMPACT_BUILDING_KEYS });
-    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 3, taskCount: 4, targets: ["PLANNING"], activate: false, complete: false, district: reserved[3], buildingKeys: PLANNED_BUILDING_KEYS });
+    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 0, taskCount: 4, targets: ["COMPLETED"], activate: true, complete: true, district: reserved[0] });
+    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 1, taskCount: 4, targets: ["COMPLETED"], activate: true, complete: true, district: reserved[1] });
+    // The second task of the third nonempty district receives the real airport
+    // reservation. Complete it through the public stage lifecycle in two cities
+    // so the atlas exercises one real route, not synthetic per-city airports.
+    await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 2, taskCount: 4, targets: ["IN_PROGRESS", "COMPLETED"], activate: true, complete: false, district: reserved[2] });
+    if (cityIndex === 9) await addDistrict({ service, countryId: user.countryId, cityId: city.id, cityIndex, districtIndex: 3, taskCount: 4, targets: ["PLANNING"], activate: false, complete: false, district: reserved[3] });
   } else {
     const progressiveTargets: TaskStatus[][] = [
       ["PLANNING", "STARTED", "IN_PROGRESS", "TESTING"],
@@ -236,6 +207,7 @@ for (let cityIndex = 0; cityIndex < CITY_SPECS.length; cityIndex += 1) {
   const cityDistricts = await service.listDistricts(user.countryId, city.id);
   const unexpectedBuildings = cityTasks.filter((task) => !TASK_BUILDING_CATALOG.some((entry) => entry.key === task.buildingType));
   const wrongPlatforms = cityTasks.filter((task) => {
+    if (task.visualKind === "PARK") return task.platformType !== "PARK";
     const building = TASK_BUILDING_CATALOG.find((entry) => entry.key === task.buildingType);
     return !building || task.platformType !== taskBuildingPlatform(building);
   });
@@ -291,6 +263,25 @@ const output = {
   cities: reports,
   finalCity: { ...finalCity, districts: finalShape },
 };
+// Planet QA uses real accessible countries and task-linked city/district
+// clusters. These local named fixtures are additive; unrelated countries stay
+// untouched, and the primary validation country remains the active country.
+for (const [index, name] of ["Северная Республика", "Лазурный Союз"].entries()) {
+  const accessible = await listAccessibleCountries(db, user.id);
+  const neighborId = accessible.find(country => country.name === name)?.id ?? await createCountry(db, user.id, name);
+  await db.prepare("UPDATE countries SET seed=? WHERE id=?").run(84721 + index, neighborId);
+  if ((await service.listCities(neighborId)).length === 0) {
+    const neighborCity = await service.createCity(neighborId, { name: `${name}: столица`, idempotencyKey: `planet-neighbor-${index}-city` });
+    const district = await service.createDistrict(neighborId, { cityId: neighborCity.id, name: "Центральный район", activate: true,
+      idempotencyKey: `planet-neighbor-${index}-district` });
+    for (let n = 0; n < 3; n++) {
+      const task = await service.createTask(neighborId, { cityId: neighborCity.id, districtId: district.id, title: `Городской корпус ${n + 1}`,
+        estimate: 1, idempotencyKey: `planet-neighbor-${index}-task-${n}` });
+      await advanceTask(service, neighborId, task, "COMPLETED", `planet-neighbor-${index}-task-${n}`);
+    }
+  }
+}
+await setActiveCountry(db, user.id, user.countryId);
 await mkdir("screenshots/world-validation", { recursive: true });
 await writeFile("screenshots/world-validation/report.json", `${JSON.stringify(output, null, 2)}\n`, "utf8");
 console.log(JSON.stringify(output, null, 2));

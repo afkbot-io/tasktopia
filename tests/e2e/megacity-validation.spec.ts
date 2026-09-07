@@ -53,7 +53,7 @@ test("opens and captures the 100-task megacity", async ({ page }) => {
   await expect.poll(async () => Number(await host.getAttribute("data-cars") ?? 0), { timeout: 60_000 }).toBeGreaterThan(0);
   await expect.poll(async () => Number(await host.getAttribute("data-walkers") ?? 0), { timeout: 60_000 }).toBeGreaterThan(0);
   await expect(host).toHaveAttribute("data-wrong-way-cars", "0");
-  await expect(host).toHaveAttribute("data-wrong-way-buses", "0");
+  await expect(host).toHaveAttribute("data-buses", "0");
   await expect(host).toHaveAttribute("data-traffic-unsafe-pairs", "0");
   await expect(host).toHaveAttribute("data-world-object-depth-errors", "0");
   await expect(host).toHaveAttribute("data-resident-center-errors", "0");
@@ -94,7 +94,6 @@ test("opens and captures the 100-task megacity", async ({ page }) => {
     animals: await metric("animals"),
     trafficSignals: await metric("traffic-signals"),
     wrongWayCars: await metric("wrong-way-cars"),
-    wrongWayBuses: await metric("wrong-way-buses"),
     trafficUnsafePairs: await metric("traffic-unsafe-pairs"),
     worldObjectDepthErrors: await metric("world-object-depth-errors"),
     residentCenterErrors: await metric("resident-center-errors"),

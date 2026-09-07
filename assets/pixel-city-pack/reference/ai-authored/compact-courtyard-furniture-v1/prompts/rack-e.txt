@@ -1,0 +1,9 @@
+Use case: background-extraction recovery. Preserve the exact three square
+arch outlines, six supports, openings, mounting rail, dimensions and camera
+of rack-D. Its checkerboard is painted, not alpha. Replace EVERY background
+checker pixel (also inside each of three holes) with one solid flat #ff00ff.
+No transparency preview pattern. No magenta within any actual metal material.
+Preserve the structure; convert any soft material gradients into a few hard
+square muted-teal/slate clusters and a small upper-left highlight. No new
+geometry, no rounded/chamfered corners, no object changes, no ground or shadow.
+Output one complete isolated object with generous solid-magenta padding.

@@ -1,0 +1,195 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-recovery",
+  "commonSourceFrame": [
+    139,
+    164,
+    1114,
+    1089
+  ],
+  "uniformScale": 0.04923076923076923,
+  "targetSize": [
+    48,
+    46
+  ],
+  "offset": [
+    0,
+    2
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "7bc85125a3c218bde1bccd68207371c77823858550faa8a5644aa72983803344",
+      "runtimeSha256": "69e9d2f81448cc12cea5ea22deadc868d550ad15c5364b7eb31c24b45c6e0d26",
+      "sourceBounds": [
+        139,
+        164,
+        1114,
+        1089
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        46
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "b00ba75e082c89741accff56a2b6930015a168173e238c99b31f58a686cecf0c",
+      "runtimeSha256": "a5c6b3ba771fc5f7bdcd962eeb02c109407f0e27d506e2d1c898e1fac17de74c",
+      "sourceBounds": [
+        138,
+        166,
+        1114,
+        1089
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        46
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "c9ff86b561e6d2ad5fd77a430317eaa88854ff75ea23659225df82eec90da06b",
+      "runtimeSha256": "1acb1d553e3e7fcc45dbeef81839c263adbc6ebc29c75ace1d44d748ed7927ba",
+      "sourceBounds": [
+        124,
+        199,
+        1128,
+        1095
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [
+    "Stage 3: visual review missing or stale",
+    "Stage 3: source review missing or stale"
+  ],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-teal-mansard-v1",
+    "reviewedAt": "2026-09-07",
+    "reviewScope": "Stage4 and5 source/native independently approved; stage3/full sequence pending.",
+    "reviewMethod": "Parent independently inspected native1x and8x plus exact measured ROIs.",
+    "projection": {
+      "camera": "High45 roof-dominant axisaligned frontal-top; no receding sidefacade",
+      "roofDepthPx": 30,
+      "facadeHeightPx": 16,
+      "floorStepPx": 5,
+      "windowPaneSizePxRange": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "doorLeafBoundsPx": [
+        22,
+        45,
+        26,
+        48
+      ],
+      "doorFrameBoundsPx": [
+        20,
+        43,
+        27,
+        48
+      ],
+      "doorGrammar": "Two-row header and glass reaching baseline match accepted Garden/Olive/Rose/Sand grammar. No separate bottom threshold required.",
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "noHeavyBlackBaseline": true,
+      "sameCameraAcrossStages": true,
+      "sameCameraAssertionScope": "Available approved4/5 stages only; stage3 has not yet been generated or accepted."
+    },
+    "stages": {
+      "4": {
+        "accepted": true,
+        "sourceSha256": "b00ba75e082c89741accff56a2b6930015a168173e238c99b31f58a686cecf0c",
+        "runtimeSha256": "a5c6b3ba771fc5f7bdcd962eeb02c109407f0e27d506e2d1c898e1fac17de74c",
+        "notes": "Parent independently accepted native1x/8x: left half slate/right four opaque rooms; all final dormers/chimney removed, eight exact dark2x2 openings and portal preserved, same axisaligned camera."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "7bc85125a3c218bde1bccd68207371c77823858550faa8a5644aa72983803344",
+        "runtimeSha256": "69e9d2f81448cc12cea5ea22deadc868d550ad15c5364b7eb31c24b45c6e0d26",
+        "notes": "Parent approved three small cream/teal dormers, rear chimney and double teal roof band as distinct architecture; muted palette and high camera consistent, exact openings accepted. VariantK unnecessary and unused."
+      }
+    }
+  }
+}

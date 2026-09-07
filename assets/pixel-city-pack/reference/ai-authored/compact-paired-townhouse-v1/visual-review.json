@@ -1,0 +1,85 @@
+{
+  "key": "compact-paired-townhouse-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected native48x32images and8x3/4/5shared-baseline sequence after targeted window-clarity correction. Separate numeric mask report clean.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention; all structural edges axis aligned.",
+    "roofDepthPx": 22,
+    "facadeHeightPx": 8,
+    "floorStepPx": 4,
+    "floorCount": 2,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      8,
+      4
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "3faf43f5d6701abb59424df593cb3325cd41cc49f6b22d28698e92529e78e563",
+      "runtimeSha256": "aba1ecc9435a90d472637662b67eb5f5454be3f15f3f98c3e249eec356d10ab6",
+      "notes": "No roof, opaque full-depth rooms with straight partitions and rough wall ends; material stacks remain inside. Same dark window/door positions and facade, not a shrunken house."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "8642dca7598064ff17001eef6c1d8dc1cc61dbb6b7fdd8e667aec3b2df145adb",
+      "runtimeSha256": "b3e73827159a5915ed74c5f69f5b6a7df345ecc09c270cb279a3faac62954775",
+      "notes": "Half plain clay roof; opaque right rooms and clay material stacks, unglazed dark windows and central stair opening. Same facade and anchor."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "6c4d5d861ceb9dd35a93f4050cdf1c0a59bff3e41b047633b8f085989d6e432a",
+      "runtimeSha256": "76ae0486e92584ca17a67f10860f6452123488d4b76907b4bf41727e8c150af0",
+      "notes": "Paired clay/sage roof planes, two small dormers, skylight, shallow balcony and central stair glazing. Readable simple windows; very low2floorfacade."
+    }
+  },
+  "pendingIntegration": [
+    "Final frozen-revision QA/deployment approval; stages0–2 use shared construction geometry, not separately AI-authored art."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+    "acceptedStages": [
+      3,
+      4,
+      5
+    ],
+    "fixture": "compact_release_20260906:480tasks/20sprints",
+    "evidence": "docs/evidence/compact-rc/final-browser.json",
+    "checks": [
+      "Same footprint and south entrance across3/4/5",
+      "Shaded opaque interior and aligned partitions at3",
+      "Partial bare roof and unfinished openings at4",
+      "Completed unique roof and facade at5",
+      "Tree/crown and sidewalk clearance",
+      "All30real building clicks opened the matching task"
+    ],
+    "captures": [
+      {
+        "stage": 3,
+        "path": "screenshots/compact-rc-final/compact-paired-townhouse-v1-stage-3.png",
+        "sha256": "a5b13ee80f922dec15da50886364c624fc74df07fa6722bf6f6bc3706051f9a7"
+      },
+      {
+        "stage": 4,
+        "path": "screenshots/compact-rc-final/compact-paired-townhouse-v1-stage-4.png",
+        "sha256": "486fd6b69a4ba5acfc8e4d64721de2fab79ece66d05e69ea69619ba7b39f99c2"
+      },
+      {
+        "stage": 5,
+        "path": "screenshots/compact-rc-final/compact-paired-townhouse-v1-stage-5.png",
+        "sha256": "fd2d652ac40a269aaedf2e69ed52b488b5e3eec17ce0961009c3fbcd877b2af4"
+      }
+    ]
+  }
+}

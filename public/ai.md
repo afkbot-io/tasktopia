@@ -1,32 +1,33 @@
 # Tasktopia AI integration guide
 
 Version: 1.23.0
-Last updated: 2026-08-24
+Last updated: 2026-09-05
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
 Tasktopia turns work into a living country. Countries contain cities, cities
 contain districts, and every task is represented by a building.
 
-The authenticated browser map requests compact `ChunkPayloadDto` responses with
-the version-2 vendor `Accept` header. The active CITY client loads one complete
-`/api/countries/:countryId/cities/:cityId/scene` response; viewport and chunk
-routes are rolling-deploy compatibility paths. These endpoints are not MCP
+The active CITY client loads one complete version-3
+`/api/countries/:countryId/cities/:cityId/scene` response, containing compact
+version-2 chunk payloads. Moving inside that city does not fetch viewport chunks.
+These browser endpoints are not MCP
 resources and external agents should use the tools and resources below.
 
 The country overview uses the internal authenticated
-`GET /api/countries/:countryId/overview` read model (`schemaVersion: 4`).
+`GET /api/countries/:countryId/overview` read model (`schemaVersion: 6`).
 It carries planet-derived bounded terrain, aggregate district progress and a
 semantic city miniature; full buildings, roads, surfaces and props are absent.
 This endpoint is private UI infrastructure, uses ETag plus conditional
 background revalidation, and is not an MCP resource. Agents must continue to
-use `country.get_current`, `city.list`, `district.list`, and the task tools.
+use explicit-country `country.get`, `city.list`, `district.list`, and the task tools.
 
 The planet overview uses the authenticated browser-only `GET /api/planet-atlas`
-read model (`schemaVersion: 3`). It contains only countries visible to the
-current account and compact city, district, building, and progress aggregates.
-The browser deterministically projects continents, coasts, water, routes, and
-atmosphere from `planetSeed`; coordinates are not stored or transferred. The
+read model (`schemaVersion: 4`). It contains only countries visible to the
+current account, compact progress aggregates, canonical world bounds, city and
+district centres, and task-backed airports. The browser projects the shared
+geography from these coordinates and `planetSeed`; four-connected land groups
+define continents. Logical airport connections are not ground roads. The
 response uses a private ETag cache (`max-age=60`, `stale-while-revalidate=600`),
 and browser snapshots are isolated by account. This endpoint is UI
 infrastructure, not an MCP resource; agents should use `country.list` and the
@@ -232,7 +233,7 @@ Reads one accepted generation operation in the explicitly requested country.
 `PENDING` and `RUNNING` are transient. `COMPLETED` includes `result`; final
 `FAILED` includes a safe error object. Required scope: `country:read`.
 
-The server exposes 46 tools.
+The server exposes 47 tools.
 
 ### Countries
 
@@ -371,7 +372,7 @@ plus required `idempotencyKey`. Use `deadline: null` to clear the date.
 
 #### `city.delete`
 
-Permanently deletes a city and cascades its districts, tasks, comments, and city features. City-local roads are removed; only genuine highway or through-road components are retained as shared infrastructure. The response includes `roadsDeleted`. Pass the exact current name to prevent accidental deletion.
+Permanently deletes a city and cascades its districts, tasks and comments. Permanent former task sites remain country-owned history and are never available for new construction. Deleting the country itself removes that history for privacy. Pass the exact current name to prevent accidental deletion.
 
 ```json
 { "countryId": "<country-id>", "cityId": "<city-id>", "confirmName": "Exact city name", "idempotencyKey": "delete-city-v1" }
@@ -543,11 +544,43 @@ country-level State Archive is separate and is not selected with `buildingHint`.
 
 To create a task-backed park, set `visualKind` to `PARK` and optionally choose
 `parkVariant`: `urban-formal`, `urban-community`, `urban-central`,
-`urban-botanical`, `urban-amusement`, or `urban-park`. Do not infer a park from
-words such as "parking"; use `PARK` only when the user explicitly wants a public
-green-space task. For ordinary tasks omit both fields.
+`urban-botanical`, `urban-amusement`, `urban-park`, `urban-lake`, `urban-parking`,
+`urban-pocket`, `urban-large`, `urban-fountain`, `urban-monument`, `urban-memorial`,
+`urban-orchard`, or `urban-promenade`. Pocket/fountain/monument variants fit compact
+parcels; `urban-large` requires a large park parcel. These objects keep the task's
+number, five stages and transfer/deletion history. Do not infer appearance from
+words in ordinary engineering tasks; request a public-space type only when the
+user asks for it. For ordinary tasks omit both fields and let the server consume
+the next planned slot. A full sprint creates additional blocks, not a new sprint.
 
 Required scope: `tasks:write`.
+
+#### `task.transfer`
+
+Moves an existing task to a different sprint in the same city and explicitly
+requested country. Required scope: `tasks:write`; current country membership
+must permit writes. It preserves UUID, number, status, history and service role.
+The former site remains permanently reserved with a MOVE marker linking directly
+to the task's current location. Never delete/recreate a task to move it.
+
+```json
+{
+  "countryId": "<country-id>",
+  "taskId": "<task-id>",
+  "targetDistrictId": "<different-sprint-id-in-the-same-city>",
+  "comment": "Move to the next sprint",
+  "idempotencyKey": "task-transfer-next-sprint-v1"
+}
+```
+
+All fields except `comment` are required. `comment` is limited to 4000 characters;
+unknown fields are rejected. A completed/abandoned destination or another city
+is not allowed. Placement, history and marker commit atomically; failure leaves
+the source unchanged. Retrying the identical request with the same key creates
+no extra marker. The response is the current task plus its canonical browser URL.
+Task URLs returned by get/create/transfer/link operations include both `countryId`
+and `taskId`: `/task/<number>?countryId=<country-id>&taskId=<task-id>`. Preserve
+these parameters: task numbers are country-local, while UUID survives relocation.
 
 #### `task.update_fields`
 
@@ -606,8 +639,9 @@ step done or refine its title. Re-read `task.get` before and after the write.
 }
 ```
 
-The human UI is read-only: people inspect task documents, checklist, MR links,
-evidence, defects and history; AI agents perform task mutations through MCP.
+People inspect task documents, checklist, MR links, evidence, defects and history
+in the UI; its separate sprint-transfer form uses the same server operation.
+AI agents use MCP for authorized task mutations.
 
 #### `task.defect_create`
 
@@ -650,7 +684,8 @@ Required scope: `tasks:write`.
 
 #### `task.delete`
 
-Permanently deletes one task/building and releases its planned lot so a later task can reuse it.
+Permanently deletes one task/building. Its site remains occupied by permanent ruins
+with limited historical information; a later task can never reuse it.
 
 ```json
 { "countryId": "<country-id>", "taskId": "<task-id>", "confirmTitle": "Exact task title", "idempotencyKey": "delete-task-v1" }

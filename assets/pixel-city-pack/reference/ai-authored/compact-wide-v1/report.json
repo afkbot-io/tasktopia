@@ -1,0 +1,186 @@
+{
+  "key": "compact-wide-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-recovery",
+  "commonSourceFrame": [
+    244,
+    148,
+    1291,
+    875
+  ],
+  "uniformScale": 0.04401650618982118,
+  "targetSize": [
+    46,
+    32
+  ],
+  "offset": [
+    1,
+    0
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "8a867ea84fb32bd812ee06eb53a16893bd3d5833bc550f21053a4c713ce4c5e7",
+      "runtimeSha256": "76a38f42a135e5063b28b9d158ace246504d9ab91d2ad9b02b033f61b23cbf4c",
+      "sourceBounds": [
+        244,
+        148,
+        1291,
+        875
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "ac9f983b1cab5a5847c9e386003b24418327ad6f456901fb949d50f5f6f7c1c1",
+      "runtimeSha256": "2b22de59010de19c67630c8d094907d29aabfdf2ee051b0e00e0781220d50f91",
+      "sourceBounds": [
+        243,
+        147,
+        1293,
+        876
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 30,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "58923f2ccfb470ef198cb3f51ddb91dfe149e128a0df2f2b10b9dfd91bbbf251",
+      "runtimeSha256": "7124c8387e65e9f0e849c6ae7992bb75f11f6743df6a8137acac52c90fe9f246",
+      "sourceBounds": [
+        242,
+        146,
+        1294,
+        877
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-wide-v1",
+    "reviewedAt": "2026-09-05",
+    "reviewMethod": "Native pixels and nearest-neighbour8x per-stage and shared-baseline sequence inspection, independently reviewed by parent agent. Numeric alpha/foundation registration audited separately. Runtime landscape remains integration gate.",
+    "projection": {
+      "camera": "Accepted high45-degree frontal-top orthographic; all structural lines axis aligned; no receding side facade.",
+      "roofDepthPx": 22,
+      "facadeHeightPx": 10,
+      "floorStepPx": 5,
+      "floorCount": 2,
+      "windowPaneSizePx": [
+        2,
+        2
+      ],
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true,
+      "windowOpeningSizePx": [
+        2,
+        2
+      ],
+      "windowGroupWithSillPx": [
+        2,
+        3
+      ]
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "runtimeSha256": "7124c8387e65e9f0e849c6ae7992bb75f11f6743df6a8137acac52c90fe9f246",
+        "sourceSha256": "58923f2ccfb470ef198cb3f51ddb91dfe149e128a0df2f2b10b9dfd91bbbf251",
+        "notes": "Roof absent; opaque shaded rooms, axis-aligned simplified wall caps, rough facade masonry patches and internal materials. About half assembled by missing roof/finish, not shrinking the physical floor. Foundation/centre/baseline exact on native grid."
+      },
+      "4": {
+        "accepted": true,
+        "runtimeSha256": "2b22de59010de19c67630c8d094907d29aabfdf2ee051b0e00e0781220d50f91",
+        "sourceSha256": "ac9f983b1cab5a5847c9e386003b24418327ad6f456901fb949d50f5f6f7c1c1",
+        "notes": "Same frame and openings; approximately55% left roof retained, dark unfinished window apertures; no finished rooftop equipment. Right interior stays opaque and material piles contained."
+      },
+      "5": {
+        "accepted": true,
+        "runtimeSha256": "76a38f42a135e5063b28b9d158ace246504d9ab91d2ad9b02b033f61b23cbf4c",
+        "sourceSha256": "8a867ea84fb32bd812ee06eb53a16893bd3d5833bc550f21053a4c713ce4c5e7",
+        "notes": "Finished low-rise building with muted beige/olive bands, slate dominant roof, restrained warm rim and tiny teal windows; no heavy baseline."
+      }
+    }
+  }
+}

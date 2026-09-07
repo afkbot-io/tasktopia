@@ -1,35 +1,54 @@
 import { isPrivateAppPath } from "./pwa-cache-policy.ts";
 
-export function renderServiceWorker(revision: string, candidates: readonly string[]): string {
-  const precache = [...new Set(candidates.filter((path) => path.startsWith("/") && !isPrivateAppPath(path) && !path.endsWith(".map")))];
+export function renderServiceWorker(revision: string, candidates: readonly string[], staticOrigin = ""): string {
+  const origin = staticOrigin.replace(/\/$/, "");
+  if (origin) {
+    const parsed = new URL(origin);
+    if (!["http:", "https:"].includes(parsed.protocol) || parsed.origin !== origin) throw new Error("Static asset origin must be an HTTP(S) origin without credentials, path, query or fragment");
+  }
+  const precache = [...new Set(candidates.filter(path => /^\/(?!\/)[A-Za-z0-9_./-]*$/.test(path)
+    && new URL(path, "https://build.invalid").pathname === path
+    && !isPrivateAppPath(path) && !path.endsWith(".map")))];
+  // Only exact emitted public build files may cross the app-origin boundary.
+  // Never turn the CDN origin into a general-purpose runtime cache allowlist.
+  const cdnAssets = origin ? precache.filter(path =>
+    /^\/assets\/[A-Za-z0-9_./-]+\.(?:js|css|woff2?|png|svg|webp|jpe?g|gif|avif)$/.test(path)
+  ).map(path => origin + path) : [];
   return `const REVISION = ${JSON.stringify(revision)};
 const CACHE_PREFIX = "tasktopia-shell-";
 const CACHE_NAME = ${JSON.stringify(`tasktopia-shell-${revision}`)};
 const PRECACHE = ${JSON.stringify(precache)};
+const CDN_ASSETS = new Set(${JSON.stringify(cdnAssets)});
 const PRIVATE_PREFIXES = ["/api", "/mcp", "/socket.io", "/health"];
 const isPrivatePath = (path) => PRIVATE_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + "/"));
 const isRuntimeAsset = (request, url) => url.origin === self.location.origin && !isPrivatePath(url.pathname)
   && !url.pathname.endsWith(".map") && url.pathname !== "/game-assets/v5/manifest.json"
   && ((url.pathname.startsWith("/assets/") && ["script", "style", "font", "image"].includes(request.destination))
     || (url.pathname.startsWith("/game-assets/v5/") && request.destination === "image"));
-self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))));
+self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll([
+  ...PRECACHE, ...Array.from(CDN_ASSETS).filter((url) => new URL(url).origin !== self.location.origin)
+    .map((url) => new Request(url, { mode: "cors", credentials: "omit" })),
+]))));
 self.addEventListener("activate", (event) => event.waitUntil((async () => {
   for (const key of await caches.keys()) if (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) await caches.delete(key);
   await self.clients.claim();
 })()));
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.origin !== self.location.origin || isPrivatePath(url.pathname)) return;
-  if (event.request.mode === "navigate") {
+  if (event.request.method !== "GET" || isPrivatePath(url.pathname) || event.request.headers.has("authorization")) return;
+  const isCdnAsset = url.origin !== self.location.origin && CDN_ASSETS.has(url.href)
+    && event.request.credentials !== "include";
+  if (url.origin !== self.location.origin && !isCdnAsset) return;
+  if (!isCdnAsset && event.request.mode === "navigate") {
     event.respondWith(fetch(event.request).catch(async () => (await (await caches.open(CACHE_NAME)).match("/")) || Response.error()));
     return;
   }
-  if (!isRuntimeAsset(event.request, url)) return;
+  if (!isCdnAsset && !isRuntimeAsset(event.request, url)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(event.request);
     if (cached) return cached;
-    const response = await fetch(event.request);
+    const response = await fetch(event.request, isCdnAsset ? { credentials: "omit" } : undefined);
     if (response.ok) await cache.put(event.request, response.clone());
     return response;
   })());

@@ -1,0 +1,12 @@
+Correct the PROPORTIONS of this same rooftop café building, preserving its roof terrace canopy/planters, palette, camera and width. The three-storey front is currently too tall. Do not add details.
+
+Keep1254x1254 canvas. Restore the intended occupied outer box exactly x185..1069,y100..1066. Straight vertical outer walls; horizontal roof/floor edges; no tapering.
+EXTEND THE TOP-DOWN ROOF SURFACE SOUTH to y750 (currently ends near697). COMPRESS THE THREE-STOREY FACADE into y750..1066, keeping bottom baseline at1066 (currently1100). So roof occupies~32 game pixels and front only~16. Do not stretch/reduce the roof terrace objects; move their relative layout naturally within the longer roof.
+
+Each facade floor is about100sourcepx tall, not the current120/180:
+- upper floor y750..850, middle850..950, ground950..1066.
+- two upper rows of SIX simple teal panes each, every actual glass body40–50px wide ×40px high (2–3×2 native pixels), not thin stripes, no internal grids.
+- lower shop awnings are a SHALLOW20px orange/cream horizontal band near950..970; beneath, six simple teal panes each40–50px wide ×40px high.
+- centered main door must have sandstone outer frame x557..697,y966..1066 (7×5 native); teal leaf x587..667,y1006..1066 (4×3). This is a SMALL door. No large double-panel portal. Keep threshold flush at1066.
+
+Final resulting proportions: native48x48 canvas, occupied44–48 wide and44–48 tall;3floors of5px pitch;roof32/front16;windows2–3×2;door4×3 andframe7×5. Use coarse crisp cartoon pixels and no near-black baseline. Outside completely flat magenta. No external props, fence, grass, paving, shadows, people or text. Only this corrected finished café, same rooftop identity.

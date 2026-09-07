@@ -1,0 +1,601 @@
+{
+  "schema": "courtyard_art_preview_722d785067dc4440ae5a893b03717c7e",
+  "assetRevision": "750f26edc463160e",
+  "sceneRevision": "8f074c327c4b41408f37302840b659bac44b7ec62d6a7076c2bbc58a8e83786a",
+  "frames": [
+    {
+      "key": "compact-apartment-v1-3",
+      "id": "393679ef-fc1d-4be4-8f9a-f69a2a16ba86",
+      "stage": 3,
+      "screenshot": "compact-apartment-v1-3.png",
+      "camera": {
+        "x": 103,
+        "y": -102,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-ivory-library-v1-3",
+      "id": "69055edd-ccc4-4992-a144-65e4196550e6",
+      "stage": 3,
+      "screenshot": "compact-ivory-library-v1-3.png",
+      "camera": {
+        "x": 122,
+        "y": -134,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-garden-house-v1-3",
+      "id": "346743ad-5828-4d94-bc5e-d549e24afd90",
+      "stage": 3,
+      "screenshot": "compact-garden-house-v1-3.png",
+      "camera": {
+        "x": 104.5,
+        "y": -139.84,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-rust-loft-v1-3",
+      "id": "27b68f63-e550-4f5a-a5a8-edd9ebfb82dd",
+      "stage": 3,
+      "screenshot": "compact-rust-loft-v1-3.png",
+      "camera": {
+        "x": 79,
+        "y": -121,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-sand-balcony-v1-3",
+      "id": "5720dbfd-a79f-476a-907d-db9af49f3572",
+      "stage": 3,
+      "screenshot": "compact-sand-balcony-v1-3.png",
+      "camera": {
+        "x": 79,
+        "y": -112,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-long-gallery-v1-3",
+      "id": "e3bd7a90-c910-4720-b74a-528b7fe56230",
+      "stage": 3,
+      "screenshot": "compact-long-gallery-v1-3.png",
+      "camera": {
+        "x": 87,
+        "y": -145,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-corner-court-v1-3",
+      "id": "b436bc3c-b130-4562-83d8-f78fb52655bc",
+      "stage": 3,
+      "screenshot": "compact-corner-court-v1-3.png",
+      "camera": {
+        "x": 113,
+        "y": -103,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-u-courtyard-v1-3",
+      "id": "4da79df4-65aa-4d72-b6b0-b513c379b576",
+      "stage": 3,
+      "screenshot": "compact-u-courtyard-v1-3.png",
+      "camera": {
+        "x": 106,
+        "y": -87,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-olive-cafe-v1-3",
+      "id": "ce52bb8d-8b98-4f8e-a5eb-0242e193abd7",
+      "stage": 3,
+      "screenshot": "compact-olive-cafe-v1-3.png",
+      "camera": {
+        "x": 79,
+        "y": -103,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-rose-clinic-annex-v1-3",
+      "id": "cbd9550c-de5a-4a09-b433-1afba447d08a",
+      "stage": 3,
+      "screenshot": "compact-rose-clinic-annex-v1-3.png",
+      "camera": {
+        "x": 90,
+        "y": -136,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-teal-mansard-v1-3",
+      "id": "419fc498-354d-4a22-8557-85e0ad167b1a",
+      "stage": 3,
+      "screenshot": "compact-teal-mansard-v1-3.png",
+      "camera": {
+        "x": 138,
+        "y": -110,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-long-slate-wing-v1-3",
+      "id": "31a9fd03-5da6-4f83-8c7a-1c614cb1402c",
+      "stage": 3,
+      "screenshot": "compact-long-slate-wing-v1-3.png",
+      "camera": {
+        "x": 103,
+        "y": -114,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-plum-workshop-v1-3",
+      "id": "30040baf-5f36-4604-b6dc-fcf441cc23c3",
+      "stage": 3,
+      "screenshot": "compact-plum-workshop-v1-3.png",
+      "camera": {
+        "x": 138,
+        "y": -119,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-community-3",
+      "id": "7be8b9c2-be47-4d96-99a9-1d63fbf96393",
+      "stage": 3,
+      "screenshot": "urban-community-3.png",
+      "camera": {
+        "x": 112,
+        "y": -122.5,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-formal-3",
+      "id": "c36ee26f-0f6f-4d6d-9933-51273fce99da",
+      "stage": 3,
+      "screenshot": "urban-formal-3.png",
+      "camera": {
+        "x": 103.5,
+        "y": -123.5,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-large-3",
+      "id": "5a94886f-733f-4be3-9aaa-2fb853f0cb65",
+      "stage": 3,
+      "screenshot": "urban-large-3.png",
+      "camera": {
+        "x": 140.5,
+        "y": -139.5,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-apartment-v1-4",
+      "id": "6dd4815d-f5bf-4327-9c5c-915867224000",
+      "stage": 4,
+      "screenshot": "compact-apartment-v1-4.png",
+      "camera": {
+        "x": 154,
+        "y": -78,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-ivory-library-v1-4",
+      "id": "3fef07c1-edd3-40cd-b872-508aef105360",
+      "stage": 4,
+      "screenshot": "compact-ivory-library-v1-4.png",
+      "camera": {
+        "x": 103,
+        "y": -73,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-garden-house-v1-4",
+      "id": "bcd834f6-8f2c-4ae7-a1e3-2aca8b59947e",
+      "stage": 4,
+      "screenshot": "compact-garden-house-v1-4.png",
+      "camera": {
+        "x": 120.5,
+        "y": -67.17,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-rust-loft-v1-4",
+      "id": "29c9c9a8-378c-4212-861c-e51403361fac",
+      "stage": 4,
+      "screenshot": "compact-rust-loft-v1-4.png",
+      "camera": {
+        "x": 90,
+        "y": -89,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-sand-balcony-v1-4",
+      "id": "14a122b3-1ebd-4492-963c-37168421ba34",
+      "stage": 4,
+      "screenshot": "compact-sand-balcony-v1-4.png",
+      "camera": {
+        "x": 90,
+        "y": -80,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-long-gallery-v1-4",
+      "id": "e2de668d-2206-42c9-bcd1-0d07e49891ef",
+      "stage": 4,
+      "screenshot": "compact-long-gallery-v1-4.png",
+      "camera": {
+        "x": 154,
+        "y": -110,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-corner-court-v1-4",
+      "id": "0ac189ba-a686-461b-bc21-449267968f8c",
+      "stage": 4,
+      "screenshot": "compact-corner-court-v1-4.png",
+      "camera": {
+        "x": 144,
+        "y": -79,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-u-courtyard-v1-4",
+      "id": "d0b63132-c8ca-4083-93c5-28b0fd24ea5a",
+      "stage": 4,
+      "screenshot": "compact-u-courtyard-v1-4.png",
+      "camera": {
+        "x": 143,
+        "y": -63,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-olive-cafe-v1-4",
+      "id": "b7c11e76-7b72-4159-af8a-438d77b9477e",
+      "stage": 4,
+      "screenshot": "compact-olive-cafe-v1-4.png",
+      "camera": {
+        "x": 90.5,
+        "y": -70.93,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-rose-clinic-annex-v1-4",
+      "id": "26b9d5fb-aea1-487e-84f4-b927c5b87867",
+      "stage": 4,
+      "screenshot": "compact-rose-clinic-annex-v1-4.png",
+      "camera": {
+        "x": 151,
+        "y": -119,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-teal-mansard-v1-4",
+      "id": "0cffc3eb-29de-4f36-a2cd-06021d1d97f6",
+      "stage": 4,
+      "screenshot": "compact-teal-mansard-v1-4.png",
+      "camera": {
+        "x": 159,
+        "y": -145,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-long-slate-wing-v1-4",
+      "id": "41a41d90-632e-42b3-99fb-d6a529fbc44a",
+      "stage": 4,
+      "screenshot": "compact-long-slate-wing-v1-4.png",
+      "camera": {
+        "x": 154,
+        "y": -90,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-plum-workshop-v1-4",
+      "id": "61bcc9f6-b5b6-40b5-ba07-f5ef6e0a1512",
+      "stage": 4,
+      "screenshot": "compact-plum-workshop-v1-4.png",
+      "camera": {
+        "x": 158.98,
+        "y": -135.85,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-community-4",
+      "id": "4575a2b0-f3aa-4774-ba5a-65b04877ebbc",
+      "stage": 4,
+      "screenshot": "urban-community-4.png",
+      "camera": {
+        "x": 145,
+        "y": -98.5,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-formal-4",
+      "id": "4f08b115-842a-4141-853f-7c5dada719a0",
+      "stage": 4,
+      "screenshot": "urban-formal-4.png",
+      "camera": {
+        "x": 136,
+        "y": -98,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-large-4",
+      "id": "b3eef3bc-4c89-4210-ad54-c99b77fc4c24",
+      "stage": 4,
+      "screenshot": "urban-large-4.png",
+      "camera": {
+        "x": 164.5,
+        "y": -59.5,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-apartment-v1-5",
+      "id": "886450ba-76d5-4c0f-910a-7d751061ecab",
+      "stage": 5,
+      "screenshot": "compact-apartment-v1-5.png",
+      "camera": {
+        "x": 63,
+        "y": -57,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-ivory-library-v1-5",
+      "id": "fa319d56-1ce6-4ad2-a2ea-82b8b33ed1bb",
+      "stage": 5,
+      "screenshot": "compact-ivory-library-v1-5.png",
+      "camera": {
+        "x": 114,
+        "y": -49,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-garden-house-v1-5",
+      "id": "43cb11bf-cb18-4910-abc3-c0bc03b2c1e8",
+      "stage": 5,
+      "screenshot": "compact-garden-house-v1-5.png",
+      "camera": {
+        "x": 96.5,
+        "y": -43.17,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-rust-loft-v1-5",
+      "id": "07e152f7-195c-4970-b000-ed2bde75d5ce",
+      "stage": 5,
+      "screenshot": "compact-rust-loft-v1-5.png",
+      "camera": {
+        "x": 55,
+        "y": -70,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-sand-balcony-v1-5",
+      "id": "1da4aed9-8352-4448-9bfe-9d934f1d683f",
+      "stage": 5,
+      "screenshot": "compact-sand-balcony-v1-5.png",
+      "camera": {
+        "x": 55,
+        "y": -79,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-long-gallery-v1-5",
+      "id": "988c08f0-eb57-43d6-9456-dfaddf5b8f58",
+      "stage": 5,
+      "screenshot": "compact-long-gallery-v1-5.png",
+      "camera": {
+        "x": 62.97,
+        "y": -101.92,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-corner-court-v1-5",
+      "id": "55401391-6440-426e-abd2-e698a8cab461",
+      "stage": 5,
+      "screenshot": "compact-corner-court-v1-5.png",
+      "camera": {
+        "x": 72.98,
+        "y": -56.07,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-u-courtyard-v1-5",
+      "id": "666f3dd7-c43c-4552-a868-f2125de7e4f7",
+      "stage": 5,
+      "screenshot": "compact-u-courtyard-v1-5.png",
+      "camera": {
+        "x": 58,
+        "y": -128,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-olive-cafe-v1-5",
+      "id": "32414801-87cb-4678-bfdd-f92a446dd22d",
+      "stage": 5,
+      "screenshot": "compact-olive-cafe-v1-5.png",
+      "camera": {
+        "x": 55,
+        "y": -88,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-rose-clinic-annex-v1-5",
+      "id": "e4dde263-f26a-4fea-ae5d-9e522230cf24",
+      "stage": 5,
+      "screenshot": "compact-rose-clinic-annex-v1-5.png",
+      "camera": {
+        "x": 65.96,
+        "y": -110.92,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-teal-mansard-v1-5",
+      "id": "01769b4a-a4c0-4b9d-b226-14c515fc106c",
+      "stage": 5,
+      "screenshot": "compact-teal-mansard-v1-5.png",
+      "camera": {
+        "x": 130,
+        "y": -49,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-long-slate-wing-v1-5",
+      "id": "5bb64fcf-bc64-4477-801b-bb7ffb04147a",
+      "stage": 5,
+      "screenshot": "compact-long-slate-wing-v1-5.png",
+      "camera": {
+        "x": 64,
+        "y": -73,
+        "scale": 4
+      }
+    },
+    {
+      "key": "compact-plum-workshop-v1-5",
+      "id": "e2c6d4f7-8c71-489d-b983-3520c27f0e5f",
+      "stage": 5,
+      "screenshot": "compact-plum-workshop-v1-5.png",
+      "camera": {
+        "x": 130,
+        "y": -40,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-community-5",
+      "id": "0e57c5c6-bca9-4f0e-88a4-95071f34616a",
+      "stage": 5,
+      "screenshot": "urban-community-5.png",
+      "camera": {
+        "x": 72,
+        "y": -36.5,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-formal-5",
+      "id": "c5e6a090-8b65-4afb-847a-085c4897696a",
+      "stage": 5,
+      "screenshot": "urban-formal-5.png",
+      "camera": {
+        "x": 67.5,
+        "y": -47.5,
+        "scale": 4
+      }
+    },
+    {
+      "key": "urban-large-5",
+      "id": "2fb70b38-ef9a-45af-88cf-5c74ff527f2e",
+      "stage": 5,
+      "screenshot": "urban-large-5.png",
+      "camera": {
+        "x": 60.5,
+        "y": -147.5,
+        "scale": 4
+      }
+    }
+  ],
+  "parkFurniture": [
+    {
+      "key": "urban-community-3",
+      "cells": 18,
+      "kinds": []
+    },
+    {
+      "key": "urban-formal-3",
+      "cells": 27,
+      "kinds": []
+    },
+    {
+      "key": "urban-large-3",
+      "cells": 289,
+      "kinds": []
+    },
+    {
+      "key": "urban-community-4",
+      "cells": 18,
+      "kinds": []
+    },
+    {
+      "key": "urban-formal-4",
+      "cells": 60,
+      "kinds": []
+    },
+    {
+      "key": "urban-large-4",
+      "cells": 289,
+      "kinds": []
+    },
+    {
+      "key": "urban-community-5",
+      "cells": 18,
+      "kinds": [
+        "courtyard-square-planter"
+      ]
+    },
+    {
+      "key": "urban-formal-5",
+      "cells": 27,
+      "kinds": []
+    },
+    {
+      "key": "urban-large-5",
+      "cells": 289,
+      "kinds": [
+        "courtyard-picnic-table",
+        "courtyard-cycle-rack",
+        "courtyard-square-planter"
+      ]
+    }
+  ],
+  "mapReads": [
+    "/api/countries/a25c2d61-d5fa-45c1-a755-bc25b65a7693/cities/d6f46df7-aab7-46d5-bf12-feda2cfb6d8b/scene"
+  ],
+  "errors": [],
+  "warnings": [
+    "Service Worker registration blocked by Playwright",
+    "[.WebGL-0x1240062c800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x1240062c800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x1240062c800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x1240062c800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ],
+  "failed": [],
+  "writes": []
+}

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type ElementHandle, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 1440, height: 900 } });
 test.skip(process.env.E2E_ATLAS_FIXTURE !== "true", "Run against the dedicated fixture with npm run test:atlas");
@@ -34,14 +34,24 @@ test("country overview keeps projected city silhouettes and accessible controls"
   await expect(atlas.locator("svg")).toHaveCount(0);
   await expect(atlas.locator("canvas")).toHaveCount(1);
   await expect(atlas.locator(".country-overview-city")).toHaveCount(10);
+  const labelRects = await atlas.locator(".country-overview-city").evaluateAll(labels => labels.map(label => {
+    const box = label.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height };
+  }));
+  for (let i = 0; i < labelRects.length; i++) for (let j = i + 1; j < labelRects.length; j++) {
+    const a = labelRects[i]!, b = labelRects[j]!;
+    expect(a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y).toBe(false);
+  }
+  await expect(atlas.locator(".country-city-leader")).toHaveCount(10);
+  expect(await atlas.locator(".country-city-leader").first().evaluate(node => getComputedStyle(node).pointerEvents)).toBe("none");
   await expect(atlas.locator(".country-side-fog")).toHaveCount(0);
   await expect(atlas).toHaveAttribute("data-country-terrain-cells", "792");
   await expect(atlas).toHaveAttribute("data-country-terrain-render", "directional-16px-sheets");
-  await expect(atlas).toHaveAttribute("data-country-city-render", "filled-16x16-atlas-tiles");
+  await expect(atlas).toHaveAttribute("data-country-city-render", "one-house-per-block");
   expect(Number(await atlas.getAttribute("data-country-selected-cells"))).toBeGreaterThan(0);
-  expect(Number(await atlas.getAttribute("data-country-airports"))).toBe(10);
+  expect(Number(await atlas.getAttribute("data-country-airports"))).toBe(2);
+  await expect(atlas).toHaveAttribute("data-country-flights", "1");
   const aircraft = atlas.locator(".country-atlas-aircraft");
-  await expect(aircraft).toHaveCount(5);
+  await expect(aircraft).toHaveCount(1);
   const flightBefore = await aircraft.first().getAttribute("style");
   await page.waitForTimeout(160);
   await expect.poll(() => aircraft.first().getAttribute("style")).not.toBe(flightBefore);
@@ -56,24 +66,38 @@ test("country overview keeps projected city silhouettes and accessible controls"
   const metrics = await page.evaluate(async () => {
     const countryId = document.querySelector<HTMLElement>(".country-overview")!.dataset.countryId!;
     const response = await fetch(`/api/countries/${countryId}/overview`, {
-      headers: { accept: "application/vnd.tasktopia.country-overview+json; version=4" },
+      headers: { accept: "application/vnd.tasktopia.country-overview+json; version=7" },
     });
     const body = await response.arrayBuffer();
     const json = JSON.parse(new TextDecoder().decode(body));
     const miniature = json.cities[0]?.miniature;
+    const airports = json.cities.flatMap((city: { id: string; miniature: { airports: { taskId: string }[] } }) => city.miniature.airports.map(airport => ({ ...airport, cityId: city.id })));
+    const airportTasks = await Promise.all(airports.map(async (airport: { taskId: string; cityId: string }) => {
+      const task = await (await fetch(`/api/tasks/${airport.taskId}`)).json();
+      return { id: task.id, cityId: task.cityId, role: task.serviceRole, status: task.status, stage: task.stage,
+        sameTask: task.id === airport.taskId && task.cityId === airport.cityId };
+    }));
     return {
       status: response.status,
       bytes: body.byteLength,
       etag: response.headers.get("etag"),
       schemaVersion: json.schemaVersion,
-      semanticBlockSize: miniature?.blockSize,
-      semanticCells: miniature?.districtCodes?.length,
-      terrainCells: miniature?.terrainCodes?.length,
+      cellSize: miniature?.cellSize,
+      miniatureKeys: Object.keys(miniature).sort(),
+      blockCount: json.cities.reduce((sum: number, city: { miniature: { blocks: unknown[] } }) => sum + city.miniature.blocks.length, 0),
+      geographyCells: json.geography.terrainCodes.length,
+      territoryCells: json.geography.territoryCodes.length,
+      connections: json.connections.length,
+      airportTasks,
       hasRawGeometry: /buildings|roads|surfaces|features|footprint/.test(new TextDecoder().decode(body)),
     };
   });
-  expect(metrics).toMatchObject({ status: 200, etag: expect.any(String), schemaVersion: 4, semanticBlockSize: 16, hasRawGeometry: false });
-  expect(metrics.terrainCells).toBe(metrics.semanticCells);
+  expect(metrics).toMatchObject({ status: 200, etag: expect.any(String), schemaVersion: 7, cellSize: 8, hasRawGeometry: false,
+    miniatureKeys: ["airports", "blocks", "cellSize", "columns", "rows"], geographyCells: 792, territoryCells: 792, connections: 1 });
+  expect(metrics.blockCount).toBeGreaterThanOrEqual(10);
+  expect(metrics.airportTasks).toHaveLength(2);
+  for (const task of metrics.airportTasks) expect(task).toMatchObject({ sameTask: true, role: "AIRPORT", status: "COMPLETED", stage: 5 });
+  await expect(atlas).toHaveAttribute("data-country-miniature-cells", String(metrics.blockCount));
   expect(metrics.bytes).toBeLessThan(200_000);
   await testInfo.attach("country-overview-metrics", { body: Buffer.from(JSON.stringify(metrics, null, 2)), contentType: "application/json" });
   await expect(atlas).toHaveAttribute("data-country-ready", "true");
@@ -92,9 +116,10 @@ test("country camera is RAF-driven and its zoom is intentionally bounded", async
   const atlas = page.locator(".country-overview");
   const box = await atlas.boundingBox();
   expect(box).not.toBeNull();
-  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  // Empty outer context: zooming into an actual city now correctly enters CITY.
+  await page.mouse.move(box!.x + 2, box!.y + 2);
   for (let index = 0; index < 20; index += 1) await page.mouse.wheel(0, -240);
-  await expect.poll(async () => Number(await atlas.getAttribute("data-country-zoom"))).toBeLessThanOrEqual(2.6);
+  await expect.poll(async () => Number(await atlas.getAttribute("data-country-zoom"))).toBe(2.6);
   expect(await atlas.locator(".country-overview-city").count()).toBe(10);
   await page.waitForTimeout(250);
   expect(Number(await atlas.getAttribute("data-country-camera-frame-max-ms"))).toBeLessThan(50);
@@ -116,7 +141,9 @@ test("city opens with one atomic scene request and pan performs no data I/O", as
     const pathname = new URL(response.url()).pathname;
     return pathname.includes("/cities/") && pathname.endsWith("/scene");
   });
-  await page.locator(".country-overview-city").first().click();
+  // The bootstrap's first city may already be retained behind COUNTRY. A
+  // different city is the actual cold-entry contract; warm return is separate.
+  await page.locator(".country-overview-city").nth(1).click();
   const sceneResponse = await sceneResponsePromise;
   const sceneBytes = (await sceneResponse.body()).byteLength;
 
@@ -124,7 +151,8 @@ test("city opens with one atomic scene request and pan performs no data I/O", as
   await expect(host).toHaveAttribute("data-city-scene-requests", "1", { timeout: 90_000 });
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
   await expect(host).toHaveAttribute("data-loading", "false", { timeout: 90_000 });
-  await expect(host).toHaveAttribute("data-render-scale", "0.8", { timeout: 90_000 });
+  await expect.poll(async () => Number(await host.getAttribute("data-render-scale")) - Number(await host.getAttribute("data-minimum-render-scale")), { timeout: 90_000 }).toBeCloseTo(0, 3);
+  expect(Number(await host.getAttribute("data-render-scale"))).toBeGreaterThanOrEqual(.8);
   expect(requests.filter((url) => url.endsWith("/scene"))).toHaveLength(1);
   expect(requests.filter((url) => url.includes("/world/viewport") || url.includes("/chunks/"))).toEqual([]);
   expect(sceneBytes).toBeLessThan(10_000_000);
@@ -165,12 +193,26 @@ test("city opens with one atomic scene request and pan performs no data I/O", as
   });
 });
 
-test("planet, country and city transitions keep a single renderer mounted", async ({ page }) => {
+test("planet and country transitions retain exactly one paused city renderer for warm return", async ({ page }) => {
   test.setTimeout(120_000);
   await loginAndOpenCountry(page);
   const levels = page.getByRole("navigation", { name: "Уровень карты" });
+  await page.locator(".country-overview-city").first().click();
+  const host = page.locator(".world-canvas");
+  await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
+  const canvas = await page.locator(".world-canvas-element").elementHandle();
+  await levels.getByRole("button", { name: "Страна" }).click();
+  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true", { timeout: 45_000 });
+  await expect(host).toBeHidden();
+  await expect(host).toHaveAttribute("data-map-active", "false");
+  await expect(host).toHaveAttribute("data-animation-active", "false");
   await levels.getByRole("button", { name: "Планета" }).click();
   await expect(page.locator(".planet-atlas")).toBeVisible();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 45_000 });
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-countries", "3");
+  const visibleCountries = Number(await page.locator(".planet-atlas").getAttribute("data-visible-countries"));
+  expect(visibleCountries).toBeGreaterThan(0); expect(visibleCountries).toBeLessThanOrEqual(3);
+  await expect(page.locator(".planet-country-label")).toHaveCount(visibleCountries);
   const planetTerrainSheets = page.locator('.planet-terrain-sprite image[href*="atlas/terrain-v4/planet/"]');
   await expect(planetTerrainSheets.first()).toBeVisible();
   expect(await planetTerrainSheets.count()).toBeGreaterThan(20);
@@ -178,12 +220,18 @@ test("planet, country and city transitions keep a single renderer mounted", asyn
     await expect(page.locator(".map-level-transition")).toHaveCount(0);
     await page.screenshot({ path: process.env.PLANET_SCREENSHOT_PATH, fullPage: true });
   }
-  await expect(page.locator(".country-overview, .world-canvas")).toHaveCount(0);
-  await page.locator(".planet-country-label").first().click();
+  await expect(page.locator(".country-overview")).toHaveCount(0);
+  await expect(host).toHaveCount(1); await expect(host).toBeHidden();
+  expect(await canvas!.evaluate(node => node.isConnected)).toBe(true);
+  await page.locator('.planet-country-label[data-active="true"]').click();
   await expect(page.locator(".country-overview")).toBeVisible({ timeout: 45_000 });
-  await expect(page.locator(".planet-atlas, .world-canvas")).toHaveCount(0);
+  await expect(page.locator(".planet-atlas")).toHaveCount(0);
+  await expect(host).toBeHidden();
   await page.locator(".country-overview-city").first().click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
+  await expect(host).toBeVisible();
+  await expect(host).toHaveAttribute("data-map-active", "true");
+  expect(await canvas!.evaluate(node => node === document.querySelector(".world-canvas-element"))).toBe(true);
   await expect(page.locator(".planet-atlas, .country-overview")).toHaveCount(0);
   await levels.getByRole("button", { name: "Страна" }).click();
   await expect(page.locator(".country-overview")).toBeVisible({ timeout: 45_000 });
@@ -192,8 +240,10 @@ test("planet, country and city transitions keep a single renderer mounted", asyn
 
 test("a failed city preload keeps the country interactive and supports retry", async ({ page }) => {
   test.setTimeout(120_000);
+  await loginAndOpenCountry(page);
+  const targetCityId = await page.locator(".country-overview-city").nth(1).getAttribute("data-city-id");
   let fail = true;
-  await page.route("**/api/countries/*/cities/*/scene", async (route) => {
+  await page.route(`**/api/countries/*/cities/${targetCityId}/scene`, async (route) => {
     if (fail) {
       fail = false;
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });
@@ -201,26 +251,34 @@ test("a failed city preload keeps the country interactive and supports retry", a
     }
     await route.continue();
   });
-  await loginAndOpenCountry(page);
-  await page.locator(".country-overview-city").first().click();
+  await page.locator(".country-overview-city").nth(1).click();
   await expect(page.locator(".country-overview")).toBeVisible();
-  await expect(page.locator(".world-canvas")).toHaveCount(0);
+  await expect(page.locator(".world-canvas")).toBeHidden();
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("temporary");
   await alert.getByRole("button", { name: "Закрыть" }).click();
-  await page.locator(".country-overview-city").first().click();
+  await page.locator(".country-overview-city").nth(1).click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
+  await expect(page.locator(".map-level-transition")).toHaveCount(0, { timeout: 90_000 });
+  await expect(page.locator(".world-canvas")).toBeVisible();
 });
 
-test("distinct full-city visits release renderer heap before the next city", async ({ page, context }, testInfo) => {
+test("distinct city visits replace the retained renderer and keep heap bounded", async ({ page, context }, testInfo) => {
   test.setTimeout(240_000);
   await loginAndOpenCountry(page);
   const cdp = await context.newCDPSession(page);
   const heapAfterEviction: number[] = [];
+  let previousCanvas: ElementHandle<HTMLElement | SVGElement> | null = null;
   for (let cityIndex = 0; cityIndex < 3; cityIndex += 1) {
     await page.locator(".country-overview-city").nth(cityIndex).dispatchEvent("click");
+    // The previous hidden canvas can still carry "atomic" while the next
+    // scene is preloading. Wait for the user-visible transition to commit.
+    await expect(page.locator(".map-level-transition")).toHaveCount(0, { timeout: 90_000 });
+    await expect(page.locator(".world-canvas")).toBeVisible();
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
     await expect(page.locator(".world-canvas-element")).toHaveCount(1);
+    if (previousCanvas) await expect.poll(() => previousCanvas!.evaluate(node => node.isConnected), { timeout: 30_000 }).toBe(false);
+    previousCanvas = await page.locator(".world-canvas-element").elementHandle();
     await expect(page.locator(".country-overview-raster")).toHaveCount(0);
     await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Страна" }).click();
     await expect(page.locator(".country-overview")).toBeVisible({ timeout: 30_000 });
@@ -229,7 +287,11 @@ test("distinct full-city visits release renderer heap before the next city", asy
     heapAfterEviction.push(await page.evaluate(() => (
       performance as Performance & { memory?: { usedJSHeapSize: number } }
     ).memory?.usedJSHeapSize ?? 0));
-    await expect(page.locator(".world-canvas-element")).toHaveCount(0);
+    await expect(page.locator(".world-canvas-element")).toHaveCount(1);
+    await expect(page.locator(".world-canvas-element")).toBeHidden();
+    await expect(page.locator(".world-canvas")).toHaveAttribute("data-map-active", "false");
+    await expect(page.locator(".world-canvas")).toHaveAttribute("data-animation-active", "false");
+    expect(await previousCanvas!.evaluate(node => node.isConnected)).toBe(true);
     await expect(page.locator(".country-overview-raster")).toHaveCount(1);
   }
   const heapDrift = heapAfterEviction.at(-1)! - heapAfterEviction[0]!;

@@ -1,0 +1,9 @@
+Generate one corrected finished rooftop café sprite, using IMAGE1 for its unique architecture/colors/roof objects and IMAGE2 strictly for the correct broad proportions and compact three-floor facade/door sizing.
+
+Keep IMAGE1's identity: broad pale stone roof terrace, central orange-and-cream striped canopy with teal table and2chairs, olive planters, terracotta upperfloors and dark-teal groundfloor cafe with shallow stripedawnings. Do not copy image2's roof, plants, hut or facade materials.
+
+CRITICAL: IMAGE1 is too NARROW and its facade too TALL. Give it the SAME broad almost-square OUTER WIDTH/HEIGHT RATIO as IMAGE2. Roof must occupy about two-thirds of the object's total projected depth; the3-storey front only aboutone-third. A broad 6x6cell parcel, not a narrow tower. Native48x48 canvas, occupied46–48px wide and44–47px high. All three floors are5px high, windows2×2, door4×3 inside7×5frame. Bottom centered entrance and identical5px floor bands. Use image2's SMALL main door and shallow-facade scale, but teal door/orange cafe architecture fromimage1.
+
+Output1254x1254, broadbuilding about1000pxwide×950pxhigh centered horizontally, bottomaroundy1115, toparoundy165. Outer walls vertical, roof/floor horizontal andparallel. No perspective, no sidefacade/no isometric turn. No externalground, fence, grass, hugefoundation, shadows or text. Three-storey front has TWO rows ofsix isolatedteal2×2 windows plus groundshopwindows3left/3right similarly2×2 under shallowawnings. No miniaturewindowgrids. Maintealleaf4pxwide3tall, warmframe7wide5tall baselineflush, never a giantdoubleportal.
+
+Match the muted GameBoy-style cartoonpixel city, chunky hard squareclusters and calmcolors, no realism/softdetail. Uniformflatmagenta background. Keep rooftop café recognizable and pleasant but with image2's approvedcompactgeometry. ONE finished building, not a sheet.

@@ -1,354 +1,81 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import catalog from "../assets/pixel-city-pack/catalog/buildings.json";
 import manifest from "../assets/pixel-city-pack/manifest.json";
-import residentialMask from "../assets/pixel-city-pack/catalog/residential-generation-mask.json";
+import { COMPACT_BUILDING_SHAPES } from "../src/shared/compact-building-families";
 
-type CatalogBuilding = {
-  key: string;
-  label: string;
-  category: string;
-  rarity: string;
-  spriteSize: number[];
-  footprintCells: number[];
-  anchorPx: number[];
-  platform: string;
-  estimates: number[];
-  tags: string[];
-  ruleIds: string[];
-  entrances: Array<{ side: string; offset: number }>;
-  maxPerCity: number | null;
-  maxPerDistrict: number | null;
-  serviceRole: string | null;
-  stageSources?: string[] | null;
-  stageSha256?: string[] | null;
-  reviewed: boolean;
-};
+const pack = resolve("assets/pixel-city-pack");
+const sha = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex");
 
-type RuntimeBuilding = Omit<CatalogBuilding, "key" | "reviewed"> & {
-  stages: string[];
-};
-
-const referenceRoot = resolve("assets/pixel-city-pack/reference");
-const manifestBuildings = manifest.buildings as Record<string, RuntimeBuilding>;
-const catalogBuildings = catalog.buildings as CatalogBuilding[];
-
-const frozenFields = [
-  "label",
-  "category",
-  "rarity",
-  "platform",
-  "estimates",
-  "tags",
-  "ruleIds",
-  "maxPerCity",
-  "maxPerDistrict",
-  "serviceRole",
-] as const;
-
-describe("unified building art catalog", () => {
-  it("tracks every runtime building key exactly once", () => {
-    const catalogKeys = catalogBuildings.map((building) => building.key);
-    expect(catalogKeys).toHaveLength(167);
-    expect(new Set(catalogKeys).size).toBe(catalogKeys.length);
-    expect([...catalogKeys].sort()).toEqual(Object.keys(manifestBuildings).sort());
-  });
-
-  it("freezes gameplay and placement metadata during the art migration", () => {
-    for (const building of catalogBuildings) {
-      const runtimeBuilding = manifestBuildings[building.key];
-      expect(runtimeBuilding, building.key).toBeDefined();
-      for (const field of frozenFields) {
-        expect(building[field], `${building.key}.${field}`).toEqual(runtimeBuilding[field]);
-      }
+describe("compact building authoring contract", () => {
+  it("publishes distinct compact geometries and rejects restoration of large legacy buildings", () => {
+    const keys = catalog.buildings.map(({ key }) => key);
+    expect(keys).toEqual(expect.arrayContaining(["compact-apartment-v1", "compact-row-v1", "compact-wide-v1", "compact-long-gallery-v1", "compact-fire-station-v1", "compact-clinic-v1", "compact-roofgarden-v1", "compact-bungalow-v1", "compact-workshop-home-v1", "compact-terrace-v1"]));
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const entry of catalog.buildings) {
+      expect(entry.reviewed).toBe(true);
+      const approvedSizes = Object.values(COMPACT_BUILDING_SHAPES).map(shape => [shape.width * 8, shape.height * 8]);
+      expect(approvedSizes, entry.key).toContainEqual(entry.spriteSize);
+      expect(entry.footprintCells).toEqual(entry.spriteSize.map(size => size / 8));
+    }
+    expect(Object.keys(manifest.buildings)).toEqual(keys);
+    const family = (key: string) => catalog.buildings.find(entry => entry.key === key)!;
+    expect(family("compact-apartment-v1")).toMatchObject({
+      spriteSize: [48, 48], footprintCells: [6, 6], anchorPx: [24, 48],
+      entrances: [{ side: "S", offset: 3 }], reviewed: true,
+    });
+    expect([family("compact-row-v1"), family("compact-wide-v1")].map(({ spriteSize, footprintCells, anchorPx }) => ({ spriteSize, footprintCells, anchorPx }))).toEqual([
+      { spriteSize: [48, 24], footprintCells: [6, 3], anchorPx: [24, 24] },
+      { spriteSize: [48, 32], footprintCells: [6, 4], anchorPx: [24, 32] },
+    ]);
+    expect(family("compact-fire-station-v1")).toMatchObject({ serviceRole: "FIRE", spriteSize: [48, 32], footprintCells: [6, 4], anchorPx: [24, 32] });
+    expect(family("compact-clinic-v1")).toMatchObject({ serviceRole: "MEDICAL", spriteSize: [48, 32], footprintCells: [6, 4], anchorPx: [24, 32] });
+    for (const base of [resolve(pack, "runtime/buildings"), resolve("public/game-assets/v5/buildings")]) {
+      const pngs = readdirSync(base, { recursive: true }).filter((path) => String(path).endsWith(".png"));
+      expect(pngs).toHaveLength(keys.length * 5);
+      expect(pngs.every((path) => keys.some((key) => String(path).includes(`${key}/`)))).toBe(true);
     }
   });
 
-  it("keeps geometry mutable only for explicit reviewed stage migrations", () => {
-    for (const building of catalogBuildings) {
-      const runtimeBuilding = manifestBuildings[building.key];
-      expect(runtimeBuilding, building.key).toBeDefined();
-      const geometryFields = ["spriteSize", "footprintCells", "anchorPx", "entrances"] as const;
-      for (const field of geometryFields) {
-        expect(building[field], `${building.key}.${field}`).toEqual(runtimeBuilding[field]);
-      }
-      if (building.stageSources?.length === 3) {
-        expect(building.anchorPx[0] * 2, building.key).toBe(building.spriteSize[0]);
-        expect(building.anchorPx[1], building.key).toBe(building.spriteSize[1]);
-        expect(building.spriteSize[0] % 8, building.key).toBe(0);
-        expect(building.spriteSize[1] % 8, building.key).toBe(0);
-      }
+  it.each(catalog.buildings)("keeps three separate source stages and exact accepted runtime bytes: $key", (entry) => {
+    const family = resolve(pack, "reference/ai-authored", entry.key);
+    expect(entry.stageSources).toHaveLength(3);
+    expect(entry.stageSha256).toHaveLength(3);
+    expect(new Set(entry.stageSources).size).toBe(3);
+    const report = JSON.parse(readFileSync(resolve(family, "report.json"), "utf8"));
+    const review = JSON.parse(readFileSync(resolve(family, "visual-review.json"), "utf8"));
+    expect(report.errors).toEqual([]);
+    const published = manifest.buildings[entry.key as keyof typeof manifest.buildings];
+    for (const stage of [3, 4, 5]) {
+      const source = resolve(pack, "reference", entry.stageSources[stage - 3]!);
+      expect(existsSync(source)).toBe(true);
+      expect(sha(source)).toBe(entry.stageSha256[stage - 3]);
+      const runtime = resolve(pack, "runtime", published.stages[stage - 1]!);
+      const normalized = resolve(family, "normalized", `stage-${stage}.png`);
+      expect(sha(runtime)).toBe(sha(normalized));
+      expect(report.stages[String(stage)].runtimeSha256).toBe(sha(runtime));
+      expect(review.stages[String(stage)]).toMatchObject({ accepted: true, runtimeSha256: sha(runtime) });
     }
   });
 
-  it("contains no legacy source-kind classification", () => {
-    const serialized = JSON.stringify(catalog);
-    expect(serialized).not.toMatch(/artSource|sourceKind|procedural|imported|sheet/i);
-  });
-
-  it("publishes all active families through the reviewed V5 contract", () => {
-    const reviewed = catalogBuildings.filter((building) => building.reviewed).length;
-    const pending = catalogBuildings.filter((building) => !building.reviewed).length;
-    expect(reviewed).toBe(167);
-    expect(pending).toBe(0);
-  });
-
-  it("pins every reviewed source family by SHA-256", () => {
-    for (const building of catalogBuildings.filter((entry) => entry.reviewed)) {
-      expect(building.stageSources, building.key).toHaveLength(3);
-      expect(building.stageSha256, building.key).toHaveLength(3);
-      building.stageSources!.forEach((stageSource, index) => {
-        const stagePath = resolve(referenceRoot, stageSource);
-        expect(existsSync(stagePath), `${building.key}: ${stagePath}`).toBe(true);
-        const digest = createHash("sha256").update(readFileSync(stagePath)).digest("hex");
-        expect(digest, `${building.key}: stage ${index + 3}`).toBe(building.stageSha256![index]);
-      });
+  it.each(catalog.buildings)("fixes the roof-dominant camera and common transform: $key", (entry) => {
+    const family = resolve(pack, "reference/ai-authored", entry.key);
+    const geometry = JSON.parse(readFileSync(resolve(family, "geometry.json"), "utf8"));
+    const report = JSON.parse(readFileSync(resolve(family, "report.json"), "utf8"));
+    const review = JSON.parse(readFileSync(resolve(family, "visual-review.json"), "utf8"));
+    expect(geometry.roofDepthPxRange[0]).toBeGreaterThan(geometry.facadeHeightPxRange[1]);
+    expect(geometry.constructionClearanceCells).toBe(1);
+    expect(report.commonSourceFrame).toHaveLength(4);
+    expect(report.targetSize).toHaveLength(2);
+    for (const stage of [3, 4, 5]) {
+      const measured = report.stages[String(stage)];
+      expect(measured.transparentHolePixels).toBe(0);
+      expect(measured.centreDriftPx).toBeLessThanOrEqual(1);
+      expect(measured.baselineDriftPx).toBeLessThanOrEqual(1);
+      expect(measured.paletteColors).toBeLessThanOrEqual(32);
     }
-  });
-
-  it("replaces private houses with ten low-rise apartment families", () => {
-    expect(catalogBuildings.filter((building) => building.tags.includes("private-residential"))).toHaveLength(0);
-    const lowRise = catalogBuildings.filter((building) => building.tags.includes("low-rise-residential"));
-    expect(lowRise).toHaveLength(10);
-    expect(lowRise.every((building) => building.category === "HOUSE" && building.platform === "STONE")).toBe(true);
-    expect(lowRise.every((building) => building.entrances[0]?.side === "S")).toBe(true);
-    expect(lowRise.every((building) => building.stageSources?.length === 3)).toBe(true);
-  });
-
-  it("enforces the residential generation mask in the active catalog", () => {
-    expect(residentialMask.districtComposition).toEqual({
-      PRIVATE: ["low-rise-residential", "mid-rise-residential"],
-      NEW_BUILD: ["mid-rise-residential", "high-rise-residential"],
-    });
-    const residential = catalogBuildings.filter((building) => (
-      residentialMask.activeResidentialTiers.some((tier) => building.tags.includes(tier))
-    ));
-    expect(residential).toHaveLength(60);
-    expect(residential.every((building) => building.platform === "STONE")).toBe(true);
-    expect(residential.every((building) => (
-      residentialMask.forbiddenTags.every((tag) => !building.tags.includes(tag))
-    ))).toBe(true);
-
-    for (const building of residential.filter((entry) => entry.tags.includes("low-rise-residential"))) {
-      const studyDir = resolve(referenceRoot, building.stageSources![0]!, "..", "..");
-      const geometry = JSON.parse(readFileSync(resolve(studyDir, "geometry.json"), "utf8")) as {
-        doorSizePx: number[];
-        doorLeafSizePx: number[];
-        doorBottomInsetPx: number;
-        doorVisualReview: {
-          moduleBoundsPx: number[];
-          leafBoundsPx: number[];
-          reviewedStage5Sha256: string;
-          reviewedEvidenceSha256: string;
-          moduleMatchesVisibleEntrance: boolean;
-          leavesMatchVisibleDoorPixels: boolean;
-        };
-      };
-      expect(geometry.doorSizePx, building.key).toEqual(residentialMask.humanScaleMask.doubleDoorFramePx);
-      expect(geometry.doorLeafSizePx, building.key).toEqual(residentialMask.humanScaleMask.doubleDoorLeavesPx);
-      expect(geometry.doorBottomInsetPx, building.key).toBeGreaterThanOrEqual(
-        residentialMask.humanScaleMask.doorBottomInsetPxRange[0],
-      );
-      expect(geometry.doorBottomInsetPx, building.key).toBeLessThanOrEqual(
-        residentialMask.humanScaleMask.doorBottomInsetPxRange[1],
-      );
-      const [moduleLeft, moduleTop, moduleRight, moduleBottom] = geometry.doorVisualReview.moduleBoundsPx;
-      const [leafLeft, leafTop, leafRight, leafBottom] = geometry.doorVisualReview.leafBoundsPx;
-      expect([moduleRight - moduleLeft, moduleBottom - moduleTop], building.key).toEqual(
-        residentialMask.humanScaleMask.doubleDoorFramePx,
-      );
-      expect([leafRight - leafLeft, leafBottom - leafTop], building.key).toEqual(
-        residentialMask.humanScaleMask.doubleDoorLeavesPx,
-      );
-      expect((moduleLeft + moduleRight) / 2, building.key).toBe(building.anchorPx[0]);
-      expect((leafLeft + leafRight) / 2, building.key).toBe(building.anchorPx[0]);
-      expect(moduleBottom, building.key).toBe(building.spriteSize[1] - geometry.doorBottomInsetPx);
-      expect(leafBottom, building.key).toBe(moduleBottom);
-      expect(geometry.doorVisualReview.moduleMatchesVisibleEntrance, building.key).toBe(true);
-      expect(geometry.doorVisualReview.leavesMatchVisibleDoorPixels, building.key).toBe(true);
-      const runtimeStage5 = resolve(
-        "assets/pixel-city-pack/runtime/buildings/house",
-        building.key,
-        "stage-5.png",
-      );
-      expect(geometry.doorVisualReview.reviewedStage5Sha256, building.key).toBe(
-        createHash("sha256").update(readFileSync(runtimeStage5)).digest("hex"),
-      );
-      const doorEvidence = JSON.stringify({
-        leafBoundsPx: geometry.doorVisualReview.leafBoundsPx,
-        moduleBoundsPx: geometry.doorVisualReview.moduleBoundsPx,
-        runtimeStage5Sha256: geometry.doorVisualReview.reviewedStage5Sha256,
-      });
-      expect(geometry.doorVisualReview.reviewedEvidenceSha256, building.key).toBe(
-        createHash("sha256").update(doorEvidence).digest("hex"),
-      );
-      const projection = JSON.parse(readFileSync(resolve(studyDir, "projection-review.json"), "utf8")) as {
-        facadeVerticals: number[][][];
-        floorHorizontals: number[][][];
-        topPlanes: unknown[];
-        sideFacadeWidthPx: number;
-        reviewedEvidenceFingerprint: string;
-        primaryRoofIsDominantSurface: boolean;
-        primaryRoofFrontEdgeMatchesEave: boolean;
-        annotationsMatchVisiblePixels: boolean;
-        sameCameraAcrossStages: boolean;
-      };
-      const projectionEvidence = JSON.stringify({
-        spriteSize: building.spriteSize,
-        footprintCells: building.footprintCells,
-        stageSha256: building.stageSha256,
-        facadeVerticals: projection.facadeVerticals,
-        floorHorizontals: projection.floorHorizontals,
-        topPlanes: projection.topPlanes,
-        sideFacadeWidthPx: projection.sideFacadeWidthPx,
-      });
-      expect(projection.reviewedEvidenceFingerprint, building.key).toBe(
-        createHash("sha256").update(projectionEvidence).digest("hex"),
-      );
-      expect(projection.primaryRoofIsDominantSurface, building.key).toBe(true);
-      expect(projection.primaryRoofFrontEdgeMatchesEave, building.key).toBe(true);
-      expect(projection.annotationsMatchVisiblePixels, building.key).toBe(true);
-      expect(projection.sameCameraAcrossStages, building.key).toBe(true);
-    }
-  });
-
-  it("does not mark a replacement ready without a complete reviewed source", () => {
-    for (const building of catalogBuildings) {
-      const hasStages = building.stageSources?.length === 3
-        && building.stageSha256?.length === building.stageSources?.length;
-      expect(building.reviewed).toBe(hasStages);
-    }
-  });
-
-  it("registers the balcony tower as three authored late stages", () => {
-    const tower = catalogBuildings.find((building) => building.key === "highrise-residential-tower");
-    expect(tower).toMatchObject({
-      spriteSize: [144, 280],
-      footprintCells: [18, 16],
-      anchorPx: [72, 280],
-      entrances: [{ side: "S", offset: 9 }],
-      reviewed: true,
-    });
-    expect(tower?.stageSources).toHaveLength(3);
-    expect(new Set(tower?.stageSources).size).toBe(3);
-  });
-
-  it("registers the glass tower in the shared-early-stage migration", () => {
-    const tower = catalogBuildings.find((building) => building.key === "highrise-glass");
-    expect(tower).toMatchObject({
-      spriteSize: [96, 224],
-      footprintCells: [12, 10],
-      anchorPx: [48, 224],
-      entrances: [{ side: "S", offset: 6 }],
-      maxPerDistrict: 1,
-      reviewed: true,
-    });
-    expect(tower?.stageSources).toHaveLength(3);
-    expect(new Set(tower?.stageSources).size).toBe(3);
-
-    const migratedNewBuilds = catalogBuildings.filter(
-      (building) => building.tags.includes("new-build") && building.stageSources?.length === 3,
-    );
-    expect(migratedNewBuilds).toHaveLength(50);
-  });
-
-  it("publishes the regenerated civic-library geometry without shrinking it to the old catalog size", () => {
-    const library = catalogBuildings.find((building) => building.key === "civic-library");
-    expect(library).toMatchObject({
-      spriteSize: [96, 112],
-      footprintCells: [12, 8],
-      anchorPx: [48, 112],
-      entrances: [{ side: "S", offset: 6 }],
-      reviewed: true,
-    });
-    expect(manifestBuildings["civic-library"]).toMatchObject({
-      spriteSize: [96, 112],
-      footprintCells: [12, 8],
-      anchorPx: [48, 112],
-      entrances: [{ side: "S", offset: 6 }],
-    });
-  });
-
-  it("publishes the compact fire station as a full-size V5 civic building", () => {
-    const station = catalogBuildings.find((building) => building.key === "civic-fire-station-compact");
-    expect(station).toMatchObject({
-      spriteSize: [96, 96],
-      footprintCells: [12, 8],
-      anchorPx: [48, 96],
-      entrances: [{ side: "S", offset: 6 }],
-      reviewed: true,
-      stageSources: expect.arrayContaining([
-        "ai-authored/building-stage-study/civic-fire-station-compact-v5/sources/stage-3.png",
-        "ai-authored/building-stage-study/civic-fire-station-compact-v5/sources/stage-4.png",
-        "ai-authored/building-stage-study/civic-fire-station-compact-v5/sources/stage-5.png",
-      ]),
-    });
-  });
-
-  it("registers the luxury tower with shared early construction stages", () => {
-    const tower = catalogBuildings.find((building) => building.key === "highrise-luxury-tower");
-    expect(tower).toMatchObject({
-      spriteSize: [112, 256],
-      footprintCells: [14, 12],
-      anchorPx: [56, 256],
-      entrances: [{ side: "S", offset: 7 }],
-      reviewed: true,
-    });
-    expect(tower?.stageSources).toHaveLength(3);
-    expect(new Set(tower?.stageSources).size).toBe(3);
-  });
-
-  it("registers the hotel as three authored V5 stages on one large footprint", () => {
-    const hotel = catalogBuildings.find((building) => building.key === "highrise-hotel");
-    expect(hotel).toMatchObject({
-      spriteSize: [112, 256],
-      footprintCells: [14, 12],
-      anchorPx: [56, 256],
-      entrances: [{ side: "S", offset: 7 }],
-      reviewed: true,
-    });
-    expect(hotel?.stageSources).toHaveLength(3);
-    expect(new Set(hotel?.stageSources).size).toBe(3);
-  });
-
-  it("registers the Art Deco tower with a deep roof-matched foundation", () => {
-    const tower = catalogBuildings.find((building) => building.key === "highrise-art-deco");
-    expect(tower).toMatchObject({
-      spriteSize: [112, 256],
-      footprintCells: [14, 12],
-      anchorPx: [56, 256],
-      entrances: [{ side: "S", offset: 7 }],
-      reviewed: true,
-    });
-    expect(tower?.stageSources).toHaveLength(3);
-    expect(new Set(tower?.stageSources).size).toBe(3);
-  });
-
-  it("registers the office tower as three aligned authored V5 stages", () => {
-    const tower = catalogBuildings.find((building) => building.key === "highrise-office");
-    expect(tower).toMatchObject({
-      spriteSize: [112, 256],
-      footprintCells: [14, 12],
-      anchorPx: [56, 256],
-      entrances: [{ side: "S", offset: 7 }],
-      reviewed: true,
-    });
-    expect(tower?.stageSources).toHaveLength(3);
-    expect(new Set(tower?.stageSources).size).toBe(3);
-  });
-
-  it("registers the medical tower on its wider V5 hospital footprint", () => {
-    const tower = catalogBuildings.find((building) => building.key === "highrise-medical-tower");
-    expect(tower).toMatchObject({
-      spriteSize: [128, 256],
-      footprintCells: [16, 12],
-      anchorPx: [64, 256],
-      entrances: [{ side: "S", offset: 8 }],
-      reviewed: true,
-    });
-    expect(tower?.stageSources).toHaveLength(3);
-    expect(new Set(tower?.stageSources).size).toBe(3);
+    expect(review.projection.roofDepthPx).toBeGreaterThan(review.projection.facadeHeightPx);
   });
 });

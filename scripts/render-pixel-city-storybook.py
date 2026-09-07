@@ -13,6 +13,7 @@ import json
 import struct
 from pathlib import Path
 from typing import Any
+from courtyard_furniture_contract import GEOMETRY as COURTYARD_GEOMETRY, PROFILE as COURTYARD_PROFILE
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,11 +49,10 @@ def asset_url(relative_path: str) -> str:
 
 def classify_prop(key: str) -> str:
     groups = (
-        ("Жители и активности", ("walker-", "resident-", "fisher-", "cyclist-", "scooter-")),
         ("Деревья и кустарники", ("tree-", "shrub-", "bush-", "flower-")),
-        ("Парки и площадки", ("park-", "playground-", "fountain-", "gazebo", "bandstand", "statue-", "topiary-", "pond-", "picnic-", "planter-")),
-        ("Улицы и транспорт", ("bus-stop-", "city-bus-", "streetlamp", "traffic-light-", "utility-pole", "bench-", "trash-", "recycling-", "bollard", "bicycle-", "mailbox", "fire-hydrant", "city-sign-", "guardrail-")),
-        ("События и спецтехника", ("fire-engine-", "incident-", "airplane-", "active-district-")),
+        ("Парки и площадки", ("courtyard-", "park-", "playground-", "fountain-", "gazebo", "bandstand", "statue-", "topiary-", "pond-", "picnic-", "planter-")),
+        ("Улицы и транспорт", ("bus-stop-", "streetlamp", "traffic-light-", "utility-pole", "bench-", "trash-", "recycling-", "bollard", "bicycle-", "mailbox", "fire-hydrant", "city-sign-", "guardrail-")),
+        ("События и спецтехника", ("incident-", "active-district-")),
         ("Природа и животные", ("animal-", "boat-", "reed-", "rock-", "hill-", "mountain-")),
         ("Ограждения и архив", ("fence-", "archive-")),
     )
@@ -126,23 +126,29 @@ def load_storybook_data() -> tuple[dict[str, Any], list[str]]:
             "group": classify_prop(key),
             "visualProfile": entry.get("visualProfile"),
         })
-        if entry.get("artSource") == "AI_AUTHORED" and not str(entry.get("visualProfile", "")).startswith(("TASKTOPIA_V5_", "TASKTOPIA_V6_")):
-            errors.append(f"{key}: active authored prop does not use a V5/V6 visual profile")
+        profile = str(entry.get("visualProfile", ""))
+        compact_park = key in {f"compact-park-{kind}-stage-{stage}" for kind in ("fountain", "monument") for stage in (3, 4, 5)}
+        accepted_profile = (profile == "TASKTOPIA_V7_TREE_COMPACT_45_GRID" if key.startswith("tree-")
+                            else profile == "TASKTOPIA_COMPACT_PARK_HIGH_45_V1" if compact_park
+                            else (key in COURTYARD_GEOMETRY and profile == COURTYARD_PROFILE
+                                  and (entry["size"], entry["footprintCells"], entry["anchorPx"]) == COURTYARD_GEOMETRY[key]) if key.startswith("courtyard-")
+                            else profile.startswith(("TASKTOPIA_V5_", "TASKTOPIA_V6_")))
+        if entry.get("artSource") == "AI_AUTHORED" and not accepted_profile:
+            errors.append(f"{key}: active authored prop does not use its accepted visual profile")
 
     vehicles: list[dict[str, Any]] = []
-    for key, entry in sorted(manifest["vehicles"].items()):
-        views = []
-        for direction in ("horizontal", "north", "south"):
-            view = entry[direction]
-            path = RUNTIME / view["path"]
-            if not path.exists():
-                errors.append(f"{key}: missing {view['path']}")
-                continue
-            size = list(png_size(path))
-            if size != view["size"]:
-                errors.append(f"{key}/{direction}: {size}, expected {view['size']}")
-            views.append({"direction": direction, "url": asset_url(view["path"]), "size": view["size"]})
-        vehicles.append({"key": key, "views": views})
+    micro = manifest["microAmbient"]["sprites"]
+    for kind, variants in (("car", ("blue", "red", "taxi", "van")), ("person", ("ochre", "teal")), ("aircraft", ("regional",)), ("animal", ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"))):
+        for variant in variants:
+            views = []
+            for direction in (("static",) if kind == "animal" else ("north", "east", "south", "west")):
+                key = f"micro-{kind}-{variant}-{direction}"
+                view = micro[key]
+                path = RUNTIME / view["path"]
+                if not path.exists() or list(png_size(path)) != view["size"]:
+                    errors.append(f"{key}: missing or incorrect native canvas")
+                views.append({"direction": direction, "url": asset_url(view["path"]), "size": view["size"]})
+            vehicles.append({"key": f"{kind}-{variant}", "views": views})
 
     tiles = [
         {"key": key, "url": asset_url(entry["path"]), "role": entry["materialRole"]}
@@ -220,10 +226,10 @@ def html_document(data: dict[str, Any]) -> str:
     .badges {{ display:flex; flex-wrap:wrap; gap:5px; margin-top:10px }}
     .badge {{ padding:2px 6px; border-radius:999px; border:1px solid #45616a; background:#11272d; color:#bcd0cd; font-size:10px }}
     .badge.ok {{ color:#8ce58e; border-color:#397341 }} .badge.queue {{ color:#f0c84b; border-color:#806c31 }}
-    .stage-street {{ min-width:0; display:flex; gap:16px; align-items:end; overflow:auto; padding:20px 28px 22px; border-bottom:calc(3 * var(--cell)) solid transparent; border-image:url('../../assets/pixel-city-pack/runtime/tiles/road.png') 8 repeat }}
-    .plot {{ position:relative; flex:0 0 auto; display:flex; align-items:end; justify-content:center; min-width:calc(var(--w) * 1px * var(--zoom) + 2 * var(--cell)); height:calc(var(--h) * 1px * var(--zoom) + 4 * var(--cell)); padding:var(--cell); background-image:url('../../assets/pixel-city-pack/runtime/tiles/pavement.png'); background-size:var(--cell) var(--cell); border:1px solid #78909866 }}
+    .stage-street {{ min-width:0; display:flex; gap:16px; align-items:end; overflow:auto; padding:20px 28px 22px; border-bottom:calc(3 * var(--cell)) solid #263540 }}
+    .plot {{ position:relative; flex:0 0 auto; display:flex; align-items:end; justify-content:center; min-width:calc(var(--w) * 1px * var(--zoom) + 2 * var(--cell)); height:calc(var(--h) * 1px * var(--zoom) + 4 * var(--cell)); padding:var(--cell); background:#849195; border:1px solid #58676e }}
     .plot[data-platform="YARD"] {{ background-image:url('../../assets/pixel-city-pack/runtime/terrain/meadow-0.png') }}
-    .plot[data-platform="ASPHALT"] {{ background-image:url('../../assets/pixel-city-pack/runtime/tiles/road.png') }}
+    .plot[data-platform="ASPHALT"] {{ background:#3d4856 }}
     .grid-on .plot::after,.grid-on .park-canvas::after {{ content:""; position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(#f0c84b28 1px,transparent 1px),linear-gradient(90deg,#f0c84b28 1px,transparent 1px); background-size:var(--cell) var(--cell) }}
     .stage-img {{ display:block; width:calc(var(--w) * 1px * var(--zoom)); height:calc(var(--h) * 1px * var(--zoom)); object-fit:contain }}
     .stage-no {{ position:absolute; left:5px; top:5px; z-index:3; width:20px; height:20px; display:grid; place-items:center; border-radius:5px; background:#071418e8; border:1px solid #557079; color:var(--accent); font:700 11px ui-monospace,monospace }}
@@ -231,12 +237,12 @@ def html_document(data: dict[str, Any]) -> str:
     .atlas {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px }}
     .asset-card {{ min-width:0; border:1px solid var(--line); border-radius:12px; background:var(--panel); overflow:hidden }}
     .asset-card-info {{ padding:10px 12px; border-bottom:1px solid var(--line) }}
-    .asset-card-stage {{ min-height:240px; display:flex; align-items:end; justify-content:center; overflow:auto; padding:14px; background-image:url('../../assets/pixel-city-pack/runtime/tiles/pavement.png'); background-size:var(--cell) var(--cell) }}
+    .asset-card-stage {{ min-height:240px; display:flex; align-items:end; justify-content:center; overflow:auto; padding:14px; background:#849195 }}
     .compare {{ overflow:auto; border:1px solid var(--line); border-radius:12px }}
     .compare-row {{ min-width:980px; display:grid; grid-template-columns:250px repeat(5,minmax(140px,1fr)); border-bottom:1px solid var(--line); background:var(--panel) }}
     .compare-row:last-child {{ border-bottom:0 }}
     .compare-meta {{ padding:12px; position:sticky; left:0; z-index:3; background:#102126 }}
-    .compare-stage {{ position:relative; min-height:180px; display:flex; align-items:end; justify-content:center; padding:12px; border-left:1px solid var(--line); background-image:url('../../assets/pixel-city-pack/runtime/tiles/pavement.png'); background-size:var(--cell) var(--cell); overflow:hidden }}
+    .compare-stage {{ position:relative; min-height:180px; display:flex; align-items:end; justify-content:center; padding:12px; border-left:1px solid var(--line); background:#849195; overflow:hidden }}
     .compare-stage img {{ max-width:100%; max-height:360px; object-fit:contain }}
     .park-grid,.transport-grid,.prop-groups,.tile-grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px }}
     .park-grid {{ grid-template-columns:1fr }}
@@ -245,7 +251,7 @@ def html_document(data: dict[str, Any]) -> str:
     .park-canvas {{ position:relative; display:grid; grid-template-columns:repeat(var(--cols),var(--cell)); grid-template-rows:repeat(var(--rows),var(--cell)); flex:0 0 auto; border:1px solid #648087 }}
     .park-cell {{ width:var(--cell); height:var(--cell); background-size:var(--cell) var(--cell) }}
     .park-prop {{ position:absolute; z-index:2; image-rendering:pixelated; transform:translate(-50%,-100%) scale(var(--zoom)); transform-origin:bottom center }}
-    .view-row {{ display:flex; align-items:end; gap:18px; min-height:116px; padding:14px; margin-top:10px; background-image:url('../../assets/pixel-city-pack/runtime/tiles/road.png'); background-size:var(--cell) var(--cell) }}
+    .view-row {{ display:flex; align-items:end; gap:18px; min-height:116px; padding:14px; margin-top:10px; background:#3d4856 }}
     .view {{ text-align:center; min-width:64px }} .view img {{ display:block; margin:auto; transform:scale(4); transform-origin:center bottom; margin-bottom:26px }}
     .view small {{ color:var(--muted) }}
     .prop-rack {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:8px; margin-top:12px }}
@@ -343,7 +349,7 @@ def html_document(data: dict[str, Any]) -> str:
       return `<div><div class="summary">Стадия ${{stage}}</div><div class="park-canvas" style="--cols:${{cols}};--rows:${{rows}}">${{cells}}${{props}}</div></div>`;
     }}
     document.getElementById('park-grid').innerHTML=data.areas.map(a=>`<article class="park-card"><h3>${{a.label}}</h3><div class="family-key">${{a.key}} · ${{a.size.join('×')}} cells</div><div class="park-stages">${{[1,2,3,4,5].map(s=>parkStage(a,s)).join('')}}</div></article>`).join('');
-    document.getElementById('transport-grid').innerHTML=data.vehicles.map(v=>`<article class="transport-card"><h3>${{v.key}}</h3><div class="view-row">${{v.views.map(view=>`<div class="view">${{img(view.url,'')}}<small>${{view.direction}}</small></div>`).join('')}}${{v.views[0]?`<div class="view">${{img(v.views[0].url,'','transform:scale(-4,4)')}}<small>west mirror</small></div>`:''}}</div></article>`).join('');
+    document.getElementById('transport-grid').innerHTML=data.vehicles.map(v=>`<article class="transport-card"><h3>${{v.key}}</h3><div class="view-row">${{v.views.map(view=>`<div class="view">${{img(view.url,'')}}<small>${{view.direction}}</small></div>`).join('')}}</div></article>`).join('');
     const groups=Object.groupBy?Object.groupBy(data.props,p=>p.group):data.props.reduce((out,p)=>((out[p.group]??=[]).push(p),out),{{}});
     document.getElementById('prop-groups').innerHTML=Object.entries(groups).map(([group,items])=>`<section class="prop-group"><h3>${{group}}</h3><div class="prop-rack">${{items.map(p=>`<div class="prop">${{img(p.url,'')}}<span>${{p.key}}<br>${{p.size.join('×')}} · ${{p.visualProfile||'manifest'}}</span></div>`).join('')}}</div></section>`).join('');
     document.getElementById('terrain-rack').innerHTML=data.terrain.flatMap(t=>t.variants.map((url,index)=>`<div class="tile">${{img(url,'')}}<div class="family-key">${{t.key}}-${{index}}</div><small>${{data.pack.materialProfile}}</small></div>`)).join('');

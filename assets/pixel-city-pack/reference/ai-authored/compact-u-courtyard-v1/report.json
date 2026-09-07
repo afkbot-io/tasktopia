@@ -1,0 +1,244 @@
+{
+  "key": "compact-u-courtyard-v1",
+  "contract": "geometry.json",
+  "normalization": "Geometry frozen before generation. All3approved separate stages use one shared finished-source frame with uniform nearest-neighbour scaling, hard alpha and bounded palette only. Parent authorized existing broad chroma recovery after accepted5remainedbyte-identical; no new normalizer threshold, axis stretching, per-stage recentering, architectural repainting or interior-hole repair.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    46,
+    25,
+    1501,
+    974
+  ],
+  "uniformScale": 0.06597938144329897,
+  "targetSize": [
+    96,
+    63
+  ],
+  "offset": [
+    0,
+    1
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "2aa115e5c9384e61efe57827f65c5499197dea1122f9d8456859ef000dedd1c6",
+      "runtimeSha256": "394021ea3d037d63c586a819a205261d5f9936cffb4ff8ee07cba6ed099284b1",
+      "sourceBounds": [
+        46,
+        27,
+        1491,
+        974
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        95,
+        64
+      ],
+      "occupiedSizePx": [
+        95,
+        63
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "7919945cbef2b7ded72211b9ae3e71125da67b2590eba955aa503df3dc628d56",
+      "runtimeSha256": "6550cf19d8709537333179f6436d0ee4e576d79260ae88fac36ba3d0b3e2fa27",
+      "sourceBounds": [
+        46,
+        26,
+        1492,
+        974
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        95,
+        64
+      ],
+      "occupiedSizePx": [
+        95,
+        63
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "2c81a30f2f2564dfb9be2173c6706896abdbef0efd1d848a7d0f102ac5002cc4",
+      "runtimeSha256": "3f559853437954d3fc7903a0c2ab079402ac3c02bd569e12ed71428b1be9308b",
+      "sourceBounds": [
+        46,
+        26,
+        1492,
+        975
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        95,
+        64
+      ],
+      "occupiedSizePx": [
+        95,
+        63
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-u-courtyard-v1",
+    "reviewedAt": "2026-09-07",
+    "reviewScope": "Complete separate source/native stages5H/4G/3A independently approved; no runtime/catalog registration.",
+    "reviewMethod": "Parent inspected each native and nearest8x stage, then complete sequence, after exact source/runtime hashes and geometry checks.",
+    "projection": {
+      "camera": "High45 orthographic frontal-top U-plan; axes parallel screenX/Y, no receding outer side facade.",
+      "roofDepthPx": 53,
+      "facadeHeightPx": 11,
+      "floorStepPx": 4,
+      "windowRowsPx": [
+        [
+          55,
+          56
+        ],
+        [
+          59,
+          60
+        ]
+      ],
+      "windowPaneSizePxRange": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "doorFrameBoundsPx": [
+        45,
+        59,
+        50,
+        64
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "doorLeafBoundsPx": [
+        46,
+        60,
+        49,
+        63
+      ],
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorThresholdRowPx": 63,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "sameCameraAcrossStages": true,
+      "sameCameraAssertionScope": "Parent independently reviewed all3stages and sequence; same high45 screenaxis camera and opaqueUfootprint/courtyard.",
+      "roofAndFloorLinesAreAxisAligned": true,
+      "noHeavyBlackBaseline": true
+    },
+    "backgroundRecovery": {
+      "sourceBackground": "magenta-chroma-family",
+      "commonSourceFrame": [
+        46,
+        25,
+        1501,
+        974
+      ],
+      "outwardMarginsPx": {
+        "left": 0,
+        "top": 2,
+        "right": 10,
+        "bottom": 0
+      },
+      "unchangedSource": true,
+      "unchangedNormalizer": true,
+      "nativePinkPixels": 0,
+      "evidence": "diagnostics/common-frame-phase.json",
+      "notes": "Parent accepts quieter right-wing roof ribbing caused by the legal native sampling phase. Parent subsequently authorized the existing broad chroma mode for this draft only: accepted5H remains byte-identical394021ea3d037d63c586a819a205261d5f9936cffb4ff8ee07cba6ed099284b1; 1966 additional source pixels are exterior-connected, depth at most2, zero enclosed removal. No new normalizer threshold, XY stretching, cropping architecture or pixel painting. Stage4D/E remain rejected. See diagnostics/stage-4-E-broad-key.json; its overall rejected result concerns stage4E, not accepted5H."
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "2c81a30f2f2564dfb9be2173c6706896abdbef0efd1d848a7d0f102ac5002cc4",
+        "runtimeSha256": "3f559853437954d3fc7903a0c2ab079402ac3c02bd569e12ed71428b1be9308b",
+        "windowRowsPx": [
+          [
+            60,
+            61
+          ]
+        ],
+        "windowRegistrationDeltaPx": 1,
+        "notes": "Parent approved native3 and whole5\u21924\u21923 sequence: roof0, fulloriginalU/opaqueattachedcourt, meaningful brokenwalls and singlelowerfront. Eight2pixelhighlowerwindows shifted1nativepxdown versus4/5 is disclosed and withinregistration; doorway/foundation unchanged. Mutedinterior/dust variation constructionappropriate. No visiblepink/transparentholes."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "7919945cbef2b7ded72211b9ae3e71125da67b2590eba955aa503df3dc628d56",
+        "runtimeSha256": "6550cf19d8709537333179f6436d0ee4e576d79260ae88fac36ba3d0b3e2fa27",
+        "notes": "Parent independently viewed native8x and approved approximately halfroofWEST/leftSOUTH, no roofequipment, opaqueEAST/SOUTHrooms and originalcourt, sameflatcamera/entry/2rowsdarkwindows. Warmedfloorpalette is explicitly accepted. No visible pink; cap2left extension<1nativepixel disclosed; geometry/key/frame frozen."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "2aa115e5c9384e61efe57827f65c5499197dea1122f9d8456859ef000dedd1c6",
+        "runtimeSha256": "394021ea3d037d63c586a819a205261d5f9936cffb4ff8ee07cba6ed099284b1",
+        "notes": "Parent accepted open-north U identity, opaque attachedcourt, twofloorfront and exact3x3leaf/5x5frame under legal sharedframe. Numeric95x63inside96x64/12x8physical,32colors/0holes/drift."
+      }
+    },
+    "sequence": {
+      "accepted": true,
+      "reviewer": "parent independent visual review",
+      "progression": "3 roof0/brokenwalls/singlelowerfront;4 approximatelyhalfroof/darktwofloorfront/noequipment;5 completeUroof/equipment/twofloorfront",
+      "samePhysicalLot": true,
+      "sameFoundationOpacityMask": true,
+      "sameEntrance": true,
+      "originalCourtyardOpaqueAcrossStages": true,
+      "stage3WindowShiftPx": 1
+    }
+  }
+}

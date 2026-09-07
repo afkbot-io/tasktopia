@@ -1,0 +1,42 @@
+{
+  "imageId": "sha256:03537a60affa4ab51964a6d95cdaa0e5c28ef71ad32a21e8c7dd4cedfadb351f",
+  "tag": "tasktopia:compact-local-final35-r4-20260907",
+  "platform": "linux/arm64",
+  "inspectedWithoutNetworkOrHostMounts": true,
+  "revisionMaterialization": "built synchronize-assets CLI in disposable 128MiB tmpfs, read-only image; no database or web server",
+  "builtArtifactScope": "dist excluding generated game-assets/v5/revisions; revision tree checked separately",
+  "node": "v24.20.0",
+  "uid": 1000,
+  "assetRevision": "750f26edc463160e",
+  "buildings": 35,
+  "stages": 175,
+  "excluded": true,
+  "builtArtifacts": {
+    "files": 601,
+    "sha256": "5c38fee79ae8b81b7862b2801a4a778d04139c98882dd2206e72f6593843863e"
+  },
+  "publishedRevision": {
+    "files": 511,
+    "sha256": "9482ea696ce175c10b9299b6bbfcf17cefacd720e2904df542e2b676a02e9840"
+  },
+  "materializedRevision": {
+    "files": 511,
+    "sha256": "9482ea696ce175c10b9299b6bbfcf17cefacd720e2904df542e2b676a02e9840"
+  },
+  "entrypoints": {
+    "dist/audit-worlds.mjs": "487be5b93e7d9f453c390ab966a5fc9bf29ffd94e301239e73d6bca0056a6678",
+    "dist/create-user.mjs": "dd5536bfba4e7f2aa309b9984e170ca05e9c58706234fadab89ac6c61e3687fc",
+    "dist/regenerate-worlds.mjs": "a443d747e571aa6f19c885413a0006a3e6e79cc64d0e6ddcb191efdfdb7e54ea",
+    "dist/server.mjs": "bbf000192cb556306bd9cf270fa5ed0292802f19ceff4ecb56f4128fc19243b7",
+    "dist/synchronize-assets.mjs": "b569409639701a3ba554570a8198d5580b1289c642ebf9c0d013f403fdfc370b"
+  },
+  "hostNode": "v24.19.0",
+  "hostBuiltArtifacts": {
+    "files": 601,
+    "sha256": "5c38fee79ae8b81b7862b2801a4a778d04139c98882dd2206e72f6593843863e"
+  },
+  "exactHostArtifactMatch": true,
+  "exactHostRevisionMatch": true,
+  "differences": [],
+  "missing": []
+}

@@ -1,0 +1,141 @@
+{
+  "key": "compact-corner-court-v1",
+  "status": "APPROVED_SOURCE_FAMILY_NOT_PUBLISHED",
+  "authoringDate": "2026-09-07",
+  "generator": "OpenAI built-in ImageGen",
+  "promptFile": "PROMPTS.md",
+  "scope": "One independently authored L-shaped family. Stage5 approved before sequential4then3derivation. No catalog entry, runtime registration or global assets build.",
+  "currentAttempt": "G",
+  "sourceBackgroundRecovery": "Finished C and descendants explicitly request a reserved magenta backdrop. Parent approved the existing broader chroma-family recovery after proving all additionally removed source components touch exterior transparency and are at most2sourcepixels thick; no enclosed component removed. The original common frame[89,86,1168,1161] is locked. Native5is unchanged,3/4palette shifts are disclosed in diagnostics/background-recovery.json. The court and room floors are opaque in the AI source, never repaired by code.",
+  "attempts": [
+    {
+      "id": "A",
+      "operation": "new image",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-d0ea58dc-0239-4f8b-9399-1745552b676a.png",
+      "source": "sources/stage-5-A.png",
+      "sha256": "b548f4cdd60dfdb6b03433b50e9bc46d8415beb3e08ae8473505504143440e43",
+      "status": "REJECTED_DIMENSIONS",
+      "reason": "Occupied native57x64 misses frozen62-64width; source has genuine alpha and no courtyard holes.",
+      "report": "sources/stage-5-A-report.json"
+    },
+    {
+      "id": "B",
+      "operation": "ImageGen edit of A",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-eabb19a0-5032-417e-8fa8-7c4444de0db1.png",
+      "source": "sources/stage-5-B.png",
+      "sha256": "3261deea57d1252688cd9382194082f91a97175ddaaa04af3ae9b74f7f2adafd",
+      "status": "REJECTED_BACKGROUND_AND_FLOORS",
+      "reason": "Source alpha is255everywhere, with painted checkerboard background; the two-floor reading also regressed. Never used as the canonical source or a later edit reference."
+    },
+    {
+      "id": "C",
+      "operation": "ImageGen edit of A, deliberate key-magenta recovery",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-9a492b23-3a98-4d6a-8ce7-a44b31ab591b.png",
+      "source": "sources/stage-5-C.png",
+      "sha256": "47e293aab9daa2f8b749f3826b300779305ba1617b4fdc4d83bd5325135b1450",
+      "normalizedSha256": "49e2186d04e75f0bc3d621976e9913b53c32e4b352bd0bbfbba3fa8228995e4a",
+      "status": "REJECTED_OPENING_HEIGHT_ARCHITECTURE_RETAINED",
+      "reason": "Native64x64, hard alpha,31colors, no holes/drift. Native entrance appears5x6frame/3x4leaf and does not yet meet the frozen5x5/3x3opening contract.",
+      "report": "sources/stage-5-C-report.json"
+    },
+    {
+      "id": "D",
+      "operation": "ImageGen localized entrance edit of C",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-ae5db78a-453b-434f-b193-ebefb2ab1097.png",
+      "source": "sources/stage-5-D.png",
+      "sha256": "4a3f2441c55e198a9a06c50200f5c443fc5d2286732d7a7f5d6ec0fabad9c281",
+      "normalizedSha256": "5fd2c6490f50737340a0a2cfc6117b40c928b23278b4ed02017ce24bddeeb348",
+      "status": "REJECTED_OPENING_FRAME",
+      "reason": "Native sampling loses the thin top header and bottom threshold; leaf remains four pixels tall.",
+      "report": "sources/stage-5-D-report.json"
+    },
+    {
+      "id": "E",
+      "operation": "ImageGen localized entrance edit of C with source-coordinate guide",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-8d4092c0-e869-486e-aea7-07a6b3770522.png",
+      "source": "sources/stage-5-E.png",
+      "sha256": "bdf35f23f4e396f525fa1351b5fe7d89777276dfe2b1c89f581b158526d609cd",
+      "normalizedSha256": "813c540eb6fd462b6bd485b09cedd6bd683549f4c86093ea1d627fa44e378f6d",
+      "status": "REJECTED_OPENING_SCALE",
+      "reason": "Frame enlarged to6x6 and leaf4x4 instead of5x5/3x3.",
+      "report": "sources/stage-5-E-report.json"
+    },
+    {
+      "id": "F",
+      "operation": "ImageGen localized entrance edit of C plus normalized C as native-scale reference",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-8d5357f4-7842-45ee-aa64-93a73da473cf.png",
+      "source": "sources/stage-5-F.png",
+      "sha256": "860843a7b2faab1c5d270743b088253aa6e00f3e5d7874761652e8253651b3d9",
+      "normalizedSha256": "bed53ebf25faf13e4a98887afa10d6a535ce0adc935c940762f5d55beaf97b76",
+      "status": "REJECTED_OPENING_HEIGHT",
+      "reason": "Frame is5x4 and leaf3x2; width and coarse header/threshold are correct, but one vertical pixel is missing.",
+      "report": "sources/stage-5-F-report.json"
+    },
+    {
+      "id": "G",
+      "operation": "ImageGen one-row entrance correction of F, retaining C-derived architecture",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-d9e116d3-a0cd-485c-803b-9637a9281d6d.png",
+      "source": "sources/stage-5-G.png",
+      "sha256": "e96727be1bdebaec1d089de9e06846ed2ba07ccb586c166d200f1a53443a4044",
+      "normalizedSha256": "30d6588186da59da3afd31d4f36ca21d72347bbcb5197da633d993be5ba15ac0",
+      "status": "INDEPENDENT_STAGE5_SOURCE_APPROVED",
+      "reason": "Native64x64, hard alpha,31colors, no holes/drift; observed frame5x5 at29,59 and leaf3x3 at30,60. This observation is not independent visual approval.",
+      "report": "sources/stage-5-G-report.json"
+    }
+  ],
+  "reverseStages": {
+    "3": [
+      {
+        "attempt": "A",
+        "reference": "sources/stage-4.png(primary approved A),sources/stage-5.png(approved G registration)",
+        "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-4517e0c2-46d0-40e4-bf95-53c441d43f8b.png",
+        "source": "sources/stage-3-A.png",
+        "sourceSha256": "f9864e4517db54bb8bbf49ff7a3fa2e5a8b0b296423e3db2cd2356732f521962",
+        "runtimeSha256": "313d1b05400aaaa151e68d900491d46ee501484416e51c4aaf719ff9eae06798",
+        "status": "REJECTED_EXTERIOR_MAGENTA_FRINGE",
+        "notes": "Roofless full Lstructure and court, numeric gates pass, but three bright exterior key-fringe pixels survive simple recovery.",
+        "report": "sources/stage-3-A-report.json"
+      },
+      {
+        "attempt": "B",
+        "reference": "sources/stage-3-A.png, ImageGen external-background cleanup only",
+        "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-a3110d4a-fb21-4996-947c-805b0a194d89.png",
+        "source": "sources/stage-3-B.png",
+        "sourceSha256": "0d21c151608212598bd955cd12c684abe6e593cf92b44e78d872e442ecae7c41",
+        "narrowRecoveryRuntimeSha256": "77b7c14f4492e1da02d2292e0cf728e48d545d64878e3512ef778d71a40e2dbb",
+        "runtimeSha256": "33315045ad4d827011496f732c91a7a8b7587bdfc21c3afbd7ffdf12e89d604b",
+        "status": "INDEPENDENT_STAGE3_AND_FINAL_SEQUENCE_APPROVED",
+        "notes": "Parent accepted roofless Lrooms/court and partial front, and the existing broad-key recovery after source-level exterior-halo proof. Exact2native fringe pixels removed;135opaque palette pixels remapped by canonical quantization. No new normalizer, architectural repaint, source edits or geometry relaxation.",
+        "report": "sources/stage-3-B-report.json"
+      },
+      {
+        "attempt": "C",
+        "reference": "sources/stage-3-B.png, requested true-alpha cleanup",
+        "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-66c9b15a-ee45-4f74-9bd4-90ed374e8d96.png",
+        "source": "sources/stage-3-C.png",
+        "sourceSha256": "7d32aa98b7ce5512e26026b485d7872b230e103006bd5ac64278eab182764c67",
+        "status": "REJECTED_PAINTED_CHECKERBOARD",
+        "notes": "Alpha255everywhere; generator depicted transparency rather than producing it. Never made canonical or normalized."
+      }
+    ],
+    "4": [{
+      "attempt": "A",
+      "reference": "sources/stage-5.png, immutable approved G",
+      "originalPath": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-41ed32b1-e9a7-4e14-a1a2-f074b8b89e80.png",
+      "source": "sources/stage-4-A.png",
+      "sourceSha256": "e512a8713dea27b20f36d49342f8dec637736c8d53af21e36fc716a02610822b",
+      "narrowRecoveryRuntimeSha256": "aa99832102ad2c27834425532fa7b456bace272b4aac9ee54aef89ff975d8791",
+      "runtimeSha256": "839e5dc0f03d598dfcd75f5c1fae7a676d59176851698ecd75df8b99d08a22e0",
+      "status": "INDEPENDENT_STAGE4_SOURCE_APPROVED",
+      "notes": "West roof retained approximately50-53percent of Lroof; south-bar five open rooms have opaque floors and raised partitions. Original northeast courtyard stays separate. No finished roof vents, all14windows dark. Full64x64occupation, noholes/drift; foundation alpha differs by0pixels from5.",
+      "report": "sources/stage-4-A-report.json"
+    }]
+  },
+  "normalization": {
+    "tool": "scripts/verify-compact-building-art.py",
+    "mode": "Existing magenta-chroma-family background recovery; original finished-source frame[89,86,1168,1161] explicitly locked; uniform nearest-neighbour64x64, hard alpha, bounded MAXCOVERAGE palette. No warping, repainting, silhouette repair or source compositing.",
+    "geometryRelaxed": false
+  },
+  "independentVisualApproval": "visual-review.json",
+  "publicationStatus": "Only catalog-entry.proposed.json is prepared. Global catalog, shared shape authority, runtime assets and game are unchanged by this family authoring slice."
+}

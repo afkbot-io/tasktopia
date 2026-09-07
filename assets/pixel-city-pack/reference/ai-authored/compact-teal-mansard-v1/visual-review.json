@@ -1,0 +1,70 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "reviewedAt": "2026-09-07",
+  "reviewScope": "Stages 3, 4 and 5 and the complete reverse-construction sequence independently approved by the parent reviewer. Source-family acceptance only; runtime publication is a separate integration gate.",
+  "reviewMethod": "Parent independently inspected native1x and8x plus exact measured ROIs.",
+  "projection": {
+    "camera": "High45 roof-dominant axisaligned frontal-top; no receding sidefacade",
+    "roofDepthPx": 30,
+    "facadeHeightPx": 16,
+    "floorStepPx": 5,
+    "windowPaneSizePxRange": [
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "doorLeafBoundsPx": [
+      22,
+      45,
+      26,
+      48
+    ],
+    "doorFrameBoundsPx": [
+      20,
+      43,
+      27,
+      48
+    ],
+    "doorGrammar": "Two-row header and glass reaching baseline match accepted Garden/Olive/Rose/Sand grammar. No separate bottom threshold required.",
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "noHeavyBlackBaseline": true,
+    "sameCameraAcrossStages": true,
+    "sameCameraAssertionScope": "All three accepted stages, inspected at native 1x and 8x with the complete sequence. Stage 3 remaining windows move at most one native pixel; the entrance, foundation and physical footprint remain fixed."
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "428ac32d8891c60e9d978a67ee510cf0fe46ac642fb3a53f6f7a14ad8bc6eb01",
+      "runtimeSha256": "4e8ffff61c4e27adcc94fed63d527eb52c56db634f3adb541c3879e54d9b1b16",
+      "notes": "Parent independently accepted native 1x/8x and the whole sequence: eight opaque roofless rooms, reduced upper frontage, the same portal and footing, and five dark 2x2 panes. Disclosed one-pixel downward window registration and one-pixel left-bay offset are within the existing gate. Source-edge variation is below one native pixel under the frozen common frame; no geometry or tolerance changes."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "b00ba75e082c89741accff56a2b6930015a168173e238c99b31f58a686cecf0c",
+      "runtimeSha256": "a5c6b3ba771fc5f7bdcd962eeb02c109407f0e27d506e2d1c898e1fac17de74c",
+      "notes": "Parent independently accepted native1x/8x: left half slate/right four opaque rooms; all final dormers/chimney removed, eight exact dark2x2 openings and portal preserved, same axisaligned camera."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "7bc85125a3c218bde1bccd68207371c77823858550faa8a5644aa72983803344",
+      "runtimeSha256": "69e9d2f81448cc12cea5ea22deadc868d550ad15c5364b7eb31c24b45c6e0d26",
+      "notes": "Parent approved three small cream/teal dormers, rear chimney and double teal roof band as distinct architecture; muted palette and high camera consistent, exact openings accepted. VariantK unnecessary and unused."
+    }
+  }
+}

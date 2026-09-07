@@ -1,0 +1,88 @@
+{
+  "key": "compact-fire-station-v1",
+  "visualProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
+  "semanticRole": "FIRE",
+  "cellSizePx": 8,
+  "spriteSize": [
+    48,
+    32
+  ],
+  "footprintCells": [
+    6,
+    4
+  ],
+  "anchorPx": [
+    24,
+    32
+  ],
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 3
+    }
+  ],
+  "floorCount": 2,
+  "floorHeightPxRange": [
+    4,
+    6
+  ],
+  "roofDepthPxRange": [
+    21,
+    23
+  ],
+  "facadeHeightPxRange": [
+    9,
+    11
+  ],
+  "windowSizePxRange": [
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      2
+    ]
+  ],
+  "doorLeafSizePx": [
+    4,
+    4
+  ],
+  "doorFrameSizePx": [
+    6,
+    5
+  ],
+  "foundationMaskDriftPxMax": 1,
+  "stageCentreDriftPxMax": 1,
+  "stageBaselineDriftPxMax": 1,
+  "paletteColorsMax": 32,
+  "constructionClearanceCells": 1,
+  "sourceBackground": "magenta-recovery",
+  "foundationMaskRowsPx": [
+    30,
+    31
+  ],
+  "finishedOccupiedWidthPxRange": [
+    46,
+    48
+  ],
+  "finishedOccupiedHeightPxRange": [
+    30,
+    32
+  ],
+  "stage3OccupiedHeightPxRange": [
+    26,
+    32
+  ],
+  "stages": {
+    "0": "Runtime reserved lot; no authored building image.",
+    "1": "Separate fence and south gate around the same physical footprint.",
+    "2": "Same fenced footprint with compact foundation, crane, cabin and materials.",
+    "3": "Roughly half assembled masonry; no roof, opaque shaded full-depth interior rooms with correctly scaled partitions and small material piles.",
+    "4": "Same shell, entrance and opening coordinates; dark unfinished windows, approximately half the roof installed; no finished roof equipment.",
+    "5": "Finished compact fire station: two front garage bays, central south personnel entrance, muted brick-red functional bands, broad slate roof with small dispatch/vent volumes; no vehicles baked in."
+  },
+  "overrides": "Explicit service-family extension authorized 2026-09-05, preserving approved compact-wide-v1 native geometry and high45-degree axis-aligned camera. Independent architecture, not a recolored or stretched existing bitmap. No heavy black outline/baseline, realistic texture or image-height-based construction percentage.",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "approvedOpeningEnvelope": "Parent independently reviewed source8a8f6e837aaed1eca3033346d5de9edd5ca9f4de5204e65cc8e3521d46831c5e and runtime6944ab5e88aaad32aad096df874591267bc8e50d59bfa7ce6f225b3b86d4dc9e at native and8x on2026-09-05. Explicit fire-specific personnel door4x4/frame6x5 accepted within the established row-family envelope, replacing proposed wide3x3/5x5. Exact measured exception, not a wider drift tolerance. Paired garage openings10x3 are distinct functional apertures; facade has two5px floors."
+}

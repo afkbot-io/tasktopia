@@ -12,6 +12,8 @@ coverage/
 output/
 tmp/
 backups/
+# Local synthetic migration backups are evidence, never application assets.
+/screenshots/release-readiness/*.dump
 .DS_Store
 
 # Local AI-client skill mirrors. The canonical project skill lives in
@@ -26,7 +28,7 @@ backups/
 !/.agents/skills/tasktopia-building-stage-generator/**
 !/.agents/skills/tasktopia-building-stage-verifier/
 !/.agents/skills/tasktopia-building-stage-verifier/**
-/.agents/skills/tasktopia-building-stage-verifier/scripts/__pycache__/
+/.agents/skills/**/__pycache__/
 /.agent/
 /.tabnine/
 /agent/

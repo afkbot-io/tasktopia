@@ -1,0 +1,15 @@
+{
+  "schema": "courtyard_art_preview_722d785067dc4440ae5a893b03717c7e",
+  "assetRevision": "750f26edc463160e",
+  "transitionOverlays": 0,
+  "canvasRetained": true,
+  "day": "2026-09-07T09:00:00Z",
+  "night": "2026-09-07T18:00:00Z",
+  "reads": [
+    "/api/countries/a25c2d61-d5fa-45c1-a755-bc25b65a7693/cities/d6f46df7-aab7-46d5-bf12-feda2cfb6d8b/scene",
+    "/api/countries/a25c2d61-d5fa-45c1-a755-bc25b65a7693/overview",
+    "/api/planet-atlas"
+  ],
+  "errors": [],
+  "failures": []
+}

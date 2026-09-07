@@ -44,10 +44,10 @@ export class OptionalRedisWorldCache implements SharedWorldCache {
 
   private key(key: string): string { return `${this.prefix}${key}`; }
 
-  private parsedChunk(value: string, locator?: string): ChunkPayloadDto | undefined {
+  private parsedChunk(value: string, locator: string): ChunkPayloadDto | undefined {
     const payload = JSON.parse(value) as ChunkPayloadDto;
     if (!payload || typeof payload !== "object" || typeof payload.contentHash !== "string") return undefined;
-    if (locator !== undefined && locator !== payload.contentHash) return undefined;
+    if (locator !== payload.contentHash) return undefined;
     const { contentHash, ...content } = payload;
     return chunkPayloadContentHash(content) === contentHash ? payload : undefined;
   }
@@ -56,9 +56,7 @@ export class OptionalRedisWorldCache implements SharedWorldCache {
     if (Date.now() < this.retryAfter || this.client.isReady === false) return undefined;
     try {
       const locator = await timeout(this.client.get(this.key(key)), this.operationTimeoutMs);
-      if (!locator) return undefined;
-      // Backward compatibility for cache entries written before content-addressed blobs.
-      if (locator.startsWith("{")) return this.parsedChunk(locator);
+      if (!locator || !/^[a-f0-9]{64}$/.test(locator)) return undefined;
       const value = await timeout(this.client.get(this.key(`chunk-content:${locator}`)), this.operationTimeoutMs);
       return value ? this.parsedChunk(value, locator) : undefined;
     } catch {

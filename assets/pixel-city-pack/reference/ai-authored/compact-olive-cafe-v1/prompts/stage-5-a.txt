@@ -1,0 +1,11 @@
+Refine this ONE existing rooftop-cafe building for a 48x48 pixel-art town sprite, preserving its unique identity: sandstone roof terrace with the central orange/cream striped canopy, tiny teal table/chairs and olive planters; terracotta two upper floors; dark-teal cafe ground floor with striped awnings. Keep camera and overall rectangle. This is a finished stage5 building, not construction.
+
+Maintain square1254x1254 canvas, occupied building x185..1069 and y100..1066, so its game sprite is44x48 pixels centered on48x48 with baseline48. Roof depth32 native pixels, facade16, three short floors with5-pixel rhythm. Use strict parallel horizontal facade/roof edges and vertical depth edges, NO receding sides, no isometric diamond, no heavy black outline or external shadow. Keep rooftop layout and all non-facade geometry.
+
+Correct only the over-detailed oversized facade:
+- Every upper window should be ONE clearly readable solid TEAL rectangular pane with a tiny pale highlight, not subdivisions. Six small windows per upper row. Each pane exactly2–3 game pixels wide and2 pixels tall (~40–60 source px wide by40 tall). Keep consistent spacing and two rows5 game pixels apart. Current upper windows are too short: extend their actual teal bodies vertically to two full native pixels while keeping floor bands straight.
+- Ground-floor shop windows similarly2–3 pixels wide by2 high, with simple pale trim, no miniature grids. Reduce awnings to compact shallow orange/cream bands so glazing remains visible.
+- Central street door must be modest: exactly4x3 game pixels (~80x60 source pixels) with a sandstone7x5 frame (~140x100 source pixels). Center it on x627. Outer frame roughlyx557..697,y966..1066; teal door leafx587..667,y1006..1066. NO giant double doors. Preserve final bottom baseline1066 and width.
+- Keep all3 storeys horizontally banded; no floor may become taller than6 native pixels. Keep recognizable cafe facade colors and slim piers, simplify masonry into coarse square clusters.
+
+Muted GameBoy-style cartoon pixel palette, dusty cream/olive/terracotta/teal, strong crisp chunky shapes, NO photoreal texture, blur, smooth shading, lettering, people, cars, road, external grass or fence. Uniform solid magenta reserved for background only. Output only the corrected original stage5 at same registration.

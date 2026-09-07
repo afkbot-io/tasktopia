@@ -16,11 +16,16 @@ describe("country atlas event policy", () => {
     expect(countryOverviewEventImpact(event("district.renamed"))).toBe("STRUCTURE");
     expect(countryOverviewEventImpact(event("task.created"))).toBe("STRUCTURE");
     expect(countryOverviewEventImpact(event("task.renamed"))).toBe("STRUCTURE");
+    expect(countryOverviewEventImpact(event("task.transferred", { serviceRole: "AIRPORT" }))).toBe("STRUCTURE");
     expect(countryOverviewEventImpact(event("task.comment_added"))).toBe("NONE");
     expect(countryOverviewEventImpact(event("task.fields_updated", { changedFields: ["documents"] }))).toBe("NONE");
     expect(countryOverviewEventImpact(event("task.fields_updated", { changedFields: ["priority"] }))).toBe("STRUCTURE");
     expect(countryOverviewEventImpact(event("task.status_changed", { groundChanged: false }))).toBe("TASK_PROGRESS");
     expect(countryOverviewEventImpact(event("task.status_changed", { groundChanged: true }))).toBe("STRUCTURE");
+    // Opening or closing a task-backed airport changes routes at every level,
+    // even though the ground raster itself does not change.
+    expect(countryOverviewEventImpact(event("task.status_changed", { groundChanged: false, serviceRole: "AIRPORT", stage: 5 }))).toBe("STRUCTURE");
+    expect(countryOverviewEventImpact(event("task.status_changed", { groundChanged: false, serviceRole: "AIRPORT", stage: 4 }))).toBe("STRUCTURE");
   });
 
   it("keeps every progress event in a replay batch and lets structure dominate", () => {

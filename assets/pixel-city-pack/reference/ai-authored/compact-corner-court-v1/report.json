@@ -1,0 +1,263 @@
+{
+  "key": "compact-corner-court-v1",
+  "contract": "geometry.json",
+  "normalization": "Shared finished-stage frame only; uniform nearest-neighbour scale, hard alpha and bounded palette quantization. Never repaint courtyard floors, repair holes, warp axes or crop each reverse stage independently. Geometry is frozen before generation. Stage5only until independent parent approval.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    89,
+    86,
+    1168,
+    1161
+  ],
+  "uniformScale": 0.05931417979610751,
+  "targetSize": [
+    64,
+    64
+  ],
+  "offset": [
+    0,
+    0
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "e96727be1bdebaec1d089de9e06846ed2ba07ccb586c166d200f1a53443a4044",
+      "runtimeSha256": "30d6588186da59da3afd31d4f36ca21d72347bbcb5197da633d993be5ba15ac0",
+      "sourceBounds": [
+        90,
+        87,
+        1168,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "e512a8713dea27b20f36d49342f8dec637736c8d53af21e36fc716a02610822b",
+      "runtimeSha256": "839e5dc0f03d598dfcd75f5c1fae7a676d59176851698ecd75df8b99d08a22e0",
+      "sourceBounds": [
+        90,
+        88,
+        1166,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "0d21c151608212598bd955cd12c684abe6e593cf92b44e78d872e442ecae7c41",
+      "runtimeSha256": "33315045ad4d827011496f732c91a7a8b7587bdfc21c3afbd7ffdf12e89d604b",
+      "sourceBounds": [
+        90,
+        90,
+        1166,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-corner-court-v1",
+    "reviewedAt": "2026-09-07",
+    "reviewScope": "All authored stages3,4,5 independently accepted as a source family. No runtime/catalog/packing/map integration is claimed.",
+    "reviewMethod": "Author inspected each source/native/8x preview. Parent independently inspected finished G, unfinished4A, then source-fringe contact, complete after-sequence and exact alpha/RGB diagnostic before accepting3B and revised4. Source/background recovery uses the existing canonical key, not a new normalizer or hand-painted repair. Original tight finished frame is explicitly locked to preserve approved sampling.",
+    "projection": {
+      "camera": "High45-degree orthographic frontal-top with axis-parallel floor bands and L-plan roof; no receding side facade.",
+      "roofDepthPx": 53,
+      "roofAndCorniceBoundsPx": [
+        0,
+        0,
+        64,
+        53
+      ],
+      "facadeHeightPx": 11,
+      "floorStepPx": 5,
+      "windowPaneSizePxRange": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "windowRowsPx": [
+        [
+          53,
+          54
+        ],
+        [
+          58,
+          59
+        ]
+      ],
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorLeafBoundsPx": [
+        30,
+        60,
+        33,
+        63
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "doorFrameBoundsPx": [
+        29,
+        59,
+        34,
+        64
+      ],
+      "doorThresholdRowPx": 63,
+      "southEntranceAxisPx": 31.5,
+      "entranceAxisToleranceNote": "Pixel-centre entrance is within one native pixel of contracted physical south centre32; footprint offset4 and anchor32,64 remain unchanged.",
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "sameCameraAssertionScope": "All three sources and full native/8x sequence reviewed; stage3assembly is structural progress, never a reduced image-height footprint.",
+      "noHeavyBlackBaseline": true
+    },
+    "backgroundRecovery": {
+      "mode": "magenta-chroma-family",
+      "commonSourceFrame": [
+        89,
+        86,
+        1168,
+        1161
+      ],
+      "sourceGeometryChanged": false,
+      "newSharedNormalizerCode": false,
+      "enclosedRemovedSourcePixels": 0,
+      "maxRemovedSourceDepthFromExistingTransparentBackgroundPx": 2,
+      "nativeAlphaChanges": {
+        "3": [
+          [
+            22,
+            0
+          ],
+          [
+            0,
+            41
+          ]
+        ],
+        "4": [
+          [
+            63,
+            39
+          ]
+        ],
+        "5": []
+      },
+      "nativeOpaquePaletteRemappingPixels": {
+        "3": 135,
+        "4": 55,
+        "5": 0
+      },
+      "maxOpaqueChannelDelta": {
+        "3": 26,
+        "4": 23,
+        "5": 0
+      },
+      "evidence": "diagnostics/background-recovery.json",
+      "sourceContact": "diagnostics/source-fringe-contact.png",
+      "notes": "Parent confirmed these are exterior key halos, not architectural material deletion. All removed source components touch the original transparent backdrop, with no enclosed component removed. Native5is byte-identical;3/4palette remapping is disclosed rather than claimed pixel-identical. Door/court/foundation alpha is unchanged."
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "0d21c151608212598bd955cd12c684abe6e593cf92b44e78d872e442ecae7c41",
+        "runtimeSha256": "33315045ad4d827011496f732c91a7a8b7587bdfc21c3afbd7ffdf12e89d604b",
+        "retainedRoofAreaApproxPercent": 0,
+        "notes": "Parent accepted the roofless roughly half-assembled Lstructure, opaque west/south rooms and original separate northeast court. Partial masonry/front infill and internal materials show construction without shrinking the full64x64footprint. Source3B and the existing broad-key recovery are accepted together. Fixed door axis,64baseline and foundation rows62/63stay registered; no enclosed transparent holes or external scenery."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "e512a8713dea27b20f36d49342f8dec637736c8d53af21e36fc716a02610822b",
+        "runtimeSha256": "839e5dc0f03d598dfcd75f5c1fae7a676d59176851698ecd75df8b99d08a22e0",
+        "retainedRoofAreaApproxPercent": 52,
+        "notes": "Parent accepted tall west roof retained while the south bar exposes five opaque rooms with raised axis-parallel partitions and small internal materials. The original northeast court remains a court. All six finished vents removed; all14windows are dark unfinished apertures. Entry/foundation remain registered. Revised native hash includes approved exterior-key cleanup and disclosed palette remapping."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "e96727be1bdebaec1d089de9e06846ed2ba07ccb586c166d200f1a53443a4044",
+        "runtimeSha256": "30d6588186da59da3afd31d4f36ca21d72347bbcb5197da633d993be5ba15ac0",
+        "notes": "Parent independently accepted Gnative and8x: distinct slate Lroof with full west wing and south bar, opaque attached northeast court, dusty-plum two-floor frontage, small centered3x3leaf/5x5frame, no receding side facade or heavy baseline.64x64native/8x8physical geometry was not relaxed. Later background recovery leaves this native hash exactly unchanged."
+      }
+    },
+    "runtimeIntegrationReviewOwner": "Parent owns batch catalog registration, variable-slot packing, construction-clearance integration and actual map review. This family directory and proposed entry alone do not publish the building."
+  }
+}

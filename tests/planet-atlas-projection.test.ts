@@ -4,13 +4,13 @@ import { layoutPlanetCountryLabels, planetHexPath, projectPlanetAtlas, projectPl
 import { planetAtlasCacheKey } from "../src/client/planet-atlas-cache";
 
 const fixture: PlanetAtlasDto = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   planetSeed: 782_441,
   revision: "planet-fixture",
   countries: [
-    { id: "country-a", name: "Атуаленда", seed: 11, worldVersion: 4, cityCount: 1, districtCount: 3, buildingCount: 12, unfinishedBuildingCount: 8, progress: 30, worldBounds: { minX: -200, minY: -120, maxX: 240, maxY: 180 } },
-    { id: "country-b", name: "Северия", seed: 22, worldVersion: 7, cityCount: 4, districtCount: 12, buildingCount: 80, unfinishedBuildingCount: 14, progress: 65, worldBounds: { minX: 300, minY: 100, maxX: 700, maxY: 460 } },
-    { id: "country-c", name: "Острова", seed: 33, worldVersion: 2, cityCount: 2, districtCount: 6, buildingCount: 25, unfinishedBuildingCount: 2, progress: 90, worldBounds: { minX: -700, minY: 260, maxX: -320, maxY: 620 } },
+    { id: "country-a", name: "Атуаленда", seed: 11, worldVersion: 4, cityCount: 1, districtCount: 3, buildingCount: 12, unfinishedBuildingCount: 8, progress: 30, cities:[{id:"a-city",center:{x:0,y:0},districts:[{id:"a-d1",center:{x:-20,y:0}},{id:"a-d2",center:{x:20,y:0}},{id:"a-d3",center:{x:0,y:30}}],airports:[{taskId:"a-airport",center:{x:40,y:40}}]}], worldBounds: { minX: -200, minY: -120, maxX: 240, maxY: 180 } },
+    { id: "country-b", name: "Северия", seed: 22, worldVersion: 7, cityCount: 4, districtCount: 12, buildingCount: 80, unfinishedBuildingCount: 14, progress: 65, cities:[{id:"b-city",center:{x:500,y:200},districts:[{id:"b-d1",center:{x:500,y:200}}],airports:[{taskId:"b-airport",center:{x:520,y:240}}]}], worldBounds: { minX: 300, minY: 100, maxX: 700, maxY: 460 } },
+    { id: "country-c", name: "Острова", seed: 33, worldVersion: 2, cityCount: 2, districtCount: 6, buildingCount: 25, unfinishedBuildingCount: 2, progress: 90, cities:[{id:"c-city",center:{x:-400,y:400},districts:[{id:"c-d1",center:{x:-400,y:400}}],airports:[]}], worldBounds: { minX: -700, minY: 260, maxX: -320, maxY: 620 } },
   ],
 };
 
@@ -42,10 +42,40 @@ describe("planet atlas projection", () => {
         for (const neighbor of [
           { q: cell.q + 1, r: cell.r }, { q: cell.q - 1, r: cell.r },
           { q: cell.q, r: cell.r + 1 }, { q: cell.q, r: cell.r - 1 },
-          { q: cell.q + 1, r: cell.r - 1 }, { q: cell.q - 1, r: cell.r + 1 },
         ]) if (countryCells.has(cellKey(neighbor))) queue.push(neighbor);
       }
       expect(visited.size).toBe(country.cells.length);
+    }
+  });
+
+  it("uses disjoint ocean and four-connected continent components shared by neighboring countries", () => {
+    for (const planetSeed of [782_441, 73, 424_242]) {
+      const atlas = projectPlanetAtlas({ ...fixture, planetSeed, countries: Array.from({ length: 16 }, (_, index) => ({
+        ...fixture.countries[index % 3]!, id: `land-${index}`, cities: [],
+      })) });
+      const land = new Map([...atlas.countries.flatMap(country => country.cells), ...atlas.coastCells].map(cell => [cellKey(cell), cell]));
+      for (const cell of atlas.oceanCells) expect(land.has(cellKey(cell))).toBe(false);
+      const components = new Map<string, number>();
+      let count = 0;
+      for (const first of land.values()) {
+        if (components.has(cellKey(first))) continue;
+        const queue = [first];
+        components.set(cellKey(first), count);
+        for (let i = 0; i < queue.length; i++) {
+          const cell = queue[i]!;
+          for (const [dq, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const key = `${cell.q + dq!}:${cell.r + dr!}`;
+            if (!land.has(key) || components.has(key)) continue;
+            components.set(key, count); queue.push(land.get(key)!);
+          }
+        }
+        count++;
+      }
+      for (const a of atlas.countries) for (const b of atlas.countries) {
+        expect(a.continent === b.continent).toBe(components.get(cellKey(a.cells[0]!)) === components.get(cellKey(b.cells[0]!)));
+      }
+      expect(count).toBeGreaterThan(1);
+      expect(count).toBeLessThan(atlas.countries.length);
     }
   });
 
@@ -60,11 +90,13 @@ describe("planet atlas projection", () => {
     const projected = projectPlanetAtlas(fixture);
     const airportIds = new Set(projected.countries.flatMap((country) => country.airports.map((airport) => airport.id)));
     expect(projected.oceanCells.length).toBeGreaterThan(100);
+    expect(projected.countries.flatMap(country=>country.districtIcons)).toHaveLength(5);
+    expect(projected.countries.flatMap(country=>country.districtIcons).map(icon=>icon.id)).toContain("a-d2");
     expect(projected.clouds.length).toBeGreaterThanOrEqual(12);
     expect(projected.stars.length).toBeGreaterThanOrEqual(40);
     expect(projected.edgeFog.length).toBeGreaterThanOrEqual(40);
     expect(projected.countries.flatMap((country) => country.airports)).toHaveLength(
-      fixture.countries.reduce((total, country) => total + country.cityCount, 0),
+      fixture.countries.reduce((total, country) => total + country.cities.reduce((sum,city)=>sum+city.airports.length,0), 0),
     );
     expect(new Set(projected.countries.flatMap((country) => country.cells.map((cell) => cell.terrain))).size).toBeGreaterThan(3);
     for (const route of projected.routes) {
@@ -76,11 +108,10 @@ describe("planet atlas projection", () => {
   });
 
   it("does not create flights when fewer than two airports exist", () => {
-    const withoutAirports = projectPlanetAtlas({ ...fixture, countries: fixture.countries.map((country) => ({ ...country, cityCount: 0 })) });
+    const withoutAirports = projectPlanetAtlas({ ...fixture, countries: fixture.countries.map((country) => ({ ...country, cities:country.cities.map(city=>({...city,airports:[]})) })) });
     const oneAirport = projectPlanetAtlas({ ...fixture, countries: [{ ...fixture.countries[0]!, cityCount: 1 }] });
     expect(withoutAirports.routes).toEqual([]);
-    expect(oneAirport.routes).toHaveLength(1);
-    expect(oneAirport.routes[0]!.fromAirportId).toBeNull();
+    expect(oneAirport.routes).toEqual([]);
   });
 
   it("keeps browser snapshots isolated between accounts", () => {
@@ -107,8 +138,10 @@ describe("planet atlas projection", () => {
     const secondAirport = second.countries.flatMap((country) => country.airports)[0]!;
     const firstCell = first.countries.flatMap((country) => country.cells).find((cell) => cell.id === firstAirport.cellId)!;
     const secondCell = second.countries.flatMap((country) => country.cells).find((cell) => cell.id === secondAirport.cellId)!;
-    expect(firstAirport.center).toEqual(firstCell.center);
-    expect(secondAirport.center).toEqual(secondCell.center);
+    // Raster corners and point anchors each round to an integer pixel.
+    expect(Math.abs((firstAirport.center.x-firstCell.center.x)*1.2-(secondAirport.center.x-secondCell.center.x))).toBeLessThanOrEqual(1.5);
+    expect(Math.abs((firstAirport.center.y-firstCell.center.y)*1.2-(secondAirport.center.y-secondCell.center.y))).toBeLessThanOrEqual(1.5);
+    expect(second.routes.find(route=>route.fromAirportId===secondAirport.id)?.from).toEqual(secondAirport.center);
     expect(second.routes.every((route) => route.path.startsWith("M") && route.rotateWithPath)).toBe(true);
   });
 

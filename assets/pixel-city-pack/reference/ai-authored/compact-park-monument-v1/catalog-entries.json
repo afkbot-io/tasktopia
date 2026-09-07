@@ -1,0 +1,65 @@
+[
+  {
+    "key": "compact-park-monument-stage-3",
+    "label": "Памятник · стадия 3",
+    "sheet": "ai-authored/compact-park-monument-v1/sources/stage-3.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 3,
+    "sourceSha256": "318be99167dbbc082f5952602465e5ab6e37ff799e86c7214c81090d31d8c291"
+  },
+  {
+    "key": "compact-park-monument-stage-4",
+    "label": "Памятник · стадия 4",
+    "sheet": "ai-authored/compact-park-monument-v1/sources/stage-4.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 4,
+    "sourceSha256": "35d5a40a24e71f7040cac1522c6b48908284571f791c1f5af7ed8bcdd03af2f1"
+  },
+  {
+    "key": "compact-park-monument-stage-5",
+    "label": "Памятник · стадия 5",
+    "sheet": "ai-authored/compact-park-monument-v1/sources/stage-5.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 5,
+    "sourceSha256": "15e13826250a5561468c007fe14a0813e4cc816bd990e74f7731683a8c598321"
+  }
+]

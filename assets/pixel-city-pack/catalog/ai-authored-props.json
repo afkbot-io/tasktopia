@@ -1,305 +1,2265 @@
 [
-  {"key":"bus-stop-horizontal","label":"Городская остановка","sheet":"ai-authored/ambient/bus-stop-canonical-v2.png","segments":2,"segment":0,"size":[16,16],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TRANSIT_STOP_FRONTAL_TOP"},
-  {"key":"bus-stop-vertical","label":"Городская остановка","sheet":"ai-authored/ambient/bus-stop-canonical-v2.png","segments":2,"segment":1,"size":[16,16],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TRANSIT_STOP_FRONTAL_TOP"},
-  {"key":"city-bus-horizontal","label":"Городской автобус","sheet":"ai-authored/ambient/city-bus-v6.png","segments":3,"segment":0,"size":[56,24],"occupiedSize":[54,22],"footprintCells":[7,3],"reviewed":true,"visualProfile":"TASKTOPIA_V6_ROAD_VEHICLE_NATIVE","baseFacing":"EAST"},
-  {"key":"city-bus-north","label":"Городской автобус","sheet":"ai-authored/ambient/city-bus-v6.png","segments":3,"segment":1,"size":[24,56],"occupiedSize":[22,54],"footprintCells":[3,7],"reviewed":true,"visualProfile":"TASKTOPIA_V6_ROAD_VEHICLE_NATIVE","baseFacing":"NORTH"},
-  {"key":"city-bus-south","label":"Городской автобус","sheet":"ai-authored/ambient/city-bus-v6.png","segments":3,"segment":2,"size":[24,56],"occupiedSize":[22,54],"footprintCells":[3,7],"reviewed":true,"visualProfile":"TASKTOPIA_V6_ROAD_VEHICLE_NATIVE","baseFacing":"SOUTH"},
-
-  {"key":"bench-horizontal","label":"Городская скамейка — горизонтально","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":0,"size":[16,8],"occupiedSize":[14,7],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"bench-vertical","label":"Городская скамейка — вертикально","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":1,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"trash-bin","label":"Городская урна","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":2,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"recycling-bin","label":"Контейнер для переработки","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":3,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"streetlamp","label":"Классический фонарь — выключен","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":4,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-lit","label":"Классический фонарь — включён","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":5,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-modern","label":"Современный фонарь — выключен","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":6,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-modern-lit","label":"Современный фонарь — включён","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":7,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-double","label":"Двойной фонарь — выключен","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":8,"size":[16,16],"occupiedSize":[14,15],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-double-lit","label":"Двойной фонарь — включён","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":9,"size":[16,16],"occupiedSize":[14,15],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"traffic-light-red","label":"Компактный светофор — красный","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":10,"size":[8,16],"occupiedSize":[5,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_COMPACT_TRAFFIC_LIGHT"},
-  {"key":"traffic-light-green","label":"Компактный светофор — зелёный","sheet":"ai-authored/ambient/street-furniture-lighting-v1.png","grid":[4,3],"segment":11,"size":[8,16],"occupiedSize":[5,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_COMPACT_TRAFFIC_LIGHT"},
-
-  {"key":"flower-white","label":"Белые цветы","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":0,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"flower-yellow","label":"Жёлтые цветы","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":1,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"flower-red","label":"Красные цветы","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":2,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"flower-pink","label":"Розовые цветы","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":3,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"flower-purple","label":"Фиолетовые цветы","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":4,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"flower-blue","label":"Синие цветы","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":4,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"bush-dark","label":"Тёмный куст","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":5,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"bush-light","label":"Светлый куст","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":6,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"bush-berries","label":"Ягодный куст","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":7,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"rock-small","label":"Небольшой камень","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":8,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"rock-cluster","label":"Группа камней","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":9,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"reed-green","label":"Зелёный камыш","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":10,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"reed-cattail","label":"Рогоз","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":11,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"shrub-hazel","label":"Орешник","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":12,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"shrub-fern","label":"Папоротник","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":13,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"shrub-flowering","label":"Цветущий куст","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":14,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"shrub-dry","label":"Сухой куст","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":12,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"crop-wheat-a","label":"Пшеница A","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":15,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_CROP"},
-  {"key":"crop-wheat-b","label":"Пшеница B","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":15,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_CROP","mirrorX":true},
-  {"key":"crop-corn-a","label":"Кукуруза A","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":16,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_CROP"},
-  {"key":"crop-corn-b","label":"Кукуруза B","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":16,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_CROP","mirrorX":true},
-  {"key":"shrub-hedge","label":"Стриженая изгородь","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":17,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"shrub-juniper","label":"Можжевельник","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":18,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-  {"key":"tree-flowering","label":"Цветущее деревце","sheet":"ai-authored/ambient/nature-small-v2.png","grid":[5,4],"segment":19,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V6_SEEDED_NATURE"},
-
-  {"key":"utility-pole","label":"Городской столб","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":0,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"planter-round","label":"Круглая клумба","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":1,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"fire-hydrant","label":"Пожарный гидрант","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":2,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"mailbox","label":"Почтовый ящик","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":3,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"bollard","label":"Дорожный столбик","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":4,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"bicycle-rack","label":"Велопарковка","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":5,"size":[16,8],"occupiedSize":[14,7],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"fountain-small","label":"Малый городской фонтан","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":6,"size":[16,16],"occupiedSize":[14,15],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"picnic-table","label":"Стол для отдыха","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":7,"size":[16,16],"occupiedSize":[14,15],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"streetlamp-vintage","label":"Винтажный фонарь — выключен","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":0,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-solar","label":"Солнечный фонарь — выключен","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":1,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-industrial","label":"Промышленный фонарь — выключен","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":2,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-festive","label":"Праздничный фонарь — выключен","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":3,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"city-sign-horizontal","label":"Городской указатель — горизонтальный маршрут","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":12,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"city-sign-vertical","label":"Городской указатель — вертикальный маршрут","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":13,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"active-district-flag","label":"Флаг активного района","sheet":"ai-authored/ambient/civic-details-v1.png","grid":[5,3],"segment":14,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-
-  {"key":"bandstand","label":"Парковая эстрада","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":0,"size":[40,32],"occupiedSize":[38,31],"footprintCells":[5,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"statue-hero","label":"Памятник герою","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":1,"size":[16,24],"occupiedSize":[14,23],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"statue-abstract","label":"Абстрактная скульптура","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":2,"size":[16,24],"occupiedSize":[14,23],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"topiary-spiral","label":"Спиральный топиарий","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":3,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"topiary-animal","label":"Фигурный топиарий","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":4,"size":[16,16],"occupiedSize":[14,15],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"pond-small","label":"Малый парковый пруд","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":5,"size":[24,24],"occupiedSize":[22,23],"footprintCells":[3,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"flower-bed-horizontal","label":"Цветник — горизонтально","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":6,"size":[24,8],"occupiedSize":[22,7],"footprintCells":[3,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"flower-bed-vertical","label":"Цветник — вертикально","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":7,"size":[8,24],"occupiedSize":[6,23],"footprintCells":[1,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"park-bench-double","label":"Двойная парковая скамейка","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":8,"size":[24,16],"occupiedSize":[22,15],"footprintCells":[3,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"park-bridge","label":"Парковый мостик","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":9,"size":[32,16],"occupiedSize":[30,15],"footprintCells":[4,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"park-lamp","label":"Парковый фонарь — выключен","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":4,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-vintage-lit","label":"Винтажный фонарь — включён","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":5,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-solar-lit","label":"Солнечный фонарь — включён","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":6,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-industrial-lit","label":"Промышленный фонарь — включён","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":7,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"streetlamp-festive-lit","label":"Праздничный фонарь — включён","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":8,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"park-lamp-lit","label":"Парковый фонарь — включён","sheet":"ai-authored/ambient/street-lamps-night-v1.png","grid":[5,2],"segment":9,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"},
-  {"key":"park-path-circle","label":"Круглая парковая площадка","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":11,"size":[24,24],"occupiedSize":[22,23],"footprintCells":[3,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"guardrail-horizontal","label":"Ограждение — горизонтально","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":12,"size":[16,8],"occupiedSize":[14,7],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-  {"key":"guardrail-vertical","label":"Ограждение — вертикально","sheet":"ai-authored/ambient/park-details-v1.png","grid":[5,3],"segment":13,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"},
-
-  {"key":"fire-engine-horizontal","label":"Пожарная автоцистерна","sheet":"ai-authored/ambient/fire-engines-v7.png","sheetSha256":"28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8","segments":3,"segment":0,"autoSegments":true,"size":[56,24],"occupiedSize":[54,22],"footprintCells":[7,3],"reviewed":true,"artSource":"AI_AUTHORED","visualProfile":"TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"fire-engine-rescue","label":"Пожарно-спасательная машина","sheet":"ai-authored/ambient/fire-engines-v7.png","sheetSha256":"28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8","segments":3,"segment":1,"autoSegments":true,"size":[56,24],"occupiedSize":[54,22],"footprintCells":[7,3],"reviewed":true,"artSource":"AI_AUTHORED","visualProfile":"TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"fire-engine-ladder","label":"Пожарная автолестница","sheet":"ai-authored/ambient/fire-engines-v7.png","sheetSha256":"28e2a90ea48fce160e4173133b1be47a734dd82adee625aa1f4259a70a477ed8","segments":3,"segment":2,"autoSegments":true,"size":[56,24],"occupiedSize":[54,22],"footprintCells":[7,3],"reviewed":true,"artSource":"AI_AUTHORED","visualProfile":"TASKTOPIA_V6_HEAVY_EMERGENCY_VEHICLE_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"boat-horizontal-a","label":"Рыбацкая лодка — горизонтально A","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":3,"size":[24,8],"occupiedSize":[22,7],"footprintCells":[3,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"boat-horizontal-b","label":"Рыбацкая лодка — горизонтально B","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":4,"size":[24,8],"occupiedSize":[22,7],"footprintCells":[3,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"boat-vertical-a","label":"Рыбацкая лодка — вертикально A","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":5,"size":[8,24],"occupiedSize":[6,23],"footprintCells":[1,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP","baseFacing":"SOUTH"},
-  {"key":"boat-vertical-b","label":"Рыбацкая лодка — вертикально B","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":6,"size":[8,24],"occupiedSize":[6,23],"footprintCells":[1,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP","baseFacing":"SOUTH"},
-  {"key":"airplane-small","label":"Малый пассажирский самолёт","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":7,"size":[32,16],"occupiedSize":[30,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_WORLD_AIRCRAFT","baseFacing":"EAST"},
-  {"key":"airplane-courier","label":"Курьерский самолёт","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":8,"size":[32,16],"occupiedSize":[30,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_WORLD_AIRCRAFT","baseFacing":"EAST"},
-  {"key":"airplane-twin","label":"Двухмоторный самолёт","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":9,"size":[32,16],"occupiedSize":[30,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_WORLD_AIRCRAFT","baseFacing":"EAST"},
-  {"key":"incident-flame-a","label":"Огонь — кадр A","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":10,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-  {"key":"incident-flame-b","label":"Огонь — кадр B","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":11,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-  {"key":"incident-flame-c","label":"Огонь — кадр C","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":12,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-  {"key":"incident-flame-d","label":"Огонь — кадр D","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":13,"size":[8,8],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-  {"key":"incident-smoke-a","label":"Дым — кадр A","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":14,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-  {"key":"incident-smoke-b","label":"Дым — кадр B","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":15,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-  {"key":"incident-smoke-c","label":"Дым — кадр C","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":16,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-  {"key":"incident-smoke-d","label":"Дым — кадр D","sheet":"ai-authored/ambient/incidents-special-vehicles-v1.png","grid":[5,4],"segment":17,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_INCIDENT_ANIMATION"},
-
-  {"key":"hill-small","label":"Небольшой холм","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":0,"size":[16,16],"occupiedSize":[14,15],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"},
-  {"key":"hill-rocky","label":"Каменистый холм","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":1,"size":[16,16],"occupiedSize":[14,15],"footprintCells":[2,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"},
-  {"key":"mountain-peak","label":"Горная вершина","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":2,"size":[16,24],"occupiedSize":[14,23],"footprintCells":[2,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"},
-  {"key":"mountain-ridge","label":"Горный хребет","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":3,"size":[24,16],"occupiedSize":[22,15],"footprintCells":[3,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"},
-  {"key":"fence-horizontal","label":"Городская ограда — горизонтально","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":4,"size":[16,8],"occupiedSize":[14,7],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_FENCE_FRONTAL_TOP"},
-  {"key":"fence-vertical","label":"Городская ограда — вертикально","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":5,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_FENCE_FRONTAL_TOP"},
-  {"key":"archive-fence-horizontal","label":"Ограда архива — горизонтально","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":6,"size":[16,8],"occupiedSize":[14,7],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"},
-  {"key":"archive-fence-vertical","label":"Ограда архива — вертикально","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":7,"size":[8,16],"occupiedSize":[6,15],"footprintCells":[1,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"},
-  {"key":"archive-security-barrier","label":"Шлагбаум архива","sheet":"ai-authored/ambient/terrain-fences-v1.png","grid":[5,2],"segment":8,"size":[16,8],"occupiedSize":[14,7],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"},
-
-  {"key":"animal-fox-north-a","label":"Лиса — север A","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":0,"size":[16,16],"occupiedSize":[8,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-fox-north-b","label":"Лиса — север B","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":1,"size":[16,16],"occupiedSize":[8,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-fox-north-c","label":"Лиса — север C","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":2,"size":[16,16],"occupiedSize":[8,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-fox-east-a","label":"Лиса — восток A","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-fox-east-b","label":"Лиса — восток B","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-fox-east-c","label":"Лиса — восток C","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-fox-south-a","label":"Лиса — юг A","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":6,"size":[16,16],"occupiedSize":[8,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-fox-south-b","label":"Лиса — юг B","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":7,"size":[16,16],"occupiedSize":[8,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-fox-south-c","label":"Лиса — юг C","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":8,"size":[16,16],"occupiedSize":[8,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-fox-west-a","label":"Лиса — запад A","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-fox-west-b","label":"Лиса — запад B","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-fox-west-c","label":"Лиса — запад C","sheet":"ai-authored/ambient/animal-fox-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-deer-north-a","label":"Олень — север A","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":0,"size":[16,24],"occupiedSize":[10,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-deer-north-b","label":"Олень — север B","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":1,"size":[16,24],"occupiedSize":[10,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-deer-north-c","label":"Олень — север C","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":2,"size":[16,24],"occupiedSize":[10,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-deer-east-a","label":"Олень — восток A","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":3,"size":[16,24],"occupiedSize":[14,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-deer-east-b","label":"Олень — восток B","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":4,"size":[16,24],"occupiedSize":[14,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-deer-east-c","label":"Олень — восток C","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":5,"size":[16,24],"occupiedSize":[14,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-deer-south-a","label":"Олень — юг A","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":6,"size":[16,24],"occupiedSize":[10,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-deer-south-b","label":"Олень — юг B","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":7,"size":[16,24],"occupiedSize":[10,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-deer-south-c","label":"Олень — юг C","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":8,"size":[16,24],"occupiedSize":[10,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-deer-west-a","label":"Олень — запад A","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":3,"size":[16,24],"occupiedSize":[14,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-deer-west-b","label":"Олень — запад B","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":4,"size":[16,24],"occupiedSize":[14,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-deer-west-c","label":"Олень — запад C","sheet":"ai-authored/ambient/animal-deer-v3.png","grid":[3,3],"segment":5,"size":[16,24],"occupiedSize":[14,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-rabbit-north-a","label":"Кролик — север A","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":0,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-north-b","label":"Кролик — север B","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":1,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-north-c","label":"Кролик — север C","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":2,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-east-a","label":"Кролик — восток A","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[12,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-east-b","label":"Кролик — восток B","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[12,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-east-c","label":"Кролик — восток C","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[12,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-south-a","label":"Кролик — юг A","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":6,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-south-b","label":"Кролик — юг B","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":7,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-south-c","label":"Кролик — юг C","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":8,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-rabbit-west-a","label":"Кролик — запад A","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[12,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-rabbit-west-b","label":"Кролик — запад B","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[12,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-rabbit-west-c","label":"Кролик — запад C","sheet":"ai-authored/ambient/animal-rabbit-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[12,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-boar-north-a","label":"Кабан — север A","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":0,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-boar-north-b","label":"Кабан — север B","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":1,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-boar-north-c","label":"Кабан — север C","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":2,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-boar-east-a","label":"Кабан — восток A","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-boar-east-b","label":"Кабан — восток B","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-boar-east-c","label":"Кабан — восток C","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-boar-south-a","label":"Кабан — юг A","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":6,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-boar-south-b","label":"Кабан — юг B","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":7,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-boar-south-c","label":"Кабан — юг C","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":8,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-boar-west-a","label":"Кабан — запад A","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-boar-west-b","label":"Кабан — запад B","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-boar-west-c","label":"Кабан — запад C","sheet":"ai-authored/ambient/animal-boar-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-duck-north-a","label":"Утка — север A","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":0,"size":[16,16],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-duck-north-b","label":"Утка — север B","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":1,"size":[16,16],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-duck-north-c","label":"Утка — север C","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":2,"size":[16,16],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-duck-east-a","label":"Утка — восток A","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[10,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-duck-east-b","label":"Утка — восток B","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[10,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-duck-east-c","label":"Утка — восток C","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[10,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-duck-south-a","label":"Утка — юг A","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":6,"size":[16,16],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-duck-south-b","label":"Утка — юг B","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":7,"size":[16,16],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-duck-south-c","label":"Утка — юг C","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":8,"size":[16,16],"occupiedSize":[6,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-duck-west-a","label":"Утка — запад A","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[10,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-duck-west-b","label":"Утка — запад B","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[10,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-duck-west-c","label":"Утка — запад C","sheet":"ai-authored/ambient/animal-duck-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[10,7],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-sheep-north-a","label":"Овца — север A","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":0,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-sheep-north-b","label":"Овца — север B","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":1,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-sheep-north-c","label":"Овца — север C","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":2,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-sheep-east-a","label":"Овца — восток A","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-sheep-east-b","label":"Овца — восток B","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-sheep-east-c","label":"Овца — восток C","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-sheep-south-a","label":"Овца — юг A","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":6,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-sheep-south-b","label":"Овца — юг B","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":7,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-sheep-south-c","label":"Овца — юг C","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":8,"size":[16,16],"occupiedSize":[10,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-sheep-west-a","label":"Овца — запад A","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-sheep-west-b","label":"Овца — запад B","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-sheep-west-c","label":"Овца — запад C","sheet":"ai-authored/ambient/animal-sheep-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-dog-north-a","label":"Собака — север A","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":0,"size":[16,16],"occupiedSize":[9,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-dog-north-b","label":"Собака — север B","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":1,"size":[16,16],"occupiedSize":[9,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-dog-north-c","label":"Собака — север C","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":2,"size":[16,16],"occupiedSize":[9,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-dog-east-a","label":"Собака — восток A","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-dog-east-b","label":"Собака — восток B","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-dog-east-c","label":"Собака — восток C","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-dog-south-a","label":"Собака — юг A","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":6,"size":[16,16],"occupiedSize":[9,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-dog-south-b","label":"Собака — юг B","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":7,"size":[16,16],"occupiedSize":[9,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-dog-south-c","label":"Собака — юг C","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":8,"size":[16,16],"occupiedSize":[9,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-dog-west-a","label":"Собака — запад A","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[14,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-dog-west-b","label":"Собака — запад B","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[14,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-dog-west-c","label":"Собака — запад C","sheet":"ai-authored/ambient/animal-dog-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[14,11],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-cat-north-a","label":"Кошка — север A","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":0,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-cat-north-b","label":"Кошка — север B","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":1,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-cat-north-c","label":"Кошка — север C","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":2,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"animal-cat-east-a","label":"Кошка — восток A","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[11,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-cat-east-b","label":"Кошка — восток B","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[11,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-cat-east-c","label":"Кошка — восток C","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[11,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"animal-cat-south-a","label":"Кошка — юг A","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":6,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-cat-south-b","label":"Кошка — юг B","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":7,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-cat-south-c","label":"Кошка — юг C","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":8,"size":[16,16],"occupiedSize":[7,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"animal-cat-west-a","label":"Кошка — запад A","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":3,"size":[16,16],"occupiedSize":[11,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-cat-west-b","label":"Кошка — запад B","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":4,"size":[16,16],"occupiedSize":[11,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-  {"key":"animal-cat-west-c","label":"Кошка — запад C","sheet":"ai-authored/ambient/animal-cat-v3.png","grid":[3,3],"segment":5,"size":[16,16],"occupiedSize":[11,8],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_ANIMAL_DIRECTIONAL_ANIMATED","baseFacing":"WEST","mirrorX":true,"strictOccupiedBounds":true},
-
-  {"key":"playground-small","label":"Дворовая игровая площадка","sheet":"ai-authored/ambient/playground-combination-v1.png","segments":1,"segment":0,"size":[24,16],"footprintCells":[3,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"},
-  {"key":"playground-slide","label":"Игровая горка","sheet":"ai-authored/ambient/playground-slide-v1.png","segments":1,"segment":0,"size":[24,16],"footprintCells":[3,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"},
-  {"key":"playground-carousel","label":"Детская карусель","sheet":"ai-authored/ambient/park-frontal-core-v2.png","segments":3,"segment":2,"size":[32,24],"footprintCells":[3,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"playground-climbing","label":"Лазательный комплекс","sheet":"ai-authored/ambient/playground-climbing-v1.png","segments":1,"segment":0,"size":[24,24],"footprintCells":[3,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"},
-  {"key":"playground-swing","label":"Двойные качели","sheet":"ai-authored/ambient/playground-swing-v1.png","segments":1,"segment":0,"size":[24,24],"footprintCells":[3,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"},
-
-  {"key":"fountain-large","label":"Большой городской фонтан","sheet":"ai-authored/ambient/park-frontal-core-v2.png","segments":3,"segment":0,"size":[32,32],"footprintCells":[4,4],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"gazebo","label":"Парковая беседка","sheet":"ai-authored/ambient/park-frontal-core-v2.png","segments":3,"segment":1,"size":[32,32],"footprintCells":[4,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"park-pond","label":"Пруд с мостиком","sheet":"ai-authored/ambient/park-pond-v1.png","segments":1,"segment":0,"size":[32,24],"footprintCells":[4,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"park-sculpture","label":"Парковая скульптура","sheet":"ai-authored/ambient/park-sculpture-v1.png","segments":1,"segment":0,"size":[16,24],"footprintCells":[2,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"park-flower-clock","label":"Цветочные часы","sheet":"ai-authored/ambient/park-flower-clock-v1.png","segments":1,"segment":0,"size":[24,16],"footprintCells":[3,2],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-  {"key":"park-bandstand","label":"Парковая эстрада","sheet":"ai-authored/ambient/park-bandstand-v1.png","segments":1,"segment":0,"size":[32,24],"footprintCells":[4,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"},
-
-  {"key":"tree-oak","label":"Дуб","sheet":"ai-authored/ambient/trees-deciduous-v3.png","segments":5,"segment":0,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-maple","label":"Клён","sheet":"ai-authored/ambient/trees-deciduous-v3.png","segments":5,"segment":1,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-round","label":"Городское дерево","sheet":"ai-authored/ambient/trees-deciduous-v3.png","segments":5,"segment":2,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-aspen","label":"Осина","sheet":"ai-authored/ambient/trees-deciduous-v3.png","segments":5,"segment":3,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-birch","label":"Берёза","sheet":"ai-authored/ambient/trees-deciduous-v3.png","segments":5,"segment":4,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-apple","label":"Яблоня","sheet":"ai-authored/ambient/trees-special-v3.png","segments":5,"segment":0,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-cherry","label":"Цветущая вишня","sheet":"ai-authored/ambient/trees-special-v3.png","segments":5,"segment":1,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-magnolia","label":"Магнолия","sheet":"ai-authored/ambient/trees-special-v3.png","segments":5,"segment":2,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-willow","label":"Ива","sheet":"ai-authored/ambient/trees-special-v3.png","segments":5,"segment":3,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-deadwood","label":"Сухостой","sheet":"ai-authored/ambient/trees-special-v3.png","segments":5,"segment":4,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-conifer","label":"Ель","sheet":"ai-authored/ambient/trees-conifers-v3.png","segments":5,"segment":0,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-pine","label":"Сосна","sheet":"ai-authored/ambient/trees-conifers-v3.png","segments":5,"segment":1,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-cedar","label":"Кедр","sheet":"ai-authored/ambient/trees-conifers-v3.png","segments":5,"segment":2,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-cypress","label":"Кипарис","sheet":"ai-authored/ambient/trees-conifers-v3.png","segments":5,"segment":3,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-redwood","label":"Секвойя","sheet":"ai-authored/ambient/trees-conifers-v3.png","segments":5,"segment":4,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-  {"key":"tree-palm","label":"Пальма","sheet":"ai-authored/ambient/tree-palm-v3.png","segments":1,"segment":0,"size":[16,32],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_TREE_FRONTAL_TOP"},
-
-  {"key":"walker-north-a","label":"Пешеход — север, шаг A","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":0,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"NORTH","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-north-b","label":"Пешеход — север, шаг B","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":1,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"NORTH","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-north-c","label":"Пешеход — север, шаг C","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":2,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"NORTH","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-east-a","label":"Пешеход — восток, шаг A","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":3,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"EAST","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-east-b","label":"Пешеход — восток, шаг B","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":4,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"EAST","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-east-c","label":"Пешеход — восток, шаг C","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":5,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"EAST","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-south-a","label":"Пешеход — юг, шаг A","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":6,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"SOUTH","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-south-b","label":"Пешеход — юг, шаг B","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":7,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"SOUTH","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-south-c","label":"Пешеход — юг, шаг C","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":8,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"SOUTH","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-west-a","label":"Пешеход — запад, шаг A","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":3,"mirrorX":true,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"WEST","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-west-b","label":"Пешеход — запад, шаг B","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":4,"mirrorX":true,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"WEST","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"walker-west-c","label":"Пешеход — запад, шаг C","sheet":"ai-authored/ambient/resident-walkers-v5.png","segment":5,"mirrorX":true,"size":[16,24],"occupiedSize":[12,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_WALK_3_FRAME","baseFacing":"WEST","grid":[3,3],"strictOccupiedBounds":true},
-  {"key":"resident-reader","label":"Житель с книгой","sheet":"ai-authored/ambient/resident-actions-v1.png","segments":6,"segment":0,"size":[16,24],"occupiedSize":[8,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY"},
-  {"key":"resident-box","label":"Курьер с посылкой","sheet":"ai-authored/ambient/resident-actions-v1.png","segments":6,"segment":1,"size":[16,24],"occupiedSize":[8,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY"},
-  {"key":"resident-sweeper","label":"Дворник","sheet":"ai-authored/ambient/resident-actions-v1.png","segments":6,"segment":2,"size":[16,24],"occupiedSize":[10,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY"},
-  {"key":"resident-phone","label":"Житель с телефоном","sheet":"ai-authored/ambient/resident-actions-v1.png","segments":6,"segment":3,"size":[16,24],"occupiedSize":[8,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY"},
-  {"key":"resident-worker","label":"Рабочий","sheet":"ai-authored/ambient/resident-actions-v1.png","segments":6,"segment":4,"size":[16,24],"occupiedSize":[9,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY"},
-  {"key":"resident-wave","label":"Житель приветствует","sheet":"ai-authored/ambient/resident-actions-v1.png","segments":6,"segment":5,"size":[16,24],"occupiedSize":[10,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY"},
-
-  {"key":"fisher-north","label":"Рыбак — север","sheet":"ai-authored/ambient/fisher-views-v1.png","segments":4,"segment":0,"size":[16,24],"occupiedSize":[9,14],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY","baseFacing":"NORTH"},
-  {"key":"fisher-east","label":"Рыбак — восток","sheet":"ai-authored/ambient/fisher-views-v1.png","segments":4,"segment":1,"size":[16,24],"occupiedSize":[9,12],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY","baseFacing":"EAST"},
-  {"key":"fisher-south","label":"Рыбак — юг","sheet":"ai-authored/ambient/fisher-views-v1.png","segments":4,"segment":2,"size":[16,24],"occupiedSize":[9,14],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY","baseFacing":"SOUTH"},
-  {"key":"fisher-west","label":"Рыбак — запад","sheet":"ai-authored/ambient/fisher-views-v1.png","segments":4,"segment":3,"size":[16,24],"occupiedSize":[9,14],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_RESIDENT_ACTIVITY","baseFacing":"WEST"},
-
-  {"key":"cyclist-horizontal-a","label":"Велосипедист — горизонтально A","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":0,"size":[24,24],"occupiedSize":[17,18],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"cyclist-horizontal-b","label":"Велосипедист — горизонтально B","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":1,"size":[24,24],"occupiedSize":[17,18],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"cyclist-horizontal-c","label":"Велосипедист — горизонтально C","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":2,"size":[24,24],"occupiedSize":[17,18],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"cyclist-north-a","label":"Велосипедист — север A","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":3,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"cyclist-north-b","label":"Велосипедист — север B","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":4,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"cyclist-north-c","label":"Велосипедист — север C","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":5,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"cyclist-south-a","label":"Велосипедист — юг A","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":6,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"cyclist-south-b","label":"Велосипедист — юг B","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":7,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"cyclist-south-c","label":"Велосипедист — юг C","sheet":"ai-authored/ambient/cyclist-views-v3.png","grid":[3,3],"segment":8,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"scooter-horizontal-a","label":"Самокатчик — горизонтально A","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":0,"size":[24,24],"occupiedSize":[14,18],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"scooter-horizontal-b","label":"Самокатчик — горизонтально B","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":1,"size":[24,24],"occupiedSize":[14,18],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"scooter-horizontal-c","label":"Самокатчик — горизонтально C","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":2,"size":[24,24],"occupiedSize":[14,18],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"EAST","strictOccupiedBounds":true},
-  {"key":"scooter-north-a","label":"Самокатчик — север A","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":3,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"scooter-north-b","label":"Самокатчик — север B","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":4,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"scooter-north-c","label":"Самокатчик — север C","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":5,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"NORTH","strictOccupiedBounds":true},
-  {"key":"scooter-south-a","label":"Самокатчик — юг A","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":6,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"scooter-south-b","label":"Самокатчик — юг B","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":7,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"SOUTH","strictOccupiedBounds":true},
-  {"key":"scooter-south-c","label":"Самокатчик — юг C","sheet":"ai-authored/ambient/scooter-views-v3.png","grid":[3,3],"segment":8,"size":[16,24],"occupiedSize":[7,18],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP","baseFacing":"SOUTH","strictOccupiedBounds":true},
-
-  {"key":"construction-plan-survey-tripod","label":"Геодезический штатив","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":0,"size":[16,24],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-blueprint-table","label":"Стол с чертежами","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":1,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-string-grid","label":"Разметка участка","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":2,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-tool-crate","label":"Ящик с инструментами","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":3,"size":[16,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-safety-board","label":"Щит стройплощадки","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":4,"size":[16,24],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-generator","label":"Переносной генератор","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":5,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-pipe-stack","label":"Штабель труб","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":6,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-sand-pile","label":"Куча песка","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":7,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-plan-excavator","label":"Гусеничный экскаватор","sheet":"ai-authored/construction/v2/excavator.png","segments":1,"segment":0,"size":[48,32],"footprintCells":[6,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_VEHICLE_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"construction-plan-site-office","label":"Бытовка прораба","sheet":"ai-authored/construction/planning-modules-v1.png","grid":[5,2],"segment":9,"size":[48,32],"footprintCells":[5,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-
-  {"key":"construction-build-tower-crane","label":"Башенный кран — жёлтый","sheet":"ai-authored/construction/v2/tower-crane-a.png","segments":1,"segment":0,"size":[80,96],"footprintCells":[6,4],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_CRANE_FRONTAL_TOP"},
-  {"key":"construction-build-tower-crane-alt","label":"Башенный кран — стальной","sheet":"ai-authored/construction/v2/tower-crane-b.png","segments":1,"segment":0,"size":[72,88],"footprintCells":[5,4],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_CRANE_FRONTAL_TOP"},
-  {"key":"construction-build-mobile-crane","label":"Тяжёлый автокран","sheet":"ai-authored/construction/v2/mobile-crane.png","segments":1,"segment":0,"size":[48,24],"footprintCells":[6,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_VEHICLE_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"construction-build-dump-truck","label":"Строительный самосвал","sheet":"ai-authored/construction/v2/dump-truck.png","segments":1,"segment":0,"size":[40,24],"footprintCells":[5,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_VEHICLE_FRONTAL_TOP","baseFacing":"EAST"},
-  {"key":"construction-build-scaffolding-rack","label":"Стеллаж строительных лесов","sheet":"ai-authored/construction/v2/scaffolding-rack.png","segments":1,"segment":0,"size":[32,32],"footprintCells":[4,3],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL_FRONTAL_TOP"},
-  {"key":"construction-build-brick-pallet","label":"Поддон кирпича","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":2,"size":[16,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-build-box-pallet","label":"Поддон материалов","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":3,"size":[16,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-build-concrete-mixer","label":"Бетономешалка","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":4,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-build-workbench","label":"Рабочий верстак","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":5,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-build-steel-beams","label":"Стальные балки","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":6,"size":[24,16],"footprintCells":[2,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-build-cement-bags","label":"Мешки цемента","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":7,"size":[16,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-build-rebar-cage","label":"Арматурный каркас","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":8,"size":[16,24],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"},
-  {"key":"construction-build-wheelbarrow","label":"Строительная тачка","sheet":"ai-authored/construction/foundation-modules-v1.png","grid":[5,2],"segment":9,"size":[16,16],"footprintCells":[1,1],"reviewed":true,"visualProfile":"TASKTOPIA_V5_CONSTRUCTION_DETAIL"}
+  {
+    "key": "bus-stop-horizontal",
+    "label": "Городская остановка",
+    "sheet": "ai-authored/ambient/bus-stop-canonical-v2.png",
+    "segments": 2,
+    "segment": 0,
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_TRANSIT_STOP_FRONTAL_TOP"
+  },
+  {
+    "key": "bus-stop-vertical",
+    "label": "Городская остановка",
+    "sheet": "ai-authored/ambient/bus-stop-canonical-v2.png",
+    "segments": 2,
+    "segment": 1,
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_TRANSIT_STOP_FRONTAL_TOP"
+  },
+  {
+    "key": "bench-horizontal",
+    "label": "Городская скамейка — горизонтально",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 0,
+    "size": [
+      16,
+      8
+    ],
+    "occupiedSize": [
+      14,
+      7
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "bench-vertical",
+    "label": "Городская скамейка — вертикально",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 1,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "trash-bin",
+    "label": "Городская урна",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 2,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "recycling-bin",
+    "label": "Контейнер для переработки",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 3,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp",
+    "label": "Классический фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 4,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-lit",
+    "label": "Классический фонарь — включён",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 5,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-modern",
+    "label": "Современный фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 6,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-modern-lit",
+    "label": "Современный фонарь — включён",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 7,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-double",
+    "label": "Двойной фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 8,
+    "size": [
+      16,
+      16
+    ],
+    "occupiedSize": [
+      14,
+      15
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-double-lit",
+    "label": "Двойной фонарь — включён",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 9,
+    "size": [
+      16,
+      16
+    ],
+    "occupiedSize": [
+      14,
+      15
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "traffic-light-red",
+    "label": "Компактный светофор — красный",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 10,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      5,
+      11
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_COMPACT_TRAFFIC_LIGHT"
+  },
+  {
+    "key": "traffic-light-green",
+    "label": "Компактный светофор — зелёный",
+    "sheet": "ai-authored/ambient/street-furniture-lighting-v1.png",
+    "grid": [
+      4,
+      3
+    ],
+    "segment": 11,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      5,
+      11
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_COMPACT_TRAFFIC_LIGHT"
+  },
+  {
+    "key": "flower-white",
+    "label": "Белые цветы",
+    "sheet": "ai-authored/ambient/nature-small-v2.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 0,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
+  },
+  {
+    "key": "flower-yellow",
+    "label": "Жёлтые цветы",
+    "sheet": "ai-authored/ambient/nature-small-v2.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 1,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
+  },
+  {
+    "key": "flower-pink",
+    "label": "Розовые цветы",
+    "sheet": "ai-authored/ambient/nature-small-v2.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 3,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
+  },
+  {
+    "key": "shrub-flowering",
+    "label": "Цветущий куст",
+    "sheet": "ai-authored/ambient/nature-small-v2.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 14,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V6_SEEDED_NATURE"
+  },
+  {
+    "key": "utility-pole",
+    "label": "Городской столб",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 0,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "planter-round",
+    "label": "Круглая клумба",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 1,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "fire-hydrant",
+    "label": "Пожарный гидрант",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 2,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "mailbox",
+    "label": "Почтовый ящик",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 3,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "bollard",
+    "label": "Дорожный столбик",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 4,
+    "size": [
+      8,
+      8
+    ],
+    "occupiedSize": [
+      6,
+      7
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "bicycle-rack",
+    "label": "Велопарковка",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 5,
+    "size": [
+      16,
+      8
+    ],
+    "occupiedSize": [
+      14,
+      7
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "fountain-small",
+    "label": "Малый городской фонтан",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 6,
+    "size": [
+      16,
+      16
+    ],
+    "occupiedSize": [
+      14,
+      15
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "picnic-table",
+    "label": "Стол для отдыха",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 7,
+    "size": [
+      16,
+      16
+    ],
+    "occupiedSize": [
+      14,
+      15
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-vintage",
+    "label": "Винтажный фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 0,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-solar",
+    "label": "Солнечный фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 1,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-industrial",
+    "label": "Промышленный фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 2,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-festive",
+    "label": "Праздничный фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 3,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "city-sign-horizontal",
+    "label": "Городской указатель — горизонтальный маршрут",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 12,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "city-sign-vertical",
+    "label": "Городской указатель — вертикальный маршрут",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 13,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "active-district-flag",
+    "label": "Флаг активного района",
+    "sheet": "ai-authored/ambient/civic-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 14,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "bandstand",
+    "label": "Парковая эстрада",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 0,
+    "size": [
+      40,
+      32
+    ],
+    "occupiedSize": [
+      38,
+      31
+    ],
+    "footprintCells": [
+      5,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "statue-hero",
+    "label": "Памятник герою",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 1,
+    "size": [
+      16,
+      24
+    ],
+    "occupiedSize": [
+      14,
+      23
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "statue-abstract",
+    "label": "Абстрактная скульптура",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 2,
+    "size": [
+      16,
+      24
+    ],
+    "occupiedSize": [
+      14,
+      23
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "topiary-spiral",
+    "label": "Спиральный топиарий",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 3,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "topiary-animal",
+    "label": "Фигурный топиарий",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 4,
+    "size": [
+      16,
+      16
+    ],
+    "occupiedSize": [
+      14,
+      15
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "pond-small",
+    "label": "Малый парковый пруд",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 5,
+    "size": [
+      24,
+      24
+    ],
+    "occupiedSize": [
+      22,
+      23
+    ],
+    "footprintCells": [
+      3,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "flower-bed-horizontal",
+    "label": "Цветник — горизонтально",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 6,
+    "size": [
+      24,
+      8
+    ],
+    "occupiedSize": [
+      22,
+      7
+    ],
+    "footprintCells": [
+      3,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "flower-bed-vertical",
+    "label": "Цветник — вертикально",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 7,
+    "size": [
+      8,
+      24
+    ],
+    "occupiedSize": [
+      6,
+      23
+    ],
+    "footprintCells": [
+      1,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-bench-double",
+    "label": "Двойная парковая скамейка",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 8,
+    "size": [
+      24,
+      16
+    ],
+    "occupiedSize": [
+      22,
+      15
+    ],
+    "footprintCells": [
+      3,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-bridge",
+    "label": "Парковый мостик",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 9,
+    "size": [
+      32,
+      16
+    ],
+    "occupiedSize": [
+      30,
+      15
+    ],
+    "footprintCells": [
+      4,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-lamp",
+    "label": "Парковый фонарь — выключен",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 4,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-vintage-lit",
+    "label": "Винтажный фонарь — включён",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 5,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-solar-lit",
+    "label": "Солнечный фонарь — включён",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 6,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-industrial-lit",
+    "label": "Промышленный фонарь — включён",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 7,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "streetlamp-festive-lit",
+    "label": "Праздничный фонарь — включён",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 8,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-lamp-lit",
+    "label": "Парковый фонарь — включён",
+    "sheet": "ai-authored/ambient/street-lamps-night-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 9,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_LIGHT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-path-circle",
+    "label": "Круглая парковая площадка",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 11,
+    "size": [
+      24,
+      24
+    ],
+    "occupiedSize": [
+      22,
+      23
+    ],
+    "footprintCells": [
+      3,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "guardrail-horizontal",
+    "label": "Ограждение — горизонтально",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 12,
+    "size": [
+      16,
+      8
+    ],
+    "occupiedSize": [
+      14,
+      7
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "guardrail-vertical",
+    "label": "Ограждение — вертикально",
+    "sheet": "ai-authored/ambient/park-details-v1.png",
+    "grid": [
+      5,
+      3
+    ],
+    "segment": 13,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
+  },
+  {
+    "key": "boat-horizontal-a",
+    "label": "Рыбацкая лодка — горизонтально A",
+    "sheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 3,
+    "size": [
+      24,
+      8
+    ],
+    "occupiedSize": [
+      22,
+      7
+    ],
+    "footprintCells": [
+      3,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+    "baseFacing": "EAST"
+  },
+  {
+    "key": "boat-horizontal-b",
+    "label": "Рыбацкая лодка — горизонтально B",
+    "sheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 4,
+    "size": [
+      24,
+      8
+    ],
+    "occupiedSize": [
+      22,
+      7
+    ],
+    "footprintCells": [
+      3,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+    "baseFacing": "EAST"
+  },
+  {
+    "key": "boat-vertical-a",
+    "label": "Рыбацкая лодка — вертикально A",
+    "sheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 5,
+    "size": [
+      8,
+      24
+    ],
+    "occupiedSize": [
+      6,
+      23
+    ],
+    "footprintCells": [
+      1,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+    "baseFacing": "SOUTH"
+  },
+  {
+    "key": "boat-vertical-b",
+    "label": "Рыбацкая лодка — вертикально B",
+    "sheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
+    "grid": [
+      5,
+      4
+    ],
+    "segment": 6,
+    "size": [
+      8,
+      24
+    ],
+    "occupiedSize": [
+      6,
+      23
+    ],
+    "footprintCells": [
+      1,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+    "baseFacing": "SOUTH"
+  },
+  {
+    "key": "hill-small",
+    "label": "Небольшой холм",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 0,
+    "size": [
+      16,
+      16
+    ],
+    "occupiedSize": [
+      14,
+      15
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"
+  },
+  {
+    "key": "hill-rocky",
+    "label": "Каменистый холм",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 1,
+    "size": [
+      16,
+      16
+    ],
+    "occupiedSize": [
+      14,
+      15
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"
+  },
+  {
+    "key": "mountain-peak",
+    "label": "Горная вершина",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 2,
+    "size": [
+      16,
+      24
+    ],
+    "occupiedSize": [
+      14,
+      23
+    ],
+    "footprintCells": [
+      2,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"
+  },
+  {
+    "key": "mountain-ridge",
+    "label": "Горный хребет",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 3,
+    "size": [
+      24,
+      16
+    ],
+    "occupiedSize": [
+      22,
+      15
+    ],
+    "footprintCells": [
+      3,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_LANDFORM_FRONTAL_TOP"
+  },
+  {
+    "key": "fence-horizontal",
+    "label": "Городская ограда — горизонтально",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 4,
+    "size": [
+      16,
+      8
+    ],
+    "occupiedSize": [
+      14,
+      7
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_FENCE_FRONTAL_TOP"
+  },
+  {
+    "key": "fence-vertical",
+    "label": "Городская ограда — вертикально",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 5,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_FENCE_FRONTAL_TOP"
+  },
+  {
+    "key": "archive-fence-horizontal",
+    "label": "Ограда архива — горизонтально",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 6,
+    "size": [
+      16,
+      8
+    ],
+    "occupiedSize": [
+      14,
+      7
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"
+  },
+  {
+    "key": "archive-fence-vertical",
+    "label": "Ограда архива — вертикально",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 7,
+    "size": [
+      8,
+      16
+    ],
+    "occupiedSize": [
+      6,
+      15
+    ],
+    "footprintCells": [
+      1,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"
+  },
+  {
+    "key": "archive-security-barrier",
+    "label": "Шлагбаум архива",
+    "sheet": "ai-authored/ambient/terrain-fences-v1.png",
+    "grid": [
+      5,
+      2
+    ],
+    "segment": 8,
+    "size": [
+      16,
+      8
+    ],
+    "occupiedSize": [
+      14,
+      7
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_ARCHIVE_SECURITY_FRONTAL_TOP"
+  },
+  {
+    "key": "playground-small",
+    "label": "Дворовая игровая площадка",
+    "sheet": "ai-authored/ambient/playground-combination-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      24,
+      16
+    ],
+    "footprintCells": [
+      3,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"
+  },
+  {
+    "key": "playground-slide",
+    "label": "Игровая горка",
+    "sheet": "ai-authored/ambient/playground-slide-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      24,
+      16
+    ],
+    "footprintCells": [
+      3,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"
+  },
+  {
+    "key": "playground-carousel",
+    "label": "Детская карусель",
+    "sheet": "ai-authored/ambient/park-frontal-core-v2.png",
+    "segments": 3,
+    "segment": 2,
+    "size": [
+      32,
+      24
+    ],
+    "footprintCells": [
+      3,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "playground-climbing",
+    "label": "Лазательный комплекс",
+    "sheet": "ai-authored/ambient/playground-climbing-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      24,
+      24
+    ],
+    "footprintCells": [
+      3,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"
+  },
+  {
+    "key": "playground-swing",
+    "label": "Двойные качели",
+    "sheet": "ai-authored/ambient/playground-swing-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      24,
+      24
+    ],
+    "footprintCells": [
+      3,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PLAYGROUND_FRONTAL_TOP"
+  },
+  {
+    "key": "fountain-large",
+    "label": "Большой городской фонтан",
+    "sheet": "ai-authored/ambient/park-frontal-core-v2.png",
+    "segments": 3,
+    "segment": 0,
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "gazebo",
+    "label": "Парковая беседка",
+    "sheet": "ai-authored/ambient/park-frontal-core-v2.png",
+    "segments": 3,
+    "segment": 1,
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-pond",
+    "label": "Пруд с мостиком",
+    "sheet": "ai-authored/ambient/park-pond-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      32,
+      24
+    ],
+    "footprintCells": [
+      4,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-sculpture",
+    "label": "Парковая скульптура",
+    "sheet": "ai-authored/ambient/park-sculpture-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      16,
+      24
+    ],
+    "footprintCells": [
+      2,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-flower-clock",
+    "label": "Цветочные часы",
+    "sheet": "ai-authored/ambient/park-flower-clock-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      24,
+      16
+    ],
+    "footprintCells": [
+      3,
+      2
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "park-bandstand",
+    "label": "Парковая эстрада",
+    "sheet": "ai-authored/ambient/park-bandstand-v1.png",
+    "segments": 1,
+    "segment": 0,
+    "size": [
+      32,
+      24
+    ],
+    "footprintCells": [
+      4,
+      3
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
+  },
+  {
+    "key": "compact-park-fountain-stage-3",
+    "label": "Фонтан · стадия 3",
+    "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-3.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 3,
+    "sourceSha256": "f1bd1b16c849dd7745528c05856fa02aabd9e384eb1449ed379dd2bdbfd6a223"
+  },
+  {
+    "key": "compact-park-fountain-stage-4",
+    "label": "Фонтан · стадия 4",
+    "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-4.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 4,
+    "sourceSha256": "4a40ba1c696313d54bd132785abff29c149016d1c73de9b2e07d97bb90fdbb49"
+  },
+  {
+    "key": "compact-park-fountain-stage-5",
+    "label": "Фонтан · стадия 5",
+    "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-5.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 5,
+    "sourceSha256": "2834676a47673444849d078409fdf567081608632ef0334b278b0b9ae57ab122"
+  },
+  {
+    "key": "compact-park-monument-stage-3",
+    "label": "Памятник · стадия 3",
+    "sheet": "ai-authored/compact-park-monument-v1/sources/stage-3.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 3,
+    "sourceSha256": "318be99167dbbc082f5952602465e5ab6e37ff799e86c7214c81090d31d8c291"
+  },
+  {
+    "key": "compact-park-monument-stage-4",
+    "label": "Памятник · стадия 4",
+    "sheet": "ai-authored/compact-park-monument-v1/sources/stage-4.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 4,
+    "sourceSha256": "35d5a40a24e71f7040cac1522c6b48908284571f791c1f5af7ed8bcdd03af2f1"
+  },
+  {
+    "key": "compact-park-monument-stage-5",
+    "label": "Памятник · стадия 5",
+    "sheet": "ai-authored/compact-park-monument-v1/sources/stage-5.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 5,
+    "sourceSha256": "15e13826250a5561468c007fe14a0813e4cc816bd990e74f7731683a8c598321"
+  },
+  {
+    "key": "tree-apple",
+    "label": "Яблоня",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-apple.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "8d86e3820b4e6cc181804a5559393f47d5381b11b6416b6d63da0ac9461f7da9"
+  },
+  {
+    "key": "tree-aspen",
+    "label": "Осина",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-aspen.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "8e2a3614d3f9b9772d665d4f4a6529d039030bca7ba2eb368a6d3e74c296abf0"
+  },
+  {
+    "key": "tree-birch",
+    "label": "Берёза",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-birch.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "3878a25c1a9cd65a373644f76b63d772fd2aa6475dbb50fa76f2421a5d06755f"
+  },
+  {
+    "key": "tree-cedar",
+    "label": "Кедр",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-cedar.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "0c1a60ea6f4b72459a816a6185e787790d24ac5b98ff871df0b0733c4716bd2e"
+  },
+  {
+    "key": "tree-cherry",
+    "label": "Цветущая вишня",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-cherry.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "6d9fd38a5f9896e5aab42feef38e6f0775680ba6f7560466a5ef8a00502c1d45"
+  },
+  {
+    "key": "tree-conifer",
+    "label": "Ель",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-conifer.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "9be04bc3c6c8c7edb6289fa5299456b86f8519dd2db9f27ab2c5758aaddc43e5"
+  },
+  {
+    "key": "tree-cypress",
+    "label": "Кипарис",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-cypress.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "da4f850fc978556e8f274a0fdadf6491c596aea0be5f54d46b1e5ad13cc15628"
+  },
+  {
+    "key": "tree-deadwood",
+    "label": "Сухостой",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-deadwood.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "76b45ae870982e578bd24c1bb575c402aa6d2b82afb5e84f870519e336b93826"
+  },
+  {
+    "key": "tree-flowering",
+    "label": "Цветущее деревце",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-flowering.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "ad2261ceb0588caef7b8f8ee8f8196d2888c7d469dd72ac944dd09ded0a3ddc2"
+  },
+  {
+    "key": "tree-magnolia",
+    "label": "Магнолия",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-magnolia.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "ee5cd81fe78a30c1f3b4dcd57997657cdb955f2fbe9351898b64fcc6a25ffa7c"
+  },
+  {
+    "key": "tree-maple",
+    "label": "Клён",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-maple.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "ee491d76e8ebfd6eca69b8ae38ff870aa5010c07bc50d7a0bdbf6f252397a5c9"
+  },
+  {
+    "key": "tree-oak",
+    "label": "Дуб",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-oak.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "e9b00e89b7e161e75301621cf298f3c798c8e7b9132956d668ed512876b40fd7"
+  },
+  {
+    "key": "tree-palm",
+    "label": "Пальма",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-palm.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "04efbee6d9b9d605d668453743e77b59836be6b3c9fea78a0d10e4fece05e3df"
+  },
+  {
+    "key": "tree-pine",
+    "label": "Сосна",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-pine.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "df35d2496a1f6ef3c3539618cc6a380eed8bd0279e3a919f130fdf26ebe68cc2"
+  },
+  {
+    "key": "tree-redwood",
+    "label": "Секвойя",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-redwood.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "78cc20e49b560608d12cac7044040f2537105d801bfb82964f074de6e7763d4d"
+  },
+  {
+    "key": "tree-round",
+    "label": "Городское дерево",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-round.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "1d7bf7866fa039828f549187d28ec4c1597e3664bef15421405ba7bc117b3019"
+  },
+  {
+    "key": "tree-willow",
+    "label": "Ива",
+    "sheet": "ai-authored/compact-trees-v7/sources/tree-willow.png",
+    "size": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "visualProfile": "TASKTOPIA_V7_TREE_COMPACT_45_GRID",
+    "reviewed": true,
+    "sourceSha256": "9675846a88bfc612d3c01fe07ccca94e3d696c0761c640bdd50e78cf3876b447"
+  },
+  {
+    "key": "courtyard-picnic-table",
+    "label": "Дворовый стол со скамейками",
+    "sheet": "ai-authored/compact-courtyard-furniture-v1/sources/courtyard-picnic-table.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
+    "sourceSha256": "30e3558deb43a674f806e6f91a467e62f33bda8342ec0352a4d7e58f28199e4d"
+  },
+  {
+    "key": "courtyard-square-planter",
+    "label": "Квадратная клумба во дворе",
+    "sheet": "ai-authored/compact-courtyard-furniture-v1/sources/courtyard-square-planter.png",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "anchorPx": [
+      4,
+      8
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
+    "sourceSha256": "b3748b871fd0562d57234a058e168bd92e001215bc257591ea66a08193a836d1"
+  },
+  {
+    "key": "courtyard-cycle-rack",
+    "label": "Компактная велопарковка",
+    "sheet": "ai-authored/compact-courtyard-furniture-v1/sources/courtyard-cycle-rack.png",
+    "size": [
+      16,
+      8
+    ],
+    "footprintCells": [
+      2,
+      1
+    ],
+    "anchorPx": [
+      8,
+      8
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
+    "sourceSha256": "01f533ee34aafddc90d00dca15d06270a69da41f8c3c403485713138323dc0fe"
+  }
 ]

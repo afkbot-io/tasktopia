@@ -1,4 +1,4 @@
-import manifest from "../../assets/pixel-city-pack/manifest.json";
+import manifest from "../../assets/pixel-city-pack/manifest.json" with { type: "json" };
 import type { Estimate, PlatformKind } from "./contracts";
 
 const clientStaticOrigin = typeof window === "undefined"
@@ -32,7 +32,6 @@ export type BuildingCatalogEntry = {
   rarity: "COMMON" | "UNCOMMON" | "RARE" | "UNIQUE";
   platform: PlatformKind;
   footprint: { width: number; height: number };
-  finishedPlatform?: { width: number; height: number };
   spriteSize: { width: number; height: number };
   anchor: { x: number; y: number };
   stageOpaqueBounds: Array<{ left: number; top: number; right: number; bottom: number }>;
@@ -53,7 +52,6 @@ type RawBuilding = {
   rarity: BuildingCatalogEntry["rarity"];
   platform: PlatformKind;
   footprintCells: [number, number];
-  finishedPlatformCells?: [number, number];
   spriteSize: [number, number];
   anchorPx: [number, number];
   stageOpaqueBounds: Array<[number, number, number, number]>;
@@ -77,9 +75,6 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
     rarity: building.rarity,
     platform: building.platform,
     footprint: { width: building.footprintCells[0], height: building.footprintCells[1] },
-    finishedPlatform: building.finishedPlatformCells
-      ? { width: building.finishedPlatformCells[0], height: building.finishedPlatformCells[1] }
-      : undefined,
     spriteSize: { width: building.spriteSize[0], height: building.spriteSize[1] },
     anchor: { x: building.anchorPx[0], y: building.anchorPx[1] },
     stageOpaqueBounds: building.stageOpaqueBounds.map(([left, top, right, bottom]) => ({ left, top, right, bottom })),
@@ -95,41 +90,13 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
   }))
   .sort((a, b) => a.key.localeCompare(b.key));
 
-const CORE_CITY_SERVICE_ROLES = new Set(["health-service", "fire-service", "police-service", "parking-service"]);
-
-/** Task-backed city catalog.
- *
- * Residential families are tiered as low-, mid- and high-rise apartment
- * complexes. The legacy PRIVATE district code selects low+mid rise, while
- * NEW_BUILD selects mid+high rise; detached private houses are not active.
- * Reviewed health, fire and police facades stay in the same
- * selector because the city audit requires them at 10/20/30 tasks. The compact
- * parking service is also task-backed so an explicitly named parking task does
- * not have to grow a residential superblock. Other categories remain
- * render-only until their task placement contract is ready.
- */
+/** Only reviewed compact families may occupy the predefined block slots. */
 export const TASK_BUILDING_CATALOG: BuildingCatalogEntry[] = BUILDING_CATALOG
-  .filter((entry) => entry.tags.includes("new-build") || entry.category === "HOUSE"
-    || entry.serviceRole && CORE_CITY_SERVICE_ROLES.has(entry.serviceRole))
-  .filter((entry) => !entry.tags.includes("archive"));
+  .filter((entry) => entry.tags.includes("compact-building"));
 
-/** Every apartment family uses its catalog pavement platform. */
+/** Ground material is explicit catalog data, never inferred from a legacy family tag. */
 export function taskBuildingPlatform(entry: BuildingCatalogEntry): PlatformKind {
-  return entry.tags.includes("new-build") ? "STONE" : entry.platform;
-}
-
-const TASK_TAG_DICTIONARY: Array<{ tag: string; words: string[] }> = [
-  { tag: "house", words: ["дом", "жиль", "квартир", "жилой", "коттедж", "таунхаус"] },
-  { tag: "commercial", words: ["магазин", "торгов", "кафе", "аптек", "пекар", "заправ", "сервис", "парков", "стоянк"] },
-  { tag: "parking", words: ["парков", "стоянк"] },
-  { tag: "park", words: ["парк", "сквер", "зелён", "сад отдыха", "бульвар"] },
-  { tag: "civic", words: ["полици", "пожар", "школ", "клиник", "больниц", "банк", "почт", "мэр"] },
-  { tag: "dense", words: ["офис", "высот", "башн", "комплекс", "многоэтаж"] },
-];
-
-export function inferTaskTags(title: string, description = ""): string[] {
-  const value = `${title} ${description}`.toLocaleLowerCase("ru");
-  return TASK_TAG_DICTIONARY.filter((entry) => entry.words.some((word) => value.includes(word))).map((entry) => entry.tag);
+  return entry.platform;
 }
 
 export function getBuilding(key: string): BuildingCatalogEntry {
@@ -189,8 +156,6 @@ export const TILE_SPRITES = Object.fromEntries(
   Object.entries(manifest.tiles).map(([key, value]) => [key, gameAssetUrl((value as { path: string }).path)]),
 ) as Record<string, string>;
 
-export const VEHICLE_SPRITES = Object.fromEntries(
-  Object.entries(manifest.vehicles).map(([color, axes]) => [color, Object.fromEntries(
-    Object.entries(axes as Record<string, { path: string }>).map(([axis, value]) => [axis, gameAssetUrl(value.path)]),
-  )]),
-) as Record<string, { horizontal: string; north: string; south: string }>;
+export const BLOCK_SURFACE_SPRITES = Object.fromEntries(
+  Object.entries(manifest.blockSurfaces.tiles).map(([key, value]) => [key, gameAssetUrl((value as { path: string }).path)]),
+) as Record<"block-lawn" | "block-water", string>;

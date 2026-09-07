@@ -1,30 +1,61 @@
+import { compactCellRuns, compactSurfaceRuns } from "../src/shared/world-cell-runs";
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
-import type { ChunkPayloadV1Dto } from "../src/shared/contracts";
+import type { ChunkPayloadV2Dto } from "../src/shared/contracts";
 import { encodeTerrainSample, materializeChunkPayload } from "../src/shared/world-chunk-payload";
 import { terrainAt } from "../src/shared/world-terrain";
 
-function payload(lod: "DETAIL" | "OVERVIEW"): ChunkPayloadV1Dto {
+function payload(lod: "DETAIL" | "OVERVIEW"): ChunkPayloadV2Dto {
   return {
-    payloadVersion: 1,
+    payloadVersion: 2,
     contentHash: "test-content-hash",
-    generatorVersion: "square-v7",
+    generatorVersion: "block-v1",
     terrainSeed: 84721,
     publishedVersion: 7,
     lod,
     chunkX: -1,
     chunkY: 2,
     size: 64,
-    roads: [],
-    surfaces: [],
+    roadRuns: [],
+    surfaceRuns: [],
     districts: [],
     tasks: [],
     worldFeatures: [],
-    decorationContext: { cityBounds: [], districts: [], tasks: [] },
+    decorationContext: { treeGeometryVersion: 7, lightingVersion: 1, surfaceHaloRuns: [], blockedCellRuns: [], cityBounds: [], districts: [], tasks: [] },
   };
 }
 
 describe("published world chunk payload", () => {
+  it("uses the paving halo for seam-side lamps without rendering adjacent chunks", () => {
+    const compact = { ...payload("DETAIL"), terrainSeed:42, chunkX:0, chunkY:0 };
+    const paving = Array.from({length:64},(_,y)=>({x:64,y,kind:"SIDEWALK" as const,variant:0}));
+    compact.decorationContext.surfaceHaloRuns = compactSurfaceRuns(paving);
+    // Paving belongs to the surface halo, not the hard occupancy halo.
+    compact.decorationContext.blockedCellRuns = [];
+    const samples = new Uint8Array(4096).fill(encodeTerrainSample({terrain:"GRASS",variant:0}));
+    const chunk = materializeChunkPayload(compact,samples);
+    expect(chunk.decorations.some(d=>d.kind.startsWith("streetlamp") && d.origin.x===63)).toBe(true);
+    expect(chunk.decorations.every(d=>d.origin.x>=0 && d.origin.x<64 && d.origin.y>=0 && d.origin.y<64)).toBe(true);
+    expect(chunk.surfaces).toEqual([]);
+    expect(chunk.terrain).toHaveLength(4096);
+    // This is the previous mixed representation, reconstructed only in the
+    // test: keeping paving separate must not alter existing lamps or crowns.
+    compact.decorationContext.blockedCellRuns = compactCellRuns(paving);
+    expect(materializeChunkPayload(compact, samples).decorations).toEqual(chunk.decorations);
+  });
+  it("uses compact off-chunk obstacles without rendering their cells", () => {
+    const compact = { ...payload("DETAIL"), terrainSeed: 84720, chunkX: 0, chunkY: 0 };
+    const samples = new Uint8Array(4096).fill(encodeTerrainSample({ terrain: "FOREST", variant: 0 }));
+    const first = materializeChunkPayload(compact, samples);
+    const edgeTree = first.decorations.find(item => item.kind.startsWith("tree-")
+      && item.origin.x === 0 && item.origin.y > 2 && item.origin.y < 62);
+    expect(edgeTree).toBeDefined();
+    compact.decorationContext.blockedCellRuns = compactCellRuns([{ x: -1, y: edgeTree!.origin.y }]);
+    const guarded = materializeChunkPayload(compact, samples);
+    expect(guarded.decorations.some(item => item.id === edgeTree!.id)).toBe(false);
+    expect(guarded.terrain).toHaveLength(4096);
+    expect(guarded.terrain.every(cell => cell.x >= 0 && cell.y >= 0)).toBe(true);
+  });
   it("reconstructs deterministic detail terrain without transporting terrain objects", () => {
     const compact = payload("DETAIL");
     expect(compact).not.toHaveProperty("terrain");
@@ -73,10 +104,10 @@ describe("published world chunk payload", () => {
     compact.chunkY = 0;
     compact.districts = [{
       id: "cross-seam", cityId: "city", name: "Cross seam", deadline: null,
-      status: "PLANNED", color: "#fff", archetype: "MIXED_URBAN", cells: renderCells,
+      status: "PLANNED", color: "#fff", archetype: "MIXED_URBAN", cellRuns: compactCellRuns(renderCells),
     }];
     compact.decorationContext.districts = [{
-      id: "cross-seam", status: "PLANNED", archetype: "MIXED_URBAN", cells: ownershipCells,
+      id: "cross-seam", status: "PLANNED", archetype: "MIXED_URBAN", cellRuns: compactCellRuns(ownershipCells),
     }];
 
     const chunk = materializeChunkPayload(compact);
@@ -96,7 +127,7 @@ describe("published world chunk payload", () => {
       ...Array.from({ length: 10 }, (_, index) => ({ x: 20 + index, y: 19, kind: "PATH" as const, finish: "PAVERS" as const })),
       ...Array.from({ length: 10 }, (_, index) => ({ x: 20 + index, y: 28, kind: "PATH" as const, finish: "PAVERS" as const })),
     ];
-    compact.surfaces = frontage;
+    compact.surfaceRuns = compactSurfaceRuns(frontage);
     compact.tasks = [{
       id: "building", taskNumber: 81, cityId: "city", districtId: "district", title: "Building", workItemType: "TASK",
       status: "IN_PROGRESS", progress: 50, stage: 3, buildingType: "highrise-luxury-tower", visualKind: "BUILDING",
@@ -119,7 +150,7 @@ describe("published world chunk payload", () => {
     expect(chunk.decorations.filter((item) => item.id.startsWith("frontage:building:"))).toEqual([]);
   });
 
-  it("derives area interiors from the seed and ignores legacy PARK_DECOR children", () => {
+  it("derives deterministic area interiors from a single persisted parent", () => {
     const compact = payload("DETAIL");
     compact.chunkX = 0;
     compact.chunkY = 0;
@@ -129,11 +160,6 @@ describe("published world chunk payload", () => {
         kind: "PARK", assetKind: "AREA", assetKey: "urban-park", origin: { x: 8, y: 8 },
         footprint: Array.from({ length: 5 * 4 }, (_, index) => ({ x: 8 + index % 5, y: 8 + Math.floor(index / 5) })),
         orientation: "S", accessPath: [], developmentStage: 5,
-      },
-      {
-        id: "legacy-tree", cityId: "city", districtId: "district", parentFeatureId: "park",
-        kind: "PARK_DECOR", assetKind: "PROP", assetKey: "tree-oak", origin: { x: 8, y: 8 },
-        footprint: [{ x: 8, y: 8 }], orientation: "S", accessPath: [], developmentStage: 5,
       },
     ];
 
@@ -145,35 +171,15 @@ describe("published world chunk payload", () => {
     expect(first.decorations).toEqual(second.decorations);
   });
 
-  it("keeps every ambient and derived decoration outside an airport interior", () => {
-    const compact = payload("DETAIL");
-    compact.chunkX = 0;
-    compact.chunkY = 0;
-    const origin = { x: 8, y: 8 };
-    const width = 24;
-    const height = 16;
-    const perimeter = [
-      ...Array.from({ length: width }, (_, index) => ({ x: origin.x + index, y: origin.y })),
-      ...Array.from({ length: width }, (_, index) => ({ x: origin.x + index, y: origin.y + height - 1 })),
-      ...Array.from({ length: height - 2 }, (_, index) => ({ x: origin.x, y: origin.y + index + 1 })),
-      ...Array.from({ length: height - 2 }, (_, index) => ({ x: origin.x + width - 1, y: origin.y + index + 1 })),
-    ];
-    compact.worldFeatures = [{
-      id: "airport", cityId: "city", districtId: null, parentFeatureId: null,
-      kind: "AIRPORT", assetKind: "AREA", assetKey: "city-airport-terminal-1", origin,
-      footprint: perimeter, orientation: "E", accessPath: [{ x: 32, y: 15 }], developmentStage: 5,
-    }];
-
-    const chunk = materializeChunkPayload(compact);
-
-    expect(chunk.decorations.some((decoration) => decoration.id.startsWith("area:airport:"))).toBe(false);
-    expect(chunk.decorations.every((decoration) => decoration.origin.x < origin.x
-      || decoration.origin.x >= origin.x + width
-      || decoration.origin.y < origin.y
-      || decoration.origin.y >= origin.y + height)).toBe(true);
+  it("keeps ambient trees and props outside every reserved stage-zero plot", () => {
+    const compact = payload("DETAIL"); compact.chunkX=0; compact.chunkY=0;
+    compact.plannedSites=[{id:"planned",origin:{x:8,y:8},width:6,height:6,kind:"BUILDING"}];
+    const chunk=materializeChunkPayload(compact);
+    expect(chunk.plannedSites).toEqual(compact.plannedSites);
+    expect(chunk.decorations.every(d=>d.origin.x<8||d.origin.x>=14||d.origin.y<8||d.origin.y>=14)).toBe(true);
   });
 
-  it("keeps the full decoration output compatible across two adjacent chunks", () => {
+  it("keeps the current decoration output deterministic across adjacent chunks without tiny scatter", () => {
     const districtCells = Array.from({ length: 128 * 64 }, (_, index) => ({
       x: index % 128,
       y: Math.floor(index / 128),
@@ -188,13 +194,14 @@ describe("published world chunk payload", () => {
       compact.districts = [{
         id: "golden-district", cityId: "city", name: "Golden", deadline: null,
         status: "PLANNED", color: "#fff", archetype: "MIXED_URBAN",
-        cells: districtCells.filter((cell) => cell.x >= minX && cell.x <= maxX),
+        cellRuns: compactCellRuns(districtCells.filter((cell) => cell.x >= minX && cell.x <= maxX)),
       }];
       compact.decorationContext = {
+        treeGeometryVersion: 7, lightingVersion: 1, surfaceHaloRuns: [], blockedCellRuns: [],
         cityBounds: [{ minX: 0, minY: 0, maxX: 127, maxY: 63 }],
         districts: [{
           id: "golden-district", status: "PLANNED", archetype: "MIXED_URBAN",
-          cells: districtCells.filter((cell) => cell.x >= minX - 1 && cell.x <= maxX + 1),
+          cellRuns: compactCellRuns(districtCells.filter((cell) => cell.x >= minX - 1 && cell.x <= maxX + 1)),
         }],
         tasks: [],
       };
@@ -205,6 +212,8 @@ describe("published world chunk payload", () => {
     const fingerprint = createHash("sha256").update(JSON.stringify(decorations)).digest("hex");
 
     expect(decorations.filter((item) => item.kind === "fence-vertical" && (item.origin.x === 63 || item.origin.x === 64))).toEqual([]);
-    expect(fingerprint).toBe("a0c9091f69b9c59948c18ff81bc10102093d41daca390335c5952e3cff6835f7");
+    expect(decorations.some((item) => /flower|rock-cluster|reed|shrub-patch/.test(item.kind))).toBe(false);
+    // Reviewed overlapping-forest policy; deterministic across chunk boundaries.
+    expect(fingerprint).toBe("d287779ba384de14d8409df17894962f60c36d3a46f3ef41770e0de9afe989d1");
   });
 });

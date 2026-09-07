@@ -1,0 +1,89 @@
+{
+  "key": "compact-fire-station-v1",
+  "reviewedAt": "2026-09-05",
+  "reviewMethod": "Each nativePNG and nearest-neighbour8x viewed by authoring agent; parent independently reviewed stage5, stage4, then stage3+whole3/4/5sequence. Raster/source/structure checks run separately. Runtime landscape and service selection remain parent integration gate.",
+  "semanticRole": "FIRE",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic art convention; all structural edges axis aligned, no receding side facade.",
+    "roofDepthPx": 22,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "floorCount": 2,
+    "windowPaneSizePx": [
+      2,
+      2
+    ],
+    "windowOpeningSizePxRange": [
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "doorLeafSizePx": [
+      4,
+      4
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "doorLeafBoundsPx": [
+      22,
+      28,
+      26,
+      32
+    ],
+    "doorFrameBoundsPx": [
+      21,
+      27,
+      27,
+      32
+    ],
+    "garageOpeningSizePx": [
+      10,
+      3
+    ],
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "0c63d8fbfe906b3390aafa1ad352b974c22aa36f9c0a63343d3036bd47ae0ae0",
+      "runtimeSha256": "9d17da8d9e79fb2020e31725751288320856cd8496241472b940eafbef305def",
+      "notes": "No roof; complete opaque full-depth room floor, raised axis-aligned partitions, rough incomplete masonry and internal supplies. Same two garage axes and central4x4 personnel aperture; parent independently accepted native and3/4/5sequence. Construction amount describes structure, not reduced image height."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "3e40b8c8ab872320e9a992a93ed466248b15ceb35153499d52b3c975d6f98abf",
+      "runtimeSha256": "bf5edf6d4e1c36c8f579aaee839c5ecd0cfa9d4a2089dfd40b55c77c5f2448ad",
+      "notes": "Approximately43% left main roof remains; right rooms and building supplies exposed on opaque floor; all finished dispatch/skylight/equipment removed. Upperwindows and garages unfinished dark. Parent independently reviewed8x. Sourcebottom differs12px(0.527native) inside1px tolerance; shared5frame unchanged."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "8a8f6e837aaed1eca3033346d5de9edd5ca9f4de5204e65cc8e3521d46831c5e",
+      "runtimeSha256": "6944ab5e88aaad32aad096df874591267bc8e50d59bfa7ce6f225b3b86d4dc9e",
+      "notes": "Finished unique FIRE architecture accepted by parent atnativeand8x: substantial stepped/glazed dispatchroom with alarm, two ribbed garage roof zones and paired red garage bays. Explicit personnel opening4x4/frame6x5 accepted as this family's exact exception; no heavy black baseline."
+    }
+  },
+  "numericScope": "Foundation opacity rows30/31 equal stage5 at every nativepixel;0differences,0drift. Fullroof/room/facade alpha and exact4x4darkdoor ROI independently verified in structure-report.json. Source bounds have documented subpixel native differences; no independent recenter, warp or code architecture repaint.",
+  "integrationReview": {
+    "date": "2026-09-05",
+    "catalogPublished": true,
+    "actualMapStage5Accepted": true,
+    "evidence": "screenshots/compact-service-art/fire-station-stage-5.png and evidence.json; real sixteen-task city, automatic FIRE task16,6x4 footprint, physical roof click opens canonical task. Root visually reviewed alongside terrain/roads/trees.",
+    "browserGate": "tests/e2e/compact-service-art.spec.ts:1/1 pass; no failed requests/page errors/unexpected writes after login."
+  },
+  "pendingIntegration": [
+    "Separate actual-map visual review of this family's runtime0/1/2 and service3/4 construction composition",
+    "Service-specific incident behavior beyond generic compact incident coverage"
+  ]
+}

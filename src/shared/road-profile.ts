@@ -6,14 +6,6 @@ export type RoadBandRole =
   | { kind: "SHOULDER"; axis: "H" | "V" }
   | { kind: "TRAVEL"; axis: "H" | "V"; dx: -1 | 0 | 1; dy: -1 | 0 | 1 };
 
-/** Full-size buses use the separated travel bands of wide road classes only. */
-export function roadClassSupportsVehicle(
-  roadClass: RoadCellDto["roadClass"],
-  kind: "CAR" | "BUS",
-): boolean {
-  return kind === "CAR" || roadClass !== "LOCAL";
-}
-
 function key(cell: Cell): string {
   return `${cell.x},${cell.y}`;
 }
@@ -73,7 +65,7 @@ function contiguousBand(
 
 /**
  * Classify a canonical road cell. A three-cell local street contains two
- * opposing travel lanes and one median marking. A seven-cell bus road adds
+ * opposing travel lanes and one median marking. A seven-cell collector adds
  * median clearance and shoulders around two full-size travel lanes.
  */
 export function roadBandRole(graph: ReadonlyMap<string, RoadProfileCell>, cell: RoadProfileCell): RoadBandRole {

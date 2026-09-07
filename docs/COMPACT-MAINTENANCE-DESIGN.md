@@ -1,0 +1,104 @@
+# Первый compact cutover: исполняемый протокол
+
+Задача RELEASE14 включает завершение инфраструктуры и выкладку. Builder 1.4.3
+относит tasktopia.online к dev-server; разрешение на релиз действует до результата,
+AI review достаточно при отсутствии SCM human-approval requirement. Guards
+обычного image-only updater сохранены; первый переход использует отдельный режим.
+
+## Решение
+
+Используем существующую БД и полный совместный откат из замороженной копии.
+Переключение между переименованными БД не добавляем: текущий Compose фиксирует
+имя tasktopia во всех трёх ролях, а отдельного контракта DB routing нет.
+Новая операция не может использовать image-only rollback обычного updater.
+
+Нужен сохраняемый журнал до и после каждого потенциально необратимого шага.
+Сбой/неопределённый результат не позволяет продолжать вперёд или открывать
+трафик. После прерывания допускается только восстановление. Повторное
+восстановление всегда начинает с блокировки трафика и остановки всех writers.
+Старые роли запускаются только после доказанного восстановления БД, uploads,
+конфигурации и статического release. Ошибка восстановления сохраняет maintenance.
+
+Состояние PREPARED/READY не заменяет разрешение Builder.
+Финальный переход из READY к открытию трафика — отдельное действие после
+проверок оператора, привязанное к тому же immutable plan. После открытия трафика
+автоматический откат из старого backup запрещён: он потерял бы новые записи.
+
+## Порядок реализации и доказательства
+
+1. Проверяемый автомат состояний и дисковый журнал: точный SHA/образ/назначение,
+   lock, атомарная запись с fsync, отказ от изменённого плана, восстановление
+   после падения в каждой точке, отсутствие открытия при ошибке.
+2. Host adapter: проверка текущих контейнеров/томов/статического release,
+   блокировка Nginx, остановка app/mcp/world и проверка других writers,
+   защищённый backup+restore, существующие CLI FORCE/audit, conservation,
+   точные image/static/config/uploads и health. Никаких произвольных shell hooks.
+3. Интеграционная репетиция через тот же adapter на отдельном окружении:
+   копия реальных данных, успешный путь и failure injection, полный row-hash
+   и sequence comparison после rollback. Старые защищённые backup не менять.
+4. AI review diff и обязательные SCM проверки; managed merge, точный manifest
+   dev-server и builder release validate. Переиспользовать проверки неизменных
+   runtime/migration/art inputs, не запрашивать повторное подтверждение пользователя.
+
+## Стоп-условия
+
+Неизвестные writers, активные generation jobs, неверный SHA/образ/назначение,
+недостаток места, непроверенный restore, утрата бизнес-строки/истории,
+неполный audit хотя бы одной страны, ошибка smoke или rollback — остановка.
+Миграционные checksum не переписываются; task IDs/номера/контент не удаляются.
+Изменения координат — ожидаемы; допустимые исключения фиксируются явно.
+
+RepoWise MCP недоступен в текущей сессии. Owners и контракты подтверждены
+прямым чтением deploy/update-server.sh, static-release.sh,
+compact-release-preflight.sh, docker-compose.yml и существующей репетиции.
+
+## Границы текущего кода
+
+Автомат состояний сам не выполняет Docker/SSH/SQL. Его контракт реализует
+`compact_cutover_driver.py`, вызываемый через `update-server.sh compact-cutover`.
+Driver связывает backup/restore, файлы, maintenance, реальные CLI, роли и acceptance.
+Локальная сквозная репетиция прошла; запуск сервера требует Builder preflight.
+
+### Исполняемый PostgreSQL backend
+
+`deploy/compact_cutover_database.py` реализует DB-часть пункта 2:
+`capture`, `prove_restore`, `restore_verified`. Команды ограничены по времени,
+размеру вывода и точному container/image/volume ID. Копия публикуется только
+после сравнения до/после; доказательство restore — только после независимого
+восстановления и остановки проверочного контейнера. Откат существующей БД
+требует архив, baseline и checksum успешного независимого proof.
+
+Проверка охватывает все строки public-таблиц, схему `pg_dump --schema-only`,
+metadata БД и состояния sequences. Неизвестные client sessions, незавершённые
+generation jobs, prepared transactions, расширения кроме plpgsql, replication,
+дополнительные схемы и large objects останавливают исполнение. Это осознанная
+граница первого перехода, не попытка незаметно пропустить неизвестные данные.
+
+Восстановление DB уже проверено на отдельной реальной копии; это **не** полная
+репетиция host cutover. Backend не включает Nginx maintenance, общий updater lock,
+остановку/проверку app/mcp/world, config/uploads/static/image rollback,
+запуск candidate CLI и допуск внешнего трафика. Он не является CLI деплоя.
+Вызывающий host adapter обязан проверить состояние journal перед `restore_verified`:
+после возможного открытия трафика восстановление старой копии запрещено.
+Глобальные PostgreSQL roles/credentials не изменяются и этим DB-backup не заменяются.
+
+Доказательства и команда изолированной проверки: [QA-COMPACT-MAINTENANCE-DATABASE.md](QA-COMPACT-MAINTENANCE-DATABASE.md).
+
+### Host freeze
+
+`deploy/compact_cutover_host.py` добавляет общий с updater `flock`, канонический
+Nginx maintenance и остановку точного inventory app/mcp/world. Реальные локальные
+nginx/TLS/curl и Docker подтверждают закрытие новых запросов и повторяемость stop.
+Baseline привязан к planDigest; изменённый site, чужой checkout, неизвестная роль
+или restart policy, способная поднять остановленный процесс после reboot, дают отказ.
+Открытие возможно только в состоянии OPENING/pending=open_traffic.
+
+Это компоненты host adapter, а не самостоятельный deployment entrypoint. В старом тесте состояния
+journal задаются явно для проверки границ компонентов; полный prepare/recover/accept
+с приложением и DB ещё не исполняется. После stop будущий driver обязан проверить
+DB-сессии/задания, неизвестных пользователей volumes, выполнить совместный backup/
+rollback config/uploads/static/image, затем migration/FORCE/conservation/audit и smoke.
+Параметры путей и портов нужны для изоляции теста; production driver обязан получать
+их из проверенного inventory разрешённой цели, а не произвольных env overrides.
+
+Доказательства: [QA-COMPACT-MAINTENANCE-HOST.md](QA-COMPACT-MAINTENANCE-HOST.md).

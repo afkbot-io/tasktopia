@@ -1,0 +1,69 @@
+{
+  "key": "compact-long-slate-wing-v1",
+  "reviewedAt": "2026-09-07",
+  "reviewScope": "Complete source-family acceptance. Stages 5F and 4D independently reviewed by main and layout reviewers; main independently accepted 3M2 and the full 3/4/5 sequence at native 1x and 8x. No runtime publication claim.",
+  "projection": {
+    "camera": "High-45-degree roof-dominant axis-aligned frontal-top convention; no receding side facade",
+    "roofDepthPx": 85,
+    "facadeHeightPx": 11,
+    "floorStepPx": 6,
+    "windowPaneSizePxRange": [
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "doorLeafBoundsPx": [
+      22,
+      92,
+      25,
+      95
+    ],
+    "doorFrameBoundsPx": [
+      21,
+      91,
+      26,
+      96
+    ],
+    "doorGrammar": "Flat five-pixel header, one-pixel jambs and inner threshold in row 95 around the square 3x3 leaf. Outer bottom corners remain opaque foundation material.",
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "noHeavyBlackBaseline": true,
+    "sameCameraAcrossStages": true,
+    "registrationDisclosure": "Finished upper openings y85-86; stage 4 upper openings y86-87, within the accepted one-pixel tolerance. Bottom openings, entrance, center, baseline and foundation silhouette remain registered. Source bounds differ by at most three source pixels horizontally and one vertically; the common transform remains fixed."
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "99827c9855248f033ece14dd19a6f6566a71a6e28c1e5755f7e60665a54511e5",
+      "runtimeSha256": "0c05fb4870dfd41a3ada9798a3dea157110353c963b5a99c6f108ff467cb9d3d",
+      "notes": "Parent independently accepted native1x/8x and complete sequence: full ten opaque rooms/corridor, no roof, reduced upper frontage and partial posts, retained bottom floor and six solid2-3x2 dark openings, square3x3 leaf/threshold and continuous foundation. M1 roof-only intermediate then M2 upper-front-only source edits; no pixel repair."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "287bbb63b6154dcbd14498f3828d008bcb7d84e6b30446fd0b976dcaf4870795",
+      "runtimeSha256": "236a100abc1b960c7cbf95410fcfb550bd9b9c186ca8d3abcde458294bb86b1a",
+      "notes": "Independent main/layout approval: approximately44% roof is visually roughly half, no finished rooftop equipment, six opaque exposed rooms and corridor. Upper openings are one pixel lower than5, all windows two pixels high, exact door leaf/frame and foundation retained. Darker warm-olive frame material variation disclosed."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "415a5d24cec09969854fe7b75148d1a7e3d3ff1722c70139d6b7f24e7141abb2",
+      "runtimeSha256": "f4124e03302d063f0e37e718a7c1ceb936d49bdb487b5755f7c6d7fce76c7551",
+      "notes": "Independent main/layout approval: long north-south slate roof with three skylight groups, eleven-pixel two-floor frontage and six-pixel rhythm, 2-3x2 teal apertures and square3x3 door leaf inside5x5 frame. F brightened roof/lower glazing as a disclosed AI source palette change."
+    }
+  }
+}

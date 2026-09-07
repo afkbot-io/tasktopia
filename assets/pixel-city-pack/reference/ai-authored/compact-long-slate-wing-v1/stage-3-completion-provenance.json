@@ -1,0 +1,28 @@
+{
+  "key": "compact-long-slate-wing-v1",
+  "scope": "Source-only stage 3 continuation after the rejected J/K/L attempts; stage 5F and 4D and geometry remain immutable.",
+  "attempts": [
+    {
+      "attempt": "3M1",
+      "source": "sources/intermediate-stage-3-m1.png",
+      "sourceSha256": "421ef68e460f8213e42d9a7c19097141da6e6d65322c4d6704403b922c4334e2",
+      "runtimeSha256": "5d9d15bdda8e8b45ac46979dfc665bfcd81bcdcff0f75bbd367b506522a6b849",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-057c2ab5-0a5c-48cc-b967-be8ec88a0d4c.png",
+      "references": ["sources/stage-4.png"],
+      "prompt": "prompts/stage-3-m1.txt",
+      "result": "INTERMEDIATE_NOT_ACCEPTED: exact 887x1774 source and frozen-frame 47x96 footprint; zero holes, center/baseline/foundation drift. The 3x3 leaf/5x5 frame passes unchanged. Both facade rows intentionally remain for the next bounded edit; one lower opening has a ragged 5-of-6 dark body and is not accepted."
+    },
+    {
+      "attempt": "3M2",
+      "source": "sources/candidate-stage-3-m2.png",
+      "sourceSha256": "99827c9855248f033ece14dd19a6f6566a71a6e28c1e5755f7e60665a54511e5",
+      "runtimeSha256": "0c05fb4870dfd41a3ada9798a3dea157110353c963b5a99c6f108ff467cb9d3d",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-0d673723-dd0f-46c5-bf00-a53591908d32.png",
+      "references": ["sources/intermediate-stage-3-m1.png", "sources/stage-4.png"],
+      "prompt": "prompts/stage-3-m2.txt",
+      "result": "ACCEPTED_BY_PARENT: independent native 1x/8x and complete-sequence review accepted ten opaque rooms/corridor, no roof, reduced upper frontage, square leaf/threshold and continuous foundation. Exact 887x1774 source; 47x96 occupied native footprint; 32 colors, hard alpha, zero holes, center/baseline/foundation drift. Complete 3x3 leaf/5x5 frame and all six solid 2-3x2 lower openings pass. No geometry/key/frame/tolerance changes."
+    }
+  ]
+}

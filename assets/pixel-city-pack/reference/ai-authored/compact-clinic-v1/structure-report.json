@@ -1,0 +1,106 @@
+{
+  "key": "compact-clinic-v1",
+  "regions": {
+    "doorLeafBoundsPx": [
+      22,
+      28,
+      26,
+      32
+    ],
+    "doorFrameBoundsPx": [
+      21,
+      27,
+      27,
+      32
+    ],
+    "roofRegionPx": [
+      1,
+      0,
+      47,
+      22
+    ],
+    "facadeRegionPx": [
+      1,
+      22,
+      47,
+      32
+    ],
+    "stage4RetainedRoofPlanePx": [
+      25,
+      2,
+      45,
+      20
+    ],
+    "stage4OpenRoomRegionPx": [
+      3,
+      2,
+      25,
+      20
+    ],
+    "stage3OpenRoomRegionPx": [
+      3,
+      1,
+      46,
+      20
+    ],
+    "sharedPartitionColumnsPx": [
+      12,
+      16
+    ],
+    "sharedPartitionSampleRowsPx": [
+      2,
+      3,
+      4,
+      9,
+      10,
+      11,
+      12,
+      13,
+      16,
+      17,
+      18,
+      19
+    ],
+    "stage3NewRightPartitionColumnPx": 29
+  },
+  "stages": {
+    "3": {
+      "doorLeafBoundsPx": [
+        22,
+        28,
+        26,
+        32
+      ],
+      "doorDarkOpaquePixels": 16,
+      "roofInstalledFractionVisuallyAnnotated": 0,
+      "opaqueFullDepthInteriorOrRoof": true,
+      "sharedLightPartitionCapSamples": 24,
+      "newRightPartitionCapSamples": 18
+    },
+    "4": {
+      "doorLeafBoundsPx": [
+        22,
+        28,
+        26,
+        32
+      ],
+      "doorDarkOpaquePixels": 16,
+      "roofInstalledFractionVisuallyAnnotated": 0.46,
+      "opaqueFullDepthInteriorOrRoof": true,
+      "sharedLightPartitionCapSamples": 24
+    },
+    "5": {
+      "doorLeafBoundsPx": [
+        22,
+        28,
+        26,
+        32
+      ],
+      "doorDarkOpaquePixels": 16,
+      "roofInstalledFractionVisuallyAnnotated": 1,
+      "opaqueFullDepthInteriorOrRoof": true
+    }
+  },
+  "errors": [],
+  "scope": "Exact4x4 door, full interior alpha and selected shared/new partition-cap coordinates are numeric checks on normalized bytes. Roof fractions and full room semantics remain independent visual review; overlays are never runtime art. Foundation and source-frame drift are measured separately in report.json, including accepted1px stage4 inset and0.5px stage3 center shift; no exact silhouette identity is claimed."
+}

@@ -22,15 +22,11 @@ import {
   updateAccountName,
 } from "./auth";
 import { BUILDING_CATALOG } from "../shared/catalog";
-import { MCP_SCOPES, type ChunkPayloadDto, type McpScope, type ViewportPayloadDto } from "../shared/contracts";
-import type { CitySceneDto } from "../shared/city-scene-contract";
-import { legacyCountryOverview, type CountryOverviewDto } from "../shared/country-overview-contract";
+import { MCP_SCOPES, type McpScope, type ViewportPayloadDto } from "../shared/contracts";
 import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
-import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { config } from "./config";
 import { APP_VERSION } from "./version";
 import { GenerationPendingError, getWorldGenerationJob } from "./world-generation-jobs";
-import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { z } from "zod";
 import { hasPushSubscription, removePushSubscription, savePushSubscription } from "./push-subscriptions";
 
@@ -46,38 +42,6 @@ const registerSchema = z.object({
   path: ["passwordConfirmation"],
 });
 
-function legacyCityScene(scene: CitySceneDto) {
-  const completedTasks = scene.completedDistrictSnapshots.flatMap((snapshot) => snapshot.tasks);
-  const completedTasksByChunk = new Map<string, Map<string, typeof completedTasks[number]>>();
-  for (const task of completedTasks) {
-    const chunkKeys = new Set([...task.footprint, ...task.accessPath].map((cell) => (
-      `${Math.floor(cell.x / scene.chunkSize)}:${Math.floor(cell.y / scene.chunkSize)}`
-    )));
-    for (const chunkKey of chunkKeys) {
-      const tasks = completedTasksByChunk.get(chunkKey) ?? new Map();
-      tasks.set(task.id, task);
-      completedTasksByChunk.set(chunkKey, tasks);
-    }
-  }
-  const chunks = scene.chunks.map((chunk): ChunkPayloadDto => {
-    const tasks = new Map(chunk.tasks.map((task) => [task.id, task]));
-    for (const [taskId, task] of completedTasksByChunk.get(`${chunk.chunkX}:${chunk.chunkY}`) ?? []) tasks.set(taskId, task);
-    const { contentHash, ...content } = chunk;
-    void contentHash;
-    const legacyContent = { ...content, tasks: [...tasks.values()] };
-    return { ...legacyContent, contentHash: chunkPayloadContentHash(legacyContent) } as ChunkPayloadDto;
-  });
-  return { ...scene, schemaVersion: 1 as const, chunks };
-}
-
-const COUNTRY_OVERVIEW_V4_MEDIA_TYPE = "application/vnd.tasktopia.country-overview+json";
-
-function negotiatedCountryOverview(overview: CountryOverviewDto, accept: string | undefined) {
-  const wantsV4 = accept?.split(",").some((entry) => (
-    entry.includes(COUNTRY_OVERVIEW_V4_MEDIA_TYPE) && /(?:^|;)\s*version\s*=\s*4(?:\s*;|\s*$)/i.test(entry)
-  ));
-  return wantsV4 ? overview : legacyCountryOverview(overview);
-}
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "Введите корректный email" }).max(254, { message: "Email слишком длинный" }),
   password: z.string().min(1, { message: "Введите пароль" }).max(128, { message: "Пароль слишком длинный" }),
@@ -125,6 +89,8 @@ const invitationSchema = z.object({ email: z.string().trim().email().max(254), r
 const deleteCitySchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
 const deleteDistrictSchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
 const deleteTaskSchema = z.object({ confirmTitle: z.string().trim().min(1).max(160), idempotencyKey: z.string().min(1).max(160) }).strict();
+const transferTaskSchema = z.object({ targetDistrictId: z.string().uuid(), comment: z.string().trim().max(4000).optional(),
+  idempotencyKey: z.string().min(4).max(160) }).strict();
 const regenerateCountrySchema = z.object({ confirmName: z.string().trim().min(1).max(100), idempotencyKey: z.string().min(1).max(160) }).strict();
 const taskLinkSchema = z.object({
   url: z.string().trim().min(8).max(2000), title: z.string().trim().max(200).optional(), idempotencyKey: z.string().min(4).max(160),
@@ -306,10 +272,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
   app.get("/api/country-overview", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
-            const overview = negotiatedCountryOverview(
-              await service.getCountryOverview(user.id, user.countryId),
-              request.headers.accept,
-            );
+            const overview = await service.getCountryOverview(user.id, user.countryId);
             const etag = `"${overview.revision}-country-overview-${overview.schemaVersion}"`;
             reply.header("Vary", "Accept");
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
@@ -323,10 +286,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (!user) return reply;
             const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
             if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
-            const overview = negotiatedCountryOverview(
-              await service.getCountryOverview(user.id, countryId),
-              request.headers.accept,
-            );
+            const overview = await service.getCountryOverview(user.id, countryId);
             const etag = `"${overview.revision}-country-overview-${overview.schemaVersion}"`;
             reply.header("Vary", "Accept");
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
@@ -342,11 +302,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
             const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
-            const currentScene = await service.getCityScene(user.countryId, cityId);
-            const accept = request.headers.accept ?? "";
-            const scene = accept.includes("version=1") && !accept.includes("version=2")
-              ? legacyCityScene(currentScene)
-              : currentScene;
+            const scene = await service.getCityScene(user.countryId, cityId);
             const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
@@ -362,11 +318,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (!user) return reply;
             const params = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid() }).strict(), request.params);
             if (!await countryRole(db, user.id, params.countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
-            const currentScene = await service.getCityScene(params.countryId, params.cityId);
-            const accept = request.headers.accept ?? "";
-            const scene = accept.includes("version=1") && !accept.includes("version=2")
-              ? legacyCityScene(currentScene)
-              : currentScene;
+            const scene = await service.getCityScene(params.countryId, params.cityId);
             const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
@@ -478,7 +430,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const jobId = parse(z.string().uuid(), (request.params as { jobId: string }).jobId);
     const job = await getWorldGenerationJob(db, jobId);
     if (!job || !await countryRole(db, user.id, job.countryId)) throw new DomainError("NOT_FOUND", "Операция генерации не найдена");
-    return job;
+    return job.status === "COMPLETED" ? { ...job, result: await service.rehydrateGenerationResult(job.countryId, job.operation, job.result) } : job;
   });
 
   app.delete("/api/countries/:countryId", async (request, reply) => {
@@ -579,13 +531,8 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             }
             const lod = parse(z.enum(["detail", "overview"]).default("detail"), (request.query as { lod?: string }).lod);
             const chunk = await service.getChunkPayload(user.countryId, chunkX, chunkY, lod === "overview" ? "OVERVIEW" : "DETAIL");
-            const compact = request.headers.accept?.includes("application/vnd.tasktopia.chunk-payload+json") ?? false;
-            // The payload hash is content-addressed, so unrelated country
-            // events no longer invalidate every visible chunk. A weak ETag is
-            // intentional: PostgreSQL JSONB may reorder equivalent object keys.
-            // Representation identity is included so a legacy full ChunkDto
-            // and the compact v2 body never share a validator in a proxy.
-            const etag = `W/"${user.countryId}-${chunk.contentHash}-${compact ? "v2" : "v1"}"`;
+            // One current compact representation; no full-cell compatibility body.
+            const etag = `W/"${user.countryId}-${chunk.contentHash}-v2"`;
             reply.header("ETag", etag)
               .header("Cache-Control", "private, no-cache, must-revalidate")
               .header("Vary", "Accept")
@@ -593,9 +540,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (request.headers["if-none-match"] === etag) {
               return reply.code(304).send();
             }
-            // Default to the v1 representation for tabs opened before this
-            // deployment. New clients opt into the compact worker payload.
-            return reply.send(compact ? chunk : materializeChunkPayload(chunk));
+            return reply.send(chunk);
           });
 
   const archiveRecordSchema = z.object({
@@ -662,6 +607,19 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             }).strict(), request.query);
             return await service.searchTasks(user.countryId, query.q, query.limit);
           });
+
+  app.get("/api/tasks/resolve", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const query = parse(z.union([
+      z.object({ id: z.string().uuid() }).strict(),
+      z.object({ number: z.coerce.number().int().min(1).max(999_999_999), countryId: z.string().uuid().optional() }).strict(),
+    ]), request.query);
+    if ("id" in query) return reply.header("Cache-Control", "private, no-store").send(await service.resolveTask(user.id, query));
+    const countryId = query.countryId ?? user.countryId;
+    if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+    return reply.header("Cache-Control", "private, no-store").send(await service.resolveTask(user.id, { number: query.number, countryId }));
+  });
 
   app.get("/api/tasks/:taskId", async (request, reply) => {
             const user = await requireUser(db, request, reply);
@@ -804,6 +762,14 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN", "Наблюдатель не может удалять районы");
     const districtId = parse(z.string().uuid(), (request.params as { districtId: string }).districtId);
     return await service.deleteDistrict(user.countryId, { districtId, ...parse(deleteDistrictSchema, request.body) });
+  });
+
+  app.post("/api/tasks/:taskId/transfer", async (request, reply) => {
+    const user = await requireUser(db,request,reply);
+    if (!user) return reply;
+    if (user.countryRole === "VIEWER") throw new DomainError("FORBIDDEN","Наблюдатель не может переносить задачи");
+    const taskId = parse(z.string().uuid(),(request.params as {taskId:string}).taskId);
+    return service.transferTask(user.countryId,{taskId,...parse(transferTaskSchema,request.body),actor:user.name,actorUserId:user.id});
   });
 
   app.delete("/api/tasks/:taskId", async (request, reply) => {

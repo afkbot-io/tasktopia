@@ -1,0 +1,463 @@
+{
+  "version": "pg_dump (PostgreSQL) 16.14",
+  "databases": [
+    "release_rehearsal_de3c0017b463_before",
+    "release_rehearsal_de3c0017b463_candidate",
+    "release_rehearsal_de3c0017b463_rollback"
+  ],
+  "synthetic": true,
+  "production": false,
+  "startedAt": "2026-09-07T04:14:29.179Z",
+  "backup": {
+    "path": "/Users/kikasnikita/.codex/worktrees/task14-block-runtime-integration/docs/evidence/compact-rc/cutover-de3c0017b463/synthetic-pre-cutover-de3c0017b463.dump",
+    "bytes": 137159,
+    "sha256": "6296b71955bc9d46854b48f4f89f901d8565646616a4a906676e3bc0ebdc52df"
+  },
+  "cli": {
+    "bundleSha256": "a443d747e571aa6f19c885413a0006a3e6e79cc64d0e6ddcb191efdfdb7e54ea",
+    "events": [
+      {
+        "event": "world-regeneration.started",
+        "runId": "rehearsal-de3c0017b463",
+        "countries": 1
+      },
+      {
+        "event": "world-regeneration.completed",
+        "index": 1,
+        "total": 1,
+        "country": "Synthetic restore fixture: страна",
+        "attempts": 1,
+        "previousSeed": 424242,
+        "seed": 424242,
+        "cities": 1,
+        "districts": 1,
+        "tasks": 3,
+        "violationsBefore": 1,
+        "violationsAfter": 0
+      },
+      {
+        "event": "world-regeneration.finished",
+        "runId": "rehearsal-de3c0017b463",
+        "countries": 1
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "name": "0001_initial.sql",
+      "checksum": "a1b1212f0679d45616075d649a6b89feedf5b107bdf760ebcdb97752c9d08324"
+    },
+    {
+      "name": "0002_backfill_spatial.sql",
+      "checksum": "f039807e3e0b64fd0dab9ce0745f278f92d3675ee4b993e3ed24c259b0110edc"
+    },
+    {
+      "name": "0003_feature_ownership.sql",
+      "checksum": "02734b788a5c19df91029307a7a5f423d4db95d27775eefbc98b7dfdabd0574c"
+    },
+    {
+      "name": "0004_ai_work_model.sql",
+      "checksum": "a884d769921631d7eae82b9973b71f60927cf53e6494b7b0260fd53bdec4b24b"
+    },
+    {
+      "name": "0005_incident_response.sql",
+      "checksum": "305ff65d676676099fca73ad49c697b16acf346184dc7eb3146c6eaca2ea7dea"
+    },
+    {
+      "name": "0006_task_extras.sql",
+      "checksum": "b43349a8e1a0b1ebd6c30462abb6c6d93b568aca0d9ccafa8a1e2de5c02d85ae"
+    },
+    {
+      "name": "0007_ai_fields.sql",
+      "checksum": "f38f1b1106be87044e66b1ea5bc0b5e24d941cb531067a9baf5ecfeff8da8c46"
+    },
+    {
+      "name": "0008_starter_city.sql",
+      "checksum": "303d2a8a6e6d8efeae11eb4c66082973076ed5565c9e50227d4a27df832d14a4"
+    },
+    {
+      "name": "0009_country_archive.sql",
+      "checksum": "15e70c35676d36ef16056f5f1dae6d11dbd117f2d20330087d7386f1d0372d31"
+    },
+    {
+      "name": "0010_task_linked_landmarks.sql",
+      "checksum": "570258abbec3d3b4462bc561c7235267f1c1c77d4ebe67ab43d9589200db0de5"
+    },
+    {
+      "name": "0011_task_documents_checklist.sql",
+      "checksum": "c952120dfc4d37e9d2573a45ca34dd75f1fe299d06c54b4022dcb59132f8342c"
+    },
+    {
+      "name": "0012_staged_green_areas.sql",
+      "checksum": "b6cd4bde7ab14772aa1acd06837676ee2bc42eb0ba1d9bf305bf910765c82908"
+    },
+    {
+      "name": "0013_task_visual_kind.sql",
+      "checksum": "2d5471c4018a649763563daf9df4b80def810add883521e0905e04b8daa4445c"
+    },
+    {
+      "name": "0014_published_chunk_payloads.sql",
+      "checksum": "b00b7ad2d6622659b7186986c456950b73dcba73f8b6fd355b06d367a27591f0"
+    },
+    {
+      "name": "0015_published_chunk_retention.sql",
+      "checksum": "67d0af5d578ac3b948848b9bf946104e3727728a8a52631232f9f6aeb3f62867"
+    },
+    {
+      "name": "0016_chunk_local_district_cells.sql",
+      "checksum": "6b4d7ceefab1a2d3926db70f2743abb5bcec3c33d42a6b353495c418b4b56953"
+    },
+    {
+      "name": "0017_world_generation_jobs.sql",
+      "checksum": "0a974f530c10199cf31c253e7c941faa514fb1f1bdf6560d93dbc008a508cbea"
+    },
+    {
+      "name": "0018_compact_spatial_indexes.sql",
+      "checksum": "9dc1e0baf666f38b0f28bebd2dbd1e5267083dffc01eb356c81ecd5e4f85ff44"
+    },
+    {
+      "name": "0019_seeded_area_decor.sql",
+      "checksum": "3675129dea40004e027f474e9913c6dd97dde32252cd0d09375914fd30b21810"
+    },
+    {
+      "name": "0020_country_overview_snapshots.sql",
+      "checksum": "689ba139986b2c0e136740a82479ff986f5812ebacef5a36ccd14fd1e5d1140b"
+    },
+    {
+      "name": "0021_web_push.sql",
+      "checksum": "b0b41c78f04162b39f7f31256cdfc15b6b9ff3870d646d937db93b8d6430b260"
+    },
+    {
+      "name": "0022_block_v1_shadow_layouts.sql",
+      "checksum": "d811f9170f2e516f8d36e5a4d02ff3cd0c625010a2e9d71ea39a500ccf643148"
+    },
+    {
+      "name": "0023_compact_block_cutover.sql",
+      "checksum": "8cdbd96a0151616e82cd993bdc99ffb31dbb9c36f4121b3313ea74826c081b82"
+    },
+    {
+      "name": "0024_dense_slot_planning.sql",
+      "checksum": "9fee4d07bc0c96baa0736c932d356815907dca2e1fcd560b32bf24665901566a"
+    },
+    {
+      "name": "0025_task_history_read_index.sql",
+      "checksum": "31c4303143b064283f0b33c8b5a7b4c2d29e5584f5ed4d8c02e2c18b0caedc07"
+    },
+    {
+      "name": "0026_permanent_task_sites.sql",
+      "checksum": "d6061642e1ed43fc5c7fec78aa3919c6469478cee5f26534ddc41cf8453b70ea"
+    },
+    {
+      "name": "0027_task_public_spaces.sql",
+      "checksum": "edc58f4cc37263e84b2faaa793e03d581abbe3450bba6a3d35a325c358f5b0b6"
+    },
+    {
+      "name": "0028_civic_service_role.sql",
+      "checksum": "f6e8665c5cf798e28937aca4bd64b14509737cd2fce5dbf533ca804728539f60"
+    },
+    {
+      "name": "0029_country_road_snapshots.sql",
+      "checksum": "95fdf58f6a0d1c858ec33bd19672b61c63406f060c4713d26499c3306115673f"
+    }
+  ],
+  "candidate": {
+    "regeneration": {
+      "event": "world-regeneration.completed",
+      "index": 1,
+      "total": 1,
+      "country": "Synthetic restore fixture: страна",
+      "attempts": 1,
+      "previousSeed": 424242,
+      "seed": 424242,
+      "cities": 1,
+      "districts": 1,
+      "tasks": 3,
+      "violationsBefore": 1,
+      "violationsAfter": 0
+    },
+    "audit": {
+      "metrics": {
+        "cities": 1,
+        "districts": 1,
+        "tasks": 3,
+        "blocks": 1,
+        "roadSegments": 16,
+        "plannedSlots": 9,
+        "roads": 384,
+        "bridges": 0,
+        "roadClasses": {
+          "LOCAL": 384,
+          "COLLECTOR": 0,
+          "ARTERIAL": 0,
+          "HIGHWAY": 0
+        },
+        "taskStages": {
+          "1": 1,
+          "2": 0,
+          "3": 1,
+          "4": 0,
+          "5": 1
+        },
+        "uniqueBuildingTypes": 3,
+        "uniqueBuildingTypesPerCity": {
+          "Restore city": 3
+        },
+        "tasksPerCity": {
+          "Restore city": 3
+        },
+        "districtsPerCity": {
+          "Restore city": 1
+        },
+        "tasksPerDistrict": {
+          "Restore district": 3
+        },
+        "districtCellRange": {
+          "min": 1024,
+          "max": 1024
+        },
+        "maximumTaskRoadDistance": 12,
+        "maximumEntranceAccessLength": 17,
+        "surfaceCells": 305,
+        "worldFeatures": 0,
+        "greenAreas": 0,
+        "parkDecor": 0,
+        "greenAreasPerCity": {
+          "Restore city": 0
+        },
+        "serviceRolesPerCity": {
+          "Restore city": []
+        },
+        "districtArchetypes": {
+          "MIXED_URBAN": 1
+        },
+        "zoningCompliance": 1,
+        "zoningPrimarySharePerDistrict": {
+          "Restore district": 1
+        },
+        "asphaltSharePerDistrict": {
+          "Restore district": 0.1787109375
+        },
+        "maximumResidentialAsphaltShare": 0.1787109375,
+        "crosswalkCells": 0,
+        "roadJunctionsPerCity": {
+          "Restore city": 0
+        }
+      },
+      "violations": []
+    },
+    "durableHashes": {
+      "countries": {
+        "count": 1,
+        "sha256": "82265102a40d0a20b0c659c79cfa31eedf76b0653a13ab670bfe4ed57784c909"
+      },
+      "cities_v3": {
+        "count": 1,
+        "sha256": "5ee33d231ec82725b518ab9e6c1db5d1ee8eb2941bf8b68d5bf1b1d3f6b85a63"
+      },
+      "districts_v3": {
+        "count": 1,
+        "sha256": "53b2d162e8b7f7a3ec3d9df490785f954554bf3d91e5fbeb4982074563262246"
+      },
+      "tasks_v3": {
+        "count": 3,
+        "sha256": "f832bc547b814b43f6f48ef577dd8f7c3567b3e74249be6df19447d0b05978fb"
+      },
+      "task_comments_v3": {
+        "count": 1,
+        "sha256": "0c4c360faefd7980ede2ee858c98303330afe677ce18812dd360b262df633598"
+      },
+      "task_events_v7": {
+        "count": 1,
+        "sha256": "1ce02437406b123302d60a1be1847ed55dcee1654048dd89e4877fbb5f145a61"
+      },
+      "task_dependencies_v1": {
+        "count": 1,
+        "sha256": "8b8cf58b752057923d91ef3d4ca18eb7963ddace61918d7dfa451de0363a27e0"
+      },
+      "task_documents_v1": {
+        "count": 1,
+        "sha256": "5e7f5528c95c53a0e10d7ed79c3b575e8c45b6edd7f9f02b6f29c9f08c40c80a"
+      },
+      "task_checklist_items_v1": {
+        "count": 1,
+        "sha256": "69032578ce3a85c45a628dc8e7562f36fb8f0fdcff0945e10a9587bc33e74d3f"
+      },
+      "task_defects_v18": {
+        "count": 1,
+        "sha256": "d3de0df8a81e94a64663ec2f229f7725fb5b97503f78c9f2b9739b740d554c34"
+      }
+    }
+  },
+  "rollback": {
+    "exactTableHashes": {
+      "cities_v3": {
+        "count": 1,
+        "sha256": "10def9802bc332acf24df7a64748f4faba003eb40f2ec626410d05e832e3fe9e"
+      },
+      "city_blocks_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "city_layouts_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "countries": {
+        "count": 1,
+        "sha256": "b0234dbe5d8744adee9a94244fa9fb1f53b016cf2fee9a6f4b6992859c2fa1f6"
+      },
+      "country_archive_records_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "country_archives_v1": {
+        "count": 1,
+        "sha256": "ba98033659983779bdbfb567160630156da10618692c25dd2b79a0e398685e09"
+      },
+      "country_members": {
+        "count": 1,
+        "sha256": "9d4a53a4738af19f34a88ea865066331b38f0330f7d3bcedbe6c68bb42c602e6"
+      },
+      "country_overview_snapshots_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "district_layouts_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "districts_v3": {
+        "count": 1,
+        "sha256": "29a965d26aa91627c650761d91d1b95dbc69efa1fe41bb69c837ed04cfc78ded"
+      },
+      "events": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "idempotency": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "mcp_tokens": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "projects": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "push_deliveries_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "push_delivery_cursor_v1": {
+        "count": 1,
+        "sha256": "f5fed6ffa2317037b18432e9a05233263a9d656633e3804e04f22c80b3055b2c"
+      },
+      "push_subscriptions_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "road_networks_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "roads": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "roads_v3": {
+        "count": 1,
+        "sha256": "2f9e5f9b201a461e550228b76fa967dadd060c7ff2b2c1bc432f6280538a7ff0"
+      },
+      "schema_migrations": {
+        "count": 22,
+        "sha256": "4346e96a213b9a560971eb2aaccb37461e515dce94b7d5b6203e0f35002fa001"
+      },
+      "sessions": {
+        "count": 1,
+        "sha256": "478e38cb80d49dabf430326795aafc031eebb5282bdc434abfaf0ac96d6ce9b5"
+      },
+      "site_markers_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "sprints": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_attachments_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_checklist_items_v1": {
+        "count": 1,
+        "sha256": "69032578ce3a85c45a628dc8e7562f36fb8f0fdcff0945e10a9587bc33e74d3f"
+      },
+      "task_comments": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_comments_v3": {
+        "count": 1,
+        "sha256": "0c4c360faefd7980ede2ee858c98303330afe677ce18812dd360b262df633598"
+      },
+      "task_defects_v18": {
+        "count": 1,
+        "sha256": "d3de0df8a81e94a64663ec2f229f7725fb5b97503f78c9f2b9739b740d554c34"
+      },
+      "task_dependencies_v1": {
+        "count": 1,
+        "sha256": "8b8cf58b752057923d91ef3d4ca18eb7963ddace61918d7dfa451de0363a27e0"
+      },
+      "task_documents_v1": {
+        "count": 1,
+        "sha256": "5e7f5528c95c53a0e10d7ed79c3b575e8c45b6edd7f9f02b6f29c9f08c40c80a"
+      },
+      "task_events_v7": {
+        "count": 1,
+        "sha256": "1ce02437406b123302d60a1be1847ed55dcee1654048dd89e4877fbb5f145a61"
+      },
+      "task_placements_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "tasks": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "tasks_v3": {
+        "count": 3,
+        "sha256": "d3d26ec7ae9412c84d524cee0c9d8db684171f789be7fcf2772ee0b865650502"
+      },
+      "users": {
+        "count": 1,
+        "sha256": "d1305a6a7ed2ede40ef16d469286ab7c9469240fea25d91f492f5b468131307f"
+      },
+      "world_chunk_district_cells_v1": {
+        "count": 1,
+        "sha256": "07f3028d1c221bc7b5c9a64fef3a2216ad35f49a7901c77e9931ef0105e59c10"
+      },
+      "world_chunk_entities_v11": {
+        "count": 4,
+        "sha256": "aeecbbf0a0cc26752597a2fed5e1af54fee4a83190c77e758bddb52415f2693a"
+      },
+      "world_chunk_payloads_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "world_features_v6": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "world_generation_jobs_v1": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    "legacySchemaRestored": true
+  },
+  "status": "passed",
+  "disposableDatabasesRemoved": true,
+  "finishedAt": "2026-09-07T04:14:30.630Z"
+}

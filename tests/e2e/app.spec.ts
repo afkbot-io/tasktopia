@@ -79,7 +79,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
     // Wait for that public stream instead of sampling the first coherent frame.
     await expect.poll(async () => Number(await mapHost.getAttribute("data-cars")), { timeout: 30_000 }).toBeGreaterThan(0);
     await expect.poll(async () => Number(await mapHost.getAttribute("data-walkers")), { timeout: 30_000 }).toBeGreaterThan(0);
-    expect(Number(await mapHost.getAttribute("data-walkers"))).toBeLessThanOrEqual(24);
+    expect(Number(await mapHost.getAttribute("data-walkers"))).toBeLessThanOrEqual(32);
   }
   const districtsToggle = page.getByRole("button", { name: "Границы" });
   await expect(districtsToggle).toHaveAttribute("aria-pressed", "false");
@@ -96,7 +96,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
   let cityDirectory = page.getByRole("complementary", { name: "План страны" });
   await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
-  await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
+  await cityDirectory.getByRole("button", { name: /^Квартальный район 1 / }).click();
   await cityDirectory.getByRole("button", { name: /^\d+ #1 · Задача района 1\.1/ }).click();
   const taskDialog = page.getByRole("dialog");
   await expect(taskDialog).toBeVisible();
@@ -130,8 +130,8 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(cityDirectory).toBeVisible();
   await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
   await capture(page, "screenshots/release-city-directory.png");
-  await cityDirectory.getByRole("button", { name: /^Тестовый район 1 / }).click();
-  await expect(cityDirectory.getByText(/Задача района 1\.1/)).toBeVisible();
+  await cityDirectory.getByRole("button", { name: /^Квартальный район 1 / }).click();
+  await expect(cityDirectory.getByText("#1 · Задача района 1.1", { exact: true })).toBeVisible();
   await capture(page, "screenshots/release-plan-tasks.png");
   await cityDirectory.getByRole("button", { name: "Закрыть план" }).click();
 

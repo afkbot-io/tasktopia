@@ -50,14 +50,17 @@ export class AssetLease {
 
   async load(urls: string[], loader: (urls: string[]) => Promise<void>): Promise<void> {
     if (this.disposed) throw new DOMException("Asset lease disposed", "AbortError");
-    const next = [...new Set(urls)].filter((url) => !this.owned.has(url));
-    if (next.length === 0) return;
+    const requested = [...new Set(urls)];
+    const next = requested.filter((url) => !this.owned.has(url));
     for (const url of next) { this.owned.add(url); retain(url); }
-    const existing = next.flatMap((url) => {
+    // Ownership and readiness are independent. Concurrent chunks in one scene
+    // share a lease, but every bake must await PNG decode for every requested
+    // atlas, including URLs that another chunk has already retained.
+    const existing = [...new Set(requested.flatMap((url) => {
       const pending = pendingLoads.get(url);
       return pending ? [pending] : [];
-    });
-    const fresh = next.filter((url) => !pendingLoads.has(url) && !records.get(url)?.loaded);
+    }))];
+    const fresh = requested.filter((url) => !pendingLoads.has(url) && !records.get(url)?.loaded);
     let batch: Promise<void> | undefined;
     if (fresh.length > 0) {
       const unloads = [...new Set(fresh.flatMap((url) => {

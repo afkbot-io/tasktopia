@@ -1,0 +1,23 @@
+Use case: precise-object-edit
+Asset type: tiny native pixel-art courtyard bicycle rack for Tasktopia.
+Input image: edit target and palette/material reference only. Correct its fragile
+thin hoops so every support survives aspect-preserving normalization to 16x8.
+Create exactly one rack: THREE identical inverted-U steel hoops in a horizontal
+row, each with an uninterrupted top and BOTH sturdy vertical legs attached to
+the same low two-rail base. All three transparent openings must remain visibly
+open after reduction; no missing outside leg, disconnected caps or filled slabs.
+Design on a coarse conceptual 14x7 artistic-pixel silhouette: each hoop at least
+3 artistic pixels wide, 4 tall, each leg at least 1 full artistic pixel thick,
+and the opening at least 1 pixel wide by 2 pixels tall. Two clear gaps separate
+the hoops. Give the low base one readable top-depth row and one compressed
+front row. Use genuinely chunky uniform square clusters, not subpixel detail.
+Camera: high45 frontal-top, screen-horizontal base and parallel hoop tops,
+compressed vertical height, no receding side face, no isometric diagonals.
+Materials: muted teal painted hoops, slate outline/shadow, restrained cool grey
+base, only a few pale upper-left functional highlights. Maximum20 colors.
+Preserve the three-hoop subject and material identity, but replace the overly
+thin source geometry. Uniform hard pixels; no gradients, gloss, soft shadow,
+AA, text, bicycles, people, pavement, ground, grid, UI or extra objects.
+One complete isolated object on a genuine transparent background with padding.
+The final occupied silhouette should have roughly2:1 width:height so both legs
+and all three holes survive a single uniform nearest-neighbour reduction.

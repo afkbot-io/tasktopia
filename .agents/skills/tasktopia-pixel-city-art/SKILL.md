@@ -1,6 +1,6 @@
 ---
 name: tasktopia-pixel-city-art
-description: Create, expand, integrate, or audit Tasktopia Pixel City V4 terrain, props, vehicles, buildings, landmarks, and five-stage construction sprites. Use for pixel-art generation, style matching, proportion checks, manifest/catalog updates, contact sheets, world-generator variety, or diagnosing an asset that looks inconsistent in the game.
+description: Create, integrate, or audit Tasktopia compact-city cartoon pixel buildings, terrain, trees, props, vehicles and construction art. Use for generation, style matching, proportion checks, manifest/catalog updates, contact sheets, world placement or diagnosing visual inconsistency; route buildings to the compact high-45-degree contract while preserving approved terrain/tree families and the native top-down micro ambient contract.
 ---
 
 # Tasktopia Pixel City Art
@@ -11,21 +11,28 @@ Produce runtime-safe assets that read clearly at native `1x`, remain stable at e
 
 Before drawing or reviewing, read:
 
-1. `assets/pixel-city-pack/docs/GENERATION-SPEC.md` — canonical geometry and style contract.
-2. `assets/pixel-city-pack/docs/ASSET-EXPANSION-PLAN.md` — requested catalog and quotas.
+1. `docs/art/COMPACT-BUILDING-ART-CONTRACT.md` and the family geometry JSON — current building geometry, camera, scale and source authority.
+2. `assets/pixel-city-pack/docs/GENERATION-SPEC.md` and `ASSET-EXPANSION-PLAN.md` — broader material/ambient plans. Old large-building dimensions and quotas are superseded by the compact contract; do not restore retired catalog entries.
 3. `references/visual-grammar.md` — measurable proportions and stage rules.
 4. `references/prompt-template.md` only when generating concept/reference art.
 5. `references/production-acceptance.md` when generating, migrating, or approving AI-authored runtime buildings.
-6. `references/ambient-asset-acceptance.md` when working on vehicles, stops, playgrounds, park furniture, trees, shrubs, animals, boats, or other ambient props.
+6. For cars, people, animals or aircraft, first read `docs/art/MICRO-AMBIENT-ART-CONTRACT.md`; it supersedes old large-car, upright-resident and gait rules in broader plans.
+7. `references/ambient-asset-acceptance.md` when working on vehicles, stops, playgrounds, park furniture, trees, shrubs, animals, boats, or other ambient props.
+8. `docs/art/TASK-PUBLIC-SPACES.md` for task-backed parks, fountains and monuments.
+   Their16×16 authored centerpieces use separate3–5 sources, not building roof/
+   room rules; the full lot and stages1–2 remain procedural composition.
 
 For construction buildings, delegate the fragile parts to the focused project skills:
 
 - use `$tasktopia-building-stage-generator` to approve stage 5 and derive separate authored stages 4→3;
-- use `$tasktopia-building-stage-verifier` to measure geometry and render every
-  stage independently on its semantic 8×8 site grid (urban pavement or an
-  ordinary residential yard).
+- use `$tasktopia-building-stage-verifier` to normalize a common stage-5 frame,
+  compare structural masks and render each stage independently on an 8px grid.
 
-Inspect `screenshots/pixel-city-v4-expanded-assets.png` at original resolution and at nearest-neighbour `4x`. Treat it as the style reference, not as a source to copy pixel-for-pixel.
+For buildings, inspect the catalog-registered family's normalized images
+at its contracted native size and nearest-neighbour zoom. Resolve supported
+envelopes from `COMPACT_BUILDING_SHAPES` and the reviewed catalog; do not use
+the initial three-size list as a permanent whitelist. Current world terrain/road/tree
+screenshots are the material reference, not obsolete large-building sheets.
 
 ## Choose the production path
 
@@ -39,50 +46,54 @@ Inspect `screenshots/pixel-city-v4-expanded-assets.png` at original resolution a
 
 1. Define semantic role before appearance: category, density, service role, rarity, quotas, footprint, platform, entrances, and allowed estimates.
 2. Select a silhouette not already overrepresented in the category. Compare against the category contact sheet.
-3. Draw at final resolution in multiples of `8 px`; never downsample into pixel art.
-4. Use bottom-centre `anchorPx`. Keep the visible entrance aligned with manifest `entrances`.
+3. Define final native dimensions in multiples of `8 px`. AI sources may be normalized using the family's single aspect-preserving nearest-neighbour transform; never warp axes or procedurally replace accepted architecture.
+4. Use centered anchors for the native micro ambient family; otherwise use bottom-centre `anchorPx`. Keep the visible entrance aligned with manifest `entrances`.
 5. For every building and large progress-bearing prop, publish exactly five distinct runtime stages. Keep the building footprint separate from the one-cell construction clearance:
-   - stage 1: shared earth/survey tiles inside the projected site rectangle;
-   - stage 2: shared foundation/edge/rebar tiles inside the same rectangle;
-   - stage 3: recognisable structural frame;
-   - stage 4: the same final silhouette with scaffolding/unfinished surfaces;
+   - stage 0: reserved slot marker, composed without a building image;
+   - stage 1: separate fence/gate around the reserved physical footprint;
+   - stage 2: same fenced footprint with compact foundation, crane/cabin and materials;
+   - stage 3: about half the masonry, no roof, full opaque interior floor and correctly scaled partitions;
+   - stage 4: same shell, dark unfinished windows, about half a roof and no finished rooftop equipment;
    - stage 5: finished building with no construction elements.
 6. Keep footprint, anchor and entrance constant across all five runtime stages; keep authored canvas, palette family, ground line and identity constant across stages 3–5. A stage is progress, not a separate design variant.
 7. Give ordinary small props artistic variants instead of fake construction stages. Terrain families need at least three seamless variants; water may use five.
 8. Register every runtime file in the manifest/catalog and connect the semantic key to world generation. An unused PNG is unfinished work.
 9. Generate native and `4x` nearest-neighbour contact sheets. Review stages in a row and category variants side by side.
 10. For directional ambient assets, draw each required orientation independently while preserving identity. Runtime rotation is not an authored orientation.
-11. For every standard tree, enforce the `16×32`/`1×1` planting contract:
-    anchor `[8,32]`, ground contact inside the lower-centre `8×8` cell, no
-    opaque pixels outside `x=4..11` in ground-contact rows `30..31`, and crown
-    overhang only above that band. Review the tree on the same pavement grid as the
-    building rather than on a plain color card.
-12. Give ordinary low-rise `HOUSE` entries a `YARD` platform: deterministic
-    grass as the dominant surface, sparse meadow/dirt accents and a short path
-    aligned with the declared entrance. Keep dense apartment/new-build families
-    on continuous urban pavement; never bake either surface into the sprite.
+11. For trees, read `docs/art/COMPACT-TREE-ART-CONTRACT.md`. V7 uses16×16,
+    anchor8,16,1×1 planting footprint and a12×14 maximum visible envelope.
+    The world ground anchor is centered in its cell. Do not restore V6's tall
+    canvas or trunk-only collision checks. Review beside real low-rise buildings.
+12. Ground surfaces belong to the block/slot plan. The current compact
+    apartment uses its declared `STONE` platform; parks, lawns and paths remain
+    separately composed. Never infer platform from an old category default or
+    bake any surface into the building sprite.
 
 ## Enforce variety without noise
 
 - Separate construction stages from visual variants. Five stages are mandatory per building; catalog variety comes from additional stable keys.
 - Cap unique civic/service/landmark assets with `maxPerCity` or `maxPerDistrict`; do not make every rare asset unique.
 - Prefer materially different massing: narrow/wide, courtyard, corner, row, tower, pavilion, campus, or roadside composition. Palette swaps alone do not count as variety.
-- Avoid repeating the same finished silhouette more than twice in one district when alternatives fit the same estimate/category.
+- Geometry and asset identity are separate: multiple independently authored homes can share an envelope, while new long/court envelopes require reviewed geometry and packing tests. Never stretch one family to create another, or load a retired large sprite to fill an unavailable category.
 - Add one task-linked city landmark at most per city. It must occupy a task lot and follow the task's five stages; never publish a ready decorative `LANDMARK` world feature. Country-level complexes such as the State Archive are separate.
 - Keep decorative density subordinate to task readability and runtime budgets.
 
 ## Generate reference art
 
-Use one request per building or one large landmark. Include two approved benchmark images from the same category as projection references. State the exact runtime canvas and occupied-bounds target from `references/production-acceptance.md`. Approve stage 5 first and derive two independent images in order `4→3`. The approved sources become visual authority; rejected generations must not enter the repository or catalog.
+Use one request per building stage. The approved compact family is the
+projection/scale reference; the family geometry owns exact canvas and bounds.
+Approve stage 5 first and derive separate stages `4→3`. Approved sources are
+visual authority. Rejected drafts may be retained with explicit provenance for
+diagnosis, but never enter the reviewed catalog, runtime pack or public assets.
 
 Between external image requests, wait `2–5 s` after completion. Do not use long sleeps. Do not request several unrelated buildings in one image: it weakens proportions and stage identity. Review in groups of at most five accepted sources before continuing the queue.
 
 After generation:
 
-1. Save accepted authored stages as `assets/pixel-city-pack/reference/ai-authored/building-stage-study/<key>/sources/stage-{3..5}.png`.
+1. Save accepted authored stages as `assets/pixel-city-pack/reference/ai-authored/<key>/sources/stage-{3..5}.png`, alongside geometry, normalized outputs, report, visual review and previews.
 2. Register the three relative `stageSources` and `stageSha256` values in the matching `catalog/buildings.json` entry. Building catalog entries must not contain combined-sheet fields.
 3. Set `reviewed: true` only after projection, five-stage and native-scale review; runtime manifests never expose authoring provenance.
-4. Normalize the approved source deterministically at its exact target size; never replace it with code-drawn geometry.
+4. Normalize with one shared stage-5 frame; never independently crop/recenter a reverse stage or replace it with code-drawn geometry. Require `npm run assets:compact:verify` before publishing.
 
 ## Audit before integration
 
@@ -108,14 +119,13 @@ failures.
 The audit must cover the complete pack, not only newly created files:
 
 - five unique stages for every building;
-- exact canvas, hard alpha, bottom anchor, palette budget, and registered files;
+- exact canvas, hard alpha, the family-specific center/bottom anchor, palette budget, and registered files;
 - visible change between consecutive stages;
-- stable centre/ground line and plausible footprint coverage;
+- stable centre/ground line and structural-mask registration, opaque room floors and plausible footprint coverage;
 - distinct completed silhouettes within a category;
 - props, terrain, transitions, tiles, and vehicles for grid size, palette, alpha, anchors, and visually distinct variants;
-- every `TASKTOPIA_V5_TREE_FRONTAL_TOP` prop for its exact `16×32` canvas,
-  `[8,32]` anchor, `1×1` footprint and lower-centre `8×8` planting cell
-  with a centred two-row ground contact;
+- every tree for the V7 compact profile,16×16canvas,8,16anchor,1×1footprint,
+  centered two-row contact and the shared crown-clearance envelope;
 - authored ambient provenance, paired directional consistency, semantic readability at `1x`, and silhouette diversity inside each vehicle/prop family;
 - no orphan or missing runtime PNGs.
 

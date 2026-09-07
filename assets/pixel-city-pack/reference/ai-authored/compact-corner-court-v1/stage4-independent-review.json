@@ -1,0 +1,12 @@
+{
+  "key": "compact-corner-court-v1",
+  "stage": 4,
+  "reviewedAt": "2026-09-07",
+  "reviewer": "Parent agent, independent of source author",
+  "accepted": true,
+  "scope": "Unfinished stage4 source/native identity and geometry only; no runtime/catalog/map approval.",
+  "sourceSha256": "e512a8713dea27b20f36d49342f8dec637736c8d53af21e36fc716a02610822b",
+  "runtimeSha256": "839e5dc0f03d598dfcd75f5c1fae7a676d59176851698ecd75df8b99d08a22e0",
+  "reviewEvidence": ["normalized/stage-4.png", "previews/stage-4-grid-8x.png", "sources/stage-4-A-report.json"],
+  "decision": "Parent independently accepted the original4source, then reviewed source-fringe diagnostic and final full sequence. Approves this revised native hash after existing broad-key recovery with the original frame locked. One exterior native-edge pixel is removed and55opaque RGB pixels shift through palette quantization; no source architecture, door, court or foundation is deleted. The prior narrow-key review is preserved in diagnostics/stage4-narrow-key-review.json."
+}

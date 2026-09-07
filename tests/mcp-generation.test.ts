@@ -42,9 +42,12 @@ describe("MCP generation polling boundary", () => {
       expect(ownPending.structuredContent).toMatchObject({ result: { id: pending.id, status: "PENDING" } });
 
       await processNextWorldGenerationJob(db, new AppService(db), "mcp-boundary-worker");
+      const currentCity = (await new AppService(db).listCities(owner.user.countryId))[0]!;
+      await db.prepare("UPDATE world_generation_jobs_v1 SET result_json=?::jsonb WHERE id=?")
+        .run(JSON.stringify({ ...currentCity, bounds: { minX: 900, minY: 900, maxX: 999, maxY: 999 } }), pending.id);
       const ownCompleted = await client.callTool({ name: "world_generation.get", arguments: { countryId: owner.user.countryId, jobId: pending.id } });
       expect(ownCompleted.structuredContent).toMatchObject({
-        result: { id: pending.id, status: "COMPLETED", result: { name: "MCP queued city" } },
+        result: { id: pending.id, status: "COMPLETED", result: { name: "MCP queued city", bounds: currentCity.bounds } },
       });
 
       for (const jobId of [foreignJob.id, crypto.randomUUID()]) {

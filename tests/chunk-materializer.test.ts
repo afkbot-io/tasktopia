@@ -3,19 +3,23 @@ import { ChunkMaterializer, recommendedChunkWorkerCount, type ChunkWorker } from
 import type { ChunkDto, ChunkPayloadDto } from "../src/shared/contracts";
 import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
 
+vi.mock("../src/client/chunk-materializer-worker.ts?worker&url", () => ({
+  default: "https://store.tasktopia.online/assets/chunk-materializer-worker-test.js",
+}));
+
 function payload(chunkX: number): ChunkPayloadDto {
   return {
-    payloadVersion: 1,
+    payloadVersion: 2,
     contentHash: `hash-${chunkX}`,
-    generatorVersion: "square-v7",
+    generatorVersion: "block-v1",
     terrainSeed: 42,
     publishedVersion: 1,
     lod: "OVERVIEW",
     chunkX,
     chunkY: 0,
     size: 64,
-    roads: [], surfaces: [], districts: [], tasks: [], worldFeatures: [],
-    decorationContext: { cityBounds: [], districts: [], tasks: [] },
+    roadRuns: [], surfaceRuns: [], districts: [], tasks: [], worldFeatures: [],
+    decorationContext: { treeGeometryVersion: 7, lightingVersion: 1, surfaceHaloRuns: [], blockedCellRuns: [], cityBounds: [], districts: [], tasks: [] },
   };
 }
 
@@ -42,6 +46,24 @@ class FakeChunkWorker implements ChunkWorker {
 }
 
 describe("ChunkMaterializer", () => {
+  it("loads its worker from the app origin even when the client uses a CDN", () => {
+    const urls: URL[] = [];
+    class BrowserWorker extends FakeChunkWorker {
+      constructor(url: URL) { super(); urls.push(url); }
+    }
+    vi.stubGlobal("Worker", BrowserWorker);
+    vi.stubGlobal("location", new URL("https://tasktopia.online/country?task=1"));
+    const materializer = new ChunkMaterializer(1);
+    try {
+      expect(urls.map((url) => url.href)).toEqual([
+        "https://tasktopia.online/assets/chunk-materializer-worker-test.js",
+      ]);
+    } finally {
+      materializer.destroy();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("uses additional desktop cores for a bounded whole-city decode", () => {
     expect(recommendedChunkWorkerCount(1)).toBe(1);
     expect(recommendedChunkWorkerCount(2)).toBe(1);

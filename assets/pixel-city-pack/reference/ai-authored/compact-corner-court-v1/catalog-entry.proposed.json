@@ -1,0 +1,28 @@
+{
+  "key": "compact-corner-court-v1",
+  "label": "Угловой дом с внутренним двором",
+  "category": "HOUSE",
+  "rarity": "RARE",
+  "spriteSize": [64, 64],
+  "footprintCells": [8, 8],
+  "anchorPx": [32, 64],
+  "platform": "STONE",
+  "estimates": [3, 6],
+  "tags": ["residential", "low-rise-residential", "compact-building", "corner-court"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side": "S", "offset": 4}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-corner-court-v1/sources/stage-3.png",
+    "ai-authored/compact-corner-court-v1/sources/stage-4.png",
+    "ai-authored/compact-corner-court-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "0d21c151608212598bd955cd12c684abe6e593cf92b44e78d872e442ecae7c41",
+    "e512a8713dea27b20f36d49342f8dec637736c8d53af21e36fc716a02610822b",
+    "e96727be1bdebaec1d089de9e06846ed2ba07ccb586c166d200f1a53443a4044"
+  ],
+  "reviewed": true
+}

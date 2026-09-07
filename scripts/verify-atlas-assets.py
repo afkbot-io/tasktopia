@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Read-only validation for generated atlas aircraft, cloud and airport sprites."""
 
+import hashlib
+import json
 from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 ATLAS = ROOT / "public" / "game-assets" / "v5" / "atlas"
+PUBLIC_PACK = ROOT / "public" / "game-assets" / "v5"
+SOURCE_MANIFEST = ROOT / "assets" / "pixel-city-pack" / "manifest.json"
 
 
 def verify(path, size):
@@ -23,6 +27,51 @@ def verify_directional_sheet(path: Path, tile_size: int, variants: int) -> None:
     assert set(image.getchannel("A").getdata()) == {255}, f"{path}: every atlas tile must be opaque"
     first_row = [image.crop((mask * tile_size, 0, (mask + 1) * tile_size, tile_size)).tobytes() for mask in range(16)]
     assert len(set(first_row)) >= 12, f"{path}: directional masks collapsed into too few silhouettes"
+
+
+def verify_road_directional_sheet(path: Path, families: int) -> None:
+    image = Image.open(path).convert("RGBA")
+    expected = (8 * 16, 8 * families * 3)
+    assert image.size == expected, f"{path}: expected {expected}, got {image.size}"
+    assert set(image.getchannel("A").getdata()) == {255}, f"{path}: every road and surface cell must be opaque"
+    family_samples = []
+    for family in range(families):
+        row = family * 3
+        masks = [image.crop((mask * 8, row * 8, (mask + 1) * 8, (row + 1) * 8)).tobytes() for mask in range(16)]
+        assert len(set(masks)) >= 12, f"{path}: family {family} directional masks collapsed"
+        family_edge = image.getpixel((0, row * 8))
+        # A directional cell is a full material cell. Missing neighbours may
+        # add a one-pixel perimeter curb, but may never carve the old 2x2
+        # square/stepped corner into the road or pavement interior.
+        for mask in (0b0011, 0b0110, 0b1100, 0b1001):
+            tile = image.crop((mask * 8, row * 8, (mask + 1) * 8, (row + 1) * 8))
+            interior = [tile.getpixel((x, y)) for y in range(1, 7) for x in range(1, 7)]
+            assert interior.count(family_edge) < 4, f"{path}: family {family} mask {mask} contains a stepped inner corner"
+        family_samples.append(masks[15])
+    assert len(set(family_samples)) == families, f"{path}: material families must remain visually distinct"
+
+
+def verify_road_overlays(path: Path) -> None:
+    image = Image.open(path).convert("RGBA")
+    assert image.size == (8 * 12, 8 * 3), f"{path}: expected {(8 * 12, 8 * 3)}, got {image.size}"
+    assert set(image.getchannel("A").getdata()) <= {0, 255}, f"{path}: soft alpha"
+    frames = [image.crop((frame * 8, 0, (frame + 1) * 8, 8)) for frame in range(12)]
+    assert all(frame.getchannel("A").getbbox() for frame in frames), f"{path}: empty overlay frame"
+    assert len({frame.tobytes() for frame in frames}) == 12, f"{path}: overlay frames must be distinct"
+    for frame in range(4):
+        variants = [image.crop((frame * 8, variant * 8, (frame + 1) * 8, (variant + 1) * 8)).tobytes() for variant in range(3)]
+        assert len(set(variants)) == 3, f"{path}: crossing/marking frame {frame} must publish three material variants"
+
+
+def verify_published_revision() -> None:
+    digest = hashlib.sha256()
+    for path in sorted(PUBLIC_PACK.rglob("*.png")):
+        digest.update(path.relative_to(PUBLIC_PACK).as_posix().encode())
+        digest.update(path.read_bytes())
+    expected = digest.hexdigest()[:16]
+    for path in (PUBLIC_PACK / "manifest.json", SOURCE_MANIFEST):
+        manifest = json.loads(path.read_text())
+        assert manifest.get("assetRevision") == expected, f"{path}: stale assetRevision for published atlas content"
 
 
 def main() -> None:
@@ -63,7 +112,11 @@ def main() -> None:
         for name in terrain_v4:
             verify_directional_sheet(ATLAS / "terrain-v4" / level / f"{name}.png", tile_size, 5 if name in {"river", "deep_water", "shallow_water"} else 3)
         verify(ATLAS / "terrain-v4" / level / "ocean.png", (tile_size, tile_size))
-    print("atlas assets: legacy families, directional terrain V4, V4 aircraft and shared top-down clouds verified")
+    verify_road_directional_sheet(ATLAS / "road-v2" / "road.png", 5)
+    verify_road_directional_sheet(ATLAS / "road-v2" / "surface.png", 5)
+    verify_road_overlays(ATLAS / "road-v2" / "overlay.png")
+    verify_published_revision()
+    print("atlas assets: registered terrain, road, cloud and retained reference aircraft checks passed; native runtime aircraft validated by verify-micro-ambient.py")
 
 
 if __name__ == "__main__":

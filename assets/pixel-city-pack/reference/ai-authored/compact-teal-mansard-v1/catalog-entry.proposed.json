@@ -1,0 +1,28 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "label": "Бирюзовый мансардный дом",
+  "category": "HOUSE",
+  "rarity": "RARE",
+  "spriteSize": [48, 48],
+  "footprintCells": [6, 6],
+  "anchorPx": [24, 48],
+  "platform": "STONE",
+  "estimates": [3, 6],
+  "tags": ["residential", "low-rise-residential", "compact-building", "teal-mansard"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side": "S", "offset": 3}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-teal-mansard-v1/sources/stage-3.png",
+    "ai-authored/compact-teal-mansard-v1/sources/stage-4.png",
+    "ai-authored/compact-teal-mansard-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "428ac32d8891c60e9d978a67ee510cf0fe46ac642fb3a53f6f7a14ad8bc6eb01",
+    "b00ba75e082c89741accff56a2b6930015a168173e238c99b31f58a686cecf0c",
+    "7bc85125a3c218bde1bccd68207371c77823858550faa8a5644aa72983803344"
+  ],
+  "reviewed": true
+}

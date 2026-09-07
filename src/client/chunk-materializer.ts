@@ -1,4 +1,5 @@
 import type { ChunkDto, ChunkPayloadDto } from "../shared/contracts";
+import workerAssetUrl from "./chunk-materializer-worker.ts?worker&url";
 
 type WorkerResponse = { id: number; chunk?: ChunkDto; error?: string };
 
@@ -27,10 +28,14 @@ type WorkerSlot = {
   active?: MaterializationRequest;
 };
 
-const browserWorkerFactory: ChunkWorkerFactory = () => new Worker(
-  new URL("./chunk-materializer-worker.ts", import.meta.url),
-  { type: "module" },
-);
+const browserWorkerFactory: ChunkWorkerFactory = () => {
+  // The app also serves the identical hashed build assets. Worker entrypoints
+  // must be same-origin even when regular client modules come from the CDN.
+  const url = new URL(workerAssetUrl, location.origin);
+  url.protocol = location.protocol;
+  url.host = location.host;
+  return new Worker(url, { type: "module" });
+};
 
 /**
  * City scenes can contain dozens of independent deterministic pages. Two

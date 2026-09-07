@@ -27,8 +27,7 @@ await transaction(db, async () => {
   await db.prepare("UPDATE users SET name = ? WHERE id = ?").run("Президент Авроры", user.id);
   await db.prepare("UPDATE countries SET name = ?, seed = ?, world_version = 1 WHERE id = ?")
     .run("Республика Аврора", GROWTH_DEMO_SEED, user.countryId);
-  await db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(user.countryId);
-  await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(user.countryId);
+  await db.prepare("DELETE FROM world_chunk_payloads_v1 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM cities_v3 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM events WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM idempotency WHERE country_id = ?").run(user.countryId);

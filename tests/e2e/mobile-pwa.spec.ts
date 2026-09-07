@@ -172,11 +172,17 @@ test("installable shell registers a revisioned worker and survives offline navig
   expect(pwa.cachedPaths).toContain("/");
   expect(pwa.cachedPaths.some((path) => path.startsWith("/api/") || path.startsWith("/mcp/") || path.startsWith("/socket.io/"))).toBe(false);
 
+  // A warm browser HTTP cache can conceal missing CDN entries in the PWA
+  // cache. Preserve CacheStorage, but require a usable shell without that crutch.
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Network.clearBrowserCache");
   await context.setOffline(true);
   try {
     const response = await page.reload({ waitUntil: "domcontentloaded" });
     expect(response?.ok()).toBe(true);
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/site.webmanifest");
+    await expect(page.getByLabel("Email")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Открыть страну" })).toBeVisible();
   } finally {
     await context.setOffline(false);
   }

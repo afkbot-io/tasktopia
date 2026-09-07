@@ -26,10 +26,14 @@ test("loads a complete city through one request and never calls chunk endpoints"
   const staticDecorationParticles = Number(await host.getAttribute("data-static-decoration-particles") ?? 0);
   const decorationSpriteViews = Number(await host.getAttribute("data-decoration-sprite-views") ?? 0);
   const ambientAnimations = Number(await host.getAttribute("data-ambient-animations") ?? 0);
-  const worldObjects = Number(await host.getAttribute("data-world-objects") ?? 0);
+  const staticDecorationLayers = Number(await host.getAttribute("data-static-decoration-layers") ?? 0);
   expect(staticDecorationParticles).toBeGreaterThan(0);
   expect(decorationSpriteViews).toBe(ambientAnimations);
-  expect(worldObjects).toBeLessThan(staticDecorationParticles / 4);
+  // Compare decoration bands with decorations, not with buildings, incidents,
+  // road features, padding and moving agents sharing the depth-sorted layer.
+  expect(staticDecorationLayers).toBeGreaterThan(0);
+  expect(staticDecorationLayers).toBeLessThan(staticDecorationParticles / 4);
+  await expect(host).toHaveAttribute("data-world-object-depth-errors", "0");
   expect(Number(await host.getAttribute("data-resident-chunks"))).toBe(Number(await host.getAttribute("data-city-scene-chunks")));
   await expect(host).toHaveAttribute("data-map-lod", "detail");
 
@@ -47,7 +51,7 @@ test("loads a complete city through one request and never calls chunk endpoints"
   await expect(page.getByText("Подгружаем карту…", { exact: true })).toHaveCount(0);
 });
 
-test("renders the normalized city frame before input and reaches the shared zoom-out limit", async ({ page }) => {
+test("renders the normalized city frame before input and crosses one level at the shared zoom-out limit", async ({ page }) => {
   test.setTimeout(120_000);
   const { host, canvas } = await openDemoCity(page);
   await expect(host).toHaveAttribute("data-city-first-frame-rendered", "true");
@@ -56,8 +60,11 @@ test("renders the normalized city frame before input and reaches the shared zoom
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  for (let step = 0; step < 12; step += 1) await page.mouse.wheel(0, 800);
-  await expect.poll(async () => Number(await host.getAttribute("data-render-scale"))).toBeCloseTo(.8, 2);
+  // One input crosses one boundary. Twelve separate round trips on a loaded
+  // runner can span multiple gestures (>220 ms gaps), reaching PLANET.
+  await page.mouse.wheel(0, 4_000);
+  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await expect(page.locator(".planet-atlas")).toHaveCount(0);
 });
 
 test("keeps the loader visible until the delayed whole-city scene commits", async ({ page }) => {
@@ -86,7 +93,6 @@ test("offers a renderer restart when the city-scene request fails", async ({ pag
   let fail = true;
   await page.route("**/api/countries/*/cities/*/scene", async (route) => {
     if (fail) {
-      fail = false;
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });
       return;
     }
@@ -98,6 +104,7 @@ test("offers a renderer restart when the city-scene request fails", async ({ pag
   await page.getByRole("button", { name: "Открыть страну" }).click();
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Не удалось запустить карту", { timeout: 30_000 });
+  fail = false;
   await alert.getByRole("button", { name: "Повторить" }).click();
   await expect(alert).toHaveCount(0);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });

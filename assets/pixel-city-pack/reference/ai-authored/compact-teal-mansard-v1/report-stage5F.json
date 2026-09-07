@@ -1,0 +1,66 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-recovery",
+  "commonSourceFrame": [
+    124,
+    160,
+    1129,
+    1102
+  ],
+  "uniformScale": 0.04776119402985075,
+  "targetSize": [
+    48,
+    45
+  ],
+  "offset": [
+    0,
+    3
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "4f0ce5179e9264f82081f04bf5fc812166363d5bbfe422c7d109f4f53779dc71",
+      "runtimeSha256": "e2f9d907114c746fd7a1fa52e64628e09495ba64e125908c563c6e7392c52fe2",
+      "sourceBounds": [
+        124,
+        160,
+        1129,
+        1102
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ]
+}

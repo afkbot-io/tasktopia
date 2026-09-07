@@ -1,0 +1,65 @@
+[
+  {
+    "key": "compact-park-fountain-stage-3",
+    "label": "Фонтан · стадия 3",
+    "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-3.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 3,
+    "sourceSha256": "f1bd1b16c849dd7745528c05856fa02aabd9e384eb1449ed379dd2bdbfd6a223"
+  },
+  {
+    "key": "compact-park-fountain-stage-4",
+    "label": "Фонтан · стадия 4",
+    "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-4.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 4,
+    "sourceSha256": "4a40ba1c696313d54bd132785abff29c149016d1c73de9b2e07d97bb90fdbb49"
+  },
+  {
+    "key": "compact-park-fountain-stage-5",
+    "label": "Фонтан · стадия 5",
+    "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-5.png",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "reviewed": true,
+    "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+    "stage": 5,
+    "sourceSha256": "2834676a47673444849d078409fdf567081608632ef0334b278b0b9ae57ab122"
+  }
+]

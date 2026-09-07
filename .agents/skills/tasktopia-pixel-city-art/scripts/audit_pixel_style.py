@@ -6,11 +6,17 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 from PIL import Image, ImageChops
+
+REPOSITORY = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(REPOSITORY / "scripts"))
+from compact_asset_contract import audit_compact_building
+from micro_ambient_contract import audit_micro_ambient
 
 
 CELL = 8
@@ -87,8 +93,15 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
     metrics: dict[str, Any] = {}
     category_signatures: dict[str, dict[bytes, list[str]]] = defaultdict(lambda: defaultdict(list))
     audited_paths: set[str] = set()
+    errors.extend(audit_compact_building(manifest, runtime, manifest_path.parent))
 
-    def audit_image(relative: str, label: str, *, expected_size: tuple[int, int] | None = None) -> Image.Image | None:
+    def audit_image(
+        relative: str,
+        label: str,
+        *,
+        expected_size: tuple[int, int] | None = None,
+        grid_unit: int = CELL,
+    ) -> Image.Image | None:
         path = runtime / relative
         audited_paths.add(relative)
         if not path.is_file():
@@ -97,8 +110,8 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         image = Image.open(path).convert("RGBA")
         if expected_size is not None and image.size != expected_size:
             errors.append(f"{label}: expected {expected_size}, got {image.size}")
-        if min(image.size) <= 0 or any(value % CELL for value in image.size):
-            errors.append(f"{label}: canvas must use positive {CELL}px units")
+        if min(image.size) <= 0 or any(value % grid_unit for value in image.size):
+            errors.append(f"{label}: canvas must use positive {grid_unit}px units")
         colors = image.getcolors(maxcolors=65_536) or []
         if len(colors) > PALETTE_BUDGET:
             errors.append(f"{label}: {len(colors)} colors exceeds {PALETTE_BUDGET}")
@@ -217,9 +230,6 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                 errors.append(f"{label}: tree ground contact is not centred on its 8x8 cell")
         bounds = opaque_bounds(image)
         minimum_opaque_bounds = {
-            "city-bus-horizontal": (20, 7),
-            "city-bus-north": (6, 18),
-            "city-bus-south": (6, 18),
             "bus-stop-horizontal": (14, 12),
             "bus-stop-vertical": (9, 15),
             "fountain-large": (26, 31),
@@ -229,75 +239,42 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         minimum = minimum_opaque_bounds.get(key)
         if minimum and (bounds is None or bounds[2] - bounds[0] < minimum[0] or bounds[3] - bounds[1] < minimum[1]):
             errors.append(f"{label}: authored subject is too small for its runtime footprint")
-        if prop.get("visualProfile") == "TASKTOPIA_V5_RESIDENT_WALK_3_FRAME":
-            if image.size != (16, 24):
-                errors.append(f"{label}: walking resident canvas must be 16x24")
-            if bounds is None:
-                errors.append(f"{label}: walking resident has no opaque subject")
-            else:
-                resident_width = bounds[2] - bounds[0]
-                resident_height = bounds[3] - bounds[1]
-                # A passing pose is naturally narrower than the two contact
-                # poses. Requiring every frame to fill eight pixels caused the
-                # pipeline to rescale individual frames and made residents
-                # visibly stretch while walking. Family-level scale, mass and
-                # baseline stability are verified by verify-agent-animations.
-                if resident_width < 6 or resident_width > 12:
-                    errors.append(f"{label}: walking resident opaque width must be 6..12 px")
-                if resident_height < 16 or resident_height > 18:
-                    errors.append(f"{label}: walking resident opaque height must be 16..18 px, got {resident_height}")
-                if bounds[3] != image.height:
-                    errors.append(f"{label}: walking resident feet must share the bottom baseline")
-        if prop.get("visualProfile") == "TASKTOPIA_V5_RESIDENT_ACTIVITY":
-            if image.size != (16, 24):
-                errors.append(f"{label}: activity resident canvas must be 16x24")
-            if bounds is None:
-                errors.append(f"{label}: activity resident has no opaque subject")
-            else:
-                resident_width = bounds[2] - bounds[0]
-                resident_height = bounds[3] - bounds[1]
-                if key.startswith("fisher-"):
-                    if resident_width < 8 or resident_width > 10 or resident_height < 12 or resident_height > 14:
-                        errors.append(
-                            f"{label}: fishing pose must occupy 8..10x12..14 px at canonical human scale, "
-                            f"got {resident_width}x{resident_height}"
-                        )
-                elif resident_width < 8 or resident_width > 10 or resident_height < 16 or resident_height > 18:
-                    errors.append(
-                        f"{label}: upright activity resident must occupy 8..10x16..18 px, "
-                        f"got {resident_width}x{resident_height}"
-                    )
-                if bounds[3] != image.height:
-                    errors.append(f"{label}: activity resident feet must share the bottom baseline")
-        if prop.get("visualProfile") == "TASKTOPIA_V5_MICROMOBILITY_FRONTAL_TOP":
-            horizontal = "-horizontal-" in key
-            expected_canvas = (24, 24) if horizontal else (16, 24)
-            if image.size != expected_canvas:
-                errors.append(f"{label}: micromobility canvas must be {expected_canvas[0]}x{expected_canvas[1]}")
-            if bounds is None:
-                errors.append(f"{label}: micromobility sprite has no opaque subject")
-            else:
-                subject_width = bounds[2] - bounds[0]
-                subject_height = bounds[3] - bounds[1]
-                if horizontal and (subject_width < 12 or subject_width > 18 or subject_height < 13 or subject_height > 18):
-                    errors.append(
-                        f"{label}: horizontal rider and vehicle must occupy 12..18x13..18 px, "
-                        f"got {subject_width}x{subject_height}"
-                    )
-                if not horizontal and (subject_width < 6 or subject_width > 8 or subject_height < 16 or subject_height > 18):
-                    errors.append(
-                        f"{label}: vertical rider and vehicle must occupy 6..8x16..18 px, "
-                        f"got {subject_width}x{subject_height}"
-                    )
-                if bounds[3] != image.height:
-                    errors.append(f"{label}: micromobility contact point must share the bottom baseline")
-        if prop.get("visualProfile") == "TASKTOPIA_V5_TREE_FRONTAL_TOP":
-            if image.size != (16, 32):
-                errors.append(f"{label}: standard V5 tree canvas must be 16x32")
+        if key.startswith("tree-"):
+            if prop.get("visualProfile") != "TASKTOPIA_V7_TREE_COMPACT_45_GRID":
+                errors.append(f"{label}: retired tree profile")
+            if image.size != (16, 16):
+                errors.append(f"{label}: compact tree canvas must be 16x16")
             if footprint != [1, 1]:
-                errors.append(f"{label}: standard V5 tree footprint must be 1x1")
-            if prop.get("anchorPx") != [8, 32]:
-                errors.append(f"{label}: standard V5 tree anchor must be [8, 32]")
+                errors.append(f"{label}: compact tree footprint must be 1x1")
+            if prop.get("anchorPx") != [8, 16]:
+                errors.append(f"{label}: compact tree anchor must be [8, 16]")
+            visible_bounds = image.getbbox()
+            visible_height = visible_bounds[3] - visible_bounds[1] if visible_bounds else 0
+            minimum_height, maximum_height = (6, 9) if key == "tree-deadwood" else (8, 14)
+            if visible_bounds and visible_bounds[2] - visible_bounds[0] > 12:
+                errors.append(f"{label}: crown exceeds 12px compact clearance envelope")
+            if not minimum_height <= visible_height <= maximum_height:
+                errors.append(
+                    f"{label}: high-45 visible height must be {minimum_height}..{maximum_height}px, "
+                    f"got {visible_height}px"
+                )
+            # A high-45 crown keeps most occupied rows close to its maximum
+            # width. Front-facing cones and round icons narrow for too long.
+            # Deadwood is intentionally a low stump and shares only the
+            # anchor/planting-cell checks below.
+            if key not in ("tree-deadwood", "tree-palm"):
+                crown_widths = []
+                for y in range(0, image.height - 3):
+                    occupied_x = [x for x in range(image.width) if image.getpixel((x, y))[3]]
+                    if occupied_x:
+                        crown_widths.append(max(occupied_x) - min(occupied_x) + 1)
+                maximum_crown_width = max(crown_widths, default=0)
+                broad_rows = sum(width >= maximum_crown_width - 2 for width in crown_widths)
+                if maximum_crown_width < 6 or broad_rows < max(2, round(len(crown_widths) * 0.45)):
+                    errors.append(
+                        f"{label}: crown must remain a broad square/rectangle in the high-45 view; "
+                        f"max width {maximum_crown_width}px, broad rows {broad_rows}/{len(crown_widths)}"
+                    )
             planting_top = image.height - 2
             outside_planting_cell = [
                 (x, y)
@@ -335,6 +312,17 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
                 errors.append("propAtlas: soft alpha is forbidden")
     if set(prop_atlas.get("frames", {})) != set(manifest.get("props", {})):
         errors.append("propAtlas: frames must match the complete prop catalog")
+    elif isinstance(atlas_relative, str) and (runtime / atlas_relative).is_file():
+        atlas = Image.open(runtime / atlas_relative).convert("RGBA")
+        for key, prop in manifest.get("props", {}).items():
+            frame = prop_atlas["frames"][key]
+            atlas_frame = atlas.crop((
+                frame["x"], frame["y"],
+                frame["x"] + frame["width"], frame["y"] + frame["height"],
+            ))
+            prop_image = Image.open(runtime / prop["path"]).convert("RGBA")
+            if atlas_frame.size != prop_image.size or atlas_frame.tobytes() != prop_image.tobytes():
+                errors.append(f"propAtlas: {key} frame differs from {prop['path']}")
 
     ai_prop_catalog = manifest_path.parent / "catalog" / "ai-authored-props.json"
     if ai_prop_catalog.exists():
@@ -360,84 +348,24 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
     for key, tile in sorted(manifest.get("tiles", {}).items()):
         audit_image(str(tile.get("path", "")), f"tiles/{key}", expected_size=(CELL, CELL))
 
+    for key, tile in sorted(manifest.get("blockSurfaces", {}).get("tiles", {}).items()):
+        image = audit_image(
+            str(tile.get("path", "")),
+            f"blockSurfaces/{key}",
+            expected_size=(4, 4),
+            grid_unit=4,
+        )
+        if image is not None and image.getchannel("A").getextrema() != (255, 255):
+            errors.append(f"blockSurfaces/{key}: full base tile must be opaque")
+
     for material, directions in sorted(manifest.get("transitions", {}).items()):
         for direction, relative in sorted(directions.items()):
             audit_image(relative, f"transitions/{material}/{direction}", expected_size=(CELL, CELL))
 
-    ai_vehicle_catalog = manifest_path.parent / "catalog" / "ai-authored-vehicles.json"
-    authored_vehicles = {
-        entry["key"]: entry
-        for entry in json.loads(ai_vehicle_catalog.read_text(encoding="utf-8"))
-    } if ai_vehicle_catalog.exists() else {}
-    vehicle_signatures: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
-    vehicle_drawings: dict[str, list[bytes]] = {"horizontal": [], "north": [], "south": []}
-    vehicles = manifest.get("vehicles", {})
-    if len(vehicles) < 6:
-        errors.append("vehicles: expected at least six distinct models")
-    for variant, orientations in sorted(vehicles.items()):
-        authored = authored_vehicles.get(variant)
-        if authored is None or not authored.get("reviewed"):
-            errors.append(f"vehicles/{variant}: missing reviewed source catalog entry")
-        if set(orientations) != {"horizontal", "north", "south"}:
-            errors.append(f"vehicles/{variant}: expected exactly horizontal, north and south views")
-        for orientation, vehicle in sorted(orientations.items()):
-            expected = (24, 16) if orientation == "horizontal" else (16, 24)
-            image = audit_image(str(vehicle.get("path", "")), f"vehicles/{variant}/{orientation}", expected_size=expected)
-            if image is None:
-                continue
-            vehicle_signatures[orientation].append(silhouette_signature(image))
-            vehicle_drawings[orientation].append(image.tobytes())
-            bounds = opaque_bounds(image)
-            if bounds is not None:
-                width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
-                if orientation == "horizontal" and (width < 21 or height < 12):
-                    errors.append(f"vehicles/{variant}/horizontal: model is too small at native scale")
-                if orientation in {"north", "south"} and (width < 12 or height < 21):
-                    errors.append(f"vehicles/{variant}/{orientation}: model is too small at native scale")
-            if orientation in {"horizontal", "north", "south"}:
-                alpha = image.getchannel("A")
-                remaining = {
-                    (x, y) for y in range(image.height) for x in range(image.width)
-                    if alpha.getpixel((x, y)) > 0
-                }
-                components = 0
-                while remaining:
-                    components += 1
-                    stack = [remaining.pop()]
-                    while stack:
-                        x, y = stack.pop()
-                        for neighbour in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
-                            if neighbour in remaining:
-                                remaining.remove(neighbour)
-                                stack.append(neighbour)
-                if components != 1:
-                    errors.append(f"vehicles/{variant}/{orientation}: body has {components} disconnected components")
-            if vehicle.get("artSource") != "AI_AUTHORED" or not vehicle.get("sourceSheet"):
-                errors.append(f"vehicles/{variant}/{orientation}: missing approved AI-authored provenance")
-            if authored is not None:
-                source_path = manifest_path.parent / "reference" / authored["sheet"]
-                expected_digest = authored.get("sheetSha256")
-                actual_digest = hashlib.sha256(source_path.read_bytes()).hexdigest() if source_path.is_file() else None
-                if actual_digest != expected_digest or vehicle.get("sourceSha256") != expected_digest:
-                    errors.append(f"vehicles/{variant}/{orientation}: source digest provenance mismatch")
-            if vehicle.get("visualProfile") != "TASKTOPIA_V6_ROAD_VEHICLE_NATIVE":
-                errors.append(f"vehicles/{variant}/{orientation}: wrong V6 native-road visual profile")
-        horizontal = orientations.get("horizontal")
-        north = orientations.get("north")
-        south = orientations.get("south")
-        if horizontal and north and south:
-            horizontal_image = Image.open(runtime / horizontal["path"]).convert("RGBA")
-            north_image = Image.open(runtime / north["path"]).convert("RGBA")
-            south_image = Image.open(runtime / south["path"]).convert("RGBA")
-            if horizontal_image.tobytes() == north_image.transpose(Image.Transpose.ROTATE_270).tobytes():
-                errors.append(f"vehicles/{variant}: north view is a mechanical side rotation")
-            if north_image.tobytes() == south_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes():
-                errors.append(f"vehicles/{variant}: south view is a mechanical north flip")
-    for orientation, signatures in vehicle_signatures.items():
-        drawings = vehicle_drawings[orientation]
-        if drawings and len(set(drawings)) != len(drawings):
-            errors.append(f"vehicles/{orientation}: model drawings must be visually unique")
 
+    errors.extend(audit_micro_ambient(manifest, runtime, manifest_path.parent))
+    for key, entry in manifest.get("microAmbient", {}).get("sprites", {}).items():
+        audit_image(entry["path"], key, expected_size=tuple(entry["size"]))
     runtime_paths = {str(path.relative_to(runtime)) for path in runtime.rglob("*.png")}
     missing_from_manifest = sorted(runtime_paths - audited_paths)
     if missing_from_manifest:
