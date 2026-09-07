@@ -116,3 +116,20 @@ Builder теперь определяет tasktopia.online как dev-server. О
 review эта цель не требует; актуальный AI diff review и реальные SCM protections
 сохраняются. Следующие gates — managed merge, ready:true и server prepare/accept,
 затем public smoke/наблюдение. Новое разрешение после каждого commit не требуется.
+
+## Проверка установленного official vhost, 2026-09-07
+
+Первая серверная попытка `compact-release14-20260907-2330` на `b473c072`
+построила образ, но остановилась на read-only `inspect`: установленный
+Nginx-файл от21августа отличается от текущего шаблона только отсутствием
+отдельного PWA static location. Его SHA256:
+`fe826405068ce80d6c55f17677cfa3987955f4662c8cf6aa947f1664305c8a1d`.
+Предыдущий fingerprint ошибочно относился к репозиторному файлу, не к серверному.
+Ни maintenance, ни остановка сервисов, ни backup/migration не начинались;
+четыре прежние роли остались healthy. Пустой evidence journal сохранён.
+
+Регрессия вызывает настоящий `NginxMaintenance.capture()` на точном fixture:
+до исправления отказ, после — успешный read-only capture и два503 только для
+основного сайта. CDN сохраняется. Изменение upstream по-прежнему отвергается.
+Это исправление только идентификации baseline, не ослабление произвольных
+конфигов; код maintenance/restore/runtime/schema/art не изменён.

@@ -1,12 +1,16 @@
 """Границы host freeze; production endpoints здесь не используются."""
 from pathlib import Path
+import hashlib
+import json
+from types import SimpleNamespace
 import sys
 import subprocess
 import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "deploy"))
-from compact_cutover_host import DeploymentLock, maintenance_config
+from compact_cutover_host import DeploymentLock, NginxMaintenance, maintenance_config
+from compact_cutover_database import CommandRunner
 from compact_cutover_state import CutoverError
 
 
@@ -58,6 +62,39 @@ class HostBoundaryTests(unittest.TestCase):
         self.assertEqual(rendered.count("return 503;"), 2)
         self.assertEqual(rendered.split("    server_name tasktopia.online;", 1)[0],
                          original.split("    server_name tasktopia.online;", 1)[0])
+
+    def test_capture_exact_installed_pre_pwa_official_site(self):
+        current = (Path(__file__).resolve().parents[1] / "deploy/nginx-tasktopia.conf").read_text()
+        start = current.index("    location ~ ^/(sw\\.js|")
+        end = current.index("    # Immutable versioned", start)
+        installed = current[:start] + current[end:]
+        self.assertEqual(hashlib.sha256(installed.encode()).hexdigest(),
+                         "fe826405068ce80d6c55f17677cfa3987955f4662c8cf6aa947f1664305c8a1d")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            site, enabled = root / "site", root / "enabled"
+            site.write_text(installed)
+            site.chmod(0o600)
+            enabled.symlink_to(site)
+            audit = root / "audit"
+            audit.mkdir(mode=0o700)
+            runner = CommandRunner(audit)
+            journal = SimpleNamespace(fd=1, plan={"appDir": str(root)}, plan_digest="a" * 64)
+            lock = SimpleNamespace(fd=1, app_dir=root)
+            spec = {"site": str(site), "enabled": str(enabled), "prefix": "/etc/nginx",
+                    "configuration": "/etc/nginx/nginx.conf", "certRoot": "/etc/letsencrypt",
+                    "staticRoot": "/srv/tasktopia/static", "domain": "tasktopia.online",
+                    "httpPort": 80, "httpsPort": 443, "caFile": None, "loopbackOnly": False}
+            host = NginxMaintenance(journal, lock, runner, spec, "/usr/sbin/nginx", "/usr/bin/curl")
+            record = host.capture()
+            with runner.open_private(record["artifact"]) as stream:
+                baseline = json.load(stream)
+            self.assertEqual(baseline["original"], installed)
+            self.assertEqual(baseline["maintenance"].count("return 503;"), 2)
+            self.assertEqual(site.read_text(), installed)
+            site.write_text(installed.replace("127.0.0.1:3000", "127.0.0.1:3999"))
+            with self.assertRaises(CutoverError):
+                host.capture()
 
 
 if __name__ == "__main__":
