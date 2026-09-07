@@ -5,12 +5,36 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "deploy"))
-from compact_cutover_driver import HostDriver, validate_cli_log, external_compose, completed_export, validate_controller, retain_image, recovery_image
+from compact_cutover_driver import HostDriver, validate_cli_log, external_compose, completed_export, validate_controller, retain_image, recovery_image, restore_private_run_mode
 from compact_cutover_database import CommandRunner
 from compact_cutover_state import CutoverError
 
 
 class DriverTests(unittest.TestCase):
+    def test_recovery_repairs_only_owned_readable_run_under_private_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = root / "compact-fixture-1234"
+            run.mkdir(mode=0o755)
+            for action in ("prepare", "accept"):
+                with self.assertRaises(CutoverError):
+                    restore_private_run_mode(run, action)
+            self.assertTrue(restore_private_run_mode(run, "recover"))
+            self.assertEqual(run.stat().st_mode & 0o777, 0o700)
+            self.assertFalse(restore_private_run_mode(run, "recover"))
+            run.chmod(0o777)
+            with self.assertRaises(CutoverError):
+                restore_private_run_mode(run, "recover")
+            run.chmod(0o755)
+            root.chmod(0o755)
+            with self.assertRaises(CutoverError):
+                restore_private_run_mode(run, "recover")
+            root.chmod(0o700)
+            link = root / "compact-link-1234"
+            link.symlink_to(run)
+            with self.assertRaises(CutoverError):
+                restore_private_run_mode(link, "recover")
+
     def test_retained_image_requires_archive_restore_identity(self):
         image = "sha256:" + "a" * 64
         commands = []

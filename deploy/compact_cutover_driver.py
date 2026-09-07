@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import sys
 import time
 import traceback
@@ -24,6 +25,26 @@ from compact_cutover_state import CutoverError, Journal, accept, canonical, prep
 APP = Path("/srv/tasktopia/app")
 STATIC = Path("/srv/tasktopia/static")
 ROLES = ("app", "mcp", "world")
+
+
+def restore_private_run_mode(directory, action):
+    """Tighten the known static-publisher mode error only for recovery.
+
+    The private parent has prevented access throughout; normal plan, journal
+    and backup verification still runs. No contents are trusted or changed.
+    """
+    info = directory.lstat()
+    require(stat.S_ISDIR(info.st_mode) and info.st_uid == os.getuid(), "Unsafe run directory")
+    if info.st_mode & 0o077 == 0:
+        return False
+    parent = directory.parent.lstat()
+    require(action == "recover" and stat.S_IMODE(info.st_mode) == 0o755
+            and stat.S_ISDIR(parent.st_mode) and parent.st_uid == os.getuid()
+            and parent.st_mode & 0o077 == 0, "Run permissions require investigation")
+    directory.chmod(0o700)
+    fsync_directory(directory)
+    fsync_directory(directory.parent)
+    return True
 
 
 def completed_export(info, image):
@@ -495,7 +516,11 @@ def main():
             require(not directory.exists(), "Run already exists; forward resume is forbidden")
             directory.mkdir(mode=0o700)
         require(directory.is_dir() and not directory.is_symlink(), "Missing or unsafe run directory")
+        permissions_repaired = restore_private_run_mode(directory, args.action)
         runner = CommandRunner(directory)
+        if permissions_repaired:
+            runner.publish_json("private-mode-recovery-" + uuid.uuid4().hex + ".json",
+                                {"action": args.action, "previousMode": "0755", "mode": "0700"})
         head = runner.run(["git", "-C", str(APP), "rev-parse", "HEAD"]).decode().strip()
         require(head == revision, "Checkout does not match approved revision")
         require(not runner.run(["git", "-C", str(APP), "status", "--porcelain", "--untracked-files=no"]).strip(), "Dirty deployment checkout")
