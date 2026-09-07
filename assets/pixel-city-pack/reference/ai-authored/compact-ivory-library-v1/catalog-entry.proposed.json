@@ -1,0 +1,28 @@
+{
+  "key": "compact-ivory-library-v1",
+  "label": "Светлый дом с библиотекой",
+  "category": "HOUSE",
+  "rarity": "COMMON",
+  "spriteSize": [48, 48],
+  "footprintCells": [6, 6],
+  "anchorPx": [24, 48],
+  "platform": "STONE",
+  "estimates": [1, 2, 3, 6],
+  "tags": ["residential", "low-rise-residential", "compact-building"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side": "S", "offset": 3}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-ivory-library-v1/sources/stage-3.png",
+    "ai-authored/compact-ivory-library-v1/sources/stage-4.png",
+    "ai-authored/compact-ivory-library-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "bed4b128ea8bec66183c87cd572a53c1661c53bff0377844159b0a8ec8b74500",
+    "9e3c332891314b475c89d2e88b72dc699b06178cdd32c8de99e77992608f8de9",
+    "9112c57e86a3687f8422fd5397e9698e5d2045a1e68b66fca98e96fb27110bdc"
+  ],
+  "reviewed": true
+}

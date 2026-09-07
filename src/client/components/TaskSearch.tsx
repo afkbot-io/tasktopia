@@ -16,16 +16,18 @@ export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDt
   const requestRef = useRef(0);
 
   useEffect(() => {
+    const requestId = ++requestRef.current;
+    const controller = new AbortController();
     const text = query.trim().replace(/^#/, "");
     if (text.length < 1) {
       setResults([]);
       setOpen(false);
+      setLoading(false);
       return;
     }
-    const requestId = ++requestRef.current;
     const timer = setTimeout(() => {
       setLoading(true);
-      void api<TaskSearchResultDto[]>(`/api/tasks/search?q=${encodeURIComponent(text)}&limit=10`)
+      void api<TaskSearchResultDto[]>(`/api/tasks/search?q=${encodeURIComponent(text)}&limit=10`, { signal: controller.signal })
         .then((found) => {
           if (requestRef.current !== requestId) return;
           setResults(found);
@@ -34,7 +36,7 @@ export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDt
         .catch(() => { if (requestRef.current === requestId) setResults([]); })
         .finally(() => { if (requestRef.current === requestId) setLoading(false); });
     }, 220);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [query]);
 
   useEffect(() => {

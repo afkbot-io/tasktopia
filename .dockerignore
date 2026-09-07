@@ -4,7 +4,18 @@ dist
 data
 .git
 .env
+**/.env
+**/.env.*
+!**/.env*.example
 .agent
+.agents
+.codex
+.repowise
+tmp
+docs/evidence
+**/__pycache__
+*.dump
+*.heapsnapshot
 screenshots
 test-results
 playwright-report
@@ -15,7 +26,16 @@ assets/*
 !assets/pixel-city-pack/
 assets/pixel-city-pack/*
 !assets/pixel-city-pack/manifest.json
+!assets/pixel-city-pack/micro-ambient-manifest.json
 !assets/pixel-city-pack/catalog/
 !assets/pixel-city-pack/catalog/**
+# Keep only the geometry JSON imported by the build's test typecheck.
+!assets/pixel-city-pack/reference/
+assets/pixel-city-pack/reference/*
+!assets/pixel-city-pack/reference/ai-authored/
+assets/pixel-city-pack/reference/ai-authored/*
+!assets/pixel-city-pack/reference/ai-authored/compact-long-slate-wing-v1/
+assets/pixel-city-pack/reference/ai-authored/compact-long-slate-wing-v1/*
+!assets/pixel-city-pack/reference/ai-authored/compact-long-slate-wing-v1/geometry.json
 *.log
 .DS_Store

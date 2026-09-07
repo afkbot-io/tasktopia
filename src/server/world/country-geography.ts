@@ -1,4 +1,4 @@
-import type { PlanetTerrainCell, PlanetTerrainKind, ProjectedPlanetAtlas } from "../../shared/planet-atlas";
+import { projectPlanetWorldPoint, type PlanetPoint, type PlanetTerrainCell, type PlanetTerrainKind, type ProjectedPlanetAtlas, type ProjectedPlanetCountry } from "../../shared/planet-atlas";
 
 export const COUNTRY_GEOGRAPHY_COLUMNS = 36;
 export const COUNTRY_GEOGRAPHY_ROWS = 22;
@@ -33,6 +33,29 @@ export type CountryGeography = {
 };
 
 export type CountryCityAnchor = { id: string; atlasCenter: { x: number; y: number } };
+
+/** One cached transform for cities, airports and canonical route waypoints. */
+export function createCountryWorldProjection(geography: CountryGeography, country: ProjectedPlanetCountry) {
+  const macroRects = new Map<string, { minX: number; minY: number; maxX: number; maxY: number }>();
+  for (const cell of geography.cells) {
+    if (!cell.macroCellId) continue;
+    const rect = macroRects.get(cell.macroCellId) ?? { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+    rect.minX = Math.min(rect.minX, cell.x); rect.minY = Math.min(rect.minY, cell.y);
+    rect.maxX = Math.max(rect.maxX, cell.x + geography.grid.cellSize);
+    rect.maxY = Math.max(rect.maxY, cell.y + geography.grid.cellSize);
+    macroRects.set(cell.macroCellId, rect);
+  }
+  return (source: PlanetPoint): { point: PlanetPoint; macroCellId: string; macro: { q: number; r: number } } | null => {
+    if (!country.cells.length) return null;
+    const projected = projectPlanetWorldPoint(country, source, country.cells, .5);
+    const rect = macroRects.get(projected.cell.id);
+    if (!rect) return null;
+    return { point: {
+      x: rect.minX + (projected.point.x - projected.cell.q) * (rect.maxX - rect.minX),
+      y: rect.minY + (projected.point.y - projected.cell.r) * (rect.maxY - rect.minY),
+    }, macroCellId: projected.cell.id, macro: { q: projected.cell.q, r: projected.cell.r } };
+  };
+}
 
 /** Select one country's planet cells plus the immediately visible world ring. */
 export function countryMacroContext(atlas: ProjectedPlanetAtlas, countryId: string, padding = 1): CountryMacroCell[] {
@@ -70,7 +93,7 @@ export function snapCountryCitiesToLand(
   geography: CountryGeography,
   cities: readonly CountryCityAnchor[],
 ): Map<string, { x: number; y: number }> {
-  const available = geography.cells.filter((cell) => cell.land && cell.terrain !== "coast");
+  const available = geography.cells.filter((cell) => cell.selected && cell.land && cell.terrain !== "coast");
   const used = new Set<string>();
   const result = new Map<string, { x: number; y: number }>();
   for (const city of cities) {
@@ -96,33 +119,10 @@ export function snapCountryCitiesToLand(
   return result;
 }
 
-function hashText(value: string, seed: number): number {
-  let hash = seed >>> 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16_777_619);
-  }
-  return hash >>> 0;
-}
-
-function detailedTerrain(base: PlanetTerrainKind, value: number): PlanetTerrainKind {
-  const percentile = value % 100;
-  switch (base) {
-    case "mountain": return percentile < 72 ? "mountain" : percentile < 90 ? "hill" : "stone";
-    case "hill": return percentile < 66 ? "hill" : percentile < 84 ? "stone" : "grass";
-    case "forest": return percentile < 80 ? "forest" : percentile < 95 ? "grass" : "meadow";
-    case "river": return percentile < 76 ? "river" : percentile < 91 ? "grass" : "forest";
-    case "stone": return percentile < 76 ? "stone" : percentile < 90 ? "hill" : "grass";
-    case "coast": return percentile < 70 ? "coast" : "grass";
-    case "meadow": return percentile < 78 ? "meadow" : "grass";
-    default: return percentile < 82 ? "grass" : percentile < 94 ? "meadow" : "forest";
-  }
-}
-
 /**
  * Expands the planet's coarse square cells into the country's denser square
- * grid. The macro cell owns the local terrain family, while deterministic
- * sub-cell noise adds detail without moving the feature to another region.
+ * grid. Geography is inherited, never rerolled for the selected country.
+ * The renderer's texture variations provide detail within each terrain family.
  */
 export function buildCountryGeography(input: {
   countryId: string;
@@ -154,21 +154,13 @@ export function buildCountryGeography(input: {
     }
   }
 
-  const isLandMacro = (cell: CountryMacroCell | undefined) => Boolean(cell?.ownerCountryId);
-  const isWaterMacro = (cell: CountryMacroCell | undefined) => cell?.terrain === "deep_water" || cell?.terrain === "shallow_water" || cell?.terrain === "coast";
   const cells: CountryGeographyCell[] = [];
   for (let row = 0; row < COUNTRY_GEOGRAPHY_ROWS; row += 1) {
     for (let column = 0; column < COUNTRY_GEOGRAPHY_COLUMNS; column += 1) {
       const owner = owners.get(`${column}:${row}`);
-      const land = isLandMacro(owner);
-      const coast = land && countryGridNeighbors({ column, row })
-        .some((neighbor) => isWaterMacro(owners.get(`${neighbor.column}:${neighbor.row}`)));
-      const value = hashText(`${input.countryId}:${column}:${row}`, input.seed);
-      const terrain: CountryTerrainKind = !owner
-        ? "unknown"
-        : land
-          ? coast ? "coast" : detailedTerrain(owner.terrain as PlanetTerrainKind, value)
-          : owner.terrain;
+      const terrain: CountryTerrainKind = owner?.terrain ?? "unknown";
+      const land = !["deep_water", "shallow_water", "river", "unknown"].includes(terrain);
+      const coast = terrain === "coast";
       cells.push({
         id: `${input.countryId}:country-cell:${column}:${row}`,
         column,

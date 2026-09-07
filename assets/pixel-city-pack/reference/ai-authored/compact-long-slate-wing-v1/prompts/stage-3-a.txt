@@ -1,0 +1,11 @@
+Derive ONLY construction STAGE3 from image1, using image2 solely as the immutable finished-building geometry reference. This is the SAME long north-south residential wing, NOT a different shape or a smaller building. Keep exact887x1774 canvas and x23..863/y23..1750 source footprint, native48x96 canvas occupied47x96, bottom anchor24,96 and south entranceoffset3. Same strict high frontal-top camera: every depth wall perfectly vertical, cross-wall/floor edge horizontal, no vanishing point or taper.
+
+Stage3 is genuinely about HALF assembled:
+- Remove the ENTIRE northern slate roof, leaving0%roof, and remove all finished skylights/vents/roof equipment.
+- Extend the existing opaque room-floor plan into the newly opened north half. Keep the existing south six rooms, their center corridor and cross-wall alignment. In the north show additional plainly separated rooms with raised short sandstone/olive wall faces at the SAME wall scale; some partitions and upper courses are incomplete. All indoor floors are opaque warm shaded earth/concrete, not magenta/transparent.
+- Dismantle most of the UPPER FRONTAGE course above the ground floor: remove allseven upper window apertures and most continuous upper masonry, leaving a few clearly unfinished low pier/stub sections and exposed room floors behind. Do not show a nearly finished two-storey facade merely with roof removed. Physical room depth/lot stays full-sized.
+- KEEP the lower six dark window apertures in exactly their image1 places and sizes(native rows91–92, each2–3px by2px). Do not shorten them.
+- KEEP exact central lower entrance: native darkleaf x22..24,y92..94 (3x3), sandstoneframe x21..25,y91..95 (5x5), header and bottom threshold1px. Keep foundation rows94/95 and full-width bottom baseline EXACT. Do not make a taller doorway or add an outside step.
+- Inside only: sparse brick piles, one or two worktables, a small tool or sand pile. No completed furniture/greenery, people, fence, crane, ground apron or extras outside the footprint.
+
+Use same muted warm olive/sandstone palette, coarse readable cartoon-pixel clusters. Uniform magenta exterior. No isometric rotation, no leaning sidewalls, no transparency or checkerboard inside, no black outline/baseline. Preserve source registration, facade widths and window/door scale. Output one separate stage3 source.

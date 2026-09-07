@@ -1,0 +1,1232 @@
+{
+  "schemaVersion": 1,
+  "visualProfile": "TASKTOPIA_MICRO_TOPDOWN_CARTOON_V1",
+  "cellSizePx": 8,
+  "artSource": "AI_AUTHORED",
+  "sources": {
+    "cars": {
+      "path": "reference/ai-authored/micro-ambient-v1/sources/cars.png",
+      "sha256": "1a03955a49b400bac169fc5d832ee1ddc230340fa15569bde927246b2c4a7a5c",
+      "grid": [
+        4,
+        4
+      ]
+    },
+    "people": {
+      "path": "reference/ai-authored/micro-ambient-v1/sources/people-v2.png",
+      "sha256": "bba0f57e1884fabbd553ecd0f82ce2d86a8ef240706e999441b19d9e634de52b",
+      "grid": [
+        2,
+        4
+      ],
+      "revision": 2,
+      "provenance": "reference/ai-authored/micro-ambient-v1/people-v2-provenance.json"
+    },
+    "animals": {
+      "path": "reference/ai-authored/micro-ambient-v1/sources/animals.png",
+      "sha256": "b6d6be38648b71a240fc1019d7760334f7eed3f95f7f92ec676b4f18b3097761",
+      "grid": [
+        4,
+        2
+      ]
+    },
+    "aircraft": {
+      "path": "reference/ai-authored/micro-ambient-v1/sources/aircraft.png",
+      "sha256": "249d483594d7f407c78781a4c2022c4e8db0e10a4b0e4c9111a5e32f5533ac67",
+      "grid": [
+        2,
+        2
+      ]
+    }
+  },
+  "sprites": {
+    "micro-car-blue-north": {
+      "path": "micro-ambient/micro-car-blue-north.png",
+      "kind": "car",
+      "variant": "blue",
+      "direction": "north",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "sourceCellBounds": [
+        0,
+        0,
+        318,
+        309
+      ],
+      "sha256": "50142c815a019b08158218f99b40ba2280b2c7b27754b078f23f9eec18fd3299"
+    },
+    "micro-car-red-north": {
+      "path": "micro-ambient/micro-car-red-north.png",
+      "kind": "car",
+      "variant": "red",
+      "direction": "north",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "sourceCellBounds": [
+        318,
+        0,
+        637,
+        309
+      ],
+      "sha256": "36985312030ed5c080f3685513e40521a8e3b3ba72d575737fa4b08c4ea3927c"
+    },
+    "micro-car-taxi-north": {
+      "path": "micro-ambient/micro-car-taxi-north.png",
+      "kind": "car",
+      "variant": "taxi",
+      "direction": "north",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        2,
+        0
+      ],
+      "sourceCellBounds": [
+        637,
+        0,
+        956,
+        309
+      ],
+      "sha256": "d03c9c661b75a0521bf319779b897b4c043f447887ebd233332abd031e155918"
+    },
+    "micro-car-van-north": {
+      "path": "micro-ambient/micro-car-van-north.png",
+      "kind": "car",
+      "variant": "van",
+      "direction": "north",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        3,
+        0
+      ],
+      "sourceCellBounds": [
+        956,
+        0,
+        1274,
+        309
+      ],
+      "sha256": "3ce8136c6f355979dc182f272450f99538b9e6014c1c645fd95722737ec565ec"
+    },
+    "micro-car-blue-east": {
+      "path": "micro-ambient/micro-car-blue-east.png",
+      "kind": "car",
+      "variant": "blue",
+      "direction": "east",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "sourceCellBounds": [
+        0,
+        309,
+        318,
+        618
+      ],
+      "sha256": "69ba74a4f58eebc2df0925318967e4abb5382c953c300695f50e087d8663632c"
+    },
+    "micro-car-red-east": {
+      "path": "micro-ambient/micro-car-red-east.png",
+      "kind": "car",
+      "variant": "red",
+      "direction": "east",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "sourceCellBounds": [
+        318,
+        309,
+        637,
+        618
+      ],
+      "sha256": "68ab2161404ff4b0cb4bc549ead589dd4d864385ca9249bf2fcd0e4a9fa6e3a9"
+    },
+    "micro-car-taxi-east": {
+      "path": "micro-ambient/micro-car-taxi-east.png",
+      "kind": "car",
+      "variant": "taxi",
+      "direction": "east",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        2,
+        1
+      ],
+      "sourceCellBounds": [
+        637,
+        309,
+        956,
+        618
+      ],
+      "sha256": "593e91069d4bb3ecfbc0088f7c4cfa9ddcd60378e40fb775f03f622857815c6e"
+    },
+    "micro-car-van-east": {
+      "path": "micro-ambient/micro-car-van-east.png",
+      "kind": "car",
+      "variant": "van",
+      "direction": "east",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        3,
+        1
+      ],
+      "sourceCellBounds": [
+        956,
+        309,
+        1274,
+        618
+      ],
+      "sha256": "2e9093007a292abc1bdcc81d96b8f9a3061a0c32178b7723e386035f32625395"
+    },
+    "micro-car-blue-south": {
+      "path": "micro-ambient/micro-car-blue-south.png",
+      "kind": "car",
+      "variant": "blue",
+      "direction": "south",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        0,
+        2
+      ],
+      "sourceCellBounds": [
+        0,
+        618,
+        318,
+        926
+      ],
+      "sha256": "1c74d148ed348c7e447858d2f92418837b16809c2aac445cfb31ed53f5999196"
+    },
+    "micro-car-red-south": {
+      "path": "micro-ambient/micro-car-red-south.png",
+      "kind": "car",
+      "variant": "red",
+      "direction": "south",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        1,
+        2
+      ],
+      "sourceCellBounds": [
+        318,
+        618,
+        637,
+        926
+      ],
+      "sha256": "ec1f60dd4034f3a9ef7591ce934e3a02eb6d301f62b5a08b09f97275cd5b78bf"
+    },
+    "micro-car-taxi-south": {
+      "path": "micro-ambient/micro-car-taxi-south.png",
+      "kind": "car",
+      "variant": "taxi",
+      "direction": "south",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        2,
+        2
+      ],
+      "sourceCellBounds": [
+        637,
+        618,
+        956,
+        926
+      ],
+      "sha256": "2a380f72f5090fae68ce1f52b2cf552127fc27455b1efc5bede786110759370c"
+    },
+    "micro-car-van-south": {
+      "path": "micro-ambient/micro-car-van-south.png",
+      "kind": "car",
+      "variant": "van",
+      "direction": "south",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        3,
+        2
+      ],
+      "sourceCellBounds": [
+        956,
+        618,
+        1274,
+        926
+      ],
+      "sha256": "f999f9698ac9d84ffda2efafce7d80db763f21477af68f6855e0589182dca49a"
+    },
+    "micro-car-blue-west": {
+      "path": "micro-ambient/micro-car-blue-west.png",
+      "kind": "car",
+      "variant": "blue",
+      "direction": "west",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        0,
+        3
+      ],
+      "sourceCellBounds": [
+        0,
+        926,
+        318,
+        1235
+      ],
+      "sha256": "f943422a557ee8c11ef1228bbaf79eef2e1628378b1b5a1e89c321b3a387e960"
+    },
+    "micro-car-red-west": {
+      "path": "micro-ambient/micro-car-red-west.png",
+      "kind": "car",
+      "variant": "red",
+      "direction": "west",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        1,
+        3
+      ],
+      "sourceCellBounds": [
+        318,
+        926,
+        637,
+        1235
+      ],
+      "sha256": "d524c80ac0d63a4ff893eadaddfbe18f9675150824ffa00caad154fddcfd2435"
+    },
+    "micro-car-taxi-west": {
+      "path": "micro-ambient/micro-car-taxi-west.png",
+      "kind": "car",
+      "variant": "taxi",
+      "direction": "west",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        2,
+        3
+      ],
+      "sourceCellBounds": [
+        637,
+        926,
+        956,
+        1235
+      ],
+      "sha256": "117cf36f911a5897a588182b039a87818d6bce69f79c63e92ec5b4c58364d7ed"
+    },
+    "micro-car-van-west": {
+      "path": "micro-ambient/micro-car-van-west.png",
+      "kind": "car",
+      "variant": "van",
+      "direction": "west",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "cars",
+      "sourceCell": [
+        3,
+        3
+      ],
+      "sourceCellBounds": [
+        956,
+        926,
+        1274,
+        1235
+      ],
+      "sha256": "c85f3f485aa969f14779d3b81d6fc35aa5037082225e1f5c178ec9cde42a3617"
+    },
+    "micro-person-ochre-north": {
+      "path": "micro-ambient/micro-person-ochre-north.png",
+      "kind": "person",
+      "variant": "ochre",
+      "direction": "north",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "sourceCellBounds": [
+        0,
+        0,
+        256,
+        288
+      ],
+      "sha256": "2b735250a448f37082b1d06a525bf3317dc38e1ec5e3426a4472dbcd6e23dd99"
+    },
+    "micro-person-teal-north": {
+      "path": "micro-ambient/micro-person-teal-north.png",
+      "kind": "person",
+      "variant": "teal",
+      "direction": "north",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "sourceCellBounds": [
+        256,
+        0,
+        512,
+        288
+      ],
+      "sha256": "e4a74067adc98a09647effe0430c9dec33ce8e30adfed1c898f064a440698551"
+    },
+    "micro-person-ochre-east": {
+      "path": "micro-ambient/micro-person-ochre-east.png",
+      "kind": "person",
+      "variant": "ochre",
+      "direction": "east",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "sourceCellBounds": [
+        0,
+        288,
+        256,
+        576
+      ],
+      "sha256": "1bdbfa3a664b11946cf68f57a32ad869a46a314329a3c701f79a0d1b5a53e5eb"
+    },
+    "micro-person-teal-east": {
+      "path": "micro-ambient/micro-person-teal-east.png",
+      "kind": "person",
+      "variant": "teal",
+      "direction": "east",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "sourceCellBounds": [
+        256,
+        288,
+        512,
+        576
+      ],
+      "sha256": "54f4eaa92363b7575a16dd3d333c7e22baa8749c4bbcd0dd4638ac7960c1d753"
+    },
+    "micro-person-ochre-south": {
+      "path": "micro-ambient/micro-person-ochre-south.png",
+      "kind": "person",
+      "variant": "ochre",
+      "direction": "south",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        0,
+        2
+      ],
+      "sourceCellBounds": [
+        0,
+        576,
+        256,
+        864
+      ],
+      "sha256": "1b8506ac656c49fb367efd82974f2dc12663204b5ef65ddbce47f5fd81978348"
+    },
+    "micro-person-teal-south": {
+      "path": "micro-ambient/micro-person-teal-south.png",
+      "kind": "person",
+      "variant": "teal",
+      "direction": "south",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        1,
+        2
+      ],
+      "sourceCellBounds": [
+        256,
+        576,
+        512,
+        864
+      ],
+      "sha256": "cfd48742abf0e6416848f4c92fd331b961fbbc615bf131212844cdeb3a48c379"
+    },
+    "micro-person-ochre-west": {
+      "path": "micro-ambient/micro-person-ochre-west.png",
+      "kind": "person",
+      "variant": "ochre",
+      "direction": "west",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        0,
+        3
+      ],
+      "sourceCellBounds": [
+        0,
+        864,
+        256,
+        1152
+      ],
+      "sha256": "fee438218661946bc3f1440cb7a75aa9d7053e1bbad9a8319f8462850998f336"
+    },
+    "micro-person-teal-west": {
+      "path": "micro-ambient/micro-person-teal-west.png",
+      "kind": "person",
+      "variant": "teal",
+      "direction": "west",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
+      ],
+      "frameCount": 1,
+      "sourceFamily": "people",
+      "sourceCell": [
+        1,
+        3
+      ],
+      "sourceCellBounds": [
+        256,
+        864,
+        512,
+        1152
+      ],
+      "sha256": "4f7c575eba131c7d5a4ccbb4f0542a731ca82636481479a98536cae7e8c5c08e"
+    },
+    "micro-animal-fox-static": {
+      "path": "micro-ambient/micro-animal-fox-static.png",
+      "kind": "animal",
+      "variant": "fox",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "sourceCellBounds": [
+        0,
+        0,
+        384,
+        512
+      ],
+      "sha256": "50cc6a449a07cdafea99113fefdbcbd3e158e3d15382a6a656c9434701821b2a"
+    },
+    "micro-animal-deer-static": {
+      "path": "micro-ambient/micro-animal-deer-static.png",
+      "kind": "animal",
+      "variant": "deer",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "sourceCellBounds": [
+        384,
+        0,
+        768,
+        512
+      ],
+      "sha256": "6dd317397c314995ffc79f2dab720193ea59aa3e535ab5b3764812e5a6e1ad71"
+    },
+    "micro-animal-rabbit-static": {
+      "path": "micro-ambient/micro-animal-rabbit-static.png",
+      "kind": "animal",
+      "variant": "rabbit",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        2,
+        0
+      ],
+      "sourceCellBounds": [
+        768,
+        0,
+        1152,
+        512
+      ],
+      "sha256": "d62ca7b4459363a283afa8449f495ea09569955eb62248ceaa4ab9e0590525b6"
+    },
+    "micro-animal-boar-static": {
+      "path": "micro-ambient/micro-animal-boar-static.png",
+      "kind": "animal",
+      "variant": "boar",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        3,
+        0
+      ],
+      "sourceCellBounds": [
+        1152,
+        0,
+        1536,
+        512
+      ],
+      "sha256": "503a929f27c26d3326c32126c8fb88300943fc6e7c04f1e43d87b2fbd708d849"
+    },
+    "micro-animal-duck-static": {
+      "path": "micro-ambient/micro-animal-duck-static.png",
+      "kind": "animal",
+      "variant": "duck",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "sourceCellBounds": [
+        0,
+        512,
+        384,
+        1024
+      ],
+      "sha256": "afdb7d49b874d9cfbb3ae3864b4fa4f9b3e9424f5ea7a0c680c4dd08c9c46890"
+    },
+    "micro-animal-sheep-static": {
+      "path": "micro-ambient/micro-animal-sheep-static.png",
+      "kind": "animal",
+      "variant": "sheep",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "sourceCellBounds": [
+        384,
+        512,
+        768,
+        1024
+      ],
+      "sha256": "c262a4cb3c69d62f78dd89019d80494f0e7d81a89e7285ed1fb8de3a0aea0463"
+    },
+    "micro-animal-dog-static": {
+      "path": "micro-ambient/micro-animal-dog-static.png",
+      "kind": "animal",
+      "variant": "dog",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        2,
+        1
+      ],
+      "sourceCellBounds": [
+        768,
+        512,
+        1152,
+        1024
+      ],
+      "sha256": "45898e534a149e50500f3ce913b38f54184309b523e4bcbc49d48cc6d73bb281"
+    },
+    "micro-animal-cat-static": {
+      "path": "micro-ambient/micro-animal-cat-static.png",
+      "kind": "animal",
+      "variant": "cat",
+      "direction": "static",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        4
+      ],
+      "opaqueBounds": [
+        1,
+        1,
+        6,
+        7
+      ],
+      "frameCount": 1,
+      "sourceFamily": "animals",
+      "sourceCell": [
+        3,
+        1
+      ],
+      "sourceCellBounds": [
+        1152,
+        512,
+        1536,
+        1024
+      ],
+      "sha256": "c550e62dc59f430bb3a83fa18f25d8994c0e31ed038cdd71866d3d13fd4132a0"
+    },
+    "micro-aircraft-regional-north": {
+      "path": "micro-ambient/micro-aircraft-regional-north.png",
+      "kind": "aircraft",
+      "variant": "regional",
+      "direction": "north",
+      "size": [
+        16,
+        16
+      ],
+      "anchorPx": [
+        8,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        14,
+        13
+      ],
+      "frameCount": 1,
+      "sourceFamily": "aircraft",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "sourceCellBounds": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "sha256": "ed36e783a9c3b574283c775cbb153b260e96bf8209e8b05695b8eb118eed7c75"
+    },
+    "micro-aircraft-regional-east": {
+      "path": "micro-ambient/micro-aircraft-regional-east.png",
+      "kind": "aircraft",
+      "variant": "regional",
+      "direction": "east",
+      "size": [
+        16,
+        16
+      ],
+      "anchorPx": [
+        8,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        13,
+        14
+      ],
+      "frameCount": 1,
+      "sourceFamily": "aircraft",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "sourceCellBounds": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "sha256": "52cdc47a345656b7cdc2ab3b4216173e36e6f14a644b00eb224a1acb79718c52"
+    },
+    "micro-aircraft-regional-south": {
+      "path": "micro-ambient/micro-aircraft-regional-south.png",
+      "kind": "aircraft",
+      "variant": "regional",
+      "direction": "south",
+      "size": [
+        16,
+        16
+      ],
+      "anchorPx": [
+        8,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        14,
+        13
+      ],
+      "frameCount": 1,
+      "sourceFamily": "aircraft",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "sourceCellBounds": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "sha256": "5a8f1dfd8bc1b9aad17dbe6c6b98ffd5951ba576bd5d514f9ff8ca2480eddf2e"
+    },
+    "micro-aircraft-regional-west": {
+      "path": "micro-ambient/micro-aircraft-regional-west.png",
+      "kind": "aircraft",
+      "variant": "regional",
+      "direction": "west",
+      "size": [
+        16,
+        16
+      ],
+      "anchorPx": [
+        8,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        13,
+        14
+      ],
+      "frameCount": 1,
+      "sourceFamily": "aircraft",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "sourceCellBounds": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "sha256": "a4c3ed5d522b600e4ef83b5b0549a9db66e0ec04e8c06a91813e81a60a724d88"
+    }
+  }
+}

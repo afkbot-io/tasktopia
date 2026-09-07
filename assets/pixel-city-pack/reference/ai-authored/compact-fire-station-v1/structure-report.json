@@ -1,0 +1,98 @@
+{
+  "key": "compact-fire-station-v1",
+  "regions": {
+    "doorLeafBoundsPx": [
+      22,
+      28,
+      26,
+      32
+    ],
+    "doorFrameBoundsPx": [
+      21,
+      27,
+      27,
+      32
+    ],
+    "roofRegionPx": [
+      1,
+      0,
+      47,
+      22
+    ],
+    "facadeRegionPx": [
+      1,
+      22,
+      47,
+      32
+    ],
+    "stage4RetainedRoofPlanePx": [
+      2,
+      1,
+      21,
+      21
+    ],
+    "stage4OpenRoomRegionPx": [
+      22,
+      1,
+      46,
+      21
+    ],
+    "stage3OpenRoomRegionPx": [
+      2,
+      1,
+      46,
+      21
+    ],
+    "sharedRoomPartitionSearchBandsPx": [
+      [
+        20,
+        2,
+        23,
+        19
+      ],
+      [
+        28,
+        2,
+        31,
+        8
+      ]
+    ]
+  },
+  "stages": {
+    "3": {
+      "doorLeafBoundsPx": [
+        22,
+        28,
+        26,
+        32
+      ],
+      "doorDarkOpaquePixels": 16,
+      "roofInstalledFractionVisuallyAnnotated": 0,
+      "opaqueFullDepthInteriorOrRoof": true
+    },
+    "4": {
+      "doorLeafBoundsPx": [
+        22,
+        28,
+        26,
+        32
+      ],
+      "doorDarkOpaquePixels": 16,
+      "roofInstalledFractionVisuallyAnnotated": 0.43,
+      "opaqueFullDepthInteriorOrRoof": true
+    },
+    "5": {
+      "doorLeafBoundsPx": [
+        22,
+        28,
+        26,
+        32
+      ],
+      "doorDarkOpaquePixels": 16,
+      "roofInstalledFractionVisuallyAnnotated": 1,
+      "opaqueFullDepthInteriorOrRoof": true
+    }
+  },
+  "errors": [],
+  "scope": "Door4x4 and full interior alpha are numerically checked on existing normalized bytes. Roof coverage and wall interpretation are manual stage-aware annotations; colored masks are verification overlays, never runtime architecture. Source frame, palette and structural foundation comparison remain in report.json."
+}

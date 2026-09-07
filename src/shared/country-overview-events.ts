@@ -6,7 +6,7 @@ const STRUCTURAL_EVENTS = new Set([
   "country.regenerated",
   "city.created", "city.updated", "city.renamed", "city.deleted",
   "district.created", "district.updated", "district.renamed", "district.deleted", "district.activated", "district.completed",
-  "task.created", "task.renamed", "task.deleted",
+  "task.created", "task.renamed", "task.deleted", "task.transferred",
   "archive.record_created", "archive.record_deleted",
 ]);
 
@@ -16,7 +16,7 @@ export function countryOverviewEventImpact(event: Pick<RealtimeEvent, "type" | "
     const changedFields = Array.isArray(event.payload.changedFields) ? event.payload.changedFields : [];
     return changedFields.some((field) => field === "title" || field === "priority") ? "STRUCTURE" : "NONE";
   }
-  if (event.type === "task.status_changed") return event.payload.groundChanged === true ? "STRUCTURE" : "TASK_PROGRESS";
+  if (event.type === "task.status_changed") return event.payload.groundChanged === true || event.payload.serviceRole === "AIRPORT" ? "STRUCTURE" : "TASK_PROGRESS";
   return "NONE";
 }
 

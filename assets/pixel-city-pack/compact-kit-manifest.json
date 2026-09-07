@@ -1,0 +1,148 @@
+{
+  "tiles": {
+    "compact-construction-foundation-a": {
+      "path": "tiles/compact-construction-foundation-a.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": false,
+      "materialRole": "CONSTRUCTION",
+      "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
+    },
+    "compact-construction-foundation-b": {
+      "path": "tiles/compact-construction-foundation-b.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": false,
+      "materialRole": "CONSTRUCTION",
+      "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
+    },
+    "compact-construction-foundation-c": {
+      "path": "tiles/compact-construction-foundation-c.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": false,
+      "materialRole": "CONSTRUCTION",
+      "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
+    },
+    "compact-construction-fence": {
+      "path": "tiles/compact-construction-fence.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "CONSTRUCTION_OVERLAY",
+      "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
+    },
+    "compact-construction-fence-corner": {
+      "path": "tiles/compact-construction-fence-corner.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "CONSTRUCTION_OVERLAY",
+      "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
+    },
+    "compact-construction-fence-post": {
+      "path": "tiles/compact-construction-fence-post.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "CONSTRUCTION_OVERLAY",
+      "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
+    },
+    "compact-construction-gate": {
+      "path": "tiles/compact-construction-gate.png",
+      "size": [
+        8,
+        8
+      ],
+      "overlay": true,
+      "materialRole": "CONSTRUCTION_OVERLAY",
+      "visualProfile": "TASKTOPIA_V5_CITY_MATERIALS_2026"
+    }
+  },
+  "props": {
+    "compact-construction-crane": {
+      "label": "Компактный строительный кран",
+      "path": "props/compact-construction-crane.png",
+      "size": [
+        16,
+        24
+      ],
+      "footprintCells": [
+        2,
+        2
+      ],
+      "anchorPx": [
+        8,
+        24
+      ],
+      "artSource": "PROCEDURAL_TILE_KIT",
+      "visualProfile": "TASKTOPIA_V7_COMPACT_CONSTRUCTION_45"
+    },
+    "compact-construction-hut": {
+      "label": "Компактная строительная бытовка",
+      "path": "props/compact-construction-hut.png",
+      "size": [
+        16,
+        8
+      ],
+      "footprintCells": [
+        2,
+        1
+      ],
+      "anchorPx": [
+        8,
+        8
+      ],
+      "artSource": "PROCEDURAL_TILE_KIT",
+      "visualProfile": "TASKTOPIA_V7_COMPACT_CONSTRUCTION_45"
+    },
+    "compact-construction-bricks": {
+      "label": "Поддон кирпича",
+      "path": "props/compact-construction-bricks.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "artSource": "PROCEDURAL_TILE_KIT",
+      "visualProfile": "TASKTOPIA_V7_COMPACT_CONSTRUCTION_45"
+    },
+    "compact-construction-sand": {
+      "label": "Строительный песок",
+      "path": "props/compact-construction-sand.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "artSource": "PROCEDURAL_TILE_KIT",
+      "visualProfile": "TASKTOPIA_V7_COMPACT_CONSTRUCTION_45"
+    }
+  }
+}

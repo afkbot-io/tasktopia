@@ -1,4 +1,4 @@
 interface:
   display_name: "Tasktopia Pixel City Art"
-  short_description: "Рисование и проверка пиксельных ассетов"
-  default_prompt: "Используй $tasktopia-pixel-city-art, чтобы создать или проверить ассеты активного Tasktopia Pixel City Pack."
+  short_description: "Мультяшные ассеты компактного города"
+  default_prompt: "Используй $tasktopia-pixel-city-art, чтобы создать или проверить компактные здания под высоким углом 45 градусов в стиле текущего ландшафта Tasktopia."

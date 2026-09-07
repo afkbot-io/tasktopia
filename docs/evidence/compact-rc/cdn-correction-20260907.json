@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "status": "verified locally; awaiting new-diff human review and managed release prerequisites",
+  "deployed": false,
+  "releaseTask": {"countryId":"4201d605-751a-469b-8d5f-a7e322a7ece1","taskId":"00d4e6a2-4abc-49df-8e14-8c77e93df2cd","taskNumber":14},
+  "source": {"files":509,"sha256":"cb9d8f77b4a705a92e09a4a9febeb935af3596da48d4ebe18afd6b0f0feb2486","excludedPythonCacheFiles":10},
+  "correctedImage": {"platform":"linux/amd64","staticOrigin":"https://store.tasktopia.online","id":"sha256:6ab064c3ccbed67da72f7c25e6060b96c1487cc9ee6bc6b7df2142317510a968"},
+  "sameOriginBuild": {"files":601,"sha256":"69a81c870ec224c003ef3e6131a17e85d774fb2730e407006d5a069e61165b60","note":"Not the CDN artifact digest"},
+  "verification": {"affectedTests":{"files":5,"passed":63},"cleanCheckoutLint":"passed","typescript":"passed","sameOriginBuild":"passed","amd64CdnBuild":"passed","independentReview":"no actionable finding"},
+  "browser": {"browser":"Chromium151.0.7922.34","startedAt":"2026-09-07T07:33:50.847Z","finishedAt":"2026-09-07T07:33:57.881Z","exitCode":0,"fixtureTasks":66,"workersCreated":4,"workerReplies":9,"workerErrors":0,"offlineReactShell":true,"offlineScriptStyleFailures":0,"publicCacheEntries":81,"privateCacheEntries":0,"unexpectedExternalRequests":0,"domainCommands":0,"reportSha256":"86e57de5905d4ee9fdae29347a668be65c6cc2bf4fb21b46691b8dec3c861a41","harnessSha256":"eff402b6335a7d5fe348d95e9bcd9463961b975c95a4d25a81d1255c9389e487"},
+  "notProven": ["real production CDN availability","physical-device push","upgrade from an existing installed PWA","production backup/restore","merged immutable Git revision","Builder release validation ready=true","production deployment and FORCE regeneration"],
+  "limits": ["API/private data and full game art remain unavailable offline; only public application shell is guaranteed","original1088tests and art/scale evidence are prior unchanged-boundary evidence, not a rerun on this six-file patch","full dirty-worktree lint fails on local ignored tmp scripts; unchanged full lint passes in clean curated candidate"]
+}

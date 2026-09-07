@@ -3,6 +3,15 @@
 - Статус: принято
 - Дата: 2026-08-26
 
+Примечание 2026-09-05: разделение renderer-ов и один scene request сохраняются,
+но конкретные v4 occupancy DTO, rolling-deploy fallback и состав миниатюр
+ниже — исторические решения, superseded compact/dense cutover.
+Действующие схемы: CITY v3, COUNTRY v5 (дом на квартал), PLANET v4
+(дом на район), завершённые task-backed аэропорты и viewport-safe минимум
+CITY по resident raster. Актуальные контракты и проверка:
+[COMPACT-BLOCK-CUTOVER](../COMPACT-BLOCK-CUTOVER.md),
+[map validation](../qa/COUNTRY-ATLAS-V6-VALIDATION.md).
+
 ## Контекст
 
 Страна строилась как подробный SVG из десятков тысяч поклеточных узлов, а город догружал viewport и отдельные чанки при перемещении. На контрольной стране это давало 26 817 DOM-элементов и long tasks до 159 ms; переход в город создавал несколько сетевых и materialization-волн. Одновременно держать подробные сцены соседних городов не требуется продуктовой моделью.

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { ChunkPayloadV1Dto, ChunkPayloadV2Dto } from "../../shared/contracts";
+import type { ChunkPayloadV2Dto } from "../../shared/contracts";
 
-export type ChunkPayloadHashInput = Omit<ChunkPayloadV1Dto, "contentHash"> | Omit<ChunkPayloadV2Dto, "contentHash">;
+export type ChunkPayloadHashInput = Omit<ChunkPayloadV2Dto, "contentHash">;
 
 /**
  * Validator for render-equivalent chunk content. The publication version is

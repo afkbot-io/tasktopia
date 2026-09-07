@@ -6,6 +6,9 @@ export type BlockWorldBounds = { minX: number; minY: number; maxX: number; maxY:
 export type BlockWorldLayoutStatus = "GENERATING" | "VALIDATING" | "READY" | "ACTIVE" | "SUPERSEDED" | "FAILED";
 export type BlockWorldKind = "RESIDENTIAL" | "CIVIC" | "PARK" | "WATER" | "INDUSTRIAL" | "TRANSPORT";
 export type ConstructionStage = 1 | 2 | 3 | 4 | 5;
+export type BlockSlotKind = "BUILDING" | "PARK" | "WATER" | "PARKING";
+export const BLOCK_SERVICE_ROLES = ["SHOP", "EDUCATION", "MEDICAL", "FIRE", "POLICE", "RAILWAY", "AIRPORT", "CIVIC"] as const;
+export type BlockServiceRole = typeof BLOCK_SERVICE_ROLES[number];
 
 export type DistrictLayoutV1 = {
   id: string;
@@ -38,6 +41,7 @@ export type TaskPlacementV1 = {
   buildingFamily: string;
   facadeVariant: string;
   constructionStage: ConstructionStage;
+  serviceRole?: BlockServiceRole;
 };
 
 export type SiteMarkerKind = "RUINED" | "RELOCATED";

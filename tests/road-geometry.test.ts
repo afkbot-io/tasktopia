@@ -1,27 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { Cell, RoadCellDto } from "../src/shared/contracts";
+import type { Cell } from "../src/shared/contracts";
 import { ROAD_WIDTH } from "../src/server/world/city-generation";
-import { roadBandRole, roadClassSupportsVehicle, roadMarkingAxis } from "../src/shared/road-profile";
-import { bridgeComponentsWithoutTwoLandPortals, centeredRoadOffsets, roadCorridorBlockers, stampRoadCorridor } from "../src/server/world/road-geometry";
-import { cellKey, orthogonalPath } from "../src/server/world/grid";
-
-function keys(cells: Cell[]): Set<string> {
-  return new Set(cells.map(cellKey));
-}
+import { roadBandRole, roadMarkingAxis } from "../src/shared/road-profile";
+import { centeredRoadOffsets } from "../src/server/world/road-geometry";
+import { cellKey } from "../src/server/world/grid";
 
 describe("canonical road geometry", () => {
-  it("detects a multi-lane bridge cap with only one land portal", () => {
-    const road = (x: number, y: number, structure: RoadCellDto["structure"]): RoadCellDto => ({
-      x, y, structure, roadClass: "COLLECTOR", mask: 0,
-    });
-    const westBank = [-1, 0, 1].map((y) => road(0, y, "ROAD"));
-    const bridge = [1, 2, 3].flatMap((x) => [-1, 0, 1].map((y) => road(x, y, "BRIDGE")));
-
-    expect(bridgeComponentsWithoutTwoLandPortals([...westBank, ...bridge])).toEqual([new Set(bridge.map(cellKey))]);
-    const eastBank = [-1, 0, 1].map((y) => road(4, y, "ROAD"));
-    expect(bridgeComponentsWithoutTwoLandPortals([...westBank, ...bridge, ...eastBank])).toEqual([]);
-  });
-
   it("uses two travel cells locally and a marked median in larger streets", () => {
     expect(ROAD_WIDTH.LOCAL).toBe(3);
     expect(ROAD_WIDTH.COLLECTOR).toBe(7);
@@ -33,21 +17,8 @@ describe("canonical road geometry", () => {
     expect(centeredRoadOffsets(7)).toEqual([-3, -2, -1, 0, 1, 2, 3]);
   });
 
-  it("keeps full-size buses on separated seven-cell road classes", () => {
-    expect(roadClassSupportsVehicle("LOCAL", "CAR")).toBe(true);
-    expect(roadClassSupportsVehicle("LOCAL", "BUS")).toBe(false);
-    expect(roadClassSupportsVehicle("COLLECTOR", "BUS")).toBe(true);
-    expect(roadClassSupportsVehicle("ARTERIAL", "BUS")).toBe(true);
-  });
-
-  it("stamps a complete seven-cell collector cross-section", () => {
-    const road = keys(stampRoadCorridor(orthogonalPath({ x: -2, y: 0 }, { x: 2, y: 0 }, true), "COLLECTOR", ROAD_WIDTH));
-    for (let x = -2; x <= 2; x += 1) for (let y = -3; y <= 3; y += 1) expect(road.has(`${x},${y}`)).toBe(true);
-    expect(road.size).toBe(35);
-  });
-
   it("classifies shoulders, travel cells and median clearance from one seven-cell band", () => {
-    const cells = stampRoadCorridor(orthogonalPath({ x: -4, y: 0 }, { x: 4, y: 0 }, true), "COLLECTOR", ROAD_WIDTH);
+    const cells = Array.from({ length: 9 * 7 }, (_, i) => ({ x: i % 9 - 4, y: Math.floor(i / 9) - 3 }));
     const graph = new Map(cells.map((cell) => [`${cell.x},${cell.y}`, { ...cell, roadClass: "COLLECTOR" as const }]));
     expect(roadBandRole(graph, { x: 0, y: -3 })).toEqual({ kind: "SHOULDER", axis: "H" });
     expect(roadBandRole(graph, { x: 0, y: -2 })).toEqual({ kind: "TRAVEL", axis: "H", dx: -1, dy: 0 });
@@ -104,32 +75,5 @@ describe("canonical road geometry", () => {
     }
   });
 
-  it("stamps every cross-section of a straight local street", () => {
-    const road = keys(stampRoadCorridor(orthogonalPath({ x: -3, y: 0 }, { x: 3, y: 0 }, true), "LOCAL", ROAD_WIDTH));
-    for (let x = -3; x <= 3; x += 1) for (let y = -1; y <= 1; y += 1) expect(road.has(`${x},${y}`)).toBe(true);
-    expect(road.size).toBe(21);
-  });
 
-  it("fills the complete corner envelope without an inner curb notch", () => {
-    const path = [
-      { x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 },
-      { x: 0, y: -1 }, { x: 0, y: -2 },
-    ];
-    const road = keys(stampRoadCorridor(path, "LOCAL", ROAD_WIDTH));
-    for (let y = -1; y <= 1; y += 1) for (let x = -1; x <= 1; x += 1) expect(road.has(`${x},${y}`)).toBe(true);
-  });
-
-  it("unions full-width crossing arms even when the center already exists", () => {
-    const horizontal = keys(stampRoadCorridor(orthogonalPath({ x: -4, y: 0 }, { x: 4, y: 0 }, true), "LOCAL", ROAD_WIDTH));
-    const vertical = stampRoadCorridor(orthogonalPath({ x: 0, y: -4 }, { x: 0, y: 4 }, false), "LOCAL", ROAD_WIDTH);
-    for (const cell of vertical) horizontal.add(cellKey(cell));
-    for (let y = -1; y <= 1; y += 1) for (let x = -1; x <= 1; x += 1) expect(horizontal.has(`${x},${y}`)).toBe(true);
-  });
-
-  it("rejects a clipped cross-section instead of publishing a narrow road", () => {
-    const path = orthogonalPath({ x: -2, y: 0 }, { x: 2, y: 0 }, true);
-    const blocked = new Set(["0,-1"]);
-    expect(roadCorridorBlockers(path, "LOCAL", ROAD_WIDTH, blocked)).toEqual([{ x: 0, y: -1 }]);
-    expect(roadCorridorBlockers(path, "LOCAL", ROAD_WIDTH, blocked, new Set(["0,-1"]))).toEqual([]);
-  });
 });

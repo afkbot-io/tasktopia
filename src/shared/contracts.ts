@@ -10,7 +10,7 @@ export type PlatformKind = "YARD" | "STONE" | "ASPHALT" | "SERVICE" | "PARK";
 export type CityMorphology = "BALANCED" | "DENSE_CORE" | "GARDEN_CITY" | "POLYCENTRIC";
 export type DistrictArchetype = "NEW_BUILD" | "PRIVATE" | "MIXED_URBAN" | "COMMERCIAL" | "CIVIC";
 export type SurfaceKind = "SIDEWALK" | "PATH" | "DRIVEWAY" | "SHOULDER" | "CROSSWALK";
-export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "PARK_DECOR" | "RUIN" | "LANDMARK" | "COUNTRY_ARCHIVE" | "AIRPORT";
+export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "RUIN" | "LANDMARK" | "COUNTRY_ARCHIVE" | "AIRPORT";
 export type CardinalOrientation = "N" | "E" | "S" | "W";
 export type CountryRole = "OWNER" | "MEMBER" | "VIEWER";
 export type McpScope = "country:read" | "cities:write" | "districts:write" | "tasks:read" | "tasks:write" | "comments:write";
@@ -18,9 +18,6 @@ export const MCP_SCOPES: readonly McpScope[] = [
   "country:read", "cities:write", "districts:write", "tasks:read", "tasks:write", "comments:write",
 ];
 export const MCP_READ_SCOPES: readonly McpScope[] = ["country:read", "tasks:read"];
-export type BlockPattern = "COMPLEX_ROW" | "COMPLEX_SLAB" | "COMPLEX_SQUARE" | "COMPLEX_L_SHAPE" | "COMPLEX_COURT" | "COMPLEX_POINT";
-export type PlannedLotRole = "PRIMARY" | "SUPPORT";
-export type PlannedLotPosition = "FRONTAGE" | "CORNER" | "COURTYARD";
 
 export type Cell = { x: number; y: number };
 export type Rect = { minX: number; minY: number; maxX: number; maxY: number };
@@ -34,7 +31,7 @@ export type CountryDto = {
   successCriteria: string;
   constraints: string;
   worldVersion: number;
-  generatorVersion: "square-v7";
+  generatorVersion: "block-v1";
   createdAt: string;
 };
 
@@ -78,30 +75,23 @@ export type CityDto = {
 };
 
 export type PlannedLotDto = {
+  serviceRole?: import("./block-world").BlockServiceRole;
+  slotKind?: "BUILDING" | "PARK" | "WATER" | "PARKING";
   id: string;
   origin: Cell;
   width: number;
   height: number;
   taskId: string | null;
-  /** V10 complex planning metadata. */
-  layoutVersion?: "block-v3";
-  /** Complex (ЖК) identifier — one perimeter block along one street group. */
+  /** Current semantic block identity; used to compose shared streets. */
   groupId?: string;
-  pattern?: BlockPattern;
-  slotIndex?: number;
-  slotCount?: number;
-  role?: PlannedLotRole;
-  /** Position inside the complex: street frontage, street corner or courtyard infill. */
-  position?: PlannedLotPosition;
-  frontageSide?: CardinalOrientation;
-  facadeFamily?: string;
-  /** Courtyard-loop skeleton; published as PATH only once the lot is committed. */
+  /** Current slot's pedestrian access path, derived from its block template. */
   sharedAccess?: Cell[];
   /** Demolished building site (пустырь): kept reserved until redevelopment. */
   vacant?: boolean;
 };
 
 export type DistrictDto = {
+  blockPlaques?: BlockPlaqueDto[];
   id: string;
   cityId: string;
   name: string;
@@ -207,6 +197,9 @@ export type TaskSearchResultDto = {
   origin: Cell;
 };
 
+/** Current task location, resolved only through the requesting user's memberships. */
+export type TaskResolutionDto = TaskSearchResultDto & { countryId: string };
+
 /**
  * Immutable world-language snapshot attached to a durable task event.
  * Notification copy must describe the entity as it was when the event
@@ -269,6 +262,7 @@ export type TaskDto = {
   progress: number;
   dueAt: string | null;
   buildingType: string;
+  serviceRole?: import("./block-world").BlockServiceRole;
   visualKind: "BUILDING" | "PARK";
   visualAssetKey: string;
   platformType: PlatformKind;
@@ -325,6 +319,13 @@ export type WorldFeatureDto = {
   accessPath: Cell[];
   developmentStage: 1 | 2 | 3 | 4 | 5;
   label?: string;
+  siteMarker?: {
+    kind: "RUINED" | "RELOCATED";
+    permanent: true;
+    targetTaskId: string | null;
+    snapshot: { taskNumber: number; title: string; buildingFamily: string; lastStage: 1|2|3|4|5; recordedAt: string };
+    variant: "brick" | "frame" | "overgrown";
+  };
 };
 
 export type DecorationDto = {
@@ -338,12 +339,17 @@ export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "name" | "dea
 };
 
 export type ChunkTaskDto = Pick<TaskDto,
-  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint" | "accessPath"
+  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "serviceRole" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint" | "accessPath"
 > & {
   defectSummary?: { open: number; inProgress: number; verifying: number; active: number };
 };
 
+export type PlannedSiteDto = { id: string; origin: Cell; width: number; height: number; kind: "BUILDING" | "PARK" | "WATER" | "PARKING"; serviceRole?: import("./block-world").BlockServiceRole };
+export type BlockPlaqueDto = { id: string; origin: Cell; label: string; taskCount: number };
+
 export type ChunkDto = {
+  blockPlaques?: BlockPlaqueDto[];
+  plannedSites?: PlannedSiteDto[];
   chunkX: number;
   chunkY: number;
   size: number;
@@ -367,26 +373,6 @@ export type SurfaceRunDto = CellRunDto & Pick<SurfaceCellDto, "kind" | "finish">
  * Compact persisted/wire representation. Deterministic environment arrays are
  * reconstructed in a browser worker instead of crossing the network.
  */
-export type ChunkPayloadV1Dto = Omit<ChunkDto, "terrain" | "decorations" | "worldVersion"> & {
-  payloadVersion: 1;
-  contentHash: string;
-  generatorVersion: "square-v7";
-  terrainSeed: number;
-  publishedVersion: number;
-  lod: ChunkLod;
-  /** Client-only fast path used before authoritative overlays arrive. */
-  baseLayerOnly?: true;
-  decorationContext: {
-    cityBounds: Rect[];
-    // One-cell ownership halo prevents clipped district boundaries from
-    // turning chunk seams into artificial fence lines.
-    districts: Array<Pick<ChunkDistrictDto, "id" | "status" | "archetype" | "cells">>;
-    // Decoration generation needs neighbouring task access paths even when a
-    // task footprint itself belongs to the adjacent chunk.
-    tasks: Array<Pick<ChunkTaskDto, "id" | "taskNumber" | "visualKind" | "stage" | "footprint" | "accessPath">>;
-  };
-};
-
 export type CompactChunkDistrictDto = Omit<ChunkDistrictDto, "cells"> & { cellRuns: CellRunDto[] };
 export type CompactDecorationDistrictDto = Omit<
   Pick<ChunkDistrictDto, "id" | "status" | "archetype" | "cells">,
@@ -397,10 +383,10 @@ export type CompactDecorationDistrictDto = Omit<
  * Endpoint-based read model. Canonical editing and generation may keep cells,
  * but the browser receives linear geometry once and expands it in its worker.
  */
-export type ChunkPayloadV2Dto = Pick<ChunkDto, "chunkX" | "chunkY" | "size" | "tasks" | "worldFeatures"> & {
+export type ChunkPayloadV2Dto = Pick<ChunkDto, "chunkX" | "chunkY" | "size" | "tasks" | "worldFeatures" | "plannedSites" | "blockPlaques"> & {
   payloadVersion: 2;
   contentHash: string;
-  generatorVersion: "square-v8";
+  generatorVersion: "block-v1";
   terrainSeed: number;
   publishedVersion: number;
   lod: ChunkLod;
@@ -409,13 +395,21 @@ export type ChunkPayloadV2Dto = Pick<ChunkDto, "chunkX" | "chunkY" | "size" | "t
   surfaceRuns: SurfaceRunDto[];
   districts: CompactChunkDistrictDto[];
   decorationContext: {
+    treeGeometryVersion: 7;
+    lightingVersion: 1;
+    /** Read-only paving halo for crowns, lamps and frontage; never rendered. */
+    surfaceHaloRuns: SurfaceRunDto[];
+    /** Hard off-chunk roads/occupied footprints/access, plus reserved sites
+     * clipped to the local chunk AND halo (site entities are origin-owned).
+     * Paving is NOT hard occupancy and belongs only in surfaceHaloRuns. */
+    blockedCellRuns: CellRunDto[];
     cityBounds: Rect[];
     districts: CompactDecorationDistrictDto[];
     tasks: Array<Pick<ChunkTaskDto, "id" | "taskNumber" | "visualKind" | "stage" | "footprint" | "accessPath">>;
   };
 };
 
-export type ChunkPayloadDto = ChunkPayloadV1Dto | ChunkPayloadV2Dto;
+export type ChunkPayloadDto = ChunkPayloadV2Dto;
 
 export type ViewportPayloadDto = {
   payloadVersion: 1;

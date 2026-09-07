@@ -46,14 +46,16 @@ describe("whole-city scene HTTP boundary", () => {
     const response = await app.inject({ method: "GET", url: `/api/cities/${cityId}/scene`, headers: { cookie } });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-2"$/);
+    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-4"$/);
     const scene = response.json();
     expect(scene).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 4,
       sceneRevision: expect.stringMatching(/^[a-f0-9]{64}$/),
       city: { id: cityId, bounds: bootstrap.initialCity.bounds },
       lod: "DETAIL",
       completedDistrictSnapshots: [],
+      airportConnections: [],
+      intercityRoads: [],
     });
     expect(scene.chunks.length).toBeGreaterThan(0);
     expect(scene.chunks.every((chunk: { payloadVersion: number; lod: string }) => chunk.payloadVersion === 2 && chunk.lod === "DETAIL")).toBe(true);
@@ -69,8 +71,8 @@ describe("whole-city scene HTTP boundary", () => {
       headers: { cookie, accept: "application/vnd.tasktopia.city-scene+json; version=1" },
     });
     expect(legacy.statusCode).toBe(200);
-    expect(legacy.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-1"$/);
-    expect(legacy.json()).toMatchObject({ schemaVersion: 1, city: { id: cityId } });
+    expect(legacy.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-4"$/);
+    expect(legacy.json()).toMatchObject({ schemaVersion: 4, city: { id: cityId } });
     expect((await app.inject({
       method: "GET",
       url: `/api/cities/${cityId}/scene`,
@@ -86,5 +88,19 @@ describe("whole-city scene HTTP boundary", () => {
     const setCookie = registered.headers["set-cookie"]!;
     const cookie = (Array.isArray(setCookie) ? setCookie[0]! : setCookie).split(";")[0]!;
     expect((await app.inject({ method: "GET", url: `/api/cities/${crypto.randomUUID()}/scene`, headers: { cookie } })).statusCode).toBe(404);
+    const other = await app.inject({
+      method: "POST", url: "/api/auth/register",
+      payload: { email: "scene-private@example.test", name: "Private", password: "safe-password-123", passwordConfirmation: "safe-password-123", countryName: "Private Country", cityName: "Private City" },
+    });
+    const otherCookieHeader = other.headers["set-cookie"]!;
+    const otherCookie = (Array.isArray(otherCookieHeader) ? otherCookieHeader[0]! : otherCookieHeader).split(";")[0]!;
+    const privateBootstrap = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie: otherCookie } })).json();
+    const rejected = await app.inject({
+      method: "GET",
+      url: `/api/countries/${privateBootstrap.country.id}/cities/${privateBootstrap.initialCity.id}/scene`,
+      headers: { cookie },
+    });
+    expect(rejected.statusCode).toBe(403);
+    expect(rejected.json()).not.toHaveProperty("airportConnections");
   }, 30_000);
 });

@@ -1,0 +1,85 @@
+{
+  "key": "compact-stepped-apartment-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected each native-grid preview and the3/4/5nearest-neighbour8xsequence. Numeric source-frame registration is a separate automated gate. Actual CITY stages3–5 reviewed; see runtimeReview.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention; parallel axis-aligned structural edges.",
+    "roofDepthPx": 33,
+    "facadeHeightPx": 15,
+    "floorStepPx": 5,
+    "floorCount": 3,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "caa9af70a5d43e3cde45da69f38c2d2d11395a68e1dc4d8776dddf37dde3fe6e",
+      "runtimeSha256": "05b5a350d43d2af3c7454ba8b931818c09eb94f267a3963f703aa45197937332",
+      "notes": "Three low roof terraces, paired side balconies and slate facade distinguish the building.3 retains the physical shell with incomplete top masonry and opaque rooms;4 is left-half plain slate slab, no final roof equipment. Opening rhythm and south entrance remain fixed."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "53c6a00ac203a3f4178395a16570a65565f589af87073bca49b12611e440d192",
+      "runtimeSha256": "c0809d6b2cb49083bb8913627203657cccaf95e5d0af5ea9adc331d5c4d146c2",
+      "notes": "Three low roof terraces, paired side balconies and slate facade distinguish the building.3 retains the physical shell with incomplete top masonry and opaque rooms;4 is left-half plain slate slab, no final roof equipment. Opening rhythm and south entrance remain fixed."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "d6900ebca61c31ddea1668f92acbb83aabfd2e3ba2b6f6712d45400739822e0c",
+      "runtimeSha256": "f0c81f2e4e61d0e6fcae99856a58677c825c6850660481b042ef01617fffdc95",
+      "notes": "Three low roof terraces, paired side balconies and slate facade distinguish the building.3 retains the physical shell with incomplete top masonry and opaque rooms;4 is left-half plain slate slab, no final roof equipment. Opening rhythm and south entrance remain fixed."
+    }
+  },
+  "pendingIntegration": [
+    "Final frozen-revision QA/deployment approval; stages0–2 use shared construction geometry, not separately AI-authored art."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+    "acceptedStages": [
+      3,
+      4,
+      5
+    ],
+    "fixture": "compact_release_20260906:480tasks/20sprints",
+    "evidence": "docs/evidence/compact-rc/final-browser.json",
+    "checks": [
+      "Same footprint and south entrance across3/4/5",
+      "Shaded opaque interior and aligned partitions at3",
+      "Partial bare roof and unfinished openings at4",
+      "Completed unique roof and facade at5",
+      "Tree/crown and sidewalk clearance",
+      "All30real building clicks opened the matching task"
+    ],
+    "captures": [
+      {
+        "stage": 3,
+        "path": "screenshots/compact-rc-final/compact-stepped-apartment-v1-stage-3.png",
+        "sha256": "d58576b392390599406a30e507e840b012b720e4646c3b7c6608129a88b9086b"
+      },
+      {
+        "stage": 4,
+        "path": "screenshots/compact-rc-final/compact-stepped-apartment-v1-stage-4.png",
+        "sha256": "b91ffe54a670f64370e28c47676d2ac85a1330f65a53bb78a6050ca947ff91d7"
+      },
+      {
+        "stage": 5,
+        "path": "screenshots/compact-rc-final/compact-stepped-apartment-v1-stage-5.png",
+        "sha256": "d22f74bb1368b6f68a1fd2bd89e6631a36ba38777aefadb0bf36e342692282df"
+      }
+    ]
+  }
+}

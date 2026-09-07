@@ -1,0 +1,70 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-recovery",
+  "commonSourceFrame": [
+    0,
+    159,
+    1129,
+    1254
+  ],
+  "uniformScale": 0.042515500442869794,
+  "targetSize": [
+    48,
+    47
+  ],
+  "offset": [
+    0,
+    1
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "c5eedb2f59da57be36ea46cf3446c9dad408c69c2c6619dfdd2bd37d44f57a64",
+      "runtimeSha256": "890f703b6f33c6ec51d4a761a8474fc10179b539635d50de19733c416cbf3353",
+      "sourceBounds": [
+        0,
+        159,
+        1129,
+        1254
+      ],
+      "occupiedBoundsPx": [
+        5,
+        1,
+        48,
+        41
+      ],
+      "occupiedSizePx": [
+        43,
+        40
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0
+    }
+  },
+  "errors": [
+    "Stage 5: ground line does not meet bottom-centre anchor",
+    "Finished occupied size [43, 40] misses contract",
+    "Finished occupied size [43, 40] misses contract"
+  ],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ]
+}

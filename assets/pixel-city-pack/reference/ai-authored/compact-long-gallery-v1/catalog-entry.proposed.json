@@ -1,0 +1,28 @@
+{
+  "key": "compact-long-gallery-v1",
+  "label": "Длинный галерейный дом",
+  "category": "HOUSE",
+  "rarity": "COMMON",
+  "spriteSize": [96, 48],
+  "footprintCells": [12, 6],
+  "anchorPx": [48, 48],
+  "platform": "STONE",
+  "estimates": [1, 2, 3, 6],
+  "tags": ["residential", "low-rise-residential", "compact-building"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side": "S", "offset": 6}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-long-gallery-v1/sources/stage-3.png",
+    "ai-authored/compact-long-gallery-v1/sources/stage-4.png",
+    "ai-authored/compact-long-gallery-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "38ff5e1f8d1282e9f7cfcddb8f54ee044a897ca45c3694a1ade1ba99f859b9c2",
+    "ec7cb49787412048a4feb909b16c5c9ec037b625549e3c43fe41b1c06a1cd572",
+    "c3a8ca83de401e40ee0a2670757d86badb2036a8bec1e4b4e2b7d0e9d690ca4e"
+  ],
+  "reviewed": true
+}

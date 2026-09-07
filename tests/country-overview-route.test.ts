@@ -48,15 +48,15 @@ describe("country overview HTTP boundary", () => {
     const response = await app.inject({
       method: "GET",
       url: `/api/countries/${countryId}/overview`,
-      headers: { cookie, accept: "application/vnd.tasktopia.country-overview+json; version=4" },
+      headers: { cookie, accept: "application/vnd.tasktopia.country-overview+json; version=7" },
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-4"$/);
+    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-7"$/);
     expect(response.headers.vary).toBe("Accept");
     expect(response.headers["cache-control"]).toBe("private, max-age=60, stale-while-revalidate=600");
     expect(response.json()).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 7,
       countryId: expect.any(String),
       revision: expect.stringMatching(/^[a-f0-9]{64}$/),
       geography: {
@@ -75,15 +75,13 @@ describe("country overview HTTP boundary", () => {
         miniature: {
           columns: expect.any(Number),
           rows: expect.any(Number),
-          blockSize: 16,
-          districtCodes: expect.any(String),
-          coverageCodes: expect.any(String),
-          shapeCodes: expect.any(String),
-          terrainCodes: expect.any(String),
-          airportCell: expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+          cellSize: 8,
+          blocks: [],
+          airports: [],
         },
       }],
       connections: [],
+      groundRoads: { revision: expect.any(Number), routes: [], unavailable: [] },
     });
     expect(response.json().geography.terrainCodes).toHaveLength(36 * 22);
     expect(response.json().geography.territoryCodes).toHaveLength(36 * 22);
@@ -91,30 +89,20 @@ describe("country overview HTTP boundary", () => {
     expect(Buffer.byteLength(response.body)).toBeLessThan(24_000);
     expect(await db.prepare(`SELECT schema_version, planet_revision, payload_json->>'revision' AS payload_revision
       FROM country_overview_snapshots_v1 WHERE country_id = ?`).get(countryId)).toMatchObject({
-      schema_version: 4,
+      schema_version: 7,
       planet_revision: expect.stringMatching(/^[a-f0-9]{16}$/),
       payload_revision: response.json().revision,
     });
     expect((await app.inject({
       method: "GET",
       url: `/api/countries/${countryId}/overview`,
-      headers: { cookie, accept: "application/vnd.tasktopia.country-overview+json; version=4", "if-none-match": response.headers.etag! },
+      headers: { cookie, accept: "application/vnd.tasktopia.country-overview+json; version=7", "if-none-match": response.headers.etag! },
     })).statusCode).toBe(304);
 
-    const legacy = await app.inject({ method: "GET", url: `/api/countries/${countryId}/overview`, headers: { cookie } });
-    expect(legacy.statusCode).toBe(200);
-    expect(legacy.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-3"$/);
-    expect(legacy.headers.vary).toBe("Accept");
-    expect(legacy.json()).toMatchObject({ schemaVersion: 3, countryId });
-    expect(legacy.json().geography).not.toHaveProperty("territoryCodes");
-    expect(legacy.json().cities[0].miniature).toEqual(expect.objectContaining({
-      columns: expect.any(Number), rows: expect.any(Number), districtCodes: expect.any(String), airportCell: expect.any(Object),
-    }));
-    expect(Math.max(legacy.json().cities[0].miniature.columns, legacy.json().cities[0].miniature.rows)).toBeLessThanOrEqual(14);
-    expect(legacy.json().cities[0].miniature).not.toHaveProperty("blockSize");
-    expect(legacy.json().cities[0].miniature).not.toHaveProperty("coverageCodes");
-    expect(legacy.json().cities[0].miniature).not.toHaveProperty("shapeCodes");
-    expect(legacy.json().cities[0].miniature).not.toHaveProperty("terrainCodes");
+    const current = await app.inject({ method: "GET", url: `/api/countries/${countryId}/overview`, headers: { cookie } });
+    expect(current.statusCode).toBe(200);
+    expect(current.json()).toEqual(response.json());
+    expect(current.headers.etag).toBe(response.headers.etag);
   }, 30_000);
 
   it("opens an explicitly scoped city even if another country became active", async () => {

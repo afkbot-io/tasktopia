@@ -1,0 +1,45 @@
+{
+  "key": "compact-long-slate-wing-v1",
+  "generator": "image_gen.imagegen",
+  "generationOrder": [5, 4, 3],
+  "reviewAuthority": "Independent parent acceptance; stage5F and stage4D also independently inspected by the layout reviewer. Exact accepted hashes are pinned in visual-review.json.",
+  "sourceCanvas": [887, 1774],
+  "commonSourceFrame": [23, 23, 864, 1751],
+  "sourceBackground": "magenta-chroma-family",
+  "paletteMethod": "MAXCOVERAGE",
+  "normalizationPolicy": "Existing declared chroma recovery, uniform nearest-neighbour transform, hard alpha and bounded quantization only. No architecture painting, axis warp, independent frame/crop/recentering or tolerance relaxation.",
+  "stages": {
+    "5": {
+      "attempt": "5F",
+      "source": "sources/stage-5.png",
+      "sourceSha256": "415a5d24cec09969854fe7b75148d1a7e3d3ff1722c70139d6b7f24e7141abb2",
+      "runtimeSha256": "f4124e03302d063f0e37e718a7c1ceb936d49bdb487b5755f7c6d7fce76c7551",
+      "prompt": "prompts/stage-5-f.txt",
+      "references": ["sources/rejected-stage-5-e.png"],
+      "acceptance": "APPROVED. Upper glass visibility corrected with existing aperture dimensions. Additional roof/lower glass brightening disclosed and reviewed."
+    },
+    "4": {
+      "attempt": "4D",
+      "source": "sources/stage-4.png",
+      "sourceSha256": "287bbb63b6154dcbd14498f3828d008bcb7d84e6b30446fd0b976dcaf4870795",
+      "runtimeSha256": "236a100abc1b960c7cbf95410fcfb550bd9b9c186ca8d3abcde458294bb86b1a",
+      "prompt": "prompts/stage-4-d.txt",
+      "references": ["sources/rejected-stage-4-c.png"],
+      "immutableGeometryAuthority": "sources/stage-5.png",
+      "acceptance": "APPROVED. Approximately44% roof retained, no final equipment, six exposed opaque rooms, exact doorway and two-pixel openings. Upper row one pixel down versus5 and darker frame palette disclosed."
+    },
+    "3": {
+      "attempt": "3M2",
+      "source": "sources/stage-3.png",
+      "sourceSha256": "99827c9855248f033ece14dd19a6f6566a71a6e28c1e5755f7e60665a54511e5",
+      "runtimeSha256": "0c05fb4870dfd41a3ada9798a3dea157110353c963b5a99c6f108ff467cb9d3d",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-0d673723-dd0f-46c5-bf00-a53591908d32.png",
+      "prompt": "prompts/stage-3-m2.txt",
+      "references": ["sources/intermediate-stage-3-m1.png", "sources/stage-4.png"],
+      "immutableGeometryAuthority": "sources/stage-5.png",
+      "acceptance": "APPROVED. Two bounded source edits from accepted4: M1 removes roof only, M2 removes upper frontage only. Ten opaque rooms/corridor, six small lower openings, square doorway/threshold and full foundation preserved."
+    }
+  },
+  "retainedAttemptEvidence": ["authoring-plan.md", "AUTHORING-CHECKPOINT.md", "stage-3-completion-provenance.json", "prompts/", "sources/"],
+  "runtimeScope": "Source-family approval and proposed metadata only. Global catalog/shape publication and actual-city acceptance are separate integration gates."
+}

@@ -1,0 +1,219 @@
+{
+  "key": "compact-rose-clinic-annex-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    128,
+    153,
+    1121,
+    1094
+  ],
+  "uniformScale": 0.04833836858006042,
+  "targetSize": [
+    48,
+    45
+  ],
+  "offset": [
+    0,
+    3
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "0e72c300f51c02f6a146aacacc453a5afade9e1fee4385d0645895a4ee5e2d83",
+      "runtimeSha256": "b2f53e5a2cb000c06e56b3e6261a1dffdd4bfcfc79766bd3dfcb2352a4829c12",
+      "sourceBounds": [
+        134,
+        168,
+        1121,
+        1094
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "4f57f9f6d68ae698e267d762ca09551e63d66baafc6406e58767ad340e731106",
+      "runtimeSha256": "4011055419f1f7043dbd994ac0ef7f55e643921dbad6e8efbadac3ab768d4307",
+      "sourceBounds": [
+        134,
+        167,
+        1121,
+        1094
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "8bd4b646e5031b12eb85fb06526586c5d672e9f39b3356816a4bf1a1400f48d5",
+      "runtimeSha256": "88025dc3ce20b8b1856bdcfb3aaf097e9ad3282800d280dfc463224288e86111",
+      "sourceBounds": [
+        134,
+        168,
+        1121,
+        1094
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-rose-clinic-annex-v1",
+    "reviewedAt": "2026-09-07",
+    "reviewScope": "Parent independently accepted stage5G,4A,3D2 native1x/8x and full sequence. Complete frozen source family, not globally published or actual-map reviewed by this author.",
+    "reviewMethod": "Built-in ImageGen source. Existing uniform NN/hardalpha/MAXCOVERAGE only. One measured legal outward-only frame, no crop of visible5 geometry, per-stage framing, opaque repaint or per-axis warp.",
+    "projection": {
+      "camera": "High45 frontal-top orthographic, axis-aligned and roof-dominant, no receding side wall",
+      "roofDepthPx": 29,
+      "roofRegionBoundsPx": [
+        0,
+        4,
+        48,
+        33
+      ],
+      "facadeHeightPx": 15,
+      "floorStepPx": 5,
+      "windowPaneSizePxRange": [
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "windowRowsPx": [
+        [
+          34,
+          35
+        ],
+        [
+          39,
+          40
+        ],
+        [
+          44,
+          45
+        ]
+      ],
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorLeafBoundsPx": [
+        22,
+        45,
+        26,
+        48
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "doorFrameBoundsPx": [
+        20,
+        43,
+        27,
+        48
+      ],
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "sameCameraAssertionScope": "All3 sources/natives and sequence independently reviewed. Same48x44 occupied envelope, original entrance/lower opening ROIs and foundation; identical common frame/transform, not per-stage registration.",
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "8bd4b646e5031b12eb85fb06526586c5d672e9f39b3356816a4bf1a1400f48d5",
+        "runtimeSha256": "88025dc3ce20b8b1856bdcfb3aaf097e9ad3282800d280dfc463224288e86111",
+        "retainedRoofAreaApproxPercent": 0,
+        "notes": "Parent independently accepted actualnative1x and sequence8x: roof fully absent, full opaque room floors/raised axis-aligned partitions/internal material piles, actual upperfront row removed with partial columns. Lower5 exact2x2 apertures and4x3leaf/7x5portal remain at original ROIs; no extra broken fourth storey. Existing upperfloor area is exposed brown floor, not remaining three dark windows. Two local AI edits4\u2192roof-offD1\u2192upperfront-removalD2; D1 is preserved as intermediate, not a separate approved3. Sourcebounds134,168,1121,1094 match5 exactly. Native48x44occupied,31colors/hardalpha/0holes,0centre/baseline/foundation-mask drift. No crop/realignment/geometry repair. Final whole progression roof100\u219250\u21920 and openings8\u21928\u21925 independently accepted."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "4f57f9f6d68ae698e267d762ca09551e63d66baafc6406e58767ad340e731106",
+        "runtimeSha256": "4011055419f1f7043dbd994ac0ef7f55e643921dbad6e8efbadac3ab768d4307",
+        "retainedRoofAreaApproxPercent": 50,
+        "notes": "Parent independently accepted actual1x/8x: LEFT half main roof, six RIGHT opaque rooms with raised orthogonal partitions and materials; both finished gardens and central tower completely absent. Same three front floor bands,8 dark2x2 aperture ROIs,4x3 leaf/7x5 portal and full48px foundation. Same48x44 occupied/31colors/0holes/0centre/baseline drift. Existing broad reserved-magenta key removes one exterior fringe pixel near native47,8 from the narrow-key draft; parent authorized it after proving the entire accepted5 PNG remains byte-identical. This is background recovery, not silhouette repaint or new geometry tolerance."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "0e72c300f51c02f6a146aacacc453a5afade9e1fee4385d0645895a4ee5e2d83",
+        "runtimeSha256": "b2f53e5a2cb000c06e56b3e6261a1dffdd4bfcfc79766bd3dfcb2352a4829c12",
+        "notes": "Parent independently accepted actual1x/8x: distinct two small roof gardens and center-rear access tower on broad cream roof, rose facade, no receding wall. Eight exact2x2 teal panes,4x3 leaf/7x5 portal, floorpitch5/5. Frame128,153,1121,1094 contains visible134,167,1121,1094; only6left/14top exterior pixels (<2%). Allocated normalization target48x45 at0,3 but actual occupied48x44 top4; not falsely claiming45opaque rows. Native canvas48x48/physical6x6/anchor24,48.31colors/hardalpha/0holes/full48px opaque foundation rows46/47. All original/A\u2013F failed sources preserved, not silently approved."
+      }
+    },
+    "runtimeIntegrationReviewOwner": "Parent owns catalog/publisher and actual-map gate after all3 stages accepted"
+  }
+}

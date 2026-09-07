@@ -69,7 +69,7 @@ describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
     const initialEventCursor = bootstrap.json().eventCursor as number;
     expect(bootstrap.json().worldManifest).toMatchObject({
       terrainSeed: expect.any(Number),
-      generatorVersion: "square-v7",
+      generatorVersion: "block-v1",
       worldRevision: bootstrap.json().country.worldVersion,
       chunkSize: 64,
       viewBounds: bootstrap.json().viewBounds,
@@ -127,7 +127,7 @@ describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
     expect(overviewResponse.headers["x-world-version"]).toBe(String(overviewChunk.publishedVersion));
     const detailChunk = (await app.inject({ method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=detail`, headers: compactHeaders })).json();
     expect(overviewChunk.tasks).toMatchObject([{ id: task.id }]);
-    expect(overviewChunk).toMatchObject({ payloadVersion: 2, generatorVersion: "square-v8", lod: "OVERVIEW" });
+    expect(overviewChunk).toMatchObject({ payloadVersion: 2, generatorVersion: "block-v1", lod: "OVERVIEW" });
     expect(overviewChunk.contentHash).toMatch(/^[a-f0-9]{64}$/);
     expect(overviewChunk).not.toHaveProperty("terrain");
     expect(overviewChunk).not.toHaveProperty("decorations");
@@ -138,7 +138,7 @@ describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
     expect(overviewMaterialized.surfaces.length).toBeLessThan(400);
     expect(overviewMaterialized.surfaces.every((surface: SurfaceCellDto) => surface.kind === "PATH" || surface.kind === "SIDEWALK")).toBe(true);
     expect(overviewChunk.worldFeatures).toEqual([]);
-    expect(detailChunk).toMatchObject({ payloadVersion: 2, generatorVersion: "square-v8", lod: "DETAIL" });
+    expect(detailChunk).toMatchObject({ payloadVersion: 2, generatorVersion: "block-v1", lod: "DETAIL" });
     expect(detailChunk).not.toHaveProperty("terrain");
     expect(detailChunk).not.toHaveProperty("decorations");
     // A task footprint may legally straddle a chunk whose access surface is in
@@ -163,9 +163,9 @@ describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
     const legacyResponse = await app.inject({
       method: "GET", url: `/api/chunks/${taskChunk.chunkX}/${taskChunk.chunkY}?lod=overview`, headers: { cookie },
     });
-    expect(legacyResponse.json()).toMatchObject({ chunkX: taskChunk.chunkX, chunkY: taskChunk.chunkY, terrain: expect.any(Array), decorations: expect.any(Array) });
-    expect(legacyResponse.json()).not.toHaveProperty("payloadVersion");
-    expect(legacyResponse.headers.etag).not.toBe(overviewResponse.headers.etag);
+    expect(legacyResponse.json()).toMatchObject({ chunkX: taskChunk.chunkX, chunkY: taskChunk.chunkY, payloadVersion: 2 });
+    expect(legacyResponse.json()).not.toHaveProperty("terrain");
+    expect(legacyResponse.headers.etag).toBe(overviewResponse.headers.etag);
     expect(legacyResponse.headers.vary).toBe("Accept");
     const revalidated = await app.inject({
       method: "GET",
@@ -234,11 +234,15 @@ describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
     expect(pendingResponse.json()).toMatchObject({ id: pending.id, countryId: owner.user.countryId, status: "PENDING" });
 
     await processNextWorldGenerationJob(db, service, "http-boundary-worker");
+    const currentCity = (await service.listCities(owner.user.countryId))[0]!;
+    await db.prepare("UPDATE world_generation_jobs_v1 SET result_json=?::jsonb WHERE id=?")
+      .run(JSON.stringify({ ...currentCity, bounds: { minX: 900, minY: 900, maxX: 999, maxY: 999 } }), pending.id);
     const completedResponse = await app.inject({
       method: "GET", url: `/api/world-generation-jobs/${pending.id}`, headers: { cookie },
     });
     expect(completedResponse.statusCode).toBe(200);
     expect(completedResponse.json()).toMatchObject({ id: pending.id, status: "COMPLETED", result: { name: "HTTP queued city" } });
+    expect(completedResponse.json().result.bounds).toEqual(currentCity.bounds);
     const foreignJob = await enqueueWorldGenerationJob(db, foreign.user.countryId, "city.create", "foreign-job", {
       name: "Foreign queued city", idempotencyKey: "foreign-job",
     });
@@ -374,7 +378,7 @@ describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
       districtId: district.id,
       title: "Disposable Task",
       estimate: 1,
-      buildingHint: "house-small-apartments",
+      buildingHint: "compact-apartment-v1",
       idempotencyKey: "http-delete-task-create",
     });
     const wrong = await app.inject({ method: "DELETE", url: `/api/tasks/${task.id}`, headers: { cookie }, payload: { confirmTitle: "wrong", idempotencyKey: "http-delete-task-wrong" } });

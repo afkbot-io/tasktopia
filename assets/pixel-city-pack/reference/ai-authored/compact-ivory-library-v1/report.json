@@ -1,0 +1,222 @@
+{
+  "key": "compact-ivory-library-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    125,
+    168,
+    1125,
+    1115
+  ],
+  "uniformScale": 0.048,
+  "targetSize": [
+    48,
+    45
+  ],
+  "offset": [
+    0,
+    3
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "9112c57e86a3687f8422fd5397e9698e5d2045a1e68b66fca98e96fb27110bdc",
+      "runtimeSha256": "cdde6e7be4cbbeb04df21d3e92909f93612b899dc5c6f159af5a096f24f85ac9",
+      "sourceBounds": [
+        130,
+        169,
+        1124,
+        1108
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "9e3c332891314b475c89d2e88b72dc699b06178cdd32c8de99e77992608f8de9",
+      "runtimeSha256": "213c00b6173741beb9a62794f96c154861f3b25ff21a7128af8e9fc77e4706a5",
+      "sourceBounds": [
+        129,
+        168,
+        1125,
+        1108
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "bed4b128ea8bec66183c87cd572a53c1661c53bff0377844159b0a8ec8b74500",
+      "runtimeSha256": "9661833dded63afcdba3207157b557ee58c0044b9ff5506c9c75d0cfc71358b9",
+      "sourceBounds": [
+        129,
+        239,
+        1124,
+        1109
+      ],
+      "occupiedBoundsPx": [
+        0,
+        6,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        42
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-ivory-library-v1",
+    "reviewedAt": "2026-09-07",
+    "reviewScope": "All stages5,4B,3B independently accepted with full sequence. Source family frozen; catalog/runtime/map integration not performed or claimed.",
+    "reviewMethod": "Author inspected raw source, native48x48 and8x grid. Parent independently inspected exact source-D native/8x candidate and explicitly accepted it. Source-authored portal and panes were corrected by built-in ImageGen, not code. A single legal outward-only background frame adds4sourcepixels left and6below visible bounds; uniform nearest-neighbour transform, hard alpha and palette normalization only.",
+    "projection": {
+      "camera": "High45-degree orthographic frontal-top; square axis-aligned roof and facade bands, no receding side facade.",
+      "roofDepthPx": 31,
+      "roofRegionBoundsPx": [
+        0,
+        3,
+        48,
+        34
+      ],
+      "facadeHeightPx": 14,
+      "floorStepPx": 4,
+      "windowPaneSizePxRange": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "windowRowsPx": [
+        [
+          36,
+          37
+        ],
+        [
+          40,
+          41
+        ],
+        [
+          44,
+          45
+        ]
+      ],
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorLeafBoundsPx": [
+        22,
+        45,
+        26,
+        48
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "doorFrameBoundsPx": [
+        21,
+        43,
+        28,
+        48
+      ],
+      "southEntranceAxisPx": 23.5,
+      "entranceAxisToleranceNote": "Four-pixel leaf is centered between native columns23 and24, within the fixed bottom-centre24 entrance registration.",
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "sameCameraAssertionScope": "Parent independently inspected all native stages and8x sequence, accepting corrected3B alongside5/4B. Lower roofless wall/cap silhouette is stage-aware; canvas/frame/entrance/foundation stay unchanged.",
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "bed4b128ea8bec66183c87cd572a53c1661c53bff0377844159b0a8ec8b74500",
+        "runtimeSha256": "9661833dded63afcdba3207157b557ee58c0044b9ff5506c9c75d0cfc71358b9",
+        "retainedRoofAreaApproxPercent": 0,
+        "notes": "Parent explicitly accepted exact3B source/native and full5\u21924B\u21923B sequence. ALL cream/orange roof/slab surfaces absent; full opaque room floor, raised axis-parallel partitions, internal materials/worktable. Upper front masonry is dismantled across left/center/right, leaving columns/short lintel stubs; only two lower facade rows remain,15complete2\u20133x2apertures at unchanged coordinates. Leaf4x3/frame7x5 fixed. Occupied48x42(top6) versus5/4 48x45(top3) reflects removal of completed roof/parapets, not reframe or smaller physical lot. Foundation rows46/47 have exactly0alpha differences and0drift acrossall3stages, baseline48, horizontal centre0drift. Earlier3A preserved21panes and looked too complete; it was rejected and preserved, never approved. Assembly~50%is semantic missing upper masonry plus all roof, not a claim about arbitrary pixel area."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "9e3c332891314b475c89d2e88b72dc699b06178cdd32c8de99e77992608f8de9",
+        "runtimeSha256": "213c00b6173741beb9a62794f96c154861f3b25ff21a7128af8e9fc77e4706a5",
+        "retainedRoofAreaApproxPercent": 53,
+        "mainCreamRoofPlaneRetainedApproxPercent": 50,
+        "notes": "Parent independently inspected corrected4B native/8x and explicitly approved this exact source/runtime hash. RIGHT orange structural slab is opened into the same opaque unfinished room floor; LEFT cream roof and LEFT orange structural slab remain. Inclusive projected roof/slab coverage approximately53%, not a main-plane-only measurement. All24 dark2\u20133x2apertures and4x3leaf/7x5frame retain positions;48x45occupied, baseline and commonframe unchanged. Roof skylight, furniture and plants absent. First4A was rejected for63%inclusivecoverage and is preserved in rejected-stage-4-a.png; no stage3 was generated from4A. Stage3 must remove all remaining roof and orange slab while preserving opaque interior floor."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "9112c57e86a3687f8422fd5397e9698e5d2045a1e68b66fca98e96fb27110bdc",
+        "runtimeSha256": "cdde6e7be4cbbeb04df21d3e92909f93612b899dc5c6f159af5a096f24f85ac9",
+        "notes": "Parent explicitly accepted source D after native/8x review: distinct ivory library, olive glazed roof lantern and paired terracotta reading terraces; roof31/facade14 and3floor rows with4/4spacing. All24 full facade panes are2\u20133x2 (left bands3/3/2, center/right3/2/3); incomplete doorway sidelights were removed in source. Leaf4x3 within7x5frame, one small internal highlight, fixed anchor24,48. Occupied48x45 in48x48canvas,31colors including transparency, hardalpha/noholes. Raw prior drafts are preserved and are not accepted."
+      }
+    },
+    "runtimeIntegrationReviewOwner": "Parent owns serial catalog/runtime publication after all3stages are independently accepted. No global publication is claimed here."
+  }
+}

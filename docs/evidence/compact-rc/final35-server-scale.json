@@ -1,0 +1,327 @@
+{
+  "scope": "Existing-only synthetic local PostgreSQL fixtures; no production/WAN/browser claim",
+  "reports": [
+    {
+      "rawEvidence": "tmp/server-scale-final35-b.json",
+      "rawSha256": "867a387e6d76e028b7e1a4530719376dc5612a95e613bf441d464db2550c6cd7",
+      "tier": "b",
+      "schema": "release_perf_20260907_b",
+      "workload": {
+        "cities": 1,
+        "tasks": 1000,
+        "districts": 20
+      },
+      "node": "v24.19.0",
+      "platform": "darwin",
+      "samples": 20,
+      "budgetsMs": {
+        "taskOpenP95": 100,
+        "cityWarmP95": 150,
+        "countryWarmP95": 150,
+        "planetP95": 100,
+        "cityCold": 2000,
+        "countryCold": 2000,
+        "stageUpdateP95": 750
+      },
+      "sourceFingerprints": {
+        "src/server/app-service.ts": "13cb4e816a46666afd125273945e3ee552eaf93943971e87ad885f7355559382",
+        "src/server/task-detail-read.ts": "07ca2bf7f312958134e0489dd50e98617dda861af10702c4dd4c9b189b6b4dad",
+        "src/server/db.ts": "91d49532078cf7ea13db3e541aaddce3a6ff47413ee729fb521a6fdb0a9f0d5e",
+        "src/server/world/active-block-layout.ts": "d81291977c1088c9a1415cc6bcfd2e2f98f563b080a2fd6880a894db284d0006",
+        "src/server/world/block-layout-compiler.ts": "db03babd066c69953517876ba94f670f431dd75419c05d89d060cf10ea097f61",
+        "src/server/world/compact-city-site.ts": "3fc6c5877794ef3564a029d80b70331bab3cd09ae8c02495a44073eabab0113b",
+        "src/server/world/intercity-road-store.ts": "c28d6e12cd6248aafdafe78e5dce26754c34f91ac756909337d52293eed80008",
+        "src/server/world/intercity-road-planner.ts": "5b2f30536ed9856d03d039d46d205590468b1b5a9b190dfae6d297fce96e07f7",
+        "src/server/world/country-road-projection.ts": "6e2728bcc386ff51787c096efb4e701693cf9526d97007e6141162c8e0bdd2d5",
+        "src/shared/district-separator.ts": "fb168d54fcddd65b04b12bdf93b98f2731b23f80c05666130a07a59d503e0009",
+        "src/shared/compact-building-families.ts": "e097f0c4a39cb9b2a082d19ddd3df1d3e9c57a8c2619c9852eee94dec65ac340",
+        "src/shared/block-parcel-plan.ts": "3ff63e209560cfcf64a0a173fc9ce846cc5793e45eb474293cc7c69b7e9e9d96",
+        "src/shared/block-templates.ts": "481b6c33f3dc42db4f0705eec730795329cfbc39380558bfe64b6b907d89486b",
+        "migrations/postgres/0025_task_history_read_index.sql": "31c4303143b064283f0b33c8b5a7b4c2d29e5584f5ed4d8c02e2c18b0caedc07",
+        "migrations/postgres/0029_country_road_snapshots.sql": "95fdf58f6a0d1c858ec33bd19672b61c63406f060c4713d26499c3306115673f",
+        "scripts/server-scale-audit.ts": "467695504978159d9988f69723770ac024f7737ea5f42e9e452ef256312fc9d3"
+      },
+      "seedMs": 2.840165999999982,
+      "actualWorkload": {
+        "cities": "1",
+        "districts": "20",
+        "tasks": "1000"
+      },
+      "requestedWorkloadComplete": true,
+      "cityCold": {
+        "p50Ms": 396.81724999999994,
+        "p95Ms": 396.81724999999994,
+        "maxMs": 396.81724999999994,
+        "queriesMin": 22,
+        "queriesMax": 22,
+        "sqlP95Ms": 318.07045900000014,
+        "bytes": 3643869,
+        "gzipBytes": 511792
+      },
+      "countryCold": {
+        "p50Ms": 35.26708300000007,
+        "p95Ms": 35.26708300000007,
+        "maxMs": 35.26708300000007,
+        "queriesMin": 9,
+        "queriesMax": 9,
+        "sqlP95Ms": 32.52266799999995,
+        "bytes": 20645,
+        "gzipBytes": 4581
+      },
+      "taskOpen": {
+        "p50Ms": 5.12683299999992,
+        "p95Ms": 7.203083000000106,
+        "maxMs": 8.511999999999944,
+        "queriesMin": 2,
+        "queriesMax": 2,
+        "sqlP95Ms": 3.2608750000000555,
+        "bytes": 9435,
+        "gzipBytes": 1464
+      },
+      "cityWarm": {
+        "p50Ms": 1.0714159999999993,
+        "p95Ms": 1.9646659999999656,
+        "maxMs": 2.0386250000000246,
+        "queriesMin": 3,
+        "queriesMax": 3,
+        "sqlP95Ms": 2.5215010000000575,
+        "bytes": 3643869,
+        "gzipBytes": 511792
+      },
+      "countryWarm": {
+        "p50Ms": 3.452166000000034,
+        "p95Ms": 4.323791000000028,
+        "maxMs": 4.94233399999996,
+        "queriesMin": 2,
+        "queriesMax": 2,
+        "sqlP95Ms": 4.271375000000035,
+        "bytes": 20645,
+        "gzipBytes": 4581
+      },
+      "planet": {
+        "p50Ms": 3.2075830000001133,
+        "p95Ms": 4.028500000000122,
+        "maxMs": 4.0544579999998405,
+        "queriesMin": 2,
+        "queriesMax": 2,
+        "sqlP95Ms": 3.9892500000000837,
+        "bytes": 1910,
+        "gzipBytes": 868
+      },
+      "taskOpenConcurrent8": {
+        "p50Ms": 26.481917000000067,
+        "p95Ms": 33.84616599999981,
+        "maxMs": 33.84616599999981,
+        "queriesMin": 16,
+        "queriesMax": 16,
+        "sqlP95Ms": 123.85016800000017,
+        "bytes": 75489,
+        "gzipBytes": 2102
+      },
+      "cityRestartPublished": {
+        "p50Ms": 52.58616699999993,
+        "p95Ms": 71.64958300000012,
+        "maxMs": 71.64958300000012,
+        "queriesMin": 8,
+        "queriesMax": 8,
+        "sqlP95Ms": 64.29278999999974,
+        "bytes": 3643869,
+        "gzipBytes": 515053
+      },
+      "stageUpdate": {
+        "p50Ms": 68.37991699999998,
+        "p95Ms": 75.10220799999979,
+        "maxMs": 93.26554199999987,
+        "queriesMin": 17,
+        "queriesMax": 17,
+        "sqlP95Ms": 65.14979100000073,
+        "bytes": 14175,
+        "gzipBytes": 1715,
+        "countryLockWaitP95Ms": 1.4598329999998896
+      },
+      "stageUpdateConcurrent2": {
+        "p50Ms": 123.71570799999972,
+        "p95Ms": 129.4777079999999,
+        "maxMs": 129.4777079999999,
+        "queriesMin": 34,
+        "queriesMax": 34,
+        "sqlP95Ms": 171.7386260000012,
+        "bytes": 21355,
+        "gzipBytes": 2269,
+        "countryLockWaitP95Ms": 64.68708400000014
+      },
+      "memory": {
+        "rss": 357154816,
+        "heapTotal": 196034560,
+        "heapUsed": 73844272,
+        "external": 25720760,
+        "arrayBuffers": 23031521
+      },
+      "finishedAt": "2026-09-07T05:14:40.546Z",
+      "sourcesUnchangedDuringMeasurement": true,
+      "budgetFailures": [],
+      "accepted": true
+    },
+    {
+      "rawEvidence": "tmp/server-scale-final35-d.json",
+      "rawSha256": "25810f4f14b67452e2debb9220fbdd02498d7f15c2b02ce29f35e133fbab6bb6",
+      "tier": "d",
+      "schema": "release_perf_20260907_d",
+      "workload": {
+        "cities": 100,
+        "tasks": 10,
+        "districts": 3
+      },
+      "node": "v24.19.0",
+      "platform": "darwin",
+      "samples": 20,
+      "budgetsMs": {
+        "taskOpenP95": 100,
+        "cityWarmP95": 150,
+        "countryWarmP95": 150,
+        "planetP95": 100,
+        "cityCold": 2000,
+        "countryCold": 5000,
+        "stageUpdateP95": 250
+      },
+      "sourceFingerprints": {
+        "src/server/app-service.ts": "13cb4e816a46666afd125273945e3ee552eaf93943971e87ad885f7355559382",
+        "src/server/task-detail-read.ts": "07ca2bf7f312958134e0489dd50e98617dda861af10702c4dd4c9b189b6b4dad",
+        "src/server/db.ts": "91d49532078cf7ea13db3e541aaddce3a6ff47413ee729fb521a6fdb0a9f0d5e",
+        "src/server/world/active-block-layout.ts": "d81291977c1088c9a1415cc6bcfd2e2f98f563b080a2fd6880a894db284d0006",
+        "src/server/world/block-layout-compiler.ts": "db03babd066c69953517876ba94f670f431dd75419c05d89d060cf10ea097f61",
+        "src/server/world/compact-city-site.ts": "3fc6c5877794ef3564a029d80b70331bab3cd09ae8c02495a44073eabab0113b",
+        "src/server/world/intercity-road-store.ts": "c28d6e12cd6248aafdafe78e5dce26754c34f91ac756909337d52293eed80008",
+        "src/server/world/intercity-road-planner.ts": "5b2f30536ed9856d03d039d46d205590468b1b5a9b190dfae6d297fce96e07f7",
+        "src/server/world/country-road-projection.ts": "6e2728bcc386ff51787c096efb4e701693cf9526d97007e6141162c8e0bdd2d5",
+        "src/shared/district-separator.ts": "fb168d54fcddd65b04b12bdf93b98f2731b23f80c05666130a07a59d503e0009",
+        "src/shared/compact-building-families.ts": "e097f0c4a39cb9b2a082d19ddd3df1d3e9c57a8c2619c9852eee94dec65ac340",
+        "src/shared/block-parcel-plan.ts": "3ff63e209560cfcf64a0a173fc9ce846cc5793e45eb474293cc7c69b7e9e9d96",
+        "src/shared/block-templates.ts": "481b6c33f3dc42db4f0705eec730795329cfbc39380558bfe64b6b907d89486b",
+        "migrations/postgres/0025_task_history_read_index.sql": "31c4303143b064283f0b33c8b5a7b4c2d29e5584f5ed4d8c02e2c18b0caedc07",
+        "migrations/postgres/0029_country_road_snapshots.sql": "95fdf58f6a0d1c858ec33bd19672b61c63406f060c4713d26499c3306115673f",
+        "scripts/server-scale-audit.ts": "467695504978159d9988f69723770ac024f7737ea5f42e9e452ef256312fc9d3"
+      },
+      "seedMs": 3.639250000000004,
+      "actualWorkload": {
+        "cities": "100",
+        "districts": "300",
+        "tasks": "1000"
+      },
+      "requestedWorkloadComplete": true,
+      "cityCold": {
+        "p50Ms": 75.42345799999998,
+        "p95Ms": 75.42345799999998,
+        "maxMs": 75.42345799999998,
+        "queriesMin": 32,
+        "queriesMax": 32,
+        "sqlP95Ms": 135.3139569999999,
+        "bytes": 154440,
+        "gzipBytes": 17714
+      },
+      "countryCold": {
+        "p50Ms": 95.00566599999996,
+        "p95Ms": 95.00566599999996,
+        "maxMs": 95.00566599999996,
+        "queriesMin": 9,
+        "queriesMax": 9,
+        "sqlP95Ms": 57.98270900000006,
+        "bytes": 159482,
+        "gzipBytes": 30588
+      },
+      "taskOpen": {
+        "p50Ms": 1.9445409999999583,
+        "p95Ms": 3.094916999999896,
+        "maxMs": 3.471916999999962,
+        "queriesMin": 2,
+        "queriesMax": 2,
+        "sqlP95Ms": 2.8845410000001266,
+        "bytes": 9435,
+        "gzipBytes": 1430
+      },
+      "cityWarm": {
+        "p50Ms": 1.1044170000000122,
+        "p95Ms": 1.3396670000000768,
+        "maxMs": 1.5204170000000659,
+        "queriesMin": 3,
+        "queriesMax": 3,
+        "sqlP95Ms": 2.050792000000115,
+        "bytes": 154440,
+        "gzipBytes": 17714
+      },
+      "countryWarm": {
+        "p50Ms": 8.675041000000078,
+        "p95Ms": 9.532000000000039,
+        "maxMs": 10.313792000000035,
+        "queriesMin": 2,
+        "queriesMax": 2,
+        "sqlP95Ms": 9.426873999999998,
+        "bytes": 159482,
+        "gzipBytes": 30588
+      },
+      "planet": {
+        "p50Ms": 8.041417000000024,
+        "p95Ms": 9.297124999999937,
+        "maxMs": 10.17454100000009,
+        "queriesMin": 2,
+        "queriesMax": 2,
+        "sqlP95Ms": 9.201000000000136,
+        "bytes": 32624,
+        "gzipBytes": 11285
+      },
+      "taskOpenConcurrent8": {
+        "p50Ms": 5.983375000000024,
+        "p95Ms": 13.674375000000055,
+        "maxMs": 13.674375000000055,
+        "queriesMin": 16,
+        "queriesMax": 16,
+        "sqlP95Ms": 44.722291999999925,
+        "bytes": 75489,
+        "gzipBytes": 2068
+      },
+      "cityRestartPublished": {
+        "p50Ms": 9.037333999999987,
+        "p95Ms": 12.15304100000003,
+        "maxMs": 12.15304100000003,
+        "queriesMin": 8,
+        "queriesMax": 8,
+        "sqlP95Ms": 12.873957000000132,
+        "bytes": 154440,
+        "gzipBytes": 17555
+      },
+      "stageUpdate": {
+        "p50Ms": 16.957959000000074,
+        "p95Ms": 18.64975000000004,
+        "maxMs": 23.909375000000068,
+        "queriesMin": 17,
+        "queriesMax": 17,
+        "sqlP95Ms": 16.53591999999992,
+        "bytes": 14175,
+        "gzipBytes": 1672,
+        "countryLockWaitP95Ms": 0.5836659999999938
+      },
+      "stageUpdateConcurrent2": {
+        "p50Ms": 35.56120799999985,
+        "p95Ms": 40.57995800000003,
+        "maxMs": 40.57995800000003,
+        "queriesMin": 34,
+        "queriesMax": 34,
+        "sqlP95Ms": 57.31829200000129,
+        "bytes": 21207,
+        "gzipBytes": 2221,
+        "countryLockWaitP95Ms": 21.514582999999902
+      },
+      "memory": {
+        "rss": 193511424,
+        "heapTotal": 88981504,
+        "heapUsed": 41006352,
+        "external": 11782167,
+        "arrayBuffers": 9088262
+      },
+      "finishedAt": "2026-09-07T05:15:14.638Z",
+      "sourcesUnchangedDuringMeasurement": true,
+      "budgetFailures": [],
+      "accepted": true
+    }
+  ]
+}

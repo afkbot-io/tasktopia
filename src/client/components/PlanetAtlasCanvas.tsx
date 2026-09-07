@@ -1,8 +1,9 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../../shared/planet-atlas-contract";
-import { gameAssetUrl } from "../../shared/catalog";
-import { ATLAS_AIRPORT_SVG_PATH } from "../../shared/atlas-airport";
-import { atlasTerrainConnectionMask, atlasTerrainTile } from "../../shared/atlas-scene";
+import { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PlanetAtlasDto } from "../../shared/planet-atlas-contract";
+import { gameAssetUrl, getBuilding } from "../../shared/catalog";
+import { overviewBuildingArt } from "../../shared/overview-building-art";
+import { atlasTerrainConnectionMask, type AtlasTerrainKind } from "../../shared/atlas-scene";
+import { overviewTerrainPatches } from "../../shared/overview-terrain-presentation";
 import {
   layoutPlanetCountryLabels,
   projectPlanetAtlas,
@@ -12,22 +13,31 @@ import {
   type PlanetMapCell,
   type PlanetMapCountry,
 } from "../../shared/planet-atlas";
-import { api } from "../api";
-import { advanceAtlasEntryHysteresis, atlasTargetCoverage, continuousAtlasZoom, initialAtlasEntryHysteresis } from "../atlas-zoom-navigation";
-import { planetAtlasCacheKey } from "../planet-atlas-cache";
+import { atlasHitTarget, atlasPointInsideEllipse, atlasTargetCoverage, atlasViewBoxPoint, continuousAtlasZoom, type AtlasWheelNavigation } from "../atlas-zoom-navigation";
+import { peekPlanetAtlas, watchPlanetAtlas } from "../planet-atlas-cache";
 import { smoothCameraScale } from "../world-camera";
 import { bindMapPointerGestures } from "../map-pointer-gesture";
+import { visiblePlanetCountries } from "../planet-visible-countries";
 import { AtlasAircraft } from "./AtlasAircraft";
 import { AtlasOverviewCard, planetOverviewCardModel } from "./AtlasOverviewCard";
 
 const MIN_MAP_ZOOM = .82;
 const MAX_MAP_ZOOM = 8.5;
 const COUNTRY_ENTRY_COVERAGE = .56;
-const COUNTRY_ENTRY_REARM_ZOOM = 1.08;
+// Fine material is immutable under camera motion. Only its outer macro-cell
+// transform changes; React never rebuilds these four sheet windows per frame.
+const AtlasTerrainMaterial = memo(function AtlasTerrainMaterial({ kind, column, row, mask }: {
+  kind: AtlasTerrainKind; column: number; row: number; mask: number;
+}) {
+  return overviewTerrainPatches(kind, "planet", column, row, mask).map(({ x, y, size, tile }) =>
+    <svg key={`${x}:${y}`} x={x} y={y} width={size} height={size}
+      viewBox={`${tile.sourceX} ${tile.sourceY} ${tile.tileSize} ${tile.tileSize}`} preserveAspectRatio="none">
+      <image href={gameAssetUrl(tile.url)} width={tile.sheetWidth} height={tile.sheetHeight} className="atlas-pixel" />
+    </svg>);
+});
 function AtlasTerrainImage({ cell, mask }: { cell: PlanetMapCell; mask: number }) {
-  const tile = atlasTerrainTile(cell.terrain, "planet", cell.q, cell.r, mask);
-  return <svg x={cell.x} y={cell.y} width={cell.width} height={cell.height} viewBox={`${tile.sourceX} ${tile.sourceY} ${tile.tileSize} ${tile.tileSize}`} preserveAspectRatio="none" className="atlas-pixel planet-terrain-sprite" aria-hidden="true">
-    <image href={gameAssetUrl(tile.url)} width={tile.sheetWidth} height={tile.sheetHeight} className="atlas-pixel" />
+  return <svg x={cell.x} y={cell.y} width={cell.width} height={cell.height} viewBox="0 0 1 1" preserveAspectRatio="none" className="atlas-pixel planet-terrain-sprite" aria-hidden="true">
+    <AtlasTerrainMaterial kind={cell.terrain} column={cell.q} row={cell.r} mask={mask} />
   </svg>;
 }
 
@@ -42,19 +52,6 @@ function countryScreenBounds(country: PlanetMapCountry) {
 
 function pixelSquarePath(cell: PlanetMapCell): string {
   return `M${cell.x},${cell.y}H${cell.x + cell.width}V${cell.y + cell.height}H${cell.x}Z`;
-}
-
-function readCachedPlanet(userId: string): PlanetAtlasDto | null {
-  try {
-    const value = window.sessionStorage.getItem(planetAtlasCacheKey(userId));
-    if (!value) return null;
-    const parsed = JSON.parse(value) as PlanetAtlasDto;
-    return parsed.schemaVersion === PLANET_ATLAS_SCHEMA_VERSION ? parsed : null;
-  } catch { return null; }
-}
-
-function writeCachedPlanet(userId: string, atlas: PlanetAtlasDto): void {
-  try { window.sessionStorage.setItem(planetAtlasCacheKey(userId), JSON.stringify(atlas)); } catch { /* Optional first-paint cache. */ }
 }
 
 function CountryLabel({ country, x, y, width, height, active, selecting, onSelect }: {
@@ -81,23 +78,27 @@ function CountryLabel({ country, x, y, width, height, active, selecting, onSelec
   />;
 }
 
-export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountryId, refreshToken, onCountrySelect }: {
+export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountryId, refreshToken, onCountrySelect, wheelNavigation }: {
   userId: string;
   activeCountryId: string;
   initialFocusCountryId?: string;
   refreshToken: number;
   onCountrySelect: (countryId: string, focus?: { x: number; y: number }) => Promise<void> | void;
+  wheelNavigation: AtlasWheelNavigation;
 }) {
-  const [atlas, setAtlas] = useState<PlanetAtlasDto | null>(() => readCachedPlanet(userId));
+  const [atlas, setAtlas] = useState<PlanetAtlasDto | null>(() => peekPlanetAtlas(userId, refreshToken) ?? null);
   const [camera, setCamera] = useState<PlanetMapCamera>({ panX: 0, panY: 0, zoom: 1 });
   const cameraRef = useRef<PlanetMapCamera>(camera);
   const targetCameraRef = useRef<PlanetMapCamera>(camera);
   const cameraFrameRef = useRef(0);
   const cameraFrameAtRef = useRef(0);
   const [error, setError] = useState("");
+  const [readyRevision, setReadyRevision] = useState<string | null>(null);
+  const [assetError, setAssetError] = useState("");
+  const [assetAttempt, setAssetAttempt] = useState(0);
   const [selectingCountryId, setSelectingCountryId] = useState<string | null>(null);
   const suppressClick = useRef(false);
-  const entryHysteresis = useRef(initialAtlasEntryHysteresis());
+  const selectionPending = useRef(false);
   const atlasView = useRef<SVGSVGElement>(null);
   const initialFocusApplied = useRef(false);
 
@@ -141,20 +142,17 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    setAtlas(readCachedPlanet(userId));
-    void api<PlanetAtlasDto>("/api/planet-atlas", { signal: controller.signal, cache: "no-cache" })
-      .then((next) => {
-        if (next.schemaVersion !== PLANET_ATLAS_SCHEMA_VERSION) throw new Error("Версия планеты устарела. Обновите страницу");
-        setAtlas(next); writeCachedPlanet(userId, next); setError("");
-      })
-      .catch((reason) => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось открыть планету"); });
-    return () => controller.abort();
+    return watchPlanetAtlas(userId, refreshToken, next => {
+      // A 304-equivalent body keeps the same projected map and decoded assets.
+      setAtlas(current => current?.revision === next.revision ? current : next);
+      setError("");
+    }, reason => setError(reason instanceof Error ? reason.message : "Не удалось открыть планету"));
   }, [refreshToken, userId]);
 
   const projectedAtlas = useMemo(() => atlas ? projectPlanetAtlas(atlas) : null, [atlas]);
   const map = useMemo(() => projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, camera) : null, [projectedAtlas, camera]);
-  const labels = useMemo(() => map ? layoutPlanetCountryLabels(map.countries, map.width, map.height) : [], [map]);
+  const visibleCountries = useMemo(() => map ? visiblePlanetCountries(map.countries, map.surface, map) : [], [map]);
+  const labels = useMemo(() => map ? layoutPlanetCountryLabels(visibleCountries, map.width, map.height) : [], [map, visibleCountries]);
   const countriesById = useMemo(() => new Map(map?.countries.map((country) => [country.id, country]) ?? []), [map]);
   const terrainByCoordinate = useMemo(() => {
     const lookup = new Map<string, PlanetMapCell>();
@@ -169,6 +167,25 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     (column, row) => terrainByCoordinate.get(`${column}:${row}`)?.terrain,
   ), [terrainByCoordinate]);
 
+  const atlasRevision = atlas?.revision;
+  useEffect(() => {
+    const view = atlasView.current;
+    if (!view || !atlasRevision) return;
+    let cancelled = false;
+    setAssetError("");
+    const urls = [...new Set([...view.querySelectorAll("image")].map(node => node.getAttribute("href")).filter((url): url is string => Boolean(url)))];
+    void Promise.all(urls.map(async url => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+    })).then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!cancelled) setReadyRevision(atlasRevision);
+    }))).catch(() => {
+      if (!cancelled) setAssetError("Не удалось загрузить текстуры планеты");
+    });
+    return () => { cancelled = true; };
+  }, [atlasRevision, assetAttempt]);
+
   useEffect(() => {
     initialFocusApplied.current = false;
   }, [initialFocusCountryId]);
@@ -178,7 +195,6 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     const country = projectedAtlas.countries.find((candidate) => candidate.id === initialFocusCountryId);
     if (!country) return;
     initialFocusApplied.current = true;
-    entryHysteresis.current = { armed: false };
     const nextCamera = {
       zoom: 2.15,
       panX: Math.max(-1.25, Math.min(1.25, (country.center.x - projectedAtlas.width / 2) / (projectedAtlas.width * .32))),
@@ -190,12 +206,13 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   }, [initialFocusCountryId, projectedAtlas]);
 
   const selectCountry = useCallback(async (countryId: string, focus?: { x: number; y: number }) => {
-    if (selectingCountryId) return;
+    if (selectionPending.current) return;
+    selectionPending.current = true;
     setSelectingCountryId(countryId);
     try { await onCountrySelect(countryId, focus); setError(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось открыть страну"); }
-    finally { setSelectingCountryId(null); }
-  }, [onCountrySelect, selectingCountryId]);
+    finally { selectionPending.current = false; setSelectingCountryId(null); }
+  }, [onCountrySelect]);
 
   useEffect(() => {
     const view = atlasView.current;
@@ -207,21 +224,20 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       const nextZoom = continuousAtlasZoom(baseCamera.zoom, event.deltaY, { min: MIN_MAP_ZOOM, max: MAX_MAP_ZOOM });
       const bounds = view.getBoundingClientRect();
       const focus = { x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / Math.max(1, bounds.width))), y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / Math.max(1, bounds.height))) };
-      const screenFocus = { x: focus.x * map.width, y: focus.y * map.height };
+      const screenFocus = atlasViewBoxPoint({ x: event.clientX, y: event.clientY }, { minX: bounds.left, minY: bounds.top, maxX: bounds.right, maxY: bounds.bottom }, map);
       const nextCamera = projectedAtlas ? zoomPlanetCameraAtFocus(projectedAtlas, baseCamera, nextZoom, screenFocus) : { ...baseCamera, zoom: nextZoom };
       const nextMap = projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, nextCamera) : map;
-      const point = { x: focus.x * nextMap.width, y: focus.y * nextMap.height };
-      const country = [...nextMap.countries].sort((left, right) => Math.hypot(left.center.x - point.x, left.center.y - point.y) - Math.hypot(right.center.x - point.x, right.center.y - point.y))[0];
+      const point = screenFocus;
+      const country = atlasPointInsideEllipse(point, nextMap.surface)
+        ? atlasHitTarget(point, nextMap.countries, candidate => candidate.cells.map(cell => ({ minX: cell.x, minY: cell.y, maxX: cell.x + cell.width, maxY: cell.y + cell.height }))) : undefined;
       const coverage = country ? atlasTargetCoverage(countryScreenBounds(country), { minX: 0, minY: 0, maxX: nextMap.width, maxY: nextMap.height }) : 0;
-      const entry = advanceAtlasEntryHysteresis(entryHysteresis.current, { direction, zoom: nextZoom, rearmZoom: COUNTRY_ENTRY_REARM_ZOOM, coverage, enterCoverage: COUNTRY_ENTRY_COVERAGE });
-      entryHysteresis.current = entry.state;
       targetCameraRef.current = nextCamera;
       scheduleCameraMotion();
-      if (entry.triggered && country) void selectCountry(country.id, focus);
+      if (wheelNavigation.consume({ at: event.timeStamp, deltaY: event.deltaY }, direction === "IN" && coverage >= COUNTRY_ENTRY_COVERAGE && Boolean(country)) && country) void selectCountry(country.id, focus);
     };
     view.addEventListener("wheel", handleWheel, { passive: false });
     return () => view.removeEventListener("wheel", handleWheel);
-  }, [map, projectedAtlas, scheduleCameraMotion, selectCountry]);
+  }, [map, projectedAtlas, scheduleCameraMotion, selectCountry, wheelNavigation]);
 
   useEffect(() => {
     const view = atlasView.current;
@@ -229,15 +245,12 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     return bindMapPointerGestures(view, (gesture) => {
       updateCameraImmediately((current) => {
         const rect = view.getBoundingClientRect();
-        const focus = {
-          x: Math.max(0, Math.min(1, (gesture.center.x - rect.left) / Math.max(1, rect.width))),
-          y: Math.max(0, Math.min(1, (gesture.center.y - rect.top) / Math.max(1, rect.height))),
-        };
         const currentMap = projectProjectedPlanetMap(projectedAtlas, current);
+        const focus = atlasViewBoxPoint(gesture.center, { minX: rect.left, minY: rect.top, maxX: rect.right, maxY: rect.bottom }, currentMap);
         const zoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, current.zoom * gesture.scale));
         const zoomed = gesture.scale === 1
           ? current
-          : zoomPlanetCameraAtFocus(projectedAtlas, current, zoom, { x: focus.x * currentMap.width, y: focus.y * currentMap.height });
+          : zoomPlanetCameraAtFocus(projectedAtlas, current, zoom, focus);
         return {
           ...zoomed,
           panX: Math.max(-1.25, Math.min(1.25, zoomed.panX - gesture.panX * .0045 / zoomed.zoom)),
@@ -245,6 +258,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
         };
       });
     }, {
+      onNavigationStart: () => { suppressClick.current = true; },
       onEnd: (moved) => { suppressClick.current = moved; },
       shouldStart: (event) => !(event.target instanceof Element && event.target.closest(".planet-country-label, button, a, input, select, textarea")),
     });
@@ -258,7 +272,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     ...map.routes.filter((route) => route.fromAirportId !== null).slice(0, 5),
   ];
 
-  return <div className="planet-atlas" data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={map.countries.length} data-planet-routes={map.routes.length} data-globe-zoom={camera.zoom.toFixed(2)} data-planet-renderer="square-pixel-map">
+  return <div className="planet-atlas" data-planet-ready={readyRevision === atlasRevision && !assetError} data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={visibleCountries.length} data-planet-routes={map.routes.length} data-globe-zoom={camera.zoom.toFixed(2)} data-planet-renderer="square-pixel-map" data-planet-material-subdivisions="2">
     <svg ref={atlasView} viewBox={`0 0 ${map.width} ${map.height}`} role="group" aria-label={`Планета: ${atlas?.countries.length ?? map.countries.length} стран`} preserveAspectRatio="xMidYMid meet" tabIndex={0} onKeyDown={(event) => {
       const movement = event.shiftKey ? .22 : .09;
       if (event.key === "ArrowLeft") updateCameraImmediately((value) => ({ ...value, panX: Math.max(-1.25, value.panX - movement) }));
@@ -284,7 +298,13 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault(); void selectCountry(country.id);
         }}>{country.cells.map((cell) => <g key={cell.id}><AtlasTerrainImage cell={cell} mask={terrainMask(cell)} /><path d={pixelSquarePath(cell)} fill={country.color} className="planet-country-tint" /></g>)}
-          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map((airport) => <g key={airport.id} transform={`translate(${airport.center.x} ${airport.center.y})`}><rect x="-5" y="-5" width="10" height="10" /><path d={ATLAS_AIRPORT_SVG_PATH} /></g>)}</g>
+          <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon => {
+            const art = overviewBuildingArt(icon.id);
+            return <image key={icon.id} data-district-id={icon.id} data-city-id={icon.cityId} data-building-family={art.key}
+              href={art.url} x={icon.center.x - art.width / 2} y={icon.center.y - art.height / 2}
+              width={art.width} height={art.height} className="atlas-pixel" />;
+          })}</g>
+          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-4} y={airport.center.y-3} width="8" height="6" className="atlas-pixel" />)}</g>
         </g>)}</g>
         <g className="planet-routes" aria-hidden="true">{activeRoutes.map((route) => <g key={route.id}><path d={route.path} className="planet-route-line" /><AtlasAircraft path={route.path} durationSeconds={route.durationSeconds} delaySeconds={route.delaySeconds} kind={route.planeKind} size="planet" rotateWithPath visualScale={route.altitudeScale} startsAtAirport={route.fromAirportId !== null} endsAtAirport /></g>)}</g>
         <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><image href={gameAssetUrl(`atlas/clouds-v2/cloud-topdown-${index % 8 + 1}.png`)} x="-32" y="-16" width="64" height="32" className="atlas-pixel" /></g>)}</g>
@@ -296,6 +316,10 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
         return <CountryLabel key={country.id} country={country} {...label} active={country.id === activeCountryId} selecting={country.id === selectingCountryId} onSelect={() => { void selectCountry(country.id); }} />;
       })}</g>
     </svg>
+    {(readyRevision !== atlasRevision || assetError) && <div className="planet-texture-loading atlas-state" role={assetError ? "alert" : "status"}>
+      <span>{assetError || "Готовим ландшафт планеты…"}</span>
+      {assetError && <button type="button" onClick={() => setAssetAttempt(value => value + 1)}>Повторить</button>}
+    </div>}
     {error && <div className="planet-refresh-warning" role="status">Показана сохранённая планета</div>}
   </div>;
 }

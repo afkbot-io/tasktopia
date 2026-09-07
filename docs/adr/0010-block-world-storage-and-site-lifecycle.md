@@ -67,11 +67,14 @@ schema. Старые `square-v7`, `block-v3`, `roads_v3` и поклеточны
 - `id`, `layout_id`, `district_id`, `sequence`;
 - `kind`, `template_key`, `template_version`, `variant`;
 - `origin`, `width`, `height`, `seed`, `status`;
-- `parameters_json` только для отклонений от шаблона;
+- `parameters_json` для параметров шаблона и сохранённого плана новых кварталов;
 - `summary_json` для COUNTRY-проекции.
 
-Слоты, внутренние дорожки и базовое озеленение детерминированно выводятся из
-`template_key + version + variant + seed`. Они не копируются в каждую строку.
+Уточнение 2026-09-06: у существующих template v2 слоты по-прежнему выводятся из
+`template_key + version + variant + seed`. Новые v3 сохраняют полный локальный
+`sitePlan` в одной JSON-записи квартала, включая свободные участки под парки;
+отдельных строк на клетки/пустые слоты нет. Это фиксирует геометрию при расширении
+набора форм зданий. [Решение и откат](../RECTANGULAR-BLOCK-PLANS.md).
 
 #### `task_placements_v1`
 

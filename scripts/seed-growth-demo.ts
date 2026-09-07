@@ -5,6 +5,8 @@ import { createDb } from "../src/server/db";
 import { GROWTH_DEMO_SEED, seedGrowthDemo } from "../src/server/fixtures/growth-demo";
 import { auditWorld } from "../src/server/world/world-audit";
 import { cellKey, contains } from "../src/server/world/grid";
+import { readActiveBlockLayout } from "../src/server/world/active-block-layout";
+import { rasterizeBlockRoads } from "../src/server/world/block-layout-compiler";
 
 const databasePath = process.env.DATABASE_URL ?? "postgres://tasktopia:tasktopia@127.0.0.1:5432/tasktopia";
 const districtLimit = Number(process.env.GROWTH_DISTRICTS ?? 10);
@@ -21,7 +23,9 @@ const startedAt = performance.now();
 const fixture = await seedGrowthDemo(service, registered.user.countryId, districtLimit);
 const generationMs = performance.now() - startedAt;
 const audit = await auditWorld(db, service, registered.user.countryId);
-const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(registered.user.countryId) as Array<{ x: number; y: number }>;
+const layout = await readActiveBlockLayout(db, fixture.city.id);
+if (!layout) throw new Error("Compact city layout is missing");
+const roads = rasterizeBlockRoads(layout.roadNetwork);
 const roadKeys = new Set(roads.map(cellKey));
 
 function footprintRoadDistance(task: (typeof fixture.tasks)[number], limit = 8): number {

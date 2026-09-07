@@ -1,0 +1,220 @@
+{
+  "key": "compact-garden-house-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    141,
+    201,
+    1111,
+    1113
+  ],
+  "uniformScale": 0.049484536082474224,
+  "targetSize": [
+    48,
+    45
+  ],
+  "offset": [
+    0,
+    3
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "963f90cdb5220a68b5c9a1813d6d5e57bc1898181733abc9f28214b41c65c484",
+      "runtimeSha256": "6345738ba36ae28cd77a46363b3cad7a0172c24d04af2edff1fecf7bf5ebe98d",
+      "sourceBounds": [
+        141,
+        201,
+        1111,
+        1109
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "f5b2560aca459b02158f5b3418b8d96b6715fbb2cab4940bc9d79a006831d0ba",
+      "runtimeSha256": "882763574b5a53e15a8ecffe3064c9161b3c6bcf0642d7f75b9f5c9ff12d57a9",
+      "sourceBounds": [
+        141,
+        200,
+        1111,
+        1108
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "6630e25bfda1b24b0bbecbda2605a52d5b6fdbcac199b8f755822c891c8ac40f",
+      "runtimeSha256": "99569a89decbf9ca1d6589e96b92f732ec936aee107e29b9f8617ee388ed119c",
+      "sourceBounds": [
+        144,
+        225,
+        1106,
+        1112
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-garden-house-v1",
+    "reviewedAt": "2026-09-07",
+    "reviewScope": "All stages5D,4,3D and full sequence independently accepted. Frozen source family; runtime integration not performed or claimed here.",
+    "reviewMethod": "Author and parent separately inspected exact native48x48 and8x grid. AI source corrections only; existing broad magenta recovery, MAXCOVERAGE31palette, uniform nearest-neighbour normalization. One common frame adds4sourcepx background below visible bounds and never crops opaque pixels.",
+    "projection": {
+      "camera": "High45-degree orthographic frontal-top; square axis-aligned roof and facade, no receding side wall.",
+      "roofDepthPx": 29,
+      "roofRegionBoundsPx": [
+        0,
+        3,
+        48,
+        32
+      ],
+      "facadeHeightPx": 16,
+      "floorStepPx": 5,
+      "windowPaneSizePxRange": [
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "windowRowsPx": [
+        [
+          33,
+          34
+        ],
+        [
+          38,
+          39
+        ],
+        [
+          43,
+          44
+        ]
+      ],
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorLeafBoundsPx": [
+        22,
+        45,
+        26,
+        48
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "doorFrameBoundsPx": [
+        20,
+        43,
+        27,
+        48
+      ],
+      "southEntranceAxisPx": 23.5,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "sameCameraAssertionScope": "Parent independently inspected native stages and full8x sequence, accepting5D/4/3D. Full physical footprint/base/entrance remain fixed. Stage3 north coping is lower after dismantling; internal partition axes vary up to1px, not an exact-masonry identity claim.",
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "6630e25bfda1b24b0bbecbda2605a52d5b6fdbcac199b8f755822c891c8ac40f",
+        "runtimeSha256": "99569a89decbf9ca1d6589e96b92f732ec936aee107e29b9f8617ee388ed119c",
+        "retainedRoofAreaApproxPercent": 0,
+        "notes": "Parent independently approved3D native/8x and full sequence: no roof, opaque rooms/materials, visibly partial upperfront across all three bays, no pink edge fringe. Five surviving lower2x2windows and4x3leaf/7x5portal retain exact5ROIs. All three upper window apertures absent; dark chromatic olive lintel shadows are real masonry, not charcoal window holes. Occupied48x44(top4) versus5/4 48x45(top3) reflects dismantled north coping, not per-stage crop or moved foundation. Frame/anchor unchanged,0centre/baseline drift,0foundation alpha differences onrows46/47, noholes, hardalpha,32colors. Internal central/right partition axes vary by up to1nativepx from4, explicitly accepted within existing tolerance, not claimed pixel-identical. Earlier3A trapezoid,3B height45 and3C pink edge variants remain preserved and rejected."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "f5b2560aca459b02158f5b3418b8d96b6715fbb2cab4940bc9d79a006831d0ba",
+        "runtimeSha256": "882763574b5a53e15a8ecffe3064c9161b3c6bcf0642d7f75b9f5c9ff12d57a9",
+        "retainedRoofAreaApproxPercent": 50,
+        "notes": "Parent explicitly accepted native/8x: LEFT retained roof about50% of all roof surfaces, RIGHT six opaque lowered rooms with raised orthogonal partitions and internal material stacks. All finished garden bed, vegetation and access hut are absent. Eight dark2x2apertures,4x3leaf and7x5portal remain at exactly the fixed5ROIs; same occupied48x45/frame/anchor, foundation rows46/47 have0alpha differences. Source upper bound200 vs5bound201 differs1sourcepixel; runtime bounding box has zero drift.32colors, hardalpha, noholes. Stage3 must remove the remaining roof and visibly dismantle upperfront masonry, not merely reuse this nearlycomplete shell."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "963f90cdb5220a68b5c9a1813d6d5e57bc1898181733abc9f28214b41c65c484",
+        "runtimeSha256": "6345738ba36ae28cd77a46363b3cad7a0172c24d04af2edff1fecf7bf5ebe98d",
+        "notes": "Parent explicitly accepted D native/8x: distinct terracotta roof rim with planted center and upper-right access hut, olive3floors, readable square windows, no receding plane or heavy baseline. Occupied48x45 on48x48canvas; eight2x2panes at x8/23/38 and y33/38/43, bottom center omitted fordoor. Door4x3/frame7x5, fixed baseline48/anchor24,48. Legal commonframe141,201,1111,1113 adds only4px below visiblebottom1109 (0.44%). Roof29/front16, floorpitch5/5,31colors, hardalpha, noholes. Earlier original and A/B/C sources preserved, never accepted."
+      }
+    },
+    "runtimeIntegrationReviewOwner": "Parent owns serial publication after all3stages are independently accepted; no global registration/build is claimed."
+  }
+}

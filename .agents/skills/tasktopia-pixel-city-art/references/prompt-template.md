@@ -1,23 +1,30 @@
-# Reference-art prompt template
+# Compact finished-building prompt
 
-Use approved single-stage images as visual authority for deterministic runtime normalization.
+Use this for a new stage5 only. Preserve an already accepted stage5 and derive
+construction with the reverse-stage-generator skill.
 
-This template is for creating a new stage 5 from scratch. If stage 5 already exists, do not replace it. Use `$tasktopia-building-stage-generator`, its `references/reverse-stage-prompts.md`, and one separate generation request per stage. Verify each result independently with `$tasktopia-building-stage-verifier` before continuing.
+Read `docs/art/COMPACT-BUILDING-ART-CONTRACT.md` and family geometry first.
+The following is the original apartment-specific example, not universal sizing.
+Use the row/wide geometry contracts for new low-rise art and prefer their dusty
+beige/olive bands and warm roof rim when matching the square landscape:
 
 ```text
-Use case: stylized-concept
-Asset type: Tasktopia Pixel City V5 single finished building stage
-Input images: Image 1 is the authoritative style and projection reference
-Primary request: design <asset key and Russian label> as exactly one isolated finished building, stage 5
-Scene/backdrop: perfectly flat solid #ff00ff chroma-key background, no ground plane
-Subject: one finished building with no construction remnants
-Style/medium: crisp hand-authored pixel art matching Image 1; strict straight-on frontal-top city-builder projection; facade parallel to screen, verticals vertical, floors horizontal; only a shallow roof/top plane is visible; one-pixel dark blue-grey outline; upper-left light; muted palette
-Composition/framing: one centered subject; exact canvas, bottom baseline, footprint and entrance contract; generous transparent/chroma clearance only where required
-Target proportions: runtime canvas <W>x<H> px, footprint <FW>x<FH> cells, bottom-centre anchor <AX>,<AY>, entrance <SIDE>:<OFFSET>
-Occupied bounds: stage 5 must fill <MIN_W>–<MAX_W> px width and <MIN_H>–<MAX_H> px height after aspect-preserving normalization
-Identity cue: <one defining silhouette/function cue>
-Constraints: stage 5 has no construction elements; hard pixel clusters; no antialiasing; no blur; no gradients; no soft alpha; no text; no logo; no UI; no watermark; no sheet or comparison panel
-Avoid: three-quarter/side view, receding side facade, isometric projection, photorealism, smooth vector edges, palette-only variants, changing entrances, floating buildings, excessive micro-detail
+Create exactly one finished compact apartment, stage5, on true transparent alpha.
+Use the accepted compact-apartment-v1 reference as camera, palette and pixel scale.
+Target48×48 native pixels, physical6×6 cells at8px, bottom anchor24,48,
+south entrance offset3. Coarse square pixel clusters, muted terracotta, cream,
+teal and slate, upper-left light.
+High45-degree frontal-top art convention, NOT isometric: broad rectangular roof
+dominates, no receding side facade; all roof/floor/window/door edges share screen axes.
+Roof region28–34px, front wall14–18px, three small floors at4–6px step.
+Use approved compact paired2×2 window panes and4×3 leaf inside7×5 doorway portal.
+Roof equipment is small and follows the same camera.
+No heavy black outline or baseline, text, UI, scenery, pavement, trees, fence,
+construction equipment, antialiasing, gradients, realistic texture or baked shadow.
+One source, no grid of variants, no comparison sheet, no painted checkerboard.
 ```
 
-After approval, preserve the AI-authored geometry as the visual authority. Deterministically remove chroma, resize the single stage without stretching, harden alpha and quantize the palette. Do not repaint or replace its geometry with procedural primitives. Keep accepted source art and provenance next to the runtime contract, then run the pack audit.
+For a new authorized family, replace dimensions from its explicit reviewed
+contract, not legacy catalog defaults. Save the accepted source and normalize
+with one aspect-preserving frame. The AI geometry remains authoritative:
+code may remove declared chroma, harden alpha and quantize, not redraw massing.

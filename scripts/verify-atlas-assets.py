@@ -116,7 +116,7 @@ def main() -> None:
     verify_road_directional_sheet(ATLAS / "road-v2" / "surface.png", 5)
     verify_road_overlays(ATLAS / "road-v2" / "overlay.png")
     verify_published_revision()
-    print("atlas assets: legacy families, directional terrain V4, road V2, V4 aircraft and shared top-down clouds verified")
+    print("atlas assets: registered terrain, road, cloud and retained reference aircraft checks passed; native runtime aircraft validated by verify-micro-ambient.py")
 
 
 if __name__ == "__main__":

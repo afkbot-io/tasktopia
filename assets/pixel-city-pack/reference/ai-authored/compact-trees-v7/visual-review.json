@@ -1,0 +1,97 @@
+{
+  "scope": "Native art plus real30task and480task/20sprint CITY/COUNTRY/PLANET/mobile visual acceptance; production approval remains separate.",
+  "finalWorldEvidence": {
+    "screenshots": "screenshots/compact-rc-final/",
+    "browserReport": "docs/evidence/compact-rc/final-browser.json",
+    "wholeCityReport": "docs/evidence/compact-rc/whole-city-browser.json",
+    "assetRevision": "0912ab37de3e0fa5",
+    "result": "Main agent reviewed whole city, district boundaries, all30new-home stage crops, COUNTRY, PLANET and390px mobile. Reduced trees leave crown gaps and no longer dominate one/two-storey houses. Pale/flowering species remain limited accents.",
+    "remaining": "Frozen-revision release review and target-environment deployment approval."
+  },
+  "worldEvidence": {
+    "screenshots": "screenshots/compact-rc-trees/",
+    "browserReport": "docs/evidence/compact-rc/trees-browser.json",
+    "testedAssetRevision": "0dc9aef792d0fa0b",
+    "result": "1 browser journey passed23.3s; main agent reviewed city, large park, country and planet. Reduced trees no longer dominate low-rise houses; crowns leave visible gaps and avoid roofs. Mobile image still requires final catalog review.",
+    "remaining": "Twenty-sprint scene, full release matrix and final catalog screenshots."
+  },
+  "reviewedAt": "2026-09-06",
+  "reference": "scale-preview.png / scale-preview-6x.png next to accepted48x24 and48x32 buildings",
+  "observations": [
+    "All17trees are distinct AI-authored sources, not runtime shrinkage of V6.",
+    "Living silhouettes are8–14px high and at most12px wide; deadwood is8x7px.",
+    "Ground contact is centered inside the lower planting cell; magenta-edge cleanup is mechanical.",
+    "Broad stepped canopy planes, short trunks and restrained tones; pale birch/aspen and flowering accents require density-limited use.",
+    "Palm and low willow keep species-specific silhouettes in the same overhead chunky grammar."
+  ],
+  "trees": {
+    "tree-apple": {
+      "sourceSha256": "8d86e3820b4e6cc181804a5559393f47d5381b11b6416b6d63da0ac9461f7da9",
+      "runtimeSha256": "f5789bf77cd2c27b8a84620f795785653455d52c71ef2170d82d9bac98f28008"
+    },
+    "tree-aspen": {
+      "sourceSha256": "8e2a3614d3f9b9772d665d4f4a6529d039030bca7ba2eb368a6d3e74c296abf0",
+      "runtimeSha256": "c28c6d31e53c723f45eb612e8072cd869579bacf587181b0e35264e410628e85"
+    },
+    "tree-birch": {
+      "sourceSha256": "3878a25c1a9cd65a373644f76b63d772fd2aa6475dbb50fa76f2421a5d06755f",
+      "runtimeSha256": "8839439159416584bf3d4dac5a57e48a1fa384b6420f0174ce951bc9b7712df0"
+    },
+    "tree-cedar": {
+      "sourceSha256": "0c1a60ea6f4b72459a816a6185e787790d24ac5b98ff871df0b0733c4716bd2e",
+      "runtimeSha256": "73bd653722dad651c71cebb027501f19aa0664f5bca5b320809b70aa0481336e"
+    },
+    "tree-cherry": {
+      "sourceSha256": "6d9fd38a5f9896e5aab42feef38e6f0775680ba6f7560466a5ef8a00502c1d45",
+      "runtimeSha256": "a797a11b09d23831d395cd1fc56a4f1a521c55f873d60af9928476965097b18a"
+    },
+    "tree-conifer": {
+      "sourceSha256": "9be04bc3c6c8c7edb6289fa5299456b86f8519dd2db9f27ab2c5758aaddc43e5",
+      "runtimeSha256": "31ecff6cb1548ecbcfc74af4a7c99aa5456526cb1aaab98ff09ffdade7b1ceab"
+    },
+    "tree-cypress": {
+      "sourceSha256": "da4f850fc978556e8f274a0fdadf6491c596aea0be5f54d46b1e5ad13cc15628",
+      "runtimeSha256": "52708408eae7716b0ffd022a8b195304a64d6b0e49edf2cbf28b7ff19f28866a"
+    },
+    "tree-deadwood": {
+      "sourceSha256": "76b45ae870982e578bd24c1bb575c402aa6d2b82afb5e84f870519e336b93826",
+      "runtimeSha256": "4e4431d7f6d50aaf720b3f7ee77de9964db6613963f0f5e24864a30142d8cccf"
+    },
+    "tree-flowering": {
+      "sourceSha256": "ad2261ceb0588caef7b8f8ee8f8196d2888c7d469dd72ac944dd09ded0a3ddc2",
+      "runtimeSha256": "09a2e47745f113e986354d7643e890375fa603d5a0d05260f722bf33de7b1bd8"
+    },
+    "tree-magnolia": {
+      "sourceSha256": "ee5cd81fe78a30c1f3b4dcd57997657cdb955f2fbe9351898b64fcc6a25ffa7c",
+      "runtimeSha256": "45922953040bca1e0a386b1e41ab6500397193e33bab1d0062255a8247113a63"
+    },
+    "tree-maple": {
+      "sourceSha256": "ee491d76e8ebfd6eca69b8ae38ff870aa5010c07bc50d7a0bdbf6f252397a5c9",
+      "runtimeSha256": "349cd33d0d94cd5d3dfc9bad475e61bf3e95bffe12327649789ceae8775d2981"
+    },
+    "tree-oak": {
+      "sourceSha256": "e9b00e89b7e161e75301621cf298f3c798c8e7b9132956d668ed512876b40fd7",
+      "runtimeSha256": "dae615fdcba66f7d4d58a071f31e63af9da2b403fe9d8a076ce62294a0bc2d9a"
+    },
+    "tree-palm": {
+      "sourceSha256": "04efbee6d9b9d605d668453743e77b59836be6b3c9fea78a0d10e4fece05e3df",
+      "runtimeSha256": "b498cc66630df585e8c02fd8c603ad928c481ffd64f7fc639c0940d8db27ebb4"
+    },
+    "tree-pine": {
+      "sourceSha256": "df35d2496a1f6ef3c3539618cc6a380eed8bd0279e3a919f130fdf26ebe68cc2",
+      "runtimeSha256": "3ad0e06b66736b33fffb145d6bd5663e4140fc5fe9348157dc4a0c23e2defbc1"
+    },
+    "tree-redwood": {
+      "sourceSha256": "78cc20e49b560608d12cac7044040f2537105d801bfb82964f074de6e7763d4d",
+      "runtimeSha256": "c0e15b80e05737529ff5e337667525f49f7c010fed6933c7f814ede7e79d069c"
+    },
+    "tree-round": {
+      "sourceSha256": "1d7bf7866fa039828f549187d28ec4c1597e3664bef15421405ba7bc117b3019",
+      "runtimeSha256": "a1bc527ca25d06f47b1a07a37953f87f77eb651afbc1f79167079364cd52e9bb"
+    },
+    "tree-willow": {
+      "sourceSha256": "9675846a88bfc612d3c01fe07ccca94e3d696c0761c640bdd50e78cf3876b447",
+      "runtimeSha256": "60ed0112cf15f3b755ef13d1c70f9165357b8da3879db58f0af8ad6bb029b9ab"
+    }
+  }
+}

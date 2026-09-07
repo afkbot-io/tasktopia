@@ -74,7 +74,7 @@ test("validates and captures ten new-build cities", async ({ page }) => {
     await expect.poll(async () => Number(await host.getAttribute("data-traffic-signals") ?? 0), { timeout: 45_000 })
       .toBeGreaterThanOrEqual(2);
     await expect(host).toHaveAttribute("data-wrong-way-cars", "0");
-    await expect(host).toHaveAttribute("data-wrong-way-buses", "0");
+    await expect(host).toHaveAttribute("data-buses", "0");
     await expect(host).toHaveAttribute("data-traffic-unsafe-pairs", "0");
     await expect(host).toHaveAttribute("data-world-object-depth-errors", "0");
     await expect(host).toHaveAttribute("data-resident-center-errors", "0");
@@ -102,7 +102,6 @@ test("validates and captures ten new-build cities", async ({ page }) => {
       animals: await metric("animals"),
       trafficSignals: await metric("traffic-signals"),
       wrongWayCars: await metric("wrong-way-cars"),
-      wrongWayBuses: await metric("wrong-way-buses"),
       trafficUnsafePairs: await metric("traffic-unsafe-pairs"),
       trafficMovingVehicles: await metric("traffic-moving-vehicles"),
       trafficMaxWaitMs: await metric("traffic-max-wait-ms"),

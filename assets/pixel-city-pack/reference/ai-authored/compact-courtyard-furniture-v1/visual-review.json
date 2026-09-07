@@ -1,0 +1,34 @@
+{
+  "key": "compact-courtyard-furniture-v1",
+  "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
+  "reviewedAt": "2026-09-07",
+  "reviewMethod": "Parent /root and independent reviewer /root/compact_stages inspected each source, exact native PNG and nearest8x grid preview. Compared with compact-tree-v7 scale preview and actual CITY native terrain/road screenshot. Parent independently approved rack-E after native support correction.",
+  "generationTool": "Built-in image_gen; prompts are stored beside the family. No code repaint, axis stretching or runtime scaling.",
+  "objects": {
+    "courtyard-picnic-table": {
+      "accepted": true,
+      "sourceSha256": "30e3558deb43a674f806e6f91a467e62f33bda8342ec0352a4d7e58f28199e4d",
+      "runtimeSha256": "e9484453097231c3b88e3d0fff4b062b5328f99608ed553ed379a76ceca95d8f",
+      "notes": "Broad horizontal tabletop, two readable benches and supporting bars, warm ochre/slate, compact frontal-top view.14x12 inside2x2 physical footprint; no baked terrain or overhang. Accepted source/runtime bytes unchanged."
+    },
+    "courtyard-square-planter": {
+      "accepted": true,
+      "sourceSha256": "b3748b871fd0562d57234a058e168bd92e001215bc257591ea66a08193a836d1",
+      "runtimeSha256": "1085af9b7b210caeb32d0403c00235acecde9fa60b05d06367cca243fc2d903f",
+      "notes": "Foliage-dominant square warm planter with compressed front band,7x8 inside1x1. Lime foliage is deliberately a single bounded accent, not mass scatter. Accepted bytes unchanged."
+    },
+    "courtyard-cycle-rack": {
+      "accepted": true,
+      "sourceSha256": "01f533ee34aafddc90d00dca15d06270a69da41f8c3c403485713138323dc0fe",
+      "runtimeSha256": "8c30d01a8af16ee4c8d8ffb929af490077406531086a97061d3c178ad827e9b9",
+      "notes": "Rack-E retains all six vertical supports connected edge-to-edge with three square tops and a common low base. Three native open holes1x3/2x3/1x3 remain visible. Teal/slate low frontage silhouette14x5 inside2x1. Parent independently approved native1x/8x."
+    }
+  },
+  "rejected": {
+    "rack-a": "Nearest sampling lost both outer legs; numeric dimensions alone previously passed.",
+    "rack-b": "Only14x4 occupied: undersized and too flat.",
+    "rack-c": "All legs survive, but middle top only touches them diagonally; strict native support gate rejects.",
+    "rack-d": "Painted opaque checkerboard. Not a transparent source; never normalized or published. ImageGen E replaced only the background/material softness."
+  },
+  "scope": "Ordinary finished furniture, not construction stages or domain tasks. Runtime placement and actual map QA are separate acceptance gates."
+}

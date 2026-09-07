@@ -16,8 +16,7 @@ const cityNames = ["Riverside", "Pinegate", "Harborview", "Stonebridge", "Northb
 
 await transaction(db, async () => {
   await db.prepare("UPDATE countries SET name = ?, seed = ?, world_version = 1 WHERE id = ?").run("Страна восьми городов", 814_227, user.countryId);
-  await db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(user.countryId);
-  await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(user.countryId);
+  await db.prepare("DELETE FROM world_chunk_payloads_v1 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM cities_v3 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM events WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM idempotency WHERE country_id = ?").run(user.countryId);

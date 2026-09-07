@@ -1,0 +1,5 @@
+Edit this exact construction sprite with ONE local change only. Keep the entire roof, six rooms, tools, upper row of seven shallow windows, entrance, silhouette, camera and all margins as they are. Canvas remains887x1774. NO full-building redraw.
+
+The SIX LOWER-FLOOR black windows (three left of the central door and three right) are too short. EXPAND ONLY THESE SIX BLACK RECTANGLES UPWARD by about18 source pixels, keeping their lower edge and sills fixed. Increase their black aperture height from roughly28 pixels to40–44 pixels. This corresponds to exactly2 rows on the48x96 runtime grid. Target black bodies across native rows91 AND92 (~source1661..1696), with warm sill below atnative93. Do not modify the central door at all. Do not modify upper windows at all.
+
+Preserve upper windows' current2-pixel height, exact x positions of all windows, facade horizontal floor bands, colors, opaque inside and north roof44%. Outside remains solid magenta. The desired difference must be restricted to the six lower black window interiors and the small wall strip immediately above them; absolutely no rooftop, room, door, border or camera changes.

@@ -4,14 +4,23 @@ import {
   cityDetailFocusBounds,
   clampCameraPosition,
   fitCameraScale,
-  minimumCameraScale,
+  CITY_CAMERA_MIN_SCALE,
   nextCameraTargetScale,
   pixelPerfectCameraScale,
   progressiveChunkPlan,
   smoothCameraScale,
+  cameraTerrainPadding,
 } from "../src/client/world-camera";
 
 describe("world camera geometry", () => {
+  it("fills only visible terrain beyond a small resident city without requesting entities", () => {
+    const padding = cameraTerrainPadding({ x: 512, y: 256 }, 1, { width: 1536, height: 512 },
+      { minX: 0, minY: 0, maxX: 63, maxY: 63 }, 8, 64);
+    expect(padding).toContainEqual([-1, 0]);
+    expect(padding).toContainEqual([1, 0]);
+    expect(padding).not.toContainEqual([0, 0]);
+    expect(padding.length).toBe(5);
+  });
   it("opens every city through the same 160 by 100 cell camera territory", () => {
     expect(cityDetailFocusBounds(
       { x: 200, y: 140 },
@@ -32,14 +41,15 @@ describe("world camera geometry", () => {
     expect(range.maxChunkY - range.minChunkY + 1).toBeLessThanOrEqual(4);
   });
 
-  it("clamps pan and raises the minimum zoom when the country is smaller than the screen", () => {
+  it("keeps the same zoom floor for every city size and centers a smaller raster", () => {
     const bounds = { minX: -50, minY: -30, maxX: 49, maxY: 29 };
     const screen = { width: 1200, height: 800 };
-    const scale = minimumCameraScale(screen, bounds, 8);
-    expect(scale).toBeGreaterThanOrEqual(1200 / 800);
+    const scale = CITY_CAMERA_MIN_SCALE;
+    expect(scale).toBe(.8);
+    expect(nextCameraTargetScale(1, 10000)).toBe(scale);
+    expect(nextCameraTargetScale(1, -10000)).toBe(4);
     const clamped = clampCameraPosition({ x: 100_000, y: -100_000 }, scale, screen, bounds, 8);
-    expect(clamped.x).toBeLessThanOrEqual(-bounds.minX * 8 * scale);
-    expect(clamped.y).toBeGreaterThanOrEqual(screen.height - (bounds.maxY + 1) * 8 * scale);
+    expect(clamped).toEqual({ x: 600, y: 400 });
   });
 
   it("fits a tall expanded city while preserving the preferred zoom for compact cities", () => {

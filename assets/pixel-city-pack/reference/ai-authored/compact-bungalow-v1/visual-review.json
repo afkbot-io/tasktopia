@@ -1,0 +1,101 @@
+{
+  "key": "compact-bungalow-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected per-stage native48x24 previews and nearest-neighbour8x shared-baseline sequence. Numeric registration is a separate gate. Actual CITY stages3–5 reviewed; see runtimeReview.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention, all structural edges axis aligned.",
+    "roofDepthPx": 17,
+    "facadeHeightPx": 5,
+    "floorStepPx": 5,
+    "floorCount": 1,
+    "windowPaneSizePx": [
+      3,
+      2
+    ],
+    "windowOpeningSizePx": [
+      3,
+      2
+    ],
+    "windowGroupWithSillPx": [
+      4,
+      3
+    ],
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "21055410016599b8a24300ae3d365eb3a07bf1a84597a21dad0e97ebdfade34f",
+      "runtimeSha256": "044931c1aad70c55b3999f62132d355d12e54385e1ca270b9428f42e4d888ee3",
+      "notes": "Roof entirely absent, opaque shaded rooms and aligned partitions; rough masonry/material stacks stay within silhouette. Same entrance, foundation, camera and window positions as4/5; not a scaled-down complete house."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "b3b7c89cc802432d4500b8eef5cacc9cd4e3810e6b0fbfa9e925d070afcdd785",
+      "runtimeSha256": "39a1144f1579dd443f22b4b4a27785c44ebce235e695a4707555e4c1fe085d9e",
+      "notes": "About50%bare left roof remains; right rooms opaque with axial partitions and building materials. Black unfinished glazing, same exterior and entrance; no finished rooftop equipment."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "095efa2b3be5b429782037828d7865e37b7d7d06d064098e974c5667a5601fba",
+      "runtimeSha256": "0b88e49de98b0dad424db14127e86db5e2b78627618534cecc7ed5b7fbbc8a47",
+      "notes": "One-storey cream bungalow with L-shaped sage roof bands, three amber skylights and a10x5px porch/pergola envelope. Door leaf4x3; inner entrance module6x5 is separate from the wider porch. Small3x2window openings with one-pixel sills. No side wall or heavy baseline."
+    }
+  },
+  "pendingIntegration": [
+    "Final frozen-revision QA/deployment approval; stages0–2 use shared construction geometry, not separately AI-authored art."
+  ],
+  "chromaReview": {
+    "date": "2026-09-06",
+    "method": "Main agent re-inspected native3/4/5sequence after hue-bounded background recovery. All alpha masks equal previous published bytes; palette quantization changed RGB but geometry, windows, door, roof progression and readable colors remain accepted."
+  },
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+    "acceptedStages": [
+      3,
+      4,
+      5
+    ],
+    "fixture": "compact_release_20260906:480tasks/20sprints",
+    "evidence": "docs/evidence/compact-rc/final-browser.json",
+    "checks": [
+      "Same footprint and south entrance across3/4/5",
+      "Shaded opaque interior and aligned partitions at3",
+      "Partial bare roof and unfinished openings at4",
+      "Completed unique roof and facade at5",
+      "Tree/crown and sidewalk clearance",
+      "All30real building clicks opened the matching task"
+    ],
+    "captures": [
+      {
+        "stage": 3,
+        "path": "screenshots/compact-rc-final/compact-bungalow-v1-stage-3.png",
+        "sha256": "b88efb38f47ef7711ceab5efefff5991706c7d596670be292c567d66e3c63134"
+      },
+      {
+        "stage": 4,
+        "path": "screenshots/compact-rc-final/compact-bungalow-v1-stage-4.png",
+        "sha256": "5928b60187a016964616c3529dfee94bec982ad8b10639b09a359016ffa0363d"
+      },
+      {
+        "stage": 5,
+        "path": "screenshots/compact-rc-final/compact-bungalow-v1-stage-5.png",
+        "sha256": "19b33b32c6502d67a04495e81d8b13611a40359fb5f2504bde6d90f2b82f302c"
+      }
+    ]
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "visualProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
+  "cellSizePx": 8,
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 3
+    }
+  ],
+  "floorHeightPxRange": [
+    4,
+    6
+  ],
+  "windowSizePxRange": [
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      2
+    ]
+  ],
+  "doorLeafSizePx": [
+    4,
+    3
+  ],
+  "doorFrameSizePx": [
+    6,
+    5
+  ],
+  "foundationMaskDriftPxMax": 1,
+  "stageCentreDriftPxMax": 1,
+  "stageBaselineDriftPxMax": 1,
+  "paletteColorsMax": 32,
+  "constructionClearanceCells": 1,
+  "sourceBackground": "magenta-chroma-family",
+  "stages": {
+    "0": "Reserved lot outline composed by runtime; no building image.",
+    "1": "Separate fence and south gate around the physical footprint.",
+    "2": "Same footprint with compact foundation, crane, cabin and materials.",
+    "3": "Approximately50%assembled with unchanged physical footprint, open opaque rooms, aligned partitions and rough masonry; no roof.",
+    "4": "Same shell and entrance, dark unfinished windows, approximately half the roof installed, no finished rooftop equipment.",
+    "5": "A neighborhood grocery shop: broad sage/slate roof with a raised rectangular clerestory, cream facade, a short ochre-and-cream striped canopy ABOVE facade entirely inside the footprint, two broad dark teal display-window groups flanking the central door. No signs or letters, no exterior crates."
+  },
+  "overrides": "New explicitly authorized variable compact families supersede the single 6x6 footprint. Keep the accepted high-45-degree frontal-top camera, all edges axis aligned. No heavy black outline, realistic brick texture, stretching, or image-height-based construction percentage.",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "key": "compact-shop-v1",
+  "spriteSize": [
+    48,
+    32
+  ],
+  "footprintCells": [
+    6,
+    4
+  ],
+  "anchorPx": [
+    24,
+    32
+  ],
+  "roofDepthPxRange": [
+    17,
+    22
+  ],
+  "facadeHeightPxRange": [
+    10,
+    10
+  ],
+  "foundationMaskRowsPx": [
+    30,
+    31
+  ],
+  "finishedOccupiedWidthPxRange": [
+    46,
+    48
+  ],
+  "finishedOccupiedHeightPxRange": [
+    27,
+    32
+  ],
+  "stage3OccupiedHeightPxRange": [
+    26,
+    32
+  ],
+  "floorCount": 1,
+  "approvedOpeningEnvelope": "Independently reviewed per-family immutable native measurements; shared envelope door3–4px wide and3–4px high, frame5–7px wide by5px high. Do not rescale openings to match other families.",
+  "openingMeasurementNotes": "Single6pxshopfloor below4pxstriped architectural canopy band, not two tall residential floors. Occupied48x27inside6x4parcel with5pxtopclearance. Roof17pxremains larger than whole10pxfacade/canopy. Wide display windows are shopfront groups; central4x3door leaf is separate from dark6x4jamb assembly and8pxcream surround.",
+  "measuredDesignEnvelope": "New independent service authoring envelope approved before registration. Physical6x4footprint/canvas48x32/anchor24,32 unchanged. Lower silhouettes retain deliberate transparent padding; never rescale a reverse stage to fill it.",
+  "doorLeafRectPx": [
+    22,
+    29,
+    4,
+    3
+  ]
+}

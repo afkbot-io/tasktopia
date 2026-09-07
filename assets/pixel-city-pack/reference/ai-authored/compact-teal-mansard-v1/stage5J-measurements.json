@@ -1,0 +1,109 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "attempt": "5J",
+  "sourceSha256": "7bc85125a3c218bde1bccd68207371c77823858550faa8a5644aa72983803344",
+  "runtimeSha256": "69e9d2f81448cc12cea5ea22deadc868d550ad15c5364b7eb31c24b45c6e0d26",
+  "roofRegion": [
+    0,
+    2,
+    48,
+    32
+  ],
+  "roofDepth": 30,
+  "facadeRegion": [
+    0,
+    32,
+    48,
+    48
+  ],
+  "facadeHeight": 16,
+  "floorPitch": 5,
+  "facadeApertures": [
+    [
+      8,
+      33,
+      10,
+      35
+    ],
+    [
+      23,
+      33,
+      25,
+      35
+    ],
+    [
+      38,
+      33,
+      40,
+      35
+    ],
+    [
+      8,
+      38,
+      10,
+      40
+    ],
+    [
+      23,
+      38,
+      25,
+      40
+    ],
+    [
+      38,
+      38,
+      40,
+      40
+    ],
+    [
+      8,
+      43,
+      10,
+      45
+    ],
+    [
+      38,
+      43,
+      40,
+      45
+    ]
+  ],
+  "dormerApertures": [
+    [
+      12,
+      23,
+      14,
+      25
+    ],
+    [
+      23,
+      23,
+      25,
+      25
+    ],
+    [
+      34,
+      23,
+      36,
+      25
+    ]
+  ],
+  "doorLeaf": [
+    22,
+    45,
+    26,
+    48
+  ],
+  "doorFrame": [
+    20,
+    43,
+    27,
+    48
+  ],
+  "doorGrammar": "Two-row header, four-by-three leaf at baseline, same accepted Garden family grammar. No additional threshold requirement.",
+  "foundationRows": [
+    46,
+    47
+  ],
+  "assertions": "PASS"
+}

@@ -1,0 +1,85 @@
+{
+  "key": "compact-courtyard-apartment-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected each native-grid preview and the3/4/5nearest-neighbour8xsequence. Numeric source-frame registration is a separate automated gate. Actual CITY stages3–5 reviewed; see runtimeReview.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention; parallel axis-aligned structural edges.",
+    "roofDepthPx": 30,
+    "facadeHeightPx": 15,
+    "floorStepPx": 5,
+    "floorCount": 3,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "56ac4e92c75782d5c198feb91ef7c78812a28d107666310b95cf2b5e8c57f918",
+      "runtimeSha256": "dbcd3f82259e5e749f2c8bf0716eb2ffa05ae0ca164fce4806a2328ca059aaa3",
+      "notes": "Finished inset roof atrium has an opaque sage floor and small planter; broad cream facade and paired window groups. Three native floor bands5px; upper/lower pane2x2 and middle pane2x1 after native sampling, paired groups6pxwide. Architectural entrance portal is wider than the inner7x5door-frame annotation.4 removes atrium fixtures;3 opens the full roof and has interrupted masonry."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "1427d7c8cc69a2e765ccab343c2c2faa9f42e82cfb9fabe099d8a27787e849a3",
+      "runtimeSha256": "3d877a87a443bdab3c5238178cf958c0334ff7e83e53568fd7ee437b3632d957",
+      "notes": "Finished inset roof atrium has an opaque sage floor and small planter; broad cream facade and paired window groups. Three native floor bands5px; upper/lower pane2x2 and middle pane2x1 after native sampling, paired groups6pxwide. Architectural entrance portal is wider than the inner7x5door-frame annotation.4 removes atrium fixtures;3 opens the full roof and has interrupted masonry."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "6050ac48d6fd7ca193abe95b9c00473d7b7ebf2ebf0d4494072f4792361103cc",
+      "runtimeSha256": "ea6020dd8f15eee49d3af0a7f4e0e54ccd317a75b5db12a6c983f9469e92c8dc",
+      "notes": "Finished inset roof atrium has an opaque sage floor and small planter; broad cream facade and paired window groups. Three native floor bands5px; upper/lower pane2x2 and middle pane2x1 after native sampling, paired groups6pxwide. Architectural entrance portal is wider than the inner7x5door-frame annotation.4 removes atrium fixtures;3 opens the full roof and has interrupted masonry."
+    }
+  },
+  "pendingIntegration": [
+    "Final frozen-revision QA/deployment approval; stages0–2 use shared construction geometry, not separately AI-authored art."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+    "acceptedStages": [
+      3,
+      4,
+      5
+    ],
+    "fixture": "compact_release_20260906:480tasks/20sprints",
+    "evidence": "docs/evidence/compact-rc/final-browser.json",
+    "checks": [
+      "Same footprint and south entrance across3/4/5",
+      "Shaded opaque interior and aligned partitions at3",
+      "Partial bare roof and unfinished openings at4",
+      "Completed unique roof and facade at5",
+      "Tree/crown and sidewalk clearance",
+      "All30real building clicks opened the matching task"
+    ],
+    "captures": [
+      {
+        "stage": 3,
+        "path": "screenshots/compact-rc-final/compact-courtyard-apartment-v1-stage-3.png",
+        "sha256": "8fae9a8798d0bb8b33ec29d71b58ed90cdc6cb57c5573814dc56ffa74805374d"
+      },
+      {
+        "stage": 4,
+        "path": "screenshots/compact-rc-final/compact-courtyard-apartment-v1-stage-4.png",
+        "sha256": "e967e8a2a0245ea4f41ab3cd3cae5a46d6da8a0bce148a739ca2d501e833e507"
+      },
+      {
+        "stage": 5,
+        "path": "screenshots/compact-rc-final/compact-courtyard-apartment-v1-stage-5.png",
+        "sha256": "5b6cd31b666dc35b343d18f100a1154ce662ae7dc6adfbf7d25c986460af273c"
+      }
+    ]
+  }
+}

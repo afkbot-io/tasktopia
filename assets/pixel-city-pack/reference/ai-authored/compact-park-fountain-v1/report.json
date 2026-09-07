@@ -1,0 +1,121 @@
+{
+  "key": "compact-park-fountain-v1",
+  "normalization": "One stage5 alpha-derived frame shared unchanged by allstages; aspect-preserving nearest-neighbour resize, hardalpha and atmost19opaque colors only. No architecture repaint, per-stage crop/recenter, axis stretch or terrain.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-recovery",
+  "commonSourceFrame": [
+    362,
+    362,
+    892,
+    865
+  ],
+  "uniformScale": 0.03018867924528302,
+  "targetSize": [
+    16,
+    15
+  ],
+  "offset": [
+    0,
+    1
+  ],
+  "stages": {
+    "5": {
+      "sourceSha256": "2834676a47673444849d078409fdf567081608632ef0334b278b0b9ae57ab122",
+      "runtimeSha256": "4ac98ff646f3c4026e18f241629e62687d573307c6698b911541d69d199dd1a1",
+      "sourceBounds": [
+        362,
+        362,
+        892,
+        865
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        16,
+        16
+      ],
+      "occupiedSizePx": [
+        16,
+        15
+      ],
+      "paletteColors": 19,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "tealWaterPixels": 86,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "4a40ba1c696313d54bd132785abff29c149016d1c73de9b2e07d97bb90fdbb49",
+      "runtimeSha256": "f6d9e0076462a9cc5e70879d465030cd806aed130260d0e1dd703ef39a524967",
+      "sourceBounds": [
+        361,
+        362,
+        893,
+        866
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        16,
+        16
+      ],
+      "occupiedSizePx": [
+        16,
+        15
+      ],
+      "paletteColors": 20,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "tealWaterPixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "f1bd1b16c849dd7745528c05856fa02aabd9e384eb1449ed379dd2bdbfd6a223",
+      "runtimeSha256": "f20572b06c61c1ceae1936d725cd93a024a5ece96540a890d5c7c6d872917857",
+      "sourceBounds": [
+        360,
+        362,
+        894,
+        867
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        16,
+        16
+      ],
+      "occupiedSizePx": [
+        16,
+        15
+      ],
+      "paletteColors": 20,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "tealWaterPixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticScope": "Numeric checks prove frame/alpha/palette/masks, not angle or artistic identity. Fountain water is a conservative color check; final visual review verifies basin, nozzle and construction state. Building roof, room and opening rules do not apply."
+}

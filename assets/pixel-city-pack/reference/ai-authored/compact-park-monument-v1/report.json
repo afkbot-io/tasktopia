@@ -1,0 +1,118 @@
+{
+  "key": "compact-park-monument-v1",
+  "normalization": "One stage5 alpha-derived frame shared unchanged by allstages; aspect-preserving nearest-neighbour resize, hardalpha and atmost19opaque colors only. No architecture repaint, per-stage crop/recenter, axis stretch or terrain.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-recovery",
+  "commonSourceFrame": [
+    370,
+    308,
+    884,
+    914
+  ],
+  "uniformScale": 0.026402640264026403,
+  "targetSize": [
+    14,
+    16
+  ],
+  "offset": [
+    1,
+    0
+  ],
+  "stages": {
+    "5": {
+      "sourceSha256": "15e13826250a5561468c007fe14a0813e4cc816bd990e74f7731683a8c598321",
+      "runtimeSha256": "b6ca62c90501cea08780dda6604897721e88f9dbddbc1e46ab07d557fc5e0042",
+      "sourceBounds": [
+        370,
+        308,
+        884,
+        914
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        15,
+        16
+      ],
+      "occupiedSizePx": [
+        14,
+        16
+      ],
+      "paletteColors": 19,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "35d5a40a24e71f7040cac1522c6b48908284571f791c1f5af7ed8bcdd03af2f1",
+      "runtimeSha256": "1bced4a9ff00c832af5e09720f3bffe8ff90c0c3020fb1d0e39c935c6f7d5eb1",
+      "sourceBounds": [
+        368,
+        307,
+        884,
+        915
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        15,
+        16
+      ],
+      "occupiedSizePx": [
+        14,
+        16
+      ],
+      "paletteColors": 18,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "318be99167dbbc082f5952602465e5ab6e37ff799e86c7214c81090d31d8c291",
+      "runtimeSha256": "0f3017e94eabb4fa32044a1560c55b0b0de6034350efed30a58e30c6f3dd5452",
+      "sourceBounds": [
+        364,
+        508,
+        890,
+        923
+      ],
+      "occupiedBoundsPx": [
+        1,
+        5,
+        15,
+        16
+      ],
+      "occupiedSizePx": [
+        14,
+        11
+      ],
+      "paletteColors": 19,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticScope": "Numeric checks prove frame/alpha/palette/masks, not angle or artistic identity. Fountain water is a conservative color check; final visual review verifies basin, nozzle and construction state. Building roof, room and opening rules do not apply."
+}

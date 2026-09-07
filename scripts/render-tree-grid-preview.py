@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render every V5 tree on its exact one-cell planting anchor."""
+"""Render every compact tree on its exact one-cell planting anchor."""
 
 from __future__ import annotations
 
@@ -32,12 +32,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=ROOT / "tmp/v6-tree-planting-grid.png",
+        default=ROOT / "tmp/v7-tree-planting-grid.png",
     )
     parser.add_argument(
         "--preview-output",
         type=Path,
-        default=ROOT / "tmp/v6-tree-planting-grid-4x.png",
+        default=ROOT / "tmp/v7-tree-planting-grid-4x.png",
     )
     return parser.parse_args()
 
@@ -49,12 +49,12 @@ def main() -> None:
         (
             (key, value)
             for key, value in manifest["props"].items()
-            if value.get("visualProfile") == "TASKTOPIA_V6_TREE_HIGH_45_GRID"
+            if key.startswith("tree-")
         ),
         key=lambda item: item[0],
     )
     if not tree_entries:
-        raise SystemExit("manifest contains no V5 trees")
+        raise SystemExit("manifest contains no compact trees")
 
     rows = (len(tree_entries) + SHEET_COLUMNS - 1) // SHEET_COLUMNS
     panel_size = (PANEL_COLUMNS * CELL, PANEL_ROWS * CELL)
@@ -72,12 +72,12 @@ def main() -> None:
 
     report: dict[str, object] = {"cellSizePx": CELL, "trees": {}}
     for index, (key, entry) in enumerate(tree_entries):
-        if entry.get("size") != [16, 32]:
-            raise SystemExit(f"{key}: expected 16x32 canvas")
+        if entry.get("size") != [16, 16]:
+            raise SystemExit(f"{key}: expected 16x16 canvas")
         if entry.get("footprintCells") != [1, 1]:
             raise SystemExit(f"{key}: expected 1x1 footprint")
-        if entry.get("anchorPx") != [8, 32]:
-            raise SystemExit(f"{key}: expected anchor [8,32]")
+        if entry.get("anchorPx") != [8, 16]:
+            raise SystemExit(f"{key}: expected anchor [8,16]")
 
         panel_x = (index % SHEET_COLUMNS) * panel_size[0]
         panel_y = (index // SHEET_COLUMNS) * panel_size[1]
@@ -89,16 +89,15 @@ def main() -> None:
                 )
 
         anchor_x = panel_x + (PANEL_COLUMNS // 2) * CELL + CELL // 2
-        anchor_y = panel_y + (PANEL_ROWS - 1) * CELL
+        anchor_y = panel_y + (PANEL_ROWS - 2) * CELL + CELL // 2
         sprite = Image.open(args.runtime / entry["path"]).convert("RGBA")
-        sheet.alpha_composite(sprite, (anchor_x - 8, anchor_y - 32))
 
         draw = ImageDraw.Draw(sheet)
         planting_box = (
             anchor_x - CELL // 2,
-            anchor_y - CELL,
+            anchor_y - CELL // 2,
             anchor_x + CELL // 2 - 1,
-            anchor_y - 1,
+            anchor_y + CELL // 2 - 1,
         )
         draw.rectangle(planting_box, outline=(65, 205, 229, 255), width=1)
         draw.line(
@@ -106,12 +105,13 @@ def main() -> None:
             fill=(242, 200, 75, 255),
             width=1,
         )
+        sheet.alpha_composite(sprite, (anchor_x - 8, anchor_y - 16))
         report["trees"][key] = {
             "size": entry["size"],
             "footprintCells": entry["footprintCells"],
             "anchorPx": entry["anchorPx"],
-            "plantingCell": [4, 24, 12, 32],
-            "groundContactRows": [30, 31],
+            "plantingCell": [4, 8, 12, 16],
+            "groundContactRows": [14, 15],
         }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

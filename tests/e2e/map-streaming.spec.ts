@@ -47,7 +47,7 @@ test("loads a complete city through one request and never calls chunk endpoints"
   await expect(page.getByText("Подгружаем карту…", { exact: true })).toHaveCount(0);
 });
 
-test("renders the normalized city frame before input and reaches the shared zoom-out limit", async ({ page }) => {
+test("renders the normalized city frame before input and crosses one level at the shared zoom-out limit", async ({ page }) => {
   test.setTimeout(120_000);
   const { host, canvas } = await openDemoCity(page);
   await expect(host).toHaveAttribute("data-city-first-frame-rendered", "true");
@@ -57,7 +57,8 @@ test("renders the normalized city frame before input and reaches the shared zoom
   expect(box).not.toBeNull();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   for (let step = 0; step < 12; step += 1) await page.mouse.wheel(0, 800);
-  await expect.poll(async () => Number(await host.getAttribute("data-render-scale"))).toBeCloseTo(.8, 2);
+  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await expect(page.locator(".planet-atlas")).toHaveCount(0);
 });
 
 test("keeps the loader visible until the delayed whole-city scene commits", async ({ page }) => {
@@ -86,7 +87,6 @@ test("offers a renderer restart when the city-scene request fails", async ({ pag
   let fail = true;
   await page.route("**/api/countries/*/cities/*/scene", async (route) => {
     if (fail) {
-      fail = false;
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "temporary" }) });
       return;
     }
@@ -98,6 +98,7 @@ test("offers a renderer restart when the city-scene request fails", async ({ pag
   await page.getByRole("button", { name: "Открыть страну" }).click();
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Не удалось запустить карту", { timeout: 30_000 });
+  fail = false;
   await alert.getByRole("button", { name: "Повторить" }).click();
   await expect(alert).toHaveCount(0);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });

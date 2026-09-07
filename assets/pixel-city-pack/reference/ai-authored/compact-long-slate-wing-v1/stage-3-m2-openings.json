@@ -1,0 +1,347 @@
+{
+  "stages": {
+    "5": {
+      "runtimeSha256": "f4124e03302d063f0e37e718a7c1ceb936d49bdb487b5755f7c6d7fce76c7551",
+      "leafBoundsExclusive": [
+        22,
+        92,
+        25,
+        95
+      ],
+      "frameBoundsExclusive": [
+        21,
+        91,
+        26,
+        96
+      ],
+      "windows": [
+        {
+          "boundsExclusive": [
+            4,
+            85,
+            6,
+            87
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            10,
+            85,
+            12,
+            87
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            16,
+            85,
+            18,
+            87
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            22,
+            85,
+            25,
+            87
+          ],
+          "bodyPixels": 6
+        },
+        {
+          "boundsExclusive": [
+            29,
+            85,
+            31,
+            87
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            35,
+            85,
+            37,
+            87
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            41,
+            85,
+            43,
+            87
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            4,
+            91,
+            6,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            10,
+            91,
+            12,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            16,
+            91,
+            18,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            29,
+            91,
+            31,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            35,
+            91,
+            37,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            41,
+            91,
+            43,
+            93
+          ],
+          "bodyPixels": 4
+        }
+      ],
+      "semanticLimit": "This does not certify camera, roof coverage, room walls or assembled masonry."
+    },
+    "4": {
+      "runtimeSha256": "236a100abc1b960c7cbf95410fcfb550bd9b9c186ca8d3abcde458294bb86b1a",
+      "leafBoundsExclusive": [
+        22,
+        92,
+        25,
+        95
+      ],
+      "frameBoundsExclusive": [
+        21,
+        91,
+        26,
+        96
+      ],
+      "windows": [
+        {
+          "boundsExclusive": [
+            4,
+            86,
+            6,
+            88
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            10,
+            86,
+            12,
+            88
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            16,
+            86,
+            18,
+            88
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            22,
+            86,
+            25,
+            88
+          ],
+          "bodyPixels": 6
+        },
+        {
+          "boundsExclusive": [
+            28,
+            86,
+            31,
+            88
+          ],
+          "bodyPixels": 6
+        },
+        {
+          "boundsExclusive": [
+            35,
+            86,
+            37,
+            88
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            41,
+            86,
+            43,
+            88
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            4,
+            91,
+            6,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            10,
+            91,
+            12,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            16,
+            91,
+            18,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            28,
+            91,
+            31,
+            93
+          ],
+          "bodyPixels": 6
+        },
+        {
+          "boundsExclusive": [
+            35,
+            91,
+            37,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            41,
+            91,
+            43,
+            93
+          ],
+          "bodyPixels": 4
+        }
+      ],
+      "semanticLimit": "This does not certify camera, roof coverage, room walls or assembled masonry."
+    },
+    "3": {
+      "runtimeSha256": "0c05fb4870dfd41a3ada9798a3dea157110353c963b5a99c6f108ff467cb9d3d",
+      "leafBoundsExclusive": [
+        22,
+        92,
+        25,
+        95
+      ],
+      "frameBoundsExclusive": [
+        21,
+        91,
+        26,
+        96
+      ],
+      "windows": [
+        {
+          "boundsExclusive": [
+            4,
+            91,
+            6,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            10,
+            91,
+            12,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            16,
+            91,
+            18,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            28,
+            91,
+            31,
+            93
+          ],
+          "bodyPixels": 6
+        },
+        {
+          "boundsExclusive": [
+            35,
+            91,
+            37,
+            93
+          ],
+          "bodyPixels": 4
+        },
+        {
+          "boundsExclusive": [
+            41,
+            91,
+            43,
+            93
+          ],
+          "bodyPixels": 4
+        }
+      ],
+      "semanticLimit": "This does not certify camera, roof coverage, room walls or assembled masonry."
+    }
+  },
+  "errors": []
+}

@@ -15,10 +15,11 @@ describe("atlas aircraft", () => {
       endsAtAirport
     /></svg>);
 
-    expect(markup).toContain("aircraft-v4/airplane-topdown-4.png");
+    expect(markup).toContain("micro-ambient/micro-aircraft-regional-east.png");
     expect(markup).toContain('rotate="auto"');
     expect(markup.match(/atlas-aircraft-sprite/g)).toHaveLength(1);
-    expect(markup).toContain("atlas-aircraft-trail");
+    expect(markup).not.toContain("atlas-aircraft-trail");
+    expect(markup).toContain('width="8" height="8"');
     expect(markup).toContain('values="0.05;1;1;0.05"');
     expect(markup).not.toContain("scale(-1 1)");
     expect(markup).not.toContain("atlas-aircraft-frame-b");

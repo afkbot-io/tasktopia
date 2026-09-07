@@ -1,0 +1,46 @@
+{
+  "key": "compact-olive-cafe-v1",
+  "reviewedAt": "2026-09-07",
+  "reviewScope": "Stages5I,4A and3D3 independently accepted by main and separate reviewers. Source family frozen; catalog/runtime integration remains pending.",
+  "reviewMethod": "Original source and exact48x48native/8x inspected independently. Fixed eight aperture and door ROIs measured. MAXCOVERAGE is an existing allowed palette mode; MEDIANCUT comparison retained as diagnostics because it collapsed teal glass into warm/green shades. No source pixel painting or stretching.",
+  "projection": {
+    "camera": "High45-degree orthographic frontal-top, horizontal/vertical architecture axes, no receding side facade.",
+    "roofDepthPx": 29,
+    "roofRegionBoundsPx": [0, 2, 48, 31],
+    "facadeHeightPx": 17,
+    "floorStepPx": 5,
+    "windowPaneSizePxRange": [[2, 2], [2, 2]],
+    "windowRowsPx": [[33, 34], [38, 39], [43, 44]],
+    "doorLeafSizePx": [4, 3],
+    "doorLeafBoundsPx": [22, 45, 26, 48],
+    "doorFrameSizePx": [7, 5],
+    "doorFrameBoundsPx": [20, 43, 27, 48],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "sameCameraAssertionScope": "Independently reviewed all stages5/4/3 with immutable source frame and entrance. Stage3 removes the north wall top course and upper front storey without moving the foundation.",
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "60438bf0459eda540547df0faffe3cda555955ff751e8118a6a032039064e141",
+      "runtimeSha256": "da510adb36a55f93b61cdb3edc45bb8b90df8b9cf679893aa7ee5ab95b9e18e3",
+      "notes": "Main and independent compact-building-art reviewer inspected source/native1x/8x sequence and actual aperture pixels. D1 removes only the left roof from approved4A; D2 dismantles only the upper front storey; D3 removes the north wall top course. Fourteen opaque rooms (5+5+4), raised axis-aligned walls, construction materials and partial upper columns, roof0. Five exact2x2 warm-charcoal panes retain fixed positions; leaf4x3/frame7x5 and full foundation match5/4. Source-derived aperture colors38,33,24 /57,44,32 /84,67,32 are real shaded openings, confirmed independently. Existing broad magenta key removes two exterior fringe pixels, while normalized5/4 remain byte-identical. Native48x44,31colors, hardalpha,0holes,0center/baseline/foundation drift. No per-stage transform, pixel painting or geometry tolerance change."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "6ab832636728dd855129bcb1dcd09e90bcf68a57babf5b69486c15af08d53308",
+      "runtimeSha256": "593142a4ca832ca27c2950350c50dd1f828a5635eeac5a628432030a6e2ffba5",
+      "notes": "Main and independent compact-stage reviewer inspected full source, native48x48 and8x. Approximately44–46%leftroof, opaque rightrooms/materials, no finished cafe furniture or landscaping. Same8square2x2openings,4x3leaf/7x5creamportal, roof29/facade17 and floorpitch5. Warm-charcoal opening colors87,77,63 and74,67,56 are source shading, not missing body pixels; fixed ROI equality verifies them with a family-local stage4 classifier. Canvas/frame unchanged, occupied48x46,32colors/hardalpha/0holes and foundation alpha exact."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "86750cbaf33815aca72fb126764cbdb7abcac452c8079f1c8e6d9cd6cc21b14a",
+      "runtimeSha256": "b24696098cedc28a986983cdc2d2e92eb303cb7555cd36aa94c86aaa554120f2",
+      "notes": "Distinct cafe terrace with orange/cream canopy, teal table/chairs, four pots and two hedge planters; muted terracotta short three-floor facade. Garden-house source was a geometry reference, not the delivered raster. The cafe roof arrangement is independently AI-authored, not merely a facade recolor. Eight exact2x2glass bodies and flat4x3leaf/7x5portal. Occupied48x46, anchor24,48; fixed tightframe142,169,1109,1092. MAXCOVERAGE yields32colors/hardalpha/0holes and readable tealglass. Earlier A–H corrections remain rejected for camera/opening/floor-rhythm drift."
+    }
+  }
+}

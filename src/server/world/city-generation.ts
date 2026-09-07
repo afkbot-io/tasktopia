@@ -5,103 +5,16 @@ import type {
   CityMorphology,
   DistrictArchetype,
   DistrictDto,
-  Rect,
   RoadCellDto,
   SurfaceCellDto,
   TaskDto,
   WorldFeatureDto,
 } from "../../shared/contracts";
+import { buildRoadSurfaces } from "../../shared/road-surfaces";
 import { greenAreaPathCells } from "../../shared/green-area";
-import { cellKey, contains, expandRect, neighbors4, rectangleFootprint } from "./grid";
+import { cellKey, contains, neighbors4 } from "./grid";
 
-export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
-  // V2 always separates opposing streams. Local streets use two outer travel
-  // cells and one central marking. Bus-capable roads use two-cell-wide median
-  // clearance plus an outer shoulder, so honest 22px buses never need runtime
-  // squeezing and can pass without touching the sidewalk or opposing traffic.
-  LOCAL: 3,
-  COLLECTOR: 7,
-  ARTERIAL: 7,
-  HIGHWAY: 7,
-};
-
-/** Keep annex site search near fresh land instead of rescanning the whole old district. */
-export function districtAnnexSearchBounds(patchBounds: Rect): Rect {
-  return expandRect(patchBounds, 24);
-}
-
-/**
- * Screen-space facades rise north from their south ground anchor. Reserve the
- * opaque height that is not already represented by the physical lot depth so
- * another frontage or street cannot be planned underneath the artwork.
- */
-export function buildingVisualSetbackCells(entry: BuildingCatalogEntry): number {
-  const finished = entry.stageOpaqueBounds[4]!;
-  const opaqueHeight = Math.max(0, finished.bottom - finished.top);
-  const projected = Math.max(0, Math.ceil((opaqueHeight - entry.footprint.height * 8) / 8));
-  if (entry.category === "HIGHRISE" || entry.category === "CIVIC" || entry.spriteSize.height >= 200) return projected;
-  return 0;
-}
-
-export function buildingLotDepthCells(entry: BuildingCatalogEntry): number {
-  return entry.footprint.height + buildingVisualSetbackCells(entry);
-}
-
-/** A compact infill facade must be compact in screen space, not only on the ground. */
-export function isCompactNewBuildBuilding(entry: BuildingCatalogEntry): boolean {
-  return entry.footprint.width <= 14 && buildingLotDepthCells(entry) <= 12;
-}
-
-export function buildingVisualReservationCells(entry: BuildingCatalogEntry, origin: Cell): Cell[] {
-  const northSetback = buildingVisualSetbackCells(entry);
-  return rectangleFootprint(
-    { x: origin.x, y: origin.y - northSetback },
-    entry.footprint.width,
-    entry.footprint.height + northSetback,
-  );
-}
-
-export function findAreaAccessPath(input: {
-  allowed: ReadonlySet<string>;
-  footprint: Cell[];
-  roads: ReadonlyMap<string, RoadCellDto>;
-  surfaces: ReadonlyMap<string, SurfaceCellDto>;
-  occupied: ReadonlySet<string>;
-  isWalkableTerrain: (cell: Cell) => boolean;
-  maxLength?: number;
-}): Cell[] | null {
-  const footprintKeys = new Set(input.footprint.map(cellKey));
-  const starts = new Map<string, Cell>();
-  for (const cell of input.footprint) {
-    for (const next of neighbors4(cell)) {
-      const nextKey = cellKey(next);
-      if (!footprintKeys.has(nextKey) && input.allowed.has(nextKey)) starts.set(nextKey, next);
-    }
-  }
-  const maxLength = input.maxLength ?? 8;
-  // Include the sidewalk endpoint in the persisted path. Completed districts
-  // suppress newly inferred sidewalks at their boundary, so omitting this
-  // anchor can make a valid park unreachable after regeneration.
-  for (const start of starts.values()) if (input.surfaces.get(cellKey(start))?.kind === "SIDEWALK") return [start];
-  const queue = [...starts.values()].map((cell) => ({ cell, path: [cell] }));
-  const visited = new Set<string>();
-  while (queue.length > 0) {
-    const state = queue.shift()!;
-    const stateKey = cellKey(state.cell);
-    if (visited.has(stateKey) || state.path.length >= maxLength) continue;
-    visited.add(stateKey);
-    if (input.roads.has(stateKey) || input.occupied.has(stateKey) || footprintKeys.has(stateKey) || !input.isWalkableTerrain(state.cell)) continue;
-    for (const next of neighbors4(state.cell)) {
-      const nextKey = cellKey(next);
-      if (input.surfaces.get(nextKey)?.kind === "SIDEWALK") return [...state.path, next];
-      if (!input.allowed.has(nextKey) || input.surfaces.has(nextKey) || input.roads.has(nextKey)
-        || footprintKeys.has(nextKey) || input.occupied.has(nextKey)) continue;
-      queue.push({ cell: next, path: [...state.path, next] });
-    }
-  }
-  return null;
-}
-
+export { ROAD_WIDTH } from "../../shared/road-surfaces";
 const MORPHOLOGIES: CityMorphology[] = ["BALANCED", "DENSE_CORE", "GARDEN_CITY", "POLYCENTRIC"];
 const ARCHETYPES: DistrictArchetype[] = ["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"];
 
@@ -141,94 +54,6 @@ export function chooseDistrictArchetype(input: {
   const cycle = Math.floor(input.existing.length / order.length);
   const offset = cycle > 0 && input.variation > 0.66 ? 1 : 0;
   return order[(input.existing.length + offset) % order.length]!;
-}
-
-export type BuildingZoningRole =
-  | "LOW_RISE_RESIDENTIAL"
-  | "MID_RISE_RESIDENTIAL"
-  | "HIGH_RISE_RESIDENTIAL"
-  | "COMMERCIAL"
-  | "CIVIC";
-
-export function buildingZoningRole(entry: BuildingCatalogEntry): BuildingZoningRole {
-  const tags = new Set(entry.tags);
-  if (entry.category === "CIVIC") return "CIVIC";
-  if (entry.category === "COMMERCIAL") return "COMMERCIAL";
-  if (entry.category === "HIGHRISE" || tags.has("high-rise-residential")) return "HIGH_RISE_RESIDENTIAL";
-  if (tags.has("mid-rise-residential") || tags.has("new-build") || tags.has("mixed-use")) return "MID_RISE_RESIDENTIAL";
-  return "LOW_RISE_RESIDENTIAL";
-}
-
-/** Gas stations belong inside a road-bounded service court, not on a facade row. */
-export function buildingLotPlacementScore(input: {
-  entry: BuildingCatalogEntry;
-  lot: { origin: Cell; width: number; height: number };
-  origin: Cell;
-  accessDistance: number;
-  bottomGap: number;
-  partyBonus: number;
-}): number {
-  const { entry, lot, origin, accessDistance, bottomGap, partyBonus } = input;
-  if (entry.serviceRole === "fuel-service") {
-    const lotCenterX = lot.origin.x + lot.width / 2;
-    const lotCenterY = lot.origin.y + lot.height / 2;
-    const buildingCenterX = origin.x + entry.footprint.width / 2;
-    const buildingCenterY = origin.y + entry.footprint.height / 2;
-    const centerOffset = Math.abs(buildingCenterX - lotCenterX) + Math.abs(buildingCenterY - lotCenterY);
-    return accessDistance * 100 + centerOffset * 24;
-  }
-  const edgePenalty = (origin.x - lot.origin.x) * 2;
-  return accessDistance * 100 + bottomGap * 30 + partyBonus + edgePenalty;
-}
-
-export function buildingCompatibleWithArchetype(entry: BuildingCatalogEntry, archetype: DistrictArchetype): boolean {
-  const role = buildingZoningRole(entry);
-  if (entry.serviceRole) return true;
-  if (archetype === "PRIVATE") return role === "LOW_RISE_RESIDENTIAL" || role === "MID_RISE_RESIDENTIAL" || role === "COMMERCIAL" || role === "CIVIC";
-  if (archetype === "NEW_BUILD") {
-    const longSupport = role === "COMMERCIAL" && (entry.footprint.width >= 5 || entry.key === "commercial-parking-lot");
-    return role === "MID_RISE_RESIDENTIAL" || role === "HIGH_RISE_RESIDENTIAL" || longSupport || role === "CIVIC";
-  }
-  if (archetype === "COMMERCIAL") return role === "COMMERCIAL" || role === "CIVIC" || entry.tags.includes("mixed-use");
-  if (archetype === "CIVIC") return role === "CIVIC" || role === "COMMERCIAL";
-  return true;
-}
-
-/** Task buildings obey the same zoning contract as the generated city. */
-export function taskBuildingCompatibleWithArchetype(entry: BuildingCatalogEntry, archetype: DistrictArchetype): boolean {
-  // Reviewed emergency services are city infrastructure, not residential
-  // zoning. Their own catalog rules and placement platform decide the site;
-  // every district archetype may host the scheduled 10/20/30-task service.
-  if (entry.serviceRole) return buildingCompatibleWithArchetype(entry, archetype);
-  if (archetype === "PRIVATE" || archetype === "NEW_BUILD") return buildingCompatibleWithArchetype(entry, archetype);
-  // The current task catalog intentionally focuses on residential growth.
-  // Dense task buildings remain the neutral fallback for older commercial or
-  // civic district records until those task types get an explicit selector.
-  return entry.tags.includes("new-build");
-}
-
-export function primaryZoningRole(archetype: DistrictArchetype, role: BuildingZoningRole): boolean {
-  if (archetype === "PRIVATE") return role === "LOW_RISE_RESIDENTIAL" || role === "MID_RISE_RESIDENTIAL";
-  if (archetype === "NEW_BUILD") return role === "MID_RISE_RESIDENTIAL" || role === "HIGH_RISE_RESIDENTIAL";
-  if (archetype === "COMMERCIAL") return role === "COMMERCIAL";
-  if (archetype === "CIVIC") return role === "CIVIC";
-  return true;
-}
-
-export function archetypeAffinity(entry: BuildingCatalogEntry, archetype: DistrictArchetype): number {
-  const tags = new Set(entry.tags);
-  const role = buildingZoningRole(entry);
-  const isLowRise = role === "LOW_RISE_RESIDENTIAL";
-  const isMidRise = role === "MID_RISE_RESIDENTIAL";
-  const isHighRise = role === "HIGH_RISE_RESIDENTIAL";
-  const isMixed = tags.has("mixed-use");
-  const isCommercial = entry.category === "COMMERCIAL" || tags.has("commercial");
-  const isCivic = entry.category === "CIVIC" || tags.has("civic");
-  if (archetype === "NEW_BUILD") return isHighRise ? 14 : isMidRise || isMixed ? 11 : isCommercial ? 5 : isCivic ? 2 : isLowRise ? -11 : 0;
-  if (archetype === "PRIVATE") return isLowRise ? 14 : isMidRise ? 10 : isCommercial ? 4 : isCivic ? 2 : isHighRise ? -11 : 0;
-  if (archetype === "MIXED_URBAN") return isMixed ? 14 : isMidRise || isHighRise ? 9 : isCommercial || isCivic ? 6 : isLowRise ? 2 : 0;
-  if (archetype === "COMMERCIAL") return isCommercial ? 14 : isMixed ? 7 : isCivic ? 3 : isLowRise ? -7 : 0;
-  return isCivic ? 16 : isMixed || isCommercial ? 5 : isLowRise ? -3 : 0;
 }
 
 export function entranceOutside(origin: Cell, entry: BuildingCatalogEntry, side: EntranceSide, offset: number): Cell {
@@ -322,42 +147,18 @@ export function buildSurfaceMap(input: {
   features: WorldFeatureDto[];
   isSurfaceTerrain: (cell: Cell) => boolean;
 }): Map<string, SurfaceCellDto> {
-  const surfaces = new Map<string, SurfaceCellDto>();
-  // V10: RUIN plots are vacant land. They neither block surfaces nor publish
-  // any surface of their own — the cell stays plain terrain until redevelopment.
   const activeFeatures = input.features.filter((feature) => feature.kind !== "RUIN");
   const blocked = new Set([
     ...input.tasks.flatMap((task) => task.footprint).map(cellKey),
     ...activeFeatures.flatMap((feature) => feature.footprint).map(cellKey),
   ]);
-  const pavementNeighbors = (cell: Cell): Cell[] => {
-    const result: Cell[] = [];
-    for (let y = -1; y <= 1; y += 1) for (let x = -1; x <= 1; x += 1) {
-      if (x !== 0 || y !== 0) result.push({ x: cell.x + x, y: cell.y + y });
-    }
-    return result;
-  };
+  const surfaces = buildRoadSurfaces({ roads: input.roads, blocked,
+    isSurfaceTerrain: input.isSurfaceTerrain,
+    isInsideCity: cell => input.cities.some(city => contains(city.bounds, cell)),
+  });
 
-  for (const road of input.roads.values()) {
-    // Pavement is part of the road right-of-way. The full eight-neighbour
-    // envelope supplies diagonal corner slabs and end caps, so a road never
-    // exposes a grass notch at a bend or beside street furniture. District
-    // lifecycle may stop new lots, but it must not cut an existing footway.
-    for (const cell of pavementNeighbors(road)) {
-      const key = cellKey(cell);
-      if (input.roads.has(key) || blocked.has(key) || !input.isSurfaceTerrain(cell)) continue;
-      const insideCity = input.cities.some((city) => contains(city.bounds, cell));
-      const kind: SurfaceCellDto["kind"] = road.roadClass === "HIGHWAY" && !insideCity ? "SHOULDER" : "SIDEWALK";
-      const existing = surfaces.get(key);
-      if (!existing || existing.kind === "SHOULDER" && kind === "SIDEWALK") surfaces.set(key, { ...cell, kind });
-    }
-  }
-
-  publishCrosswalks(input.roads, surfaces);
-
-  // V10: a complex publishes its courtyard skeleton only together with the
-  // first committed courtyard building. Empty lots stay plain grass, so the
-  // map never shows pedestrian spurs leading nowhere.
+  // Occupied block slots publish their shared pedestrian access. Planned
+  // slots remain unpaved until an actual task uses them.
   for (const district of input.districts) {
     const finish = pathFinish(district.id);
     for (const lot of district.lots) {
@@ -422,121 +223,4 @@ export function buildSurfaceMap(input: {
     }
   }
   return surfaces;
-}
-
-type CrosswalkCandidate = {
-  cells: Cell[];
-  orientation: "H" | "V";
-  axis: number;
-  group: string;
-};
-
-function publishCrosswalks(roads: Map<string, RoadCellDto>, surfaces: Map<string, SurfaceCellDto>): void {
-  const candidates = new Map<string, CrosswalkCandidate>();
-  for (const sidewalk of [...surfaces.values()].filter((surface) => surface.kind === "SIDEWALK")) {
-    for (const direction of [{ x: 1, y: 0 }, { x: 0, y: 1 }] as const) {
-      const first = { x: sidewalk.x + direction.x, y: sidewalk.y + direction.y };
-      const firstRoad = roads.get(cellKey(first));
-      if (!firstRoad || firstRoad.structure !== "ROAD" || firstRoad.roadClass === "HIGHWAY") continue;
-      const expectedWidth = ROAD_WIDTH[firstRoad.roadClass];
-      const cells: Cell[] = [];
-      let current = first;
-      while (roads.has(cellKey(current)) && cells.length < expectedWidth) {
-        cells.push(current);
-        current = { x: current.x + direction.x, y: current.y + direction.y };
-      }
-      if (surfaces.get(cellKey(current))?.kind !== "SIDEWALK" || cells.length !== expectedWidth) continue;
-      if (cells.some((cell) => {
-        const road = roads.get(cellKey(cell));
-        return !road || road.structure !== "ROAD" || road.roadClass !== firstRoad.roadClass;
-      })) continue;
-      const orientation: "H" | "V" = direction.x !== 0 ? "H" : "V";
-      const perpendicularCenter = orientation === "H"
-        ? cells.reduce((sum, cell) => sum + cell.x, 0) / cells.length
-        : cells.reduce((sum, cell) => sum + cell.y, 0) / cells.length;
-      const axis = orientation === "H" ? sidewalk.y : sidewalk.x;
-      const group = `${orientation}:${Math.round(perpendicularCenter * 2)}`;
-      const candidateKey = cells.map(cellKey).sort().join("|");
-      candidates.set(candidateKey, { cells, orientation, axis, group });
-    }
-  }
-
-  const groups = new Map<string, CrosswalkCandidate[]>();
-  for (const candidate of candidates.values()) groups.set(candidate.group, [...(groups.get(candidate.group) ?? []), candidate]);
-  for (const group of groups.values()) {
-    const ordered = group.sort((left, right) => left.axis - right.axis);
-    const segments: CrosswalkCandidate[][] = [];
-    for (const candidate of ordered) {
-      const segment = segments.at(-1);
-      if (!segment || candidate.axis - segment.at(-1)!.axis > 1) segments.push([candidate]);
-      else segment.push(candidate);
-    }
-    for (const segment of segments) {
-      // Short blocks get one central crossing. Long blocks receive a crossing
-      // roughly every twelve cells, keeping the walk graph useful without
-      // painting zebra stripes across the entire street.
-      const firstIndex = Math.min(segment.length - 1, Math.max(0, Math.floor(Math.min(6, segment.length / 2))));
-      for (let index = firstIndex; index < segment.length; index += 12) {
-        const crossing = segment[index]!;
-        for (const cell of crossing.cells) surfaces.set(cellKey(cell), { ...cell, kind: "CROSSWALK", orientation: crossing.orientation });
-      }
-    }
-  }
-}
-
-export type AccessPlan = { entrance: Cell; path: Cell[]; distance: number };
-
-export function findAccessPlan(input: {
-  entry: BuildingCatalogEntry;
-  origin: Cell;
-  lotCells: Set<string>;
-  buildingFootprint: Set<string>;
-  occupied: Set<string>;
-  roads: Map<string, RoadCellDto>;
-  surfaces: Map<string, SurfaceCellDto>;
-  isWalkableTerrain: (cell: Cell) => boolean;
-  maxLength?: number;
-}): AccessPlan | null {
-  const maxLength = input.maxLength ?? 6;
-  const isPublicPedestrianSurface = (cell: Cell): boolean => {
-    const kind = input.surfaces.get(cellKey(cell))?.kind;
-    return kind === "SIDEWALK" || kind === "PATH";
-  };
-  let best: AccessPlan | null = null;
-  for (const configured of input.entry.entrances) {
-    const start = entranceOutside(input.origin, input.entry, configured.side, configured.offset);
-    const startKey = cellKey(start);
-    if (input.roads.has(startKey) || input.buildingFootprint.has(startKey) || input.occupied.has(startKey) || !input.isWalkableTerrain(start)) continue;
-    if (isPublicPedestrianSurface(start)) {
-      const direct = { entrance: start, path: [], distance: 0 };
-      if (!best || direct.distance < best.distance) best = direct;
-      continue;
-    }
-    type State = { cell: Cell; path: Cell[]; direction: number; turns: number };
-    const queue: State[] = [{ cell: start, path: [start], direction: -1, turns: 0 }];
-    const visited = new Set<string>();
-    while (queue.length > 0) {
-      const state = queue.shift()!;
-      if (state.path.length > maxLength) continue;
-      const stateKey = `${cellKey(state.cell)}:${state.direction}:${state.turns}`;
-      if (visited.has(stateKey)) continue;
-      visited.add(stateKey);
-      for (let direction = 0; direction < 4; direction += 1) {
-        const next = neighbors4(state.cell)[direction]!;
-        const nextKey = cellKey(next);
-        if (isPublicPedestrianSurface(next)) {
-          const candidate = { entrance: start, path: state.path, distance: state.path.length };
-          if (!best || candidate.distance < best.distance) best = candidate;
-          queue.length = 0;
-          break;
-        }
-        const turns = state.direction < 0 || state.direction === direction ? state.turns : state.turns + 1;
-        if (turns > 2 || state.path.length >= maxLength) continue;
-        if (!input.lotCells.has(nextKey) || input.roads.has(nextKey) || input.buildingFootprint.has(nextKey) || input.occupied.has(nextKey)) continue;
-        if (!input.isWalkableTerrain(next)) continue;
-        queue.push({ cell: next, path: [...state.path, next], direction, turns });
-      }
-    }
-  }
-  return best;
 }

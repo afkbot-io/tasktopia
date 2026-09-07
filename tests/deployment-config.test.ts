@@ -145,8 +145,35 @@ describe("production reverse proxy", () => {
     expect(dockerignore).toContain("assets/*");
     expect(dockerignore).toContain("!assets/pixel-city-pack/manifest.json");
     expect(dockerignore).toContain("!assets/pixel-city-pack/catalog/**");
-    expect(dockerignore).not.toContain("!assets/pixel-city-pack/reference");
+    // Traversing one reference directory for imported geometry metadata must
+    // not admit its source PNGs, drafts or normalization artifacts.
+    const rules = dockerignore.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    expect(rules).toEqual(expect.arrayContaining([
+      "assets/pixel-city-pack/reference/*",
+      "assets/pixel-city-pack/reference/ai-authored/*",
+      "assets/pixel-city-pack/reference/ai-authored/compact-long-slate-wing-v1/*",
+    ]));
+    expect(rules).not.toContain("!assets/pixel-city-pack/reference/**");
+    expect(rules.filter(rule => rule.startsWith("!assets/pixel-city-pack/reference") && /[.]png|sources|normalized/.test(rule))).toEqual([]);
     expect(dockerignore).not.toContain("!assets/pixel-city-pack/runtime");
+  });
+
+  it("keeps local evidence, caches and environment secrets out of the build context", () => {
+    const rules = dockerignore.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    expect(rules).toEqual(expect.arrayContaining([
+      "tmp", ".repowise", ".agents", ".codex", "docs/evidence",
+      "**/.env", "**/.env.*", "**/__pycache__", "*.dump", "*.heapsnapshot",
+    ]));
+    expect(rules).toContain("!**/.env*.example");
+  });
+
+  it("includes the JSON metadata imported by the container's typecheck", () => {
+    const rules = dockerignore.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    expect(rules).toEqual(expect.arrayContaining([
+      "!assets/pixel-city-pack/micro-ambient-manifest.json",
+      "!assets/pixel-city-pack/reference/ai-authored/compact-long-slate-wing-v1/geometry.json",
+    ]));
+    expect(rules).not.toContain("!assets/pixel-city-pack/reference/**");
   });
 
   it("guards disk space and rotates pre-update database backups", () => {

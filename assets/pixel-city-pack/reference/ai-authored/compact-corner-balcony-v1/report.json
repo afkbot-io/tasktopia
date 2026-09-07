@@ -1,0 +1,213 @@
+{
+  "key": "compact-corner-balcony-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    276,
+    186,
+    1260,
+    867
+  ],
+  "uniformScale": 0.04698972099853157,
+  "targetSize": [
+    46,
+    32
+  ],
+  "offset": [
+    1,
+    0
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "b19531fd963a3635f5b4a892df5e751ac55cdb35644761169fa522d54853d998",
+      "runtimeSha256": "62b6bc9b2bfbb9ee6dc0c45b559b7f78e6e73b7022333a47c6e986447dd35911",
+      "sourceBounds": [
+        276,
+        186,
+        1260,
+        867
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "19bae4deb4747aa331c8b279a732b94625a40ce75a37df656e3e2b21a986ac7e",
+      "runtimeSha256": "db73be239924a502db6fa87994f585d5dedbee17b7b820e285c4f355f07362d0",
+      "sourceBounds": [
+        275,
+        186,
+        1261,
+        867
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "31b9ffa8abebb0285b723243bfa027827c1de01b6e9eb14f3d58feddab41c058",
+      "runtimeSha256": "e1d4d049fd967dadd869a7daaaea35861831dd5a009bf497c1baa4937fc60df1",
+      "sourceBounds": [
+        274,
+        186,
+        1263,
+        868
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-corner-balcony-v1",
+    "reviewedAt": "2026-09-06",
+    "reviewMethod": "Main agent inspected each native-grid preview and the3/4/5nearest-neighbour8xsequence. Numeric source-frame registration is a separate automated gate. Actual CITY stages3\u20135 reviewed; see runtimeReview.",
+    "projection": {
+      "camera": "High45-degree frontal-top orthographic convention; parallel axis-aligned structural edges.",
+      "roofDepthPx": 21,
+      "facadeHeightPx": 11,
+      "floorStepPx": 5,
+      "floorCount": 2,
+      "doorLeafSizePx": [
+        3,
+        4
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "31b9ffa8abebb0285b723243bfa027827c1de01b6e9eb14f3d58feddab41c058",
+        "runtimeSha256": "e1d4d049fd967dadd869a7daaaea35861831dd5a009bf497c1baa4937fc60df1",
+        "notes": "Slate roof has an inset opaque courtyard and a low L-shaped rear/right pavilion; corner balcony remains attached to the same facade. Upper native windows2x3, lower2x2 with sills.4 has approximately40%slab and dark empty glazing;3 has no roof, opaque rooms and rough wall ends."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "19bae4deb4747aa331c8b279a732b94625a40ce75a37df656e3e2b21a986ac7e",
+        "runtimeSha256": "db73be239924a502db6fa87994f585d5dedbee17b7b820e285c4f355f07362d0",
+        "notes": "Slate roof has an inset opaque courtyard and a low L-shaped rear/right pavilion; corner balcony remains attached to the same facade. Upper native windows2x3, lower2x2 with sills.4 has approximately40%slab and dark empty glazing;3 has no roof, opaque rooms and rough wall ends."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "b19531fd963a3635f5b4a892df5e751ac55cdb35644761169fa522d54853d998",
+        "runtimeSha256": "62b6bc9b2bfbb9ee6dc0c45b559b7f78e6e73b7022333a47c6e986447dd35911",
+        "notes": "Slate roof has an inset opaque courtyard and a low L-shaped rear/right pavilion; corner balcony remains attached to the same facade. Upper native windows2x3, lower2x2 with sills.4 has approximately40%slab and dark empty glazing;3 has no roof, opaque rooms and rough wall ends."
+      }
+    },
+    "pendingIntegration": [
+      "Final frozen-revision QA/deployment approval; stages0\u20132 use shared construction geometry, not separately AI-authored art."
+    ],
+    "runtimeReview": {
+      "reviewedAt": "2026-09-06",
+      "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+      "acceptedStages": [
+        3,
+        4,
+        5
+      ],
+      "fixture": "compact_release_20260906:480tasks/20sprints",
+      "evidence": "docs/evidence/compact-rc/final-browser.json",
+      "checks": [
+        "Same footprint and south entrance across3/4/5",
+        "Shaded opaque interior and aligned partitions at3",
+        "Partial bare roof and unfinished openings at4",
+        "Completed unique roof and facade at5",
+        "Tree/crown and sidewalk clearance",
+        "All30real building clicks opened the matching task"
+      ],
+      "captures": [
+        {
+          "stage": 3,
+          "path": "screenshots/compact-rc-final/compact-corner-balcony-v1-stage-3.png",
+          "sha256": "6a8f3f736eeb6e02a9c35465e5f64d87af7142c5a12a3960d947289a38c25f4c"
+        },
+        {
+          "stage": 4,
+          "path": "screenshots/compact-rc-final/compact-corner-balcony-v1-stage-4.png",
+          "sha256": "478b42094438454dd558ef39f5e3201bf4864d80f18f9958ccc48afc7bc17c51"
+        },
+        {
+          "stage": 5,
+          "path": "screenshots/compact-rc-final/compact-corner-balcony-v1-stage-5.png",
+          "sha256": "72907fee9eef2c7cbb98372130cc5f802e18136be91dac201b4c126a6a4e739e"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "key": "compact-airport-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected native per-stage previews, nearest-neighbour8x3/4/5sequences and center-entrance pixel rows. Per-family architecture envelope is approved independently before publication; no transformation other than common-frame normalization.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention; axis-aligned structural edges, no side facade.",
+    "roofDepthPx": 25,
+    "facadeHeightPx": 6,
+    "floorStepPx": 6,
+    "floorCount": 1,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "doorLeafRectPx": [
+      22,
+      29,
+      4,
+      3
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "92969528a0eafa418832c841ab361f89500c16fe76606b9c2526dec0dcbff568",
+      "runtimeSha256": "4dfe6ee0e914e9ea6aa4328b85086bfdfd5f54dab7bd8a220d50b4cf2e1b23c8",
+      "notes": "Single6pxterminal floor, roof25pxincludes fully inset control tower and glass canopy bands. Native occupied48x31with1pxtopclearance. Tower/windsock/glass removed in4; half plain roof.3has full opaque open rooms. Door leaf4x3at[22,29], excluding the dark left jamb and top lintel. No roof, opaque rooms, incomplete masonry and internal materials."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "302e301ad55a8e9db3a214044a77d4fbab92063273d91e195964f0ea5fb9819a",
+      "runtimeSha256": "fc83d4e1c5b73a251ceefacd6a28d6f852e97ed2992475f386fa5b50d6120479",
+      "notes": "Single6pxterminal floor, roof25pxincludes fully inset control tower and glass canopy bands. Native occupied48x31with1pxtopclearance. Tower/windsock/glass removed in4; half plain roof.3has full opaque open rooms. Door leaf4x3at[22,29], excluding the dark left jamb and top lintel. Approximately half bare roof, dark unglazed facade openings; no completed roof equipment."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "c0357c85651d7d1a6f2a5c3db23f78b8370ffb2eb54b1132f3a8a1248f146458",
+      "runtimeSha256": "361409e0b972e2ea3b3e06ac65939bcbda9b9e978dc90f52f15727d9b69655c6",
+      "notes": "Single6pxterminal floor, roof25pxincludes fully inset control tower and glass canopy bands. Native occupied48x31with1pxtopclearance. Tower/windsock/glass removed in4; half plain roof.3has full opaque open rooms. Door leaf4x3at[22,29], excluding the dark left jamb and top lintel. Finished unique service design."
+    }
+  },
+  "pendingIntegration": [
+    "Freeze and approve the exact production release revision/environment; local visual acceptance is not deployment authorization."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "acceptedStages": [
+      5
+    ],
+    "screenshot": "screenshots/compact-rc-service-art/compact-airport-v1.png",
+    "screenshotSha256": "a303d186b1228de280bfee26c92b4fe3f7f1451ac81772f450552d9f8e2721ff",
+    "evidence": "docs/evidence/compact-rc/service-art-browser.json",
+    "method": "Main agent inspected the actual completed authored family in the 480-task city after Playwright verified its buildingType and clicked through to the correct task. Cohesive native scale, clear frontage and no sprite/lot overflow. Stage 3/4 acceptance remains the separate native sequence review above."
+  }
+}

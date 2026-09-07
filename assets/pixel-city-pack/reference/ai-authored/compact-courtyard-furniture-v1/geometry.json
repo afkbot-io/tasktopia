@@ -1,0 +1,27 @@
+{
+  "key": "compact-courtyard-furniture-v1",
+  "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
+  "cellSizePx": 8,
+  "paletteColorsMax": 20,
+  "normalization": "Declared source alpha/chroma, hard alpha128, one tight hard-alpha frame per independent object, uniform nearest-neighbour, palette quantization. No architectural repaint, axis stretch, ground shadow or per-object runtime scaling.",
+  "objects": {
+    "courtyard-picnic-table": {
+      "label": "Дворовый стол со скамейками",
+      "spriteSize": [16, 16], "footprintCells": [2, 2], "anchorPx": [8, 16],
+      "occupiedMaximum": [14, 13], "occupiedMinimum": [12, 10],
+      "sourceBackground": "transparent"
+    },
+    "courtyard-square-planter": {
+      "label": "Квадратная клумба во дворе",
+      "spriteSize": [8, 8], "footprintCells": [1, 1], "anchorPx": [4, 8],
+      "occupiedMaximum": [8, 8], "occupiedMinimum": [7, 6],
+      "sourceBackground": "magenta-chroma-family"
+    },
+    "courtyard-cycle-rack": {
+      "label": "Компактная велопарковка",
+      "spriteSize": [16, 8], "footprintCells": [2, 1], "anchorPx": [8, 8],
+      "occupiedMaximum": [14, 7], "occupiedMinimum": [12, 5],
+      "sourceBackground": "magenta-chroma-family"
+    }
+  }
+}

@@ -1,4 +1,5 @@
-@import "tailwindcss";
+@import "tailwindcss" source("./");
+@source "../../index.html";
 
 @theme {
   --font-sans: "Avenir Next", Avenir, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
@@ -82,13 +83,14 @@ code { font-family: "SFMono-Regular", Consolas, monospace; }
 .auth-world-road-h { left: 0; top: 270px; width: 495px; height: 44px; }
 .auth-world-road-v { left: 242px; top: 0; width: 44px; height: 430px; box-shadow: inset 3px 0 #83939a, inset -3px 0 #83939a; }
 .auth-world-sprite { z-index: 3; object-fit: contain; filter: drop-shadow(8px 10px 3px #17312078); }
-.auth-world-city-hall { left: 48px; top: 174px; width: 112px; height: 112px; }
-.auth-world-house-corner { left: 112px; top: 36px; width: 98px; height: 126px; }
-.auth-world-house-green { left: 300px; top: 65px; width: 142px; height: 174px; }
-.auth-world-highrise { left: 405px; top: -2px; width: 92px; height: 162px; }
+.auth-world-building { max-width: none; filter: none; }
+.auth-world-building-1 { left: 48px; top: 168px; }
+.auth-world-building-2 { left: 112px; top: 36px; }
+.auth-world-building-3 { left: 300px; top: 132px; }
+.auth-world-building-4 { left: 405px; top: 24px; }
 .auth-world-tree-oak { left: 18px; top: 236px; width: 32px; height: 64px; }
 .auth-world-tree-pine { left: 204px; top: 184px; width: 32px; height: 64px; }
-.auth-world-bus { left: 320px; top: 279px; z-index: 4; width: 84px; height: 36px; filter: drop-shadow(3px 4px 2px #10222999); }
+.auth-world-car { left: 320px; top: 284px; z-index: 4; width: 16px; height: 16px; }
 .auth-world-statue { left: 190px; top: 327px; width: 32px; height: 48px; }
 .auth-world-pulse { left: 256px; top: 284px; z-index: 5; width: 14px; height: 14px; border: 3px solid #f4ca48; border-radius: 50%; box-shadow: 0 0 0 7px #f4ca4830; animation: auth-world-pulse 1.8s ease-out infinite; }
 @keyframes auth-world-pulse { 70%, 100% { box-shadow: 0 0 0 20px #f4ca4800; } }
@@ -215,10 +217,27 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .country-overview-raster { position: absolute; top: 0; left: 0; display: block; transform-origin: 0 0; image-rendering: pixelated; pointer-events: none; will-change: transform; }
 .country-atlas-aircraft { position: absolute; top: 0; left: 0; z-index: 1; object-fit: contain; image-rendering: pixelated; pointer-events: none; will-change: transform; }
 .country-overview-labels { position: absolute; inset: 0; pointer-events: none; }
+.country-overview[data-country-ready="false"] .country-overview-labels { visibility: hidden; }
+.country-city-leader { position: absolute; z-index: 1; height: 1px; background: #ddce87a8; transform-origin: 0 0; pointer-events: none; }
 .country-overview-city { position: absolute; z-index: 2; display: grid; min-width: 116px; gap: 2px; padding: 7px 9px; border: 2px solid #13292b; background: #10272aeb; color: #eef0df; box-shadow: 3px 3px 0 #0717198f; pointer-events: auto; cursor: pointer; text-align: left; will-change: transform; }
 .country-overview-city strong { overflow: hidden; max-width: 150px; font: 900 12px/1.15 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
 .country-overview-city span { color: #aab9ae; font: 700 9px/1.1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
 .country-overview-city:hover, .country-overview-city:focus-visible, .country-overview-city[data-active="true"] { border-color: #f0cf56; background: #173438f2; outline: none; }
+.country-overview-city[hidden], .country-city-leader[hidden] { display: none; }
+.country-overview[data-country-label-mode="dense"] .country-overview-city { box-sizing: border-box; width: 140px; height: 44px; min-width: 0; }
+.country-overview[data-country-label-mode="dense"] { touch-action: auto; }
+.country-map-gesture-surface { position: absolute; inset: 0; z-index: 0; touch-action: none; }
+.country-city-directory-toggle { position: absolute; z-index: 4; top: 12px; left: 12px; min-height: 40px; padding: 8px 12px; border: 2px solid #617b72; background: #10272af2; color: #eef0df; font: 800 12px/1.2 "IBM Plex Mono", monospace; cursor: pointer; touch-action: manipulation; }
+.country-city-directory { position: absolute; z-index: 4; top: 60px; left: 12px; display: flex; flex-direction: column; width: min(320px, calc(100% - 24px)); max-height: calc(100% - 152px); padding: 12px; gap: 10px; border: 2px solid #617b72; background: #10272af7; color: #eef0df; box-shadow: 3px 3px 0 #0717198f; touch-action: pan-y; user-select: text; }
+.country-city-directory-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.country-city-directory-head button { min-width: 36px; min-height: 36px; border: 1px solid #617b72; background: #173438; color: #eef0df; cursor: pointer; }
+.country-city-directory label { flex-shrink: 0; }
+.country-city-directory input { width: 100%; min-height: 40px; }
+.country-city-directory-results { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 5px; }
+.country-city-directory-results button { display: grid; gap: 4px; width: 100%; min-height: 52px; padding: 9px; border: 1px solid #39594f; background: #142e30; color: #eef0df; cursor: pointer; text-align: left; }
+.country-city-directory-results strong { overflow-wrap: anywhere; }
+.country-city-directory-results span { color: #aab9ae; font-size: 11px; }
+.country-city-directory-results button[aria-current="true"], .country-city-directory button:focus-visible, .country-city-directory-toggle:focus-visible { outline: 2px solid #f0cf56; outline-offset: -2px; }
 .country-overview-loader { z-index: 5; background: #142629e8; pointer-events: none; }
 .country-overview-warning { position: absolute; right: 12px; bottom: 12px; z-index: 6; max-width: 360px; padding: 8px 10px; border: 1px solid #c58d55; background: #271d18e8; color: #f2dfca; font-size: 11px; }
 .map-transition-error { position: absolute; z-index: 35; top: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #a85b55; background: #28191bef; color: #f4d5cf; box-shadow: 0 8px 28px #0008; }
@@ -289,8 +308,9 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 /* ── Seeded planet atlas ─────────────────────────────────── */
 .planet-atlas { position: absolute; inset: 0; overflow: hidden; background: #03090f; }
-.planet-atlas svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; user-select: none; }
-.planet-atlas svg:focus-visible { outline: 2px solid #f2d45e; outline-offset: -4px; }
+.planet-texture-loading { position: absolute; inset: 0; background: #03090f; }
+.planet-atlas > svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; user-select: none; }
+.planet-atlas > svg:focus-visible { outline: 2px solid #f2d45e; outline-offset: -4px; }
 .planet-space { fill: #03090f; }
 .planet-stars { pointer-events: none; }
 .planet-stars rect { fill: #c2d7d5; shape-rendering: crispEdges; animation: planet-star-twinkle 3.6s steps(3, end) var(--star-delay) infinite; }
@@ -670,6 +690,13 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .archive-source { margin: 18px 0 0; }
 .archive-source a { color: #8fc8e2; font-weight: 800; }
 .archive-record-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.task-transfer-panel { padding: 12px 0; border-bottom: 1px solid #30474b; }
+.task-transfer-target { display: grid; gap: 8px; font-weight: 700; }
+.task-transfer-target select { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #52727a; border-radius: 8px; background: #122a30; color: #edf0dd; }
+.task-transfer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.site-history-modal { width: min(560px, calc(100vw - 32px)); height: auto; overflow-wrap: anywhere; }
+.site-history-modal h2 { padding-right: 36px; }
+.site-history-modal dd { margin: 6px 0 0; }
 
 /* ── Small-screen polish ───────────────────────────────────── */
 @media (max-width: 600px) {
@@ -683,4 +710,8 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   .task-document-preview > header small { text-align: left; }
   .task-search-results { position: fixed; left: 12px; right: 12px; top: 116px; }
 }
+}
+/* Lighting affects the map art only; task numbers and navigation stay readable. */
+.country-overview-raster, .planet-map-ocean, .planet-coast, .planet-countries {
+  filter: var(--world-light-filter, brightness(1));
 }

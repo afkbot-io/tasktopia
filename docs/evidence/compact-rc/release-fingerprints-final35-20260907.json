@@ -1,0 +1,286 @@
+{
+  "capturedAt": "2026-09-07T05:38:39.974Z",
+  "productionApproved": false,
+  "baseHead": "b42fe5946350897dbb9b3bb904b0262dd591783d",
+  "branch": "codex/task-14-block-runtime-integration",
+  "dirty": true,
+  "note": "Local source/artifact identity only. Do not deploy baseHead as the candidate: the integration worktree is dirty and requires an approved immutable commit and target image.",
+  "algorithm": "SHA256 of sorted repository-relative path + NUL + file SHA256 + newline for each group",
+  "sourceScope": [
+    "src",
+    "scripts",
+    "tests",
+    "migrations",
+    "deploy",
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "eslint.config.js",
+    "Dockerfile",
+    ".dockerignore",
+    ".gitignore",
+    "docker-compose.yml",
+    "docker-compose.dev.yml",
+    "docker-compose.test.yml",
+    "index.html",
+    "requirements-assets.txt"
+  ],
+  "sourceSnapshot": {
+    "files": 519,
+    "sha256": "ca4d0eb9016831b072489f849d440ff3de60e261f7683d6017825b4cd8ddf521"
+  },
+  "assetRevision": "750f26edc463160e",
+  "catalog": {
+    "files": 3,
+    "sha256": "cd4472ce47e3202b1c4b38a4f6bfe5adc680869768a70eb35e7b05d745829c40"
+  },
+  "manifestSha256": "62488a7571f4ab092da2220de8bd94c7498cd74f61e79408727c4fd3dfeb9525",
+  "approvedBuildingSources": {
+    "files": 105,
+    "sha256": "c77ab27042601d92ab6795d1f60461c3362d72ca5e44d50ecd84220214f2f6f0"
+  },
+  "runtimeAssets": {
+    "files": 381,
+    "sha256": "d8ad149ab8e9d3684a258a08e7feff09c407312af91130661c0bdbfe45758a42"
+  },
+  "publicAssets": {
+    "files": 521,
+    "sha256": "e5e6174bfa66bacc1f641a03f29de259b4bd2801dbf82b46e89abff22c914f2c"
+  },
+  "image": {
+    "imageId": "sha256:03537a60affa4ab51964a6d95cdaa0e5c28ef71ad32a21e8c7dd4cedfadb351f",
+    "tag": "tasktopia:compact-local-final35-r4-20260907",
+    "platform": "linux/arm64",
+    "inspectedWithoutNetworkOrHostMounts": true,
+    "revisionMaterialization": "built synchronize-assets CLI in disposable 128MiB tmpfs, read-only image; no database or web server",
+    "builtArtifactScope": "dist excluding generated game-assets/v5/revisions; revision tree checked separately",
+    "node": "v24.20.0",
+    "uid": 1000,
+    "assetRevision": "750f26edc463160e",
+    "buildings": 35,
+    "stages": 175,
+    "excluded": true,
+    "builtArtifacts": {
+      "files": 601,
+      "sha256": "5c38fee79ae8b81b7862b2801a4a778d04139c98882dd2206e72f6593843863e"
+    },
+    "publishedRevision": {
+      "files": 511,
+      "sha256": "9482ea696ce175c10b9299b6bbfcf17cefacd720e2904df542e2b676a02e9840"
+    },
+    "materializedRevision": {
+      "files": 511,
+      "sha256": "9482ea696ce175c10b9299b6bbfcf17cefacd720e2904df542e2b676a02e9840"
+    },
+    "entrypoints": {
+      "dist/audit-worlds.mjs": "487be5b93e7d9f453c390ab966a5fc9bf29ffd94e301239e73d6bca0056a6678",
+      "dist/create-user.mjs": "dd5536bfba4e7f2aa309b9984e170ca05e9c58706234fadab89ac6c61e3687fc",
+      "dist/regenerate-worlds.mjs": "a443d747e571aa6f19c885413a0006a3e6e79cc64d0e6ddcb191efdfdb7e54ea",
+      "dist/server.mjs": "bbf000192cb556306bd9cf270fa5ed0292802f19ceff4ecb56f4128fc19243b7",
+      "dist/synchronize-assets.mjs": "b569409639701a3ba554570a8198d5580b1289c642ebf9c0d013f403fdfc370b"
+    },
+    "hostNode": "v24.19.0",
+    "hostBuiltArtifacts": {
+      "files": 601,
+      "sha256": "5c38fee79ae8b81b7862b2801a4a778d04139c98882dd2206e72f6593843863e"
+    },
+    "exactHostArtifactMatch": true,
+    "exactHostRevisionMatch": true,
+    "differences": [],
+    "missing": []
+  },
+  "cutover": {
+    "path": "docs/evidence/compact-rc/cutover-de3c0017b463/local-cutover-rehearsal.json",
+    "cliByteIdentical": true,
+    "all29MigrationChecksumsIdentical": true,
+    "synthetic": true,
+    "production": false
+  },
+  "migrations": [
+    {
+      "path": "migrations/postgres/0001_initial.sql",
+      "sha256": "a1b1212f0679d45616075d649a6b89feedf5b107bdf760ebcdb97752c9d08324"
+    },
+    {
+      "path": "migrations/postgres/0002_backfill_spatial.sql",
+      "sha256": "f039807e3e0b64fd0dab9ce0745f278f92d3675ee4b993e3ed24c259b0110edc"
+    },
+    {
+      "path": "migrations/postgres/0003_feature_ownership.sql",
+      "sha256": "02734b788a5c19df91029307a7a5f423d4db95d27775eefbc98b7dfdabd0574c"
+    },
+    {
+      "path": "migrations/postgres/0004_ai_work_model.sql",
+      "sha256": "a884d769921631d7eae82b9973b71f60927cf53e6494b7b0260fd53bdec4b24b"
+    },
+    {
+      "path": "migrations/postgres/0005_incident_response.sql",
+      "sha256": "305ff65d676676099fca73ad49c697b16acf346184dc7eb3146c6eaca2ea7dea"
+    },
+    {
+      "path": "migrations/postgres/0006_task_extras.sql",
+      "sha256": "b43349a8e1a0b1ebd6c30462abb6c6d93b568aca0d9ccafa8a1e2de5c02d85ae"
+    },
+    {
+      "path": "migrations/postgres/0007_ai_fields.sql",
+      "sha256": "f38f1b1106be87044e66b1ea5bc0b5e24d941cb531067a9baf5ecfeff8da8c46"
+    },
+    {
+      "path": "migrations/postgres/0008_starter_city.sql",
+      "sha256": "303d2a8a6e6d8efeae11eb4c66082973076ed5565c9e50227d4a27df832d14a4"
+    },
+    {
+      "path": "migrations/postgres/0009_country_archive.sql",
+      "sha256": "15e70c35676d36ef16056f5f1dae6d11dbd117f2d20330087d7386f1d0372d31"
+    },
+    {
+      "path": "migrations/postgres/0010_task_linked_landmarks.sql",
+      "sha256": "570258abbec3d3b4462bc561c7235267f1c1c77d4ebe67ab43d9589200db0de5"
+    },
+    {
+      "path": "migrations/postgres/0011_task_documents_checklist.sql",
+      "sha256": "c952120dfc4d37e9d2573a45ca34dd75f1fe299d06c54b4022dcb59132f8342c"
+    },
+    {
+      "path": "migrations/postgres/0012_staged_green_areas.sql",
+      "sha256": "b6cd4bde7ab14772aa1acd06837676ee2bc42eb0ba1d9bf305bf910765c82908"
+    },
+    {
+      "path": "migrations/postgres/0013_task_visual_kind.sql",
+      "sha256": "2d5471c4018a649763563daf9df4b80def810add883521e0905e04b8daa4445c"
+    },
+    {
+      "path": "migrations/postgres/0014_published_chunk_payloads.sql",
+      "sha256": "b00b7ad2d6622659b7186986c456950b73dcba73f8b6fd355b06d367a27591f0"
+    },
+    {
+      "path": "migrations/postgres/0015_published_chunk_retention.sql",
+      "sha256": "67d0af5d578ac3b948848b9bf946104e3727728a8a52631232f9f6aeb3f62867"
+    },
+    {
+      "path": "migrations/postgres/0016_chunk_local_district_cells.sql",
+      "sha256": "6b4d7ceefab1a2d3926db70f2743abb5bcec3c33d42a6b353495c418b4b56953"
+    },
+    {
+      "path": "migrations/postgres/0017_world_generation_jobs.sql",
+      "sha256": "0a974f530c10199cf31c253e7c941faa514fb1f1bdf6560d93dbc008a508cbea"
+    },
+    {
+      "path": "migrations/postgres/0018_compact_spatial_indexes.sql",
+      "sha256": "9dc1e0baf666f38b0f28bebd2dbd1e5267083dffc01eb356c81ecd5e4f85ff44"
+    },
+    {
+      "path": "migrations/postgres/0019_seeded_area_decor.sql",
+      "sha256": "3675129dea40004e027f474e9913c6dd97dde32252cd0d09375914fd30b21810"
+    },
+    {
+      "path": "migrations/postgres/0020_country_overview_snapshots.sql",
+      "sha256": "689ba139986b2c0e136740a82479ff986f5812ebacef5a36ccd14fd1e5d1140b"
+    },
+    {
+      "path": "migrations/postgres/0021_web_push.sql",
+      "sha256": "b0b41c78f04162b39f7f31256cdfc15b6b9ff3870d646d937db93b8d6430b260"
+    },
+    {
+      "path": "migrations/postgres/0022_block_v1_shadow_layouts.sql",
+      "sha256": "d811f9170f2e516f8d36e5a4d02ff3cd0c625010a2e9d71ea39a500ccf643148"
+    },
+    {
+      "path": "migrations/postgres/0023_compact_block_cutover.sql",
+      "sha256": "8cdbd96a0151616e82cd993bdc99ffb31dbb9c36f4121b3313ea74826c081b82"
+    },
+    {
+      "path": "migrations/postgres/0024_dense_slot_planning.sql",
+      "sha256": "9fee4d07bc0c96baa0736c932d356815907dca2e1fcd560b32bf24665901566a"
+    },
+    {
+      "path": "migrations/postgres/0025_task_history_read_index.sql",
+      "sha256": "31c4303143b064283f0b33c8b5a7b4c2d29e5584f5ed4d8c02e2c18b0caedc07"
+    },
+    {
+      "path": "migrations/postgres/0026_permanent_task_sites.sql",
+      "sha256": "d6061642e1ed43fc5c7fec78aa3919c6469478cee5f26534ddc41cf8453b70ea"
+    },
+    {
+      "path": "migrations/postgres/0027_task_public_spaces.sql",
+      "sha256": "edc58f4cc37263e84b2faaa793e03d581abbe3450bba6a3d35a325c358f5b0b6"
+    },
+    {
+      "path": "migrations/postgres/0028_civic_service_role.sql",
+      "sha256": "f6e8665c5cf798e28937aca4bd64b14509737cd2fce5dbf533ca804728539f60"
+    },
+    {
+      "path": "migrations/postgres/0029_country_road_snapshots.sql",
+      "sha256": "95fdf58f6a0d1c858ec33bd19672b61c63406f060c4713d26499c3306115673f"
+    }
+  ],
+  "repowise": {
+    "mode": "forced fast/no-seed/no-editor",
+    "files": 987,
+    "symbols": 2283,
+    "doctorOk": true,
+    "baseHead": "b42fe5946350897dbb9b3bb904b0262dd591783d"
+  },
+  "evidence": [
+    {
+      "path": "tmp/release-final35-suite-r5-20260907.log",
+      "sha256": "8dd7ecd143fcc179986abf094ca84da5af3a0aaae434c80206339f9c44c370a9"
+    },
+    {
+      "path": "tmp/release-final35-lint-r5-20260907.log",
+      "sha256": "38ba3e6d6545488883ead63fe231a036e933669e3cfb37036795bf4cdc0074e7"
+    },
+    {
+      "path": "tmp/release-final35-css-build-20260907.log",
+      "sha256": "3063e1655d60830a94cc07a49b28f78acbc4595fbf539ac8f838d313bcc68ae4"
+    },
+    {
+      "path": "tmp/release-final35-docker-build-r4-20260907.log",
+      "sha256": "f58a75126ed0fca83f7d15fabbb9d8b1e0284f655bb791863a05b7f69e5ba503"
+    },
+    {
+      "path": "tmp/release-final35-source-contracts-r4-20260907.log",
+      "sha256": "b8245f0bba92dd4c557c5ed7a6f536b855d144d84b537f74f26cd9db14cdfe3d"
+    },
+    {
+      "path": "tmp/release-final35-assets-verify-r4-20260907.log",
+      "sha256": "9a4c0a9c9ae6fc821eeaaff3caf93bf23d1cda90a65a032a6b8b07d6ee2af7a6"
+    },
+    {
+      "path": "tmp/release-final35-repowise-refresh-20260907.log",
+      "sha256": "ea79b9af2c38b6c8460cbf0521fe7642f0762e29ee3986a09b964214e653ea5e"
+    },
+    {
+      "path": "screenshots/courtyard-art-48-final-r4/evidence.json",
+      "sha256": "5bb364276c94be6a983684cba6c978a6a3edbd75e360a9d54a3a0c559a26e3e6"
+    },
+    {
+      "path": "screenshots/courtyard-art-48-final-r4/stage-matrix-evidence.json",
+      "sha256": "875285b9edafa7814f131a505604562ca27fd5792980272ad741b0821abfbd6f"
+    },
+    {
+      "path": "screenshots/courtyard-art-48-final-r4-overviews/evidence.json",
+      "sha256": "968c9b5b96af03de7dc90fafc5db4988fa37696c45042a680388b2711cbc7914"
+    },
+    {
+      "path": "screenshots/world-finishing-final35-traffic-300s/metrics.json",
+      "sha256": "9283c43fe8e5e9f30c1bcaed04762a5a72e3b3e0ac2700bbeabe08a13c17455f"
+    },
+    {
+      "path": "docs/evidence/compact-rc/final35-server-scale.json",
+      "sha256": "0d1ebba06baf6a8efde8df79fdccfa8ff42a2f0affbc011745be8f874a810669"
+    },
+    {
+      "path": "docs/evidence/compact-rc/cutover-de3c0017b463/local-cutover-rehearsal.json",
+      "sha256": "c6c192b21db204ae56508732fd224cb351cb5a935bbd2d00b9a3fa6dba1e3763"
+    }
+  ],
+  "remainingExternalGates": [
+    "Physical installed PWA/background push and task notification navigation on an authorized device/provider",
+    "Identified production target, architecture, target-sized capacity and verified paired backup/restore",
+    "Reviewed immutable commit/image with approved release authority; no production deployment performed"
+  ]
+}

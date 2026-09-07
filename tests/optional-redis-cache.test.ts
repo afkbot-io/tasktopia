@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { OptionalRedisWorldCache, type RedisCommands } from "../src/server/optional-redis-cache";
-import type { ChunkPayloadDto, ChunkPayloadV1Dto } from "../src/shared/contracts";
+import type { ChunkPayloadDto, ChunkPayloadV2Dto } from "../src/shared/contracts";
 import { chunkPayloadContentHash } from "../src/server/world/chunk-payload-hash";
 
-const payloadContent: Omit<ChunkPayloadV1Dto, "contentHash"> = { payloadVersion: 1, generatorVersion: "square-v7", terrainSeed: 1,
-  publishedVersion: 2, lod: "OVERVIEW", chunkX: 0, chunkY: 0, size: 64, roads: [], surfaces: [],
-  districts: [], tasks: [], worldFeatures: [], decorationContext: { cityBounds: [], districts: [], tasks: [] } };
+const payloadContent: Omit<ChunkPayloadV2Dto, "contentHash"> = { payloadVersion: 2, generatorVersion: "block-v1", terrainSeed: 1,
+  publishedVersion: 2, lod: "OVERVIEW", chunkX: 0, chunkY: 0, size: 64, roadRuns: [], surfaceRuns: [],
+  districts: [], tasks: [], worldFeatures: [], decorationContext: { treeGeometryVersion: 7, lightingVersion: 1, surfaceHaloRuns: [], blockedCellRuns: [], cityBounds: [], districts: [], tasks: [] } };
 const payload: ChunkPayloadDto = { ...payloadContent, contentHash: chunkPayloadContentHash(payloadContent) };
 
 describe("optional Redis world cache", () => {
@@ -25,6 +25,24 @@ describe("optional Redis world cache", () => {
     await expect(cache.getChunk("chunk:country:0:0:OVERVIEW:2")).resolves.toEqual(payload);
     expect([...stored.keys()].some((key) => key.includes(`chunk-content:${payload.contentHash}`))).toBe(true);
   });
+
+  it.each([JSON.stringify(payload), "{malformed-json", "not-a-content-hash", "g".repeat(64)])(
+    "ignores a retired or malformed locator without rewriting data or disabling valid cache reads: %s",
+    async locator => {
+      const stored = new Map<string,string>([
+        ["strict:retired",locator], ["strict:valid",payload.contentHash],
+        [`strict:chunk-content:${payload.contentHash}`,JSON.stringify(payload)],
+      ]);
+      const before = [...stored];
+      const client = { get: vi.fn(async (key: string) => stored.get(key) ?? null), setEx: vi.fn() };
+      const cache = new OptionalRedisWorldCache(client,"strict:");
+      await expect(cache.getChunk("retired")).resolves.toBeUndefined();
+      expect(client.get).toHaveBeenCalledTimes(1);
+      await expect(cache.getChunk("valid")).resolves.toEqual(payload);
+      expect(client.setEx).not.toHaveBeenCalled();
+      expect([...stored]).toEqual(before);
+    },
+  );
 
   it("treats a locator/blob hash mismatch or corrupted blob as a cache miss", async () => {
     const stored = new Map<string, string>();

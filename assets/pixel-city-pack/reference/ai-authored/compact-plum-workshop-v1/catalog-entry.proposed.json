@@ -1,0 +1,53 @@
+{
+  "key": "compact-plum-workshop-v1",
+  "label": "Сливовый дом-мастерская с фонарями",
+  "category": "HOUSE",
+  "rarity": "COMMON",
+  "spriteSize": [
+    48,
+    48
+  ],
+  "footprintCells": [
+    6,
+    6
+  ],
+  "anchorPx": [
+    24,
+    48
+  ],
+  "platform": "STONE",
+  "estimates": [
+    1,
+    2,
+    3,
+    6
+  ],
+  "tags": [
+    "residential",
+    "low-rise-residential",
+    "compact-building"
+  ],
+  "ruleIds": [
+    "STANDARD"
+  ],
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 3
+    }
+  ],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-plum-workshop-v1/sources/stage-3.png",
+    "ai-authored/compact-plum-workshop-v1/sources/stage-4.png",
+    "ai-authored/compact-plum-workshop-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "1d4387f1a8ad766410943a6733fd77c08c4d14358257189e63f2c6a6ff756ab1",
+    "c3648c04e8a20fdfeeba7ba70bf711475fc7a64ab2a2ebe453ad97de95e8a884",
+    "9a22c025bbb4f83f05a067045ec6e47b7cda6793b8629d23d11131819fb42492"
+  ],
+  "reviewed": true
+}

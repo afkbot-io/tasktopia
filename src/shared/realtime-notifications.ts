@@ -92,6 +92,8 @@ function eventTitle(event: RealtimeEvent, context: BuildingEventContext): string
     }
     case "task.renamed":
       return `${context.visualKind === "PARK" ? "Парк" : "Здание"} №${context.taskNumber} теперь называется «${context.title}»`;
+    case "task.transferred":
+      return `Задание №${context.taskNumber} «${context.title}» перенесено в спринт «${context.district.name}»; прежняя площадка сохранена`;
     case "task.fields_updated":
       return `У ${genitiveSubject(context)} ${updatedBuildingDetail(event, context)}`;
     case "task.assignee_changed":

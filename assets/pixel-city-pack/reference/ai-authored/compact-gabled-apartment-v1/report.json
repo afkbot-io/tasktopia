@@ -1,0 +1,213 @@
+{
+  "key": "compact-gabled-apartment-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    134,
+    160,
+    1120,
+    1093
+  ],
+  "uniformScale": 0.0486815415821501,
+  "targetSize": [
+    48,
+    45
+  ],
+  "offset": [
+    0,
+    3
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "ff4963c7da4aafce2aef95d5b9dbafa181ae4c0426a4f3413995ff1437a6f4f0",
+      "runtimeSha256": "a0fae4a7910ffea75b49461d5c311bd2f558e0df9b651bde0302ddb410476cfc",
+      "sourceBounds": [
+        134,
+        160,
+        1120,
+        1093
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "82bef4c201672859f0ba3a8864e7cb8f0096ce1fe0d7a2e43f8681d525625e06",
+      "runtimeSha256": "b08442b467f2e9fa75bbb11e2ef9ab54fe7600846d239c9b6261ce4cc3ab9903",
+      "sourceBounds": [
+        132,
+        159,
+        1121,
+        1095
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "b815f2d92e8cda461def69f7fb7569085d47c2c90e2b786edb3ff5fc45a52768",
+      "runtimeSha256": "488d301ccdca04d792394e3cb0e72eebe35525edfb70dbbd4e538912ae4ce9fe",
+      "sourceBounds": [
+        128,
+        160,
+        1126,
+        1095
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        45
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-gabled-apartment-v1",
+    "reviewedAt": "2026-09-06",
+    "reviewMethod": "Main agent inspected each native-grid preview and the3/4/5nearest-neighbour8xsequence. Numeric source-frame registration is a separate automated gate. Actual CITY stages3\u20135 reviewed; see runtimeReview.",
+    "projection": {
+      "camera": "High45-degree frontal-top orthographic convention; parallel axis-aligned structural edges.",
+      "roofDepthPx": 27,
+      "facadeHeightPx": 18,
+      "floorStepPx": 6,
+      "floorCount": 3,
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "b815f2d92e8cda461def69f7fb7569085d47c2c90e2b786edb3ff5fc45a52768",
+        "runtimeSha256": "488d301ccdca04d792394e3cb0e72eebe35525edfb70dbbd4e538912ae4ce9fe",
+        "notes": "Broad clay ridged roof with two low dormers and burgundy outer facade bays. Three6pxfloorbands. Thin earth-colored ground contact is not a heavy black outline.4 retains about half clay slab without dormers/chimney;3 has no roof, open rooms, brick stacks and incomplete masonry."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "82bef4c201672859f0ba3a8864e7cb8f0096ce1fe0d7a2e43f8681d525625e06",
+        "runtimeSha256": "b08442b467f2e9fa75bbb11e2ef9ab54fe7600846d239c9b6261ce4cc3ab9903",
+        "notes": "Broad clay ridged roof with two low dormers and burgundy outer facade bays. Three6pxfloorbands. Thin earth-colored ground contact is not a heavy black outline.4 retains about half clay slab without dormers/chimney;3 has no roof, open rooms, brick stacks and incomplete masonry."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "ff4963c7da4aafce2aef95d5b9dbafa181ae4c0426a4f3413995ff1437a6f4f0",
+        "runtimeSha256": "a0fae4a7910ffea75b49461d5c311bd2f558e0df9b651bde0302ddb410476cfc",
+        "notes": "Broad clay ridged roof with two low dormers and burgundy outer facade bays. Three6pxfloorbands. Thin earth-colored ground contact is not a heavy black outline.4 retains about half clay slab without dormers/chimney;3 has no roof, open rooms, brick stacks and incomplete masonry."
+      }
+    },
+    "pendingIntegration": [
+      "Final frozen-revision QA/deployment approval; stages0\u20132 use shared construction geometry, not separately AI-authored art."
+    ],
+    "runtimeReview": {
+      "reviewedAt": "2026-09-06",
+      "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+      "acceptedStages": [
+        3,
+        4,
+        5
+      ],
+      "fixture": "compact_release_20260906:480tasks/20sprints",
+      "evidence": "docs/evidence/compact-rc/final-browser.json",
+      "checks": [
+        "Same footprint and south entrance across3/4/5",
+        "Shaded opaque interior and aligned partitions at3",
+        "Partial bare roof and unfinished openings at4",
+        "Completed unique roof and facade at5",
+        "Tree/crown and sidewalk clearance",
+        "All30real building clicks opened the matching task"
+      ],
+      "captures": [
+        {
+          "stage": 3,
+          "path": "screenshots/compact-rc-final/compact-gabled-apartment-v1-stage-3.png",
+          "sha256": "d4b0fb3a1940fb8e4a3f31bf62d176b1554a4b65d346d0cf750837053a682735"
+        },
+        {
+          "stage": 4,
+          "path": "screenshots/compact-rc-final/compact-gabled-apartment-v1-stage-4.png",
+          "sha256": "87def2c65d9f95cc21b83795df98c94d471c68bb955eaad5d2df599bde7426b7"
+        },
+        {
+          "stage": 5,
+          "path": "screenshots/compact-rc-final/compact-gabled-apartment-v1-stage-5.png",
+          "sha256": "3d5fbc8a55f583a9be4bf73367d2860a91c8f951174d637e6763b3775e3fcc2d"
+        }
+      ]
+    }
+  }
+}

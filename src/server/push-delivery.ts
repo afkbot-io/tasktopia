@@ -22,10 +22,15 @@ export function pushPayloadForEvent(event: RealtimeEvent): Record<string, string
   const notice = presentRealtimeNotice(event);
   if (!notice) return null;
   const taskNumber = notice.target?.taskNumber;
+  const target = notice.target;
+  const navigable = taskNumber !== undefined && Number.isInteger(taskNumber) && taskNumber > 0 && taskNumber <= 999_999_999
+    && target && target.id.trim() && target.country.id.trim() && target.country.id === event.countryId;
   return {
     title: notice.title.slice(0, 160),
     body: notice.location.slice(0, 240),
-    url: taskNumber ? `/task/${taskNumber}` : "/",
+    url: navigable
+      ? `/task/${taskNumber}?${new URLSearchParams({ countryId: target.country.id, taskId: target.id })}`
+      : "/",
     tag: `event-${event.id}`,
   };
 }
@@ -57,17 +62,19 @@ async function enqueueNewEvents(db: Db, batchSize: number): Promise<number> {
 
 function failureStatus(error: unknown): number | undefined {
   const status = Number((error as { statusCode?: unknown } | null)?.statusCode);
-  return Number.isInteger(status) && status >= 400 && status <= 599 ? status : undefined;
+  return Number.isInteger(status) && status >= 300 && status <= 599 ? status : undefined;
 }
 
 async function deliverOne(db: Db, gateway: PushGateway, deliveryId: number): Promise<void> {
   await db.transaction(async () => {
     const row = await db.prepare(`SELECT delivery.id, delivery.attempts, delivery.payload_json,
       subscription.id AS subscription_id, subscription.endpoint, subscription.p256dh, subscription.auth,
-      subscription.expiration_time,
-      EXISTS (SELECT 1 FROM events event JOIN country_members member ON member.country_id=event.country_id
-        WHERE event.id=delivery.event_id AND member.user_id=subscription.user_id) AS authorized
+      subscription.expiration_time, event.id AS event_id, event.type AS event_type, event.country_id,
+      event.world_version, event.created_at, event.payload_json AS event_payload_json,
+      EXISTS (SELECT 1 FROM country_members member
+        WHERE member.country_id=event.country_id AND member.user_id=subscription.user_id) AS authorized
       FROM push_deliveries_v1 delivery
+      LEFT JOIN events event ON event.id=delivery.event_id
       LEFT JOIN push_subscriptions_v1 subscription ON subscription.id=delivery.subscription_id
       WHERE delivery.id=? AND delivery.status IN ('PENDING','RETRY') AND delivery.next_attempt_at <= now()
       FOR UPDATE OF delivery`).get<DeliveryRow>(deliveryId);
@@ -82,10 +89,19 @@ async function deliverOne(db: Db, gateway: PushGateway, deliveryId: number): Pro
       expirationTime: row.expiration_time === null ? null : Number(row.expiration_time),
       keys: { p256dh: String(row.p256dh), auth: String(row.auth) },
     };
-    const payload = typeof row.payload_json === "string" ? row.payload_json : JSON.stringify(row.payload_json);
+    const storedPayload = (typeof row.payload_json === "string" ? JSON.parse(row.payload_json) : row.payload_json) as Record<string, unknown>;
+    let payload = storedPayload;
+    if (typeof storedPayload.url === "string" && /^\/task\/\d+$/.test(storedPayload.url)) {
+      // Queued pre-cutover links contain only a country-local number. Recover the
+      // immutable identity from its event, never guess from the reader's country.
+      const current = row.event_payload_json ? pushPayloadForEvent(eventFromRow({
+        ...row, id: row.event_id, type: row.event_type, payload_json: row.event_payload_json,
+      })) : null;
+      payload = { ...storedPayload, url: current?.url ?? "/" };
+    }
     const attempt = Number(row.attempts) + 1;
     try {
-      await gateway.send(subscription, payload);
+      await gateway.send(subscription, JSON.stringify(payload));
       await db.prepare(`UPDATE push_deliveries_v1 SET status='SENT', attempts=?, delivered_at=now(),
         last_error_code=NULL, updated_at=now() WHERE id=?`).run(attempt, deliveryId);
     } catch (error) {
@@ -109,11 +125,15 @@ async function deliverOne(db: Db, gateway: PushGateway, deliveryId: number): Pro
   });
 }
 
-export async function runPushDeliveryCycle(db: Db, gateway: PushGateway, batchSize = 50): Promise<void> {
+export async function runPushDeliveryCycle(db: Db, gateway: PushGateway, batchSize = 50, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return;
   await enqueueNewEvents(db, batchSize);
   const deliveries = await db.prepare(`SELECT id FROM push_deliveries_v1
     WHERE status IN ('PENDING','RETRY') AND next_attempt_at <= now() ORDER BY id LIMIT ?`).all<{ id: number }>(batchSize);
-  for (const delivery of deliveries) await deliverOne(db, gateway, Number(delivery.id));
+  for (const delivery of deliveries) {
+    if (signal?.aborted) break;
+    await deliverOne(db, gateway, Number(delivery.id));
+  }
 }
 
 export function startPushDeliveryWorker(
@@ -124,10 +144,13 @@ export function startPushDeliveryWorker(
 ): { close(): Promise<void> } | undefined {
   if (!gateway) return undefined;
   let closed = false;
-  let pumping: Promise<void> = Promise.resolve();
+  const controller = new AbortController();
+  let pumping: Promise<void> | undefined;
   const pump = () => {
-    if (closed) return;
-    pumping = pumping.catch(() => undefined).then(() => runPushDeliveryCycle(db, gateway)).catch(onError);
+    // A slow provider cannot accumulate an unbounded chain of future cycles.
+    if (closed || pumping) return;
+    pumping = runPushDeliveryCycle(db, gateway, 50, controller.signal).catch(onError)
+      .finally(() => { pumping = undefined; });
   };
   pump();
   const timer = setInterval(pump, pollIntervalMs);
@@ -135,8 +158,9 @@ export function startPushDeliveryWorker(
   return {
     async close() {
       closed = true;
+      controller.abort();
       clearInterval(timer);
-      await pumping.catch(() => undefined);
+      await pumping?.catch(() => undefined);
     },
   };
 }

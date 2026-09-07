@@ -1,0 +1,40 @@
+[
+  {
+    "input": "tmp/long-building-art/diagnostics/plum-correction-f/normalized/stage-5.png",
+    "inputSha256": "97dda4eb34e7f32535d829ec439b8f2040c6019534790b276257aff67ac933f3",
+    "output": "sources/input-native-f-16x.png",
+    "outputSha256": "0741592467966458abd61603dbbff9f9d20088a5cc0c4e22408c44102e6131db",
+    "opaquePixelsChanged": 0,
+    "logicalSize": [
+      48,
+      48
+    ],
+    "scale": 16,
+    "outputSize": [
+      768,
+      768
+    ],
+    "resampling": "NEAREST",
+    "usedAsStage5GReference": true,
+    "background": "Only fully transparent pixels replaced by #FF00FF for authoring input"
+  },
+  {
+    "input": "assets/pixel-city-pack/reference/ai-authored/compact-garden-house-v1/normalized/stage-5.png",
+    "inputSha256": "6345738ba36ae28cd77a46363b3cad7a0172c24d04af2edff1fecf7bf5ebe98d",
+    "output": "sources/input-garden-door-reference-16x.png",
+    "outputSha256": "20f7a2f11c4bd68b34e5a68b5a3d1606abc11618a699495dd8e3b4ae27169a5c",
+    "opaquePixelsChanged": 0,
+    "logicalSize": [
+      48,
+      48
+    ],
+    "scale": 16,
+    "outputSize": [
+      768,
+      768
+    ],
+    "resampling": "NEAREST",
+    "usedAsStage5GReference": false,
+    "background": "Only fully transparent pixels replaced by #FF00FF for authoring input"
+  }
+]

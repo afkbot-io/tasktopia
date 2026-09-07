@@ -20,10 +20,11 @@ function chunk(): ChunkDto {
 
 function payload(): ChunkPayloadDto {
   return {
-    payloadVersion: 1, contentHash: "hash", generatorVersion: "square-v7", terrainSeed: 1,
+    payloadVersion: 2, contentHash: "hash", generatorVersion: "block-v1", terrainSeed: 1,
     publishedVersion: 1, lod: "DETAIL", chunkX: 1, chunkY: 0, size: 64,
-    roads: [], surfaces: [], districts: [], tasks: [], worldFeatures: [],
+    roadRuns: [], surfaceRuns: [], districts: [], tasks: [], worldFeatures: [],
     decorationContext: {
+      treeGeometryVersion: 7, lightingVersion: 1, surfaceHaloRuns: [], blockedCellRuns: [],
       cityBounds: [], districts: [],
       tasks: [{
         id: "task-1", taskNumber: 1, visualKind: "BUILDING", stage: 2,

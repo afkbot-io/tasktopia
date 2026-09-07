@@ -1,0 +1,214 @@
+{
+  "key": "compact-clinic-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-recovery",
+  "commonSourceFrame": [
+    230,
+    150,
+    1294,
+    886
+  ],
+  "uniformScale": 0.043478260869565216,
+  "targetSize": [
+    46,
+    32
+  ],
+  "offset": [
+    1,
+    0
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "3d59da517abcec24f6d33f3c975c034180ea64db3ca8685c1a4decc9e1f1d17f",
+      "runtimeSha256": "d01050c253b4c03c753034fcec90bfeb8567c852efc22681054d7b6979950b76",
+      "sourceBounds": [
+        230,
+        150,
+        1294,
+        886
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 30,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "99656e241c58472d873857b72ba7f9f7be0924b514e9d713335c8f92c5962562",
+      "runtimeSha256": "0622e34982fd47ef2174ecf4733fa3d01dae0d8becddf5333acaabc00766e108",
+      "sourceBounds": [
+        257,
+        170,
+        1279,
+        885
+      ],
+      "occupiedBoundsPx": [
+        2,
+        1,
+        46,
+        32
+      ],
+      "occupiedSizePx": [
+        44,
+        31
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 4,
+      "foundationMaskMaxDriftPx": 1
+    },
+    "3": {
+      "sourceSha256": "a6378ca5c844b2f0133a49b339d24dbe6732ef264c6cc647276f262af19f980c",
+      "runtimeSha256": "513b127783af9c03568af0c1145e87ddb2af5b0ff7adb0b2ec30a5f3e547250b",
+      "sourceBounds": [
+        244,
+        151,
+        1293,
+        892
+      ],
+      "occupiedBoundsPx": [
+        2,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        45,
+        32
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.5,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 2,
+      "foundationMaskMaxDriftPx": 1
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-clinic-v1",
+    "reviewedAt": "2026-09-05",
+    "reviewMethod": "Native and nearest-neighbour8x inspected by authoring agent; parent independently reviewed finished5, unfinished4, then corrected3 native and full3/4/5 sequence. Numeric checks are separate from semantic review. Actual runtime landscape and service selection remain parent integration gates.",
+    "semanticRole": "MEDICAL",
+    "projection": {
+      "camera": "High45-degree frontal-top orthographic art convention; all structural edges axis aligned, no receding side facade.",
+      "roofDepthPx": 22,
+      "facadeHeightPx": 10,
+      "floorStepPx": 5,
+      "floorCount": 2,
+      "windowPaneSizePxRange": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "windowOpeningSizePx": [
+        4,
+        2
+      ],
+      "windowMeasurementNote": "Most paired glass panes are2x2; the far-left pair uses1x2 panes after common nearest-neighbour normalization. Parent explicitly accepted this measured family-specific exception at final sequence review.",
+      "doorLeafSizePx": [
+        4,
+        4
+      ],
+      "doorFrameSizePx": [
+        6,
+        5
+      ],
+      "southEntranceAxisPx": 24,
+      "doorLeafBoundsPx": [
+        22,
+        28,
+        26,
+        32
+      ],
+      "doorFrameBoundsPx": [
+        21,
+        27,
+        27,
+        32
+      ],
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "a6378ca5c844b2f0133a49b339d24dbe6732ef264c6cc647276f262af19f980c",
+        "runtimeSha256": "513b127783af9c03568af0c1145e87ddb2af5b0ff7adb0b2ec30a5f3e547250b",
+        "notes": "No roof; opaque full-depth rooms, raised axial partitions, exposed masonry/plaster patches and construction materials. Exact4x4 door was restored by targeted AI correction after numeric rejection of the first3px-high opening. Occupied[2,0,47,32], center+0.5px, baseline0drift; foundation2changedpixels, maximum1pxdrift. Parent independently accepted native and sequence. Approximately50% assembled refers to construction completion, not reduced footprint/image height."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "99656e241c58472d873857b72ba7f9f7be0924b514e9d713335c8f92c5962562",
+        "runtimeSha256": "0622e34982fd47ef2174ecf4733fa3d01dae0d8becddf5333acaabc00766e108",
+        "notes": "Approximately46% plain right roof remains; opaque left rooms and materials exposed, no completed atrium/medical rooftop volume/equipment. Dark unfinished windows. Occupied[2,1,46,32], explicit1px inset on sides/top vs5; samecenter and baseline, foundation4changedpixels and maximum1pxdrift. Parent accepted this existing tolerance, not perfect pixel identity."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "3d59da517abcec24f6d33f3c975c034180ea64db3ca8685c1a4decc9e1f1d17f",
+        "runtimeSha256": "d01050c253b4c03c753034fcec90bfeb8567c852efc22681054d7b6979950b76",
+        "notes": "Distinct clinical architecture: substantial left teal atrium, connecting roof band, stepped right cream medical volume with physical green marker; quiet sage facade bands. Independently drawn, not fire-station palette swap. Parent accepted native/8x and exact clinic-specific opening envelope."
+      }
+    },
+    "numericScope": "Hardalpha0/255, no interior holes, palette at most32 includingalpha, native48x32 and shared source frame measured in report.json. Exact dark4x4 door and room-partition cap coordinates checked in structure-report.json. Roof coverage and complete semantic room interpretation are manual review annotations, not automatic angle proof. Stage4 inset andstage3 half-pixel center drift explicitly retained within the pre-existing1px envelope; no geometry repaint, stage-specific warp or recenter.",
+    "integrationReview": {
+      "date": "2026-09-05",
+      "catalogPublished": true,
+      "actualMapStage5Accepted": true,
+      "evidence": "screenshots/compact-service-art/clinic-stage-5.png and evidence.json; real sixteen-task city, automatic MEDICAL task12,6x4 footprint, physical roof click opens canonical task. Root visually reviewed alongside terrain/roads/trees.",
+      "browserGate": "tests/e2e/compact-service-art.spec.ts:1/1 pass; no failed requests/page errors/unexpected writes after login."
+    },
+    "pendingIntegration": [
+      "Separate actual-map visual review of this family's runtime0/1/2 and service3/4 construction composition",
+      "Service-specific incident behavior beyond generic compact incident coverage"
+    ]
+  }
+}

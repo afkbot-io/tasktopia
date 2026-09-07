@@ -46,7 +46,9 @@ describe("durable push delivery", { timeout: 60_000 }, () => {
     await runPushDeliveryCycle(db, gateway);
     expect(send).toHaveBeenCalledTimes(1);
     const payload = JSON.parse(send.mock.calls[0]![1]);
-    expect(payload).toMatchObject({ body: expect.stringContaining("Push City"), url: expect.stringMatching(/^\/task\/\d+$/), tag: expect.stringMatching(/^event-/) });
+    expect(payload).toMatchObject({ body: expect.stringContaining("Push City"), url: expect.stringMatching(/^\/task\/\d+\?/), tag: expect.stringMatching(/^event-/) });
+    expect(new URL(payload.url, "https://tasktopia.test").searchParams.get("countryId")).toBe(countryId);
+    expect(new URL(payload.url, "https://tasktopia.test").searchParams.get("taskId")).toBe(taskId);
     expect(payload).not.toHaveProperty("countryId");
     expect(await db.prepare("SELECT status, attempts FROM push_deliveries_v1").get()).toMatchObject({ status: "SENT", attempts: 1 });
   });
@@ -79,5 +81,27 @@ describe("durable push delivery", { timeout: 60_000 }, () => {
     expect(await db.prepare("SELECT COUNT(*)::integer AS count FROM push_deliveries_v1").get()).toMatchObject({ count: 1 });
     expect(await db.prepare("SELECT status, attempts, last_error_code FROM push_deliveries_v1").get())
       .toMatchObject({ status: "FAILED", attempts: 3, last_error_code: "HTTP_503" });
+  });
+
+  it.each([true, false])("safely upgrades a queued legacy task URL only with durable event identity (identity=%s)", async (hasIdentity) => {
+    await runPushDeliveryCycle(db, { send: async () => { throw Object.assign(new Error("retry"), { statusCode: 503 }); } });
+    const queued = await db.prepare("SELECT id, event_id, payload_json FROM push_deliveries_v1").get<{
+      id: number; event_id: number; payload_json: Record<string, string>;
+    }>();
+    const legacy: Record<string, string> = { ...queued!.payload_json, url: "/task/1", title: "Original queued title" };
+    await db.prepare("UPDATE push_deliveries_v1 SET payload_json=?::jsonb, next_attempt_at=now() WHERE id=?")
+      .run(JSON.stringify(legacy), queued!.id);
+    if (!hasIdentity) await db.prepare("UPDATE events SET payload_json='{}'::jsonb WHERE id=?").run(queued!.event_id);
+    const send = vi.fn(async (...args: [BrowserPushSubscription, string]) => { void args; return { statusCode: 201 }; });
+    await runPushDeliveryCycle(db, { send });
+    const actual = JSON.parse(send.mock.calls[0]![1]);
+    expect(actual).toMatchObject({ title: legacy.title, body: legacy.body, tag: legacy.tag });
+    if (hasIdentity) {
+      const link = new URL(actual.url, "https://tasktopia.test");
+      expect(link.searchParams.get("countryId")).toBe(countryId);
+      expect(link.searchParams.get("taskId")).toBe(taskId);
+    } else expect(actual.url).toBe("/");
+    expect((await db.prepare("SELECT payload_json FROM push_deliveries_v1 WHERE id=?")
+      .get<{ payload_json: unknown }>(queued!.id))?.payload_json).toEqual(legacy);
   });
 });

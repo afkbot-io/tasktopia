@@ -178,11 +178,13 @@ REGENERATION_FORCE=1 \
 docker compose run --rm -e REGENERATION_RUN_ID -e REGENERATION_FORCE world npm run worlds:regenerate
 ```
 
-CLI берёт глобальный PostgreSQL advisory lock и немедленно завершается, если другой release replay уже запущен. Пул ограничивается `DATABASE_POOL_MAX` world-runtime, а не внутренним значением по умолчанию.
+CLI берёт глобальный PostgreSQL advisory lock до миграций и немедленно завершается, если другой release replay уже запущен. Lock принадлежит отдельной закреплённой транзакции/соединению на весь запуск, а не произвольному соединению рабочего пула; успех и ошибка освобождают его на том же backend. Рабочий пул ограничивается `DATABASE_POOL_MAX` world-runtime; дополнительно используется одно lock-соединение.
 
-Команда обрабатывает страны по одной: audit-clean миры сохраняет, а некорректные
-перестраивает и валидирует до commit. Failed layout по умолчанию повторяется до
-трёх раз. При необходимости передайте
+Команда обрабатывает страны по одной. В показанном maintenance-примере
+`REGENERATION_FORCE=1` перестраивает **все** миры, включая audit-clean; существующее
+расположение домов может измениться. Только при `REGENERATION_FORCE=0` audit-clean
+миры сохраняются, а некорректные перестраиваются. Каждый перестроенный мир
+валидируется до commit. Failed layout по умолчанию повторяется до трёх раз. При необходимости передайте
 `-e REGENERATION_MAX_ATTEMPTS=5`; не запускайте два batch replay одновременно.
 
 Публичный onboarding является отдельным атомарным bootstrap-путём: account,
@@ -192,7 +194,19 @@ country, session и первый city фиксируются одной тран
 
 ### Release gate для compact geometry и generation queue
 
-Миграции `0017` и `0018` additive: очередь и `cell_runs_json` создаются до переключения runtime, legacy DISTRICT membership не удаляется. После миграции до replay обязательна точная двусторонняя parity-проверка координат: разверните каждый run через `generate_series(start.x, end.x)` и выполните `(legacy EXCEPT compact) UNION ALL (compact EXCEPT legacy)` по `(district_id, chunk_x, chunk_y, x, y)`. Ненулевое число строк запрещает релиз; одной проверки количества недостаточно, потому что сдвинутый run может иметь ту же длину. Затем проверьте один принятый job через HTTP `202`/`GET /api/world-generation-jobs/:jobId` и MCP `world_generation.get`. Rollback приложения безопасен: старая проекция продолжает обновляться trigger'ом. Cleanup legacy projection не входит в этот релиз.
+Текущий релиз содержит **contract cutover `0023` и `0024`**, а не только additive `0017/0018`. Старые таблицы дорог, пространственные колонки и shadow-проекции удаляются; все layout/chunk/overview кеши пересоздаются. Старые координаты сравнивать на равенство нельзя: планировка намеренно меняется. Должны совпасть ID/номера/контент/статусы задач, история, документы, зависимости, страны/города/районы и terrain seed. Подробный контракт — [COMPACT-BLOCK-CUTOVER.md](COMPACT-BLOCK-CUTOVER.md).
+
+Обычный `deploy/update-server.sh` **отказывается выполнять первый cutover**: read-only preflight проверяет checksum уже применённых `0023`, `0024` **и `0029`**, наличие активных layout, размещений задач и дорожных сетей. Допустимы сохранённые template v2 без `sitePlan` и новые v3 с непустым планом version1. Для каждой страны с реальными активными кварталами обязателен `country_road_snapshots_v1`: его countryId/seed и форма compressed routes, отказов, components и metrics должны соответствовать текущему читателю. Пустая страна/город может не иметь snapshot; корректные пустые routes и явно недостижимые/раздельные компоненты допустимы. Additive-миграция `0029` сама не публикует snapshot: обновление с `0028` без maintenance replay запрещено, иначе CITY/COUNTRY вернут `WORLD_REGENERATION_REQUIRED`.
+
+До сборки и замены приложения guard также проверяет, что предыдущий работающий образ содержит те же три миграции **и** объявляет текущие reader capabilities в `package.json.tasktopiaRuntime`: `blockTemplateVersions` включает 2/3, `citySceneSchemaVersions` — 4, `countryOverviewSchemaVersions` — 7, `countryRoadSnapshotTables` — `country_road_snapshots_v1`. `blockStructuralShapes` кандидата точно соответствует экспортированному registry; предыдущий образ должен знать каждую такую форму с теми же width/height/floors. Одной поддержки template v3 недостаточно для безопасного автоматического image-only rollback. В persisted road plan нет выдуманного `version`-поля: проверяется реальный контракт.
+
+Дополнительно из public manifest кандидата формируется geometry-only descriptor (не более 128 семейств и 64KiB). Изолированный `node` предыдущего образа, без сети/БД и запуска сервера, сравнивает его с `/app/dist/public/game-assets/v5/manifest.json`: все candidate family keys должны иметь совпадающие footprintCells, spriteSize, anchorPx, entrances и пять упорядоченных путей стадий; соответствующие PNG должны существовать. RGB, label и assetRevision не сравниваются. Отсутствующий manifest/registry, неизвестная новая форма/семейство или неверная геометрия запрещают обычный image-only update. Никакого bypass-флага нет. Подробнее о формах кварталов: [RECTANGULAR-BLOCK-PLANS.md](RECTANGULAR-BLOCK-PLANS.md).
+
+Этот ограниченный guard проверяет базовую форму/числовые границы parcels и reader-лимит 100 compressed routes, но не доказывает соответствие каждого старого stored parcel текущему registry, отсутствие пересечений участков, актуальность topology hash, terrain-связность, корректность старого hard decoration halo или разрешение релиза. Для данного RC обязательны maintenance `REGENERATION_FORCE=1`, conservation и полный world audit **даже при совпадающих capabilities/checksum**: прежнее смешанное содержимое `blockedCellRuns` нельзя надёжно распознать по существующей версии кеша. SQL preflight остаётся read-only с `statement_timeout=5000`/`lock_timeout=1000`, ничего не чинит и не регенерирует.
+
+Для первого перехода нужен отдельно одобренный maintenance run по точной ревизии: остановить приём команд и map traffic, остановить старые web/MCP/world workers, сделать идентифицированный полный backup и проверить восстановление на отдельной БД; применить кандидат и принудительно регенерировать мир **до запуска обслуживающих трафик процессов**. Проверить conservation и чистый world audit для каждой страны, затем HTTP jobs и `world_generation.get`, smoke новых карт и задач, и только после этого вернуть traffic. Не возобновлять старый runtime после применения `0023`.
+
+Откат contract cutover — восстановление **предыдущей БД и предыдущего образа вместе**, пока запись остаётся остановленной. Нельзя автоматически возвращать только старый образ к новой схеме, использовать старый spatial renderer или переписывать checksum миграций. Для последующих schema-compatible обновлений остаётся обычный updater с проверенным предыдущим образом. Проверка на локальном fixture не является production backup/restore acceptance.
 
 После healthcheck прогрейте один detail viewport, повторите запрос и сравните `X-World-Version`, `contentHash`, latency и количество spatial SQL reads. При включённом Redis повтор на другой web replica должен вернуть тот же content hash; остановка Redis не должна менять HTTP body или статус.
 

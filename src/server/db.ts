@@ -31,6 +31,9 @@ type QueryExecutor = Sql | TransactionSql;
 type TransactionContext = { executor: QueryExecutor; afterCommit: Array<() => void>; afterRollback: Array<() => void> };
 const transactionContext = new AsyncLocalStorage<TransactionContext>();
 
+/** Process-wide read caches must never publish an uncommitted transaction view. */
+export function isTransactionActive(): boolean { return transactionContext.getStore() !== undefined; }
+
 export function onTransactionCommit(callback: () => void): void {
   const context = transactionContext.getStore();
   if (context) context.afterCommit.push(callback);

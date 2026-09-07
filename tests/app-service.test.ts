@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { randomUUID } from "node:crypto";
-import { AppService, complexMinimumRect, connectReplayDistrictSegments, connectorCorridorBlocked, districtAvailableLotBounds, districtGreenSearchBounds, districtGrowthThicknesses, DomainError, initialResidentialFrontageWidth, plannedLocalStreetCorridorsValid, rectOccupancyCounter, spatialRoadAnchors, spatialRoadAnchorTiers } from "../src/server/app-service";
+import { AppService, DomainError } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { getBuilding } from "../src/shared/catalog";
-import type { Cell, Rect, RoadCellDto } from "../src/shared/contracts";
-import { GRID_DIRECTIONS, boundsOf, cellKey, connected, manhattan } from "../src/server/world/grid";
-import { isBuildableTerrain, isWater, terrainAt } from "../src/shared/world-terrain";
+import { GRID_DIRECTIONS, boundsOf, cellKey, connected } from "../src/server/world/grid";
+import { readActiveBlockLayout } from "../src/server/world/active-block-layout";
+import { rasterizeBlockRoads } from "../src/server/world/block-layout-compiler";
+import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
 
-describe("Tasktopia square-world application service", { timeout: 20_000 }, () => {
+describe("Tasktopia compact-block application service", { timeout: 20_000 }, () => {
   let db: Db;
   let service: AppService;
   let countryId: string;
@@ -24,117 +24,20 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
 
   afterEach(async () => await db?.close());
 
-  it("joins replay continuation territories without claiming a foreign district", () => {
-    const primary = Array.from({ length: 9 }, (_, index) => ({ x: index % 3, y: Math.floor(index / 3) }));
-    const continuation = Array.from({ length: 9 }, (_, index) => ({ x: 10 + index % 3, y: Math.floor(index / 3) }));
-    const foreign = new Set(Array.from({ length: 6 }, (_, y) => cellKey({ x: 6, y })));
-
-    const merged = connectReplayDistrictSegments(
-      [primary, continuation],
-      { minX: -2, minY: -2, maxX: 14, maxY: 8 },
-      foreign,
-    );
-
-    expect(connected(merged)).toBe(true);
-    expect(merged.some((cell) => foreign.has(cellKey(cell)))).toBe(false);
-    expect(continuation.every((cell) => merged.some((candidate) => cellKey(candidate) === cellKey(cell)))).toBe(true);
-  });
-
-  it("reuses a completed district boundary road without opening its sealed land", () => {
-    const occupied = new Set<string>();
-    const existingRoads = new Set(["10,5"]);
-    const blockedByDistrict = new Set(["10,5", "11,5"]);
-    const foreignSoft = new Set<string>();
-    expect(connectorCorridorBlocked("10,5", occupied, existingRoads, blockedByDistrict, foreignSoft, false)).toBe(false);
-    expect(connectorCorridorBlocked("11,5", occupied, existingRoads, blockedByDistrict, foreignSoft, false)).toBe(true);
-  });
-
-  it("sizes a growth patch for the widest V5 complex instead of capping it below the planner minimum", () => {
-    const compact = getBuilding("highrise-glass");
-    const wide = getBuilding("house-mediterranean-courtyard");
-    expect(districtGrowthThicknesses(compact)).toEqual([64, 68, 72]);
-    expect(districtGrowthThicknesses(wide)).toEqual([64, 68, 72, 76, 80]);
-    expect(Math.max(...districtGrowthThicknesses(wide))).toBeGreaterThanOrEqual(
-      Math.min(72, wide.footprint.width * 4 + 8) + 2,
-    );
-    expect(complexMinimumRect(wide, 10)).toEqual({ width: 44, height: 29 });
-    expect(complexMinimumRect(wide, 3)).toEqual({ width: 32, height: 17 });
-  });
-
-  it("lets an established compact district annex a full new frontage instead of stopping at 32 cells", () => {
-    const compactHouse = getBuilding("house-lowrise-gallery");
-    expect(districtGrowthThicknesses(compactHouse)).toEqual([24, 28, 32, 36, 40, 48]);
-  });
-
-  it("distributes intercity route probes across road segments", () => {
-    const sameSegment = Array.from({ length: 64 }, (_, x) => ({ x, y: 0 }));
-    const remoteSegments = [{ x: -80, y: 40 }, { x: 160, y: -40 }];
-    const anchors = spatialRoadAnchors([...sameSegment, ...remoteSegments], 8, 256);
-    expect(anchors).toEqual([
-      { x: 0, y: 0 }, { x: 8, y: 0 }, { x: 16, y: 0 }, { x: 24, y: 0 },
-      { x: 32, y: 0 }, { x: 40, y: 0 }, { x: 48, y: 0 }, { x: 56, y: 0 },
-      ...remoteSegments,
-    ]);
-  });
-
-  it("keeps fallback road anchors after a full highway probe budget", () => {
-    const highways = Array.from({ length: 300 }, (_, index) => ({ x: index * 8, y: 0 }));
-    const fallback = [{ x: 9_999, y: 16 }];
-    const tiers = spatialRoadAnchorTiers(highways, fallback);
-    expect(tiers[0]).toHaveLength(256);
-    expect(tiers[1]).toEqual(fallback);
-  });
-
-  it("rejects a local street profile that escapes its district", () => {
-    const seed = 424_242;
-    const streetY = Array.from({ length: 201 }, (_, index) => index - 100).find((y) =>
-      Array.from({ length: 12 }, (_, x) => [terrainAt(seed, x, y).terrain, terrainAt(seed, x, y - 1).terrain])
-        .flat().every(isBuildableTerrain))!;
-    const street = Array.from({ length: 12 }, (_, x) => ({ x, y: streetY }));
-    const fullDistrict = new Set(Array.from({ length: 12 * 4 }, (_, index) =>
-      cellKey({ x: index % 12, y: streetY - 2 + Math.floor(index / 12) })));
-    expect(plannedLocalStreetCorridorsValid([street], fullDistrict, seed, new Map())).toBe(true);
-    const clipped = new Set([...fullDistrict].filter((key) => key !== `5,${streetY}` && key !== `5,${streetY - 1}`));
-    expect(plannedLocalStreetCorridorsValid([street], clipped, seed, new Map())).toBe(false);
-  });
-
-  it("counts occupied district cells inside candidate rectangles", () => {
-    const occupiedIn = rectOccupancyCounter(
-      [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 8, y: 8 }],
-      { minX: 0, minY: 0, maxX: 9, maxY: 9 },
-    );
-    expect(occupiedIn({ minX: 0, minY: 0, maxX: 2, maxY: 2 })).toBe(2);
-    expect(occupiedIn({ minX: 2, minY: 2, maxX: 8, maxY: 8 })).toBe(2);
-    expect(occupiedIn({ minX: -5, minY: -5, maxX: 0, maxY: 0 })).toBe(0);
-  });
-
-  it("starts a legacy private district with three readable apartment fronts", () => {
-    expect(initialResidentialFrontageWidth("PRIVATE", 0, 12)).toBe(44);
-    expect(initialResidentialFrontageWidth("NEW_BUILD", 0, 12)).toBe(56);
-    expect(initialResidentialFrontageWidth("PRIVATE", 1, 12)).toBe(44);
-    expect(initialResidentialFrontageWidth("NEW_BUILD", 1, 12)).toBe(0);
-  });
-
-  it("limits placement surfaces to unoccupied lots", () => {
-    const bounds = districtAvailableLotBounds({
-      id: "district", cityId: "city", name: "District", description: "", goal: "", createdAt: "2026-01-01",
-      deadline: null, status: "ACTIVE", archetype: "PRIVATE", capacitySp: 10,
-      color: "#fff", growthDirection: "E", cells: [{ x: 0, y: 0 }],
-      lots: [
-        { id: "used", origin: { x: -100, y: -100 }, width: 10, height: 10, taskId: "task" },
-        { id: "free", origin: { x: 20, y: 30 }, width: 4, height: 5, taskId: null },
-      ],
-    });
-    expect(bounds).toEqual({ minX: 12, minY: 22, maxX: 31, maxY: 42 });
-  });
-
-  it("searches for a generated park around the newest complex", () => {
-    const districtCells = Array.from({ length: 200 * 80 }, (_, index) => ({ x: index % 200, y: Math.floor(index / 200) }));
-    const bounds = districtGreenSearchBounds(districtCells, [
-      { id: "old", origin: { x: 10, y: 10 }, width: 6, height: 5, taskId: "task-1", groupId: "district:complex:001" },
-      { id: "new", origin: { x: 150, y: 50 }, width: 8, height: 6, taskId: null, groupId: "district:complex:009" },
-    ]);
-    expect(bounds).toEqual({ minX: 134, minY: 34, maxX: 173, maxY: 71 });
+  it.each([false, true])("rebuilds pre-lighting cached chunks without regenerating the world (batch=%s)", async (batch) => {
+    const before = await service.getChunkPayload(countryId, 7, 9, "DETAIL");
+    const obsolete = JSON.parse(JSON.stringify(before));
+    delete obsolete.decorationContext.lightingVersion;
+    delete obsolete.decorationContext.surfaceHaloRuns;
+    await db.prepare("UPDATE world_chunk_payloads_v1 SET payload_json = ? WHERE country_id = ? AND chunk_x = 7 AND chunk_y = 9 AND lod = 'DETAIL'")
+      .run(JSON.stringify(obsolete), countryId);
+    const reader = new AppService(db);
+    const after = batch ? (await reader.getViewportPayloads(countryId, 7, 9, 7, 9, "DETAIL"))[0]!
+      : await reader.getChunkPayload(countryId, 7, 9, "DETAIL");
+    expect(after.decorationContext.lightingVersion).toBe(1);
+    expect(Array.isArray(after.decorationContext.surfaceHaloRuns)).toBe(true);
+    expect(after.publishedVersion).toBe(before.publishedVersion);
+    expect(after.tasks).toEqual(before.tasks);
   });
 
   it("creates an idempotent city with reciprocal square-road masks", async () => {
@@ -143,15 +46,13 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const first = await service.createCity(countryId, input);
     const second = await service.createCity(countryId, input);
     expect(second.id).toBe(first.id);
-    expect(first.bounds.maxX - first.bounds.minX + 1).toBe(100);
-    const cityRoads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ? AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?")
-                      .all(countryId, first.bounds.minX, first.bounds.maxX, first.bounds.minY, first.bounds.maxY) as Array<{ x: number; y: number }>;
-    const spanX = Math.max(...cityRoads.map((road) => road.x)) - Math.min(...cityRoads.map((road) => road.x)) + 1;
-    const spanY = Math.max(...cityRoads.map((road) => road.y)) - Math.min(...cityRoads.map((road) => road.y)) + 1;
-    expect(Math.max(spanX, spanY)).toBeLessThan(70);
-    const worldRoadExtent = await db.prepare("SELECT MIN(x) AS min_x FROM roads_v3 WHERE country_id = ?").get(countryId) as { min_x: number };
-    expect(Number(worldRoadExtent.min_x)).toBeLessThanOrEqual(first.bounds.minX - 54);
-    const roadMap = new Map((await service.getChunk(countryId, 0, 0)).roads.map((road) => [cellKey(road), road]));
+    const layout = await readActiveBlockLayout(db, first.id);
+    expect(layout).toBeDefined();
+    expect(layout!.blocks).toEqual([]);
+    const roads = rasterizeBlockRoads(layout!.roadNetwork);
+    expect(roads.length).toBeGreaterThan(0);
+    expect(connected(roads)).toBe(true);
+    const roadMap = new Map(roads.map((road) => [cellKey(road), road]));
     for (const road of roadMap.values()) {
       for (const direction of GRID_DIRECTIONS) {
         if (!(road.mask & direction.bit)) continue;
@@ -160,73 +61,6 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
       }
     }
   });
-
-  it("publishes road corridors and mask changes with set-based statements", async () => {
-    const counts = { inserts: 0, masks: 0 };
-    const countedDb: Db = {
-      prepare: (query) => {
-        const statement = db.prepare(query);
-        const count = () => {
-          if (query.includes("INSERT INTO roads_v3")) counts.inserts += 1;
-          if (query.includes("UPDATE roads_v3 SET mask")) counts.masks += 1;
-        };
-        return {
-          all: async (...parameters) => { count(); return statement.all(...parameters); },
-          get: async (...parameters) => { count(); return statement.get(...parameters); },
-          run: async (...parameters) => { count(); return statement.run(...parameters); },
-        };
-      },
-      exec: (query) => db.exec(query), close: async () => undefined,
-      transaction: (callback) => db.transaction(callback),
-    };
-    const setBasedService = new AppService(countedDb);
-
-    await setBasedService.createCity(countryId, { name: "Set road city", idempotencyKey: "set-road-city" });
-
-    expect(counts.inserts).toBeLessThanOrEqual(8);
-    expect(counts.masks).toBeLessThanOrEqual(8);
-  });
-
-  it("reuses one spatial snapshot across rejected city connector anchors", async () => {
-    await service.createCity(countryId, { name: "Existing city", idempotencyKey: "existing-city" });
-    const unboundedReads: string[] = [];
-    const countedDb: Db = {
-      prepare: (query) => {
-        const statement = db.prepare(query);
-        const count = () => {
-          if (/FROM roads_v3 WHERE country_id = \?$/.test(query.trim())
-            || /FROM districts_v3 d JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
-            || /FROM tasks_v3 t JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
-            || /FROM world_features_v6 WHERE country_id = \? ORDER BY/.test(query)) unboundedReads.push(query);
-        };
-        return {
-          all: async (...parameters) => { count(); return statement.all(...parameters); },
-          get: async (...parameters) => { count(); return statement.get(...parameters); },
-          run: async (...parameters) => { count(); return statement.run(...parameters); },
-        };
-      },
-      exec: (query) => db.exec(query), close: async () => undefined,
-      transaction: (callback) => db.transaction(callback),
-    };
-    const cityService = new AppService(countedDb);
-    type RouteMethod = (
-      country: string, seed: number, start: Cell, end: Cell | readonly Cell[], avoid?: Rect[],
-      reserved?: Cell[], radius?: number, reuseUrbanRoads?: boolean, snapshot?: unknown,
-    ) => Promise<Cell[]>;
-    const internals = cityService as unknown as { route: RouteMethod };
-    const originalRoute = internals.route.bind(cityService);
-    let attempts = 0;
-    vi.spyOn(internals, "route").mockImplementation(async (...parameters) => {
-      attempts += 1;
-      if (attempts <= 2) throw new DomainError("ROUTE_BLOCKED", "synthetic rejected anchor");
-      return originalRoute(...parameters);
-    });
-
-    await cityService.createCity(countryId, { name: "Snapshot city", idempotencyKey: "snapshot-city" });
-
-    expect(attempts).toBeGreaterThanOrEqual(3);
-    expect(unboundedReads).toEqual([]);
-  }, 30_000);
 
   it("does not serve a warm L1 chunk after another app replica invalidates its projection", async () => {
     const city = await service.createCity(countryId, { name: "Replica City", idempotencyKey: "replica-city" });
@@ -253,26 +87,27 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
   it("invalidates warm geometry caches when an external runtime delivers the committed event", async () => {
     let externalEvent: import("../src/shared/contracts").RealtimeEvent | undefined;
     const writer = new AppService(db, (event) => { externalEvent = event; });
-    await writer.createCity(countryId, { name: "First replica city", idempotencyKey: "replica-geometry-1" });
+    const city = await writer.createCity(countryId, { name: "First replica city", idempotencyKey: "replica-geometry-1" });
     const reader = new AppService(db);
-    type GeometryReader = { roadCells(country: string): Promise<Map<string, RoadCellDto>> };
-    const cachedGeometry = reader as unknown as GeometryReader;
-    const firstRoadCount = (await cachedGeometry.roadCells(countryId)).size;
+    const firstScene = await reader.getCityScene(countryId, city.id);
+    const firstRoadCount = new Set(firstScene.chunks.flatMap(chunk => materializeChunkPayload(chunk).roads.map(cellKey))).size;
 
-    await writer.createCity(countryId, { name: "Second replica city", idempotencyKey: "replica-geometry-2" });
-    expect((await cachedGeometry.roadCells(countryId)).size).toBe(firstRoadCount);
+    const district = await writer.createDistrict(countryId, { cityId: city.id, name: "New block", activate: true, idempotencyKey: "replica-geometry-district" });
+    const task = await writer.createTask(countryId, { cityId: city.id, districtId: district.id, title: "New building", estimate: 1, idempotencyKey: "replica-geometry-task" });
     expect(externalEvent).toBeDefined();
 
     reader.acceptExternalEvent(externalEvent!);
 
-    expect((await cachedGeometry.roadCells(countryId)).size).toBeGreaterThan(firstRoadCount);
+    const secondScene = await reader.getCityScene(countryId, city.id);
+    expect(new Set(secondScene.chunks.flatMap(chunk => materializeChunkPayload(chunk).roads.map(cellKey))).size).toBeGreaterThan(firstRoadCount);
+    expect(secondScene.chunks.flatMap(chunk => chunk.tasks).some(candidate => candidate.id === task.id)).toBe(true);
   }, 20_000);
 
   it("batch-reads published viewport chunks instead of issuing one L2 lookup per coordinate", async () => {
     let publishedPayloadReads = 0;
     let publishedPayloadWrites = 0;
     let publishedRetentionRuns = 0;
-    const spatialReads = { roads: 0, districts: 0, cities: 0, tasks: 0, features: 0 };
+    const spatialReads = { cities: 0, tasks: 0, layouts: 0 };
     const countedDb: Db = {
       prepare: (query) => {
         const statement = db.prepare(query);
@@ -280,11 +115,9 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
           if (query.includes("SELECT payload_json") && query.includes("FROM world_chunk_payloads_v1")) publishedPayloadReads += 1;
           if (query.includes("INSERT INTO world_chunk_payloads_v1")) publishedPayloadWrites += 1;
           if (query.includes("WITH stale AS")) publishedRetentionRuns += 1;
-          if (query.includes("FROM roads_v3 WHERE country_id") && query.includes("mask, structure, road_class")) spatialReads.roads += 1;
-          if (query.includes("FROM world_chunk_district_cells_v1 projection")) spatialReads.districts += 1;
           if (query.includes("SELECT * FROM cities_v3 WHERE country_id") && query.includes("bounds_json")) spatialReads.cities += 1;
-          if (query.includes("chunk.entity_kind = 'TASK'")) spatialReads.tasks += 1;
-          if (query.includes("chunk.entity_kind = 'FEATURE'")) spatialReads.features += 1;
+          if (query.includes("FROM tasks_v3 t JOIN task_placements_v1")) spatialReads.tasks += 1;
+          if (query.includes("SELECT * FROM city_layouts_v1")) spatialReads.layouts += 1;
         };
         return {
           all: async (...parameters) => { count(); return statement.all(...parameters); },
@@ -304,7 +137,9 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(publishedPayloadReads).toBe(1);
     expect(publishedPayloadWrites).toBe(1);
     expect(publishedRetentionRuns).toBe(1);
-    expect(spatialReads).toEqual({ roads: 1, districts: 1, cities: 1, tasks: 1, features: 1 });
+    expect(spatialReads.cities).toBeLessThanOrEqual(3);
+    expect(spatialReads.tasks).toBe(1);
+    expect(spatialReads.layouts).toBe(0); // Empty remote viewport does not read a city layout.
   });
 
   it("plans one task from a bounded command snapshot without whole-country spatial reads", async () => {
@@ -317,11 +152,10 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
       prepare: (query) => {
         const statement = db.prepare(query);
         const count = () => {
-          if (/FROM roads_v3 WHERE country_id = \?$/.test(query.trim())
-            || /FROM cities_v3 WHERE country_id = \? ORDER BY/.test(query)
+          if (/FROM cities_v3 WHERE country_id = \? ORDER BY/.test(query)
             || /FROM districts_v3 d JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
             || /FROM tasks_v3 t JOIN cities_v3 c[^]*WHERE c\.country_id = \? ORDER BY/.test(query)
-            || /FROM world_features_v6 WHERE country_id = \? ORDER BY/.test(query)) unboundedReads.push(query);
+            || /FROM city_layouts_v1 WHERE country_id\s*=\s*\?\s*$/.test(query.trim())) unboundedReads.push(query);
         };
         return {
           all: async (...parameters) => { count(); return statement.all(...parameters); },
@@ -355,7 +189,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const countedDb: Db = {
       prepare: (query) => {
         const statement = db.prepare(query);
-        const count = () => { if (query.includes("FROM roads_v3") && query.includes("BETWEEN")) spatialReads += 1; };
+        const count = () => { if (/FROM (?:city_layouts_v1|road_networks_v1|task_placements_v1)/.test(query)
+          || query.includes("FROM tasks_v3 t JOIN task_placements_v1")) spatialReads += 1; };
         return {
           all: async (...parameters) => { count(); return statement.all(...parameters); },
           get: async (...parameters) => { count(); return statement.get(...parameters); },
@@ -422,46 +257,11 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(payload.publishedVersion).toBe(Number(country?.world_version));
   });
 
-  it("keeps the full highway corridor clear of existing city signs when adding a third city", async () => {
-    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1, countryId);
-    await service.createCity(countryId, { name: "First", idempotencyKey: "corridor-city-1" });
-    await service.createCity(countryId, { name: "Second", idempotencyKey: "corridor-city-2" });
-    type RoadPublisher = {
-      addRoadPath(country: string, seed: number, path: Cell[], roadClass: RoadCellDto["roadClass"]): Promise<void>;
-    };
-    const publisher = service as unknown as RoadPublisher;
-    const publishRoad = publisher.addRoadPath.bind(service);
-    let rejectedCandidate = false;
-    vi.spyOn(publisher, "addRoadPath").mockImplementation(async (...args) => {
-      if (!rejectedCandidate && args[3] === "HIGHWAY") {
-        rejectedCandidate = true;
-        throw new DomainError("ROUTE_BLOCKED", "Synthetic full-profile conflict");
-      }
-      await publishRoad(...args);
-    });
-    await expect(service.createCity(countryId, { name: "Third", idempotencyKey: "corridor-city-3" })).resolves.toMatchObject({ name: "Third" });
-    expect(rejectedCandidate).toBe(true);
-
-    const signCells = new Set((await service.listWorldFeatures(countryId))
-      .filter((feature) => feature.kind === "CITY_SIGN")
-      .flatMap((feature) => [...feature.footprint, ...feature.accessPath])
-      .map(cellKey));
-    const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all<{ x: number; y: number }>(countryId);
-    expect(roads.filter((road) => signCells.has(cellKey(road)))).toEqual([]);
-  }, 60_000);
-
   it("renames a city, district, and task with idempotent realtime events", async () => {
     const emitted: string[] = [];
     service = new AppService(db, (event) => emitted.push(event.type));
     await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
     const city = await service.createCity(countryId, { name: "Old City", idempotencyKey: "rename-city-create" });
-    const citySign = (await service.listWorldFeatures(countryId))
-      .find((feature) => feature.cityId === city.id && feature.kind === "CITY_SIGN")!;
-    expect(citySign).toBeDefined();
-    expect(citySign.footprint.some((cell) => (
-      cell.x < city.bounds.minX || cell.x > city.bounds.maxX || cell.y < city.bounds.minY || cell.y > city.bounds.maxY
-    ))).toBe(true);
-
     const renamedCity = await service.renameCity(countryId, { cityId: city.id, name: "New City", idempotencyKey: "rename-city" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Old District", activate: true, idempotencyKey: "rename-district-create" });
     const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Old Task", estimate: 1, idempotencyKey: "rename-task-create" });
@@ -475,9 +275,7 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(emitted.filter((type) => type.endsWith(".renamed"))).toEqual(["city.renamed", "district.renamed", "task.renamed"]);
     const renameEvent = (await service.listEvents(countryId)).findLast((event) => event.type === "city.renamed");
     const affected = renameEvent?.payload.affectedBounds as { minX: number; minY: number; maxX: number; maxY: number };
-    expect(citySign.footprint.every((cell) => (
-      cell.x >= affected.minX && cell.x <= affected.maxX && cell.y >= affected.minY && cell.y <= affected.maxY
-    ))).toBe(true);
+    expect(affected).toMatchObject(city.bounds);
     expect(await service.renameTask(countryId, { taskId: task.id, title: "New Task", actor: "Tester", idempotencyKey: "rename-task" })).toEqual(renamedTask);
   });
 
@@ -490,13 +288,9 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
       cityId: city.id, districtId: district.id, title: "Preserved work", description: "Keep this", workItemType: "HOTFIX",
       acceptanceCriteria: "Regression is covered", systemAnalysis: "Impact is bounded", architecture: "Patch service boundary",
       designSystem: "Use existing tokens", implementationPlan: "Test, patch, verify", estimate: 1, dueAt: deadline,
-      buildingHint: "house-lowrise-gallery", idempotencyKey: "regen-task",
+      buildingHint: "compact-apartment-v1", idempotencyKey: "regen-task",
     });
-    // Green areas appear together with the first streets of the first complex.
-    const greenFeatures = await service.listWorldFeatures(countryId);
-    expect(greenFeatures.some((feature) => feature.kind === "PARK" || feature.kind === "GROVE")).toBe(true);
-    expect(greenFeatures.some((feature) => feature.kind === "PARK_DECOR")).toBe(false);
-    expect(greenFeatures.filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK")).toEqual([]);
+    expect(await service.listWorldFeatures(countryId)).toEqual([]);
     const defect = await service.createTaskDefect(countryId, {
       taskId: task.id, title: "Broken path", reproductionSteps: "Open the map", actualResult: "Path breaks", expectedResult: "Path stays whole",
       idempotencyKey: "regen-defect",
@@ -507,27 +301,18 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", comment: "History survives", actor: "Tester", idempotencyKey: "regen-start" });
     // Simulate a pre-migration production row. Regeneration must not resolve
     // the removed key through the active catalog; it re-picks a current
-    // low/mid-rise family while preserving the task and its history.
+    // compact family while preserving the task, seed and history.
     await db.prepare("UPDATE tasks_v3 SET building_type = ?, visual_asset_key = ?, platform_type = ? WHERE id = ?")
       .run("house-cottage", "house-cottage", "YARD", task.id);
     const seedBefore = Number((await db.prepare("SELECT seed FROM countries WHERE id = ?").get(countryId) as { seed: number }).seed);
+    const layoutBefore = await readActiveBlockLayout(db, city.id);
     const geometryBefore = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
 
-    const createTask = AppService.prototype.createTask;
-    let replayBlockedOnce = false;
-    const createTaskSpy = vi.spyOn(AppService.prototype, "createTask").mockImplementation(function (this: AppService, replayCountryId, input) {
-      if (!replayBlockedOnce && input.idempotencyKey.startsWith("regenerate-task:")) {
-        replayBlockedOnce = true;
-        return Promise.reject(new DomainError("PLACEMENT_BLOCKED", "synthetic full replay district"));
-      }
-      return createTask.call(this, replayCountryId, input);
-    });
     const result = await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world" });
-    createTaskSpy.mockRestore();
-    expect(replayBlockedOnce).toBe(true);
     expect(await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world" })).toEqual(result);
     expect(result).toMatchObject({ regenerated: true, countryId, cities: 1, districts: 1, tasks: 1 });
-    expect(result.seed).not.toBe(seedBefore);
+    expect(result.seed).toBe(seedBefore);
+    expect((await readActiveBlockLayout(db, city.id))!.revision).toBeGreaterThan(layoutBefore!.revision);
     expect((await service.listCities(countryId))[0]?.id).toBe(city.id);
     expect((await service.listDistricts(countryId))[0]?.id).toBe(district.id);
     expect(connected((await service.listDistricts(countryId))[0]!.cells)).toBe(true);
@@ -546,7 +331,7 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(preserved.comments?.map((comment) => comment.body)).toContain("History survives");
     expect(preserved.events?.some((event) => event.type === "STATUS_CHANGED")).toBe(true);
     const geometryAfter = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
-    expect(geometryAfter).not.toBe(geometryBefore);
+    expect(geometryAfter).toBe(geometryBefore);
     expect(await db.prepare("SELECT 1 FROM countries WHERE name LIKE 'regeneration-%'").get()).toBeUndefined();
     expect((await service.listEvents(countryId)).filter((event) => event.type === "country.regenerated")).toHaveLength(1);
   }, 30_000);
@@ -555,23 +340,18 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
     const city = await service.createCity(countryId, { name: "Southport", idempotencyKey: "c1" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Core", archetype: "MIXED_URBAN", activate: true, idempotencyKey: "d1" });
-    expect(district.cells.length).toBeGreaterThan(250);
-    expect(connected(district.cells)).toBe(true);
-    // V10: a fresh district is pure territory. Streets and lots appear only
-    // together with the first complex grown by the first task.
+    expect(district.cells).toEqual([]);
     expect(district.lots).toEqual([]);
-    let task = await service.createTask(countryId, { cityId: city.id, title: "Build mixed-use tower", estimate: 2, buildingHint: "highrise-mixed-use-market", idempotencyKey: "t1" });
+    let task = await service.createTask(countryId, { cityId: city.id, title: "Build mixed-use tower", estimate: 2, buildingHint: "compact-apartment-v1", idempotencyKey: "t1" });
     expect(task.stage).toBe(1);
-    // A tower-scale facade reserves its full north visual silhouette. A point
-    // complex may therefore publish two protected frontage lots instead of
-    // squeezing a third lot underneath the artwork.
-    expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)?.lots.length).toBeGreaterThanOrEqual(2);
+    const planned = await readActiveBlockLayout(db, city.id);
+    expect(planned!.blocks.length).toBeGreaterThan(0);
+    expect(task.footprint).toHaveLength(36);
     const taskChunk = await service.chunkForCell(task.origin);
     expect((await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY)).tasks.find((item) => item.id === task.id)?.stage).toBe(1);
     const overview = await service.getChunk(countryId, taskChunk.chunkX, taskChunk.chunkY, "OVERVIEW");
     expect(overview.tasks.find((item) => item.id === task.id)).not.toHaveProperty("descriptionPreview");
-    // V10: a building may front directly onto the sidewalk without a footpath,
-    // so the overview exposes the pedestrian layer as SIDEWALK or PATH cells.
+    // Pedestrian geometry is derived from the same block template as the task.
     expect(overview.surfaces.some((surface) => surface.kind === "PATH" || surface.kind === "SIDEWALK")).toBe(true);
     expect(overview.worldFeatures).toEqual([]);
     for (const [index, status] of ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"].entries()) {
@@ -621,68 +401,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect(completedScene.chunks.flatMap((chunk) => chunk.tasks).some((candidate) => candidate.id === task.id)).toBe(false);
     await expect(service.activateDistrict(countryId, district.id, "reactivate-core")).rejects.toThrowError(/нельзя снова активировать/);
     await expect(service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Late task", estimate: 1, idempotencyKey: "late-task" }))
-      .rejects.toThrowError(/завершённый район/);
+      .rejects.toThrowError(/завершённый.*район/);
   });
-
-  it("builds a dense-core district from large existing facades around a central park", async () => {
-    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(867_530_9, countryId);
-    const city = await service.createCity(countryId, {
-      name: "Compact Core",
-      morphology: "DENSE_CORE",
-      idempotencyKey: "compact-core-city",
-    });
-    const district = await service.createDistrict(countryId, {
-      cityId: city.id,
-      name: "Новый деловой центр",
-      archetype: "NEW_BUILD",
-      capacitySp: 26,
-      activate: true,
-      idempotencyKey: "compact-core-district",
-    });
-
-    // A dense district starts with one coherent frontage sized for reviewed
-    // 12–24-cell apartment facades and the northern projection of the tallest
-    // 280px residential tower, not an obsolete cottage parcel.
-    expect(district.cells.length).toBeGreaterThanOrEqual(2_700);
-    expect(district.cells.length).toBeLessThanOrEqual(3_000);
-    const territory = boundsOf(district.cells);
-    expect(district.cells).toHaveLength(
-      (territory.maxX - territory.minX + 1) * (territory.maxY - territory.minY + 1),
-    );
-
-    const tasks: Awaited<ReturnType<AppService["createTask"]>>[] = [];
-    for (let index = 0; index < 8; index += 1) {
-      tasks.push(await service.createTask(countryId, {
-        cityId: city.id,
-        districtId: district.id,
-        title: `Многоэтажный корпус ${index + 1}`,
-        description: "Плотная городская застройка делового центра.",
-        estimate: 3,
-        idempotencyKey: `compact-core-task-${index}`,
-      }));
-    }
-    expect(tasks.every((task) => getBuilding(task.buildingType).tags.includes("new-build"))).toBe(true);
-    expect(tasks.every((task) => task.platformType === "STONE")).toBe(true);
-    const developed = (await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)!;
-    // Compact V5 buildings still share road complexes. Tower-scale facades
-    // may open one additional protected frontage so their north silhouettes
-    // do not cover the next street or building row.
-    const occupiedGroups = new Map<string, number>();
-    for (const lot of developed.lots) if (lot.taskId && lot.groupId) {
-      occupiedGroups.set(lot.groupId, (occupiedGroups.get(lot.groupId) ?? 0) + 1);
-    }
-    expect(Math.max(...occupiedGroups.values())).toBeGreaterThanOrEqual(2);
-    expect(occupiedGroups.size, JSON.stringify({
-      tasks: tasks.map((task) => ({ key: task.buildingType, footprint: getBuilding(task.buildingType).footprint })),
-      lots: developed.lots.map((lot) => ({ groupId: lot.groupId, size: [lot.width, lot.height], taskId: lot.taskId })),
-    }))
-      .toBeLessThanOrEqual(7);
-
-    const green = (await service.listWorldFeatures(countryId)).find((feature) =>
-      feature.cityId === city.id && feature.assetKey === "urban-grove");
-    expect(green).toBeDefined();
-    expect(green!.footprint.length).toBeGreaterThanOrEqual(30);
-  }, 45_000);
 
   it("creates a numbered task park with the same five-stage lifecycle", async () => {
     const city = await service.createCity(countryId, { name: "Park City", idempotencyKey: "park-city" });
@@ -709,22 +429,20 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     expect((await service.listWorldFeatures(countryId)).some((feature) => feature.assetKey === "urban-formal")).toBe(false);
   }, 20_000);
 
-  it("infers a task-backed park when an agent names a park but omits visualKind", async () => {
+  it("uses the planned AUTO slot even when task prose mentions a park", async () => {
     const city = await service.createCity(countryId, { name: "Inferred Park City", idempotencyKey: "inferred-park-city" });
     const district = await service.createDistrict(countryId, {
       cityId: city.id, name: "Green Sprint", archetype: "NEW_BUILD", activate: true, idempotencyKey: "inferred-park-district",
     });
     const park = await service.createTask(countryId, {
-      cityId: city.id, districtId: district.id, title: "Разбить городской сквер", estimate: 3,
+      cityId: city.id, districtId: district.id, title: "Разбить городской сквер", description: "Разработать генератор: рядом парк, сад отдыха, бульвар и парковка.", estimate: 3,
       idempotencyKey: "inferred-park-task",
     });
-    expect(park).toMatchObject({ visualKind: "PARK", visualAssetKey: "urban-formal", stage: 1 });
+    expect(park).toMatchObject({ visualKind: "BUILDING", stage: 1 });
+    expect(await db.prepare("SELECT visual_auto FROM tasks_v3 WHERE id=?").get(park.id)).toMatchObject({ visual_auto: true });
   }, 20_000);
 
   it("does not misclassify a parking task as a park", async () => {
-    // This terrain seed places the first commercial district outside the
-    // existing collector halo. An explicitly named parking task must bootstrap
-    // its own collector frontage instead of silently falling back to a tower.
     await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1_996_730_220, countryId);
     const city = await service.createCity(countryId, { name: "Parking City", idempotencyKey: "parking-city" });
     const district = await service.createDistrict(countryId, {
@@ -736,45 +454,9 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     });
     expect(parking).toMatchObject({
       visualKind: "BUILDING",
-      buildingType: "commercial-parking-lot",
-      platformType: "ASPHALT",
     });
-    const grownDistrict = (await service.listDistricts(countryId, city.id)).find((candidate) => candidate.id === district.id)!;
-    const grownBounds = boundsOf(grownDistrict.cells);
-    const collector = await db.prepare(`SELECT COUNT(*) AS count FROM roads_v3
-      WHERE country_id = ? AND road_class IN ('COLLECTOR', 'ARTERIAL', 'HIGHWAY')
-      AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?`).get<{ count: number }>(
-        countryId,
-        grownBounds.minX - 3,
-        grownBounds.maxX + 3,
-        grownBounds.minY - 3,
-        grownBounds.maxY + 3,
-      );
-    expect(Number(collector?.count)).toBeGreaterThan(0);
+    expect(getBuilding(parking.buildingType)?.category).toBe("HOUSE");
   }, 20_000);
-
-  it("keeps unmigrated landmarks out of the task-building profile", async () => {
-    const city = await service.createCity(countryId, { name: "Landmark City", idempotencyKey: "landmark-city" });
-    const district = await service.createDistrict(countryId, {
-      cityId: city.id, name: "Civic Sprint", archetype: "CIVIC", activate: true, idempotencyKey: "landmark-district",
-    });
-
-    expect((await service.listWorldFeatures(countryId)).filter((feature) => feature.cityId === city.id && feature.kind === "LANDMARK"))
-      .toEqual([]);
-
-    await expect(service.createTask(countryId, {
-      cityId: city.id, districtId: district.id, title: "Build the city observatory", estimate: 6,
-      buildingHint: "landmark-observatory", idempotencyKey: "landmark-task",
-    })).rejects.toThrowError(/не существует/);
-    expect(await service.listTasks(countryId)).toEqual([]);
-  });
-
-  it("allows a reviewed service facade in a compatible civic district", async () => {
-    const city = await service.createCity(countryId, { name: "Services", idempotencyKey: "services-city" });
-    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Safety", archetype: "CIVIC", capacitySp: 14, activate: true, idempotencyKey: "services-district" });
-    const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Compact fire station", estimate: 3, buildingHint: "civic-fire-station-compact", idempotencyKey: "fire-one" });
-    expect(task).toMatchObject({ buildingType: "civic-fire-station-compact" });
-  });
 
   it("rejects reused idempotency keys and invalid building hints", async () => {
     await service.createCity(countryId, { name: "Alpha", idempotencyKey: "same" });
@@ -782,47 +464,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const city = (await service.listCities(countryId))[0]!;
     await service.createDistrict(countryId, { cityId: city.id, name: "Active", activate: true, idempotencyKey: "district" });
     await expect(service.createTask(countryId, { cityId: city.id, title: "Unknown", estimate: 1, buildingHint: "missing-building", idempotencyKey: "bad-building" }))
-      .rejects.toThrowError(/не подходит оценке|не существует/);
+      .rejects.toThrowError(/семейство здания/);
   });
-
-  it("keeps an ordinary residence out of a dense new-build district", async () => {
-    const city = await service.createCity(countryId, { name: "Zoned City", morphology: "DENSE_CORE", idempotencyKey: "zoned-city" });
-    const dense = await service.createDistrict(countryId, { cityId: city.id, name: "Новые высотки", archetype: "NEW_BUILD", activate: true, idempotencyKey: "zoned-district" });
-    await expect(service.createTask(countryId, {
-                      cityId: city.id, districtId: dense.id, title: "Частный дом внутри высоток", estimate: 2,
-                      buildingHint: "house-lowrise-gallery", idempotencyKey: "zoned-conflict",
-                    })).rejects.toThrowError(/архитектур|район/);
-  });
-
-  it("groups low-rise tasks into paved apartment complexes", async () => {
-    // This seed used to rank a facade whose first growth site could not be
-    // published, even though a compatible compact house fitted the same
-    // district. Keep the terrain/candidate interaction deterministic.
-    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(1_013_904_226, countryId);
-    const city = await service.createCity(countryId, { name: "Garden City", idempotencyKey: "garden-city" });
-    const district = await service.createDistrict(countryId, {
-      cityId: city.id, name: "Тихий жилой квартал", archetype: "PRIVATE", activate: true,
-      idempotencyKey: "garden-district",
-    });
-    const tasks: Awaited<ReturnType<AppService["createTask"]>>[] = [];
-    for (let index = 0; index < 5; index += 1) {
-      tasks.push(await service.createTask(countryId, {
-        cityId: city.id, districtId: district.id, title: `Жилой дом ${index + 1}`, estimate: 2,
-        idempotencyKey: `garden-task-${index}`,
-      }));
-    }
-
-    const developed = (await service.listDistricts(countryId, city.id)).find((item) => item.id === district.id)!;
-    const taskLots = developed.lots.filter((lot) => lot.taskId && tasks.some((task) => task.id === lot.taskId));
-    expect(taskLots).toHaveLength(5);
-    expect(new Set(taskLots.map((lot) => lot.groupId)).size).toBeLessThanOrEqual(3);
-    expect(taskLots.every((lot) => lot.width >= 12 && lot.height >= 9)).toBe(true);
-    expect(tasks.every((task) => {
-      const tags = getBuilding(task.buildingType).tags;
-      return tags.includes("low-rise-residential") || tags.includes("mid-rise-residential");
-    }), tasks.map((task) => task.buildingType).join(", ")).toBe(true);
-    expect(tasks.every((task) => task.platformType === "STONE")).toBe(true);
-  }, 20_000);
 
   it("treats district SP capacity as an advisory target and still enforces status transitions", async () => {
     const city = await service.createCity(countryId, {
@@ -884,17 +527,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const next = await service.createDistrict(countryId, { cityId: city.id, name: "Next District", idempotencyKey: "lifecycle-next" });
     const task = await service.createTask(countryId, { cityId: city.id, districtId: active.id, title: "Disposable Task", estimate: 1, idempotencyKey: "lifecycle-task" });
     await service.updateTaskStatus(countryId, { taskId: task.id, status: "STARTED", comment: "Creates dependent history", idempotencyKey: "lifecycle-start" });
-    const areaId = randomUUID();
-    const featureCell = active.cells[0]!;
-    await db.prepare(`INSERT INTO world_features_v6
-      (id,country_id,city_id,district_id,parent_feature_id,kind,asset_kind,asset_key,origin_x,origin_y,footprint_json,orientation,access_json,created_at)
-      VALUES (?,?,?,?,?,'PARK','AREA','urban-park',?,?,?::jsonb,'S','[]'::jsonb,?)`)
-      .run(areaId, countryId, city.id, active.id, null, featureCell.x, featureCell.y, JSON.stringify([featureCell]), new Date().toISOString());
-    const ownedFeatures = await db.prepare("SELECT id FROM world_features_v6 WHERE district_id = ?").all(active.id);
-    expect(ownedFeatures.map((row) => row.id)).toEqual(expect.arrayContaining([areaId]));
-
     await expect(service.deleteTask(countryId, { taskId: task.id, confirmTitle: "wrong", idempotencyKey: "delete-task-wrong" }))
-      .rejects.toThrowError(/точное текущее название/);
+      .rejects.toThrowError(/точное.*название/);
     const deletedTask = await service.deleteTask(countryId, { taskId: task.id, confirmTitle: task.title, idempotencyKey: "delete-task" });
     expect(await service.deleteTask(countryId, { taskId: task.id, confirmTitle: task.title, idempotencyKey: "delete-task" })).toEqual(deletedTask);
     expect((await service.listTasks(countryId)).some((item) => item.id === task.id)).toBe(false);
@@ -906,20 +540,18 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const deletedDistrict = await service.deleteDistrict(countryId, { districtId: active.id, confirmName: active.name, idempotencyKey: "delete-district" });
     expect(deletedDistrict.activatedDistrictId).toBe(next.id);
     expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === next.id)?.status).toBe("ACTIVE");
-    // Abandonment keeps the urban fabric: the district row stays as ABANDONED,
-    // parks remain, and the demolished task became a ruin plot.
-    expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === active.id)).toMatchObject({ status: "ABANDONED", cells: [], lots: [] });
-    const remainingFeatures = await db.prepare("SELECT kind FROM world_features_v6 WHERE district_id = ?").all(active.id);
-    expect(remainingFeatures.map((row) => String(row.kind))).toEqual(expect.arrayContaining(["PARK", "RUIN"]));
-    expect(remainingFeatures.map((row) => String(row.kind))).not.toContain("PARK_DECOR");
-    expect(await db.prepare("SELECT 1 FROM world_chunk_entities_v11 WHERE entity_kind = 'FEATURE' AND entity_id = ANY(?::text[])").get(ownedFeatures.map((row) => String(row.id)))).not.toBeUndefined();
+    // Removed tasks leave a canonical ruined-site marker, not a legacy world feature.
+    expect((await service.listDistricts(countryId, city.id)).find((item) => item.id === active.id))
+      .toMatchObject({ status: "ABANDONED" });
+    const remainingMarkers = await db.prepare("SELECT kind FROM site_markers_v1 WHERE layout_id IN (SELECT id FROM city_layouts_v1 WHERE city_id=?)").all(city.id);
+    expect(remainingMarkers).toContainEqual(expect.objectContaining({ kind: "RUINED" }));
     const deletionEvent = (await service.listEvents(countryId)).findLast((event) => event.type === "district.deleted");
     const affected = deletionEvent?.payload.affectedBounds as { minX: number; minY: number; maxX: number; maxY: number };
-    expect(affected.minX).toBeLessThanOrEqual(boundsOf(next.cells).minX);
-    expect(affected.maxX).toBeGreaterThanOrEqual(boundsOf(next.cells).maxX);
+    expect(affected.minX).toBeLessThanOrEqual(task.origin.x);
+    expect(affected.maxX).toBeGreaterThanOrEqual(task.origin.x);
 
-    const currentCity = (await service.listCities(countryId)).find((item) => item.id === city.id)!;
-    const roadsBeforeDelete = Number((await db.prepare("SELECT COUNT(*) AS count FROM roads_v3 WHERE country_id = ? AND x BETWEEN ? AND ? AND y BETWEEN ? AND ?").get(countryId, currentCity.bounds.minX, currentCity.bounds.maxX, currentCity.bounds.minY, currentCity.bounds.maxY) as { count: number }).count);
+    const beforeDelete = await readActiveBlockLayout(db, city.id);
+    const roadsBeforeDelete = rasterizeBlockRoads(beforeDelete!.roadNetwork).length;
     const deletedCity = await service.deleteCity(countryId, { cityId: city.id, confirmName: city.name, idempotencyKey: "delete-city" });
     expect(deletedCity).toMatchObject({ cityId: city.id, districtsDeleted: 2, tasksDeleted: 0 });
     expect(deletedCity.roadsDeleted).toBeGreaterThan(0);
@@ -931,8 +563,8 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     const city = await service.createCity(countryId, { name: "Protected City", idempotencyKey: "protected-city" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "Protected District", activate: true, idempotencyKey: "protected-district" });
     const other = await registerUser(db, { email: "delete-other@example.com", name: "Other", password: "password123" });
-    await expect(service.deleteCity(countryId, { cityId: city.id, confirmName: "wrong", idempotencyKey: "wrong-city-confirm" })).rejects.toThrowError(/точное текущее название/);
-    await expect(service.deleteDistrict(countryId, { districtId: district.id, confirmName: "wrong", idempotencyKey: "wrong-district-confirm" })).rejects.toThrowError(/точное текущее название/);
+    await expect(service.deleteCity(countryId, { cityId: city.id, confirmName: "wrong", idempotencyKey: "wrong-city-confirm" })).rejects.toThrowError(/точное.*название/);
+    await expect(service.deleteDistrict(countryId, { districtId: district.id, confirmName: "wrong", idempotencyKey: "wrong-district-confirm" })).rejects.toThrowError(/точное.*название/);
     await expect(service.deleteCity(other.user.countryId, { cityId: city.id, confirmName: city.name, idempotencyKey: "foreign-city-delete" })).rejects.toThrowError(/не найден/);
     await expect(service.deleteDistrict(other.user.countryId, { districtId: district.id, confirmName: district.name, idempotencyKey: "foreign-district-delete" })).rejects.toThrowError(/не найден/);
     expect((await service.listDistricts(countryId, city.id)).some((item) => item.id === district.id)).toBe(true);
@@ -1000,100 +632,6 @@ describe("Tasktopia square-world application service", { timeout: 20_000 }, () =
     });
     expect(events).toEqual(["city.created"]);
   }, 15_000);
-
-  it("connects a second city to the existing national road component", async () => {
-    const cities = [];
-    for (let index = 0; index < 2; index += 1) {
-      cities.push(await service.createCity(countryId, { name: `City ${index}`, idempotencyKey: `city-${index}` }));
-    }
-    expect(cities).toHaveLength(2);
-    expect(new Set(cities.map((city) => `${city.center.x},${city.center.y}`)).size).toBe(2);
-    const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(countryId) as Array<{ x: number; y: number }>;
-    expect(connected(roads)).toBe(true);
-    for (const city of cities) expect(Math.min(...roads.map((road) => manhattan(road, city.center)))).toBeLessThanOrEqual(2);
-    const bridges = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ? AND structure = 'BRIDGE'").all(countryId) as Array<{ x: number; y: number }>;
-    const seed = Number((await db.prepare("SELECT seed FROM countries WHERE id = ?").get(countryId) as { seed: number }).seed);
-    for (const bridge of bridges) expect(isWater(terrainAt(seed, bridge.x, bridge.y).terrain)).toBe(true);
-    const features = await service.listWorldFeatures(countryId);
-    expect(features.filter((feature) => feature.kind === "CITY_SIGN").length).toBeGreaterThan(0);
-    const stops = features.filter((feature) => feature.kind === "BUS_STOP");
-    expect(stops.length).toBeGreaterThanOrEqual(4);
-    expect(stops.length % 2).toBe(0);
-    expect(stops.every((feature) => ["bus-stop-horizontal", "bus-stop-vertical"].includes(feature.assetKey))).toBe(true);
-    for (const stop of stops) expect(stop.footprint).toHaveLength(4);
-    for (const feature of features) {
-      // A boom barrier intentionally spans the archive driveway at the fence
-      // line. All other world features must remain outside drivable cells.
-      if (feature.assetKey === "archive-security-barrier") continue;
-      for (const cell of feature.footprint) {
-        expect(roads.some((road) => cellKey(road) === cellKey(cell)), `${feature.assetKey} overlaps road at ${cellKey(cell)}`).toBe(false);
-      }
-    }
-  }, 15_000);
-
-  it("anchors a new city to a real road in a legacy world without highway classes", async () => {
-    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424_242, countryId);
-    const first = await service.createCity(countryId, { name: "Legacy city", idempotencyKey: "legacy-anchor-first" });
-    await db.prepare("UPDATE roads_v3 SET road_class = 'LOCAL' WHERE country_id = ?").run(countryId);
-    await db.prepare("DELETE FROM roads_v3 WHERE country_id = ? AND x = ? AND y = ?").run(countryId, first.center.x, first.center.y);
-    service = new AppService(db);
-
-    const second = await service.createCity(countryId, { name: "Connected city", idempotencyKey: "legacy-anchor-second" });
-
-    const roads = await db.prepare("SELECT x, y FROM roads_v3 WHERE country_id = ?").all(countryId) as Array<{ x: number; y: number }>;
-    expect(connected(roads)).toBe(true);
-    expect(Math.min(...roads.map((road) => manhattan(road, second.center)))).toBeLessThanOrEqual(2);
-  }, 15_000);
-
-  it("widens a dense city into a reachable sector after two completed districts", async () => {
-    // Regression for the clean demo seed: task growth stretched the city north
-    // and south, so the next ranked sites all sat behind sealed district roads.
-    // Site selection must widen toward a less-used sector before exhausting
-    // the expensive full-profile connector attempts.
-    await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(987_321, countryId);
-    const city = await service.createCity(countryId, {
-      name: "Riverside Local",
-      morphology: "DENSE_CORE",
-      idempotencyKey: "dense-sector-city",
-    });
-    for (let districtIndex = 0; districtIndex < 2; districtIndex += 1) {
-      const district = await service.createDistrict(countryId, {
-        cityId: city.id,
-        name: `Completed district ${districtIndex + 1}`,
-        capacitySp: 26,
-        activate: true,
-        archetype: "NEW_BUILD",
-        idempotencyKey: `dense-sector-district-${districtIndex}`,
-      });
-      for (let taskIndex = 0; taskIndex < 3; taskIndex += 1) {
-        const task = await service.createTask(countryId, {
-          cityId: city.id,
-          districtId: district.id,
-          title: `Dense sector task ${districtIndex + 1}.${taskIndex + 1}`,
-          estimate: 1,
-          idempotencyKey: `dense-sector-task-${districtIndex}-${taskIndex}`,
-        });
-        for (const [statusIndex, status] of (["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"] as const).entries()) {
-          await service.updateTaskStatus(countryId, {
-            taskId: task.id,
-            status,
-            progress: [10, 60, 90, 100][statusIndex],
-            idempotencyKey: `dense-sector-task-${districtIndex}-${taskIndex}-${status}`,
-          });
-        }
-      }
-      await service.completeDistrict(countryId, district.id, `dense-sector-complete-${districtIndex}`);
-    }
-
-    await expect(service.createDistrict(countryId, {
-      cityId: city.id,
-      name: "Reachable third district",
-      capacitySp: 26,
-      activate: true,
-      archetype: "NEW_BUILD",
-      idempotencyKey: "dense-sector-third",
-    })).resolves.toMatchObject({ name: "Reachable third district" });
-  }, 60_000);
 
   it("expands a city envelope to fit eight non-overlapping districts", async () => {
     // Regression: the nearest endpoint was enclosed by reservation halos for

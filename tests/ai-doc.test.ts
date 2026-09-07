@@ -19,7 +19,11 @@ describe("public AI integration guide", () => {
     expect(guide).toContain("isError: true");
     expect(guide).toContain("systemAnalysis");
     expect(guide).toContain("implementation-plan.md");
-    expect(guide).toContain("human UI is read-only");
+    expect(guide).not.toContain("human UI is read-only");
+    expect(guide).toContain("#### `task.transfer`");
+    expect(guide).toContain('"targetDistrictId"');
+    expect(guide).toContain("a later task can never reuse it");
+    expect(guide).toContain("?countryId=<country-id>&taskId=<task-id>");
     expect(guide).toContain('"assigneeRole": "backend-lead"');
     expect(guide).toContain('"forUserEmail": "product-owner@example.com"');
     expect(guide).toContain("Base64 `contentBase64`");
@@ -59,6 +63,8 @@ describe("public AI integration guide", () => {
     expect(skill).toContain("родительскую задачу сохранять в\n`TESTING`");
     expect(skill).toContain("Готово: <конкретный результат");
     expect(skill).not.toContain("TODO");
+    expect(skill).toContain("`task.transfer`");
+    expect(skill).not.toContain("освободит участок");
     for (const tool of documentedTools) expect(skill).toContain(`\`${tool}\``);
   });
 

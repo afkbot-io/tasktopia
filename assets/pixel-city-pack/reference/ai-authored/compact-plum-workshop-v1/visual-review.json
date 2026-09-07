@@ -1,0 +1,91 @@
+{
+  "key": "compact-plum-workshop-v1",
+  "reviewedAt": "2026-09-07",
+  "reviewScope": "Parent independently accepted5I,4A,3G actualnative1x/8x and full sequence. Complete source family frozen; no global publication or actual-map claim by this author.",
+  "reviewMethod": "Built-in ImageGen; uniformNN/hardalpha/MAXCOVERAGE existing mode only. One justified outward-only common frame adds4sourcepx exterior bottom background, no opaque crop/repaint/per-axis warp.",
+  "projection": {
+    "camera": "High45 frontal-top orthographic, axis-aligned and roof-dominant, no receding side wall",
+    "roofDepthPx": 28,
+    "roofRegionBoundsPx": [
+      0,
+      4,
+      48,
+      32
+    ],
+    "facadeHeightPx": 16,
+    "floorStepPx": 5,
+    "windowPaneSizePxRange": [
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "windowRowsPx": [
+      [
+        33,
+        34
+      ],
+      [
+        38,
+        39
+      ],
+      [
+        43,
+        44
+      ]
+    ],
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorLeafBoundsPx": [
+      22,
+      45,
+      26,
+      48
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "doorFrameBoundsPx": [
+      20,
+      43,
+      27,
+      48
+    ],
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "sameCameraAssertionScope": "All3 actualnatives/sources and sequence independently reviewed. Same48x44 occupied envelope, exactlower5 opening/portal ROIs,0foundation/centre/anchor drift, samecommonframe; disclosed≤1native brokennorthperimeter variation, notpixel-identical masonry.",
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "1d4387f1a8ad766410943a6733fd77c08c4d14358257189e63f2c6a6ff756ab1",
+      "runtimeSha256": "21bc4fdc03668b36f0031582628a54d19e92682d4250b6ad52058f285423622f",
+      "retainedRoofAreaApproxPercent": 0,
+      "notes": "Parent independently accepted native1x/8x whole sequence:12 opaque rooms/raisedorthogonalpartitions/materialpiles, roof0, reduced upperfront withcolumns,5squarelowerwindows, unchanged4x3leaf/7x5portal andfoundation, plausibleplumidentity. All20loweraperture pixels use actualwarmdark palette{21,15,11;32,29,28;58,53,47}; explicitpalette helper rejects darkplummasonry while retaining exactROIs, notgeometryrelaxation. Stage3source[128,181,1113,1085] differs from5[140,201,1111,1083]; topoverhang20sourcepx within existing1native stageallowance onsharedframe, brokennorthperimeter disclosed. Same48x44occupied/31colors/hardalpha/0holes and0centre/baseline/foundationmaskdifference. G is a local source-strip edit of B1; original/failedA1/B2/C/D/E/F preservedunapproved. No perstageframe/crop/recenter/opaque repaint/warp. Finalroof progression100→50→0 andpanes8→8→5 approved."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "c3648c04e8a20fdfeeba7ba70bf711475fc7a64ab2a2ebe453ad97de95e8a884",
+      "runtimeSha256": "50c0184cd9bd7ec0c3b278109a48f502e4ec04a68f10fe1d46912dee6f1f78bd",
+      "retainedRoofAreaApproxPercent": 50,
+      "notes": "Parent independently viewed native1x+grid8x and approved: left half roof, six opaque rightrooms/raised orthogonal partitions/materials, no finished lantern/ribs/vent. Eight2x2 neutralcharcoal aperture ROIs unchanged. Darkplum masonry85,65,71 is not falsely classified aswindow; actual glassbody neutral33,31,29/47,45,46. Exact4x3 leaf/7x5portal, with disclosed warmdarkplum leftleafcolumn72,46,55; notgeometryfailure. Occupied48x44 and0anchor/centre/foundationmask drift. Sourcebounds right+2/bottom-1sourcepx withinexisting1native tolerance, sameframe without independentregistration."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "9a22c025bbb4f83f05a067045ec6e47b7cda6793b8629d23d11131819fb42492",
+      "runtimeSha256": "ed5dbcaee9240b1d09f9a372efb5490d6645f28e414e7e0a41521ea75859ac63",
+      "notes": "Parent independently viewed native1x+grid8x: twin roof lanterns with orthogonal cream frames and ribs are distinctive; compact facade/palette fit. Eight exact2x2 panes x8/23/38,y33/38/43 (no lower center),4x3leaf/7x5portal, pitch5/5. Actual48x44 occupied at0,4,31colors/hardalpha/0holes, both48px opaque foundation rows46/47. Frame140,201,1111,1087 contains source140,201,1111,1083 with only4px exterior bottom margin. Original/A–H preserved unapproved."
+    }
+  },
+  "runtimeIntegrationReviewOwner": "Parent after all3 stages accepted"
+}

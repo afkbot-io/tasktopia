@@ -1,4 +1,4 @@
 interface:
   display_name: "Tasktopia Building Stage Verifier"
-  short_description: "Verify building geometry and stage alignment"
-  default_prompt: "Use $tasktopia-building-stage-verifier to audit construction stages and render each one on the Tasktopia pavement grid."
+  short_description: "Audit compact source geometry and stage masks"
+  default_prompt: "Use $tasktopia-building-stage-verifier to audit compact source registration, structural masks, pixel scale and individual construction-stage previews."

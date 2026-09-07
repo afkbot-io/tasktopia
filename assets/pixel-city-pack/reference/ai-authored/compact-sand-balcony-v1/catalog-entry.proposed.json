@@ -1,0 +1,28 @@
+{
+  "key": "compact-sand-balcony-v1",
+  "label": "Дом с песочными балконами",
+  "category": "HOUSE",
+  "rarity": "COMMON",
+  "spriteSize": [48,48],
+  "footprintCells": [6,6],
+  "anchorPx": [24,48],
+  "platform": "STONE",
+  "estimates": [1,2,3,6],
+  "tags": ["residential","low-rise-residential","compact-building"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side":"S","offset":3}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-sand-balcony-v1/sources/stage-3.png",
+    "ai-authored/compact-sand-balcony-v1/sources/stage-4.png",
+    "ai-authored/compact-sand-balcony-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "1f7debe239526f949bd4bc1560657742ba092f0ad68c06d8a7ba4bd0a9316066",
+    "23e253f14895d80c806505644ae8545981609364bb278f8db51dcf7df9ee8a27",
+    "f8564996afceaa76935ab815b24ca3c8285db613bf49ef49de1dd96fc07af805"
+  ],
+  "reviewed": true
+}

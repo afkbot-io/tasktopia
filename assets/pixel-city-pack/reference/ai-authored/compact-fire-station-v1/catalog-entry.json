@@ -1,0 +1,53 @@
+{
+  "key": "compact-fire-station-v1",
+  "label": "Компактная пожарная станция",
+  "category": "CIVIC",
+  "rarity": "UNCOMMON",
+  "spriteSize": [
+    48,
+    32
+  ],
+  "footprintCells": [
+    6,
+    4
+  ],
+  "anchorPx": [
+    24,
+    32
+  ],
+  "platform": "STONE",
+  "estimates": [
+    1,
+    2,
+    3,
+    6
+  ],
+  "tags": [
+    "civic",
+    "fire-station",
+    "compact-building"
+  ],
+  "ruleIds": [
+    "STANDARD"
+  ],
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 3
+    }
+  ],
+  "maxPerCity": null,
+  "maxPerDistrict": 1,
+  "serviceRole": "FIRE",
+  "stageSources": [
+    "ai-authored/compact-fire-station-v1/sources/stage-3.png",
+    "ai-authored/compact-fire-station-v1/sources/stage-4.png",
+    "ai-authored/compact-fire-station-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "0c63d8fbfe906b3390aafa1ad352b974c22aa36f9c0a63343d3036bd47ae0ae0",
+    "3e40b8c8ab872320e9a992a93ed466248b15ceb35153499d52b3c975d6f98abf",
+    "8a8f6e837aaed1eca3033346d5de9edd5ca9f4de5204e65cc8e3521d46831c5e"
+  ],
+  "reviewed": true
+}

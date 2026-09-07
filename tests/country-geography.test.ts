@@ -9,6 +9,7 @@ describe("country geography LOD", () => {
     { q: 1, r: 1, id: "country:1:1", terrain: "river" as const, ownerCountryId: "country" },
     { q: 2, r: 0, id: "neighbor:2:0", terrain: "forest" as const, ownerCountryId: "neighbor" },
     { q: -1, r: 0, id: "ocean:-1:0", terrain: "deep_water" as const, ownerCountryId: null },
+    { q: -1, r: 1, id: "shore:-1:1", terrain: "coast" as const, ownerCountryId: null },
   ];
 
   it("expands one deterministic macro geography into bounded square meso cells", () => {
@@ -42,13 +43,16 @@ describe("country geography LOD", () => {
     ]);
   });
 
-  it("keeps macro terrain recognizable without requiring cell-for-cell identity", () => {
+  it("inherits every canonical terrain family without rerolling water or neighboring countries", () => {
     const geography = buildCountryGeography({ countryId: "country", seed: 777, macroCells });
-    const mountainFamily = geography.cells.filter((cell) => cell.macroCellId === "country:1:0" && cell.land);
-    const forestFamily = geography.cells.filter((cell) => cell.macroCellId === "country:0:1" && cell.land);
-
-    expect(mountainFamily.filter((cell) => ["mountain", "hill", "stone"].includes(cell.terrain)).length / mountainFamily.length).toBeGreaterThan(.7);
-    expect(forestFamily.filter((cell) => ["forest", "grass", "meadow"].includes(cell.terrain)).length / forestFamily.length).toBeGreaterThan(.8);
+    const otherSelection = buildCountryGeography({ countryId: "neighbor", seed: 123, macroCells });
+    const owners = new Map(macroCells.map((cell) => [cell.id, cell]));
+    for (const cell of geography.cells) {
+      expect(cell.terrain).toBe(owners.get(cell.macroCellId ?? "")?.terrain ?? "unknown");
+      expect(otherSelection.cells[cell.row * 36 + cell.column]!.terrain).toBe(cell.terrain);
+      if (cell.terrain === "river") expect(cell.land).toBe(false);
+      if (cell.terrain === "coast") expect(cell.land).toBe(true);
+    }
   });
 
   it("grounds city miniatures on distinct dry square cells", () => {

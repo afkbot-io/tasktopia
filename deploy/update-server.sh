@@ -108,6 +108,12 @@ if [[ -n "$previous_app_container_id" ]]; then
   app_was_running="$(docker inspect --format '{{.State.Running}}' "$previous_app_container_id")"
 fi
 
+# This updater's automatic rollback only restores images. Contract migrations
+# 0023/0024 need an explicitly prepared maintenance cutover and joint DB restore.
+source "$APP_DIR/deploy/compact-release-preflight.sh"
+check_compact_release_database
+check_compact_rollback_image
+
 app_image_ref="$(docker compose config --format json \
   | python3 -c 'import json, sys; print(json.load(sys.stdin)["services"]["app"]["image"])')"
 if [[ -z "$app_image_ref" ]]; then

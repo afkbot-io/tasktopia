@@ -26,6 +26,13 @@ function event(type: string, payload: Record<string, unknown>): RealtimeEvent {
 }
 
 describe("realtime Tasktopia notification copy", () => {
+  it("describes sprint transfer and targets the canonical task at its new location", () => {
+    const moved = { ...building, origin: { x: 152, y: -10 }, district: { id: "next-sprint", name: "Следующий спринт" } };
+    expect(presentRealtimeNotice(event("task.transferred", { taskId: building.id, building: moved }))).toMatchObject({
+      title: "Задание №42 «Единый центр входящих запросов» перенесено в спринт «Следующий спринт»; прежняя площадка сохранена",
+      location: "Атуталенд · Веб-версия · Следующий спринт", target: moved, actionLabel: "Открыть здание",
+    });
+  });
   it("names the numbered building, construction stage, and full location", () => {
     expect(presentRealtimeNotice(event("task.status_changed", {
       taskId: building.id,

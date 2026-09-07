@@ -1,0 +1,48 @@
+{
+  "key": "compact-park-monument-v1",
+  "visualProfile": "TASKTOPIA_COMPACT_PARK_HIGH_45_V1",
+  "assetRole": "MONUMENT",
+  "taskBacked": true,
+  "cellSizePx": 8,
+  "spriteSize": [
+    16,
+    16
+  ],
+  "footprintCells": [
+    2,
+    2
+  ],
+  "anchorPx": [
+    8,
+    16
+  ],
+  "entrances": [],
+  "paletteColorsMax": 20,
+  "sourceBackground": "magenta-recovery",
+  "finishedOccupiedWidthPxRange": [
+    12,
+    16
+  ],
+  "finishedOccupiedHeightPxRange": [
+    12,
+    16
+  ],
+  "stageCentreDriftPxMax": 1,
+  "stageBaselineDriftPxMax": 1,
+  "foundationMaskDriftPxMax": 1,
+  "foundationMaskRowsPx": [
+    14,
+    15
+  ],
+  "constructionClearanceCells": 1,
+  "stages": {
+    "0": "Runtime reserved task lot.",
+    "1": "Runtime site fence kit, no authored source.",
+    "2": "Runtime foundation and material kit, no authored source.",
+    "3": "Same registered foundation with partially assembled pedestal; incomplete sculpture mounting, no completed sculpture; a few materials within foundation.",
+    "4": "Almost complete pedestal and mounted bronze form, unfinished cladding and a few materials inside footprint.",
+    "5": "Low square stone pedestal with a compact abstract bronze sculpture, no text or real person."
+  },
+  "normalization": "One stage5 alpha-derived frame shared unchanged by allstages; aspect-preserving nearest-neighbour resize, hardalpha and atmost19opaque colors only. No architecture repaint, per-stage crop/recenter, axis stretch or terrain.",
+  "exception": "Explicit task-backed park centerpiece16x16 contract. Building roof/room/window/door/floor rules do not apply. Foundation masks, source registration, staged identity, high45 axis-aligned camera and hardalpha remain required."
+}

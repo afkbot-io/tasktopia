@@ -1,0 +1,185 @@
+{
+  "key": "compact-copper-court-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    137,
+    114,
+    1117,
+    1111
+  ],
+  "uniformScale": 0.048144433299899696,
+  "targetSize": [
+    47,
+    48
+  ],
+  "offset": [
+    0,
+    0
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "4f47d190b7e52ced656afbf76828a596b58eda94808b34bcdb25b496352ee1b9",
+      "runtimeSha256": "a390ec37c1f118f2b3ff324cb959cf77468956105f52c8addebd4d2b1513f128",
+      "sourceBounds": [
+        137,
+        114,
+        1117,
+        1111
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        47,
+        48
+      ],
+      "occupiedSizePx": [
+        47,
+        48
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "ddb2a1863937084c7d8618e54fc588d44bd9d241a361c42d6fa8ba73425334e3",
+      "runtimeSha256": "a6eace1f060745d96069e3e2d913208c157ee0c1e0bf4e1264c1a6f06a6b357e",
+      "sourceBounds": [
+        137,
+        113,
+        1117,
+        1111
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        47,
+        48
+      ],
+      "occupiedSizePx": [
+        47,
+        48
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "f4af7a83626f6b78c95974fd921998ee93fa3caedf9776209826fa1efe27e50f",
+      "runtimeSha256": "1bf2d9b75dbcc8956d3e3663ab6a7a6d0d1fad086f04d8b98fd01dd3de126be0",
+      "sourceBounds": [
+        139,
+        235,
+        1115,
+        1109
+      ],
+      "occupiedBoundsPx": [
+        0,
+        6,
+        47,
+        48
+      ],
+      "occupiedSizePx": [
+        47,
+        42
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-copper-court-v1",
+    "reviewedAt": "2026-09-06",
+    "reviewMethod": "Independent native48x48 and8x nearest-neighbour review of each source-normalized stage, repeated after the final chroma/palette transform. No geometry repaint or per-stage recentering.",
+    "projection": {
+      "camera": "High45 frontal-top art projection, axis-aligned planes, no receding side facade.",
+      "roofDepthPx": 33,
+      "roofRegionBoundsPx": [
+        0,
+        0,
+        47,
+        33
+      ],
+      "facadeHeightPx": 15,
+      "floorStepPx": 5,
+      "windowPaneSizePx": [
+        2,
+        2
+      ],
+      "windowOcclusion": "Cream window ledges cover part of the lower pane row; visible teal accents are retained by MAXCOVERAGE rather than merged into orange masonry.",
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "4f47d190b7e52ced656afbf76828a596b58eda94808b34bcdb25b496352ee1b9",
+        "runtimeSha256": "a390ec37c1f118f2b3ff324cb959cf77468956105f52c8addebd4d2b1513f128",
+        "notes": "Olive standing-seam roof occupies the dominant upper plane; recessed terrace/pergola at right, small cream ledges on the orange facade. Distinct roof architecture, not a palette swap."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "ddb2a1863937084c7d8618e54fc588d44bd9d241a361c42d6fa8ba73425334e3",
+        "runtimeSha256": "a6eace1f060745d96069e3e2d913208c157ee0c1e0bf4e1264c1a6f06a6b357e",
+        "notes": "Bare ribbed left half-roof remains; right half has opaque shadowed rooms and brick piles. Terrace/pergola removed, windows dark. Same native foundation, entry and floor rhythm."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "f4af7a83626f6b78c95974fd921998ee93fa3caedf9776209826fa1efe27e50f",
+        "runtimeSha256": "1bf2d9b75dbcc8956d3e3663ab6a7a6d0d1fad086f04d8b98fd01dd3de126be0",
+        "notes": "Roof absent; opaque interior, cream partitions and materials remain. Upper facade partly dismantled into stepped masonry remnants. Door scale corrected against5; all native foundation-mask pixels and ground line match5."
+      }
+    },
+    "runtimeIntegrationReviewOwner": "Live map QA checks shared composed stages0\u20132, fences, neighbors, badges and zoom."
+  }
+}

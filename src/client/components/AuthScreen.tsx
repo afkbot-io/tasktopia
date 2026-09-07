@@ -1,14 +1,19 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { gameAssetUrl } from "../../shared/catalog";
+import { getBuilding, PROP_CATALOG } from "../../shared/catalog";
+import { microAmbientSprite } from "../../shared/micro-ambient";
 import { api } from "../api";
 import { Button, Field } from "./ui";
 
 const domainLevels = [
   ["Страна", "ваш мир", "01"],
   ["Город", "центр развития", "02"],
-  ["Район", "этап строительства", "03"],
+  ["Район", "спринт команды", "03"],
   ["Здание", "задача", "04"],
 ] as const;
+
+// The decorative city uses the same reviewed family and stage URLs as the map.
+const authBuilding = getBuilding("compact-apartment-v1");
+const authBuildingStages = [5, 3, 4, 5] as const;
 
 export function AuthScreen({ onAuthenticated, initialError = "" }: {
   onAuthenticated: () => Promise<void>;
@@ -93,14 +98,13 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
       </div>
       <div className="auth-world" aria-hidden="true">
         <i className="auth-world-water" /><i className="auth-world-road auth-world-road-h" /><i className="auth-world-road auth-world-road-v" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-city-hall" src={gameAssetUrl("buildings/civic/civic-city-hall/stage-5.png")} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-house-corner" src={gameAssetUrl("buildings/house/house-corner-apartments/stage-5.png")} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-house-green" src={gameAssetUrl("buildings/house/house-lowrise-green-roof/stage-5.png")} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-highrise" src={gameAssetUrl("buildings/highrise/highrise-green-terraces/stage-5.png")} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-oak" src={gameAssetUrl("props/tree-oak.png")} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-pine" src={gameAssetUrl("props/tree-pine.png")} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-bus" src={gameAssetUrl("props/city-bus-horizontal.png")} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-statue" src={gameAssetUrl("props/statue-hero.png")} alt="" />
+        {authBuildingStages.map((stage, index) => <img key={index} data-auth-scene-sprite
+          className={`auth-world-sprite auth-world-building auth-world-building-${index + 1}`}
+          src={authBuilding.stages[stage - 1]} width={authBuilding.spriteSize.width * 2} height={authBuilding.spriteSize.height * 2} alt="" />)}
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-oak" src={PROP_CATALOG["tree-oak"]!.path} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-pine" src={PROP_CATALOG["tree-pine"]!.path} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-car" src={microAmbientSprite("car", "van", "east").url} width={16} height={16} alt="" />
+        <img data-auth-scene-sprite className="auth-world-sprite auth-world-statue" src={PROP_CATALOG["statue-hero"]!.path} alt="" />
         <i className="auth-world-pulse" />
       </div>
     </section>

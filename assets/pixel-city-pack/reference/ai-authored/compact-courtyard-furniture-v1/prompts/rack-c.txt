@@ -1,0 +1,18 @@
+Use case: stylized-concept. One native pixel-game prop for a compact cartoon city.
+Single isolated bicycle parking rack on transparent background, square image.
+Exactly THREE chunky teal inverted-U hoops with two complete legs per hoop,
+standing on one low slate-grey horizontal mounting rail. No bicycles or scenery.
+Important geometry: the complete object has width:height exactly about2:1,
+NOT a thin3:1 strip. Think14x7 very coarse artistic pixels: each of the three
+hoops is4pixels wide,6pixels tall; legs1pixel thick, open inside2pixels wide,
+onepixel gaps between hoops, mounting rail1pixel high. All six upright legs
+are strong connected square pixel bars, all three inner holes clearly open.
+Chunky square clusters must remain functional at native16x8px reduction.
+High45 frontal-top camera, modest top surfaces on bars/base, no diagonal
+receding facade or isometric view. Axis-aligned tops and legs, no curves.
+Muted teal paint, dark blue-grey outline, mid-grey rail, restrained upper-left
+highlight. One dark outline pixel at finalnative, max16colors, no blackbaseline.
+Hard pixel-art edges. No soft shading, glow, gradient, smooth rounded corners,
+microdetails, text, UI, shadow, pavement, frame, grids, or other objects.
+Generous transparent padding around a centered2:1 subject. Do not copy an
+oversized realistic rack; author the native chunky silhouette first.

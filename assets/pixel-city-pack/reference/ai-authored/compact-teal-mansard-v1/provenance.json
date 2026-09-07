@@ -1,0 +1,258 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "date": "2026-09-07",
+  "scope": "Unpublished source family only; immutable48x48/6x6 geometry. No catalog/runtime changes.",
+  "original": {
+    "source": "sources/stage-5-draft-A.png",
+    "sourceSha256": "891a9f862536addd22cc3813d2fd9ae48140fcc3d1b89bd0259f7697fafa8b8e",
+    "runtimeSha256": "d55f85f4f154a1e57a97f62cd8e3612f752d6072d287a64f5f19bd769170adda",
+    "generator": "Inherited earlier ImageGen batch per WORLD-FINISHING-2026-09-06.md",
+    "originalOutput": null,
+    "originalPrompt": null,
+    "status": "UNAPPROVED_DRAFT",
+    "findings": "Oversized ribbon glazing/one-pixel slots, missing separate doorway threshold, shallow12px facade versus required14–18."
+  },
+  "attempts": [
+    {
+      "attempt": "5B",
+      "source": "sources/stage-5-B.png",
+      "sourceSha256": "8b3652246c8d54e12ed638ecd5c08a28536496372cccfea7c2b49996732d438e",
+      "runtimeSha256": "0698dc1a4bdb462b5eef5ed2a50b2b0079b84c3eac1fca4adf4f17fef5e9fbc7",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-9db9df89-09e9-4a31-a80e-dd2f06dba83c.png",
+      "references": [
+        "sources/stage-5-draft-A.png",
+        "normalized/stage-5-draft-A.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5B",
+      "result": "REJECTED: only43pxoccupiedheight, roof19px/front24px, tallopenings/door; source did notfollowcompactgeometry. No contract relaxation."
+    },
+    {
+      "attempt": "5C",
+      "source": "sources/stage-5-C.png",
+      "sourceSha256": "0607503ddb4ed859577dc1464cf8f5fe4363368a8ba1dca3345780cd7b7603ee",
+      "runtimeSha256": "2ff046b34e2daed7deb3af906d7cdc76abf2410b460129547377b4c779662628",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-4d7f2efd-f87e-4558-854d-b5da74c168b1.png",
+      "references": [
+        "sources/stage-5-draft-A.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5C",
+      "result": "REJECTED: narrow/tall windows, facade13px, incomplete portal envelope."
+    },
+    {
+      "attempt": "5D",
+      "source": "sources/stage-5-D.png",
+      "sourceSha256": "06887e3e2704ac7c3d2c30187bd6fd0f8ecd721f758096ad073ad04102c5088f",
+      "runtimeSha256": "c33e4982c551a1bc0e15c5ff0abe9173d26ee6d4c4e5e9a0b57149a17ba10b1c",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-d0c3756f-f6b4-4033-bea3-362bb321edd4.png",
+      "references": [
+        "sources/stage-5-C.png",
+        "../compact-rust-loft-v1/sources/stage-5.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5D",
+      "result": "REJECTED: frame8x5, facade13px. MEDIANCUT native e60b64f56eb3035ca951d67084213dae55fae2d0d2a706bfc9c83b2bee773ac6 retained; unapproved draft changed to MAXCOVERAGE without modifying any geometry limits."
+    },
+    {
+      "attempt": "5E",
+      "source": "sources/stage-5-E.png",
+      "sourceSha256": "47a8040c2c92375dff41e025c412ed96a9a69dff023b7e618c03be79a9420c5c",
+      "runtimeSha256": "c07c2c73481960190a068c2d0129ba3d285af5b43770474cda1df74732e13b7c",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-5b4ec9b4-6222-4cce-92d6-f984eee18eee.png",
+      "references": [
+        "sources/stage-5-D.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5E",
+      "result": "REJECTED: distinct three-dormer architecture achieved; frame8x5 and facade13px remained."
+    },
+    {
+      "attempt": "5F",
+      "source": "sources/stage-5-F.png",
+      "sourceSha256": "4f0ce5179e9264f82081f04bf5fc812166363d5bbfe422c7d109f4f53779dc71",
+      "runtimeSha256": "e2f9d907114c746fd7a1fa52e64628e09495ba64e125908c563c6e7392c52fe2",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-de91aeda-2c8d-4862-9350-44850bfcef4c.png",
+      "references": [
+        "sources/stage-5-E.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5F",
+      "result": "REJECTED: roof31/facade14 now correct; upper apertures3px high and frame8x5."
+    },
+    {
+      "attempt": "5G",
+      "source": "sources/stage-5-G.png",
+      "sourceSha256": "efcac899b47c6c5c9dc02db39bd786534fbd790ddc69dc7176ea50879595a6af",
+      "runtimeSha256": "aa370a3e55331695142e85bf96d074001bd6d76ff1912e5103128f4827c6fd9c",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-8d46a230-7843-43e4-8843-1ab700de20f4.png",
+      "references": [
+        "sources/stage-5-F.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5G",
+      "result": "REJECTED: did not repair frame/upper apertures and added unwanted palette variation."
+    },
+    {
+      "attempt": "5H",
+      "source": "sources/stage-5-H.png",
+      "sourceSha256": "788a24e44cd99f742466d2f9a7fdb670d404cc996555a90e8367dbbdb687f061",
+      "runtimeSha256": "79ae2b9cec12e6a29136844d1dcc100f38845166ab60adf67fe42a54c3d6c878",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-0eac5a88-1f25-4206-81b4-1f1098466e26.png",
+      "references": [
+        "sources/stage-5-F.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5H",
+      "result": "REJECTED: right jamb narrowed below native sample, frame6x5; upper apertures remain3px."
+    },
+    {
+      "attempt": "5I",
+      "source": "sources/stage-5-I.png",
+      "sourceSha256": "c5eedb2f59da57be36ea46cf3446c9dad408c69c2c6619dfdd2bd37d44f57a64",
+      "runtimeSha256": "890f703b6f33c6ec51d4a761a8474fc10179b539635d50de19733c416cbf3353",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-777966fc-48fc-40f4-b610-4c24ded071cb.png",
+      "references": [
+        "sources/stage-5-H.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5I",
+      "result": "REJECTED: background contamination expands detected frame to canvas edge and breaks occupied geometry/anchor. No key changes or fallback repair adopted."
+    },
+    {
+      "attempt": "5J",
+      "source": "sources/stage-5-J.png",
+      "sourceSha256": "7bc85125a3c218bde1bccd68207371c77823858550faa8a5644aa72983803344",
+      "runtimeSha256": "69e9d2f81448cc12cea5ea22deadc868d550ad15c5364b7eb31c24b45c6e0d26",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-e3acd5a4-8099-4369-8d55-70ce516b60db.png",
+      "references": [
+        "../compact-garden-house-v1/sources/stage-5.png",
+        "sources/stage-5-F.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5J",
+      "result": "ACCEPTED_BY_PARENT: independently viewed native1x and8x, approved exact source/native hashes, distinct three-dormer/chimney/double-band rooftop, high camera, muted palette and precise opening geometry. Two-row header with4x3 leaf at baseline is valid; no separate threshold requirement."
+    },
+    {
+      "attempt": "5K",
+      "source": "sources/stage-5-K.png",
+      "sourceSha256": "9fad0a520aa2142d0a9ea005aec1b0e5b1e7264bdc3b7fbec18a7fa8c5b140ce",
+      "runtimeSha256": null,
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-bf8e8e89-683a-458e-8d43-b52d67944121.png",
+      "references": [
+        "sources/stage-5-J.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage5K",
+      "result": "UNUSED: unnecessary threshold edit began before parent clarified that 2px header/bottom-reaching4x3 glass is accepted within7x5 frame. Source retained; not normalized or substituted for J."
+    },
+    {
+      "attempt": "4A",
+      "source": "sources/stage-4-A.png",
+      "sourceSha256": "b00ba75e082c89741accff56a2b6930015a168173e238c99b31f58a686cecf0c",
+      "runtimeSha256": "a5c6b3ba771fc5f7bdcd962eeb02c109407f0e27d506e2d1c898e1fac17de74c",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-1dedb57a-1c1b-4b30-a4c0-884ba6b6a23e.png",
+      "references": [
+        "sources/stage-5-J.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage4A",
+      "result": "ACCEPTED_BY_PARENT: left half slate/right four opaque rooms, no final dormers/chimney, exact8dark2x2windows and portal."
+    },
+    {
+      "attempt": "3A",
+      "source": "sources/stage-3-A.png",
+      "sourceSha256": "3448d1d95aba373a128e1fd9bbcd24ef00463964816ced991eef954cea8f2c56",
+      "runtimeSha256": "11d35e26de09c46b2b35a875eeba1a9ebaaf437ba05feca11f97bcb1b485a697",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-c84271a3-d187-473e-a8cc-76ee41939aea.png",
+      "references": [
+        "sources/stage-4.png",
+        "sources/stage-5.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3A",
+      "result": "INTERMEDIATE_NOT_ACCEPTED: full roofless8rooms, numeric48x44, but still3complete facade rows and lowerleft1x2 aperture."
+    },
+    {
+      "attempt": "3B",
+      "source": "sources/stage-3-B.png",
+      "sourceSha256": "38de8ec32d599f298035cd7c79872964f34e830f9d7ec8a41ddba0820c75f8c6",
+      "runtimeSha256": "ad79e789d84357df649777e9a9c22179825870be045fcd8e043e97231d4b9a60",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-781e08fe-00d9-4973-927c-bc44d3dddfac.png",
+      "references": [
+        "sources/stage-3-A.png",
+        "sources/stage-4.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3B",
+      "result": "REJECTED: filled upperrow with completed blanktealwall instead of partial structure; height45 exceeds44, nativepinkfringe."
+    },
+    {
+      "attempt": "3C",
+      "source": "sources/stage-3-C.png",
+      "sourceSha256": "a70d03e4da20d18f1788bbce4578b1baf967dc1aefdaa6e75420e36d944b7aff",
+      "runtimeSha256": "59a7ac987e0aa6e64dba8573ce08f74470a35e4adbb2eafdf5423c6e471d7f6c",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-3a476bce-9e93-4246-a8b6-17648812a6f2.png",
+      "references": [
+        "sources/stage-4.png",
+        "../compact-rust-loft-v1/sources/stage-3.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3C",
+      "result": "REJECTED: source grows beyond1px immutable-frame allowance, window/door dimensions drift and source sidewalls recede."
+    },
+    {
+      "attempt": "3D",
+      "source": "sources/stage-3-D.png",
+      "sourceSha256": "c24c2f650a90513fcc271ac08b4ccf01c6c608fc7cc0db03ad5f7f43f0a59452",
+      "runtimeSha256": "10821b7bafb28f6adb32f83d75dd114999b48129b6b28b0ff5233193f0420496",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-203a5b0c-d109-4eba-a61a-ce8bc8cb8f33.png",
+      "references": [
+        "sources/stage-3-A.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3D",
+      "result": "INTERMEDIATE_NOT_ACCEPTED: correct partialupperfront/openopaquefloor and48x44, but bothleftapertures1x2."
+    },
+    {
+      "attempt": "3E",
+      "source": "sources/stage-3-E.png",
+      "sourceSha256": "e5b9035901234724307de64eb1f8fe522d1fd528dd044ada519554f93c35231c",
+      "runtimeSha256": "111b9677a457debc2f39979703125f65b77a7e4058e4962de898dc18f59265c4",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-c33dc080-25e5-41a2-ae66-acb58b74b816.png",
+      "references": [
+        "sources/stage-3-D.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3E",
+      "result": "REJECTED: leftaperturewidthfixed but two lowerapertures1pxhigh; stray exteriorbackground expands source bounds. No broadkey adopted."
+    },
+    {
+      "attempt": "3F",
+      "source": "sources/stage-3-F.png",
+      "sourceSha256": "c9ff86b561e6d2ad5fd77a430317eaa88854ff75ea23659225df82eec90da06b",
+      "runtimeSha256": "1acb1d553e3e7fcc45dbeef81839c263adbc6ebc29c75ace1d44d748ed7927ba",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-ea08baec-0215-40fa-9cd2-9f7aaab77ed1.png",
+      "references": [
+        "sources/stage-3-E.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3F",
+      "result": "REJECTED: cleanbackground/numericgeometry, but bottomwindows3pxhigh instead of2."
+    },
+    {
+      "attempt": "3G",
+      "source": "sources/stage-3-G.png",
+      "sourceSha256": "428ac32d8891c60e9d978a67ee510cf0fe46ac642fb3a53f6f7a14ad8bc6eb01",
+      "runtimeSha256": "4e8ffff61c4e27adcc94fed63d527eb52c56db634f3adb541c3879e54d9b1b16",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-e7c71304-2eb4-41ec-a9c6-0758d7ffdb70.png",
+      "references": [
+        "sources/stage-3-F.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3G",
+      "result": "ACCEPTED_BY_PARENT: independent native 1x/8x and whole-sequence review confirmed five small 2x2 windows, exact 4x3 leaf/7x5 frame, full eight opaque rooms/open front floor/partial columns, and height 44. Window left/down one-pixel registration and sub-one-native-pixel source-edge variation were disclosed and accepted under the existing gate. No source key, frame or tolerance changes."
+    }
+  ],
+  "geometryPolicy": "All physical/native dimensions, entrance, scale ranges and palette budget unchanged. MAXCOVERAGE chosen while draft unapproved; no source repaint, alpha repair, stretching, frame search or new chroma threshold."
+}

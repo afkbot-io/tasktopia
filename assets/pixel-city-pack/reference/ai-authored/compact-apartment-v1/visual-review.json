@@ -1,0 +1,44 @@
+{
+  "key": "compact-apartment-v1",
+  "reviewedAt": "2026-09-04",
+  "reviewMethod": "Independent native48x48 and nearest-neighbour8x inspection of each stage, followed by shared-baseline comparison. Raster and structural-mask measurements are in report.json.",
+  "projection": {
+    "camera": "Art-directed high45-degree orthographic frontal-top; no isometric rotation or receding side facade.",
+    "roofDepthPx": 30,
+    "openPrimaryRoofDepthPx": 25,
+    "roofRegionBoundsPx": [0, 3, 48, 33],
+    "openPrimaryRoofBoundsPx": [1, 5, 47, 30],
+    "facadeHeightPx": 15,
+    "floorStepPx": 5,
+    "windowPaneSizePx": [2, 2],
+    "doorLeafSizePx": [4, 3],
+    "doorFrameSizePx": [7, 5],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "runtimeSha256": "1a6ee9c98df6579161efc19405117515072312256e4ad572d5bc4e259550e4a9",
+      "sourceSha256": "c1617354a5ead8998464ec10d9f3b9ed282e8fe0564ac98400e1c296c5365b04",
+      "notes": "Finished3-floor apartment, broad rectangular slate roof and4 roof details. No construction equipment, external fence, pavement or dark silhouette outline. Exact measured leaf4x3 accepted as the compact native-scale authority."
+    },
+    "4": {
+      "accepted": true,
+      "runtimeSha256": "da475d33b86c1c055fc9be7c7aa2e7ffa74a91823798a6e0978575784bdf3d2a",
+      "sourceSha256": "f0c5263fd69ade7496a1c0374507fdf472ae0e10fc6221e9a5461070af39de1f",
+      "notes": "Same facade, entrance, ground line and structural width. Approximately50% bare roof remains on left; right exposes opaque rooms, matching brick partitions, material piles and a small internal scaffold. Every final rooftop object is removed, all windows are unfinished dark openings."
+    },
+    "3": {
+      "accepted": true,
+      "runtimeSha256": "edd2b84ec7d82b81b8712326caaa4406bc35aaa04e998afe78e9f00da2a15ad1",
+      "sourceSha256": "792faf5b718482d9f899c3b57b6de296e0e3688587ac59cc77a4cdc26322c6c2",
+      "notes": "Roof entirely absent; room floor stays opaque and deep, partitions are axis aligned, and front masonry is partially assembled. Brick pile, sand and worktable are inside the lot. Same center and baseline as5. Foundation masks differ by4 edge pixels at a maximum1px inset, within the explicit1px registration tolerance; this is not claimed as exact pixel identity. Physical lot remains6x6."
+    }
+  },
+  "runtimeIntegrationReviewOwner": "Map integration must still check stage0-2 construction composition, fences, roads, adjacent slots and actual zoom levels in the real application."
+}

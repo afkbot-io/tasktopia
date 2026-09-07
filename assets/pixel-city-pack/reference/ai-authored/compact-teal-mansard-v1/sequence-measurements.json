@@ -1,0 +1,228 @@
+{
+  "key": "compact-teal-mansard-v1",
+  "sourceFrame": [
+    139,
+    164,
+    1114,
+    1089
+  ],
+  "stages": {
+    "3": {
+      "sourceSha256": "428ac32d8891c60e9d978a67ee510cf0fe46ac642fb3a53f6f7a14ad8bc6eb01",
+      "runtimeSha256": "4e8ffff61c4e27adcc94fed63d527eb52c56db634f3adb541c3879e54d9b1b16",
+      "occupiedSize": [
+        48,
+        44
+      ],
+      "windowBodies": [
+        [
+          7,
+          39,
+          9,
+          41
+        ],
+        [
+          23,
+          39,
+          25,
+          41
+        ],
+        [
+          38,
+          39,
+          40,
+          41
+        ],
+        [
+          7,
+          44,
+          9,
+          46
+        ],
+        [
+          38,
+          44,
+          40,
+          46
+        ]
+      ],
+      "doorLeaf": [
+        22,
+        45,
+        26,
+        48
+      ],
+      "doorFrame": [
+        20,
+        43,
+        27,
+        48
+      ],
+      "sourceBounds": [
+        124,
+        199,
+        1128,
+        1095
+      ],
+      "nativeGeometryDrift": 0
+    },
+    "4": {
+      "sourceSha256": "b00ba75e082c89741accff56a2b6930015a168173e238c99b31f58a686cecf0c",
+      "runtimeSha256": "a5c6b3ba771fc5f7bdcd962eeb02c109407f0e27d506e2d1c898e1fac17de74c",
+      "occupiedSize": [
+        48,
+        46
+      ],
+      "windowBodies": [
+        [
+          8,
+          33,
+          10,
+          35
+        ],
+        [
+          23,
+          33,
+          25,
+          35
+        ],
+        [
+          38,
+          33,
+          40,
+          35
+        ],
+        [
+          8,
+          38,
+          10,
+          40
+        ],
+        [
+          23,
+          38,
+          25,
+          40
+        ],
+        [
+          38,
+          38,
+          40,
+          40
+        ],
+        [
+          8,
+          43,
+          10,
+          45
+        ],
+        [
+          38,
+          43,
+          40,
+          45
+        ]
+      ],
+      "doorLeaf": [
+        22,
+        45,
+        26,
+        48
+      ],
+      "doorFrame": [
+        20,
+        43,
+        27,
+        48
+      ],
+      "sourceBounds": [
+        138,
+        166,
+        1114,
+        1089
+      ],
+      "nativeGeometryDrift": 0
+    },
+    "5": {
+      "sourceSha256": "7bc85125a3c218bde1bccd68207371c77823858550faa8a5644aa72983803344",
+      "runtimeSha256": "69e9d2f81448cc12cea5ea22deadc868d550ad15c5364b7eb31c24b45c6e0d26",
+      "occupiedSize": [
+        48,
+        46
+      ],
+      "windowBodies": [
+        [
+          8,
+          33,
+          10,
+          35
+        ],
+        [
+          23,
+          33,
+          25,
+          35
+        ],
+        [
+          38,
+          33,
+          40,
+          35
+        ],
+        [
+          8,
+          38,
+          10,
+          40
+        ],
+        [
+          23,
+          38,
+          25,
+          40
+        ],
+        [
+          38,
+          38,
+          40,
+          40
+        ],
+        [
+          8,
+          43,
+          10,
+          45
+        ],
+        [
+          38,
+          43,
+          40,
+          45
+        ]
+      ],
+      "doorLeaf": [
+        22,
+        45,
+        26,
+        48
+      ],
+      "doorFrame": [
+        20,
+        43,
+        27,
+        48
+      ],
+      "sourceBounds": [
+        139,
+        164,
+        1114,
+        1089
+      ],
+      "nativeGeometryDrift": 0
+    }
+  },
+  "stage3Registration": "Remaining windows onepixel lower; leftbay onepixel left versus stage5. Building/door/baseline exactly unchanged.",
+  "stage3SourceEdgeVariation": "Max15sourcepixels (~0.74native) at left boundary,14(~0.69)right,6(~0.30)bottom; inside unchanged1nativepixel registration allowance.",
+  "semanticSequence": "Parent review needed separately: roofless8rooms/partialfront -> halfroof4rooms -> finishedmansard. This read-only checker never approves artwork.",
+  "assertions": "PASS"
+}

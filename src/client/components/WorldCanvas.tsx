@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
-import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TILE_SPRITES, VEHICLE_SPRITES, gameAssetUrl, getBuilding } from "../../shared/catalog";
-import { roadMarkingAxis } from "../../shared/road-profile";
+import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TILE_SPRITES, gameAssetUrl, getBuilding, illuminatedPropKey } from "../../shared/catalog";
+import { MICRO_ANIMAL_SPECIES, microAmbientAssetUrls, microAmbientSprite } from "../../shared/micro-ambient";
+import { microIncidentResponder } from "../micro-incident-responder";
+import { roadBandRole, roadMarkingAxis } from "../../shared/road-profile";
 import {
   roadAtlasConnectionMask,
   roadAtlasOverlayTile,
@@ -11,62 +13,52 @@ import {
   type RoadAtlasOverlay,
   type RoadAtlasSurface,
 } from "../../shared/road-atlas";
-import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
-import type { CitySceneDto } from "../../shared/city-scene-contract";
-import { terrainAt } from "../../shared/world-terrain";
+import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlannedSiteDto, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
+import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../../shared/city-scene-contract";
+import { loadCityScene } from "../map-scene-cache";
+import { isBuildableTerrain, terrainAt } from "../../shared/world-terrain";
 import { encodeTerrainSample } from "../../shared/world-chunk-payload";
-import { apiWithMetrics } from "../api";
+import { apiWithMetrics, type ApiResult } from "../api";
 import { ChunkMaterializer } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
 import { loadGameAssets } from "../game-asset-loader";
 import { AssetLease, leasedAssetCount } from "../asset-lease-registry";
-import type { MapInvalidation } from "../map-invalidation";
+import { mapInvalidationAffectsCity, mapInvalidationImpact, type MapInvalidation } from "../map-invalidation";
+import { CoalescedRefresh } from "../coalesced-refresh";
+import { drainGroundBakeFrame, INITIAL_GROUND_BAKE_BUDGET_MS, type GroundBakeWork } from "../ground-bake-budget";
+import { createGroundTerrainSampler } from "../ground-terrain-sampler";
+import { CityRoadPadding, type CityRoadPaddingChunk } from "../city-road-padding";
+import { CityTerrainPadding, type TerrainGroundChunk } from "../city-terrain-padding";
+import { GroundTextureBaker } from "../ground-texture-baker";
+import { CityTreePadding } from "../city-tree-padding";
+import { retryFailedPadding } from "../padding-retry";
+import { IMMEDIATE_PADDING_CELL_LIMIT, planImmediatePadding } from "../immediate-padding-plan";
+import { createDistrictTerritory } from "../district-territory";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
-import {
-  agentCellKey,
-  buildDirectedCarEdges,
-  detectTrafficJunctions,
-  directedTrafficCore,
-  isAgentEdgeAllowed,
-  connectShortWalkGaps,
-  nextSeededRandom,
-  nextWithoutUTurn,
-  planAgentRoute,
-  planVehicleFrame,
-  vehicleUnsafePairCount,
-  vehicleCruiseSpeed,
-  vehicleMotionPresentation,
-  vehicleWheelAnimationEnabled,
-  vehiclePresentation,
-  mustYieldAtCrosswalk,
-  mustYieldForBlockedJunctionExit,
-  trafficSignalDecision,
-  trafficSignalPhase,
-  trafficSignalPhaseForTraffic,
-  trafficRoadGraph,
-  walkerInteractionPairs,
-  type AgentEdges,
-  type TrafficVehicleSnapshot,
-  type TrafficJunction,
-} from "../agent-routing";
+import { nextSeededRandom, nextWithoutUTurn, planAgentRoute } from "../agent-routing";
+import { createCityMobility } from "../city-mobility";
+import { buildCityWalkNetwork } from "../city-walk-network";
+import { placeCityMobilitySignalPosts } from "../city-mobility-signal-posts";
 import { reconcileEntityViews, type EntityViewRecord } from "../entity-reconciler";
-import { incidentMode, incidentVisualLayout, incidentVisualProfile, incidentWaterJetFrame, incidentWaterTargetFrame, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
-import { ambientMotionPresentation } from "../ambient-motion";
-import { animalPresentation } from "../animal-presentation";
+import { incidentMode, incidentRenderSignature, incidentVisualLayout, incidentVisualProfile, incidentWaterJetFrame, incidentWaterTargetFrame, planIncidentEngines, type IncidentMode, type IncidentVisualProfile } from "../task-incidents";
+import { INCIDENT_FRAME_MS, incidentBadge, incidentEffectPixels } from "../incident-pixels";
+import { siteMarkerPresentation, siteRubbleLayout } from "../site-marker-presentation";
+import { cityMicroFlightRoutes, cityMicroFlightPosition, cityMicroFlightDuration, cityMicroFlightIsCurrent, type CityMicroFlightRoute } from "../city-micro-flights";
 import {
   chunkRangeForViewport,
+  cameraTerrainPadding,
   progressiveChunkPlan,
   clampCameraPosition,
   fitCameraScale,
   CITY_CAMERA_MIN_SCALE,
   cityDetailFocusBounds,
-  minimumCameraScale,
   nextCameraTargetScale,
   pixelPerfectCameraScale,
   smoothCameraScale,
 } from "../world-camera";
-import { advanceAtlasZoomBoundary, initialAtlasZoomBoundary } from "../atlas-zoom-navigation";
+import type { AtlasWheelNavigation } from "../atlas-zoom-navigation";
 import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
+import { readWorldLighting } from "../world-light-clock";
 import {
   buildingBadgePresentation,
   buildingInteractiveBounds,
@@ -74,14 +66,14 @@ import {
   taskPlatformCellPresentation,
   taskPlatformCells,
 } from "../world-building-presentation";
-import { micromobilityOccupancy, micromobilityPresentation } from "../micromobility-presentation";
-import { residentActivityPosition, residentActivityVisualKey, residentGroundPosition, residentWalkPresentation } from "../resident-presentation";
+import { residentGroundPosition } from "../resident-presentation";
 import { SEED_TERRAIN_COLORS, seedTerrainCellPresentation } from "../seed-terrain-presentation";
 import { compareWorldObjects, type WorldObjectKind } from "../world-object-depth";
 import { overviewFromDetailChunk } from "../world-chunk-cache";
-import { greenAreaDecorStage, greenAreaSurfaceRole } from "../../shared/green-area";
-import { taskParkDecorLayout } from "../../shared/task-park";
-import { airportCompoundCells, cityAirportVisualLayout } from "../../shared/city-airport-layout";
+import { greenAreaDecorStage, greenAreaSurfaceLayout, type GreenAreaDevelopmentStage } from "../../shared/green-area";
+import { taskParkDecorLayout, taskParkingMarkings } from "../../shared/task-park";
+import { publicSpaceRenderStage } from "../../shared/public-space-stage";
+import type { BlockPlaqueDto } from "../../shared/contracts";
 import {
   CONSTRUCTION_DETAIL_SPEC_BY_KEY,
   CONSTRUCTION_TILE_KEYS,
@@ -92,6 +84,7 @@ import {
 import { atlasTerrainConnectionMask, atlasTerrainKindFromWorld, atlasTerrainTile, type AtlasTerrainKind } from "../../shared/atlas-scene";
 import { bindMapPointerGestures } from "../map-pointer-gesture";
 import { decorationWorldAnchor } from "../decoration-placement";
+import { pixelAtlasFrame } from "../pixel-atlas-frame";
 import { stopPixiApplication } from "../pixi-app-lifecycle";
 
 const CELL_SIZE = 8;
@@ -133,16 +126,18 @@ type IncidentView = {
   mode: IncidentMode;
   profile: IncidentVisualProfile;
   fullResponse: boolean;
-  flames: Array<{ frameA: Sprite; frameB: Sprite }>;
-  smokePlumes: Array<{ frameA: Sprite; frameB: Sprite; alpha: number }>;
+  flames: Array<{ frameA: Graphics; frameB: Graphics }>;
+  smokePlumes: Array<{ frameA: Graphics; frameB: Graphics }>;
   beacon: Graphics;
   water: Graphics;
   waterJet: { source: { x: number; y: number }; targets: Array<{ x: number; y: number }>; targetIndex: number };
   phaseMs: number;
+  animationFrame: number;
 };
 type WorldRuntime = {
+  setActive(active: boolean): void;
   focus(area: FocusArea): void;
-  invalidate(event: MapInvalidation): void;
+  invalidateBatch(events: readonly MapInvalidation[]): void;
   retry(): void;
   setViewBounds(bounds: Rect): void;
 };
@@ -169,9 +164,7 @@ const GRID_DIRECTIONS = [
   { x: 0, y: -1, bit: 1 }, { x: 1, y: 0, bit: 2 }, { x: 0, y: 1, bit: 4 }, { x: -1, y: 0, bit: 8 },
 ] as const;
 
-function parkStage(stage: number): 1 | 2 | 3 | 4 | 5 {
-  return Math.max(1, Math.min(5, Math.round(stage))) as 1 | 2 | 3 | 4 | 5;
-}
+const parkStage = publicSpaceRenderStage;
 
 const TASK_STATUS_LABEL: Record<ChunkTaskDto["status"], string> = {
   PLANNING: "Планируется", STARTED: "Начата", IN_PROGRESS: "В работе", TESTING: "Проверяется", COMPLETED: "Завершена",
@@ -330,6 +323,9 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
   const group = new Container();
   group.eventMode = "static";
   group.cursor = "help";
+  const territory = createDistrictTerritory(district.cells, CELL_SIZE);
+  group.hitArea = territory;
+  group.interactiveChildren = false;
   const graphics = new Graphics();
   const hit = new Graphics();
   const cells = new Set(district.cells.map(key));
@@ -356,7 +352,11 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
     group.addChild(marker);
   }
   let tooltip: Container | undefined;
-  group.on("pointerover", () => {
+  let tooltipHeight = 0;
+  const showTooltip = (event: FederatedPointerEvent) => {
+    const point = event.getLocalPosition(group);
+    const anchor = territory.anchorAt(point.x, point.y);
+    if (!anchor) { if (tooltip) tooltip.visible = false; return; }
     if (!tooltip) {
       const deadline = district.deadline ? `\nДедлайн: ${new Date(district.deadline).toLocaleDateString("ru-RU")}` : "\nДедлайн не задан";
       const label = new Text({
@@ -366,12 +366,14 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
       const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3)
         .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color, width: 1 });
       tooltip = new Container(); tooltip.eventMode = "none"; tooltip.addChild(panel, label);
-      const anchor = district.cells.reduce((best, cell) => cell.y < best.y || cell.y === best.y && cell.x < best.x ? cell : best, district.cells[0]!);
-      tooltip.position.set(anchor.x * CELL_SIZE, anchor.y * CELL_SIZE - label.height - 12);
+      tooltipHeight = label.height;
       tooltipLayer.addChild(tooltip);
     }
+    tooltip.position.set(anchor.x * CELL_SIZE, anchor.y * CELL_SIZE - tooltipHeight - 12);
     tooltip.visible = true;
-  });
+  };
+  group.on("pointerover", showTooltip);
+  group.on("pointermove", showTooltip);
   group.on("pointerout", () => { if (tooltip) tooltip.visible = false; });
   group.once("destroyed", () => {
     if (!tooltip?.destroyed) {
@@ -382,30 +384,47 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
   return group;
 }
 
+function drawAreaPlatform(footprint: Cell[], stage: GreenAreaDevelopmentStage, assetKey: string): Container {
+  const group = new Container();
+  const surfaces: SurfacePlacement[] = [];
+  const terrain: TerrainPlacement[] = [];
+  for (const { x, y, role } of greenAreaSurfaceLayout(footprint, stage, assetKey)) {
+    if (role === "BOUNDARY") surfaces.push({ x, y, family: "PAVEMENT" });
+    else if (role === "PATH") surfaces.push({ x, y, family: "PATH_PAVERS" });
+    else if (role === "PARKING") surfaces.push({ x, y, family: "DRIVEWAY" });
+    else if (role === "BASIN" || role === "EARTH") surfaces.push({ x, y, family: "PATH_EARTH" });
+    else terrain.push({ x, y, kind: role === "WATER" ? "shallow_water" : "meadow" });
+  }
+  addTerrainPlacements(group, terrain);
+  addSurfacePlacements(group, surfaces);
+  return group;
+}
+
 function drawPlatform(task: ChunkTaskDto): Container {
   const group = new Container();
   const surfaces: SurfacePlacement[] = [];
   const terrain: TerrainPlacement[] = [];
   if (task.visualKind === "PARK") {
-    for (const cell of task.footprint) {
-      const role = greenAreaSurfaceRole(task.footprint, cell, parkStage(task.stage), task.visualAssetKey);
-      if (role === "BOUNDARY") surfaces.push({ ...cell, family: "PAVEMENT" });
-      else if (role === "PATH") surfaces.push({ ...cell, family: "PATH_PAVERS" });
-      else terrain.push({ ...cell, kind: role === "MEADOW" ? "meadow" : "grass" });
-    }
-    addTerrainPlacements(group, terrain);
-    addSurfacePlacements(group, surfaces);
-    return group;
+    return drawAreaPlatform(task.footprint, parkStage(task.stage), task.visualAssetKey);
   }
   const entry = getBuilding(task.buildingType);
-  for (const cell of taskPlatformCells(task.footprint, task.stage, entry)) {
-    const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
+  for (const cell of taskPlatformCells(task.footprint, task.stage)) {
+    const presentation = taskPlatformCellPresentation(entry);
     if (presentation.family === "surface") surfaces.push({ ...cell, family: presentation.key });
     else terrain.push({ ...cell, kind: atlasTerrainKindFromWorld(presentation.key) });
   }
   addTerrainPlacements(group, terrain);
   addSurfacePlacements(group, surfaces);
   return group;
+}
+
+function updateParkLighting(view: Container, night: boolean): void {
+  if (view.label?.startsWith("park-light:")) {
+    const kind = view.label.slice("park-light:".length);
+    const texture = cachedTexture(PROP_CATALOG[night ? illuminatedPropKey(kind) : kind]!.path);
+    if (view instanceof Sprite && texture) view.texture = texture;
+  } else if (view.label === "park-light-pool") view.alpha = night ? 1 : 0;
+  for (const child of view.children) updateParkLighting(child, night);
 }
 
 function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, tooltipLayer: Container): Container {
@@ -416,10 +435,18 @@ function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
   };
   const width = (bounds.maxX - bounds.minX + 1) * CELL_SIZE;
   const height = (bounds.maxY - bounds.minY + 1) * CELL_SIZE;
-  group.position.set(bounds.minX * CELL_SIZE, bounds.minY * CELL_SIZE);
+  // Root.y is the ground contact for global world sorting, like buildings and
+  // permanent sites. Keep authored content in unchanged north-west coordinates.
+  group.position.set(bounds.minX * CELL_SIZE, bounds.minY * CELL_SIZE + height);
+  const content = new Container(); content.y = -height; group.addChild(content);
   group.eventMode = "static";
   group.cursor = "pointer";
-  group.hitArea = new Rectangle(0, 0, width, height);
+  group.hitArea = new Rectangle(0, -height, width, height);
+  if (parkStage(task.stage) < 5) {
+    // Public-space works stay inside their ground parcel, including1-cell strips.
+    content.addChild(new Graphics().rect(0.5, 0.5, width - 1, height - 1)
+      .stroke({ color: 0xc7b782, width: 1 }));
+  }
   const decor = taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)
     .sort((left, right) => left.origin.y + left.height - right.origin.y - right.height || left.origin.x - right.origin.x);
   for (const placement of decor) {
@@ -431,16 +458,33 @@ function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
       (placement.origin.y - bounds.minY + metadata.footprint.height) * CELL_SIZE,
     );
     view.anchor.set(metadata.anchor.x / metadata.size.width, metadata.anchor.y / metadata.size.height);
-    group.addChild(view);
+    if (illuminatedPropKey(placement.kind) !== placement.kind) {
+      view.label = `park-light:${placement.kind}`;
+      const pool = new Graphics(); pool.label = "park-light-pool"; pool.eventMode = "none";
+      const x = Math.max(0, view.x - 7), y = Math.max(0, view.y - 4);
+      pool.rect(x, y, Math.min(14, width - x), Math.min(8, height - y)).fill({ color: 0xffdc8f, alpha: .3 });
+      content.addChildAt(pool, 0);
+    }
+    content.addChild(view);
+  }
+  updateParkLighting(content, readWorldLighting().lamps >= .4);
+  if (task.visualAssetKey === "urban-parking") {
+    const paint = new Graphics();
+    for (const line of taskParkingMarkings(task.footprint, parkStage(task.stage))) paint.rect(line.x, line.y, line.width, line.height).fill(0xd1c69b);
+    content.addChild(paint);
   }
   const badge = buildingBadgePresentation(task.taskNumber, task.stage);
-  const badgeX = width - badge.width / 2 - 2;
-  const badgeY = height - badge.height / 2 - 2;
-  group.addChild(new Graphics()
-    .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
-    .fill(0x0b171a).stroke({ color: badge.borderColor, width: 1 }));
-  const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: badge.fontSize, fontWeight: "900", fill: 0xffffff }) });
-  label.anchor.set(0.5); label.position.set(badgeX, badgeY); group.addChild(label);
+  // A one-cell planting strip remains clickable, but its number must not
+  // cover a neighbouring parcel. The hover tooltip retains the full identity.
+  if (width >= badge.width + 4 && height >= badge.height + 4) {
+    const badgeX = width - badge.width / 2 - 2;
+    const badgeY = height - badge.height / 2 - 2;
+    content.addChild(new Graphics()
+      .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
+      .fill(0x0b171a).stroke({ color: badge.borderColor, width: 1 }));
+    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: badge.fontSize, fontWeight: "900", fill: 0xffffff }) });
+    label.anchor.set(0.5); label.position.set(badgeX, badgeY); content.addChild(label);
+  }
   let tooltip: Container | undefined;
   group.on("pointerover", () => {
     if (!tooltip) {
@@ -451,7 +495,7 @@ function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
       const panel = new Graphics().roundRect(-5, -5, text.width + 10, text.height + 10, 3)
         .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x69ad67, width: 1 });
       tooltip = new Container(); tooltip.eventMode = "none"; tooltip.addChild(panel, text);
-      tooltip.position.set(group.position.x + width / 2 - text.width / 2, group.position.y - text.height - 8);
+      tooltip.position.set(group.position.x + width / 2 - text.width / 2, group.position.y - height - text.height - 8);
       tooltipLayer.addChild(tooltip);
     }
     tooltip.visible = true;
@@ -600,7 +644,7 @@ function drawDecoration(decoration: ChunkDto["decorations"][number]): Sprite | n
 }
 
 function isAnimatedDecoration(kind: string): boolean {
-  return kind.startsWith("boat-") || kind.startsWith("fisher-");
+  return kind.startsWith("boat-");
 }
 
 function staticDecorationRenderSignature(decorations: Iterable<ChunkDto["decorations"][number]>): string {
@@ -624,67 +668,41 @@ function drawWorldFeature(
   feature: WorldFeatureDto,
   includePlatform: boolean,
   onArchiveSelect: () => void,
+  onSiteSelect: (feature: WorldFeatureDto) => void,
   parent?: WorldFeatureDto,
 ): { platform?: Container; visual?: Container } | null {
   if (!includePlatform) return null;
+  if (feature.kind === "RUIN") {
+    if (feature.footprint.length === 0) return null;
+    const visual = new Container();
+    const width = (Math.max(...feature.footprint.map((cell) => cell.x)) - feature.origin.x + 1) * CELL_SIZE;
+    const height = (Math.max(...feature.footprint.map((cell) => cell.y)) - feature.origin.y + 1) * CELL_SIZE;
+    // Depth sorting uses ground contact, exactly as buildings and props do.
+    // Keep drawing coordinates top-left inside a bottom-anchored root.
+    visual.position.set(feature.origin.x * CELL_SIZE, feature.origin.y * CELL_SIZE + height);
+    const content = new Container(); content.y = -height; visual.addChild(content);
+    const foundation = new Graphics();
+    for (const [x, y] of [[1, 1], [width - 6, 1], [1, height - 6], [width - 6, height - 6]]) {
+      foundation.rect(x!, y!, 5, 1).rect(x!, y!, 1, 5).fill(0x8c9270);
+    }
+    content.addChild(foundation);
+    for (const { key, x, y } of siteRubbleLayout(width, height, feature.siteMarker?.variant ?? "brick")) {
+      const rubble = sprite(PROP_SPRITES[key]!, x, y); rubble.anchor.set(0.5, 1); content.addChild(rubble);
+    }
+    if (feature.siteMarker) {
+      const presentation = siteMarkerPresentation(feature.siteMarker);
+      const text = new Text({ text: presentation.badge, resolution: 2, style: { fontFamily: "monospace", fontSize: 6, fontWeight: "bold", fill: presentation.color } });
+      text.position.set(Math.round((width - text.width) / 2), Math.max(0, height - 8));
+      const panel = new Graphics().rect(text.x - 2, text.y - 1, Math.ceil(text.width) + 4, 8).fill(0x30464c);
+      content.addChild(panel, text);
+      visual.eventMode = "static"; visual.cursor = "pointer";
+      visual.hitArea = new Rectangle(0, -height, width, height);
+      visual.on("pointertap", (event: FederatedPointerEvent) => { event.stopPropagation(); onSiteSelect(feature); });
+    } else visual.eventMode = "none";
+    return { visual };
+  }
   if (feature.assetKind === "AREA") {
-    const platform = new Container();
-    if (feature.kind === "AIRPORT") {
-      const layout = cityAirportVisualLayout(feature);
-      const left = layout.bounds.minX * CELL_SIZE;
-      const top = layout.bounds.minY * CELL_SIZE;
-      const airportSurfaces: SurfacePlacement[] = [];
-      const airportAprons: Cell[] = [];
-      for (let y = 0; y < layout.bounds.height; y += 1) for (let x = 0; x < layout.bounds.width; x += 1) {
-        airportSurfaces.push({ x: layout.bounds.minX + x, y: layout.bounds.minY + y, family: "PAVEMENT" });
-      }
-      for (const tile of layout.surfaceTiles) {
-        const cell = { x: layout.bounds.minX + tile.x, y: layout.bounds.minY + tile.y };
-        if (tile.role === "APRON") {
-          airportAprons.push(cell);
-        } else {
-          airportSurfaces.push({ ...cell, family: "PATH_ASPHALT" });
-        }
-      }
-      addSurfacePlacements(platform, airportSurfaces);
-      for (const cell of airportAprons) {
-        const p = position(cell);
-        platform.addChild(sprite(TILE_SPRITES["construction-foundation"]!, p.x, p.y));
-      }
-      const markings = new Graphics();
-      for (let x = layout.runway.left + 12; x < layout.runway.left + layout.runway.width - 10; x += 32) {
-        markings.rect(left + x, top + layout.runway.top + layout.runway.height / 2 - 2, 16, 4);
-      }
-      markings.fill(0xe4d8a0);
-      markings.rect(left + layout.runway.left + 8, top + layout.runway.top + 4, 3, layout.runway.height - 8)
-        .rect(left + layout.runway.left + layout.runway.width - 11, top + layout.runway.top + 4, 3, layout.runway.height - 8)
-        .fill(0xe9e4ca);
-      platform.addChild(markings);
-      for (const tile of layout.fenceTiles) {
-        const view = sprite(TILE_SPRITES[tile.key]!, left + (tile.x + .5) * CELL_SIZE, top + (tile.y + .5) * CELL_SIZE);
-        view.anchor.set(.5);
-        view.rotation = (tile.quarterTurns ?? 0) * Math.PI / 2;
-        platform.addChild(view);
-      }
-      for (const placement of [...layout.buildings].sort((a, b) => a.baselineY - b.baselineY)) {
-        const view = sprite(gameAssetUrl(placement.asset), left + placement.centerX, top + placement.baselineY);
-        view.anchor.set(.5, 1);
-        view.scale.set(placement.scale);
-        platform.addChild(view);
-      }
-      return { platform };
-    }
-    const areaSurfaces: SurfacePlacement[] = [];
-    const areaTerrain: TerrainPlacement[] = [];
-    for (const cell of feature.footprint) {
-      const role = greenAreaSurfaceRole(feature.footprint, cell, feature.developmentStage, feature.assetKey);
-      if (role === "BOUNDARY") areaSurfaces.push({ ...cell, family: "PAVEMENT" });
-      else if (role === "PATH") areaSurfaces.push({ ...cell, family: feature.assetKey === "urban-grove" ? "PATH_EARTH" : "PATH_PAVERS" });
-      else areaTerrain.push({ ...cell, kind: role === "MEADOW" ? "meadow" : "grass" });
-    }
-    addTerrainPlacements(platform, areaTerrain);
-    addSurfacePlacements(platform, areaSurfaces);
-    return { platform };
+    return { platform: drawAreaPlatform(feature.footprint, feature.developmentStage, feature.assetKey) };
   }
   if (feature.assetKind === "PROP") {
     if (parent && parent.assetKind === "AREA" && parent.developmentStage < greenAreaDecorStage(feature.assetKey)) return null;
@@ -748,107 +766,73 @@ function drawWorldFeature(
   }
   return { platform, visual };
 }
-
-const FIRE_ENGINE_KEYS = ["fire-engine-horizontal", "fire-engine-rescue", "fire-engine-ladder"] as const;
-const FLAME_KEYS = ["incident-flame-a", "incident-flame-b", "incident-flame-c", "incident-flame-d"] as const;
-const SMOKE_KEYS = ["incident-smoke-a", "incident-smoke-b", "incident-smoke-c", "incident-smoke-d"] as const;
-const INCIDENT_ASSET_KEYS = [...FIRE_ENGINE_KEYS, ...FLAME_KEYS, ...SMOKE_KEYS] as const;
-const ANIMAL_SPECIES = ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"] as const;
-
 function drawIncidentWaterJet(
-  graphics: Graphics,
-  source: { x: number; y: number },
-  target: { x: number; y: number },
-  timeMs: number,
-  phaseMs: number,
+  graphics: Graphics, source: { x: number; y: number }, target: { x: number; y: number },
+  timeMs: number, phaseMs: number,
 ): void {
   const frame = incidentWaterJetFrame(source, target, timeMs, phaseMs);
   graphics.clear();
-  for (const pixel of frame.core) graphics.rect(pixel.x, pixel.y, pixel.size, pixel.size);
-  graphics.fill({ color: 0x4b9fb9, alpha: 0.94 });
-  for (const pixel of frame.highlights) graphics.rect(pixel.x, pixel.y, pixel.size, pixel.size);
-  graphics.fill({ color: 0xc3f2f5, alpha: 1 });
-  for (const pixel of frame.spray) graphics.rect(pixel.x, pixel.y, pixel.size, pixel.size);
-  graphics.fill({ color: 0x77cddd, alpha: 0.92 });
+  for (const pixel of frame.core) graphics.rect(pixel.x, pixel.y, 1, 1);
+  graphics.fill(0x4b9fb9);
+  for (const pixel of frame.highlights) graphics.rect(pixel.x, pixel.y, 1, 1);
+  graphics.fill(0xc3f2f5);
+  for (const pixel of frame.spray) graphics.rect(pixel.x, pixel.y, 1, 1);
+  graphics.fill(0x77cddd);
 }
 
 function drawTaskIncident(task: ChunkTaskDto, mode: Exclude<IncidentMode, "NONE">, signature: string, fullResponse: boolean): IncidentView {
   const entry = getBuilding(task.buildingType);
+  const building = task.visualKind === "BUILDING";
+  const width = building ? entry.spriteSize.width : Math.max(8, ...task.footprint.map((cell) => (cell.x - task.origin.x + 1) * CELL_SIZE));
+  const height = building ? entry.spriteSize.height : Math.max(8, ...task.footprint.map((cell) => (cell.y - task.origin.y + 1) * CELL_SIZE));
   const profile = incidentVisualProfile(task);
   const container = new Container();
   container.eventMode = "none";
-  container.position.set(
-    task.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2,
-    task.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE,
-  );
-
+  container.position.set(task.origin.x * CELL_SIZE + width / 2, task.origin.y * CELL_SIZE + height);
   const visualSeed = [...task.id].reduce((value, char) => ((value * 33) ^ char.charCodeAt(0)) >>> 0, 5381);
-  const engineKey = FIRE_ENGINE_KEYS[visualSeed % FIRE_ENGINE_KEYS.length]!;
-  const engineWidth = PROP_CATALOG[engineKey]!.size.width;
-  const engineX = entry.spriteSize.width / 2 + engineWidth / 2;
-  const engine = sprite(PROP_SPRITES[engineKey]!, engineX, 2);
-  engine.anchor.set(0.5, 1);
-  // Authored horizontal engines face east. They park to the right of the
-  // building, so mirror the accepted view exactly as moving cars do for west:
-  // the cab and hose point back toward the incident instead of away from it.
-  engine.scale.x = -1;
-
-  const stageBounds = entry.stageOpaqueBounds[Math.max(0, Math.min(4, task.stage - 1))]!;
-  const layout = incidentVisualLayout(entry.spriteSize.width, entry.spriteSize.height, profile, stageBounds);
-  const alarmAnchor = layout.flameAnchors[0] ?? layout.smokeAnchors[0] ?? { x: 0, y: -Math.max(12, entry.spriteSize.height * 0.58) };
-
-  // Full response parks an engine with a flashing beacon at the curb. The
-  // compact response is a small pulsing roof alarm: the emergency stays
-  // readable without a truck in front of every second house.
-  const beacon = fullResponse
-    ? new Graphics().rect(-2, -2, 4, 2).fill(0x71d7f2)
-    : new Graphics().rect(-2, -2, 4, 4).fill(0xf2574c);
-  beacon.position.set(fullResponse ? engineX - 12 : alarmAnchor.x - 2, fullResponse ? -20 : alarmAnchor.y - 3);
-
-  const flames = layout.flameAnchors.map((anchor, index) => {
-    const frameA = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
-    const frameB = sprite(PROP_SPRITES[FLAME_KEYS[(visualSeed + index + 1) % FLAME_KEYS.length]!]!, anchor.x, anchor.y);
-    frameA.anchor.set(0.5, 1); frameB.anchor.set(0.5, 1);
-    const responseScale = mode === "HOTFIX_ACTIVE" ? 1.12 : 0.96;
-    frameA.scale.set(anchor.scale * responseScale); frameB.scale.set(anchor.scale * responseScale);
-    return { frameA, frameB };
-  });
-
-  const smokeScale = [0, 0.5, 0.62, 0.74, 0.88, 1, 1.12][profile.smokeStrength] ?? 1.12;
-  const smokeAlpha = Math.min(0.84, 0.32 + profile.smokeStrength * 0.085);
-  const smokePlumes = layout.smokeAnchors.map((anchor, index) => {
-    const frameA = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index) % SMOKE_KEYS.length]!]!, anchor.x, anchor.y);
-    const frameB = sprite(PROP_SPRITES[SMOKE_KEYS[(visualSeed + index + 1) % SMOKE_KEYS.length]!]!, anchor.x, anchor.y);
-    frameA.anchor.set(0.5, 1); frameB.anchor.set(0.5, 1);
-    const scale = smokeScale * anchor.scale * (1 - index * 0.04);
-    frameA.scale.set(scale); frameB.scale.set(scale);
-    frameA.alpha = frameB.alpha = smokeAlpha;
-    frameA.visible = true; frameB.visible = false;
-    return { frameA, frameB, alpha: smokeAlpha };
-  });
-
-  const water = new Graphics();
-  const responseAnchors = layout.flameAnchors.length > 0 ? layout.flameAnchors : layout.smokeAnchors;
-  const targets = (responseAnchors.length > 0 ? responseAnchors : [alarmAnchor]).map((anchor) => ({
-    x: anchor.x + 3,
-    y: anchor.y - 2,
-  }));
-  const initialTarget = incidentWaterTargetFrame(targets, 0, visualSeed % 700)!;
-  const waterJet = { source: { x: engineX - 8, y: -18 }, targets, targetIndex: initialTarget.index };
-  drawIncidentWaterJet(water, waterJet.source, initialTarget.target, 0, visualSeed % 700);
-
-  const hasFlame = profile.burning;
-  const hasWater = fullResponse && (profile.burning || mode === "DEFECT_REPAIRING");
-  for (const flame of flames) { flame.frameA.visible = hasFlame; flame.frameB.visible = false; }
-  water.visible = hasWater;
-  engine.visible = fullResponse;
-  if (mode === "DEFECT_REPORTED") engine.alpha = 0.9;
-  container.addChild(water, ...smokePlumes.flatMap((plume) => [plume.frameA, plume.frameB]), ...flames.flatMap((flame) => [flame.frameA, flame.frameB]), engine, beacon);
   const phaseMs = visualSeed % 700;
-  return { signature, container, mode, profile, fullResponse, flames, smokePlumes, beacon, water, waterJet, phaseMs };
+  const stageBounds = building ? entry.stageOpaqueBounds[task.stage - 1]! : undefined;
+  const layout = incidentVisualLayout(width, height, profile, stageBounds);
+  const makeFrames = (kind: "flame" | "smoke", anchor: { x: number; y: number }) => {
+    const frames = [0, 1].map((frame) => {
+      const graphics = new Graphics();
+      for (const pixel of incidentEffectPixels(kind, frame)) graphics.rect(pixel.x, pixel.y, 1, 1).fill(pixel.color);
+      graphics.position.set(anchor.x, anchor.y);
+      graphics.visible = frame === 0;
+      return graphics;
+    });
+    return { frameA: frames[0]!, frameB: frames[1]! };
+  };
+  const flames = layout.flameAnchors.map((anchor) => makeFrames("flame", anchor));
+  const smokePlumes = layout.smokeAnchors.map((anchor) => makeFrames("smoke", anchor));
+  const presentation = incidentBadge(mode);
+  const badge = new Graphics().rect(-1, -1, 7, 7).fill(0x30464c);
+  for (const pixel of presentation.pixels) badge.rect(pixel.x, pixel.y, 1, 1).fill(pixel.color);
+  badge.position.set(Math.floor(width / 2) - 8, -height + 3);
+  container.addChild(badge);
+
+  // The response vehicle is an on-site overlay in the reserved one-cell
+  // clearance, not a simulated traffic agent or a claim of road dispatch.
+  const responder = microIncidentResponder(width);
+  const beacon = new Graphics().rect(0, 0, 1, 1).fill(0x71d7f2);
+  beacon.position.set(responder.beacon.x, responder.beacon.y);
+  beacon.visible = fullResponse;
+  if (fullResponse) {
+    const engine = sprite(responder.visual.url, responder.center.x, responder.center.y);
+    engine.anchor.set(0.5);
+    container.addChild(engine);
+  }
+  const water = new Graphics();
+  const targets = layout.flameAnchors.map((anchor) => ({ x: anchor.x, y: anchor.y - 2 }));
+  const initialTarget = incidentWaterTargetFrame(targets, 0, phaseMs);
+  const waterJet = { source: responder.hose, targets, targetIndex: initialTarget?.index ?? 0 };
+  water.visible = fullResponse && profile.burning && Boolean(initialTarget);
+  if (water.visible && initialTarget) drawIncidentWaterJet(water, waterJet.source, initialTarget.target, 0, phaseMs);
+  container.addChild(water, ...smokePlumes.flatMap((plume) => [plume.frameA, plume.frameB]), ...flames.flatMap((flame) => [flame.frameA, flame.frameB]), beacon);
+  return { signature, container, mode, profile, fullResponse, flames, smokePlumes, beacon, water, waterJet, phaseMs, animationFrame: -1 };
 }
 
-function requiredGroundAssets(chunks: Iterable<ChunkDto>, lod: MapLod): string[] {
+function requiredGroundAssets(chunks: Iterable<Pick<ChunkDto, "terrain">>, lod: MapLod): string[] {
   if (lod !== "DETAIL") return [];
   const urls = new Set<string>([
     gameAssetUrl("atlas/road-v2/road.png"),
@@ -870,9 +854,14 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
       const entry = getBuilding(task.buildingType);
       if (lod === "DETAIL") {
         if (task.visualKind === "PARK") {
+          for (const { x, y, role } of greenAreaSurfaceLayout(task.footprint, parkStage(task.stage), task.visualAssetKey)) {
+            if (role === "WATER" || role === "MEADOW") urls.add(gameAssetUrl(atlasTerrainTile(role === "WATER" ? "shallow_water" : "meadow", "city", x, y, 0).url));
+          }
           for (const placement of taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)) {
             const metadata = PROP_CATALOG[placement.kind];
             if (metadata) urls.add(metadata.path);
+            const litKey = illuminatedPropKey(placement.kind);
+            if (litKey !== placement.kind && PROP_CATALOG[litKey]) urls.add(PROP_CATALOG[litKey]!.path);
           }
         } else {
           if (task.stage < 5) for (const key of CONSTRUCTION_TILE_KEYS) urls.add(TILE_SPRITES[key]!);
@@ -882,14 +871,16 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
           for (const detail of construction.details) urls.add(PROP_SPRITES[detail.key]!);
           }
           if (task.stage > 2) urls.add(entry.stages[task.stage - 1]!);
-          for (const cell of taskPlatformCells(task.footprint, task.stage, entry)) {
-            const presentation = taskPlatformCellPresentation(entry, task.footprint, cell, task.taskNumber, task.stage);
+          for (const cell of taskPlatformCells(task.footprint, task.stage)) {
+            const presentation = taskPlatformCellPresentation(entry);
             if (presentation.family === "terrain") urls.add(gameAssetUrl(
               atlasTerrainTile(atlasTerrainKindFromWorld(presentation.key), "city", cell.x, cell.y, 0).url,
             ));
           }
         }
-        if (incidentMode(task) !== "NONE") for (const key of INCIDENT_ASSET_KEYS) urls.add(PROP_SPRITES[key]!);
+        if (incidentVisualProfile(task).burning) {
+          urls.add(microIncidentResponder(entry.spriteSize.width).visual.url);
+        }
       }
     }
   };
@@ -897,18 +888,15 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
   for (const chunk of chunks) {
     addTaskAssets(chunk.tasks);
     for (const feature of lod === "DETAIL" ? chunk.worldFeatures : []) {
+      if (feature.kind === "RUIN") {
+        urls.add(PROP_SPRITES["compact-construction-bricks"]!);
+        urls.add(PROP_SPRITES["compact-construction-sand"]!);
+      }
       if (feature.assetKind === "PROP") {
         const metadata = PROP_CATALOG[feature.assetKey];
         if (metadata) urls.add(metadata.path);
       } else if (feature.assetKind === "BUILDING") {
         urls.add(getBuilding(feature.assetKey).stages[4]!);
-      } else if (lod === "DETAIL") {
-        if (feature.kind === "AIRPORT") {
-          for (const placement of cityAirportVisualLayout(feature).buildings) urls.add(gameAssetUrl(placement.asset));
-          for (const key of ["construction-foundation", "construction-fence", "construction-fence-post", "construction-gate"] as const) {
-            urls.add(TILE_SPRITES[key]!);
-          }
-        }
       }
     }
     if (lod !== "DETAIL") continue;
@@ -930,24 +918,10 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
 }
 
 function ambientDetailAssets(): string[] {
-  const urls = new Set<string>();
-  for (const path of Object.values(VEHICLE_SPRITES).flatMap((views) => [views.horizontal, views.north, views.south])) urls.add(path);
-  for (const key of ["city-bus-horizontal", "city-bus-north", "city-bus-south"] as const) urls.add(PROP_SPRITES[key]!);
-  for (const direction of ["north", "east", "south", "west"] as const) for (const frame of ["a", "b", "c"] as const) {
-    urls.add(PROP_SPRITES[`walker-${direction}-${frame}`]!);
-  }
-  for (const key of ["resident-reader", "resident-box", "resident-sweeper", "resident-phone", "resident-worker", "resident-wave"] as const) urls.add(PROP_SPRITES[key]!);
-  for (const family of ["cyclist", "scooter"] as const) for (const view of ["horizontal", "north", "south"] as const) {
-    for (const frame of ["a", "b", "c"] as const) urls.add(PROP_SPRITES[`${family}-${view}-${frame}`]!);
-  }
-  for (const species of ANIMAL_SPECIES) for (const direction of ["north", "east", "south", "west"] as const) {
-    for (const frame of ["a", "b", "c"] as const) urls.add(PROP_SPRITES[`animal-${species}-${direction}-${frame}`]!);
-  }
-  for (let model = 1; model <= 8; model += 1) urls.add(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
-  return [...urls];
+  return microAmbientAssetUrls();
 }
 
-export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, startAtMinimumScale = false, focusTask, invalidation, showDistricts, onTaskSelect, onArchiveSelect, onReady, onFatalError, onZoomOutToCountry }: {
+export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, startAtMinimumScale = false, active = true, focusTask, invalidations, onInvalidationsProcessed, showDistricts, onTaskSelect, onArchiveSelect, onSiteSelect, onReady, onFatalError, onZoomOutToCountry, wheelNavigation }: {
   countryId: string;
   chunkSize: number;
   worldManifest: WorldManifestDto;
@@ -955,14 +929,18 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
   initialCityScene?: CitySceneDto;
   startAtMinimumScale?: boolean;
+  active?: boolean;
   focusTask?: { origin: Cell; token: number } | null;
-  invalidation?: MapInvalidation;
+  invalidations: readonly MapInvalidation[];
+  onInvalidationsProcessed: (cursor: number) => void;
   showDistricts: boolean;
   onTaskSelect: (taskId: string) => void;
   onArchiveSelect: () => void;
+  onSiteSelect: (feature: WorldFeatureDto) => void;
   onReady?: () => void;
   onFatalError?: (message: string) => void;
-  onZoomOutToCountry?: () => void;
+  onZoomOutToCountry?: (focus?: { x: number; y: number }) => void;
+  wheelNavigation: AtlasWheelNavigation;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
   const [streaming, setStreaming] = useState(false);
@@ -972,10 +950,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const districtLayerRef = useRef<Container | null>(null);
   const districtTooltipLayerRef = useRef<Container | null>(null);
   const runtimeRef = useRef<WorldRuntime | null>(null);
+  const invalidationCursorRef = useRef(0);
+  const activeRef = useRef(active);
   const showDistrictsRef = useRef(showDistricts);
   const onTaskSelectRef = useRef(onTaskSelect);
   const onArchiveSelectRef = useRef(onArchiveSelect);
+  const onSiteSelectRef = useRef(onSiteSelect);
   const onZoomOutToCountryRef = useRef(onZoomOutToCountry);
+  const wheelNavigationRef = useRef(wheelNavigation);
   const onFatalErrorRef = useRef(onFatalError);
   const terrainSeed = worldManifest.terrainSeed;
   const focusCityId = focusCity?.id;
@@ -993,19 +975,24 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin) : focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
   const initialCitySceneRef = useRef(initialCityScene);
+  const initialMinimumScaleRef = useRef(startAtMinimumScale);
+  const initialWorldRevisionRef = useRef(worldManifest.worldRevision);
 
   useEffect(() => {
     showDistrictsRef.current = showDistricts;
     if (districtLayerRef.current) districtLayerRef.current.visible = showDistricts;
     if (districtTooltipLayerRef.current) districtTooltipLayerRef.current.visible = showDistricts;
+    if (hostRef.current) hostRef.current.dataset.districtBoundaryVisible = String(showDistricts);
   }, [showDistricts]);
 
   useEffect(() => {
     onTaskSelectRef.current = onTaskSelect;
     onArchiveSelectRef.current = onArchiveSelect;
+    onSiteSelectRef.current = onSiteSelect;
     onZoomOutToCountryRef.current = onZoomOutToCountry;
+    wheelNavigationRef.current = wheelNavigation;
     onFatalErrorRef.current = onFatalError;
-  }, [onArchiveSelect, onFatalError, onTaskSelect, onZoomOutToCountry]);
+  }, [onArchiveSelect, onSiteSelect, onFatalError, onTaskSelect, onZoomOutToCountry, wheelNavigation]);
 
   useEffect(() => {
     if (focusX == null || focusY == null || focusMinX == null || focusMinY == null || focusMaxX == null || focusMaxY == null) return;
@@ -1016,8 +1003,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   }, [focusMaxX, focusMaxY, focusMinX, focusMinY, focusX, focusY]);
 
   useEffect(() => {
-    if (invalidation) runtimeRef.current?.invalidate(invalidation);
-  }, [invalidation]);
+    if (!firstFrameReady || !runtimeRef.current) return;
+    const pending = invalidations.filter(event => event.id > invalidationCursorRef.current).sort((a, b) => a.id - b.id);
+    if (pending.length === 0) return;
+    runtimeRef.current.invalidateBatch(pending);
+    const cursor = pending.at(-1)!.id;
+    invalidationCursorRef.current = cursor;
+    onInvalidationsProcessed(cursor);
+  }, [invalidations, firstFrameReady, onInvalidationsProcessed]);
 
   // Search-driven focus: jump the camera to the found building with a
   // neighbourhood-sized window around it.
@@ -1025,7 +1018,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   useEffect(() => {
     if (!focusTaskToken || !focusTask) return;
     runtimeRef.current?.focus(buildingFocusArea(focusTask.origin));
-  }, [focusTaskToken, focusTask]);
+  }, [focusTaskToken, focusTask, firstFrameReady]);
 
   useEffect(() => {
     const [minX, minY, maxX, maxY] = viewBoundsKey.split(",").map(Number);
@@ -1033,8 +1026,15 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
   }, [viewBoundsKey]);
 
   useEffect(() => {
-    if (firstFrameReady) onReady?.();
-  }, [firstFrameReady, onReady]);
+    activeRef.current = active;
+    runtimeRef.current?.setActive(active);
+  }, [active, firstFrameReady]);
+
+  // A new parent callback is not a renderer activation. Re-running setActive
+  // on bootstrap/card renders used to retry dirty scenes and schedule loads.
+  useEffect(() => {
+    if (active && firstFrameReady) onReady?.();
+  }, [active, firstFrameReady, onReady]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -1052,6 +1052,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     };
     const selectArchive = () => {
       if (performance.now() >= suppressSelectionUntil) onArchiveSelectRef.current();
+    };
+    const selectSite = (feature: WorldFeatureDto) => {
+      if (performance.now() >= suppressSelectionUntil) onSiteSelectRef.current(feature);
     };
     const beginStreamingFeedback = () => {
       window.clearTimeout(streamingTimer);
@@ -1102,7 +1105,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
     // is a separate transparent overlay, so an API response never destroys and
     // re-bakes the already visible first-frame terrain texture.
     type GroundRecord = { terrainView: Sprite; overlayView?: Sprite; lod: MapLod; usedAt: number };
-    type PreparedGround = { terrainView?: Sprite; overlayView: Sprite };
+    type PreparedGround = { terrainView?: Sprite; overlayView?: Sprite };
     const groundContainers = new Map<string, GroundRecord>();
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
@@ -1128,6 +1131,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
 
     void (async () => {
       await app.init({ resizeTo: host, backgroundColor: 0x101d20, antialias: false, autoDensity: true, resolution: Math.min(devicePixelRatio, 2), preference: "webgl" });
+      if (!activeRef.current) app.stop();
       if (disposed) { app.destroy({ removeView: true }, { children: true }); return; }
       const canvas = app.canvas;
       canvas.className = "world-canvas-element";
@@ -1145,7 +1149,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       districtTooltipLayerRef.current = districtTooltipLayer;
       const buildingTooltipLayer = new Container();
       buildingTooltipLayer.eventMode = "none";
+      const blockPlaqueLayer = new Container();
+      blockPlaqueLayer.eventMode = "none";
+      buildingTooltipLayer.addChild(blockPlaqueLayer);
+      let blockPlaqueSignature = "";
       const platformLayer = new Container();
+      const plannedSiteMarks = new Graphics();
+      plannedSiteMarks.eventMode = "none";
+      platformLayer.addChild(plannedSiteMarks);
       const featurePlatformLayer = new Container();
       const worldObjectLayer = new Container();
       const agentOverlayLayer = new Container();
@@ -1169,6 +1180,16 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         buildingTooltip: buildingTooltipLayer,
       };
       world.addChild(...WORLD_LAYER_ORDER.map((name) => worldLayers[name]));
+      const lampGlow = new Graphics();
+      const propShadows = new Graphics();
+      propShadows.eventMode = "none";
+      world.addChildAt(propShadows, world.getChildIndex(worldObjectLayer));
+      lampGlow.eventMode = "none";
+      world.addChildAt(lampGlow, world.getChildIndex(worldObjectLayer));
+      let lampSignature = "";
+      let lightElapsed = 500;
+      let lampSprites: Array<{ view: Sprite; day: Texture; night: Texture }> = [];
+      let lampsOn = false;
       app.stage.addChild(world);
       type RenderNode = Container | Graphics | Sprite;
       const worldObjectKinds = new WeakMap<RenderNode, WorldObjectKind>();
@@ -1219,70 +1240,40 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         ).fill(TERRAIN_COLORS.GRASS);
       };
       redrawBackdrop();
-      type MovingAgent = {
+      type AnimalAgent = {
         id: string;
         view: Sprite;
         graph: Map<string, Cell>;
-        outgoing?: AgentEdges;
         current: Cell;
         next: Cell;
         previous?: Cell;
-        trail: Cell[];
         progress: number;
         speed: number;
-        kind: "CAR" | "BUS" | "WALKER" | "CYCLIST" | "SCOOTER" | "ANIMAL";
         variant: string;
-        phase: number;
-        pauseMs: number;
-        socialCooldownMs: number;
-        activity: "NONE" | "THINK" | "CHAT";
-        activityView?: Graphics;
-        wheelView?: Graphics;
-        motionFrame?: 0 | 1 | 2 | 3;
-        motionView?: "horizontal" | "north" | "south";
         steps: number;
         randomState: number;
         route: Cell[];
         routeIndex: number;
-        lastStopKey?: string;
-        signalReservationId?: string;
-        waitMs: number;
-        visualKey: string;
       };
-      let movingAgents: MovingAgent[] = [];
-      let movingWalkers: MovingAgent[] = [];
-      const destroyMovingAgent = (agent: MovingAgent): void => {
-        agent.activityView?.removeFromParent();
-        agent.activityView?.destroy();
-        agent.wheelView?.removeFromParent();
-        agent.wheelView?.destroy();
+      let animals: AnimalAgent[] = [];
+      const destroyAnimal = (agent: AnimalAgent): void => {
         agent.view.removeFromParent();
         agent.view.destroy();
       };
-      let trafficJunctions: TrafficJunction[] = [];
-      const trafficSignalViews = new Map<string, { view: Sprite; junction: TrafficJunction; axis: "H" | "V"; state: "RED" | "GREEN" }>();
+      type MobilityAgent = ReturnType<typeof createCityMobility>["agents"][number];
+      let mobility: ReturnType<typeof createCityMobility> | undefined;
+      const mobilityViews = new Map<string, { view: Sprite; marker?: Graphics; activity: MobilityAgent["activity"]; visualKey: string }>();
+      const trafficSignalViews = new Map<string, { view: Sprite; state: "RED" | "GREEN" }>();
+      let mobilityPostOrigins = new Map<string, Cell>();
       const sessionSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 0x6d2b79f5;
       let spawnState = sessionSeed;
       let nextAgentId = 1;
       let simulationTimeMs = 0;
       let nextTrafficTelemetryMs = 0;
       let nextDepthSortMs = 0;
-      let nextSocialCheckMs = 700;
-      let airportPoints: Array<{ x: number; y: number }> = [];
-      let airplane: {
-        view: Container;
-        trail: Graphics;
-        elapsed: number;
-        duration: number;
-        start: { x: number; y: number };
-        control: { x: number; y: number };
-        end: { x: number; y: number };
-        startsAtAirport: boolean;
-        endsAtAirport: boolean;
-      } | undefined;
-      // The first flight should make the airport feel alive shortly after the
-      // city becomes interactive. Later flights keep the quieter ambient pace.
-      let nextFlybyMs = 5_000 + nextSeededRandom(sessionSeed).value * 8_000;
+      let airplane: { view: Sprite; route: CityMicroFlightRoute; elapsed: number; duration: number } | undefined;
+      let cityFlightRoutes: CityMicroFlightRoute[] = [];
+      let nextFlybyMs = 5_000;
       const celebrations: Array<{ particles: Array<{ view: Graphics; vx: number; vy: number }>; elapsed: number }> = [];
       const launchCelebration = (bounds: Rect) => {
         if (reducedMotion) return;
@@ -1300,124 +1291,156 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host.dataset.celebrations = String(Number(host.dataset.celebrations ?? 0) + 1);
       };
       host.dataset.airplaneSpace = flightLayer.parent === world ? "world" : "screen";
-      let activeCrosswalks = new Set<string>();
-      let activityCells = new Set<string>();
-      let busStopRoadCells = new Set<string>();
-      const setWalkerActivity = (agent: MovingAgent, activity: MovingAgent["activity"]): void => {
-        if (agent.kind !== "WALKER") return;
-        agent.activity = activity;
-        const walkKey = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase).key;
-        agent.visualKey = residentActivityVisualKey(walkKey, activity);
-        const activityTexture = cachedTexture(PROP_SPRITES[agent.visualKey]!);
-        if (activityTexture) agent.view.texture = activityTexture;
-        const marker = agent.activityView;
-        if (!marker) return;
-        marker.clear();
-        if (activity === "THINK") {
-          marker.circle(0, 0, 1).fill(0xf4f1d7).circle(3, -3, 1.4).fill(0xf4f1d7).circle(6, -4, 2).fill(0xf4f1d7);
-        } else if (activity === "CHAT") {
-          marker.roundRect(-6, -7, 12, 7, 2).fill({ color: 0xf4f1d7, alpha: 0.96 });
-          marker.poly([ -2, 0, 0, 3, 1, 0 ]).fill({ color: 0xf4f1d7, alpha: 0.96 });
-          marker.circle(-3, -3.5, 0.7).fill(0x183138).circle(0, -3.5, 0.7).fill(0x183138).circle(3, -3.5, 0.7).fill(0x183138);
+      const drawMobility = (): void => {
+        if (!mobility) return;
+        const visible = currentLod === "DETAIL" && ambientAssetsReady;
+        const wanted = new Set(mobility.agents.map(agent => agent.id));
+        for (const [id, entry] of mobilityViews) {
+          if (wanted.has(id)) continue;
+          entry.view.destroy(); entry.marker?.destroy(); mobilityViews.delete(id);
         }
-        marker.visible = agent.view.visible && activity !== "NONE";
+        for (const agent of mobility.agents) {
+          const url = microAmbientSprite(agent.kind === "CAR" ? "car" : "person", agent.variant, agent.direction).url;
+          let entry = mobilityViews.get(agent.id);
+          if (!entry) {
+            const view = sprite(url, agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE);
+            view.anchor.set(0.5);
+            worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
+            const marker = agent.kind === "WALKER" ? new Graphics() : undefined;
+            if (marker) agentOverlayLayer.addChild(marker);
+            entry = { view, marker, activity: "NONE", visualKey: url };
+            mobilityViews.set(agent.id, entry);
+          }
+          if (entry.visualKey !== url) {
+            const texture = cachedTexture(url);
+            if (texture) entry.view.texture = texture;
+            entry.visualKey = url;
+          }
+          entry.view.visible = visible;
+          entry.view.position.set(agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE);
+          entry.view.rotation = 0;
+          if (entry.marker) {
+            if (entry.activity !== agent.activity) {
+              entry.marker.clear();
+              // Native pixel cues, not oversized smooth speech balloons.
+              if (agent.activity !== "NONE") {
+                entry.marker.rect(-1, -4, 1, 1).fill(0xe1d3a4);
+              }
+              entry.activity = agent.activity;
+            }
+            entry.marker.position.copyFrom(entry.view.position);
+            entry.marker.visible = visible && agent.activity !== "NONE";
+          }
+        }
+        const wantedSignals = new Set<string>();
+        for (const signal of mobility.signals) for (const post of signal.signalPosts) {
+          const id = `${signal.id}:${post.approach}`;
+          const origin = mobilityPostOrigins.get(id);
+          if (!origin) continue;
+          wantedSignals.add(id);
+          const state = post.axis === "H" ? signal.horizontal : signal.vertical;
+          let entry = trafficSignalViews.get(id);
+          const url = PROP_SPRITES[`traffic-light-${state.toLowerCase()}`]!;
+          if (!entry) {
+            const view = sprite(url, (origin.x + 0.5) * CELL_SIZE, (origin.y + 1) * CELL_SIZE);
+            view.anchor.set(0.5, 1);
+            worldObjectLayer.addChild(registerWorldObject(view, "FEATURE"));
+            entry = { view, state };
+            trafficSignalViews.set(id, entry);
+          } else if (entry.state !== state) {
+            const texture = cachedTexture(url);
+            if (texture) entry.view.texture = texture;
+            entry.state = state;
+          }
+          entry.view.position.set((origin.x + 0.5) * CELL_SIZE, (origin.y + 1) * CELL_SIZE);
+          entry.view.visible = visible;
+        }
+        for (const [id, signal] of trafficSignalViews) if (!wantedSignals.has(id)) {
+          signal.view.destroy(); trafficSignalViews.delete(id);
+        }
       };
-      const orientRoadUser = (agent: MovingAgent): void => {
-        if (agent.kind === "CAR" || agent.kind === "BUS") {
-          const presentation = vehiclePresentation(agent.current, agent.next);
-          agent.view.scale.set(presentation.scaleX, presentation.scaleY);
-        } else if (agent.kind === "WALKER") {
-          const presentation = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase);
-          agent.view.scale.set(presentation.scaleX, presentation.scaleY);
-        } else if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
-          const presentation = micromobilityPresentation(agent.kind === "CYCLIST" ? "cyclist" : "scooter", agent.current, agent.next, agent.steps);
-          agent.view.scale.set(presentation.scaleX, presentation.scaleY);
-        } else if (agent.kind === "ANIMAL") {
-          const presentation = animalPresentation(agent.variant, agent.current, agent.next, agent.steps + Math.floor(agent.progress * 3));
-          agent.view.scale.set(presentation.scaleX, presentation.scaleY);
-        }
+      const mobilityStepMetric = new RollingPerformanceMetric(120);
+      let lastMeasuredMobilityStep = 0;
+      let mobilityRoads = new Map<string, RoadCellDto>();
+      let mobilityWalkGraph = new Map<string, Cell>();
+      const reportMobility = (): void => {
+        if (!mobility) return;
+        const agents = mobility.agents;
+        const cars = agents.filter(agent => agent.kind === "CAR");
+        const walkers = agents.filter(agent => agent.kind === "WALKER");
+        const visible = currentLod === "DETAIL" && ambientAssetsReady;
+        const metrics = mobility.metrics;
+        host.dataset.mobilityReady = "true";
+        host.dataset.mobilityFixedSteps = String(metrics.fixedSteps);
+        host.dataset.mobilityNetworkBuilds = String(metrics.networkBuilds);
+        host.dataset.cars = String(visible ? cars.length : 0);
+        host.dataset.walkers = String(visible ? walkers.length : 0);
+        host.dataset.animals = String(visible ? animals.length : 0);
+        host.dataset.buses = "0"; host.dataset.cyclists = "0"; host.dataset.scooters = "0";
+        host.dataset.trafficSteps = host.dataset.trafficLifetimeSteps = String(metrics.vehicleSteps);
+        host.dataset.walkerLifetimeSteps = String(metrics.walkerSteps);
+        host.dataset.trafficUnsafePairs = String(metrics.vehicleUnsafePairs);
+        host.dataset.trafficPedestrianUnsafePairs = String(metrics.pedestrianUnsafePairs);
+        host.dataset.trafficVehiclePedestrianUnsafePairs = String(metrics.vehiclePedestrianUnsafePairs);
+        host.dataset.mobilityVehicleUnsafeTotal = String(metrics.vehicleUnsafeTotal);
+        host.dataset.mobilityPedestrianUnsafeTotal = String(metrics.pedestrianUnsafeTotal);
+        host.dataset.mobilityVehiclePedestrianUnsafeTotal = String(metrics.vehiclePedestrianUnsafeTotal);
+        host.dataset.mobilityPeakVehicleWaitMs = String(metrics.peakVehicleWaitMs);
+        host.dataset.mobilityPeakWalkerWaitMs = String(metrics.peakWalkerWaitMs);
+        host.dataset.trafficMaxWaitMs = String(metrics.maxVehicleWaitMs);
+        host.dataset.pedestrianMaxWaitMs = String(metrics.maxWalkerWaitMs);
+        host.dataset.trafficBlockedVehicles = String(cars.filter(agent => agent.waitMs > 0).length);
+        host.dataset.trafficMovingVehicles = String(cars.filter(agent => agent.waitMs === 0 && agent.activity === "NONE").length);
+        host.dataset.mobilityTrips = String(metrics.completedTrips);
+        host.dataset.mobilityCrossings = String(metrics.crossingsCompleted);
+        host.dataset.trafficJunctions = String(mobility.signals.length);
+        host.dataset.trafficSignals = String(trafficSignalViews.size);
+        host.dataset.mobilitySignalState = mobility.signals.map(signal => `${signal.id}:${signal.horizontal[0]}${signal.vertical[0]}${signal.pedestrians[0]}`).join(";");
+        host.dataset.wrongWayCars = String(cars.filter(agent => {
+          const dx = agent.next.x - agent.current.x, dy = agent.next.y - agent.current.y;
+          if (dx === 0 && dy === 0) return false;
+          const road = mobilityRoads.get(key(agent.current));
+          if (!road || !mobilityRoads.has(key(agent.next)) || Math.abs(dx) + Math.abs(dy) !== 1) return true;
+          const band = roadBandRole(mobilityRoads, road);
+          return band.kind === "TRAVEL" && (band.dx !== dx || band.dy !== dy);
+        }).length);
+        host.dataset.walkerOffPath = String(walkers.filter(agent => !mobilityWalkGraph.has(key(agent.current)) || !mobilityWalkGraph.has(key(agent.next))).length);
+        host.dataset.activeWalkerActivities = String(walkers.filter(agent => agent.activity !== "NONE").length);
+        host.dataset.walkerRoadActivities = String(walkers.filter(agent => agent.activity !== "NONE"
+          && (mobilityRoads.has(key(agent.current)) || mobilityRoads.has(key(agent.next)))).length);
+        host.dataset.residentCenterErrors = String(walkers.filter(agent => {
+          const view = mobilityViews.get(agent.id)?.view;
+          return view && (Math.abs(view.x - agent.position.x * CELL_SIZE) > .01 || Math.abs(view.y - agent.position.y * CELL_SIZE) > .01);
+        }).length);
+        host.dataset.residentWalkFrames = [...new Set(walkers.map(agent => mobilityViews.get(agent.id)?.visualKey ?? ""))].sort().join(",");
+        host.dataset.residentWalkState = walkers.map(agent => `${agent.id}:${agent.direction}:${agent.steps}`).sort().join(",");
+        host.dataset.agentSession = String(sessionSeed);
+        host.dataset.agentIds = [...agents.map(agent => agent.id), ...animals.map(agent => agent.id)].sort().join(",");
+        const timing = mobilityStepMetric.snapshot();
+        host.dataset.mobilityStepP95Ms = timing.p95.toFixed(3);
+        host.dataset.mobilityStepMaxMs = timing.max.toFixed(3);
       };
-      let renderedVehicleFrameMask = 0;
-      const renderVehicleMotionFrame = (agent: MovingAgent, frame: 0 | 1 | 2 | 3): void => {
-        const wheels = agent.wheelView;
-        if (!wheels) return;
-        const presentation = vehiclePresentation(agent.current, agent.next);
-        if (agent.motionFrame === frame && agent.motionView === presentation.view) return;
-        agent.motionFrame = frame;
-        agent.motionView = presentation.view;
-        wheels.clear();
-        if (!vehicleWheelAnimationEnabled(agent.current, agent.next)) return;
-        const width = agent.view.texture.width;
-        const height = agent.view.texture.height;
-        const centres = presentation.view === "horizontal"
-          ? [
-              { x: -(width / 2 - (agent.kind === "BUS" ? 10 : 5)), y: height / 2 - 3 },
-              { x: width / 2 - (agent.kind === "BUS" ? 10 : 5), y: height / 2 - 3 },
-            ]
-          : [
-              { x: -(width / 2 - 3), y: -(height / 2 - (agent.kind === "BUS" ? 10 : 5)) },
-              { x: width / 2 - 3, y: -(height / 2 - (agent.kind === "BUS" ? 10 : 5)) },
-              { x: -(width / 2 - 3), y: height / 2 - (agent.kind === "BUS" ? 10 : 5) },
-              { x: width / 2 - 3, y: height / 2 - (agent.kind === "BUS" ? 10 : 5) },
-            ];
-        const orbit = [{ x: -1, y: 0 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }][frame]!;
-        for (const centre of centres) {
-          wheels.rect(Math.round(centre.x + orbit.x), Math.round(centre.y + orbit.y), 1, 1).fill(0xb8d4cf);
-        }
-        renderedVehicleFrameMask |= 1 << frame;
-        host.dataset.vehicleRenderedFrameMask = renderedVehicleFrameMask.toString(2).padStart(4, "0");
-      };
-
-      const movingAgentSpriteUrl = (agent: Pick<MovingAgent, "kind" | "variant" | "current" | "next"> & Partial<Pick<MovingAgent, "progress" | "phase" | "steps">>): string => {
-        const presentation = vehiclePresentation(agent.current, agent.next);
-        if (agent.kind === "CAR") return VEHICLE_SPRITES[agent.variant]![presentation.view];
-        if (agent.kind === "BUS") return PROP_SPRITES[`city-bus-${presentation.view}`]!;
-        if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
-          const micro = micromobilityPresentation(
-            agent.kind === "CYCLIST" ? "cyclist" : "scooter",
-            agent.current,
-            agent.next,
-            (agent.steps ?? 0) + Math.floor((agent.progress ?? 0) * 3),
-          );
-          return PROP_SPRITES[micro.key]!;
-        }
-        if (agent.kind === "ANIMAL") {
-          const animal = animalPresentation(
-            agent.variant,
-            agent.current,
-            agent.next,
-            (agent.steps ?? 0) + Math.floor((agent.progress ?? 0) * 3),
-          );
-          return PROP_SPRITES[animal.key]!;
-        }
-        return PROP_SPRITES[residentWalkPresentation(agent.current, agent.next, agent.progress ?? 0, agent.phase ?? 0).key]!;
-      };
-      const plannedVehiclePath = (agent: MovingAgent): Cell[] => {
-        const path = [agent.current, agent.next];
-        for (const cell of agent.route.slice(agent.routeIndex + 1)) {
-          if (key(cell) !== key(path[path.length - 1]!)) path.push(cell);
-        }
-        return path;
-      };
-      const vehicleSnapshot = (
-        agent: MovingAgent & { kind: "CAR" | "BUS" },
-        cruiseSpeed = agent.speed,
-      ): TrafficVehicleSnapshot => ({
-        id: agent.id,
-        kind: agent.kind,
-        current: agent.current,
-        next: agent.next,
-        progress: agent.progress,
-        cruiseSpeed,
-        path: plannedVehiclePath(agent),
-        trail: agent.trail,
-        waitMs: agent.waitMs,
-        signalReservationId: agent.signalReservationId,
-      });
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       host.dataset.animationActive = String(!reducedMotion);
       host.dataset.vehicleAnimationFrames = "4";
       app.ticker.add(() => {
+        lightElapsed += app.ticker.deltaMS;
+        if (lightElapsed >= 100) {
+          lightElapsed = 0;
+          const light = readWorldLighting();
+          for (const layer of [backdropLayer, terrainLayer, surfaceLayer, roadLayer, platformLayer, featurePlatformLayer, worldObjectLayer, flightLayer]) layer.tint = light.tint;
+          lampGlow.alpha = light.lamps;
+          propShadows.alpha = light.shadowAlpha;
+          propShadows.x = Math.round(light.shadowOffsetX);
+          const nextLampsOn = light.lamps >= .4;
+          if (nextLampsOn !== lampsOn) {
+            lampsOn = nextLampsOn;
+            for (const lamp of lampSprites) if (!lamp.view.destroyed) lamp.view.texture = lampsOn ? lamp.night : lamp.day;
+            for (const record of taskBuildingViews.values()) updateParkLighting(record.view, lampsOn);
+          }
+          host.dataset.lightPhase = light.phase;
+          host.dataset.lampIntensity = light.lamps.toFixed(3);
+        }
         if (reducedMotion) return;
         const elapsed = Math.min(50, app.ticker.deltaMS);
         simulationTimeMs += elapsed;
@@ -1442,179 +1465,38 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             celebrations.splice(index, 1);
           }
         }
-        const motorAgents = movingAgents
-          .filter((agent): agent is MovingAgent & { kind: "CAR" | "BUS" } => agent.kind === "CAR" || agent.kind === "BUS");
-        const trafficPositions = motorAgents.map((agent) => vehicleSnapshot(agent));
-        const signalDecisions = new Map(motorAgents.map((agent, index) => {
-          const decision = trafficSignalDecision(
-            agent.current,
-            agent.next,
-            trafficJunctions,
-            simulationTimeMs,
-            agent.kind,
-            agent.signalReservationId,
-            trafficPositions,
-          );
-          agent.signalReservationId = decision.reservationId;
-          trafficPositions[index]!.signalReservationId = decision.reservationId;
-          return [agent.id, decision] as const;
-        }));
-        const trafficSnapshot = motorAgents.map((agent, index) => vehicleSnapshot(agent, agent.pauseMs > 0
-          || mustYieldAtCrosswalk(agent.next, activeCrosswalks, movingWalkers)
-          || signalDecisions.get(agent.id)?.yield
-          || mustYieldForBlockedJunctionExit(trafficPositions[index]!, trafficJunctions, trafficPositions)
-          ? 0 : agent.speed));
-        const vehicleFrame = planVehicleFrame(trafficSnapshot, elapsed);
-        for (const agent of motorAgents) {
-          const advance = vehicleFrame.get(agent.id)?.advance ?? 0;
-          agent.waitMs = advance > 0.000_001 ? 0 : agent.waitMs + elapsed;
-        }
-        nextTrafficTelemetryMs -= elapsed;
-        if (nextTrafficTelemetryMs <= 0) {
-          host.dataset.trafficBlockedVehicles = String([...vehicleFrame.values()].filter((decision) => decision.blockedBy).length);
-          host.dataset.trafficMovingVehicles = String([...vehicleFrame.values()].filter((decision) => decision.advance > 0.000_001).length);
-          host.dataset.trafficMaxWaitMs = String(Math.round(Math.max(0, ...motorAgents.map((agent) => agent.waitMs))));
-          host.dataset.trafficUnsafePairs = String(vehicleUnsafePairCount(trafficSnapshot));
-          nextTrafficTelemetryMs = 250;
-        }
-        for (const agent of movingAgents) {
-          agent.socialCooldownMs = Math.max(0, agent.socialCooldownMs - elapsed);
-          if (agent.pauseMs > 0) {
-            agent.pauseMs = Math.max(0, agent.pauseMs - elapsed);
-            if (agent.pauseMs === 0) setWalkerActivity(agent, "NONE");
-            continue;
+        if (mobility && currentLod === "DETAIL") {
+          const started = performance.now();
+          mobility.advance(elapsed);
+          const duration = performance.now() - started;
+          const fixedSteps = mobility.metrics.fixedSteps;
+          if (fixedSteps > lastMeasuredMobilityStep) {
+            mobilityStepMetric.record(duration / (fixedSteps - lastMeasuredMobilityStep));
+            lastMeasuredMobilityStep = fixedSteps;
           }
-          if ((agent.kind === "CAR" || agent.kind === "BUS") && mustYieldAtCrosswalk(
-            agent.next,
-            activeCrosswalks,
-            movingWalkers,
-          )) continue;
-          if ((agent.kind === "CAR" || agent.kind === "BUS") && signalDecisions.get(agent.id)?.yield) continue;
-          const vehicleDecision = agent.kind === "CAR" || agent.kind === "BUS" ? vehicleFrame.get(agent.id) : undefined;
-          agent.progress += vehicleDecision?.advance ?? elapsed * agent.speed;
+          drawMobility();
+        }
+        for (const agent of animals) {
+          if (currentLod !== "DETAIL") continue;
+          agent.progress += elapsed * agent.speed;
           while (agent.progress >= 1) {
             agent.progress -= 1;
-            agent.previous = agent.current;
-            agent.trail.unshift(agent.current);
-            agent.trail.length = Math.min(agent.trail.length, 4);
-            agent.current = agent.next;
-            agent.steps += 1;
-            if (agent.kind === "CAR" || agent.kind === "BUS") {
-              host.dataset.trafficLifetimeSteps = String(Number(host.dataset.trafficLifetimeSteps ?? 0) + 1);
-            }
-            agent.routeIndex += 1;
-            if (agent.kind === "BUS") {
-              const stopKey = key(agent.current);
-              if (busStopRoadCells.has(stopKey) && agent.lastStopKey !== stopKey) {
-                agent.lastStopKey = stopKey;
-                agent.pauseMs = 850 + Math.floor(agent.phase * 650);
-              }
-            }
+            agent.previous = agent.current; agent.current = agent.next; agent.steps += 1; agent.routeIndex += 1;
             let routed = agent.route[agent.routeIndex];
-            if (!routed || !agent.graph.has(agentCellKey(routed)) || !isAgentEdgeAllowed(agent.current, routed, agent.outgoing)) {
-              const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, agent.kind === "CAR" || agent.kind === "BUS" ? 14 : 9, agent.previous, agent.outgoing);
-              agent.randomState = planned.randomState;
-              agent.route = planned.route;
-              agent.routeIndex = 1;
-              routed = agent.route[agent.routeIndex];
+            if (!routed || !agent.graph.has(key(routed))) {
+              const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, 9, agent.previous);
+              agent.randomState = planned.randomState; agent.route = planned.route; agent.routeIndex = 1;
+              routed = planned.route[1];
             }
-            agent.next = routed ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous, agent.outgoing);
-            const url = movingAgentSpriteUrl(agent);
-            const texture = url ? cachedTexture(url) : undefined;
-            if (texture) {
-              agent.view.texture = texture;
-              agent.visualKey = agent.kind === "WALKER"
-                ? residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase).key
-                : url;
-            }
-            orientRoadUser(agent);
-            if (agent.kind === "WALKER" && activityCells.has(key(agent.current)) && (agent.steps + Math.floor(agent.phase * 13)) % 3 === 0) {
-              agent.pauseMs = 450 + Math.floor(agent.phase * 900);
-              setWalkerActivity(agent, "THINK");
-            }
+            agent.next = routed ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous);
           }
-          if (agent.kind === "WALKER" && agent.activity === "NONE") {
-            const presentation = residentWalkPresentation(agent.current, agent.next, agent.progress, agent.phase);
-            if (agent.visualKey !== presentation.key) {
-              const texture = cachedTexture(PROP_SPRITES[presentation.key]!);
-              if (texture) agent.view.texture = texture;
-              agent.visualKey = presentation.key;
-            }
-          }
-          if (agent.kind === "CYCLIST" || agent.kind === "SCOOTER") {
-            const presentation = micromobilityPresentation(
-              agent.kind === "CYCLIST" ? "cyclist" : "scooter",
-              agent.current,
-              agent.next,
-              agent.steps + Math.floor(agent.progress * 3),
-            );
-            if (agent.visualKey !== presentation.key) {
-              const texture = cachedTexture(PROP_SPRITES[presentation.key]!);
-              if (texture) agent.view.texture = texture;
-              agent.visualKey = presentation.key;
-            }
-          }
-          if (agent.kind === "ANIMAL") {
-            const url = movingAgentSpriteUrl(agent);
-            if (agent.visualKey !== url) {
-              const texture = cachedTexture(url);
-              if (texture) agent.view.texture = texture;
-              agent.visualKey = url;
-            }
-          }
-          const motion = ambientMotionPresentation(agent.kind, agent.current, agent.next, agent.progress, agent.previous, CELL_SIZE);
-          const motorDecision = agent.kind === "CAR" || agent.kind === "BUS" ? vehicleFrame.get(agent.id) : undefined;
-          const vehicleMotion = agent.kind === "CAR" || agent.kind === "BUS"
-            ? vehicleMotionPresentation(agent.kind, agent.progress, agent.steps, (motorDecision?.advance ?? 0) > 0)
-            : undefined;
-          if (vehicleMotion) renderVehicleMotionFrame(agent, vehicleMotion.frame);
-          agent.view.position.set(motion.x, motion.y + (vehicleMotion?.suspensionYPx ?? 0));
-          agent.view.rotation = motion.rotation;
-          if (agent.activityView) {
-            const bubble = residentActivityPosition(
-              { x: agent.view.x, y: agent.view.y },
-              agent.view.texture.height,
-              agent.view.scale.y,
-            );
-            agent.activityView.position.set(bubble.x, bubble.y);
-          }
+          const motion = residentGroundPosition(agent.current, agent.next, agent.progress, CELL_SIZE);
+          agent.view.position.set(motion.x, motion.y);
         }
+        nextTrafficTelemetryMs -= elapsed;
+        if (nextTrafficTelemetryMs <= 0) { reportMobility(); nextTrafficTelemetryMs = 250; }
         nextDepthSortMs -= elapsed;
-        if (nextDepthSortMs <= 0) {
-          sortWorldObjects();
-          host.dataset.activeWalkerActivities = String(movingWalkers.filter((walker) => walker.activity !== "NONE").length);
-          host.dataset.residentCenterErrors = String(movingWalkers.filter((walker) => {
-            const expected = residentGroundPosition(walker.current, walker.next, walker.progress, CELL_SIZE);
-            return Math.abs(walker.view.x - expected.x) > 0.01 || Math.abs(walker.view.y - expected.y) > 0.01;
-          }).length);
-          host.dataset.residentWalkFrames = [...new Set(movingWalkers.map((walker) => walker.visualKey))].sort().join(",");
-          host.dataset.residentWalkState = movingWalkers.map((walker) => `${walker.id}:${walker.visualKey}`).sort().join(",");
-          host.dataset.trafficSteps = String(motorAgents.reduce((sum, agent) => sum + agent.steps, 0));
-          nextDepthSortMs = 100;
-        }
-        for (const signal of trafficSignalViews.values()) {
-          const phase = trafficSignalPhaseForTraffic(signal.junction, simulationTimeMs, trafficPositions);
-          const state = signal.axis === "H" ? phase.horizontal : phase.vertical;
-          if (state === signal.state) continue;
-          signal.state = state;
-          const url = PROP_SPRITES[`traffic-light-${state.toLowerCase()}`]!;
-          const texture = cachedTexture(url);
-          if (texture) signal.view.texture = texture;
-        }
-        nextSocialCheckMs -= elapsed;
-        if (nextSocialCheckMs <= 0) {
-          const byId = new Map(movingWalkers.map((walker) => [walker.id, walker]));
-          for (const [firstId, secondId] of walkerInteractionPairs(movingWalkers, 2)) {
-            const first = byId.get(firstId); const second = byId.get(secondId);
-            if (!first || !second) continue;
-            const duration = 1_400 + Math.floor((first.phase + second.phase) * 550);
-            first.pauseMs = second.pauseMs = duration;
-            first.socialCooldownMs = second.socialCooldownMs = 8_000 + duration;
-            setWalkerActivity(first, "CHAT"); setWalkerActivity(second, "CHAT");
-            host.dataset.walkerInteractions = String(Number(host.dataset.walkerInteractions ?? 0) + 1);
-          }
-          nextSocialCheckMs = 700;
-        }
+        if (nextDepthSortMs <= 0) { sortWorldObjects(); nextDepthSortMs = 100; }
         for (const ambient of ambientDecorationViews.values()) {
           const cycle = Math.sin(simulationTimeMs * 0.0014 + ambient.phase * Math.PI * 2);
           if (ambient.kind.startsWith("boat-")) {
@@ -1627,19 +1509,21 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         }
         for (const incident of incidentViews.values()) {
           const time = simulationTimeMs + incident.phaseMs;
-          const flameFrame = Math.floor(time / 210) % 2;
+          const animationFrame = Math.floor(time / INCIDENT_FRAME_MS);
+          if (incident.animationFrame === animationFrame) continue;
+          incident.animationFrame = animationFrame;
+          const flameFrame = animationFrame % 2;
           incident.flames.forEach((flame, index) => {
             const visibleFrame = (flameFrame + index) % 2;
             flame.frameA.visible = incident.profile.burning && visibleFrame === 0;
             flame.frameB.visible = incident.profile.burning && visibleFrame === 1;
           });
           incident.smokePlumes.forEach((plume, index) => {
-            const smokeFrame = Math.floor((time + index * 130) / 360) % 2;
+            const smokeFrame = (Math.floor(animationFrame / 2) + index) % 2;
             plume.frameA.visible = smokeFrame === 0;
             plume.frameB.visible = smokeFrame === 1;
-            plume.frameA.alpha = plume.frameB.alpha = plume.alpha + Math.sin(time * 0.004 + index) * 0.08;
           });
-          incident.beacon.alpha = Math.floor(time / 160) % 2 ? 1 : 0.28;
+          incident.beacon.visible = incident.fullResponse && animationFrame % 2 === 0;
           if (incident.water.visible) {
             const targetFrame = incidentWaterTargetFrame(incident.waterJet.targets, simulationTimeMs, incident.phaseMs);
             if (targetFrame) {
@@ -1654,86 +1538,45 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             }
           }
         }
-        if (!airplane) {
+        if (!airplane && cityFlightRoutes.length > 0) {
           nextFlybyMs -= elapsed;
           if (nextFlybyMs <= 0) {
-            const takeRandom = () => {
-              const next = nextSeededRandom(spawnState);
-              spawnState = next.state;
-              return next.value;
-            };
-            const model = Math.floor(takeRandom() * 8) + 1;
-            const texture = cachedTexture(gameAssetUrl(`atlas/aircraft/airplane-model-${model}-frame-1.png`));
+            const random = nextSeededRandom(spawnState); spawnState = random.state;
+            const route = cityFlightRoutes[Math.floor(random.value * cityFlightRoutes.length)]!;
+            const position = cityMicroFlightPosition(route, 0);
+            const texture = cachedTexture(microAmbientSprite("aircraft", "regional", position.direction).url);
             if (texture) {
-              const plane = new Sprite(texture);
-              plane.texture.source.scaleMode = "nearest";
-              plane.anchor.set(0.5);
-              const trail = new Graphics()
-                .rect(-25, -1, 7, 2).fill({ color: 0xd9ecdf, alpha: .45 })
-                .rect(-30, -.5, 3, 1).fill({ color: 0xd9ecdf, alpha: .25 });
-              const view = new Container();
-              view.addChild(trail, plane);
-              const airportPoint = airportPoints[Math.floor(takeRandom() * Math.max(1, airportPoints.length))];
-              const side = Math.floor(takeRandom() * 4);
-              const edgePosition = takeRandom();
-              const edge = side === 0
-                ? { x: currentViewBounds.minX * CELL_SIZE - 48, y: (currentViewBounds.minY + edgePosition * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
-                : side === 1
-                  ? { x: currentViewBounds.maxX * CELL_SIZE + 48, y: (currentViewBounds.minY + edgePosition * (currentViewBounds.maxY - currentViewBounds.minY)) * CELL_SIZE }
-                  : side === 2
-                    ? { x: (currentViewBounds.minX + edgePosition * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.minY * CELL_SIZE - 48 }
-                    : { x: (currentViewBounds.minX + edgePosition * (currentViewBounds.maxX - currentViewBounds.minX)) * CELL_SIZE, y: currentViewBounds.maxY * CELL_SIZE + 48 };
-              const startsAtAirport = Boolean(airportPoint && takeRandom() > .5);
-              const endsAtAirport = Boolean(airportPoint && !startsAtAirport);
-              const start = startsAtAirport ? airportPoint! : edge;
-              const end = endsAtAirport ? airportPoint! : airportPoint && startsAtAirport
-                ? { x: currentViewBounds.maxX * CELL_SIZE + 48, y: currentViewBounds.minY * CELL_SIZE - 24 }
-                : { x: currentViewBounds.maxX * CELL_SIZE + 48, y: currentViewBounds.maxY * CELL_SIZE + 48 - edge.y };
-              const control = {
-                x: (start.x + end.x) / 2 + (takeRandom() - .5) * 224,
-                y: (start.y + end.y) / 2 + (takeRandom() - .5) * 192,
-              };
-              view.position.set(start.x, start.y);
+              const view = new Sprite(texture); view.anchor.set(0.5); view.scale.set(position.scale);
+              view.texture.source.scaleMode = "nearest"; view.position.set(position.x * CELL_SIZE, position.y * CELL_SIZE);
               flightLayer.addChild(view);
-              airplane = { view, trail, elapsed: 0, duration: 9_000 + takeRandom() * 6_000, start, control, end, startsAtAirport, endsAtAirport };
-              host.dataset.airplane = "flying";
-              host.dataset.airplaneVariant = `model-${model}`;
+              airplane = { view, route, elapsed: 0, duration: cityMicroFlightDuration(route) };
+              host.dataset.airplane = "flying"; host.dataset.airplaneVariant = "micro-regional";
             }
           }
-        } else {
+        } else if (airplane) {
           airplane.elapsed += elapsed;
           const progress = Math.min(1, airplane.elapsed / airplane.duration);
-          const inverse = 1 - progress;
-          airplane.view.position.set(
-            inverse * inverse * airplane.start.x + 2 * inverse * progress * airplane.control.x + progress * progress * airplane.end.x,
-            inverse * inverse * airplane.start.y + 2 * inverse * progress * airplane.control.y + progress * progress * airplane.end.y,
-          );
-          const tangent = {
-            x: 2 * inverse * (airplane.control.x - airplane.start.x) + 2 * progress * (airplane.end.x - airplane.control.x),
-            y: 2 * inverse * (airplane.control.y - airplane.start.y) + 2 * progress * (airplane.end.y - airplane.control.y),
-          };
-          airplane.view.rotation = Math.atan2(tangent.y, tangent.x);
-          airplane.trail.alpha = .55 + Math.sin(airplane.elapsed * .018) * .22;
-          const takeoffScale = airplane.startsAtAirport ? Math.min(1, Math.max(.03, progress / .16)) : 1;
-          const landingScale = airplane.endsAtAirport ? Math.min(1, Math.max(.03, (1 - progress) / .16)) : 1;
-          const endpointScale = Math.min(takeoffScale, landingScale);
-          airplane.view.scale.set(1.35 * endpointScale);
-          if (progress >= 1) {
-            airplane.view.removeFromParent();
-            airplane.view.destroy();
-            airplane = undefined;
-            delete host.dataset.airplane;
-            delete host.dataset.airplaneVariant;
-            const random = nextSeededRandom(spawnState);
-            spawnState = random.state;
-            nextFlybyMs = 45_000 + random.value * 75_000;
+          const position = cityMicroFlightPosition(airplane.route, progress);
+          const texture = cachedTexture(microAmbientSprite("aircraft", "regional", position.direction).url);
+          if (texture) airplane.view.texture = texture;
+          airplane.view.position.set(position.x * CELL_SIZE, position.y * CELL_SIZE);
+          airplane.view.scale.set(position.scale);
+          if (progress >= 1 || !cityMicroFlightIsCurrent(airplane.route, cityFlightRoutes)) {
+            airplane.view.removeFromParent(); airplane.view.destroy(); airplane = undefined;
+            delete host.dataset.airplane; delete host.dataset.airplaneVariant;
+            nextFlybyMs = 45_000;
           }
         }
       });
-      const cameraMinimumScale = () => focusCityId
-        ? CITY_CAMERA_MIN_SCALE
-        : minimumCameraScale(app.screen, currentViewBounds, CELL_SIZE);
-      const initialScale = startAtMinimumScale && focusCityId
+      const cameraBounds = () => focusCityId ? {
+        minX: Math.floor(currentViewBounds.minX / chunkSize) * chunkSize,
+        minY: Math.floor(currentViewBounds.minY / chunkSize) * chunkSize,
+        maxX: (Math.floor(currentViewBounds.maxX / chunkSize) + 1) * chunkSize - 1,
+        maxY: (Math.floor(currentViewBounds.maxY / chunkSize) + 1) * chunkSize - 1,
+      } : currentViewBounds;
+      // City size only constrains panning; it must not change the zoom range.
+      const cameraMinimumScale = () => CITY_CAMERA_MIN_SCALE;
+      const initialScale = initialMinimumScaleRef.current && focusCityId
         ? cameraMinimumScale()
         : !initialFocus
           ? 1.25
@@ -1748,7 +1591,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         cameraMinimumScale(),
       );
       let cameraZoomAnchor: { screenX: number; screenY: number; localX: number; localY: number } | undefined;
-      let zoomBoundary = initialAtlasZoomBoundary();
       world.scale.set(appliedInitialScale);
       host.dataset.renderScale = String(appliedInitialScale);
       currentLod = appliedInitialScale < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
@@ -1772,15 +1614,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         entityChunkLods.set(cacheKey, lod);
         host.dataset.entityReadyPublishes = String(Number(host.dataset.entityReadyPublishes ?? 0) + 1);
       };
-      type GroundBakeRequest = {
-        key: string;
-        valid: () => boolean;
-        task: () => PreparedGround;
-        resolve: (view: PreparedGround | undefined) => void;
-        reject: (error: unknown) => void;
-      };
+      type GroundBakeRequest = GroundBakeWork<unknown> & { key: string };
       const groundBakeQueue: GroundBakeRequest[] = [];
-      const pendingGroundBakes = new Map<string, Promise<PreparedGround | undefined>>();
+      const pendingGroundBakes = new Map<string, Promise<unknown>>();
       let groundBakeFrame = 0;
       let lastGroundBakeFrameTime = -1;
       let groundBakesThisFrame = 0;
@@ -1801,21 +1637,27 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (groundBakeFrame || groundBakeQueue.length === 0) return;
         groundBakeFrame = requestAnimationFrame((frameTime) => {
           groundBakeFrame = 0;
-          const request = groundBakeQueue.shift();
-          if (!request) return;
-          groundBakesThisFrame = frameTime === lastGroundBakeFrameTime ? groundBakesThisFrame + 1 : 1;
+          const initialAtomic = Boolean(cityScene && !paintedFrame);
+          const batch = drainGroundBakeFrame(groundBakeQueue, initialAtomic);
+          groundBakesThisFrame = frameTime === lastGroundBakeFrameTime ? groundBakesThisFrame + batch.completed : batch.completed;
           lastGroundBakeFrameTime = frameTime;
           host.dataset.groundBakesPerFrameMax = String(Math.max(Number(host.dataset.groundBakesPerFrameMax ?? 0), groundBakesThisFrame));
-          try { request.resolve(request.valid() ? request.task() : undefined); }
-          catch (error) { request.reject(error); }
+          const phase = initialAtomic ? "initial" : "interactive";
+          const maximumKey = `${phase}GroundBakesPerFrameMax`;
+          host.dataset[maximumKey] = String(Math.max(Number(host.dataset[maximumKey] ?? 0), groundBakesThisFrame));
+          const countKey = `${phase}GroundBakeFrames`;
+          host.dataset[countKey] = String(Number(host.dataset[countKey] ?? 0) + 1);
+          host.dataset.groundBakeFrameBudgetMs = String(INITIAL_GROUND_BAKE_BUDGET_MS);
+          host.dataset.groundBakeFrameMaxMs = Math.max(Number(host.dataset.groundBakeFrameMaxMs ?? 0), batch.elapsedMs).toFixed(1);
           pumpGroundBakes();
         });
       };
-      const scheduleGroundBake = (requestKey: string, valid: () => boolean, task: () => PreparedGround): Promise<PreparedGround | undefined> => {
+      const scheduleGroundBake = <T,>(requestKey: string, valid: () => boolean, task: () => T,
+        priority?: () => number): Promise<T | undefined> => {
         const pending = pendingGroundBakes.get(requestKey);
-        if (pending) return pending;
-        const promise = new Promise<PreparedGround | undefined>((resolve, reject) => {
-          groundBakeQueue.push({ key: requestKey, valid, task, resolve, reject });
+        if (pending) return pending as Promise<T | undefined>;
+        const promise = new Promise<T | undefined>((resolve, reject) => {
+          groundBakeQueue.push({ key: requestKey, valid, task, priority, resolve: value => resolve(value as T | undefined), reject });
           host.dataset.groundBakeQueueMax = String(Math.max(
             Number(host.dataset.groundBakeQueueMax ?? 0),
             groundBakeQueue.length,
@@ -1848,16 +1690,299 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       // Do not enter the visibility pipeline until all of its lexical
       // dependencies have been initialized.
       let visibleLoaderReady = false;
+      type PaddingGround = { terrainView?: Sprite; terrainPending?: boolean; terrainFailed?: boolean; visibleMissReported?: boolean;
+        nativeView?: Container; nativeCells?: string[]; nativeCovered?: boolean;
+        trees?: readonly ChunkDto["decorations"][number][]; treeViews?: Sprite[]; treePending?: boolean; treeComplete?: boolean; treeFailed?: boolean;
+        overlayView?: Sprite; roads?: CityRoadPaddingChunk; roadPending?: boolean; roadComplete?: boolean; roadFailed?: boolean };
+      const paddingTerrain = new Map<string, PaddingGround>();
+      const paddingTreeBands = new Map<number, Container>();
+      const paddingWork = new Set<Promise<void>>();
+      let visiblePaddingKeys = new Set<string>();
+      let cityTerrainPadding: CityTerrainPadding | undefined;
+      let cityRoadPadding: CityRoadPadding | undefined;
+      let cityTreePadding: CityTreePadding | undefined;
+      let nextPaddingBakeId = 0;
+      const nativePaddingCells = new Set<string>();
+      let nativeFrameCells = 0, nativeFrameReset = 0;
+      let cityTerrainAtlasesReady = false;
+      const removeNativePadding = (record: PaddingGround) => {
+        record.nativeView?.removeFromParent(); record.nativeView?.destroy({ children: true });
+        for (const cell of record.nativeCells ?? []) nativePaddingCells.delete(cell);
+        record.nativeView = undefined; record.nativeCells = undefined; record.nativeCovered = false;
+      };
+      const removePaddingGround = (record: PaddingGround) => {
+        removeNativePadding(record);
+        if (record.terrainView) destroyGroundView(record.terrainView);
+        if (record.overlayView) destroyGroundView(record.overlayView);
+        const parents = new Set<Container>();
+        for (const view of record.treeViews ?? []) {
+          if (view.parent) parents.add(view.parent);
+          view.removeFromParent(); view.destroy();
+        }
+        for (const band of parents) if (!band.children.length) {
+          paddingTreeBands.delete(band.y / CELL_SIZE); band.removeFromParent(); band.destroy();
+        }
+      };
+      const reportPaddingRoads = () => {
+        host.dataset.cameraPaddingRoadViews = String([...paddingTerrain.values()].filter(record => record.overlayView).length);
+        host.dataset.cameraPaddingRoadCells = String([...paddingTerrain.values()].reduce((count, record) => count + (record.roads?.roads.length ?? 0), 0));
+        host.dataset.cameraPaddingSurfaceCells = String([...paddingTerrain.values()].reduce((count, record) => count + (record.roads?.surfaces.length ?? 0), 0));
+        host.dataset.cameraPaddingRoadPending = String([...paddingTerrain.values()].filter(record => record.roadPending).length);
+        host.dataset.cameraPaddingTerrainPending = String([...paddingTerrain.values()].filter(record => record.terrainPending).length);
+        host.dataset.cameraPaddingTerrainViews = String([...paddingTerrain.values()].filter(record => record.terrainView).length);
+        host.dataset.cameraPaddingVisibleUntextured = String([...visiblePaddingKeys].filter(id => {
+          const record = paddingTerrain.get(id); return !record?.terrainView && !record?.nativeCovered;
+        }).length);
+        host.dataset.cameraPaddingVisibleUnbaked = String([...visiblePaddingKeys].filter(id => !paddingTerrain.get(id)?.terrainView).length);
+        host.dataset.cameraPaddingNativeCells = String(nativePaddingCells.size);
+        if (host.dataset.cameraPaddingVisibleUntextured === "0") host.dataset.cameraPaddingNativeDeferred = "false";
+        host.dataset.cameraPaddingMaterial = "terrain-v4-city-atlas";
+        host.dataset.cameraPaddingTreePending = String([...paddingTerrain.values()].filter(record => record.treePending).length);
+        host.dataset.cameraPaddingTrees = String([...paddingTerrain.values()].reduce((n, record) => n + (record.treeViews?.length ?? 0), 0));
+        host.dataset.cameraPaddingTreeBands = String(paddingTreeBands.size);
+        const sample: ChunkDto["decorations"] = [];
+        for (const record of paddingTerrain.values()) {
+          for (const tree of record.trees ?? []) { sample.push(tree); if (sample.length === 16) break; }
+          if (sample.length === 16) break;
+        }
+        host.dataset.cameraPaddingTreeSample = JSON.stringify(sample);
+      };
+      startupDisposers.push(() => {
+        cancelAnimationFrame(nativeFrameReset);
+        for (const record of paddingTerrain.values()) removePaddingGround(record);
+        paddingTerrain.clear();
+        cityRoadPadding?.retain([]);
+        cityTerrainPadding?.retain([]);
+        cityTreePadding?.retain([]);
+      });
+      const trackPaddingWork = (work: Promise<void>) => {
+        paddingWork.add(work);
+        void work.then(() => paddingWork.delete(work), () => paddingWork.delete(work));
+      };
+      const ensurePaddingTerrain = (id: string, record: PaddingGround, x: number, y: number) => {
+        if (!cityTerrainPadding || record.terrainView || record.terrainPending || record.terrainFailed) return;
+        const provider = cityTerrainPadding;
+        record.terrainPending = true;
+        const valid = () => !disposed && cityTerrainPadding === provider && paddingTerrain.get(id) === record;
+        // Sampling a whole prewarm ring synchronously also blocks a frame.
+        // Capture and texture generation share the same bounded work queue.
+        const work = scheduleGroundBake(`padding-sample:${++nextPaddingBakeId}:${id}`, valid, () => {
+          const sampledAt = performance.now();
+          const material = provider.get(x, y);
+          host.dataset.cameraPaddingSampleMaxMs = Math.max(Number(host.dataset.cameraPaddingSampleMaxMs ?? 0), performance.now() - sampledAt).toFixed(2);
+          return material;
+        }, () => visiblePaddingKeys.has(id) ? 1 : 3).then(async material => {
+          if (!material || !valid()) return;
+          await assetLease.load(requiredGroundAssets([material.chunk], "DETAIL"), loadTextureAssets);
+          if (!valid()) return;
+          const prepared = await scheduleGroundBake(`padding-terrain:${++nextPaddingBakeId}:${id}`, valid,
+            () => {
+              const startedAt = performance.now();
+              const terrainView = createTerrainView(material.chunk, "DETAIL", material.kindAt);
+              host.dataset.cameraPaddingBakeMaxMs = Math.max(Number(host.dataset.cameraPaddingBakeMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
+              host.dataset.cameraPaddingBakes = String(Number(host.dataset.cameraPaddingBakes ?? 0) + 1);
+              return { terrainView };
+            }, () => visiblePaddingKeys.has(id) ? 0 : 2);
+          if (!prepared?.terrainView) return;
+          if (!valid()) { destroyGroundView(prepared.terrainView); return; }
+          record.terrainView = prepared.terrainView;
+          terrainLayer.addChildAt(prepared.terrainView, 0);
+          removeNativePadding(record);
+          ensurePaddingTrees(id, record, x, y);
+        }).catch(() => {
+          if (!valid()) return;
+          record.terrainFailed = true;
+          host.dataset.loadError = "true";
+          setMapLoadError("Не удалось загрузить материал ландшафта. Повторите загрузку карты.");
+        }).finally(() => {
+          record.terrainPending = false;
+          reportPaddingRoads();
+          if (valid() && reducedMotion) app.render();
+        });
+        trackPaddingWork(work);
+      };
+      const ensurePaddingTrees = (id: string, record: PaddingGround, x: number, y: number) => {
+        if (!cityTreePadding || !record.terrainView || record.treePending || record.treeComplete) return;
+        const provider = cityTreePadding;
+        record.treePending = true;
+        const valid = () => !disposed && cityTreePadding === provider && paddingTerrain.get(id) === record;
+        const work = scheduleGroundBake(`padding-tree-sample:${++nextPaddingBakeId}:${id}`, valid, () => {
+          const startedAt = performance.now();
+          const trees = provider.get(x, y);
+          host.dataset.cameraPaddingTreeSampleMaxMs = Math.max(Number(host.dataset.cameraPaddingTreeSampleMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
+          return trees;
+        }, () => visiblePaddingKeys.has(id) ? 2 : 5).then(async trees => {
+          if (!trees || !valid()) return;
+          record.trees = trees;
+          if (!trees.length) { record.treeViews = []; record.treeComplete = true; return; }
+          await assetLease.load([PROP_ATLAS.path], loadTextureAssets);
+          if (!valid()) return;
+          await scheduleGroundBake(`padding-trees:${++nextPaddingBakeId}:${id}`, valid, () => {
+            const startedAt = performance.now();
+            const atlasTexture = Texture.from(PROP_ATLAS.path);
+            const views: Sprite[] = [], bands = new Set<Container>();
+            for (const tree of trees) if (!PROP_CATALOG[tree.kind] || !PROP_ATLAS.frames[tree.kind]) throw new Error(`Missing natural tree asset ${tree.kind}`);
+            for (const tree of trees) {
+              const metadata = PROP_CATALOG[tree.kind], frame = PROP_ATLAS.frames[tree.kind];
+              if (!metadata || !frame) throw new Error(`Missing natural tree asset ${tree.kind}`);
+              let texture = propAtlasTextures.get(tree.kind);
+              if (!texture) {
+                texture = pixelAtlasFrame(atlasTexture, frame);
+                propAtlasTextures.set(tree.kind, texture);
+              }
+              const baseline = tree.origin.y + metadata.footprint.height;
+              let band = paddingTreeBands.get(baseline);
+              if (!band) {
+                band = registerWorldObject(new Container({ isRenderGroup: false, label: `padding-tree-band:${baseline}` }), "DECORATION");
+                band.y = baseline * CELL_SIZE; worldObjectLayer.addChild(band); paddingTreeBands.set(baseline, band);
+              }
+              const anchor = decorationWorldAnchor(tree.kind, tree.origin, metadata.footprint, CELL_SIZE);
+              const view = new Sprite(texture);
+              view.anchor.set(metadata.anchor.x / metadata.size.width, metadata.anchor.y / metadata.size.height);
+              view.position.set(anchor.x, anchor.y - baseline * CELL_SIZE); view.roundPixels = true; view.eventMode = "none";
+              band.addChild(view); bands.add(band); views.push(view);
+            }
+            for (const band of bands) band.children.sort((left, right) => left.x - right.x);
+            record.treeViews = views; record.treeComplete = true; sortWorldObjects();
+            host.dataset.cameraPaddingTreeCreateMaxMs = Math.max(Number(host.dataset.cameraPaddingTreeCreateMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
+          }, () => visiblePaddingKeys.has(id) ? 2 : 4);
+        }).catch(() => {
+          if (!valid()) return;
+          record.treeComplete = true; record.treeFailed = true; host.dataset.loadError = "true";
+          setMapLoadError("Не удалось загрузить деревья за границей города. Повторите загрузку карты.");
+        }).finally(() => { record.treePending = false; reportPaddingRoads(); if (valid() && reducedMotion) app.render(); });
+        trackPaddingWork(work);
+      };
+      const ensurePaddingRoads = (id: string, record: PaddingGround, x: number, y: number) => {
+        if (!cityRoadPadding || record.roadComplete || record.roadPending) return;
+        const provider = cityRoadPadding;
+        const roads = provider.get(x, y);
+        if (!roads) { record.roadComplete = true; return; }
+        record.roads = roads;
+        record.roadPending = true;
+        const valid = () => !disposed && cityRoadPadding === provider && paddingTerrain.get(id) === record;
+        // Road atlases are acquired once with the resident scene. Padding owns
+        // only a clipped transparent overlay, never remote entities or reads.
+        const work = scheduleGroundBake(`padding:${++nextPaddingBakeId}:${cityScene!.sceneRevision}:${id}`, valid, () => ({
+          overlayView: createInfrastructureOverlayView({ chunkX: x, chunkY: y, size: chunkSize,
+            roads: roads.roads, surfaces: roads.surfaces }, "DETAIL", roads),
+        }), () => visiblePaddingKeys.has(id) ? 0 : 2).then(prepared => {
+          if (!prepared?.overlayView) return;
+          if (!valid()) { destroyGroundView(prepared.overlayView); return; }
+          record.overlayView = prepared.overlayView;
+          record.roadComplete = true;
+          surfaceLayer.addChild(prepared.overlayView);
+        }).catch(() => {
+          if (!valid()) return;
+          record.roadComplete = true;
+          record.roadFailed = true;
+          host.dataset.loadError = "true";
+          setMapLoadError("Не удалось нарисовать выезд из города. Повторите загрузку карты.");
+        }).finally(() => {
+          record.roadPending = false;
+          reportPaddingRoads();
+          if (valid() && reducedMotion) app.render();
+        });
+        trackPaddingWork(work);
+      };
+      const refreshCameraPadding = () => {
+        if (!focusCityId) return;
+        const visible = cameraTerrainPadding(world.position, world.scale.x, app.screen, cameraBounds(), CELL_SIZE, chunkSize);
+        visiblePaddingKeys = new Set(visible.map(([x, y]) => chunkKey(x, y)));
+        const coordinates = cameraTerrainPadding(world.position, world.scale.x, app.screen, cameraBounds(), CELL_SIZE, chunkSize, 1);
+        const wanted = new Set(coordinates.map(([x, y]) => chunkKey(x, y)));
+        cityRoadPadding?.retain(coordinates);
+        cityTerrainPadding?.retain(coordinates);
+        cityTreePadding?.retain(coordinates);
+        for (const [id, record] of paddingTerrain) if (!wanted.has(id)) {
+          removePaddingGround(record); paddingTerrain.delete(id);
+        }
+        // Visible work precedes a single local halo, never an entire country.
+        coordinates.sort((a, b) => Number(visiblePaddingKeys.has(chunkKey(...b))) - Number(visiblePaddingKeys.has(chunkKey(...a))));
+        for (const [x, y] of coordinates) {
+          const id = chunkKey(x, y);
+          let record = paddingTerrain.get(id);
+          if (!record) {
+            record = {};
+            paddingTerrain.set(id, record);
+          }
+          ensurePaddingTerrain(id, record, x, y);
+          ensurePaddingRoads(id, record, x, y);
+          ensurePaddingTrees(id, record, x, y);
+        }
+        // First visible frame only: exact native tiles, not a flat fallback or
+        // a render-target bake in the input handler. Both work and retained
+        // temporary sprites have a measured hard cell cap. Larger misses stay
+        // explicitly deferred to the normal bounded queue.
+        if (paintedFrame && cityTerrainAtlasesReady && cityTerrainPadding) {
+          const startedAt = performance.now();
+          const missing = visible.filter(([x, y]) => !paddingTerrain.get(chunkKey(x, y))?.terrainView);
+          const budget = Math.max(0, Math.min(IMMEDIATE_PADDING_CELL_LIMIT - nativeFrameCells,
+            IMMEDIATE_PADDING_CELL_LIMIT - nativePaddingCells.size));
+          const plan = planImmediatePadding(world.position, world.scale.x, app.screen, missing, nativePaddingCells, budget, CELL_SIZE, chunkSize);
+          for (const region of plan.regions) {
+            const record = paddingTerrain.get(chunkKey(region.chunkX, region.chunkY))!;
+            const fragment = cityTerrainPadding.getPartial(region.chunkX, region.chunkY, region.cells);
+            if (!fragment) continue;
+            if (!record.nativeView) {
+              record.nativeView = new Container({ eventMode: "none" }); record.nativeCells = [];
+              terrainLayer.addChildAt(record.nativeView, 0);
+            }
+            for (const cell of fragment.terrain) {
+              record.nativeView.addChild(terrainSprite(cell, fragment.kindAt));
+              const id = key(cell); record.nativeCells!.push(id); nativePaddingCells.add(id); nativeFrameCells++;
+            }
+          }
+          if (plan.cells) {
+            host.dataset.cameraPaddingNativeFrameMaxCells = String(Math.max(Number(host.dataset.cameraPaddingNativeFrameMaxCells ?? 0), nativeFrameCells));
+            if (!nativeFrameReset) nativeFrameReset = requestAnimationFrame(() => { nativeFrameCells = 0; nativeFrameReset = 0; });
+          }
+          host.dataset.cameraPaddingNativeDeferred = String(!plan.complete);
+          for (const coordinate of missing) {
+            const record = paddingTerrain.get(chunkKey(...coordinate))!;
+            record.nativeCovered = planImmediatePadding(world.position, world.scale.x, app.screen, [coordinate], nativePaddingCells, 0, CELL_SIZE, chunkSize).complete;
+          }
+          if (missing.length) host.dataset.cameraPaddingNativeMaxMs = Math.max(Number(host.dataset.cameraPaddingNativeMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
+        }
+        for (const id of visiblePaddingKeys) {
+          const record = paddingTerrain.get(id)!;
+          if (paintedFrame && !record.terrainView && !record.nativeCovered && !record.visibleMissReported) {
+            record.visibleMissReported = true;
+            host.dataset.cameraPaddingVisibleMisses = String(Number(host.dataset.cameraPaddingVisibleMisses ?? 0) + 1);
+          }
+        }
+        host.dataset.cameraPaddingChunks = String(paddingTerrain.size);
+        reportPaddingRoads();
+      };
+      const installCityRoadPadding = (scene: CitySceneDto) => {
+        cityRoadPadding?.retain([]);
+        cityRoadPadding = new CityRoadPadding(scene, cell => isBuildableTerrain(terrainAt(terrainSeed, cell.x, cell.y).terrain));
+        cityTerrainPadding?.retain([]);
+        cityTerrainPadding = new CityTerrainPadding(terrainSeed, chunkSize, scene.chunks);
+        cityTreePadding?.retain([]);
+        cityTreePadding = new CityTreePadding(scene, terrainSeed, cityTerrainPadding, cityRoadPadding);
+        for (const [id, record] of paddingTerrain) {
+          // Terrain is immutable, but road/task edits must clear affected
+          // exterior crowns and let the same exclusion policy rebuild them.
+          removePaddingGround({ ...record, terrainView: undefined });
+          // Replace the record identity too, fencing unfinished old bakes.
+          paddingTerrain.set(id, { terrainView: record.terrainView });
+        }
+        host.dataset.intercityRoadRoutes = String(scene.intercityRoads.length);
+        refreshCameraPadding();
+      };
       const clampCamera = () => {
         const minimumScale = cameraMinimumScale();
+        host.dataset.minimumRenderScale = String(minimumScale);
         if (world.scale.x < minimumScale) {
           cameraTargetScale = Math.max(cameraTargetScale, minimumScale);
           const scale = pixelPerfectCameraScale(minimumScale, minimumScale);
           world.scale.set(scale);
           host.dataset.renderScale = String(scale);
         }
-        const clamped = clampCameraPosition(world.position, world.scale.x, app.screen, currentViewBounds, CELL_SIZE);
+        const clamped = clampCameraPosition(world.position, world.scale.x, app.screen, cameraBounds(), CELL_SIZE);
         world.position.set(clamped.x, clamped.y);
+        refreshCameraPadding();
         host.dataset.cameraWorldX = ((app.screen.width / 2 - world.position.x) / world.scale.x / CELL_SIZE).toFixed(2);
         host.dataset.cameraWorldY = ((app.screen.height / 2 - world.position.y) / world.scale.y / CELL_SIZE).toFixed(2);
       };
@@ -1911,12 +2036,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
       const disposeGestures = bindMapPointerGestures(canvas, (gesture) => {
-        if (gesture.pointers > 1 || Math.abs(gesture.panX) + Math.abs(gesture.panY) > 2 || Math.abs(gesture.scale - 1) > .006) {
-          // Pixi receives the same pointer stream and may synthesize a
-          // pointertap on the sprite below the pinch center. Keep navigation
-          // gestures from opening a task or archive card after pointerup.
-          suppressSelectionUntil = performance.now() + 500;
-        }
         const oldScale = world.scale.x;
         if (gesture.scale !== 1) {
           const rect = canvas.getBoundingClientRect();
@@ -1936,7 +2055,15 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         clampCamera();
         scheduleVisibleLoad();
         host.dataset.gesturePointers = String(gesture.pointers);
-      }, { onEnd: () => { delete host.dataset.gesturePointers; void loadVisible(); } });
+      }, { onNavigationStart: () => {
+        // Pixi can synthesize a tap on the first finger's release, or after a
+        // slow held drag. Suppress from classification until all contacts end.
+        suppressSelectionUntil = Infinity;
+      }, onEnd: (moved) => {
+        if (moved) suppressSelectionUntil = performance.now() + 500;
+        delete host.dataset.gesturePointers;
+        void loadVisible();
+      } });
       startupDisposers.push(disposeGestures);
 
       function destroyGroundView(view: Sprite): void {
@@ -1970,13 +2097,18 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host!.dataset.mixedGroundLods = String(activeLods.size > 1);
       };
 
+      const groundTextureBaker = new GroundTextureBaker(app.renderer);
+      startupDisposers.push(() => groundTextureBaker.destroy());
       function bakeGroundTexture(source: Container | Graphics, chunkX: number, chunkY: number, size: number, lod: MapLod): Sprite {
         const bakeStartedAt = performance.now();
         const originX = chunkX * size * CELL_SIZE;
         const originY = chunkY * size * CELL_SIZE;
-        const texture = app.renderer.textureGenerator.generateTexture({
-          target: source,
+        const texture = groundTextureBaker.bake(source, {
           frame: new Rectangle(originX, originY, size * CELL_SIZE, size * CELL_SIZE),
+          // The render target is uploaded during generateTexture. Configure its
+          // sampler before that upload; mutating scaleMode afterwards does not
+          // notify Pixi's already-created WebGL sampler.
+          textureSourceOptions: { scaleMode: "nearest" },
           resolution: lod === "OVERVIEW"
             ? desiredKeys.size > GROUND_CACHE_LIMIT ? ULTRA_WIDE_GROUND_TEXTURE_RESOLUTION : OVERVIEW_GROUND_TEXTURE_RESOLUTION
             : 1,
@@ -1984,7 +2116,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         });
         host!.dataset.groundTextureResolution = String(texture.source.resolution);
         texture.source.scaleMode = "nearest";
-        source.destroy({ children: true });
         const view = new Sprite(texture);
         view.position.set(originX, originY);
         view.eventMode = "none";
@@ -1992,12 +2123,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         return view;
       }
 
-      function createTerrainView(chunk: ChunkDto, lod: MapLod): Sprite {
+      function createTerrainView(chunk: TerrainGroundChunk, lod: MapLod,
+        capturedKindAt?: (column: number, row: number) => AtlasTerrainKind | undefined): Sprite {
         const source = new Container();
         source.eventMode = "none";
         if (lod === "DETAIL") {
           const terrain = new Container();
-          const terrainAtCell = (column: number, row: number) => atlasTerrainKindFromWorld(terrainAt(terrainSeed, column, row).terrain);
+          const terrainAtCell = capturedKindAt ?? createGroundTerrainSampler(chunk,
+            (column, row) => atlasTerrainKindFromWorld(terrainAt(terrainSeed, column, row).terrain));
           for (const cell of chunk.terrain) terrain.addChild(terrainSprite(cell, terrainAtCell));
           source.addChild(terrain);
         } else {
@@ -2014,18 +2147,19 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         return bakeGroundTexture(source, chunk.chunkX, chunk.chunkY, chunk.size, lod);
       }
 
-      function createInfrastructureOverlayView(chunk: ChunkDto, lod: MapLod): Sprite {
+      function createInfrastructureOverlayView(chunk: Pick<ChunkDto, "chunkX" | "chunkY" | "size" | "roads" | "surfaces">, lod: MapLod,
+        context?: Pick<CityRoadPaddingChunk, "roadContext" | "surfaceContext">): Sprite {
         const source = new Container();
         source.eventMode = "none";
         if (lod === "DETAIL") {
           const surfaces = new Container();
           const roads = new Container();
-          const surfaceMap = new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
+          const surfaceMap = context?.surfaceContext ?? new Map(chunk.surfaces.map((surface) => [key(surface), surface]));
           for (const surface of chunk.surfaces) {
             const view = drawSurface(surface, surfaceMap);
             if (view) surfaces.addChild(view);
           }
-          const roadMap = new Map(chunk.roads.map((road) => [key(road), road]));
+          const roadMap = context?.roadContext ?? new Map(chunk.roads.map((road) => [key(road), road]));
           for (const road of chunk.roads) roads.addChild(drawRoad(road, surfaceMap, roadMap));
           source.addChild(surfaces, roads);
         } else {
@@ -2102,6 +2236,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       }
 
       function installGround(cacheKey: string, prepared: PreparedGround, lod: MapLod, animate = false): void {
+        if (!prepared.overlayView) throw new Error(`Infrastructure ${cacheKey}:${lod} is missing from a resident bake`);
         let record = groundContainers.get(cacheKey);
         if (!record || record.lod !== lod) {
           if (!prepared.terrainView) throw new Error(`Terrain ${cacheKey}:${lod} is missing for a new ground record`);
@@ -2162,6 +2297,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const terrain = new Map<string, ChunkDto["terrain"][number]>();
         const decorations = new Map<string, ChunkDto["decorations"][number]>();
         const features = new Map<string, WorldFeatureDto>();
+        const plannedSites = new Map<string, PlannedSiteDto>();
+        const blockPlaques = new Map<string, BlockPlaqueDto>();
         for (const [cacheKey, chunk] of entityChunks) {
           if (entityChunkLods.get(cacheKey) !== currentLod) continue;
           for (const cell of chunk.terrain) terrain.set(key(cell), cell);
@@ -2178,33 +2315,57 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           for (const task of chunk.tasks) tasks.set(task.id, task);
           for (const decoration of chunk.decorations) decorations.set(decoration.id, decoration);
           for (const feature of chunk.worldFeatures) features.set(feature.id, feature);
+          if (currentLod === "DETAIL") for (const site of chunk.plannedSites ?? []) plannedSites.set(site.id, site);
+          if (currentLod === "DETAIL") for (const plaque of chunk.blockPlaques ?? []) blockPlaques.set(plaque.id, plaque);
         }
         for (const task of completedSnapshotTasks.values()) tasks.set(task.id, task);
-        const airportFeatures = [...features.values()].filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA");
-        airportPoints = airportFeatures.map((feature) => ({
-          x: (Math.min(...feature.footprint.map((cell) => cell.x)) + Math.max(...feature.footprint.map((cell) => cell.x)) + 1) * CELL_SIZE / 2,
-          y: (Math.min(...feature.footprint.map((cell) => cell.y)) + Math.max(...feature.footprint.map((cell) => cell.y)) + 1) * CELL_SIZE / 2,
-        }));
-        if (host) {
-          const airportCells = new Set(airportFeatures.flatMap(airportCompoundCells).map(key));
-          const decorationOverlapCount = [...decorations.values()].filter((decoration) => {
-            const metadata = PROP_CATALOG[decoration.kind];
-            const width = metadata?.footprint.width ?? 1;
-            const height = metadata?.footprint.height ?? 1;
-            return Array.from({ length: width * height }, (_, index) => ({
-              x: decoration.origin.x + index % width,
-              y: decoration.origin.y + Math.floor(index / width),
-            })).some((cell) => airportCells.has(key(cell)));
-          }).length;
-          const layouts = airportFeatures.map(cityAirportVisualLayout);
-          host.dataset.airports = String(airportPoints.length);
-          host.dataset.airportVisualStandard = "city-airport-v5";
-          host.dataset.airportSurfaceTiles = String(layouts.reduce((sum, layout) => sum + layout.surfaceTiles.length, 0));
-          host.dataset.airportFenceTiles = String(layouts.reduce((sum, layout) => sum + layout.fenceTiles.length, 0));
-          host.dataset.airportBuildings = String(layouts.reduce((sum, layout) => sum + layout.buildings.length, 0));
-          host.dataset.airportDecorationOverlaps = String(decorationOverlapCount);
+        if (latestTaskStatusPatches.size) host!.dataset.realtimeRenderedTasks = JSON.stringify(
+          [...tasks.values()].filter(task => latestTaskStatusPatches.has(task.id)).map(task => ({ taskId: task.id, stage: task.stage })),
+        );
+        // One ground-level batch can span chunk borders; no per-slot textures or
+        // opaque platforms hide the terrain while a parcel is only reserved.
+        plannedSiteMarks.clear();
+        const occupiedTaskCells = new Set([...tasks.values()].flatMap((task) => task.footprint.map(key)));
+        const plannedColors: Record<PlannedSiteDto["kind"], number> = {
+          BUILDING: 0xa6aa84, PARK: 0x91a574, WATER: 0x789995, PARKING: 0x90988b,
+        };
+        let visiblePlannedSites = 0;
+        for (const site of plannedSites.values()) {
+          let occupied = false;
+          for (let y = 0; y < site.height && !occupied; y += 1) {
+            for (let x = 0; x < site.width; x += 1) {
+              if (occupiedTaskCells.has(key({ x: site.origin.x + x, y: site.origin.y + y }))) { occupied = true; break; }
+            }
+          }
+          if (occupied) continue;
+          const left = site.origin.x * CELL_SIZE + 1;
+          const top = site.origin.y * CELL_SIZE + 1;
+          const right = (site.origin.x + site.width) * CELL_SIZE - 2;
+          const bottom = (site.origin.y + site.height) * CELL_SIZE - 2;
+          for (const [x, y, dx, dy] of [[left, top, 1, 1], [right, top, -1, 1], [left, bottom, 1, -1], [right, bottom, -1, -1]] as const) {
+            plannedSiteMarks.rect(x + (dx < 0 ? -3 : 0), y, 4, 1)
+              .rect(x, y + (dy < 0 ? -3 : 0), 1, 4);
+          }
+          plannedSiteMarks.fill(plannedColors[site.kind]);
+          visiblePlannedSites += 1;
         }
-
+        host!.dataset.plannedSites = String(visiblePlannedSites);
+        const plaqueSignature = JSON.stringify([...blockPlaques.values()]);
+        if (plaqueSignature !== blockPlaqueSignature) {
+          blockPlaqueSignature = plaqueSignature;
+          for (const child of blockPlaqueLayer.removeChildren()) child.destroy({ children: true });
+          for (const plaque of blockPlaques.values()) {
+            const text = plaque.label.length > 18 ? `${plaque.label.split(", ")[0]} · ${plaque.taskCount} задач` : plaque.label;
+            const label = new Text({ text, resolution: 2, style: new TextStyle({ fontFamily: "monospace", fontSize: 5, fontWeight: "700", fill: 0xeee0b2 }) });
+            label.anchor.set(0.5);
+            const panel = new Container();
+            panel.position.set(plaque.origin.x * CELL_SIZE, plaque.origin.y * CELL_SIZE + 3);
+            panel.addChild(new Graphics().rect(-label.width / 2 - 2, -4, label.width + 4, 8)
+              .fill(0x485744).stroke({ color: 0xaca77a, width: 1 }), label);
+            blockPlaqueLayer.addChild(panel);
+          }
+        }
+        host!.dataset.blockPlaques = String(blockPlaques.size);
         const reconcile = <T extends RenderNode, D>(
           source: Map<string, D>,
           records: Map<string, EntityViewRecord<T>>,
@@ -2230,6 +2391,24 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         const staticDecorations = currentLod === "DETAIL"
           ? [...decorations.values()].filter((decoration) => !isAnimatedDecoration(decoration.kind))
           : [];
+        const lamps = staticDecorations.filter(item => illuminatedPropKey(item.kind) !== item.kind);
+        const nextLampSignature = lamps.map(item => item.id).sort().join("|");
+        if (lampSignature !== nextLampSignature) {
+          lampSignature = nextLampSignature;
+          lampGlow.clear();
+          for (const lamp of lamps) {
+            const metadata = PROP_CATALOG[lamp.kind];
+            if (!metadata) continue;
+            const anchor = decorationWorldAnchor(lamp.kind, lamp.origin, metadata.footprint, CELL_SIZE);
+            // Stepped pools on the ground, below buildings/trees, not blurred
+            // full-screen filters or a separate ticker for every lamppost.
+            const x = Math.round(anchor.x); const y = Math.round(anchor.y);
+            lampGlow.rect(x - 10, y - 6, 20, 12).fill({ color: 0xffcf76, alpha: .12 });
+            lampGlow.rect(x - 7, y - 4, 14, 8).fill({ color: 0xffda8b, alpha: .18 });
+            lampGlow.rect(x - 3, y - 2, 6, 4).fill({ color: 0xffe6a6, alpha: .28 });
+          }
+        }
+        host!.dataset.illuminatedLamps = String(lamps.length);
         const nextStaticDecorationSignature = staticDecorationRenderSignature(staticDecorations);
         if (nextStaticDecorationSignature !== staticDecorationSignature) {
           for (const layer of staticDecorationLayers) {
@@ -2237,6 +2416,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             layer.destroy();
           }
           staticDecorationLayers = [];
+          lampSprites = [];
+          propShadows.clear();
           staticDecorationSignature = nextStaticDecorationSignature;
           staticDecorationParticleCount = 0;
           if (staticDecorations.length > 0) {
@@ -2248,15 +2429,26 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               if (!metadata || !frame) continue;
               let texture = propAtlasTextures.get(decoration.kind);
               if (!texture) {
-                texture = new Texture({
-                  source: atlasTexture.source,
-                  frame: new Rectangle(frame.x, frame.y, frame.width, frame.height),
-                });
+                texture = pixelAtlasFrame(atlasTexture, frame);
                 propAtlasTextures.set(decoration.kind, texture);
               }
               const baseline = decoration.origin.y + metadata.footprint.height;
               const anchorPosition = decorationWorldAnchor(decoration.kind, decoration.origin, metadata.footprint, CELL_SIZE);
+              if (decoration.kind.startsWith("tree-") || illuminatedPropKey(decoration.kind) !== decoration.kind) {
+                propShadows.rect(Math.round(anchorPosition.x) - 2, Math.round(anchorPosition.y), 5, 2).fill(0x182a2c);
+              }
               const view = new Sprite(texture);
+              const litKey = illuminatedPropKey(decoration.kind);
+              const litFrame = litKey !== decoration.kind ? PROP_ATLAS.frames[litKey] : undefined;
+              if (litFrame) {
+                let night = propAtlasTextures.get(litKey);
+                if (!night) {
+                  night = pixelAtlasFrame(atlasTexture, litFrame);
+                  propAtlasTextures.set(litKey, night);
+                }
+                lampSprites.push({ view, day: texture, night });
+                if (lampsOn) view.texture = night;
+              }
               view.position.set(
                 anchorPosition.x,
                 anchorPosition.y - baseline * CELL_SIZE,
@@ -2287,6 +2479,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         }
 
         reconcile(districts, districtViews, districtLayer, (district) => drawDistrictBoundary(district, districtTooltipLayer));
+        host!.dataset.districtBoundaryGroups = String(districtViews.size);
+        host!.dataset.districtBoundaryCells = String([...districts.values()].reduce((count, district) => count + district.cells.length, 0));
+        host!.dataset.districtBoundaryVisible = String(districtLayer.visible);
         reconcile(
           currentLod === "DETAIL" ? tasks : new Map<string, ChunkTaskDto>(),
           taskPlatformViews,
@@ -2324,7 +2519,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           for (const { id, task, mode } of candidates) {
             const fullResponse = engineAllowance.has(id);
             visibleIncidentIds.add(id);
-            const signature = JSON.stringify([mode, fullResponse, task.origin, task.buildingType, task.defectSummary]);
+            const signature = incidentRenderSignature(task, fullResponse);
             const current = incidentViews.get(id);
             if (current?.signature === signature) continue;
             if (current) {
@@ -2388,7 +2583,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             current.visual?.removeFromParent(); current.visual?.destroy({ children: true });
           }
           const parent = feature.parentFeatureId ? features.get(feature.parentFeatureId) : undefined;
-          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", selectArchive, parent);
+          const drawn = drawWorldFeature(feature, currentLod === "DETAIL", selectArchive, selectSite, parent);
           if (!drawn) { featureViews.delete(id); continue; }
           if (drawn.platform && currentLod === "DETAIL") featurePlatformLayer.addChild(drawn.platform);
           else if (drawn.platform) drawn.platform.destroy({ children: true });
@@ -2406,6 +2601,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             + staticDecorationParticleCount + decorationViews.size + featureViews.size,
         );
         host!.dataset.taskBuildingViews = String(taskBuildingViews.size);
+        host!.dataset.siteMarkers = String([...features.values()].filter(feature => feature.siteMarker).length);
+        host!.dataset.movedSites = String([...features.values()].filter(feature => feature.siteMarker?.kind === "RELOCATED").length);
         host!.dataset.incidents = String(incidentViews.size);
         host!.dataset.incidentEngines = String([...incidentViews.values()].filter((view) => view.fullResponse).length);
         host!.dataset.hotfixIncidents = String([...incidentViews.values()].filter((view) => view.mode === "HOTFIX_ACTIVE").length);
@@ -2418,257 +2615,68 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host!.dataset.incidentModes = [...incidentViews.values()].map((view) => view.mode).sort().join(",");
         host!.dataset.entityReplacements = String(entityReplacementCount);
 
-        const addAgents = (graph: Map<string, Cell>, count: number, kind: MovingAgent["kind"], outgoing?: AgentEdges): void => {
-          const candidates = [...graph.values()].filter((cell) => outgoing
-            ? (outgoing.get(key(cell))?.length ?? 0) > 0
-            : GRID_DIRECTIONS.some((direction) => graph.has(key({ x: cell.x + direction.x, y: cell.y + direction.y }))));
-          if (candidates.length === 0) return;
-          const colors = Object.keys(VEHICLE_SPRITES);
-          const motorAgent = kind === "CAR" || kind === "BUS";
-          const pedestrianAgent = kind === "WALKER" || kind === "CYCLIST" || kind === "SCOOTER";
-          const occupiedStarts = new Set(movingAgents
-            .filter((agent) => motorAgent
-              ? agent.kind === "CAR" || agent.kind === "BUS"
-              : pedestrianAgent ? agent.kind === "WALKER" || agent.kind === "CYCLIST" || agent.kind === "SCOOTER"
-                : agent.kind === kind)
-            .flatMap((agent) => agent.kind === "CYCLIST" || agent.kind === "SCOOTER"
-              ? micromobilityOccupancy(agent.current, agent.next).map(key)
-              : [key(agent.current)]));
-          let created = movingAgents.filter((agent) => agent.kind === kind).length;
-          let attempts = 0;
-          while (created < count && attempts < candidates.length * 2) {
-            attempts += 1;
-            const picked = nextSeededRandom(spawnState);
-            spawnState = picked.state;
-            const index = Math.floor(picked.value * candidates.length);
-            const current = candidates[index]!;
-            if (occupiedStarts.has(key(current))) continue;
-            const routeSeed = nextSeededRandom(spawnState);
-            spawnState = routeSeed.state;
-            const planned = planAgentRoute(graph, current, routeSeed.state, kind === "CAR" || kind === "BUS" ? 14 : 9, undefined, outgoing);
-            const next = planned.route[1] ?? nextWithoutUTurn(graph, current, undefined, outgoing);
-            if (key(next) === key(current)) continue;
-            const candidateOccupancy = kind === "CYCLIST" || kind === "SCOOTER"
-              ? micromobilityOccupancy(current, next)
-              : [current];
-            if (pedestrianAgent && candidateOccupancy.some((cell) => occupiedStarts.has(key(cell)))) continue;
-            const speedPick = nextSeededRandom(spawnState);
-            spawnState = speedPick.state;
-            const progress = motorAgent ? 0 : picked.value;
-            const speed = kind === "CAR" || kind === "BUS" ? vehicleCruiseSpeed(kind, speedPick.value)
-              : kind === "CYCLIST" ? 0.00175 + (index % 4) * 0.0001
-                : kind === "SCOOTER" ? 0.0015 + (index % 4) * 0.00009
-              : kind === "ANIMAL" ? 0.00065 + (index % 3) * 0.00008
-                : 0.00115 + (index % 5) * 0.00013;
-            if (kind === "CAR" || kind === "BUS") {
-              const candidate: TrafficVehicleSnapshot = {
-                id: `candidate-${nextAgentId}`,
-                kind,
-                current,
-                next,
-                progress,
-                cruiseSpeed: speed,
-                path: [current, next, ...planned.route.slice(2, 4)],
-              };
-              const residentVehicles = movingAgents
-                .filter((agent): agent is MovingAgent & { kind: "CAR" | "BUS" } => agent.kind === "CAR" || agent.kind === "BUS")
-                .map((agent) => vehicleSnapshot(agent));
-              if (vehicleUnsafePairCount([...residentVehicles, candidate]) > vehicleUnsafePairCount(residentVehicles)) continue;
-            }
-            const variant = kind === "ANIMAL" ? ANIMAL_SPECIES[created % ANIMAL_SPECIES.length]!
-              : kind === "BUS" ? "city-bus"
-                : kind === "CYCLIST" ? "cyclist"
-                  : kind === "SCOOTER" ? "scooter"
-                : colors[created % colors.length] ?? "blue";
-            const phase = (index % 11) / 11;
-            const walkerPresentation = kind === "WALKER"
-              ? residentWalkPresentation(current, next, progress, phase)
-              : undefined;
-            const url = movingAgentSpriteUrl({ kind, variant, current, next, progress, phase });
-            const tallRoadUser = kind === "WALKER" || kind === "CYCLIST" || kind === "SCOOTER";
-            const groundPosition = tallRoadUser
-              ? residentGroundPosition(current, next, progress, CELL_SIZE)
-              : { x: current.x * CELL_SIZE + CELL_SIZE / 2, y: current.y * CELL_SIZE + CELL_SIZE / 2 };
-            const view = sprite(url, groundPosition.x, groundPosition.y);
-            view.anchor.set(0.5, tallRoadUser ? 1 : 0.5);
-            // Pixi 8 deprecates children on Sprite. Vehicle sprites already
-            // contain authored wheels, so omit the optional one-pixel wheel
-            // glint instead of attaching a Graphics child to a Sprite.
-            const wheelView = undefined;
-            worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
-            const activityView = kind === "WALKER" ? new Graphics() : undefined;
-            if (activityView) { activityView.visible = false; agentOverlayLayer.addChild(activityView); }
-            const agent: MovingAgent = {
-              id: `${sessionSeed.toString(36)}-${nextAgentId++}`,
-              view, graph, outgoing, current, next, progress, speed,
-              kind, variant, phase, pauseMs: 0, socialCooldownMs: index * 170 % 2_000,
-              activity: "NONE", activityView, wheelView, steps: index % 17,
-              randomState: planned.randomState, route: planned.route, routeIndex: 1, trail: [],
-              waitMs: 0,
-              visualKey: walkerPresentation?.key ?? url,
-            };
-            orientRoadUser(agent);
-            if (motorAgent) renderVehicleMotionFrame(agent, 0);
-            movingAgents.push(agent);
-            if (kind === "WALKER") movingWalkers.push(agent);
-            for (const cell of candidateOccupancy) occupiedStarts.add(key(cell));
-            created += 1;
-          }
-        };
-        const residentRoadGraph = trafficRoadGraph(roads, "CAR");
-        trafficJunctions = detectTrafficJunctions(residentRoadGraph);
-        const wantedSignals = new Map<string, { junction: TrafficJunction; origin: Cell; axis: "H" | "V"; approach: string }>(trafficJunctions.flatMap((junction) => junction.signalPosts.map((post) => [
-          `${junction.id}:${post.approach}`,
-          { junction, ...post },
-        ] as const)));
-        for (const [signalId, signal] of trafficSignalViews) {
-          if (wantedSignals.has(signalId)) continue;
-          signal.view.removeFromParent();
-          signal.view.destroy();
-          trafficSignalViews.delete(signalId);
-        }
-        for (const [signalId, signal] of wantedSignals) {
-          const existing = trafficSignalViews.get(signalId);
-          if (existing) { existing.junction = signal.junction; continue; }
-          const phase = trafficSignalPhase(signal.junction, simulationTimeMs);
-          const state = signal.axis === "H" ? phase.horizontal : phase.vertical;
-          const view = sprite(
-            PROP_SPRITES[`traffic-light-${state.toLowerCase()}`]!,
-            signal.origin.x * CELL_SIZE + CELL_SIZE / 2,
-            (signal.origin.y + 1) * CELL_SIZE,
-          );
-          view.anchor.set(0.5, 1);
-          worldObjectLayer.addChild(registerWorldObject(view, "FEATURE"));
-          trafficSignalViews.set(signalId, { view, junction: signal.junction, axis: signal.axis, state });
-        }
-        host!.dataset.trafficJunctions = String(trafficJunctions.length);
-        host!.dataset.trafficSignals = String(trafficSignalViews.size);
-        const residentCarEdges = buildDirectedCarEdges(residentRoadGraph);
-        const trafficCore = directedTrafficCore(residentCarEdges);
-        const roadGraph = new Map<string, Cell>([...residentRoadGraph].filter(([cellKey]) => trafficCore.has(cellKey)));
-        const carEdges = new Map<string, Cell[]>([...residentCarEdges]
-          .filter(([cellKey]) => trafficCore.has(cellKey))
-          .map(([cellKey, candidates]) => [cellKey, candidates.filter((candidate) => trafficCore.has(key(candidate)))] as const)
-          .filter(([, candidates]) => candidates.length > 0));
-        const residentBusRoadGraph = trafficRoadGraph(roads, "BUS");
-        const residentBusEdges = buildDirectedCarEdges(residentBusRoadGraph);
-        const busTrafficCore = directedTrafficCore(residentBusEdges);
-        const busGraph = new Map<string, Cell>([...residentBusRoadGraph].filter(([cellKey]) => busTrafficCore.has(cellKey)));
-        const busEdges = new Map<string, Cell[]>([...residentBusEdges]
-          .filter(([cellKey]) => busTrafficCore.has(cellKey))
-          .map(([cellKey, candidates]) => [cellKey, candidates.filter((candidate) => busTrafficCore.has(key(candidate)))] as const)
-          .filter(([, candidates]) => candidates.length > 0));
-        const blockedWalkCells = new Set([
-          ...[...tasks.values()].filter((task) => task.visualKind !== "PARK" || task.stage < 2).flatMap((task) => task.footprint),
-          ...[...tasks.values()].filter((task) => task.visualKind === "PARK").flatMap((task) => (
-            taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)
-              .flatMap((placement) => Array.from({ length: placement.width * placement.height }, (_, index) => ({
-                x: placement.origin.x + index % placement.width,
-                y: placement.origin.y + Math.floor(index / placement.width),
-              })))
-          )),
-          ...[...features.values()].filter((feature) => feature.assetKind !== "AREA").flatMap((feature) => feature.footprint),
-          ...[...features.values()].filter((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA").flatMap(airportCompoundCells),
-          ...[...decorations.values()].flatMap((decoration) => {
-            const prop = PROP_CATALOG[decoration.kind];
-            if (!prop) return [decoration.origin];
-            return Array.from({ length: prop.footprint.width * prop.footprint.height }, (_, index) => ({
-              x: decoration.origin.x + index % prop.footprint.width,
-              y: decoration.origin.y + Math.floor(index / prop.footprint.width),
-            }));
-          }),
-        ].map(key));
-        const baseWalkGraph = new Map([...surfaces]
-          .filter(([cellKey, surface]) => !blockedWalkCells.has(cellKey) && (surface.kind === "SIDEWALK" || surface.kind === "PATH" || surface.kind === "CROSSWALK"))
-          .map(([cellKey, surface]) => [cellKey, { x: surface.x, y: surface.y }]));
-        const safeGround = new Map([...terrain]
-          .filter(([cellKey, cell]) => !blockedWalkCells.has(cellKey) && !roads.has(cellKey) && ["GRASS", "MEADOW", "DIRT"].includes(cell.terrain))
-          .map(([cellKey, cell]) => [cellKey, { x: cell.x, y: cell.y }]));
-        const walkGraph = connectShortWalkGaps(baseWalkGraph, safeGround, 2);
-        const animalGraph = new Map([...terrain]
-          .filter(([cellKey, cell]) => !blockedWalkCells.has(cellKey) && !roads.has(cellKey) && !surfaces.has(cellKey) && ["MEADOW", "FOREST"].includes(cell.terrain))
-          .map(([cellKey, cell]) => [cellKey, { x: cell.x, y: cell.y }]));
-        activeCrosswalks = new Set([...surfaces].filter(([, surface]) => surface.kind === "CROSSWALK").map(([cellKey]) => cellKey));
-        activityCells = new Set<string>();
-        for (const decoration of decorations.values()) {
-          if (!["bench-horizontal", "bench-vertical", "picnic-table", "playground-small", "trash-bin"].includes(decoration.kind)) continue;
-          for (const direction of GRID_DIRECTIONS) activityCells.add(key({ x: decoration.origin.x + direction.x, y: decoration.origin.y + direction.y }));
-        }
-        for (const feature of features.values()) if (feature.kind === "BUS_STOP" || feature.kind === "PARK") {
-          for (const cell of [...feature.footprint, ...feature.accessPath]) activityCells.add(key(cell));
-        }
-        busStopRoadCells = new Set<string>();
-        for (const feature of features.values()) {
-          if (feature.kind !== "BUS_STOP") continue;
-          for (const platformCell of feature.footprint) {
-            for (const direction of GRID_DIRECTIONS) {
-              const roadCell = { x: platformCell.x + direction.x, y: platformCell.y + direction.y };
-              if (busGraph.has(key(roadCell))) busStopRoadCells.add(key(roadCell));
-            }
-          }
-        }
+        cityFlightRoutes = cityScene ? cityMicroFlightRoutes(cityScene.airportConnections) : [];
+        host!.dataset.airportFlightRoutes = String(cityFlightRoutes.length);
+        const { walkGraph, animalGraph, crosswalks, activityCells, blockedCells } = buildCityWalkNetwork({
+          roads, terrain: [...terrain.values()], surfaces: [...surfaces.values()],
+          tasks: [...tasks.values()], features: [...features.values()], decorations: [...decorations.values()],
+        });
         const agentsVisible = currentLod === "DETAIL" && ambientAssetsReady;
-        for (const agent of movingAgents) {
-          agent.view.visible = agentsVisible;
-          if (agent.activityView) agent.activityView.visible = agentsVisible && agent.activity !== "NONE";
-        }
-        if (currentLod === "DETAIL" && ambientAssetsReady) {
-          const graphs = { CAR: roadGraph, BUS: busGraph, WALKER: walkGraph, CYCLIST: walkGraph, SCOOTER: walkGraph, ANIMAL: animalGraph } as const;
-          const before = movingAgents.length;
-          movingAgents = movingAgents.filter((agent) => {
-            const graph = graphs[agent.kind];
-            const retained = graph.has(key(agent.current)) && graph.has(key(agent.next));
-            if (retained) {
-              agent.graph = graph;
-              agent.outgoing = agent.kind === "BUS" ? busEdges : agent.kind === "CAR" ? carEdges : undefined;
-              if (!isAgentEdgeAllowed(agent.current, agent.next, agent.outgoing)) {
-                if (agent.kind === "CAR" || agent.kind === "BUS") {
-                  destroyMovingAgent(agent);
-                  return false;
-                }
-                const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, 9, agent.previous, agent.outgoing);
-                agent.randomState = planned.randomState;
-                agent.route = planned.route;
-                agent.routeIndex = 1;
-                agent.next = planned.route[1] ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous, agent.outgoing);
-                agent.progress = 0;
-              }
+        if (agentsVisible) {
+          const before = mobilityViews.size + animals.length;
+          const input = { roads, walkGraph, crosswalks, activityCells,
+            carLimit: Math.min(24, Math.max(3, Math.floor(roads.size / 120))),
+            walkerLimit: Math.min(32, Math.max(6, Math.floor(walkGraph.size / 70))) };
+          if (mobility) mobility.updateNetwork(input);
+          else mobility = createCityMobility({ ...input, seed: sessionSeed });
+          const posts = mobility.signals.flatMap(signal => signal.signalPosts.map(post => ({
+            ...post, id: `${signal.id}:${post.approach}`,
+          })));
+          mobilityPostOrigins = new Map(placeCityMobilitySignalPosts({
+            posts, terrain, roads, walkGraph, blocked: blockedCells,
+          }).map(post => [post.id, post.origin]));
+          for (const origin of mobilityPostOrigins.values()) animalGraph.delete(key(origin));
+          host!.dataset.mobilityPostPathConflicts = String([...mobilityPostOrigins.values()]
+            .filter(origin => walkGraph.has(key(origin)) || roads.has(key(origin)) || blockedCells.has(key(origin))).length);
+          mobilityRoads = roads;
+          mobilityWalkGraph = walkGraph;
+          animals = animals.filter(agent => {
+            if (animalGraph.has(key(agent.current)) && animalGraph.has(key(agent.next))) {
+              agent.graph = animalGraph;
+              return true;
             }
-            else destroyMovingAgent(agent);
-            return retained;
+            destroyAnimal(agent);
+            return false;
           });
-          movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
-          addAgents(roadGraph, Math.min(24, Math.max(3, Math.floor(roads.size / 120))), "CAR", carEdges);
-          addAgents(busGraph, busStopRoadCells.size > 0 ? Math.min(4, Math.max(1, Math.floor(busStopRoadCells.size / 2))) : 0, "BUS", busEdges);
-          addAgents(walkGraph, Math.min(24, Math.max(4, Math.floor(walkGraph.size / 120))), "WALKER");
-          addAgents(walkGraph, Math.min(4, Math.floor(walkGraph.size / 340)), "CYCLIST");
-          addAgents(walkGraph, Math.min(3, Math.floor(walkGraph.size / 440)), "SCOOTER");
-          addAgents(animalGraph, Math.min(6, Math.floor(animalGraph.size / 1400)), "ANIMAL");
-          movingWalkers = movingAgents.filter((agent) => agent.kind === "WALKER");
-          host!.dataset.agentChanges = String(Math.abs(before - movingAgents.length));
+          const candidates = [...animalGraph.values()];
+          const occupied = new Set(animals.map(agent => key(agent.current)));
+          const limit = Math.min(6, Math.floor(animalGraph.size / 1400));
+          for (let attempt = 0; animals.length < limit && attempt < Math.min(64, candidates.length); attempt++) {
+            const picked = nextSeededRandom(spawnState); spawnState = picked.state;
+            const current = candidates[Math.floor(picked.value * candidates.length)]!;
+            if (occupied.has(key(current))) continue;
+            const planned = planAgentRoute(animalGraph, current, spawnState, 9);
+            spawnState = planned.randomState;
+            const next = planned.route[1];
+            if (!next) continue;
+            const variant = MICRO_ANIMAL_SPECIES[animals.length % MICRO_ANIMAL_SPECIES.length]!;
+            const position = residentGroundPosition(current, next, 0, CELL_SIZE);
+            const view = sprite(microAmbientSprite("animal", variant).url, position.x, position.y);
+            view.anchor.set(0.5);
+            worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
+            animals.push({ id: `animal-${nextAgentId++}`, view, graph: animalGraph, current, next,
+              progress: 0, speed: 0.00065 + (attempt % 3) * 0.00008, variant, steps: 0,
+              randomState: planned.randomState, route: planned.route, routeIndex: 1 });
+            occupied.add(key(current));
+          }
+          drawMobility();
+          host!.dataset.agentChanges = String(Math.abs(before - mobilityViews.size - animals.length));
+        } else {
+          for (const entry of mobilityViews.values()) { entry.view.visible = false; if (entry.marker) entry.marker.visible = false; }
+          for (const entry of trafficSignalViews.values()) entry.view.visible = false;
         }
-        // Diagnostics describe visible simulation state. Resident agents are
-        // retained across overview for a seamless detail return, but hidden
-        // sprites must not be reported as active/visible agents.
-        host!.dataset.cars = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "CAR").length : 0);
-        host!.dataset.buses = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "BUS").length : 0);
-        host!.dataset.walkers = String(agentsVisible ? movingWalkers.length : 0);
-        host!.dataset.cyclists = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "CYCLIST").length : 0);
-        host!.dataset.scooters = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "SCOOTER").length : 0);
-        host!.dataset.animals = String(agentsVisible ? movingAgents.filter((agent) => agent.kind === "ANIMAL").length : 0);
-        host!.dataset.wrongWayCars = String(movingAgents.filter((agent) => agent.kind === "CAR"
-          && key(agent.current) !== key(agent.next)
-          && !agent.outgoing?.get(key(agent.current))?.some((candidate) => key(candidate) === key(agent.next))).length);
-        host!.dataset.wrongWayBuses = String(movingAgents.filter((agent) => agent.kind === "BUS"
-          && key(agent.current) !== key(agent.next)
-          && !agent.outgoing?.get(key(agent.current))?.some((candidate) => key(candidate) === key(agent.next))).length);
-        host!.dataset.agentSession = String(sessionSeed);
-        host!.dataset.agentIds = movingAgents.map((agent) => agent.id).sort().join(",");
-        host!.dataset.residentWalkFrames = [...new Set(movingWalkers.map((walker) => walker.visualKey))].sort().join(",");
-        host!.dataset.residentWalkState = movingWalkers.map((walker) => `${walker.id}:${walker.visualKey}`).sort().join(",");
-        host!.dataset.trafficSteps = String(movingAgents
-          .filter((agent) => agent.kind === "CAR" || agent.kind === "BUS")
-          .reduce((sum, agent) => sum + agent.steps, 0));
+        for (const animal of animals) animal.view.visible = agentsVisible;
+        reportMobility();
         sortWorldObjects();
         if (rebuildMovement) host!.dataset.movementRebuilds = String(Number(host!.dataset.movementRebuilds ?? 0) + 1);
         host!.dataset.entityRebuilds = String(Number(host!.dataset.entityRebuilds ?? 0) + 1);
@@ -2721,16 +2729,21 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         return cached;
       };
       if (focusCityId) {
-        const scene = initialCitySceneRef.current?.city.id === focusCityId
+        const scene = rendererAttempt === 0 && initialCitySceneRef.current?.city.id === focusCityId
           ? initialCitySceneRef.current
-          : (await apiWithMetrics<CitySceneDto>(`/api/countries/${countryId}/cities/${focusCityId}/scene`, {
-            cache: "no-cache",
-            headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
-          })).data;
-        if (scene.schemaVersion !== 2 || scene.city.id !== focusCityId || scene.lod !== "DETAIL") {
+          : await loadCityScene(countryId, focusCityId, initialWorldRevisionRef.current, rendererAttempt > 0);
+        if (scene.schemaVersion !== CITY_SCENE_SCHEMA_VERSION || scene.city.id !== focusCityId || scene.lod !== "DETAIL") {
           throw new Error("Сервер вернул несовместимую сцену города");
         }
         cityScene = scene;
+        const cityTerrainKinds: AtlasTerrainKind[] = ["grass", "meadow", "forest", "hill", "mountain", "coast", "river", "stone", "deep_water", "shallow_water"];
+        const preloadStarted = performance.now();
+        await assetLease.load([...requiredGroundAssets([], "DETAIL"), ...cityTerrainKinds.map(kind => gameAssetUrl(atlasTerrainTile(kind, "city", 0, 0, 0).url))], loadTextureAssets);
+        cityTerrainAtlasesReady = true;
+        host.dataset.cameraPaddingAtlasPreloadMs = (performance.now() - preloadStarted).toFixed(2);
+        host.dataset.cameraPaddingAtlasFamilies = String(cityTerrainKinds.length);
+        if (disposed) return;
+        installCityRoadPadding(cityScene);
         installCompletedSnapshotTasks(cityScene);
         citySceneChunkCount = cityScene.chunks.length;
         for (const payload of cityScene.chunks) storeChunkPayload(chunkKey(payload.chunkX, payload.chunkY), "DETAIL", payload);
@@ -2739,19 +2752,26 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host!.dataset.citySceneChunks = String(citySceneChunkCount);
         host!.dataset.panNetworkRequests = "0";
       }
-      let citySceneRefresh: Promise<void> | undefined;
+      const sceneRefresh = new CoalescedRefresh();
+      let sceneDirty = false;
+      let sceneDirtyMovement = false;
+      let sceneRenderRequest = 0;
       const refreshCityScene = (): Promise<void> => {
         if (!focusCityId) return Promise.resolve();
-        if (citySceneRefresh) return citySceneRefresh;
-        citySceneRefresh = (async () => {
-          const response = await apiWithMetrics<CitySceneDto>(`/api/countries/${countryId}/cities/${focusCityId}/scene`, {
+        return sceneRefresh.request(async () => {
+          if (disposed) return;
+          const response: ApiResult<CitySceneDto> = await apiWithMetrics<CitySceneDto>(`/api/countries/${countryId}/cities/${focusCityId}/scene`, {
             cache: "no-cache",
-            headers: { accept: "application/vnd.tasktopia.city-scene+json; version=2" },
+            headers: { accept: `application/vnd.tasktopia.city-scene+json; version=${CITY_SCENE_SCHEMA_VERSION}` },
           });
-          if (response.data.schemaVersion !== 2 || response.data.city.id !== focusCityId || response.data.lod !== "DETAIL") {
+          if (disposed) return;
+          if (response.data.schemaVersion !== CITY_SCENE_SCHEMA_VERSION || response.data.city.id !== focusCityId || response.data.lod !== "DETAIL") {
             throw new Error("Сервер вернул несовместимую сцену города");
           }
           cityScene = response.data;
+          installCityRoadPadding(cityScene);
+          cityFlightRoutes = cityMicroFlightRoutes(cityScene.airportConnections);
+          host!.dataset.airportFlightRoutes = String(cityFlightRoutes.length);
           installCompletedSnapshotTasks(cityScene);
           citySceneChunkCount = cityScene.chunks.length;
           chunkPayloadCache.clear();
@@ -2761,8 +2781,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           host!.dataset.citySceneRefreshRequests = String(Number(host!.dataset.citySceneRefreshRequests ?? 0) + 1);
           host!.dataset.citySceneRevision = cityScene.sceneRevision;
           host!.dataset.citySceneChunks = String(citySceneChunkCount);
-        })().finally(() => { citySceneRefresh = undefined; });
-        return citySceneRefresh;
+        });
       };
       const preloadViewportPayloads = async (wanted: Array<[number, number]>, lod: MapLod): Promise<void> => {
         if (cityScene) return;
@@ -2834,7 +2853,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               let payload = cachedChunkPayload(cacheKey, lod);
               if (!payload) {
                 if (cityScene) throw new Error(`В единой сцене отсутствует chunk ${cacheKey}:${lod}`);
-                const response = await apiWithMetrics<ChunkPayloadDto | ChunkDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${lod.toLowerCase()}`, {
+                const response = await apiWithMetrics<ChunkPayloadDto>(`/api/chunks/${chunkX}/${chunkY}?lod=${lod.toLowerCase()}`, {
                   signal: controller.signal,
                   cache: "no-cache",
                   headers: { accept: "application/vnd.tasktopia.chunk-payload+json; version=2" },
@@ -2843,15 +2862,6 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 exposeRollingMetric(host!, "chunkPayload", chunkPayloadMetric, response.metrics.decodedBytes, "Bytes");
                 exposeRollingMetric(host!, "chunkRequest", chunkRequestMetric, response.metrics.requestMs);
                 exposeRollingMetric(host!, "chunkParse", chunkParseMetric, response.metrics.parseMs);
-                if (!("payloadVersion" in response.data)) {
-                  // A v1.13.5 server ignores the v2 Accept header and returns a
-                  // fully materialized chunk. Keep this reader during rollout
-                  // and rollback so already-loaded v2 tabs remain functional.
-                  const legacy = Number.isFinite(responseWorldVersion)
-                    ? { ...response.data, worldVersion: responseWorldVersion }
-                    : response.data;
-                  return patchChunkTaskStatuses(legacy, latestTaskStatusPatches);
-                }
                 payload = Number.isFinite(responseWorldVersion)
                   ? { ...response.data, publishedVersion: responseWorldVersion }
                   : response.data;
@@ -3043,10 +3053,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host!.dataset.groundCache = String(groundContainers.size);
       }
       const drainVisibleLoads = async (): Promise<void> => {
-        if (loadRunning) return;
+        if (loadRunning || !activeRef.current) return;
         loadRunning = true;
         try {
-          while (!disposed) {
+          while (!disposed && activeRef.current) {
             const generation = loadGeneration;
             const lod = desiredLod;
             const wanted = [...desiredWanted];
@@ -3057,7 +3067,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             const discardPreparedGrounds = () => {
               for (const prepared of preparedGrounds.values()) {
                 if (prepared.terrainView) destroyGroundView(prepared.terrainView);
-                destroyGroundView(prepared.overlayView);
+                if (prepared.overlayView) destroyGroundView(prepared.overlayView);
               }
               preparedGrounds.clear();
             };
@@ -3077,7 +3087,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                 host!.dataset.viewportBatch = "ready";
               } catch {
                 // Rolling deploy / transient batch failure: individual chunk
-                // requests below remain the compatibility fallback.
+                // requests below serve only the unscoped world view.
                 host!.dataset.viewportBatch = "fallback";
               }
               await Promise.all(wanted.map(async ([chunkX, chunkY]) => {
@@ -3119,7 +3129,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
                   if (!prepared) return;
                   if (disposed || generation !== loadGeneration || desiredLod !== lod || !desiredKeys.has(cacheKey)) {
                     if (prepared.terrainView) destroyGroundView(prepared.terrainView);
-                    destroyGroundView(prepared.overlayView);
+                    if (prepared.overlayView) destroyGroundView(prepared.overlayView);
                     return;
                   }
                   preparedGrounds.set(cacheKey, prepared);
@@ -3230,6 +3240,18 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             });
             if (!covered) continue;
             if (cityScene && host!.dataset.citySceneCommit !== "atomic") {
+              // A scene is not a coherent first frame while exterior material
+              // is still awaiting its native atlas. The bounded halo also
+              // starts warm; no seed-placeholder palette is final padding.
+              while (paddingWork.size && !disposed && generation === loadGeneration) await Promise.all([...paddingWork]);
+              if (disposed || generation !== loadGeneration) continue;
+              if ([...visiblePaddingKeys].some(id => !paddingTerrain.get(id)?.terrainView || !paddingTerrain.get(id)?.treeViews)) {
+                host!.dataset.loading = "false";
+                host!.dataset.loadError = "true";
+                endStreamingFeedback();
+                setMapLoadError("Не удалось загрузить материал ландшафта. Повторите загрузку карты.");
+                break;
+              }
               if (reducedMotion) app.render();
               setFirstFrameReady(true);
               paintedFrame = true;
@@ -3261,18 +3283,25 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             host!.dataset.mapLod = currentLod.toLowerCase();
             host!.dataset.loading = "false";
             endStreamingFeedback();
-            delete host!.dataset.loadError;
             loadRetryAttempt = 0;
-            setMapLoadError(undefined);
+            // An older viewport bake may finish after a newer scene refresh
+            // failed. Finishing that old work cannot acknowledge the failure.
+            if (!sceneDirty) {
+              delete host!.dataset.loadError;
+              setMapLoadError(undefined);
+            }
             break;
           }
         } finally {
           loadRunning = false;
-          if (!disposed && host!.dataset.loading === "true") void drainVisibleLoads();
+          if (!disposed && activeRef.current && host!.dataset.loading === "true") void drainVisibleLoads();
         }
       };
 
       function loadVisible(options: { forceKeys?: Set<string>; rebuildMovement?: boolean; isRetry?: boolean } = {}): void {
+        // Camera gestures must not dismiss a failed authoritative update by
+        // treating the old in-memory scene as a successful reload.
+        if (cityScene && sceneDirty) return;
         if (!options.isRetry) {
           window.clearTimeout(loadRetryTimer);
           loadRetryAttempt = 0;
@@ -3337,7 +3366,38 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
 
       visibleLoaderReady = true;
 
+      const refreshSceneAndRender = (rebuildMovement: boolean): void => {
+        sceneDirty = true;
+        sceneDirtyMovement ||= rebuildMovement;
+        const request = ++sceneRenderRequest;
+        void refreshCityScene().then(() => {
+          if (disposed || !cityScene || request !== sceneRenderRequest) return;
+          sceneDirty = false;
+          const movement = sceneDirtyMovement;
+          sceneDirtyMovement = false;
+          const forceKeys = new Set(cityScene.chunks.map(chunk => chunkKey(chunk.chunkX, chunk.chunkY)));
+          for (const cacheKey of forceKeys) invalidatedGroundKeys.add(cacheKey);
+          desiredRange = "";
+          loadVisible({ forceKeys, rebuildMovement: movement });
+        }).catch(() => {
+          if (disposed || request !== sceneRenderRequest) return;
+          host!.dataset.loadError = "true";
+          setMapLoadError("Не удалось обновить город. Проверьте соединение и повторите попытку.");
+        });
+      };
+
       runtimeRef.current = {
+        setActive(value) {
+          activeRef.current = value;
+          updateAnimation();
+          if (value) {
+            if (cityScene && sceneDirty) { refreshSceneAndRender(sceneDirtyMovement); return; }
+            if (host.dataset.loading === "true") void drainVisibleLoads();
+            else loadVisible();
+          } else {
+            endStreamingFeedback();
+          }
+        },
         setViewBounds(bounds) {
           currentViewBounds = bounds;
           redrawBackdrop();
@@ -3363,9 +3423,28 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           renderedRange = "";
           void loadVisible();
         },
-        invalidate(event) {
-          if (event.type === "task.status_changed" && event.status === "COMPLETED" && event.affectedBounds) launchCelebration(event.affectedBounds);
-          if (event.type === "task.status_changed" && event.taskId && event.status
+        invalidateBatch(incoming) {
+          const events = incoming.filter(event => mapInvalidationImpact(event) !== 'NONE'
+            && mapInvalidationAffectsCity(event, focusCityId));
+          if (events.length === 0) return;
+          const latest = events.at(-1)!;
+          // Completed districts use compact snapshot tasks, not chunk task
+          // payloads. Reopening one must replace that authoritative snapshot.
+          const sceneEvents = events.filter(event => mapInvalidationImpact(event) === 'SCENE'
+            || Boolean(event.taskId && completedSnapshotTasks.has(event.taskId)));
+          const event = sceneEvents.length ? { ...sceneEvents.at(-1)!, worldVersion: latest.worldVersion,
+            groundChanged: sceneEvents.some(item => item.groundChanged ?? !GROUND_PRESERVING_EVENTS.has(item.type)),
+            // Union only when every event has a spatial scope; unknown means a full refresh.
+            affectedBounds: sceneEvents.every(item => item.affectedBounds) ? {
+              minX: Math.min(...sceneEvents.map(item => item.affectedBounds!.minX)), minY: Math.min(...sceneEvents.map(item => item.affectedBounds!.minY)),
+              maxX: Math.max(...sceneEvents.map(item => item.affectedBounds!.maxX)), maxY: Math.max(...sceneEvents.map(item => item.affectedBounds!.maxY)),
+            } : undefined,
+          } : latest;
+          host.dataset.realtimeBatchCount = String(Number(host.dataset.realtimeBatchCount ?? 0) + 1);
+          host.dataset.realtimeBatchEvents = String(events.length);
+          for (const event of events) {
+            if (event.type === "task.status_changed" && event.status === "COMPLETED" && event.affectedBounds) launchCelebration(event.affectedBounds);
+            if (event.type === "task.status_changed" && event.taskId && event.status
             && event.progress !== undefined && event.stage !== undefined) {
             const previous = latestTaskStatusPatches.get(event.taskId);
             if (!previous || event.worldVersion > previous.worldVersion) {
@@ -3382,19 +3461,21 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               if (!oldest) break;
               latestTaskStatusPatches.delete(oldest);
             }
+            }
           }
-          if (event.type === "task.comment_added" || event.type === "task.assignee_changed"
-            || event.type === "country.profile_updated" || event.type === "archive.record_updated") return;
-          if (event.type === "task.status_changed" && event.groundChanged === false
-            && event.taskId && event.status && event.progress !== undefined && event.stage !== undefined) {
+          if (sceneEvents.length === 0) {
+            host.dataset.realtimePatchedTasks = JSON.stringify(events.map(item => ({ taskId: item.taskId, stage: item.stage })));
             let patched = false;
             const patchedChunks = new Map<string, ChunkDto>();
             const decorationRefreshes = new Map<string, { payload: ChunkPayloadDto; lod: MapLod }>();
             for (const [payloadKey, payload] of chunkPayloadCache) {
-              const contextTask = payload.decorationContext.tasks.find((task) => task.id === event.taskId);
+              const contextChanged = payload.decorationContext.tasks.some(task => {
+                const patch = latestTaskStatusPatches.get(task.id);
+                return patch && patch.worldVersion >= payload.publishedVersion && (task.stage >= 3) !== (patch.stage >= 3);
+              });
               const next = patchChunkPayloadTaskStatuses(payload, latestTaskStatusPatches);
               if (next !== payload) chunkPayloadCache.set(payloadKey, next);
-              if (!contextTask || (contextTask.stage >= 3) === (event.stage >= 3)) continue;
+              if (!contextChanged) continue;
               const separator = payloadKey.lastIndexOf(":");
               const cacheKey = payloadKey.slice(0, separator);
               const lod = payloadKey.slice(separator + 1) as MapLod;
@@ -3465,21 +3546,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             return;
           }
           if (cityScene) {
-            const rebuildMovement = new Set([
+            const movementEvents = new Set([
               "city.created", "city.deleted", "district.created", "district.deleted", "district.activated",
               "task.created", "task.deleted",
-            ]).has(event.type);
-            void refreshCityScene().then(() => {
-              if (disposed || !cityScene) return;
-              const forceKeys = new Set(cityScene.chunks.map((chunk) => chunkKey(chunk.chunkX, chunk.chunkY)));
-              for (const cacheKey of forceKeys) invalidatedGroundKeys.add(cacheKey);
-              desiredRange = "";
-              loadVisible({ forceKeys, rebuildMovement });
-            }).catch(() => {
-              if (disposed) return;
-              host!.dataset.loadError = "true";
-              setMapLoadError("Не удалось обновить город. Проверьте соединение и повторите попытку.");
-            });
+            ]);
+            const rebuildMovement = events.some(item => movementEvents.has(item.type) || item.resync || item.groundRoadTopologyChanged);
+            refreshSceneAndRender(rebuildMovement);
             return;
           }
           const groundChanged = event.groundChanged ?? !GROUND_PRESERVING_EVENTS.has(event.type);
@@ -3510,13 +3582,17 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             }
             if (chunks.has(cacheKey) || desiredKeys.has(cacheKey)) forceKeys.add(cacheKey);
           }
-          const rebuildMovement = new Set([
+          const movementEvents = new Set([
             "city.created", "city.deleted", "district.created", "district.deleted", "district.activated",
             "task.created", "task.deleted",
-          ]).has(event.type);
+          ]);
+          const rebuildMovement = events.some(item => movementEvents.has(item.type) || item.resync);
           void loadVisible({ forceKeys, rebuildMovement });
         },
         retry() {
+          if (cityScene && sceneDirty) { refreshSceneAndRender(sceneDirtyMovement); return; }
+          retryFailedPadding(paddingTerrain);
+          refreshCameraPadding();
           desiredRange = "";
           delete host.dataset.loadError;
           void loadVisible();
@@ -3525,24 +3601,15 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
 
       const wheel = (event: WheelEvent) => {
         event.preventDefault();
-        const wheelAt = performance.now();
         const oldScale = world.scale.x;
         const minimumScale = cameraMinimumScale();
-        const wasAtMinimum = cameraTargetScale <= minimumScale + 0.001;
-        const direction = event.deltaY > 0 ? "OUT" : "IN";
-        const boundaryStep = advanceAtlasZoomBoundary(zoomBoundary, {
-          at: wheelAt,
-          atBoundary: direction === "OUT" && Math.abs(event.deltaY) <= 600 && wasAtMinimum,
-          direction,
-        }, 1);
-        zoomBoundary = boundaryStep.state;
-        if (boundaryStep.triggered) {
-          onZoomOutToCountryRef.current?.();
-          return;
-        }
         cameraTargetScale = nextCameraTargetScale(cameraTargetScale, event.deltaY);
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        if (wheelNavigationRef.current.consume({ at: event.timeStamp, deltaY: event.deltaY }, event.deltaY > 0 && cameraTargetScale <= minimumScale + .001 && Boolean(onZoomOutToCountryRef.current))) {
+          onZoomOutToCountryRef.current?.({ x: mouse.x / Math.max(1, rect.width), y: mouse.y / Math.max(1, rect.height) });
+          return;
+        }
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };
         cameraZoomAnchor = { screenX: mouse.x, screenY: mouse.y, localX: local.x, localY: local.y };
         if (reducedMotion) animateCameraZoom({ deltaMS: 1_000 });
@@ -3552,7 +3619,8 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       host.dataset.inputReady = "true";
       let intersectsViewport = true;
       const updateAnimation = () => {
-        const active = !reducedMotion && !document.hidden && intersectsViewport;
+        const active = activeRef.current && !reducedMotion && !document.hidden && intersectsViewport;
+        host.dataset.mapActive = String(activeRef.current);
         host.dataset.animationActive = String(active);
         if (active) app.start(); else app.stop();
       };
@@ -3595,7 +3663,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
       cleanupStartupResources();
       destroyApp();
     };
-  }, [chunkSize, countryId, focusCityId, rendererAttempt, startAtMinimumScale, terrainSeed]);
+  }, [chunkSize, countryId, focusCityId, rendererAttempt, terrainSeed]);
 
   return <div className="world-canvas-wrap">
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />

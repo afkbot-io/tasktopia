@@ -1,0 +1,97 @@
+{
+  "key": "compact-terrace-v1",
+  "reviewedAt": "2026-09-06",
+  "reviewMethod": "Main agent inspected per-stage native48x24 previews and nearest-neighbour8x shared-baseline sequence. Numeric registration is a separate gate. Actual CITY stages3–5 reviewed; see runtimeReview.",
+  "projection": {
+    "camera": "High45-degree frontal-top orthographic convention, all structural edges axis aligned.",
+    "roofDepthPx": 17,
+    "facadeHeightPx": 5,
+    "floorStepPx": 5,
+    "floorCount": 1,
+    "windowPaneSizePx": [
+      3,
+      2
+    ],
+    "windowOpeningSizePx": [
+      3,
+      2
+    ],
+    "windowGroupWithSillPx": [
+      4,
+      3
+    ],
+    "doorLeafSizePx": [
+      4,
+      4
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "3c1da7d1dd7056a0eaba510a1d2d7decf085a9ff228a8daa47b00d1dc0f019a4",
+      "runtimeSha256": "c09d881dba29141f46f468dbfae56fc38e3cc3c872f5dbbdfb50cedadc0a6e8a",
+      "notes": "Roof entirely absent, opaque shaded rooms and aligned partitions; rough masonry/material stacks stay within silhouette. Same entrance, foundation, camera and window positions as4/5; not a scaled-down complete house."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "41f1c52bc3138315cef670541f6631e784d6cdf740c424105bac2cc5dc7414d0",
+      "runtimeSha256": "9e953baf60b1f68eb50fa0311a4d3d70ee4131ba7d09cacf2377223b77c59075",
+      "notes": "About50%bare left roof remains; right rooms opaque with axial partitions and building materials. Black unfinished glazing, same exterior and entrance; no finished rooftop equipment."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "aa485b849684b2ce89baec643be0797eaab99db9ef978f305e0a6bdf3435cf46",
+      "runtimeSha256": "830d1565b63723bad6fdb86a4d970785f91b1d60a3bc19f9fb50c4c15ea91964",
+      "notes": "Clay horizontal roof ridges, inset green terrace with low planters, cream single-storey facade. Window openings3x2 and4x3groups including sills; exact4x4door with6x5frame. No black baseline."
+    }
+  },
+  "pendingIntegration": [
+    "Final frozen-revision QA/deployment approval; stages0–2 use shared construction geometry, not separately AI-authored art."
+  ],
+  "runtimeReview": {
+    "reviewedAt": "2026-09-06",
+    "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+    "acceptedStages": [
+      3,
+      4,
+      5
+    ],
+    "fixture": "compact_release_20260906:480tasks/20sprints",
+    "evidence": "docs/evidence/compact-rc/final-browser.json",
+    "checks": [
+      "Same footprint and south entrance across3/4/5",
+      "Shaded opaque interior and aligned partitions at3",
+      "Partial bare roof and unfinished openings at4",
+      "Completed unique roof and facade at5",
+      "Tree/crown and sidewalk clearance",
+      "All30real building clicks opened the matching task"
+    ],
+    "captures": [
+      {
+        "stage": 3,
+        "path": "screenshots/compact-rc-final/compact-terrace-v1-stage-3.png",
+        "sha256": "f28f68a62d8ae427959dc4e4a4fc3b94c1cbab18d19e8c3344a09a57485f7561"
+      },
+      {
+        "stage": 4,
+        "path": "screenshots/compact-rc-final/compact-terrace-v1-stage-4.png",
+        "sha256": "4084e441d184860992fb4b0f36e477644cd63745d50357edb10677480b305cd6"
+      },
+      {
+        "stage": 5,
+        "path": "screenshots/compact-rc-final/compact-terrace-v1-stage-5.png",
+        "sha256": "2700aca9fdfa05a8b5d9e7b0660142f7a675b44167b11b32a1a4b2c8c69820bf"
+      }
+    ]
+  }
+}

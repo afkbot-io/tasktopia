@@ -1,79 +1,89 @@
-# Tasktopia V5 asset migration status
+# Compact asset cutover status
 
-Updated: 2026-08-23
+Updated: 2026-09-05. Working-branch status, not a production release report.
 
-This file is the release checklist for the frontal-top V5 building pack. The
-active catalog is authoritative; removed private-house studies are not runtime
-families and do not count as pending migration work.
+This retained filename replaces the former V5 migration checklist. The old
+167-family catalog, 18–24-cell residential geometry, full-size door review and
+`building-stage-study` authoring pipeline are retired. Do not use historical
+research or dated changelog entries as current generation instructions.
 
-## Current inventory
+## Current authority
 
-| Scope | Active families | Geometry studies | Pack-audit verified | Remaining |
-| --- | ---: | ---: | ---: | ---: |
-| All buildings | 167 | 167 | 167 | 0 |
-| Residential and high-rise landmarks | 60 | 60 | 60 | 0 |
-| Low-rise residential | 10 | 10 | 10 | 0 |
-| Mid-rise residential | 16 | 16 | 16 | 0 |
-| High-rise residential + office landmarks | 34 | 34 | 34 | 0 |
+- [Compact world cutover](../../../docs/COMPACT-BLOCK-CUTOVER.md).
+- [Compact building art contract](../../../docs/art/COMPACT-BUILDING-ART-CONTRACT.md).
+- `reference/ai-authored/compact-apartment-v1/geometry.json`,
+  `visual-review.json` and `report.json` under the asset pack.
+- The active `catalog/buildings.json` and `manifest.json`.
 
-The former 36 detached/private HOUSE families are absent from the catalog,
-runtime pack and public pack. The stable district code `PRIVATE` remains for API
-and stored-data compatibility, but now selects low- and mid-rise apartment
-buildings. `NEW_BUILD` selects mid- and high-rise apartment buildings.
+The initial family is `compact-apartment-v1`: canvas 48×48, physical 6×6 cells
+at 8 px, anchor [24,48], south entrance 3. Its approved measurements are a 4×3
+door leaf in a 7×5 portal, paired 2×2 window panes, 30 px roof region with 25 px
+open plane, 15 px facade and 5 px floor step. The high 45-degree frontal-top view
+is roof-dominant and axis-aligned, with no receding side facade or heavy black
+baseline. Read the canonical contract for ranges and registration tolerance.
 
-## New low-rise batch
+## Active inventory
 
-The replacement batch contains ten independent 5→4→3 families:
+| Scope | Current count |
+| --- | ---: |
+| Building families | 1 |
+| Building runtime stages | 5 |
+| Independent AI-authored building sources | 3 (stages 3–5) |
+| Shared compact construction tiles / props | 7 / 4 |
+| All props | 269 |
+| Terrain families / vehicle models | 12 / 8 |
+| Pixel City pack runtime PNGs | 362 |
+| Public v5 runtime PNGs including additional atlas files | 491 |
 
-- `house-lowrise-courtyard-brick`;
-- `house-lowrise-courtyard-plaster`;
-- `house-lowrise-gallery`;
-- `house-lowrise-terrace`;
-- `house-lowrise-corner`;
-- `house-lowrise-stepped`;
-- `house-lowrise-green-roof`;
-- `house-lowrise-loft`;
-- `house-lowrise-arcade`;
-- `house-lowrise-modular`.
+Counts describe the currently published local manifest, not deployment evidence.
+Terrain, tree, vehicle and ambient families retain their approved audits.
 
-Each family has immutable stage hashes, a `geometry.json`, a semantic
-`projection-review.json`, full-size double-door geometry and a continuous
-`STONE` platform. The accepted dominant roof planes are visible in the
-frontally aligned top view; side faces remain within the narrow accent limit.
+## Building production path
 
-The 1.19.9 scale pass enlarged all ten ordinary low-rise canvases without
-single-axis stretching. Widths are now 18–24 cells and physical depths are
-14–16 cells; `house-lowrise-gallery` is `144×136` with an `18×14` footprint.
-Every family records a reviewed `16×16` entrance module and `12×14` visible
-double-door leaf bounds on the same south baseline. Eight legacy stage-3/4
-sources were replaced with true-alpha authored stages; the strict verifier now
-accepts all ten families with zero errors.
+Approve stage 5, then derive 4, then 3 from the same authority. Stage 4 preserves the
+shell with unfinished dark windows, roughly half a roof and no final rooftop
+equipment. Stage 3 removes the roof and leaves roughly half the masonry, visible
+partitions and opaque shaded room floors. It keeps the physical lot and projected
+interior depth; the old height-ratio validator does not apply.
 
-The 1.20.0 projection correction moves `house-lowrise-courtyard-plaster` to
-versioned authored sources `v6`. Its three independent stages share one
-baseline and camera; stage 3 occupies 58.5% of the finished height, while the
-finished sprite uses one 32px-deep shallow mansard plane instead of the former
-cutaway roof. The active 16×16 entrance, projection annotations and their
-evidence fingerprints are bound to the rebuilt runtime SHA-256.
+Stage 0 is a planned-slot marker. Stages 1–2 are runtime composition from the
+compact site/fence/gate/crane/cabin/material kit. Their catalog PNGs are
+thumbnails, not the live construction-site rendering. External terrain, fences
+and sidewalks are not baked into authored stages 3–5.
 
-## Release gates
+Use one source frame measured from stage 5, uniform nearest-neighbour
+normalization and hard alpha. Do not repaint architecture, stretch axes or
+independently recenter stages. Each source and normalized output is hash-pinned.
+Automated raster/structural-mask checks and independent visual review both gate
+publication; an accepted source is not silently replaced by a builder.
 
-1. `npm run assets:build` produces exactly 167 building families and 835 stages.
-2. `npm run assets:verify` reports no missing, orphaned, palette, alpha, anchor,
-   footprint or projection failures.
-3. Strict building-stage verifier reports for all ten new families have
-   `acceptedByCode: true` and no errors.
-4. `assets:residential:accept-doors` binds the manually inspected sheet to the
-   SHA-256 of all ten current runtime sprites; `render-residential-door-review.py`
-   rejects stale review data and renders the native-pixel/nearest-4× sheet.
-5. The 100-task megacity starts from twenty compact base districts and adds
-   continuation districts when a block is full. It contains every one of the 26
-   low- and mid-rise HOUSE families plus all 32 ordinary residential high-rises. The two
-   unique office towers remain separately verified landmarks. The city has no
-   blocking facade/road overlaps or audit violations.
-6. Production world regeneration replaces every stored removed building key
-   while preserving task identity and history.
+## Current commands
 
-Generation constraints are defined in
-`catalog/residential-generation-mask.json`; visual authoring rules remain in
-`GENERATION-SPEC.md` and the Tasktopia building generator/verifier skills.
+Run serially:
+
+```bash
+npm run assets:compact:verify
+npm run assets:build
+npm run assets:verify
+npm run assets:storybook
+```
+
+`assets:construction:build` rebuilds the compact kit explicitly;
+`assets:build` already invokes it and verifies authored stages before publishing.
+The obsolete residential geometry/migration/door-acceptance commands and the
+old building-stage verifier were removed. The building tests now cover the
+compact catalog, common frame, alpha holes, foundation masks and stale review.
+
+## Spatial rollout and remaining scope
+
+Migration 0023 removes derived legacy placements and caches. Task product data,
+IDs/numbers, statuses, documents/history, city/district identity and the terrain
+seed survive. Rebuild every city before map traffic resumes. Rehearse on a DB
+copy; rollback restores the pre-cutover snapshot and application revision
+together. No release has been performed as part of this working-branch change.
+
+The first cutover does not implement relocation click-through, automatic
+school/hospital quotas, airport/rail/bus-station construction or additional
+district-specific building families. Park/water/parking tasks and planned slots
+are not substitutes for those deferred requirements. Final full-test, build,
+browser and deployment results belong to the final revision's review evidence.

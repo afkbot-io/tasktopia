@@ -1,5 +1,6 @@
 import type { Rect } from "../shared/contracts";
 export { CITY_CAMERA_MIN_SCALE, cityDetailFocusBounds } from "../shared/city-camera";
+export { cameraTerrainPadding } from "./camera-terrain-padding";
 
 export type ScreenSize = { width: number; height: number };
 export type CameraPosition = { x: number; y: number };
@@ -35,12 +36,6 @@ export function smoothCameraScale(current: number, target: number, deltaMs: numb
   const blend = 1 - Math.exp(-Math.max(0, deltaMs) / Math.max(1, responseMs));
   const next = current + (target - current) * blend;
   return Math.abs(target - next) < .0005 ? target : next;
-}
-
-export function minimumCameraScale(screen: ScreenSize, bounds: Rect, cellSize: number, configuredMinimum = 0.8): number {
-  const width = (bounds.maxX - bounds.minX + 1) * cellSize;
-  const height = (bounds.maxY - bounds.minY + 1) * cellSize;
-  return Math.max(configuredMinimum, screen.width / width, screen.height / height);
 }
 
 export function fitCameraScale(

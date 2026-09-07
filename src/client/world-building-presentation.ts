@@ -2,7 +2,6 @@ import type { PlatformKind } from "../shared/contracts";
 import type { Cell } from "../shared/contracts";
 import type { BuildingCatalogEntry } from "../shared/catalog";
 import { taskBuildingPlatform } from "../shared/catalog";
-import { constructionPadDepth } from "../shared/construction-stage";
 import type { RoadAtlasSurface } from "../shared/road-atlas";
 
 const BUILDING_STAGE_COLORS = [0x9b72d2, 0xd6a13d, 0xf2c84b, 0x4fa5d7, 0x69ad67] as const;
@@ -27,7 +26,7 @@ export function buildingInteractiveBounds(
   if (stage <= 2) {
     const width = (entry.footprint.width + 2) * cellSize;
     const height = (constructionPadDepth + 2) * cellSize;
-    return { x: -width / 2, y: -height, width, height: height + cellSize };
+    return { x: -width / 2, y: -(constructionPadDepth + 1) * cellSize, width, height };
   }
   const opaque = entry.stageOpaqueBounds[Math.max(0, Math.min(4, stage - 1))]!;
   return {
@@ -63,103 +62,24 @@ export function buildingPlatformPresentation(platform: PlatformKind): BuildingPl
   }
 }
 
+/** Compact task buildings use their catalog ground material. */
 export function taskPlatformPresentation(entry: BuildingCatalogEntry): BuildingPlatformPresentation {
-  const ordinaryResidentialParcel = entry.category === "HOUSE"
-    && !entry.tags.includes("new-build")
-    && !entry.tags.includes("dense")
-    && entry.footprint.width <= 10
-    && entry.spriteSize.height <= 96;
-  if (entry.platform === "YARD" && !ordinaryResidentialParcel) {
-    return { family: "surface", key: "PAVEMENT" };
-  }
   return buildingPlatformPresentation(taskBuildingPlatform(entry));
 }
 
 /**
- * During planning/foundation stages only the authored shallow construction
- * pad is surfaced. The full collision lot remains reserved by the server but
- * stays ordinary terrain, so a narrow facade does not sit on a huge plaza.
+ * Planning is fence-only and the foundation stage owns its construction tiles.
+ * Authored stages then use exactly the physical slot, with no hidden sky
+ * reservation, forecourt extension or facade-depth compression.
  */
 export function taskPlatformCells(
   footprint: Cell[],
   stage: number,
-  entry?: BuildingCatalogEntry,
 ): Cell[] {
-  if (footprint.length === 0) return footprint;
-  const minX = Math.min(...footprint.map((cell) => cell.x));
-  const maxX = Math.max(...footprint.map((cell) => cell.x));
-  const minY = Math.min(...footprint.map((cell) => cell.y));
-  const maxY = Math.max(...footprint.map((cell) => cell.y));
-  const footprintSize = { width: maxX - minX + 1, height: maxY - minY + 1 };
-  const shallowFinishedPlatform = stage > 2 && Boolean(entry) && (
-    entry!.serviceRole === "fuel-service"
-    || entry!.tags.includes("low-rise-residential")
-      && !entry!.tags.includes("new-build")
-      && !entry!.tags.includes("dense")
-  );
-  if (stage > 2 && !shallowFinishedPlatform) return footprint;
-  const platformSize = entry?.finishedPlatform;
-  const depth = entry?.serviceRole === "fuel-service"
-    ? Math.min(4, footprintSize.height)
-    : Math.min(platformSize?.height ?? constructionPadDepth(footprintSize), footprintSize.height);
-  const width = Math.min(platformSize?.width ?? footprintSize.width, footprintSize.width);
-  const firstX = minX + Math.floor((footprintSize.width - width) / 2);
-  const lastX = firstX + width - 1;
-  return footprint.filter((cell) => cell.y > maxY - depth && cell.x >= firstX && cell.x <= lastX);
+  return stage <= 2 ? [] : footprint;
 }
 
-function yardVariant(x: number, y: number, seed: number): 0 | 1 | 2 {
-  let value = Math.imul(x + 17, 73_856_093) ^ Math.imul(y - 31, 19_349_663) ^ Math.imul(seed + 7, 83_492_791);
-  value ^= value >>> 13;
-  return Math.abs(value) % 3 as 0 | 1 | 2;
-}
-
-/**
- * Gives ordinary residential buildings a real parcel rather than a miniature
- * civic square. The south entrance always has a one-cell access path; the
- * remaining cells form a stable mix of lawn, meadow and a compact earth bed.
- * The same pure layout is consumed by the runtime, previews and tests.
- */
-export function taskPlatformCellPresentation(
-  entry: BuildingCatalogEntry,
-  footprint: Cell[],
-  cell: Cell,
-  seed: number,
-  stage: number,
-): BuildingPlatformPresentation {
-  if (entry.serviceRole === "fuel-service" && footprint.length > 0) {
-    const minY = Math.min(...footprint.map((candidate) => candidate.y));
-    const maxY = Math.max(...footprint.map((candidate) => candidate.y));
-    // One contiguous four-cell-deep pad follows the full authored station
-    // width. It reads as a centred forecourt with a small transparent-canvas
-    // margin, instead of two disconnected slabs above and below the building.
-    if (cell.y >= Math.max(minY, maxY - 3)) return { family: "surface", key: "PATH_ASPHALT" };
-
-    return { family: "terrain", key: "GRASS", variant: yardVariant(cell.x, cell.y, seed + 97) };
-  }
-
-  const base = taskPlatformPresentation(entry);
-  if (base.family !== "terrain" || base.key !== "GRASS" || footprint.length === 0) return base;
-
-  const minX = Math.min(...footprint.map((candidate) => candidate.x));
-  const maxX = Math.max(...footprint.map((candidate) => candidate.x));
-  const minY = Math.min(...footprint.map((candidate) => candidate.y));
-  const maxY = Math.max(...footprint.map((candidate) => candidate.y));
-  const width = maxX - minX + 1;
-  const localX = cell.x - minX;
-  const localY = cell.y - minY;
-  const declaredEntrance = entry.entrances.find((entrance) => entrance.side === "S")?.offset;
-  const entranceX = Math.max(0, Math.min(width - 1, declaredEntrance ?? Math.floor(width / 2)));
-  const accessDepth = Math.min(2, maxY - minY + 1);
-
-  if (localX === entranceX && cell.y >= maxY - accessDepth + 1) {
-    return { family: "surface", key: "PATH_EARTH" };
-  }
-
-  const variant = yardVariant(cell.x, cell.y, seed + Math.max(1, Math.round(stage)) * 11);
-  const rearBed = localY === 0 && width >= 4 && ((localX + seed) % Math.max(2, width - 1) === 0);
-  const sideBed = width >= 6 && localY === 1 && (localX === 0 || localX === width - 1) && (seed + localX) % 2 === 0;
-  if (rearBed || sideBed) return { family: "terrain", key: "DIRT", variant };
-  if ((localX + localY + seed) % 5 === 0) return { family: "terrain", key: "MEADOW", variant };
-  return { family: "terrain", key: "GRASS", variant };
+/** One shared surface family keeps all cells aligned with adjacent sidewalks. */
+export function taskPlatformCellPresentation(entry: BuildingCatalogEntry): BuildingPlatformPresentation {
+  return taskPlatformPresentation(entry);
 }

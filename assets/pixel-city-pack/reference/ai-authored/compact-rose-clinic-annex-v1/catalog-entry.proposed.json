@@ -1,0 +1,28 @@
+{
+  "key": "compact-rose-clinic-annex-v1",
+  "label": "Розовый дом с двумя садами",
+  "category": "HOUSE",
+  "rarity": "COMMON",
+  "spriteSize": [48,48],
+  "footprintCells": [6,6],
+  "anchorPx": [24,48],
+  "platform": "STONE",
+  "estimates": [1,2,3,6],
+  "tags": ["residential","low-rise-residential","compact-building"],
+  "ruleIds": ["STANDARD"],
+  "entrances": [{"side":"S","offset":3}],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-rose-clinic-annex-v1/sources/stage-3.png",
+    "ai-authored/compact-rose-clinic-annex-v1/sources/stage-4.png",
+    "ai-authored/compact-rose-clinic-annex-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "8bd4b646e5031b12eb85fb06526586c5d672e9f39b3356816a4bf1a1400f48d5",
+    "4f57f9f6d68ae698e267d762ca09551e63d66baafc6406e58767ad340e731106",
+    "0e72c300f51c02f6a146aacacc453a5afade9e1fee4385d0645895a4ee5e2d83"
+  ],
+  "reviewed": true
+}

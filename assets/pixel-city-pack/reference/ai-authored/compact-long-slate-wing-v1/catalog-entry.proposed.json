@@ -1,0 +1,52 @@
+{
+  "key": "compact-long-slate-wing-v1",
+  "label": "Длинный жилой корпус",
+  "category": "HOUSE",
+  "rarity": "RARE",
+  "spriteSize": [
+    48,
+    96
+  ],
+  "footprintCells": [
+    6,
+    12
+  ],
+  "anchorPx": [
+    24,
+    96
+  ],
+  "platform": "STONE",
+  "estimates": [
+    3,
+    6
+  ],
+  "tags": [
+    "residential",
+    "low-rise-residential",
+    "compact-building",
+    "long-slate-wing"
+  ],
+  "ruleIds": [
+    "STANDARD"
+  ],
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 3
+    }
+  ],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-long-slate-wing-v1/sources/stage-3.png",
+    "ai-authored/compact-long-slate-wing-v1/sources/stage-4.png",
+    "ai-authored/compact-long-slate-wing-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "99827c9855248f033ece14dd19a6f6566a71a6e28c1e5755f7e60665a54511e5",
+    "287bbb63b6154dcbd14498f3828d008bcb7d84e6b30446fd0b976dcaf4870795",
+    "415a5d24cec09969854fe7b75148d1a7e3d3ff1722c70139d6b7f24e7141abb2"
+  ],
+  "reviewed": true
+}

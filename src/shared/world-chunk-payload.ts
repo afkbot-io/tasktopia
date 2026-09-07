@@ -3,7 +3,6 @@ import { generateWorldDecorations } from "./world-decorations";
 import { terrainAt } from "./world-terrain";
 import { expandCellRuns, expandRoadRuns, expandSurfaceRuns } from "./world-cell-runs";
 import { taskParkDecorLayout } from "./task-park";
-import { airportCompoundCells } from "./city-airport-layout";
 
 function key(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
@@ -45,36 +44,58 @@ export function materializeChunkPayload(payload: ChunkPayloadDto, encodedTerrain
       terrainIndex += 1;
     }
   }
-  const roads = payload.payloadVersion === 2 ? expandRoadRuns(payload.roadRuns) : payload.roads;
-  const surfaces = payload.payloadVersion === 2 ? expandSurfaceRuns(payload.surfaceRuns) : payload.surfaces;
-  const districts = payload.payloadVersion === 2
-    ? payload.districts.map(({ cellRuns, ...district }) => ({ ...district, cells: expandCellRuns(cellRuns) }))
-    : payload.districts;
-  const decorationDistricts = payload.payloadVersion === 2
-    ? payload.decorationContext.districts.map(({ cellRuns, ...district }) => ({ ...district, cells: expandCellRuns(cellRuns) }))
-    : payload.decorationContext.districts;
-  // V2 stores only the stateful parent area. Old PARK_DECOR children may be
-  // present during a rolling deploy, but the derived seed layout is the sole
-  // rendering authority so replicas cannot show duplicate trees/furniture.
-  const worldFeatures = payload.worldFeatures.filter((feature) => feature.kind !== "PARK_DECOR");
+  const roads = expandRoadRuns(payload.roadRuns);
+  const surfaces = expandSurfaceRuns(payload.surfaceRuns);
+  const surfaceHalo = expandSurfaceRuns(payload.decorationContext.surfaceHaloRuns);
+  const hardHalo = expandCellRuns(payload.decorationContext.blockedCellRuns);
+  const districts = payload.districts.map(({ cellRuns, ...district }) => ({ ...district, cells: expandCellRuns(cellRuns) }));
+  const decorationDistricts = payload.decorationContext.districts.map(({ cellRuns, ...district }) => ({ ...district, cells: expandCellRuns(cellRuns) }));
+  // The compact contract stores parent areas only; interiors are seed-derived.
+  const worldFeatures = payload.worldFeatures;
+  // Unlike the mixed decoration blocked set, these remain forbidden even if
+  // old paving exists underneath a permanent marker or planned site.
+  const furnitureExclusions = new Set<string>([
+    ...hardHalo.map(key),
+    ...roads.map(key),
+    ...worldFeatures.flatMap(feature => [...feature.footprint, ...feature.accessPath]).map(key),
+    ...(payload.plannedSites ?? []).flatMap(site => Array.from({ length: site.width * site.height }, (_, i) =>
+      key({ x: site.origin.x + i % site.width, y: site.origin.y + Math.floor(i / site.width) }))),
+  ]);
   const blocked = new Set<string>([
+    ...hardHalo.map(key),
+    // Preserve the existing general decoration mask, while furniture can
+    // distinguish safe paving from hard geometry using the separate set above.
+    ...surfaceHalo.map(key),
     ...roads.map(key),
     ...surfaces.map(key),
     ...payload.tasks.flatMap((task) => task.footprint).map(key),
-    ...worldFeatures.flatMap((feature) => feature.kind === "AIRPORT" && feature.assetKind === "AREA"
-      ? airportCompoundCells(feature)
-      : feature.footprint).map(key),
+    ...(payload.plannedSites ?? []).flatMap(site=>Array.from({length:site.width*site.height},(_,i)=>key({x:site.origin.x+i%site.width,y:site.origin.y+Math.floor(i/site.width)}))),
+    ...worldFeatures.flatMap((feature) => feature.footprint).map(key),
   ]);
+  const decorationTerrain = [...terrain];
+  if (payload.lod === "DETAIL" && !payload.baseLayerOnly) {
+    // Read-only halo: neighbours inform coast clearance but are never rendered
+    // or considered spawn origins in this chunk.
+    for (let y = originY - 4; y < originY + payload.size + 4; y++) {
+      for (let x = originX - 4; x < originX + payload.size + 4; x++) {
+        if (x >= originX && x < originX + payload.size && y >= originY && y < originY + payload.size) continue;
+        decorationTerrain.push({ x, y, ...terrainAt(payload.terrainSeed, x, y) });
+      }
+    }
+  }
   const decorations = payload.lod === "DETAIL" && !payload.baseLayerOnly
     ? [
       ...generateWorldDecorations(
       payload.terrainSeed,
       terrain,
       blocked,
-      surfaces,
+      [...surfaces, ...surfaceHalo],
       decorationDistricts,
       payload.decorationContext.cityBounds,
       payload.decorationContext.tasks,
+      decorationTerrain,
+      cell => terrainAt(payload.terrainSeed, cell.x, cell.y).terrain,
+      furnitureExclusions,
       ),
       ...worldFeatures.filter((feature) => feature.assetKind === "AREA" && feature.kind !== "AIRPORT").flatMap((area) => (
         taskParkDecorLayout(
@@ -99,6 +120,8 @@ export function materializeChunkPayload(payload: ChunkPayloadDto, encodedTerrain
     surfaces,
     districts,
     tasks: payload.tasks,
+    plannedSites: payload.plannedSites,
+    blockPlaques: payload.blockPlaques,
     worldFeatures,
     decorations,
     worldVersion: payload.publishedVersion,

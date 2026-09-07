@@ -1,0 +1,231 @@
+{
+  "key": "compact-rust-loft-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    116,
+    159,
+    1138,
+    1095
+  ],
+  "uniformScale": 0.046966731898238745,
+  "targetSize": [
+    48,
+    44
+  ],
+  "offset": [
+    0,
+    4
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "4630de22ad6eee6c5bf273c327b6be936ddd4f6451b8760bc1439fb4e4333102",
+      "runtimeSha256": "27b8eaa21d168277b8f9fdf6fe9d472ef1a9e8bd50255f2d583adeac15d04d19",
+      "sourceBounds": [
+        116,
+        159,
+        1138,
+        1095
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "ac6b136c1722c4ac0ab7eacfc4de4b60bed60b59ec107d81363dc49107bc8c2d",
+      "runtimeSha256": "bfb7daf2c5ad196f60a300d682f1946dd1b9df75e9245da7c860ae907184d323",
+      "sourceBounds": [
+        115,
+        158,
+        1139,
+        1095
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "ed620d38dd5ed9e5c3c383a6b440b258be8949578a5be587417f22be30cbc2cd",
+      "runtimeSha256": "650093685ecad3f9971b6d103ee6fb1ef4c6dad3f486ad1debfef9f1e5b38a48",
+      "sourceBounds": [
+        115,
+        157,
+        1139,
+        1094
+      ],
+      "occupiedBoundsPx": [
+        0,
+        4,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        44
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [
+    "Stage 3: visual review missing or stale",
+    "Stage 3: source review missing or stale"
+  ],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-rust-loft-v1",
+    "reviewedAt": "2026-09-07",
+    "reviewScope": "Approved5F and4B source/native;3pending. No runtime/catalogpublish.",
+    "reviewMethod": "Parent independently viewed native1x, before/after8x and exactaperture/sourcekeymeasurements.",
+    "projection": {
+      "camera": "High45axisaligned frontal-top compactindustrialloft, no receding sidefacade.",
+      "roofDepthPx": 30,
+      "openPrimaryRoofDepthPx": 25,
+      "roofRegionBoundsPx": [
+        0,
+        4,
+        48,
+        34
+      ],
+      "openPrimaryRoofBoundsPx": [
+        1,
+        6,
+        47,
+        31
+      ],
+      "facadeHeightPx": 14,
+      "floorStepPx": 4,
+      "windowPaneSizePxRange": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "windowRowsPx": [
+        [
+          36,
+          37
+        ],
+        [
+          40,
+          41
+        ],
+        [
+          44,
+          45
+        ]
+      ],
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "doorLeafBoundsPx": [
+        22,
+        44,
+        26,
+        47
+      ],
+      "doorFrameBoundsPx": [
+        20,
+        43,
+        27,
+        48
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "sameCameraAssertionScope": "Parentcompared5F/4B and acceptedmatchingcamera; finalall3reviewpending.",
+      "noHeavyBlackBaseline": true
+    },
+    "backgroundRecovery": {
+      "mode": "existing magenta-chroma-family",
+      "sourceAdditionalRemovedPixels": 954,
+      "enclosedRemovedPixels": 0,
+      "maxSourceBoundaryDepth": 1,
+      "allRemovedComponentsTouchExterior": true,
+      "evidence": "stage5F-measurements.json",
+      "newThreshold": false
+    },
+    "paletteReview": "Parent explicitly accepted brightergoldroofstairhousing/MAXCOVERAGE materialaccent andtealseparatepanes; originalindustrialbrickpiers/steelbands retained. No sourcepainting.",
+    "stages": {
+      "4": {
+        "accepted": true,
+        "sourceSha256": "ac6b136c1722c4ac0ab7eacfc4de4b60bed60b59ec107d81363dc49107bc8c2d",
+        "runtimeSha256": "bfb7daf2c5ad196f60a300d682f1946dd1b9df75e9245da7c860ae907184d323",
+        "notes": "Parent independently approvednative1x/8x: lefthalfroof/rightfouropaquerooms+partitions/nofinishedroofgear; tinydarkaligned22openings, flat7x5portal4x3leaf; samefootprint/facade/camera."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "4630de22ad6eee6c5bf273c327b6be936ddd4f6451b8760bc1439fb4e4333102",
+        "runtimeSha256": "27b8eaa21d168277b8f9fdf6fe9d472ef1a9e8bd50255f2d583adeac15d04d19",
+        "notes": "Parent approvedroofdominantcompressed3floorloft, brickpiers/steelbands/separatepanes/flat7x5portal4x3leaf; native/windowregistration andexistingbroadsourcekey proof reviewed."
+      }
+    }
+  }
+}

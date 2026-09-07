@@ -1,0 +1,52 @@
+{
+  "key": "compact-rust-loft-v1",
+  "label": "Кирпичный лофт",
+  "category": "HOUSE",
+  "rarity": "RARE",
+  "spriteSize": [
+    48,
+    48
+  ],
+  "footprintCells": [
+    6,
+    6
+  ],
+  "anchorPx": [
+    24,
+    48
+  ],
+  "platform": "STONE",
+  "estimates": [
+    3,
+    6
+  ],
+  "tags": [
+    "residential",
+    "low-rise-residential",
+    "compact-building",
+    "rust-loft"
+  ],
+  "ruleIds": [
+    "STANDARD"
+  ],
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 3
+    }
+  ],
+  "maxPerCity": null,
+  "maxPerDistrict": null,
+  "serviceRole": null,
+  "stageSources": [
+    "ai-authored/compact-rust-loft-v1/sources/stage-3.png",
+    "ai-authored/compact-rust-loft-v1/sources/stage-4.png",
+    "ai-authored/compact-rust-loft-v1/sources/stage-5.png"
+  ],
+  "stageSha256": [
+    "03324a2bf12c4a06a2faf1f48a76b15e1531f070ef01dc3adca99a83be3f019b",
+    "ac6b136c1722c4ac0ab7eacfc4de4b60bed60b59ec107d81363dc49107bc8c2d",
+    "4630de22ad6eee6c5bf273c327b6be936ddd4f6451b8760bc1439fb4e4333102"
+  ],
+  "reviewed": true
+}

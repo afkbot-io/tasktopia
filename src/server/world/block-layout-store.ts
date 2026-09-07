@@ -10,9 +10,6 @@ export async function persistReadyBlockLayout(db: Db, layout: CompiledBlockLayou
     if (marker.kind === "RUINED" && marker.targetTaskId) {
       throw new Error(`RUINED block-v1 marker ${marker.id} cannot target an active task`);
     }
-    if (marker.kind === "RELOCATED" && !marker.targetTaskId) {
-      throw new Error(`RELOCATED block-v1 marker ${marker.id} must target the canonical task`);
-    }
   }
   await transaction(db, async () => {
     await db.prepare("SELECT pg_advisory_xact_lock(hashtext(?))")

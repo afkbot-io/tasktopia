@@ -1,0 +1,22 @@
+{
+  "status": "OBSERVATION_CONFIRMED_BY_INDEPENDENT_STAGE5_REVIEW",
+  "stage": 5,
+  "attempt": "G",
+  "sourceSha256": "e96727be1bdebaec1d089de9e06846ed2ba07ccb586c166d200f1a53443a4044",
+  "normalizedSha256": "30d6588186da59da3afd31d4f36ca21d72347bbcb5197da633d993be5ba15ac0",
+  "measurement": "Read-only native RGBA pixels and full64x64/8xgrid inspection; rectangles use exclusive right/bottom edges. No automated semantic detector is claimed.",
+  "frameRectPx": [29, 59, 34, 64],
+  "frameSizePx": [5, 5],
+  "leafRectPx": [30, 60, 33, 63],
+  "leafSizePx": [3, 3],
+  "headerRowPx": 59,
+  "thresholdRowPx": 63,
+  "foundationRowsPx": [62, 63],
+  "foundationRowsFullyOpaque": true,
+  "roofAndCorniceRowsPx": [0, 52],
+  "frontageRowsPx": [53, 63],
+  "frontageHeightPx": 11,
+  "floorCount": 2,
+  "floorPitchPx": 5,
+  "independentApproval": "stage5-independent-review.json"
+}

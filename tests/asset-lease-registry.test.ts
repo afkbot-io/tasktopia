@@ -11,6 +11,23 @@ afterEach(() => {
 });
 
 describe("AssetLease", () => {
+  it("waits for already-owned in-flight atlases before every concurrent chunk bake", async () => {
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => { finish = resolve; });
+    const loader = vi.fn(() => pending);
+    const lease = new AssetLease();
+    const first = lease.load(["city-ground-atlas.png"], loader);
+    let secondReady = false;
+    const second = lease.load(["city-ground-atlas.png"], loader).then(() => { secondReady = true; });
+    await Promise.resolve();
+    expect(secondReady).toBe(false);
+    expect(loader).toHaveBeenCalledTimes(1);
+    finish();
+    await Promise.all([first, second]);
+    expect(secondReady).toBe(true);
+    lease.dispose();
+  });
+
   it("deduplicates overlapping loads without serializing independent assets", async () => {
     let finishFirst!: () => void;
     const firstPending = new Promise<void>((resolve) => { finishFirst = resolve; });

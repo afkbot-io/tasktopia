@@ -22,8 +22,6 @@ try {
 await transaction(db, async () => {
   await db.prepare("UPDATE users SET name = ? WHERE id = ?").run("Глава страны", user.id);
   await db.prepare("UPDATE countries SET name = ? WHERE id = ?").run("Страна Tasktopia", user.countryId);
-  await db.prepare("DELETE FROM world_features_v6 WHERE country_id = ?").run(user.countryId);
-  await db.prepare("DELETE FROM roads_v3 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM cities_v3 WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM events WHERE country_id = ?").run(user.countryId);
   await db.prepare("DELETE FROM idempotency WHERE country_id = ?").run(user.countryId);

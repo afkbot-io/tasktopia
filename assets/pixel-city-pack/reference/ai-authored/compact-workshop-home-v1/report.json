@@ -1,0 +1,229 @@
+{
+  "key": "compact-workshop-home-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1774,
+    887
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    295,
+    137,
+    1480,
+    677
+  ],
+  "uniformScale": 0.04050632911392405,
+  "targetSize": [
+    48,
+    22
+  ],
+  "offset": [
+    0,
+    2
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "8e235edd25f197a6fa5eb5d9df4acf0488955de4629e3ffd3bcad7984ca0bb07",
+      "runtimeSha256": "75e94990c8fdb0d05af48539ea9826dac3202287ccd8e51646d9094c87e73b8f",
+      "sourceBounds": [
+        295,
+        137,
+        1480,
+        677
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        24
+      ],
+      "occupiedSizePx": [
+        48,
+        22
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "2da8e80e259c4362936e972906a138856e9fe95d483d270d8f7c303754a432fc",
+      "runtimeSha256": "03bdd79d7b99127d8268e2caff6da97497c7ddeb85900ddabe5422612e5a996b",
+      "sourceBounds": [
+        294,
+        137,
+        1480,
+        677
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        24
+      ],
+      "occupiedSizePx": [
+        48,
+        22
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "db66f8c2f0f38f99dd88538105fb0ba7269daf7f21a550f40496fd138dc97d67",
+      "runtimeSha256": "0132bbd077ae4b7ab3b7e8cdb610ebd535d100493719528ee33940e4f6af7f52",
+      "sourceBounds": [
+        294,
+        136,
+        1480,
+        677
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        24
+      ],
+      "occupiedSizePx": [
+        48,
+        22
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-workshop-home-v1",
+    "reviewedAt": "2026-09-06",
+    "reviewMethod": "Main agent inspected per-stage native48x24 previews and nearest-neighbour8x shared-baseline sequence. Numeric registration is a separate gate. Actual CITY stages3\u20135 reviewed; see runtimeReview.",
+    "projection": {
+      "camera": "High45-degree frontal-top orthographic convention, all structural edges axis aligned.",
+      "roofDepthPx": 17,
+      "facadeHeightPx": 5,
+      "floorStepPx": 5,
+      "floorCount": 1,
+      "windowPaneSizePx": [
+        2,
+        2
+      ],
+      "windowOpeningSizePx": [
+        2,
+        2
+      ],
+      "windowGroupWithSillPx": [
+        9,
+        3
+      ],
+      "doorLeafSizePx": [
+        4,
+        4
+      ],
+      "doorFrameSizePx": [
+        6,
+        5
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "db66f8c2f0f38f99dd88538105fb0ba7269daf7f21a550f40496fd138dc97d67",
+        "runtimeSha256": "0132bbd077ae4b7ab3b7e8cdb610ebd535d100493719528ee33940e4f6af7f52",
+        "notes": "Roof entirely absent, opaque shaded rooms and aligned partitions; rough masonry/material stacks stay within silhouette. Same entrance, foundation, camera and window positions as4/5; not a scaled-down complete house."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "2da8e80e259c4362936e972906a138856e9fe95d483d270d8f7c303754a432fc",
+        "runtimeSha256": "03bdd79d7b99127d8268e2caff6da97497c7ddeb85900ddabe5422612e5a996b",
+        "notes": "About50%bare left roof remains; right rooms opaque with axial partitions and building materials. Black unfinished glazing, same exterior and entrance; no finished rooftop equipment."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "8e235edd25f197a6fa5eb5d9df4acf0488955de4629e3ffd3bcad7984ca0bb07",
+        "runtimeSha256": "75e94990c8fdb0d05af48539ea9826dac3202287ccd8e51646d9094c87e73b8f",
+        "notes": "Distinct blue/slate live-work home with two low roof skylights and broad grouped workshop windows, quiet ochre fascia. Door4x4 inside6x5frame; individual pane clusters2x2 in wide9x2glazed groups plus sill."
+      }
+    },
+    "pendingIntegration": [
+      "Final frozen-revision QA/deployment approval; stages0\u20132 use shared construction geometry, not separately AI-authored art."
+    ],
+    "chromaReview": {
+      "date": "2026-09-06",
+      "method": "Main agent re-inspected native3/4/5sequence after hue-bounded background recovery. All alpha masks equal previous published bytes; palette quantization changed RGB but geometry, windows, door, roof progression and readable colors remain accepted."
+    },
+    "runtimeReview": {
+      "reviewedAt": "2026-09-06",
+      "method": "Main agent inspected all three unscaled real CITY crops side by side, plus map and mobile captures. No synthetic compositing of sprites into terrain.",
+      "acceptedStages": [
+        3,
+        4,
+        5
+      ],
+      "fixture": "compact_release_20260906:480tasks/20sprints",
+      "evidence": "docs/evidence/compact-rc/final-browser.json",
+      "checks": [
+        "Same footprint and south entrance across3/4/5",
+        "Shaded opaque interior and aligned partitions at3",
+        "Partial bare roof and unfinished openings at4",
+        "Completed unique roof and facade at5",
+        "Tree/crown and sidewalk clearance",
+        "All30real building clicks opened the matching task"
+      ],
+      "captures": [
+        {
+          "stage": 3,
+          "path": "screenshots/compact-rc-final/compact-workshop-home-v1-stage-3.png",
+          "sha256": "78eebc26597a8e64c3a59825e5924e8e7c9bacd5901dd1aa0395a6b34ec0853e"
+        },
+        {
+          "stage": 4,
+          "path": "screenshots/compact-rc-final/compact-workshop-home-v1-stage-4.png",
+          "sha256": "c16b2c2ff182bf94c5a5bba4f7d5ab9a13cfeab4be274e2ddbf3b96a6b8d9c95"
+        },
+        {
+          "stage": 5,
+          "path": "screenshots/compact-rc-final/compact-workshop-home-v1-stage-5.png",
+          "sha256": "49fe2ba5291411afc465102e672004395e47e5320356bc9852345bce83cf95fa"
+        }
+      ]
+    }
+  }
+}

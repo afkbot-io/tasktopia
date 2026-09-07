@@ -1,22 +1,22 @@
 import type { Cell } from "./contracts";
+import { PROP_CATALOG } from "./catalog";
+import { greenAreaPathCells, isGroundPlantingStrip } from "./green-area";
+import { compactTreeCover } from "./compact-tree-placement";
+import { courtyardFurnitureFootprint } from "./courtyard-furniture";
 
 export type TaskParkDecorPlacement = { kind: string; origin: Cell; width: number; height: number };
 
-const PROP_FOOTPRINTS: Readonly<Record<string, readonly [number, number]>> = {
-  "tree-oak": [1, 1], "tree-maple": [1, 1], "tree-cherry": [1, 1], "tree-magnolia": [1, 1],
-  "flower-white": [1, 1], "flower-yellow": [1, 1], "flower-pink": [1, 1], "shrub-flowering": [1, 1],
-  "bench-horizontal": [2, 1], "bench-vertical": [1, 2], "park-lamp": [1, 1], "trash-bin": [1, 1],
-  "fountain-large": [4, 4], "playground-small": [3, 2], "park-bandstand": [4, 3],
-  "park-flower-clock": [3, 2], "playground-carousel": [3, 3], gazebo: [4, 3],
-};
-
 const CENTERPIECE: Readonly<Record<string, string>> = {
-  "urban-formal": "fountain-large",
+  "urban-formal": "compact-park-fountain",
   "urban-community": "park-bandstand",
   "urban-central": "park-flower-clock",
   "urban-botanical": "gazebo",
   "urban-amusement": "playground-carousel",
   "urban-park": "playground-small",
+  "urban-large": "compact-park-fountain",
+  "urban-fountain": "compact-park-fountain",
+  "urban-monument": "compact-park-monument",
+  "urban-memorial": "compact-park-monument",
 };
 
 function key(cell: Cell): string { return `${cell.x},${cell.y}`; }
@@ -46,53 +46,117 @@ export function taskParkDecorLayout(
   const bounds = boundsOf(footprint);
   const width = bounds.maxX - bounds.minX + 1;
   const height = bounds.maxY - bounds.minY + 1;
+  if (isGroundPlantingStrip(width, height, assetKey)) return [];
   const occupied = new Set<string>();
-  const result: TaskParkDecorPlacement[] = [];
-  const place = (kind: string, origin: Cell): boolean => {
-    const [propWidth, propHeight] = PROP_FOOTPRINTS[kind] ?? [1, 1];
-    if (origin.x < bounds.minX + 1 || origin.y < bounds.minY + 1
-      || origin.x + propWidth - 1 > bounds.maxX - 1 || origin.y + propHeight - 1 > bounds.maxY - 1) return false;
+  const allowed = new Set(footprint.map(key));
+  const paths = new Set(greenAreaPathCells([...footprint], assetKey).map(key));
+  const result: Array<TaskParkDecorPlacement & { from: number; staged: boolean }> = [];
+  const dimensions = (kind: string): readonly [number, number] => {
+    if (kind.startsWith("compact-park-")) return [2, 2];
+    const courtyard = courtyardFurnitureFootprint(kind);
+    if (courtyard) return [courtyard.width, courtyard.height];
+    const prop = PROP_CATALOG[kind];
+    if (!prop) throw new Error(`Unregistered park object: ${kind}`);
+    return [prop.footprint.width, prop.footprint.height];
+  };
+  const place = (kind: string, origin: Cell, from: number): boolean => {
+    if (result.length >= 36) return false;
+    if (kind === "park-lamp" && result.some(prop => prop.kind === kind
+      && Math.abs(prop.origin.x - origin.x) + Math.abs(prop.origin.y - origin.y) < 3)) return false;
+    const [propWidth, propHeight] = dimensions(kind);
     const cells = Array.from({ length: propWidth * propHeight }, (_, index) => ({
       x: origin.x + index % propWidth, y: origin.y + Math.floor(index / propWidth),
     }));
-    if (cells.some((cell) => occupied.has(key(cell)))) return false;
-    cells.forEach((cell) => occupied.add(key(cell)));
-    result.push({ kind, origin, width: propWidth, height: propHeight });
+    const visibleCells = kind.startsWith("tree-") ? compactTreeCover(origin) : cells;
+    if (visibleCells.some(cell => !allowed.has(key(cell)) || occupied.has(key(cell))
+      || assetKey !== "urban-lake" && paths.has(key(cell)))) return false;
+    visibleCells.forEach((cell) => occupied.add(key(cell)));
+    result.push({ kind, origin, width: propWidth, height: propHeight, from, staged: kind.startsWith("compact-park-") });
     return true;
   };
 
-  if (stage >= 5) {
-    const kind = CENTERPIECE[assetKey] ?? CENTERPIECE["urban-park"]!;
-    const [propWidth, propHeight] = PROP_FOOTPRINTS[kind]!;
-    place(kind, {
-      x: bounds.minX + Math.floor((width - propWidth) / 2),
-      y: bounds.minY + Math.floor((height - propHeight) / 2),
-    });
+  if (assetKey === "urban-parking") return [];
+  if (assetKey === "urban-lake") {
+    // Furniture stays on the one-cell shoreline; no trees or fountain occupy water.
+    place("bench-horizontal", { x: bounds.minX + 1, y: bounds.minY }, 4);
+    place("bench-horizontal", { x: bounds.maxX - 1, y: bounds.maxY }, 5);
+  } else {
+    // Plan the finished layout FIRST. Earlier stages reveal this plan rather
+    // than reallocating around a late fountain and teleporting planted trees.
+    const search = (kind: string, from: number, targetX: number, targetY: number) => {
+      const [w, h] = dimensions(kind);
+      const candidates = [...footprint].sort((a, b) =>
+        Math.abs(a.x + w / 2 - targetX) + Math.abs(a.y + h / 2 - targetY)
+        - Math.abs(b.x + w / 2 - targetX) - Math.abs(b.y + h / 2 - targetY)
+        || a.y - b.y || a.x - b.x);
+      return candidates.some(origin => place(kind, origin, from));
+    };
+    const centerpiece = CENTERPIECE[assetKey];
+    if (centerpiece) search(centerpiece, centerpiece.startsWith("compact-park-") ? 3 : 5,
+      bounds.minX + width / 2, bounds.minY + height / 2);
+    if (assetKey === "urban-large") {
+      search("gazebo", 5, bounds.minX + width * 0.75, bounds.minY + height * 0.25);
+      search("playground-small", 5, bounds.minX + width * 0.25, bounds.minY + height * 0.75);
+    }
+    // Furniture gets a permanent reserved location before vegetation, but is
+    // revealed only after paths and planting. This keeps small lots useful.
+    search("bench-horizontal", 4, bounds.minX + width * 0.25, bounds.maxY - 1);
+    if (footprint.length >= 40) search("bench-horizontal", 4, bounds.minX + width * 0.75, bounds.minY + 1);
+    // Reserve lighting before trees. Spread fixtures around the perimeter,
+    // scaling with the site rather than leaving every large park with two.
+    const lampCount = footprint.length >= 160 ? 8 : footprint.length >= 60 ? 4 : footprint.length >= 24 ? 2 : 0;
+    const lampTargets = [[0.15, 0.15], [0.85, 0.85], [0.85, 0.15], [0.15, 0.85],
+      [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]] as const;
+    for (const [x, y] of lampTargets.slice(0, lampCount)) {
+      search("park-lamp", 4, bounds.minX + width * x, bounds.minY + height * y);
+    }
+    // Reserve the finished furniture before any tree crown. It is absent on
+    // construction stages, but cannot displace planting when stage5 arrives.
+    if (footprint.length >= 36) search("courtyard-picnic-table", 5,
+      bounds.minX + width * 0.25, bounds.minY + height * 0.25);
+    if (footprint.length >= 24) search("courtyard-cycle-rack", 5,
+      bounds.minX + width * 0.75, bounds.minY + height * 0.75);
+    // One small lime accent, never a repeated bed or general world scatter.
+    search("courtyard-square-planter", 5, bounds.minX + width * 0.75, bounds.minY + height * 0.25);
+    const tree = assetKey === "urban-orchard" ? "tree-apple" : assetKey === "urban-memorial" ? "tree-cypress"
+      : ["tree-oak", "tree-maple", "tree-cherry", "tree-magnolia"][Math.floor(hash(seed, 0, 0, 37) * 4)]!;
+    // Try every integer anchor. A two-cell stride can miss an entire narrow
+    // garden bed once its lamp is reserved; crown masks already enforce space.
+    const vegetation = [...footprint]
+      .sort((a, b) => hash(seed, a.x, a.y, 31) - hash(seed, b.x, b.y, 31));
+    const treeLimit = Math.min(16, Math.max(2, Math.floor(footprint.length / (assetKey === "urban-orchard" ? 12 : 25))));
+    let planted = 0;
+    for (const cell of vegetation) {
+      if (place(tree, cell, 3) && ++planted >= treeLimit) break;
+    }
+    // Deliberate planted beds inside task parks, not the retired world scatter.
+    const flower = assetKey === "urban-memorial" ? "flower-white" : "shrub-flowering";
+    search(flower, 3, bounds.minX + 1, bounds.minY + 1);
+    if (footprint.length >= 36) search(flower, 5, bounds.maxX - 2, bounds.maxY - 2);
   }
+  return result.filter(prop => stage >= prop.from).map(prop => ({
+    origin: prop.origin, width: prop.width, height: prop.height,
+    kind: prop.staged ? `${prop.kind}-stage-${stage}` : prop.kind,
+  }));
+}
 
-  const corners = [
-    { x: bounds.minX + 1, y: bounds.minY + 1 }, { x: bounds.maxX - 1, y: bounds.minY + 1 },
-    { x: bounds.minX + 1, y: bounds.maxY - 1 }, { x: bounds.maxX - 1, y: bounds.maxY - 1 },
-  ].sort((left, right) => hash(seed, left.x, left.y, 31) - hash(seed, right.x, right.y, 31));
-  const trees = ["tree-oak", "tree-maple", "tree-cherry", "tree-magnolia"];
-  corners.slice(0, Math.min(4, Math.max(2, Math.floor(footprint.length / 36)))).forEach((origin, index) => {
-    place(trees[Math.floor(hash(seed, origin.x, origin.y, 37 + index) * trees.length)]!, origin);
-  });
-  const flowerOrigins = [
-    { x: bounds.minX + 2, y: bounds.minY + 1 }, { x: bounds.maxX - 2, y: bounds.maxY - 1 },
-    { x: bounds.maxX - 1, y: bounds.minY + 2 }, { x: bounds.minX + 1, y: bounds.maxY - 2 },
-  ];
-  const flowers = ["flower-white", "flower-yellow", "flower-pink", "shrub-flowering"];
-  flowerOrigins.slice(0, Math.min(4, Math.max(2, Math.floor(footprint.length / 40)))).forEach((origin, index) => {
-    place(flowers[Math.floor(hash(seed, origin.x, origin.y, 43 + index) * flowers.length)]!, origin);
-  });
+export type ParkingPaintRect = { x: number; y: number; width: number; height: number };
 
-  if (stage >= 4) {
-    place("bench-horizontal", { x: bounds.minX + Math.max(1, Math.floor(width / 4)), y: bounds.minY + 1 });
-    place("bench-horizontal", { x: bounds.maxX - Math.max(2, Math.floor(width / 4)) - 1, y: bounds.maxY - 1 });
-    place("park-lamp", { x: bounds.minX + 1, y: bounds.minY + Math.floor(height / 2) });
-    place("park-lamp", { x: bounds.maxX - 1, y: bounds.minY + Math.floor(height / 2) });
-    place("trash-bin", { x: bounds.minX + Math.floor(width / 2) - 1, y: bounds.maxY - 1 });
+/** Integer-pixel bay lines, local to the site's north-west corner; no overlay sprite. */
+export function taskParkingMarkings(footprint: readonly Cell[], stage: number): ParkingPaintRect[] {
+  if (stage < 4 || !footprint.length) return [];
+  const bounds = boundsOf(footprint);
+  const width = (bounds.maxX - bounds.minX + 1) * 8;
+  const height = (bounds.maxY - bounds.minY + 1) * 8;
+  if (width < 24 || height < 32) return [];
+  const bays = Math.floor((width - 16) / 8);
+  const count = stage === 4 ? Math.ceil(bays / 2) : bays;
+  const lines: ParkingPaintRect[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const x = 8 + index * 8;
+    lines.push({ x, y: 9, width: 1, height: Math.min(12, height - 24) });
+    lines.push({ x, y: 9, width: 8, height: 1 });
   }
-  return result;
+  if (count > 0) lines.push({ x: 8 + count * 8, y: 9, width: 1, height: Math.min(12, height - 24) });
+  return lines;
 }

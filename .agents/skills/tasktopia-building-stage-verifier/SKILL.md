@@ -1,108 +1,98 @@
 ---
 name: tasktopia-building-stage-verifier
-description: Measure, normalize, audit, and grid-preview separate Tasktopia building stages against a geometry contract. Use for checking footprint and projected depth, roof-to-foundation continuity, one-cell construction clearance, fence placement, anchor/baseline drift, stage progression, hard alpha, palette budget, facade projection, or whether generated stages align on the 8×8 map grid.
+description: Normalize, measure and visually audit compact Tasktopia building stages against their shared geometry contract. Use for source registration, structural masks, alpha holes, palette, high-45-degree projection, stage continuity, entrance and window scale, or grid previews before publishing.
 ---
 
 # Tasktopia Building Stage Verifier
 
-Verify objective geometry with code, then perform a separate native-scale visual gate. Passing the script never replaces projection review.
+Code verifies raster invariants; independent visual review verifies architecture.
+Neither gate substitutes for the other.
 
-## Load the contract
+## Load the current contract
 
-Read:
+Read completely:
 
-1. `references/geometry-contract.md` completely.
-2. `../tasktopia-pixel-city-art/references/visual-grammar.md` for style and projection.
-3. The building-specific geometry JSON.
+1. `references/geometry-contract.md`.
+2. `docs/art/COMPACT-BUILDING-ART-CONTRACT.md` from the repository root.
+3. The target family's `geometry.json` and `visual-review.json`, when present.
+4. `../tasktopia-pixel-city-art/references/visual-grammar.md`.
 
-## Run the verifier
+The old18-cell verifier is removed. Do not restore its shallow roof,8×16 door,
+compressed3–5-cell construction depth or percentage-of-image-height stages.
 
-Use the project asset Python environment:
+## Run the current verifier
+
+For an incomplete authoring draft, including stage5:
 
 ```bash
-.venv-assets/bin/python \
-  .agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py \
-  --contract <geometry.json> \
-  --stage-5 <finished.png> \
-  --stage-4 <stage-4.png> \
-  --stage-3 <stage-3.png> \
-  --output-dir <output-directory>
+.venv-assets/bin/python scripts/verify-compact-building-art.py --family <family-directory>
 ```
 
-Supply stages 3–5 for the current contract. The optional stage-1/stage-2 CLI
-arguments remain only for one-off forensic comparison outside the catalog; all
-catalog work must use the shared construction-layout tests instead. The verifier writes:
+For every catalog-registered accepted family and the release gate:
 
-- one normalized transparent PNG per supplied stage;
-- one clean semantic-site preview per stage: pavement for dense/new-build
-  families, a deterministic grass/meadow/dirt parcel with an entrance path
-  for ordinary `HOUSE` families;
-- one geometry-overlay preview per stage;
-- `report.json` with measurements, errors, warnings and manual gates.
+```bash
+npm run assets:compact:verify
+```
 
-For any newly generated or visually regenerated family, also pass
-`--projection-review <projection-review.json> --require-projection-review`.
-The review records semantic facade/top-plane segments on the normalized stage-5
-grid. The verifier measures their orientation, visible depth and side-facade
-width, requires the dominant primary roof to expose at least `6 px` and span
-at least half the canvas, then writes `stage-5-projection.png` and
-`stage-5-projection-4x.png`. The review must explicitly confirm that the
-primary annotation traces the dominant surface and that its front edge is the
-real facade eave, not a ridge, cornice or parapet cap.
-Inspect that overlay to confirm the annotations trace real pixels; the numeric
-gate and overlay review are both blocking.
-Segmented pitched roofs must use separate real-pixel planes joined by one
-`primaryRoofGroup`; the verifier accepts parallel sloped edges and measures
-their union, not a fictitious rectangular envelope through roof gaps.
+The family directory contains `geometry.json`, `sources/stage-{3,4,5}.png`
+and, after manual acceptance, `visual-review.json`. Publishing requires
+`--require-complete --require-review`. The verifier writes normalized PNGs,
+individual8px-grid previews, a stage comparison and `report.json`.
 
-## Treat failures correctly
+One source-space frame measured from stage5 drives all three transforms.
+Normalization may only remove the explicitly declared chroma background,
+uniformly scale with nearest-neighbour, harden alpha and quantize colors.
+Never independently crop/recenter, repaint or stretch a reverse stage.
 
-- Block on wrong cell multiples, empty art, invalid geometry, hard constraint violations, stage centre drift over one cell, baseline drift, an out-of-range stage silhouette, or a source with no transparent pixels after chroma removal. This last gate rejects baked checkerboards and opaque presentation backgrounds before catalog integration.
-- Warn on excessive source colors or soft source edges; normalized drafts may harden alpha but must not be published until the authored source is approved. Generator pixels with alpha below `16` are treated as invisible noise so they cannot expand the common authoring frame and squash every stage.
-- Never stretch one axis to force a pass. Regenerate the source.
-- Never infer physical depth from source height alone. Require `depthCells` and `projectedRoofDepthCells` in the contract.
-- For compact/private houses, require building-specific
-  `finishedOccupiedWidthPxRange` and `finishedOccupiedHeightPxRange`. Reject a
-  materially mismatched source and regenerate it instead of scaling one axis.
-- Treat 45–80% (stage 3) and 85–105% (stage 4) as hard rejection bands.
-  Author toward the safer 55–65% and 90–100% bands respectively. Read the
-  exact measured ratios and `generationGuidance` from `report.json` before a
-  targeted regeneration; never change the contract to fit a failed draft.
+## Automated gates
 
-## Review every stage separately
+Require all three distinct stages for publishing and no report errors:
 
-Inspect each clean preview at native `1x` and nearest-neighbour `4x`:
+- exact per-family canvas and footprint from its reviewed geometry, matching
+  the published catalog and approved `COMPACT_BUILDING_SHAPES` vocabulary;
+- common source canvas and finished authoring frame;
+- hard alpha0/255, at most32colors including transparency;
+- genuine external transparency and zero enclosed transparent roof/room holes;
+- finished occupied-size ranges from geometry;
+- stable centre and baseline, at most1native pixel of registration drift;
+- actual structural-opacity masks on the declared foundation rows, not only
+  whole-image bounding boxes; report differing pixels and mask drift;
+- fresh source/runtime hashes and an accepted visual review for every stage.
 
-1. Confirm strict frontal-top projection: verticals remain vertical, floors horizontal, no receding side facade. Inspect the roof, porch, steps, canopy, balcony, podium, every setback and crown independently; all top planes must share one compressed depth direction and none may collapse into a flat stripe.
-2. Confirm the structure sits on the same bottom-centre anchor.
-3. In the shared five-stage preview, confirm stages 1–2 match the building width and use the projected site depth formula rather than full physical depth.
-4. Confirm the one-cell modular fence ring surrounds stages 1–4 but never changes the structure anchor; the road-facing gate aligns with the entrance.
-5. For stages 1–2, confirm the selected construction props use the matching phase, fit their declared cell footprints, do not overlap, and leave the two cells inside the gate clear for access. Verify compact, medium and tower-sized sites rather than approving one fixed preview.
-6. Inspect every construction prop at native `1x` before approving the composed site. Reject a heavy vehicle below `40×24 px`, a tower crane below `64×64 px`, a vehicle without the approved shallow top view, or any prop whose key parts disappear after normalization. Confirm no site contains more than one crane or one heavy vehicle.
-7. Confirm stage identity and palette continuity.
-8. Confirm no pavement, yard, fence, labels, shadows or UI are baked into the transparent structure layer.
-9. Confirm a single entrance is an `8×16 px` outer module with a `6×14 px`
-   moving leaf, or a double entrance is a `16×16 px` outer module with two
-   leaves occupying `12×14 px` together. Inspect the cyan module ruler and
-   magenta leaf ruler in every geometry preview; neither windows nor decorative
-   portal trim count as part of the door. The same axis and scale must survive
-   stages 3–5.
-10. For the finished-stage environment preview, place adjacent standard trees
-   only by their `[8,32]` anchor and central lower `8×8` planting cell. A tree
-   must not be baked into the building source and must not compensate for an
-   incorrect building footprint.
-11. For an ordinary `HOUSE`, confirm the preview uses a living parcel rather
-    than continuous civic pavement: lawn is dominant, dirt/meadow accents are
-    sparse, and a path at most two cells deep meets the declared south entrance.
-    Dense apartment and `new-build` families keep their urban paved platform.
+Stage3 preserves room/floor depth and may retain most of the image height.
+Its assembly percentage cannot be validated by the retired height-ratio rule.
 
-Do not approve from a combined sheet. Review and report each stage as an independent artifact.
+## Separate visual gate
 
-## Finish
+Inspect each normalized image at1× and nearest-neighbour8× before accepting it:
 
-Report exact occupied bounds, centre drift, baseline drift, stage coverage, construction envelope, projected-depth ratio and all remaining manual checks. An asset is accepted only when both automated and visual gates pass.
+1. Roof dominant, rectangular, high45-degree frontal-top camera; no receding
+   side facade, diagonal floors, heavy black baseline or inconsistent planes.
+2. Exact shared entrance axis, floor rhythm and the door/window dimensions in
+   geometry. Do not use residents or decorative portals as rulers.
+3. Stage5 roof equipment present; stage4 approximately50% bare roof and no
+   finished rooftop equipment; stage3 no roof and roughly50% masonry.
+4. Room floors remain opaque and shaded; partitions share exterior-wall scale.
+   Construction tools/materials remain inside the same physical footprint.
+5. No external fence, landscaping, pavement, labels or progress UI baked in.
+6. Same building identity, palette, centre, anchor and meaningful structural
+   coordinates across all stages. A tolerated1px edge inset is not exact identity.
 
-When integrating a batch, run `npm run assets:build` to completion and only
-then run `npm run assets:verify`. Never execute the builder and verifier in
-parallel: the builder rewrites runtime files and a concurrent audit can report
-transient missing assets.
+Record measured roof region, primary open roof, facade, floor step, door and
+window sizes in `visual-review.json`, alongside the source/runtime hashes.
+Never mark unchecked semantics accepted.
+
+## Runtime integration
+
+Stages0–2 are composed from slot and compact-kit primitives; their native-size catalog
+thumbnails are not live-site sprites. Test `constructionStageLayout()` for
+the actual contracted site, one-cell fence envelope, entrance corridor, fitting props
+and non-overlap. Confirm stage1 planning and stage2 crane/cabin/foundation
+differ, and the fence disappears at stage5.
+
+Run `npm run assets:build` to completion, then `npm run assets:verify`.
+Never build and audit the same runtime directories concurrently. Check the
+real map at supported zooms for adjacent slots, roads and tree clearance.
+
+Report automated results, individual previews, measured tolerances and any
+uncompleted runtime/semantic checks without claiming code proves camera angle.

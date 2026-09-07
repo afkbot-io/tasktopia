@@ -1,4 +1,4 @@
 interface:
   display_name: "Tasktopia Building Stage Generator"
-  short_description: "Generate grid-correct construction stages"
-  default_prompt: "Use $tasktopia-building-stage-generator to derive one construction stage from an approved finished Tasktopia building."
+  short_description: "Derive compact high-view building stages"
+  default_prompt: "Use $tasktopia-building-stage-generator to derive one compact high-45-degree building stage while preserving the approved source frame and geometry."

@@ -1,0 +1,62 @@
+{
+  "key": "compact-park-monument-v1",
+  "reviewedAt": "2026-09-05",
+  "reviewMethod": "Author inspected original sources and every native/8x output. Parent independently accepted stage5 on the meadow grid, then the complete3/4/5 sequence.",
+  "axisAlignedHigh45": true,
+  "noBakedTerrain": true,
+  "stageProgressionDistinct": true,
+  "sameFoundationIdentity": true,
+  "projection": {
+    "camera": "High45 frontal-top convention; square pedestal axes and compressed front bands, no diagonal receding face.",
+    "spriteSize": [
+      16,
+      16
+    ],
+    "finishedOccupiedBoundsPx": [
+      1,
+      0,
+      15,
+      16
+    ],
+    "stage3OccupiedBoundsPx": [
+      1,
+      5,
+      15,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "foundationMaskRowsPx": [
+      14,
+      15
+    ],
+    "roofAndRoomRulesApplicable": false
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "318be99167dbbc082f5952602465e5ab6e37ff799e86c7214c81090d31d8c291",
+      "runtimeSha256": "0f3017e94eabb4fa32044a1560c55b0b0de6034350efed30a58e30c6f3dd5452",
+      "notes": "Only the registered foundation and partially built stone pedestal remain, with an unfinished cap segment and materials. Bronze forms are absent. Occupied height11px starting at y5 is an intentional missing sculpture, not a resized canvas or footprint."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "35d5a40a24e71f7040cac1522c6b48908284571f791c1f5af7ed8bcdd03af2f1",
+      "runtimeSha256": "1bced4a9ff00c832af5e09720f3bffe8ff90c0c3020fb1d0e39c935c6f7d5eb1",
+      "notes": "Both abstract bronze forms are installed; left-front cladding is incomplete and two small materials remain on the upper platform. Same base and silhouette as stage5."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "15e13826250a5561468c007fe14a0813e4cc816bd990e74f7731683a8c598321",
+      "runtimeSha256": "b6ca62c90501cea08780dda6604897721e88f9dbddbc1e46ab07d557fc5e0042",
+      "notes": "Completed low square two-band stone pedestal and compact abstract stepped bronze forms. No text, real person, ground or external shadows."
+    }
+  },
+  "numericScope": "All three normalized foundation masks, baselines and centers match exactly. Stage4 source edges differ by at most2 source pixels; stage3 bottom differs9 source pixels (0.238 native pixel), retained inside the pre-existing1px source-envelope tolerance. No per-stage recenter or geometry repaint. Palette3/4/5 is19/18/19 RGBA colors; all solid material is opaque with no enclosed holes.",
+  "pendingIntegration": [
+    "Root serial publisher and complete asset audit",
+    "Actual map placement and task-backed stages0–2 construction composition"
+  ]
+}

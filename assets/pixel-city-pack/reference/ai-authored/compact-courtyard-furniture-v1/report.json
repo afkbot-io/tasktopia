@@ -1,0 +1,122 @@
+{
+  "key": "compact-courtyard-furniture-v1",
+  "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
+  "normalization": "Declared source alpha/chroma, hard alpha128, one tight hard-alpha frame per independent object, uniform nearest-neighbour, palette quantization. No architectural repaint, axis stretch, ground shadow or per-object runtime scaling.",
+  "objects": {
+    "courtyard-picnic-table": {
+      "sourceSha256": "30e3558deb43a674f806e6f91a467e62f33bda8342ec0352a4d7e58f28199e4d",
+      "runtimeSha256": "e9484453097231c3b88e3d0fff4b062b5328f99608ed553ed379a76ceca95d8f",
+      "sourceCanvas": [
+        1312,
+        1199
+      ],
+      "sourceFrame": [
+        282,
+        370,
+        1031,
+        1002
+      ],
+      "uniformScale": 0.018691588785046728,
+      "targetSize": [
+        14,
+        12
+      ],
+      "offset": [
+        1,
+        4
+      ],
+      "occupiedBoundsPx": [
+        1,
+        4,
+        15,
+        16
+      ],
+      "occupiedSizePx": [
+        14,
+        12
+      ],
+      "paletteColors": 18,
+      "alphaValues": [
+        0,
+        255
+      ]
+    },
+    "courtyard-square-planter": {
+      "sourceSha256": "b3748b871fd0562d57234a058e168bd92e001215bc257591ea66a08193a836d1",
+      "runtimeSha256": "1085af9b7b210caeb32d0403c00235acecde9fa60b05d06367cca243fc2d903f",
+      "sourceCanvas": [
+        1302,
+        1208
+      ],
+      "sourceFrame": [
+        307,
+        212,
+        995,
+        995
+      ],
+      "uniformScale": 0.010217113665389528,
+      "targetSize": [
+        7,
+        8
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        7,
+        8
+      ],
+      "occupiedSizePx": [
+        7,
+        8
+      ],
+      "paletteColors": 19,
+      "alphaValues": [
+        0,
+        255
+      ]
+    },
+    "courtyard-cycle-rack": {
+      "sourceSha256": "01f533ee34aafddc90d00dca15d06270a69da41f8c3c403485713138323dc0fe",
+      "runtimeSha256": "8c30d01a8af16ee4c8d8ffb929af490077406531086a97061d3c178ad827e9b9",
+      "sourceCanvas": [
+        1774,
+        887
+      ],
+      "sourceFrame": [
+        206,
+        198,
+        1567,
+        725
+      ],
+      "uniformScale": 0.010286554004408524,
+      "targetSize": [
+        14,
+        5
+      ],
+      "offset": [
+        1,
+        3
+      ],
+      "occupiedBoundsPx": [
+        1,
+        3,
+        15,
+        8
+      ],
+      "occupiedSizePx": [
+        14,
+        5
+      ],
+      "paletteColors": 19,
+      "alphaValues": [
+        0,
+        255
+      ]
+    }
+  },
+  "errors": []
+}

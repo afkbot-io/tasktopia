@@ -1,0 +1,175 @@
+{
+  "key": "compact-rust-loft-v1",
+  "date": "2026-09-07",
+  "scope": "Approved source family only. No catalog/runtime/global build edits by this author.",
+  "contract": "Existing48x48/6x6 footprint, anchor24,48,door4x3/frame7x5/window2–3x2,roof28–34/front14–18 unchanged.",
+  "sourceRecovery": "Parent authorized existing magenta-chroma-family in draft; no newthreshold, sourcepainting orholefilling. SourceF954additionalremovedpixels all exteriorconnected,maxdepth1,0enclosed. Evidence stage5F-measurements.json.",
+  "palette": "Parent independently accepted MAXCOVERAGE within immutable 32-color budget; brighter golden rooftop housing on stage5 is disclosed. Same method applies to all three stages.",
+  "canonicalCandidate": {
+    "attempt": "F",
+    "source": "sources/stage-5.png",
+    "sourceSha256": "4630de22ad6eee6c5bf273c327b6be936ddd4f6451b8760bc1439fb4e4333102",
+    "native": "normalized/stage-5.png",
+    "runtimeSha256": "27b8eaa21d168277b8f9fdf6fe9d472ef1a9e8bd50255f2d583adeac15d04d19",
+    "status": "INDEPENDENTLY_APPROVED_SOURCE_AND_NATIVE"
+  },
+  "attempts": [
+    {
+      "attempt": "draft-A",
+      "source": "sources/stage-5-draft-A.png",
+      "sourceSha256": "8fd3505e5c79861099de6d614716811299ec8c0c9c0a0e38b6aa74409946061e",
+      "generator": "Earlier inherited imagegen batch per WORLD-FINISHING-2026-09-06.md",
+      "originalOutput": null,
+      "promptSection": "Original prompt not present in this inherited family",
+      "result": "Original unapproved source inherited from earlier imagegen batch. NativeRED: longglazingstrips andmissingdoorthreshold."
+    },
+    {
+      "attempt": "B",
+      "source": "sources/stage-5-B.png",
+      "sourceSha256": "b91360d5195a410723088ea4698bfc85903429e7a1a9d9164556e57c2983de8e",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-2cbeb74a-3eba-4277-8483-50c9822f900f.png",
+      "promptSection": "PROMPTS.md: Stage5B",
+      "result": "Glazing separated; doorwaystillmissingthreshold. OtherbrickdetailalsoquietedbyAI; preservedindustrial3bays."
+    },
+    {
+      "attempt": "C",
+      "source": "sources/stage-5-C.png",
+      "sourceSha256": "d362c2ecbc489424569603b8fec8d4026f7198d38c72776424b53757ea5107da",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-7a4d9afb-7d76-4e80-9308-dc4f80b5ed5d.png",
+      "promptSection": "PROMPTS.md: Stage5C",
+      "result": "Thresholdfixed; frame6wide/leaf5wide andmissingrightjamb fail. MEDIANCUT andMAXCOVERAGE nativecomparisons retained."
+    },
+    {
+      "attempt": "D",
+      "source": "sources/stage-5-D.png",
+      "sourceSha256": "7866824b829d925da6cdb20b01025b21b66671a151da09a8d44110e2817b6d4a",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-95399687-637e-432f-8fd9-bece516cb794.png",
+      "promptSection": "PROMPTS.md: Stage5D",
+      "result": "7x5frame restored,leafstill5x3 too wide."
+    },
+    {
+      "attempt": "E",
+      "source": "sources/stage-5-E.png",
+      "sourceSha256": "5a8be6aa408df1f40c23216bcdfa3e6c3833078af7ae6d89f4c4b254eb90a6a5",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-15e99ae2-6879-43df-aa58-884265cefd2d.png",
+      "promptSection": "PROMPTS.md: Stage5E",
+      "result": "4x3leaf/7x5frame correct; narrowkeyfailedon exteriorbgnoise. Existingbroad recovery restoredcorrectframe, but5windowaperturesonly1nativepixelwide."
+    },
+    {
+      "attempt": "F",
+      "source": "sources/stage-5-F.png",
+      "sourceSha256": "4630de22ad6eee6c5bf273c327b6be936ddd4f6451b8760bc1439fb4e4333102",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-b8c7ccb6-b7c9-409e-b83b-57b52afa80b5.png",
+      "promptSection": "PROMPTS.md: Stage5F",
+      "result": "Parent independently approved5F source/native, loftidentity/exactopenings/door andbrightergoldroofhousing/MAXCOVERAGE/exterior-onlybroadkey."
+    }
+  ],
+  "reverseStage4": {
+    "attempt": "B",
+    "source": "sources/stage-4.png",
+    "sourceSha256": "ac6b136c1722c4ac0ab7eacfc4de4b60bed60b59ec107d81363dc49107bc8c2d",
+    "runtimeSha256": "bfb7daf2c5ad196f60a300d682f1946dd1b9df75e9245da7c860ae907184d323",
+    "status": "INDEPENDENTLY_APPROVED_SOURCE_AND_NATIVE"
+  },
+  "stage4Attempts": [
+    {
+      "attempt": "A",
+      "source": "sources/stage-4-A.png",
+      "sourceSha256": "454171ed9d58959b6300c7b6ce8ad24f8b4b98164f070a830b4d93f626e2c60e",
+      "runtimeSha256": "0643bd3d6604a7fe8e07a1dd28c75d4b0f5d6bf9e88047a89952f5d3c6c169fb",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-70258869-655e-481a-932c-2fcbaae6bf17.png",
+      "references": [
+        "sources/stage-5-F.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage4A",
+      "result": "Halfroof/rooms/geometry/doorpass; upperapertureloweredge becamewarmandlookedshallow; correctedbeforeapproval."
+    },
+    {
+      "attempt": "B",
+      "source": "sources/stage-4-B.png",
+      "sourceSha256": "ac6b136c1722c4ac0ab7eacfc4de4b60bed60b59ec107d81363dc49107bc8c2d",
+      "runtimeSha256": "bfb7daf2c5ad196f60a300d682f1946dd1b9df75e9245da7c860ae907184d323",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-49850e73-2a8b-4148-9b22-859ded52d47c.png",
+      "references": [
+        "sources/stage-4-A.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage4B",
+      "result": "Parent independently approved 4B: half roof, four opaque rooms, no rooftop gear, all22 dark apertures2–3x2, exact4x3 leaf/7x5 frame, zero holes/drift/exterior fringe."
+    }
+  ],
+  "reverseStage3": {
+    "attempt": "D",
+    "source": "sources/stage-3.png",
+    "sourceSha256": "03324a2bf12c4a06a2faf1f48a76b15e1531f070ef01dc3adca99a83be3f019b",
+    "runtimeSha256": "130d76793395dfcae09add458d54ad1c8e67458099a6a20f2c8ebe7df0561506",
+    "status": "INDEPENDENTLY_APPROVED_SOURCE_AND_NATIVE"
+  },
+  "stage3Attempts": [
+    {
+      "attempt": "A",
+      "source": "sources/stage-3-A.png",
+      "sourceSha256": "c6377f3dfe4849e0ac3ebd0b658fd2badb0c67c44bf177a9318ab2d599d4b881",
+      "runtimeSha256": "b94f8d75d7a2738ddf1244b43b51336e55108a7a47a4b15e73333742b45ad53d",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-c0a716d4-87cc-4b91-a3d2-26d3d6fdbc84.png",
+      "references": [
+        "sources/stage-4-B.png",
+        "sources/stage-5-F.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3A",
+      "result": "Geometry/door/windows pass; rejected external pink native[10,4]."
+    },
+    {
+      "attempt": "B",
+      "source": "sources/stage-3-B.png",
+      "sourceSha256": "ed620d38dd5ed9e5c3c383a6b440b258be8949578a5be587417f22be30cbc2cd",
+      "runtimeSha256": "650093685ecad3f9971b6d103ee6fb1ef4c6dad3f486ad1debfef9f1e5b38a48",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-9301ead5-7fcd-41bf-bcfc-bfc55083d157.png",
+      "references": [
+        "sources/stage-3-A.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3B",
+      "result": "Rejected two external pink native pixels[10,4],[24,4]."
+    },
+    {
+      "attempt": "C",
+      "source": "sources/stage-3-C.png",
+      "sourceSha256": "4d8e2093e6cef03b149980db46f47c3c8bbc9ff93e1a2c2254e89da498cdd2c8",
+      "runtimeSha256": "f4682936e86079f22e0b9ceec85533c3fb41602f508be28044946fb11a66d302",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-86b833de-ca5d-4137-843f-0579e96dbfa1.png",
+      "references": [
+        "sources/stage-3-B.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3C",
+      "result": "Rejected remaining native[10,4] RGB223,160,161: visual inspection caught desaturated pink missed by simple hue heuristic."
+    },
+    {
+      "attempt": "D",
+      "source": "sources/stage-3-D.png",
+      "sourceSha256": "03324a2bf12c4a06a2faf1f48a76b15e1531f070ef01dc3adca99a83be3f019b",
+      "runtimeSha256": "130d76793395dfcae09add458d54ad1c8e67458099a6a20f2c8ebe7df0561506",
+      "generator": "image_gen.imagegen",
+      "originalOutput": "/Users/kikasnikita/.codex/generated_images/01a06e07-e826-75d1-a639-659ef2f043a8/exec-a4fbcc8c-92f0-4052-9a14-3a313a13d146.png",
+      "references": [
+        "sources/stage-3-C.png"
+      ],
+      "promptSection": "PROMPTS.md: Stage3D",
+      "result": "Parent independently approved native1x/8x and full3/4/5 sequence. AI removes one protruding north partition cap to incomplete north-wall level; no source painting or key/frame changes. Eight opaque roofless rooms, partial upperfront,14 retained2x2 openings, exact door and foundation."
+    }
+  ],
+  "sequenceReview": {
+    "accepted": true,
+    "reviewer": "Parent /root independent native1x and nearest-neighbor8x inspection",
+    "date": "2026-09-07",
+    "notes": "Full same opaque parcel, roof50% at4 and0 at3; eight roofless rooms and partial upperfront masonry, lower rows/door retained, no pink fringe or heavy black baseline. No runtime publication approval is implied."
+  }
+}

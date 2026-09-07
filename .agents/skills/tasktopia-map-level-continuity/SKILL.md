@@ -11,19 +11,20 @@ Treat PLANET, COUNTRY, and CITY as three projections of one world, never as inde
 
 - PLANET owns the stable macro-cell identity and terrain family.
 - COUNTRY expands the selected country plus its visible neighbouring macro cells. Do not synthesize water merely because a cell belongs to another country.
-- CITY block-v1 keeps logical simulation coordinates independent of pixels and presents one cell as `4x4 px`; homogeneous terrain may be batched into native `16x16 px` macros while exact mixed boundaries remain detail cells. Every macro landmark affecting its territory keeps its terrain family and relative position.
-- A city's country silhouette is derived deterministically from its current city/district bounds. It must change when those bounds change and must not be a generic square marker.
+- CITY keeps logical simulation coordinates independent of pixels and presents one cell as `8x8 px`; interior `4x4 px` lawn/water substrates do not change that simulation scale. Every macro landmark affecting its territory keeps its terrain family and relative position.
+- COUNTRY v7 projects one current block as one compact house icon; PLANET v4 projects one district as one icon. Their canonical centers and extents govern composition, not a second independently generated city or the retired occupancy-code raster. A house must not be stretched to fill a district silhouette. COUNTRY4×4 and PLANET2×2 material patches abstract the same geographic cells; they never change ownership or macro identity.
 - Terrain seeds add detail inside an inherited family; they may not move a mountain, river, coast, forest, or neighbouring landmass to another macro region.
-- Country maps do not draw synthetic roads between cities. Show city silhouettes and their own internal detail only.
+- Ground roads come from the server's canonical intercity network. COUNTRY projects its route IDs through validated dry corridors; CITY v4 renders the incident approaches/exits from those same routes. Flight connections remain separate. A missing endpoint, exhausted route budget or failed dry projection is an explicit unavailable route, never permission to fabricate a straight line through water. GET consumers must not run a new planner.
 
 ## Camera contract
 
-- City navigation bounds are the full city bounds. A `160x100` frame may define the initial composition only; it must never clip the scene response or clamp panning.
+- City-scene data covers the full city bounds. A `160x100` frame defines initial composition, not the response extent. The latest user camera contract fixes CITY zoom at `0.8..4` regardless of city size. Panning still clamps to the resident chunk-aligned city. If that raster is smaller than the viewport, render visible padding through the same seeded terrain/atlas material path, with bounded natural-tree continuation and only canonical incident roads. Do not fetch remote-city entities or use flat substitute materials. Check padding leases, depth ordering, pruning and disposal on zoom/resize, retry and teardown; test transient as well as settled black-edge absence. Do not restore a size-dependent zoom floor.
 - One city-scene request contains every chunk intersecting the city bounds. Panning must not fall back to `/api/world/viewport` or `/api/chunks/*`.
 - A further outward wheel step at a level's minimum zoom transitions immediately to its parent level.
 - On CITY -> COUNTRY, focus the selected city's projected center and start close enough that outward movement visibly continues.
 - On COUNTRY -> PLANET, focus the selected country's planet cells and start close enough that outward movement visibly continues.
 - On parent -> child, preserve the cursor/focus point and start from the corresponding selected territory.
+- CITY v4 airport connections use completed task-linked slot centers shared with COUNTRY/PLANET. A remote airport endpoint does not authorize fetching or rendering its entire city.
 - Persist camera state in the map owner, not only inside a canvas that is destroyed during a level transition.
 
 ## Change workflow

@@ -2,6 +2,8 @@
 
 Use this contract for vehicles, transit stops, residents, micromobility, playgrounds, park objects, trees, shrubs, animals, boats, and similar finished props.
 
+Cars, people, animals and aircraft use the current `docs/art/MICRO-AMBIENT-ART-CONTRACT.md` and its centered native frames. The static tree, transit-stop and park-object gates below remain unchanged. Broader historical plans never override the micro contract.
+
 ## Verbal style fingerprint
 
 Tasktopia V4 uses dense hand-authored city-builder pixel art rendered on an `8 px` logical grid. Shapes are compact and deliberately chunky, but not crude: large material planes are broken into controlled clusters of two to five pixels, with selective single-pixel highlights only at functional edges. The outline is a continuous dark blue-grey, normally one artistic pixel thick. Interior shadows use a related muted tone rather than black. Light always comes from the upper left, producing a narrow light top plane and a restrained darker lower/right plane.
@@ -25,20 +27,11 @@ Reject the source before catalog registration when any item applies:
 - a directional counterpart produced by mechanically rotating the other view;
 - a palette-only vehicle variant when the requested family requires a different model silhouette.
 
-## Vehicle gate
+## Moving vehicle gate
 
-- Passenger vehicles use exactly three authored runtime views: `24x16 px` horizontal/east, `16x24 px` north/rear, and `16x24 px` south/front. The opaque vehicle is exactly `22x13 px` horizontally and `13x22 px` vertically. West is rendered only by mirroring the east view.
-- Every passenger source sheet is an exact `8x3` grid with one connected opaque vehicle in every cell. The reviewed sheet SHA-256 is stored in the catalog and copied to the runtime manifest; digest mismatch, extra disconnected shadows/fragments, silent largest-component extraction, or any occupied-bound drift is blocking.
-- The horizontal source view faces `EAST` (front at the right): it exposes a shallow roof plane plus a distinct near-side body plane, with both wheels visible below the belt line. A roof-only bird's-eye silhouette is blocking.
-- The north source view is a separately authored rear elevation: rear glass, tail lamps and trunk/hatch plane remain readable. The south source view is a separately authored front elevation: windscreen, headlights and grille/bumper remain readable. A roof-only plan view is blocking.
-- Draw all three views independently as the same model: matching roof color, window rhythm, hood/trunk proportions, lights, and defining cue. North and south must visibly differ.
-- Runtime may mirror the accepted east view for westbound travel only. It must never mirror north into south, rotate a side view, or synthesize either vertical direction.
-- Keep one transparent pixel of visual breathing room where possible; do not make the car appear to scrape the curb.
-- The horizontal silhouette must occupy exactly `22x13 px`; both north and south silhouettes exactly `13x22 px`.
-- Distinct models must differ structurally: compact, sedan, estate, taxi, van, pickup, electric hatch, or classic car. A color swap is not a model.
-- Every model must have a unique full RGBA drawing and a visibly different source-level body/roof/cargo structure. The reviewed contact sheet is the silhouette gate: tiny runtime cars may share the same safe lane envelope, so an alpha-bounds hash alone is not proof of diversity.
-- City buses use the same three-view contract but occupy `56x24 px` horizontally and `24x56 px` vertically (`7x3` or `3x7` cells). Their opaque subject must occupy at least `52x21 px` horizontally and `21x52 px` north/south. The long roof, window rhythm, front/rear lighting and three-cell width must remain readable at native `1x`. A short vehicle padded inside the large canvas is blocking. Buses run only on canonical seven-cell collector/arterial/highway roads.
-- Parked fire engines use the bus-class `56x24 px` east-facing canvas with an exact `54x22 px` connected opaque body and a `7x3` visual footprint. The accepted view must share the current car/bus camera and authored detail scale: tall crew cab, readable side windows plus sloped front windscreen, shallow cab/equipment top planes, darker near-side plane and two large rounded wheels on the same baseline. The top row must remain narrower than the full envelope, the east-facing front needs at least four stepped positions, and the bottom row ends in exactly two separate rounded wheel contacts, each `3–6 px` wide. Pumper, rescue and ladder variants require different tank/bay/ladder silhouettes; a small pickup-like body, rectangular primitive, pure side elevation, palette-only variant, disconnected equipment or stale source is blocking. Atlas extraction uses actual chroma-separated subject bands rather than mathematical thirds, so no neighbour may be clipped into a fire-engine source.
+Use the native micro contract: 8×8 car frames with 6×4/4×6 opaque bodies, four independently authored compass views and no rotation/mirroring. Retired large buses and riders are not compact-city fallback assets. Aircraft use centered 16×16 frames and task-backed airport routes.
+
+Incident response uses the west-facing red micro car: an 8×8 frame with a native 6×4 body, one-pixel beacon and body-attached hose. No large fire-engine fallback is allowed. Fire/smoke effects keep their separate authored effect contract.
 
 ## Transit-stop gate
 
@@ -47,14 +40,9 @@ Reject the source before catalog registration when any item applies:
 - The shelter must not contain baked asphalt, road, grass, or a full pavement slab.
 - Use the canonical `16x16 px`, `2x2` boarding platform contract. Every stop pair sits outside opposite road edges and is offset along the road so shelters do not face each other in one cross-section.
 
-## Resident and micromobility gate
+## People and animal gate
 
-- Moving residents use `16x24 px` canvases with a compact `6–12x16–18 px` opaque subject: separately authored north/rear, east and south/front views, each with three readable walk poses. The range is an envelope, not a per-frame resize target: all three frames keep one family scale, while the passing pose may be naturally narrower than the contact poses. West may mirror the accepted east cycle. Their feet share one bottom-centre anchor on the destination path cell; the playback loop is `A→B→C→B`, never a direct opposite-contact jump. A centred `8x8` icon, per-frame silhouette stretching, or a single bobbing frame is obsolete.
-- Activity residents use the same `16x24 px` canvas and `16–18 px` upright body scale as walkers. A book, parcel, broom, phone, tool, or wave may widen the subject but must not shrink the head/body, create a fake second person, or add baked ground. A fisher's bent pose may occupy `8–10x12–14 px` while keeping the same part scale.
-- Cyclists and scooter riders use three authored views like road vehicles: `24x24 px` horizontal/east and `16x24 px` north/rear and south/front. The visible rider-plus-vehicle bounds are `12–18x13–18 px` horizontally and `6–8x16–18 px` vertically. Runtime scale is exactly `1.0`; west mirrors only the accepted east view, and north/south are never rotations.
-- The rider, helmet, handlebar/deck or bicycle frame must form one compact silhouette. Reject detached wheels, side-view riders paired with top-view equipment, or a vehicle without a visible rider.
-- Runtime must swap the texture whenever direction changes, and apply a negative horizontal scale only for west. A sprite travelling feet-first, handlebar-first in reverse, or showing its rear while moving south is blocking.
-- Micromobility uses pedestrian/path graphs at a low population cap; it must not be added to motor-traffic collision dimensions or spawned on road lanes.
+Use centered 8×8 top-down frames: people source revision 2 has exactly 3×4px at occupied bounds `[2,2,5,6]` in all headings, animals 4–6×6px. The person canvas anchor stays `[4,4]`, with the same opaque center `[3.5,4]` across the series. Reject a 3×2 south view or a one-pixel registration shift even if its metadata and hashes agree. Each person color has four authored headings; each animal species has one static pose. No gait, activity costume swaps, static fisherman population, or micromobility rider family is active in the compact scene.
 
 ## Playground and park-object gate
 
@@ -65,13 +53,10 @@ Reject the source before catalog registration when any item applies:
 
 ## Tree gate
 
-- Standard trees use exactly `16x32 px`, a `1x1` footprint and anchor `[8,32]`.
-  The lower-centre `8x8 px` rectangle (`x=4..11`, `y=24..31`) is the planting
-  cell. All opaque pixels in the two ground-contact rows `30..31` stay inside
-  `x=4..11`, and the trunk/root reaches the final row. Crown pixels may overhang
-  above that contact band because y-sorting is anchored at the trunk. Signature
-  trees require a separate
-  explicit contract; never silently reuse the standard profile at another size.
+- Read `docs/art/COMPACT-TREE-ART-CONTRACT.md` for V7's16x16canvas,
+  anchor8,16,1x1logical footprint, source contact rows14–15 and centered world
+  anchor. Living trees stay within12x14visible pixels; deadwood within8x9.
+  V6's16x32canvas is retired, not an alternative runtime profile.
 - The crown may overhang the planting cell only above the ground-contact band.
   Its upper plane occupies about 75–85% of the readable volume. The outer
   silhouette is a compact square or rectangle with only `1–2 px` corner steps.
@@ -79,9 +64,9 @@ Reject the source before catalog registration when any item applies:
   aligned with the roof and terrain-grid axes. Keep the lower/front crown and
   trunk compressed at the anchor. At least three tones are required:
   outline/shadow, body and upper-left highlight.
-- Species differ inside the same square grammar by width, height, band spacing,
-  top-plane pattern and palette. They must not switch to round, conical,
-  triangular, radial or long-branch silhouettes.
+- Species differ by width, height, bands, top-plane pattern and palette.
+  Palm fronds and willow fringes are explicit overhead exceptions, not a switch
+  to a tall frontal camera. Avoid smooth round or long-branch realistic silhouettes.
 - Do not bake grass or a circular ground shadow into the tree.
 - Reject crowns made from one flat unbanded blob, random confetti pixels,
   lollipops, long frontal trunks, realistic leaf texture, smooth circular
@@ -97,8 +82,8 @@ Reject the source before catalog registration when any item applies:
 2. State exact cell order, runtime size, direction, semantic cue, and negative constraints in every prompt.
 3. Pause `2–5 s` after each completed request.
 4. Inspect the source at original scale before copying it into `reference/ai-authored/`.
-5. Normalize with aspect preservation, hard alpha, bottom-centre anchoring, and at most 28 opaque colors. Never redraw accepted geometry procedurally.
+5. Normalize with aspect preservation, hard alpha, the declared center/bottom anchor, and the family's palette budget (eight opaque colors for micro ambient). Never redraw accepted geometry procedurally.
 6. Register `artSource: AI_AUTHORED`, `sourceSheet`, and a style profile in the manifest.
 7. Render native and nearest-neighbour `8x` family contact sheets. Check silhouettes, paired directions, footprint isolation, and semantic readability.
 8. Run both asset audits. Any style-contract error blocks shipping; do not whitelist an incompatible visual.
-9. For directional residents or micromobility, assert `baseFacing` in catalog metadata and test the runtime north/south/east/west mapping before visual QA.
+9. For directional micro ambient, assert `direction` in metadata and test the runtime north/south/east/west mapping before visual QA.
