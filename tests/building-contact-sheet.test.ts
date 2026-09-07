@@ -18,7 +18,7 @@ families = [[Image.new('RGBA', size, (20 + row, 40 + stage, 200, 255)) for stage
 sheet = publisher.building_contact_sheet(families)
 # Distinct solid synthetic masks make every lost/overpainted pixel observable.
 # They are test data, not substitute building architecture.
-counts = [sum(pixel == image.getpixel((0, 0)) for pixel in sheet.get_flattened_data()) for family in families for image in family]
+counts = [sum(pixel == image.getpixel((0, 0)) for pixel in sheet.getdata()) for family in families for image in family]
 print(json.dumps({'size': list(sheet.size), 'counts': counts, 'inputs': [[list(im.size) for im in family] for family in families]}))
 `, JSON.stringify(sizes)], { encoding: "utf8" }));
 }

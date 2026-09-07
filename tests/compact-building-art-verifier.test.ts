@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -132,8 +132,13 @@ describe("compact building art verifier CLI", () => {
 
   it("keeps the reviewed default tight-frame PNG hashes unchanged", () => {
     const family = fixture();
-    for (const stage of [3, 4, 5]) copyFileSync(join(acceptedFamily, `sources/stage-${stage}.png`), join(family, `sources/stage-${stage}.png`));
-    const { status, report } = run(family);
+    mkdirSync(join(family, "normalized"));
+    for (const stage of [3, 4, 5]) {
+      copyFileSync(join(acceptedFamily, `sources/stage-${stage}.png`), join(family, `sources/stage-${stage}.png`));
+      copyFileSync(join(acceptedFamily, `normalized/stage-${stage}.png`), join(family, `normalized/stage-${stage}.png`));
+    }
+    copyFileSync(join(acceptedFamily, "visual-review.json"), join(family, "visual-review.json"));
+    const { status, report } = run(family, true);
     expect(status).toBe(0);
     expect(Object.fromEntries(Object.entries(report.stages).map(([stage, value]) => [stage, value.runtimeSha256]))).toEqual({
       3: "edd2b84ec7d82b81b8712326caaa4406bc35aaa04e998afe78e9f00da2a15ad1",
@@ -153,7 +158,7 @@ describe("compact building art verifier CLI", () => {
 from PIL import Image
 import sys
 im=Image.open(sys.argv[1]).convert('RGBA')
-print(sum(1 for r,g,b,a in im.get_flattened_data() if a and b>r*1.3 and g>r*1.3))
+print(sum(1 for r,g,b,a in im.getdata() if a and b>r*1.3 and g>r*1.3))
 `, join(family, "normalized/stage-5.png")], { encoding: "utf8" }));
     expect(count).toBeGreaterThanOrEqual(8);
   });

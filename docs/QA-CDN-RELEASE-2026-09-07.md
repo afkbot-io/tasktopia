@@ -1,8 +1,10 @@
 # Production-CDN release correction
 
-Status: verified locally, **not deployed**. The requesting user's approval of
-the previous candidate remains recorded, but does not approve this new six-file
-diff. No runtime/deployment policy, credentials, database schema or art changed.
+Status: verified locally, **not deployed**. The requesting user subsequently
+confirmed review of commit `d83674cc42269909f674618ddf0ee45e324a5188`, including
+this six-file CDN correction. The later [PNG normalization correction](QA-PNG-RELEASE-2026-09-07.md)
+is a separate diff and needs its own review. No runtime/deployment policy,
+credentials, database schema or art changed in the CDN correction.
 
 ## Reproduced failures
 

@@ -5,21 +5,28 @@ import json
 from pathlib import Path
 
 from PIL import Image
+from reviewed_png import save_reviewed_png
 
 ROOT = Path(__file__).resolve().parents[1]
 FAMILY = ROOT / 'assets/pixel-city-pack/reference/ai-authored/compact-trees-v7'
+
+
+def pixel_data(image):
+    return image.get_flattened_data() if hasattr(image, 'get_flattened_data') else image.getdata()
 
 
 def main():
     output = FAMILY / 'normalized'
     output.mkdir(parents=True, exist_ok=True)
     entries = {}
+    review_path = FAMILY / 'visual-review.json'
+    review = json.loads(review_path.read_text()) if review_path.exists() else {}
     sources = sorted((FAMILY / 'sources').glob('tree-*.png'))
     sheet = Image.new('RGBA', (max(1, len(sources)) * 24, 64), '#81975b')
     for index, source in enumerate(sources):
         image = Image.open(source).convert('RGBA')
         image.putdata([(0, 0, 0, 0) if min(r, b) > 90 and g < min(r, b) * .75 else (r, g, b, a)
-                       for r, g, b, a in image.get_flattened_data()])
+                       for r, g, b, a in pixel_data(image)])
         bounds = image.getchannel('A').getbbox()
         if not bounds:
             raise ValueError(f'Empty tree: {source}')
@@ -33,17 +40,18 @@ def main():
         crop.putalpha(alpha)
         canvas = Image.new('RGBA', (16, 16))
         canvas.alpha_composite(crop, ((16 - size[0]) // 2, 16 - size[1]))
-        canvas.putdata([p if p[3] else (0, 0, 0, 0) for p in canvas.get_flattened_data()])
+        canvas.putdata([p if p[3] else (0, 0, 0, 0) for p in pixel_data(canvas)])
         target = output / source.name
-        canvas.save(target)
+        source_sha = hashlib.sha256(source.read_bytes()).hexdigest()
+        runtime_sha = save_reviewed_png(canvas, target, source_sha, review.get('trees', {}).get(source.stem))
         mask = [[x, y] for y in range(16) for x in range(16) if canvas.getpixel((x, y))[3]]
         if any(x < 4 or x > 11 for x, y in mask if y >= 14):
             raise ValueError(f'Ground contact escapes planting cell: {source.stem}')
-        entries[source.stem] = {'sourceSha256': hashlib.sha256(source.read_bytes()).hexdigest(),
-            'runtimeSha256': hashlib.sha256(target.read_bytes()).hexdigest(),
+        entries[source.stem] = {'sourceSha256': source_sha,
+            'runtimeSha256': runtime_sha,
             'sourceFrame': bounds, 'size': [16, 16], 'anchorPx': [8, 16],
             'occupiedBoundsPx': canvas.getchannel('A').getbbox(), 'alphaMask': mask,
-            'paletteColors': len(set(canvas.get_flattened_data()))}
+            'paletteColors': len(set(pixel_data(canvas)))}
         sheet.alpha_composite(canvas, (index * 24 + 4, 8))
     # Scale comparison uses real reviewed low-rise assets, not a drawing proxy.
     for i, family in enumerate(('compact-row-v1', 'compact-wide-v1')):

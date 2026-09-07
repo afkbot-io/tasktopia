@@ -4,12 +4,16 @@ import argparse
 import json
 from pathlib import Path
 import runpy
+import sys
 
 from PIL import Image
 
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
+sys.path.insert(0, str(ROOT / "scripts"))
+from reviewed_png import save_reviewed_png
+
 shared = runpy.run_path(str(ROOT / "scripts/verify-compact-building-art.py"))
 extract_source = shared["extract_source"]
 visible_bounds = shared["visible_bounds"]
@@ -26,6 +30,8 @@ def main():
     args = parser.parse_args()
     family = args.family.resolve()
     contract = json.loads((family / "geometry.json").read_text())
+    review_path = family / "visual-review.json"
+    review = json.loads(review_path.read_text()) if review_path.exists() else {}
     output, previews = family / "normalized", family / "previews"
     output.mkdir(exist_ok=True)
     previews.mkdir(exist_ok=True)
@@ -62,7 +68,13 @@ def main():
         canvas.paste(image, offset)
         canvas.putdata([p if p[3] else (0, 0, 0, 0) for p in pixel_data(canvas)])
         path = output / f"stage-{stage}.png"
-        canvas.save(path)
+        approved = review.get("stages", {}).get(str(stage), {})
+        try:
+            runtime_sha = save_reviewed_png(canvas, path, sha256(sources[stage]),
+                                           approved if approved.get("accepted") is True else None)
+        except ValueError as error:
+            errors.append(f"Stage{stage}: {error}")
+            continue
         normalized[stage] = canvas
         opaque = visible_bounds(canvas)
         if not opaque:
@@ -72,7 +84,7 @@ def main():
         colors = len(set(pixel_data(canvas)))
         if opaque[3] != height or holes or colors > contract["paletteColorsMax"]:
             errors.append(f"Stage{stage}: baseline/opaque interior/palette gate failed")
-        report["stages"][str(stage)] = {"sourceSha256": sha256(sources[stage]), "runtimeSha256": sha256(path), "sourceBounds": list(bounds), "occupiedBoundsPx": list(opaque), "occupiedSizePx": [opaque[2] - opaque[0], opaque[3] - opaque[1]], "paletteColors": colors, "alphaValues": sorted(set(pixel_data(canvas.getchannel("A")))), "transparentHolePixels": holes}
+        report["stages"][str(stage)] = {"sourceSha256": sha256(sources[stage]), "runtimeSha256": runtime_sha, "sourceBounds": list(bounds), "occupiedBoundsPx": list(opaque), "occupiedSizePx": [opaque[2] - opaque[0], opaque[3] - opaque[1]], "paletteColors": colors, "alphaValues": sorted(set(pixel_data(canvas.getchannel("A")))), "transparentHolePixels": holes}
         if contract["assetRole"] == "FOUNTAIN":
             water = sum(a and b > r * 1.15 and g > r * 1.12 and b > 90 for r, g, b, a in pixel_data(canvas))
             report["stages"][str(stage)]["tealWaterPixels"] = water
@@ -109,8 +121,9 @@ def main():
             measured["foundationMaskMaxDriftPx"] = drift
             if measured["centreDriftPx"] > 1 or measured["baselineDriftPx"] > 1 or drift > 1:
                 errors.append(f"Stage{stage}: registered foundation/center/baseline drift")
-        hashes = [m["runtimeSha256"] for m in report["stages"].values()]
-        if len(hashes) != len(set(hashes)):
+        # Different canonical encodings must not disguise identical stages.
+        pixels = [(image.size, image.tobytes()) for image in normalized.values()]
+        if len(pixels) != len(set(pixels)):
             errors.append("Duplicate normalized stages")
     sheet = Image.new("RGBA", (64, 24), (126, 147, 88, 255))
     for index, stage in enumerate((3, 4, 5)):
@@ -118,9 +131,7 @@ def main():
             sheet.alpha_composite(normalized[stage], (4 + index * 20, 4))
     sheet.save(previews / "stage-sequence.png")
     sheet.resize((512, 192), Image.Resampling.NEAREST).save(previews / "stage-sequence-8x.png")
-    review_path = family / "visual-review.json"
     if args.require_review:
-        review = json.loads(review_path.read_text()) if review_path.exists() else {}
         for stage, measured in report["stages"].items():
             accepted = review.get("stages", {}).get(stage, {})
             if not accepted.get("accepted") or any(accepted.get(k) != measured[k] for k in ("sourceSha256", "runtimeSha256")):

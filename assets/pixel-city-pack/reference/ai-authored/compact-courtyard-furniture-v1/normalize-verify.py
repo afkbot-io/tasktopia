@@ -19,6 +19,7 @@ def normalize(family, require_complete=False, require_review=False):
     helpers = runpy.run_path(str(root / 'scripts/verify-compact-building-art.py'))
     sys.path.insert(0, str(root / 'scripts'))
     from courtyard_furniture_contract import rack_supports_valid
+    from reviewed_png import save_reviewed_png
     contract = json.loads((family / 'geometry.json').read_text())
     reviewed_path = family / 'visual-review.json'
     review = json.loads(reviewed_path.read_text()) if reviewed_path.exists() else {}
@@ -60,7 +61,13 @@ def normalize(family, require_complete=False, require_review=False):
         canvas.paste(image, offset)
         canvas.putdata([pixel if pixel[3] else (0, 0, 0, 0) for pixel in helpers['pixel_data'](canvas)])
         path = normalized / f'{key}.png'
-        canvas.save(path)
+        approved = review.get('objects', {}).get(key)
+        try:
+            runtime_sha = save_reviewed_png(canvas, path, digest(source_path),
+                                           approved if approved and approved.get('accepted') is True else None)
+        except ValueError as error:
+            errors.append(f'{key}: {error}')
+            continue
         bounds = canvas.getchannel('A').getbbox()
         occupied = [bounds[2] - bounds[0], bounds[3] - bounds[1]] if bounds else [0, 0]
         colors = len(set(helpers['pixel_data'](canvas)))
@@ -73,14 +80,13 @@ def normalize(family, require_complete=False, require_review=False):
             errors.append(f'{key}: palette exceeds contract')
         if key == 'courtyard-cycle-rack' and not rack_supports_valid(canvas):
             errors.append(f'{key}: requires three closed U-hoops with connected tops and both legs')
-        measured = {'sourceSha256': digest(source_path), 'runtimeSha256': digest(path),
+        measured = {'sourceSha256': digest(source_path), 'runtimeSha256': runtime_sha,
                     'sourceCanvas': list(source.size), 'sourceFrame': list(frame),
                     'uniformScale': scale, 'targetSize': list(target), 'offset': list(offset),
                     'occupiedBoundsPx': list(bounds) if bounds else None,
                     'occupiedSizePx': occupied, 'paletteColors': colors,
                     'alphaValues': sorted(set(helpers['pixel_data'](canvas.getchannel('A'))))}
         report['objects'][key] = measured
-        approved = review.get('objects', {}).get(key)
         if require_review or approved:
             if not approved or approved.get('accepted') is not True or any(
                 approved.get(field) != measured[field] for field in ('sourceSha256', 'runtimeSha256')):

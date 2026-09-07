@@ -1,0 +1,78 @@
+{
+  "status": "verified normalization correction; pending remote CI and human review; not deployed",
+  "baseRevision": "d83674cc42269909f674618ddf0ee45e324a5188",
+  "reviewedBaseTree": "5af94ef28e870e4fd696f025b5a45fad83369e12",
+  "userReview": "User explicitly approved merge and confirmed review of the base revision in this task; subsequent PNG correction is a new diff",
+  "task": {"countryId":"4201d605-751a-469b-8d5f-a7e322a7ece1","taskId":"00d4e6a2-4abc-49df-8e14-8c77e93df2cd","number":14},
+  "pr": "https://github.com/afkbot-io/tasktopia/pull/20",
+  "originalFailedCi": "https://github.com/afkbot-io/tasktopia/actions/runs/34097128549",
+  "normalization": {
+    "seams": ["buildings", "parks", "trees", "courtyard furniture"],
+    "sourceShaRequired": true,
+    "existingCanonicalFileShaRequired": true,
+    "exactDimensionsAndAllRgbaRequired": true,
+    "reviewHashesRewritten": false,
+    "pixelOrGeometryChanges": false,
+    "stageDistinctness": "fresh dimensions and RGBA; encoded PNG SHA is not stage identity",
+    "draftWithoutReview": "normal encoding remains available",
+    "missingOrCorruptCanonical": "fails closed without replacement"
+  },
+  "verification": {
+    "macPillow12": {"tests":95,"passed":95,"failed":0},
+    "macPillow11": {"tests":95,"passed":95,"failed":0},
+    "linux": {
+      "platform":"linux/amd64",
+      "python":"3.12",
+      "pillow":"11.3.0",
+      "node":"24.20.0",
+      "originalRedExit":1,
+      "assetsBuildExit":0,
+      "assetsVerifyExit":0,
+      "tests":153,
+      "passed":153,
+      "failed":0,
+      "testFiles":7,
+      "runtimePngCount":381,
+      "exactRgbaEqualCount":381,
+      "changedRgbaCount":0,
+      "changedProceduralPngEncodingCount":71,
+      "rebuiltAssetRevision":"4336731d4187a108",
+      "committedAssetRevision":"750f26edc463160e",
+      "typecheck":"passed on sequential retry with 2048MiB Node heap",
+      "fullLint":"not passed in 3.827GiB local Docker: exit137/Killed; no lint or CI rules changed"
+    },
+    "hostTypecheck":"passed",
+    "cleanHostFullLint":"passed; unchanged npm run lint in curated copy with exact correction files",
+    "scopedLint":"passed",
+    "independentReview":"initial duplicate-stage P2 fixed and retested; no remaining confirmed findings",
+    "requiredRemoteCi":"pending for correction revision"
+  },
+  "negativeFixtures": {
+    "tests/fixtures/courtyard-art/rack-a-invalid-source.png":"6bc6c157d9638fcd973c86ae490c670a650bd2f76013964d7b78ddec8b2e213e",
+    "tests/fixtures/courtyard-art/rack-c-invalid-source.png":"019eabc49e2f8b8c5bd7deda0c700fcee3ca530c35da6ae171b0b614c435aba3",
+    "note":"Exact copies of previously local rejected test inputs; not published to runtime or public assets"
+  },
+  "onlineBackupRehearsal": {
+    "productionPaused":false,
+    "productionModified":false,
+    "frozenCutoverBackup":false,
+    "snapshotAt":"2026-09-07T08:24:44.108Z",
+    "dumpBytes":46100443,
+    "dumpSha256":"0750ed352264737a6b1c72d68fdfa047c376d2535dc7c40545e7cabedf9b3b51",
+    "restorePostgres":"16.14",
+    "restoreExit":0,
+    "tableCountsMatched":35,
+    "aggregateRows":77594,
+    "migrationIdentitiesMatched":21,
+    "restoredApplicationStarted":false,
+    "schemaMigrationOrRegenerationRun":false,
+    "limitations":"Online snapshot, not a write-freeze rollback point; uploads and global role credentials not included; full row content conservation after candidate migration not tested"
+  },
+  "remaining": [
+    "successful required CI on exact published correction revision",
+    "human review of new normalization/test-fixture correction",
+    "separate operator provisioning of a clean current Builder workspace; no receipt or guard bypass",
+    "production freeze, complete identified backup/restore and conservation gates",
+    "exact merged revision and Builder release validate ready:true before environment mutation"
+  ]
+}

@@ -96,6 +96,7 @@ def main() -> int:
     # Park authoring loads only the standalone raster helpers via runpy; the
     # building CLI owns projection-record validation and its sibling module.
     from compact_asset_contract import audit_compact_projection
+    from reviewed_png import save_reviewed_png
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--family", type=Path, help="One authoring family; omitted audits every registered family.")
@@ -117,6 +118,8 @@ def main() -> int:
         return 1 if not statuses or any(statuses) else 0
     family = args.family
     contract = json.loads((family / "geometry.json").read_text())
+    review_path = family / "visual-review.json"
+    review = json.loads(review_path.read_text()) if review_path.exists() else {}
     palette_method = contract.get("paletteMethod", "MEDIANCUT")
     if palette_method not in ("MEDIANCUT", "MAXCOVERAGE"):
         raise SystemExit("Unsupported paletteMethod; use MEDIANCUT or MAXCOVERAGE")
@@ -170,7 +173,13 @@ def main() -> int:
         # Canonicalize invisible RGB to zero; this does not touch visible geometry.
         canvas.putdata([pixel if pixel[3] else (0, 0, 0, 0) for pixel in pixel_data(canvas)])
         path = output / f"stage-{stage}.png"
-        canvas.save(path)
+        approved = review.get("stages", {}).get(str(stage), {})
+        try:
+            runtime_sha = save_reviewed_png(canvas, path, sha256(sources[stage]),
+                                           approved if approved.get("accepted") is True else None)
+        except ValueError as error:
+            errors.append(f"Stage {stage}: {error}")
+            continue
         bounds = visible_bounds(canvas)
         colors = len(set(pixel_data(canvas)))
         if colors > contract["paletteColorsMax"]:
@@ -180,7 +189,7 @@ def main() -> int:
         hole_pixels = transparent_holes(canvas)
         if hole_pixels:
             errors.append(f"Stage {stage}: {hole_pixels} transparent pixels inside roof/rooms/facade")
-        measured = {"sourceSha256": sha256(sources[stage]), "runtimeSha256": sha256(path), "sourceBounds": list(stage_bounds), "occupiedBoundsPx": list(bounds), "occupiedSizePx": [bounds[2] - bounds[0], bounds[3] - bounds[1]], "paletteColors": colors, "alphaValues": sorted(set(pixel_data(canvas.getchannel("A")))), "transparentHolePixels": hole_pixels}
+        measured = {"sourceSha256": sha256(sources[stage]), "runtimeSha256": runtime_sha, "sourceBounds": list(stage_bounds), "occupiedBoundsPx": list(bounds), "occupiedSizePx": [bounds[2] - bounds[0], bounds[3] - bounds[1]], "paletteColors": colors, "alphaValues": sorted(set(pixel_data(canvas.getchannel("A")))), "transparentHolePixels": hole_pixels}
         report["stages"][str(stage)] = measured
         normalized[stage] = canvas
         preview_width, preview_height = max(64, width + 16), max(64, height + 16)
@@ -207,8 +216,10 @@ def main() -> int:
             measured["baselineDriftPx"] = abs(bounds[3] - final_bounds[3])
             if measured["centreDriftPx"] > contract["stageCentreDriftPxMax"] or measured["baselineDriftPx"] > contract["stageBaselineDriftPxMax"]:
                 errors.append(f"Stage {stage}: registration drift")
-        hashes = [item["runtimeSha256"] for item in report["stages"].values()]
-        if len(hashes) != len(set(hashes)):
+        # Canonical PNGs may use different lossless encodings. Stage identity
+        # belongs to the freshly normalized pixels, not compressed file bytes.
+        pixels = [(image.size, image.tobytes()) for image in normalized.values()]
+        if len(pixels) != len(set(pixels)):
             errors.append("Consecutive construction stages must be visually distinct")
     if len(normalized) == 3:
         authority_alpha = normalized[5].getchannel("A")
@@ -233,9 +244,7 @@ def main() -> int:
             comparison.alpha_composite(normalized[stage], (4 + index * (width + 4), 4))
         comparison.save(previews / "stage-sequence.png")
         comparison.resize(tuple(value * 8 for value in comparison_size), Image.Resampling.NEAREST).save(previews / "stage-sequence-8x.png")
-    review_path = family / "visual-review.json"
     if review_path.exists():
-        review = json.loads(review_path.read_text())
         report["visualReview"] = review
         for stage, measured in report["stages"].items():
             evidence = review.get("stages", {}).get(stage, {})
