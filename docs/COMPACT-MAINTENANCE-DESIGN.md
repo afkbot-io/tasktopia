@@ -80,3 +80,22 @@ generation jobs, prepared transactions, расширения кроме plpgsql,
 Глобальные PostgreSQL roles/credentials не изменяются и этим DB-backup не заменяются.
 
 Доказательства и команда изолированной проверки: [QA-COMPACT-MAINTENANCE-DATABASE.md](QA-COMPACT-MAINTENANCE-DATABASE.md).
+
+### Host freeze
+
+`deploy/compact_cutover_host.py` добавляет общий с updater `flock`, канонический
+Nginx maintenance и остановку точного inventory app/mcp/world. Реальные локальные
+nginx/TLS/curl и Docker подтверждают закрытие новых запросов и повторяемость stop.
+Baseline привязан к planDigest; изменённый site, чужой checkout, неизвестная роль
+или restart policy, способная поднять остановленный процесс после reboot, дают отказ.
+Открытие возможно только в состоянии OPENING/pending=open_traffic.
+
+Это компоненты host adapter, а не готовый deployment entrypoint. В тесте состояния
+journal задаются явно для проверки границ компонентов; полный prepare/recover/accept
+с приложением и DB ещё не исполняется. После stop будущий driver обязан проверить
+DB-сессии/задания, неизвестных пользователей volumes, выполнить совместный backup/
+rollback config/uploads/static/image, затем migration/FORCE/conservation/audit и smoke.
+Параметры путей и портов нужны для изоляции теста; production driver обязан получать
+их из проверенного inventory разрешённой цели, а не произвольных env overrides.
+
+Доказательства: [QA-COMPACT-MAINTENANCE-HOST.md](QA-COMPACT-MAINTENANCE-HOST.md).

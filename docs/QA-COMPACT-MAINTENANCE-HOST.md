@@ -1,0 +1,67 @@
+# Host freeze первого cutover
+
+Проверено 7 сентября 2026. Production не изменён. Новый модуль не является
+deployment CLI и сам не даёт разрешения на release.
+
+## Реализованные границы
+
+- `DeploymentLock` использует `.git/tasktopia-update.lock`, как обычный updater.
+  Второй процесс/descriptor не допускается; symlink и небезопасный owner/mode запрещены.
+- `NginxMaintenance` сохраняет private baseline точного канонического site и
+  включённого symlink. Допускаются две существующие управляемые self-host формы:
+  static и прежняя proxy-конфигурация. Кастомный конфиг не переписывается.
+- Maintenance атомарно устанавливается с сохранением mode/owner и fsync.
+  `nginx -t`, reload и новые HTTP/TLS-запросы проверяют 503 и уникальный header
+  planDigest на `/`, `/mcp`, `/api/.../regenerate`, `/socket.io/`.
+- Ошибка reload не восстанавливает открытый конфиг автоматически. Она также
+  **не означает**, что старые workers уже перестали обслуживать запросы:
+  freeze разрешён только после успешной проверки maintenance.
+- Открытие site требует journal OPENING/pending=open_traffic. Проверка полноты
+  acceptance остаётся у существующего state protocol и будущего host driver.
+- `WriterFreeze` сверяет Compose project/working_dir, точные container/image IDs,
+  runtime role, hashes конфигурации/томов и restart policy `unless-stopped`.
+  Неизвестная активная роль, duplicate/one-off или несовпадение — отказ до stop.
+- Останавливаются только проверенные app/mcp/world ID. Повторный stop разрешён;
+  после него роли перечитываются и maintenance проверяется снова.
+
+Существующие WebSocket/долгие соединения старого Nginx могут дренироваться после
+reload. Остановка upstream-ролей и последующая проверка PostgreSQL обязательны.
+Этот модуль не доказывает отсутствие unlabelled writers или других пользователей
+uploads volume; это остаётся обязательной проверкой полного host inventory.
+
+## Доказательства
+
+1. RED до появления модуля; 3 Python boundary tests PASS.
+2. Vitest: 28 tests / 4 files PASS (`host`, `state`, `database`, `preflight`).
+   Внутри wrappers отдельно исполняются Python-наборы 3/20/7 tests.
+3. Реальный отдельный Nginx 1.29.6 с локальным TLS-сертификатом, случайными
+   loopback-only портами и private prefix. Системный Nginx не перезапускался.
+4. Три новые Docker-роли + отдельный unknown-writer на `network=none`.
+   Production containers, endpoints, credentials и данные не используются.
+5. Отказ при custom site; ошибка `nginx -t` с сохранением maintenance-файла;
+   повторный enable; 503 по всем маршрутам; отказ open без accept; неизвестный
+   writer не приводит к остановке проверенных ролей; `restart=always` отвергнут;
+   повторный stop успешен; explicit opening восстанавливает исходный site побайтно.
+6. Types, scoped lint, Python compile, diffcheck PASS. Main-agent review/security
+   review добавили привязку к working_dir и проверку restart policy.
+
+Report: `tmp/cutover-host-m35exfyw/audit/host-integration-report.json`.
+SHA256: `a73cba30364f2fac07f34e62f5d022ee374bef91f8cd3a6185d78f2eb4f09f73`.
+Nginx завершён, проверено отсутствие слушателей. Все тестовые контейнеры
+остановлены, тома/артефакты сохранены. В Git нет private-файлов или сертификатов.
+
+```sh
+python3 tests/compact_cutover_host_test.py
+python3 tests/compact_cutover_host_integration.py --image sha256:<локальный-образ-с-sleep> --nginx /absolute/nginx --openssl /absolute/openssl
+```
+
+В CI добавлена отдельная проверка на системном Nginx Ubuntu. Её результат
+относится только к конкретному CI SHA; локальный PASS не заменяет CI.
+
+## Что НЕ проверено этим тестом
+
+Полный host prepare/recover/accept; запуск настоящих app/mcp/world; соединение
+freeze с DB backend; переключение candidate/static; backup и восстановление
+config/uploads; миграции/FORCE/conservation/audit; public QA/CDN/PWA/observation.
+Тест вручную задаёт состояния журнала для проверки компонентов и не выдаётся
+за сквозную репетицию деплоя. Обычный updater, его guards и Builder не ослаблены.
