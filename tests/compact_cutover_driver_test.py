@@ -5,12 +5,30 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "deploy"))
-from compact_cutover_driver import HostDriver, validate_cli_log, external_compose, completed_export, validate_controller
+from compact_cutover_driver import HostDriver, validate_cli_log, external_compose, completed_export, validate_controller, retain_image, recovery_image
 from compact_cutover_database import CommandRunner
 from compact_cutover_state import CutoverError
 
 
 class DriverTests(unittest.TestCase):
+    def test_retained_image_requires_archive_restore_identity(self):
+        image = "sha256:" + "a" * 64
+        commands = []
+        def command(args, **kw):
+            commands.append(args)
+            if args[:2] == ["image", "inspect"]:
+                return json.dumps([{"Id": image if len(commands) < 5 else "sha256:" + "b" * 64}]).encode()
+            if args[:2] == ["image", "save"]:
+                return {"artifact": "previous-image.tar", "sha256": "c" * 64, "bytes": 123}
+            return b""
+        runner = SimpleNamespace(directory=Path("/private/audit"), verify=lambda record: None)
+        with self.assertRaises(CutoverError):
+            retain_image(command, runner, image, "compact-fixture-1234", "previous")
+        self.assertEqual(commands[0], ["tag", image, "tasktopia-cutover:compact-fixture-1234-previous"])
+        self.assertIn(["image", "load", "--input", "/private/audit/previous-image.tar"], commands)
+        self.assertEqual(recovery_image({"previousImage": image}, {}), image)
+        self.assertEqual(recovery_image({"previousImage": image}, {"previousRecoveryImage": "rebuilt"}), "rebuilt")
+
     def test_start_uses_only_saved_local_image_without_pull_or_build(self):
         driver = object.__new__(HostDriver)
         driver.r = SimpleNamespace(verify=lambda record: None, directory=Path("/private/audit"))
