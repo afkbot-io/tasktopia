@@ -52,6 +52,13 @@ class HostBoundaryTests(unittest.TestCase):
         with self.assertRaises(CutoverError):
             maintenance_config(original, "tasktopia.test; include /tmp/evil", "a" * 64)
 
+    def test_official_site_keeps_cdn_asset_only(self):
+        original = (Path(__file__).resolve().parents[1] / "deploy/nginx-tasktopia.conf").read_text()
+        rendered = maintenance_config(original, "tasktopia.online", "a" * 64)
+        self.assertEqual(rendered.count("return 503;"), 2)
+        self.assertEqual(rendered.split("    server_name tasktopia.online;", 1)[0],
+                         original.split("    server_name tasktopia.online;", 1)[0])
+
 
 if __name__ == "__main__":
     unittest.main()

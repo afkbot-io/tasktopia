@@ -13,6 +13,23 @@ from compact_cutover_state import CutoverError, canonical
 
 
 class BackupBoundaryTests(unittest.TestCase):
+    def test_recovery_allows_durable_jobs_but_never_live_clients(self):
+        class Pending(DatabaseBackup):
+            sessions = 0
+            def json(self, query, database="tasktopia"):
+                if "pg_stat_activity" in query:
+                    return {"sessions": self.sessions, "prepared": 0, "subscriptions": 0, "replica": False, "exists": True}
+                if "pg_extension" in query:
+                    return 0
+                return 1
+        database = Pending(self.runner, {"id": "a" * 64, "image": "sha256:" + "b" * 64, "volume": "fixture"}, "/unused/docker")
+        with self.assertRaises(CutoverError):
+            database.assert_quiescent()
+        database.assert_quiescent(restoring=True)
+        database.sessions = 1
+        with self.assertRaises(CutoverError):
+            database.assert_quiescent(restoring=True)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.directory = Path(self.temporary.name)

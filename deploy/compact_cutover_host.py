@@ -51,7 +51,7 @@ def maintenance_config(original, domain, token):
     require(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]", domain), "Invalid site domain")
     require(re.fullmatch(r"[a-f0-9]{64}", token), "Invalid maintenance identity")
     line = "    server_name " + domain + ";\n"
-    require(original.count("server_name") == 2 and original.count(line) == 2,
+    require(original.count("server_name") in (2, 4) and original.count(line) == 2,
             "Expected exactly two canonical server blocks")
     insertion = ('    add_header X-Tasktopia-Maintenance "' + token + '" always;\n'
                  '    add_header Cache-Control "no-store" always;\n'
@@ -108,8 +108,11 @@ class NginxMaintenance:
         return data.decode(), {"mode": stat.S_IMODE(info.st_mode), "uid": info.st_uid, "gid": info.st_gid}
 
     def _canonical_sites(self):
-        for name in ("nginx-self-host.conf.template", "nginx-self-host-legacy-proxy.conf.template"):
+        for name in ("nginx-self-host.conf.template", "nginx-self-host-legacy-proxy.conf.template", "nginx-tasktopia.conf"):
             text = (Path(__file__).parent / name).read_text()
+            if name == "nginx-tasktopia.conf":
+                text = text.replace("tasktopia.online", self.spec["domain"])
+                text = text.replace("/srv/tasktopia/static", self.spec["staticRoot"])
             text = text.replace("__DOMAIN__", self.spec["domain"]).replace("__STATIC_DIR__", self.spec["staticRoot"])
             text = text.replace("/etc/letsencrypt", self.spec["certRoot"])
             for old, new in ((80, self.spec["httpPort"]), (443, self.spec["httpsPort"])):
@@ -122,10 +125,21 @@ class NginxMaintenance:
                 text = text.replace("listen [::]:", "listen [::1]:")
             yield text
 
+    def _is_canonical(self, text):
+        # Exact deployed official vhost at 135bb4cc; no arbitrary config adoption.
+        previous_official = (self.spec["domain"] == "tasktopia.online"
+            and self.spec["staticRoot"] == "/srv/tasktopia/static"
+            and self.spec["certRoot"] == "/etc/letsencrypt"
+            and (self.spec["httpPort"], self.spec["httpsPort"]) == (80, 443)
+            and not self.spec["loopbackOnly"]
+            and hashlib.sha256(text.encode()).hexdigest()
+                == "144b5886784c8518a80efd9b4bd88aa3c2b3a93d43eefc099d67d2e86a4393e9")
+        return previous_official or text in tuple(self._canonical_sites())
+
     def capture(self):
         self._locked()
         original, metadata = self._read_site()
-        require(original in tuple(self._canonical_sites()), "Customized nginx site needs separate review")
+        require(self._is_canonical(original), "Customized nginx site needs separate review")
         record = {"planDigest": self.journal.plan_digest, "spec": self.spec, "original": original,
                   "metadata": metadata, "maintenance": maintenance_config(original, self.spec["domain"], self.journal.plan_digest)}
         return self.runner.publish_json("nginx-baseline.json", record)
@@ -140,7 +154,7 @@ class NginxMaintenance:
         require(set(value) == {"planDigest", "spec", "original", "metadata", "maintenance"}
                 and value["planDigest"] == self.journal.plan_digest and value["spec"] == self.spec,
                 "Nginx baseline belongs to another cutover")
-        require(value["original"] in tuple(self._canonical_sites())
+        require(self._is_canonical(value["original"])
                 and value["maintenance"] == maintenance_config(value["original"], self.spec["domain"], self.journal.plan_digest),
                 "Nginx baseline changed")
         return value

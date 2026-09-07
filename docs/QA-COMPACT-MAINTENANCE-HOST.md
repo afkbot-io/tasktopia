@@ -80,3 +80,39 @@ CI `4118bafd` прошёл 1142 теста и упал на одном суще�
 Лимиты retention и защита current/previous не изменены. Проверены 55 тестов
 в 5 файлах, scoped ESLint, `bash -n` и diffcheck. Это обычное исправление
 инфраструктуры в PR; на сервере скрипт не запускался.
+
+## Сквозной host driver и updated Builder 1.4.3
+
+`update-server.sh compact-cutover prepare|recover|accept` теперь связывает
+компоненты; обычный updater сохраняет оба compact guards. Поддерживается exact
+официальный Nginx/CDN, включая fingerprint установленного `135bb4cc` site.
+FileBackup сохраняет и независимо проверяет uploads, asset volume и старую
+статику; env и два pinned Compose сохраняются private, `.env` не переписывается.
+Все runtime images/roles/env/mounts/network сверяются; неизвестные writers
+не останавливаются вслепую. При восстановлении допустимы остановленные durable
+PENDING jobs; живые чужие DB sessions по-прежнему запрещены.
+
+7 сентября сквозная репетиция `compact_cutover_driver_integration.py` прошла
+на новой копии исходного архива: реальные PostgreSQL, candidate CLI и три
+candidate runtime, отдельный TLS Nginx, все 10 стран. Prepare завершил backup,
+независимый restore proof, FORCE, conservation, audit, static switch и health.
+Затем recover восстановил полный DB snapshot и файлы, прежние fixture roles
+прошли health; accept открыл тестовый трафик. Прежние fixture roles обслуживают
+только health, не имитируют прежнюю бизнес-логику. Live target не использовался.
+Report: `tmp/cutover-driver-j_c8cyhb/audit/driver-report.json`;
+SHA256 `17bbdab6f30f0ed8c5e48e7abb4bbd696bfc9d3a1028d1da82d0ee8750d4a000`.
+Тестовые процессы остановлены, архив/volumes сохранены. Первый запуск fixture
+отказал из-за Docker Desktop internal network без loopback port forwarding;
+fixture использует отдельный bridge, БД без опубликованных портов.
+
+После репетиции добавлены read-only проверки environment/mount/network и
+exact loopback ports; проверены отдельными boundary tests. 56 Vitest tests /
+6 files, Python-наборы, typecheck, scoped ESLint, bash -n и diffcheck PASS.
+Runtime, migrations, dependencies и арт не менялись относительно зелёного CI
+`1e3b4449`: https://github.com/afkbot-io/tasktopia/actions/runs/34155973039.
+Это evidence reuse по неизменным входам, а не переименование старого CI SHA.
+
+Builder теперь определяет tasktopia.online как dev-server. Отдельного human
+review эта цель не требует; актуальный AI diff review и реальные SCM protections
+сохраняются. Следующие gates — managed merge, ready:true и server prepare/accept,
+затем public smoke/наблюдение. Новое разрешение после каждого commit не требуется.

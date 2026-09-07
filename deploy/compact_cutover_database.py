@@ -228,7 +228,7 @@ class DatabaseBackup:
     def json(self, query, database="tasktopia"):
         return json.loads(self.sql(query, database=database))
 
-    def assert_quiescent(self, allow_missing=False):
+    def assert_quiescent(self, allow_missing=False, restoring=False):
         # Не завершать неизвестные сессии: они означают, что freeze неполон.
         # Control DB остаётся доступна после прерывания между DROP и CREATE.
         # Другой pg_restore может ещё быть подключён к postgres, не к tasktopia.
@@ -246,7 +246,7 @@ class DatabaseBackup:
             return
         require(self.json("SELECT to_jsonb(count(*)) FROM pg_extension WHERE extname<>'plpgsql'") == 0,
                 "Unknown database extension")
-        if self.json("SELECT to_jsonb(to_regclass('public.world_generation_jobs_v1') IS NOT NULL)"):
+        if not restoring and self.json("SELECT to_jsonb(to_regclass('public.world_generation_jobs_v1') IS NOT NULL)"):
             require(self.json("SELECT to_jsonb(count(*)) FROM world_generation_jobs_v1 WHERE status IN ('PENDING','RUNNING')") == 0,
                     "Generation jobs are not drained")
 
@@ -394,7 +394,9 @@ class DatabaseBackup:
         destination = validate_target(proof["destination"])
         require(destination["id"] != self.target["id"] and destination["volume"] != self.target["volume"]
                 and destination["image"] == self.target["image"], "Restore proof is not independent")
-        self.assert_quiescent(allow_missing=True)
+        # A stopped interrupted migration may leave durable PENDING jobs. They
+        # are restored from backup, not executed; unknown live sessions still fail.
+        self.assert_quiescent(allow_missing=True, restoring=True)
         self.pg(["pg_restore", "--exit-on-error", "--clean", "--if-exists", "--create",
                  "-U", "tasktopia", "-d", "postgres"], input_name=record["archive"]["artifact"], seconds=900)
         require(self.snapshot() == baseline, "In-place recovery did not restore the baseline")

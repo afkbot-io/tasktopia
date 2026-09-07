@@ -208,6 +208,65 @@ country, session и первый city фиксируются одной тран
 
 Откат contract cutover — восстановление **предыдущей БД и предыдущего образа вместе**, пока запись остаётся остановленной. Нельзя автоматически возвращать только старый образ к новой схеме, использовать старый spatial renderer или переписывать checksum миграций. Для последующих schema-compatible обновлений остаётся обычный updater с проверенным предыдущим образом. Проверка на локальном fixture не является production backup/restore acceptance.
 
+### Исполняемый первый переход tasktopia.online
+
+В Builder 1.4.3 публичный beta/dev-сервер `tasktopia.online` имеет target
+`dev-server` / environment `dev` / component `all`. Исторические имена SSH и
+Compose не меняют классификацию. Требуются точный merged `origin/main`, AI review,
+проверки выбранной цели и `builder release validate` с `ready:true`. Исходное
+явное разрешение на релиз привязывается к итоговому SHA без повторных вопросов.
+
+Обычный режим updater сохраняет image-only guards. Первый переход выполняется
+его отдельным режимом `compact-cutover`, который использует общий lock,
+private journal и совместное восстановление. Поддерживается только установленный
+`/srv/tasktopia/app` с точной канонической official Nginx/CDN конфигурацией;
+неизвестный конфиг, дополнительные writers/volumes или изменённая `.env` дают отказ.
+
+После managed merge и успешного Builder preflight выполнить обычный внешний
+`git pull --ff-only origin main`, затем:
+
+```sh
+TASKTOPIA_EXPECTED_REVISION=<полный_итоговый_SHA> \
+  /srv/tasktopia/app/deploy/update-server.sh compact-cutover prepare \
+  compact-release14-<уникальная-дата> --previous-revision <полный_прежний_SHA>
+```
+
+`prepare` строит кандидат; сохраняет конфигурацию, образы, привязки и статику;
+закрывает web/MCP/API/WebSocket; останавливает три роли и проверяет отсутствие
+других writers. После frozen backup проверяет независимый restore PostgreSQL и
+файлов. Затем запускает существующие CLI FORCE (все страны последовательно,
+одна попытка) и audit; сравнивает бизнес-поля/историю; переключает статику и
+сервисы. Успех возвращает `READY` и `planDigest`, **трафик остаётся закрытым**.
+Секретные отчёты находятся в `backups/<run-id>/` с правами 0700/0600.
+
+После проверки READY, health и отчётов:
+
+```sh
+TASKTOPIA_EXPECTED_REVISION=<тот_же_SHA> \
+  /srv/tasktopia/app/deploy/update-server.sh compact-cutover accept \
+  <тот_же_run-id> --plan-digest <полученный_planDigest>
+```
+
+При ошибке/прерывании prepare не продолжать вперёд. До открытия трафика:
+
+```sh
+TASKTOPIA_EXPECTED_REVISION=<тот_же_SHA> \
+  /srv/tasktopia/app/deploy/update-server.sh compact-cutover recover <тот_же_run-id>
+```
+
+Recovery повторно закрывает трафик/останавливает writers, восстанавливает
+проверенную БД, uploads/asset volume/статику и прежние роли по сохранённому
+Compose с pinned image. `ROLLED_BACK_CLOSED` тоже требует `accept` с planDigest.
+После любого возможного открытия старый dump автоматически восстанавливать
+нельзя: он потеряет новые пользовательские записи. При неудаче восстановления
+оставить maintenance и private evidence; не запускать старый runtime с новой БД.
+
+После открытия: проверить public health/HTML/manifest/hashed assets/PWA/MCP auth,
+вход и открытие задач, карты CITY/COUNTRY/PLANET; наблюдать 5 минут за health,
+5xx, ошибками runtime, OOM/restarts и generation jobs. Любая новая ошибка —
+остановить дальнейшие действия и оценить сохранность уже принятых записей.
+Доказательства репетиции: `docs/QA-COMPACT-MAINTENANCE-HOST.md`.
+
 После healthcheck прогрейте один detail viewport, повторите запрос и сравните `X-World-Version`, `contentHash`, latency и количество spatial SQL reads. При включённом Redis повтор на другой web replica должен вернуть тот же content hash; остановка Redis не должна менять HTTP body или статус.
 
 Bootstrap-конфиг нужен только до первого выпуска сертификата. После него

@@ -108,6 +108,8 @@ def main():
                 raise AssertionError("An undrained generation job was accepted")
             except CutoverError:
                 report["pendingJobRejected"] = True
+            database.assert_quiescent(restoring=True)
+            report["stoppedPendingJobAllowsRecoveryOnly"] = True
             fixture_sql("DELETE FROM world_generation_jobs_v1;")
             # An actual second DB connection, not a mocked pg_stat_activity row.
             client = subprocess.Popen([docker, "exec", container_id, "timeout", "-s", "TERM", "-k", "2", "10",

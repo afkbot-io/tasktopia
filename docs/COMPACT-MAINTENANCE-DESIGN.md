@@ -1,8 +1,9 @@
-# Первый compact cutover: отдельная инфраструктурная доработка
+# Первый compact cutover: исполняемый протокол
 
-Рабочий режим — разработка с повышенным риском, не выполнение релиза.
-Задача RELEASE14 остаётся открытой. Этот документ и новые исходники должны
-пройти обычное ревью; существующие Builder policy и updater guards не меняются.
+Задача RELEASE14 включает завершение инфраструктуры и выкладку. Builder 1.4.3
+относит tasktopia.online к dev-server; разрешение на релиз действует до результата,
+AI review достаточно при отсутствии SCM human-approval requirement. Guards
+обычного image-only updater сохранены; первый переход использует отдельный режим.
 
 ## Решение
 
@@ -18,7 +19,7 @@
 Старые роли запускаются только после доказанного восстановления БД, uploads,
 конфигурации и статического release. Ошибка восстановления сохраняет maintenance.
 
-Состояние PREPARED/READY не означает разрешения Builder или human review.
+Состояние PREPARED/READY не заменяет разрешение Builder.
 Финальный переход из READY к открытию трафика — отдельное действие после
 проверок оператора, привязанное к тому же immutable plan. После открытия трафика
 автоматический откат из старого backup запрещён: он потерял бы новые записи.
@@ -35,8 +36,9 @@
 3. Интеграционная репетиция через тот же adapter на отдельном окружении:
    копия реальных данных, успешный путь и failure injection, полный row-hash
    и sequence comparison после rollback. Старые защищённые backup не менять.
-4. Обычное ревью diff, CI и review результата человеком. Только затем
-   managed merge, новый manifest и builder release validate перед production.
+4. AI review diff и обязательные SCM проверки; managed merge, точный manifest
+   dev-server и builder release validate. Переиспользовать проверки неизменных
+   runtime/migration/art inputs, не запрашивать повторное подтверждение пользователя.
 
 ## Стоп-условия
 
@@ -52,9 +54,10 @@ compact-release-preflight.sh, docker-compose.yml и существующей р�
 
 ## Границы текущего кода
 
-Автомат состояний сам не выполняет Docker/SSH/SQL. Он задаёт проверяемый
-контракт adapter; готовность adapter и сквозной репетиции фиксируется отдельно.
-Наличие этого модуля не даёт права запускать неподготовленный production cutover.
+Автомат состояний сам не выполняет Docker/SSH/SQL. Его контракт реализует
+`compact_cutover_driver.py`, вызываемый через `update-server.sh compact-cutover`.
+Driver связывает backup/restore, файлы, maintenance, реальные CLI, роли и acceptance.
+Локальная сквозная репетиция прошла; запуск сервера требует Builder preflight.
 
 ### Исполняемый PostgreSQL backend
 
@@ -90,7 +93,7 @@ Baseline привязан к planDigest; изменённый site, чужой c
 или restart policy, способная поднять остановленный процесс после reboot, дают отказ.
 Открытие возможно только в состоянии OPENING/pending=open_traffic.
 
-Это компоненты host adapter, а не готовый deployment entrypoint. В тесте состояния
+Это компоненты host adapter, а не самостоятельный deployment entrypoint. В старом тесте состояния
 journal задаются явно для проверки границ компонентов; полный prepare/recover/accept
 с приложением и DB ещё не исполняется. После stop будущий driver обязан проверить
 DB-сессии/задания, неизвестных пользователей volumes, выполнить совместный backup/

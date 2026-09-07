@@ -16,6 +16,17 @@ readonly MIN_FREE_SPACE_MB="${MIN_FREE_SPACE_MB:-1024}"
 readonly HEALTH_RETRY_COUNT="${HEALTH_RETRY_COUNT:-90}"
 readonly UPDATE_LOCK_PATH="${TASKTOPIA_UPDATE_LOCK_PATH:-$APP_DIR/.git/tasktopia-update.lock}"
 
+# Explicit first-transition protocol owns the SAME lock and full DB/file
+# recovery. The normal image-only updater below retains both compact guards.
+if [[ "${1:-}" == "compact-cutover" ]]; then
+  shift
+  exec python3 "$APP_DIR/deploy/compact_cutover_driver.py" "$@"
+fi
+if (( $# != 0 )); then
+  echo "Unknown updater mode" >&2
+  exit 2
+fi
+
 if [[ ! "$BACKUP_RETENTION_COUNT" =~ ^[1-9][0-9]*$ ]]; then
   echo "BACKUP_RETENTION_COUNT must be a positive integer" >&2
   exit 2
