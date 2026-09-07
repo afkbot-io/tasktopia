@@ -1,4 +1,4 @@
-import manifest from "../../assets/pixel-city-pack/manifest.json";
+import manifest from "../../assets/pixel-city-pack/manifest.json" with { type: "json" };
 import type { Estimate, PlatformKind } from "./contracts";
 
 const clientStaticOrigin = typeof window === "undefined"
