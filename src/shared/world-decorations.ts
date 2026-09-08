@@ -214,7 +214,7 @@ export function generateWorldDecorations(
     // thousands of independently sorted flower, stone and reed sprites.
     if (cell.terrain === "DEEP_WATER" && closeToCity(cell, 96) && ambientCounts.boats < 3 && chance < 0.0005) {
       const horizontal = hashCoordinate(seed, cell.x, cell.y, 719) < 0.5;
-      kind = `boat-${horizontal ? "horizontal" : "vertical"}-${hashCoordinate(seed, cell.x, cell.y, 727) < 0.5 ? "a" : "b"}`;
+      kind = `boat-${horizontal ? "horizontal" : "vertical"}-${["a", "b", "c", "d"][Math.floor(hashCoordinate(seed, cell.x, cell.y, 727) * 4)]}`;
     } else if (palmCandidate && naturalShoreDirection && !closeToBlocked(cell, 1)) {
       kind = "tree-palm";
     } else if (willowCandidate && naturalShoreDirection && !closeToBlocked(cell, 1)) {
@@ -227,7 +227,7 @@ export function generateWorldDecorations(
       const grove = forestGrove(seed, cell);
       if (chance < grove.density) kind = grove.species;
     } else if (cell.terrain === "HILL" && chance < 0.085) {
-      kind = chance < 0.035 ? "hill-rocky" : chance < 0.06 ? "hill-small" : chance < 0.067 ? "tree-deadwood" : "tree-pine";
+      kind = chance < 0.067 ? "tree-deadwood" : "tree-pine";
     } else if (cell.terrain === "MOUNTAIN" && chance < 0.052) {
       kind = chance < 0.03 ? "mountain-peak" : "mountain-ridge";
     } else if (!district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW")

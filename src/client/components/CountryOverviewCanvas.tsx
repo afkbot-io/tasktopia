@@ -26,6 +26,7 @@ type Flight = { view: HTMLImageElement; elapsed: number; duration: number; delay
 async function loadAtlasImage(url: string): Promise<HTMLImageElement> {
   const image = new Image();
   image.decoding = "async";
+  image.crossOrigin = "anonymous";
   image.src = url;
   await image.decode();
   return image;
@@ -152,17 +153,15 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       const worldWidth = overview.bounds.maxX - overview.bounds.minX;
       const worldHeight = overview.bounds.maxY - overview.bounds.minY;
       const scale = Math.min(width / worldWidth, height / worldHeight) * camera.zoom;
-      const halfVisibleWidth = width / scale / 2;
-      const halfVisibleHeight = height / scale / 2;
-      camera.centerX = halfVisibleWidth * 2 >= worldWidth
-        ? (overview.bounds.minX + overview.bounds.maxX) / 2
-        : Math.max(overview.bounds.minX + halfVisibleWidth, Math.min(overview.bounds.maxX - halfVisibleWidth, camera.centerX));
-      camera.centerY = halfVisibleHeight * 2 >= worldHeight
-        ? (overview.bounds.minY + overview.bounds.maxY) / 2
-        : Math.max(overview.bounds.minY + halfVisibleHeight, Math.min(overview.bounds.maxY - halfVisibleHeight, camera.centerY));
+      // Keep a world point under the viewport centre; the tiled ocean fills
+      // exposed margins even when the island is smaller than the viewport.
+      camera.centerX = Math.max(overview.bounds.minX, Math.min(overview.bounds.maxX, camera.centerX));
+      camera.centerY = Math.max(overview.bounds.minY, Math.min(overview.bounds.maxY, camera.centerY));
       sceneScale = scale;
       sceneX = width / 2 - camera.centerX * scale;
       sceneY = height / 2 - camera.centerY * scale;
+      host.style.backgroundSize = `${overview.geography.cellSize * scale / 2}px ${overview.geography.cellSize * scale / 2}px`;
+      host.style.backgroundPosition = `${sceneX}px ${sceneY}px`;
       if (rasterCanvas) rasterCanvas.style.transform = `translate3d(${sceneX}px, ${sceneY}px, 0) scale(${scale})`;
       // Read label geometry once and perform only compositor-friendly transform
       // writes during camera frames. Interleaving offset reads and style writes
@@ -233,6 +232,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
         return overviewTerrainPatches(kind, "country", column, row, atlasTerrainConnectionMask(kind, column, row, terrainAt));
       });
       const assetUrls = new Set(terrainTiles.flatMap(patches => patches.map(patch => gameAssetUrl(patch.tile.url))));
+      assetUrls.add(gameAssetUrl(overviewTerrainPatches("deep_water", "country", 0, 0, 15)[0]!.tile.url));
       if (groundRoadPlan.routes.length) for (const tile of Object.values(COUNTRY_ROAD_ATLAS_TILES)) assetUrls.add(gameAssetUrl(tile.url));
       for (const city of overview.cities) for (const block of city.miniature.blocks) assetUrls.add(getBuilding(block.family).stages[4]!);
       if (overview.cities.some(city => city.miniature.airports.length > 0)) assetUrls.add(getBuilding("compact-airport-v1").stages[4]!);
@@ -252,6 +252,14 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       staticCanvas.style.width = `${columns * cellSize}px`;
       staticCanvas.style.height = `${rows * cellSize}px`;
       rasterCanvas = staticCanvas;
+      const oceanTile = overviewTerrainPatches("deep_water", "country", 0, 0, 15)[0]!.tile;
+      const oceanCanvas = document.createElement("canvas"); oceanCanvas.width = oceanCanvas.height = 16;
+      const oceanContext = oceanCanvas.getContext("2d")!; oceanContext.imageSmoothingEnabled = false;
+      const oceanSource = textures.get(gameAssetUrl(oceanTile.url));
+      if (oceanSource) {
+        oceanContext.drawImage(oceanSource, oceanTile.sourceX, oceanTile.sourceY, oceanTile.tileSize, oceanTile.tileSize, 0, 0, 16, 16);
+        host.style.backgroundImage = `url(${oceanCanvas.toDataURL()})`;
+      }
       let selectedCellCount = 0;
       let neighborCellCount = 0;
       let waterCellCount = 0;
@@ -283,8 +291,8 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
         }
       }
       host.dataset.countryTerrainRender = "directional-16px-sheets";
-      host.dataset.countryMaterialSubdivisions = "4";
-      host.dataset.countryMaterialPatches = String(terrainTiles.length * 16);
+      host.dataset.countryMaterialSubdivisions = "2";
+      host.dataset.countryMaterialPatches = String(terrainTiles.length * 4);
       host.dataset.countryRasterPixels = String(staticCanvas.width * staticCanvas.height);
       host.dataset.countrySelectedCells = String(selectedCellCount);
       host.dataset.countryNeighborCells = String(neighborCellCount);
@@ -480,6 +488,9 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       disposeGestures();
       for (const flight of flights) flight.view.remove();
       rasterCanvas?.remove();
+      host.style.backgroundImage = "";
+      host.style.backgroundSize = "";
+      host.style.backgroundPosition = "";
     };
   }, [countryId, initialFocusCityId, overview, wheelNavigation]);
 

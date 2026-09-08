@@ -1,8 +1,10 @@
+import { blockPlaqueText } from "../map-visual-consistency";
+import { isGroundPlantingStrip } from "../../shared/green-area";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TILE_SPRITES, gameAssetUrl, getBuilding, illuminatedPropKey } from "../../shared/catalog";
-import { MICRO_ANIMAL_SPECIES, microAmbientAssetUrls, microAmbientSprite } from "../../shared/micro-ambient";
+import { MICRO_ANIMAL_SPECIES, microAmbientAssetUrls, microAmbientSprite, microDirection } from "../../shared/micro-ambient";
 import { microIncidentResponder } from "../micro-incident-responder";
 import { roadBandRole, roadMarkingAxis } from "../../shared/road-profile";
 import {
@@ -442,7 +444,7 @@ function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
   group.eventMode = "static";
   group.cursor = "pointer";
   group.hitArea = new Rectangle(0, -height, width, height);
-  if (parkStage(task.stage) < 5) {
+  if (parkStage(task.stage) < 5 && !isGroundPlantingStrip(width / CELL_SIZE, height / CELL_SIZE, task.visualAssetKey)) {
     // Public-space works stay inside their ground parcel, including1-cell strips.
     content.addChild(new Graphics().rect(0.5, 0.5, width - 1, height - 1)
       .stroke({ color: 0xc7b782, width: 1 }));
@@ -1291,6 +1293,15 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         host.dataset.celebrations = String(Number(host.dataset.celebrations ?? 0) + 1);
       };
       host.dataset.airplaneSpace = flightLayer.parent === world ? "world" : "screen";
+      // Keep tiny 3–6px silhouettes on whole screen pixels during continuous map zoom.
+      const placePixelAgent = (view: Sprite, x: number, y: number): void => {
+        const scale = Math.max(1, Math.round(world.scale.x));
+        view.scale.set(scale / world.scale.x);
+        const left = Math.round(world.x + x * world.scale.x - view.texture.width * scale / 2);
+        const top = Math.round(world.y + y * world.scale.y - view.texture.height * scale / 2);
+        view.position.set((left + view.texture.width * scale / 2 - world.x) / world.scale.x,
+          (top + view.texture.height * scale / 2 - world.y) / world.scale.y);
+      };
       const drawMobility = (): void => {
         if (!mobility) return;
         const visible = currentLod === "DETAIL" && ambientAssetsReady;
@@ -1317,7 +1328,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             entry.visualKey = url;
           }
           entry.view.visible = visible;
-          entry.view.position.set(agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE);
+          placePixelAgent(entry.view, agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE);
           entry.view.rotation = 0;
           if (entry.marker) {
             if (entry.activity !== agent.activity) {
@@ -1339,10 +1350,14 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           if (!origin) continue;
           wantedSignals.add(id);
           const state = post.axis === "H" ? signal.horizontal : signal.vertical;
+          // The physical support sits at the curb edge; pedestrians retain
+          // the middle of the sidewalk and the graph is never narrowed.
+          const postX = origin.x + (mobilityRoads.has(key({ x: origin.x + 1, y: origin.y })) ? .8 : .2);
+          const postY = origin.y + .8;
           let entry = trafficSignalViews.get(id);
           const url = PROP_SPRITES[`traffic-light-${state.toLowerCase()}`]!;
           if (!entry) {
-            const view = sprite(url, (origin.x + 0.5) * CELL_SIZE, (origin.y + 1) * CELL_SIZE);
+            const view = sprite(url, postX * CELL_SIZE, postY * CELL_SIZE);
             view.anchor.set(0.5, 1);
             worldObjectLayer.addChild(registerWorldObject(view, "FEATURE"));
             entry = { view, state };
@@ -1352,7 +1367,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             if (texture) entry.view.texture = texture;
             entry.state = state;
           }
-          entry.view.position.set((origin.x + 0.5) * CELL_SIZE, (origin.y + 1) * CELL_SIZE);
+          entry.view.position.set(postX * CELL_SIZE, postY * CELL_SIZE);
           entry.view.visible = visible;
         }
         for (const [id, signal] of trafficSignalViews) if (!wantedSignals.has(id)) {
@@ -1491,7 +1506,9 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             agent.next = routed ?? nextWithoutUTurn(agent.graph, agent.current, agent.previous);
           }
           const motion = residentGroundPosition(agent.current, agent.next, agent.progress, CELL_SIZE);
-          agent.view.position.set(motion.x, motion.y);
+          const animalTexture = cachedTexture(microAmbientSprite("animal", agent.variant, microDirection(agent.current, agent.next)).url);
+          if (animalTexture) agent.view.texture = animalTexture;
+          placePixelAgent(agent.view, motion.x, motion.y);
         }
         nextTrafficTelemetryMs -= elapsed;
         if (nextTrafficTelemetryMs <= 0) { reportMobility(); nextTrafficTelemetryMs = 250; }
@@ -2313,7 +2330,10 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             }
           }
           for (const task of chunk.tasks) tasks.set(task.id, task);
-          for (const decoration of chunk.decorations) decorations.set(decoration.id, decoration);
+          for (const decoration of chunk.decorations) {
+            if (decoration.kind === "hill-rocky" || decoration.kind === "hill-small" || decoration.kind.startsWith("rock-")) continue;
+            decorations.set(decoration.id, decoration);
+          }
           for (const feature of chunk.worldFeatures) features.set(feature.id, feature);
           if (currentLod === "DETAIL") for (const site of chunk.plannedSites ?? []) plannedSites.set(site.id, site);
           if (currentLod === "DETAIL") for (const plaque of chunk.blockPlaques ?? []) blockPlaques.set(plaque.id, plaque);
@@ -2337,7 +2357,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
               if (occupiedTaskCells.has(key({ x: site.origin.x + x, y: site.origin.y + y }))) { occupied = true; break; }
             }
           }
-          if (occupied) continue;
+          if (occupied || site.width <= 2 || site.height <= 2) continue;
           const left = site.origin.x * CELL_SIZE + 1;
           const top = site.origin.y * CELL_SIZE + 1;
           const right = (site.origin.x + site.width) * CELL_SIZE - 2;
@@ -2355,7 +2375,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           blockPlaqueSignature = plaqueSignature;
           for (const child of blockPlaqueLayer.removeChildren()) child.destroy({ children: true });
           for (const plaque of blockPlaques.values()) {
-            const text = plaque.label.length > 18 ? `${plaque.label.split(", ")[0]} · ${plaque.taskCount} задач` : plaque.label;
+            const text = blockPlaqueText(plaque.taskCount);
             const label = new Text({ text, resolution: 2, style: new TextStyle({ fontFamily: "monospace", fontSize: 5, fontWeight: "700", fill: 0xeee0b2 }) });
             label.anchor.set(0.5);
             const panel = new Container();
@@ -2629,7 +2649,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             walkerLimit: Math.min(32, Math.max(6, Math.floor(walkGraph.size / 70))) };
           if (mobility) mobility.updateNetwork(input);
           else mobility = createCityMobility({ ...input, seed: sessionSeed });
-          const posts = mobility.signals.flatMap(signal => signal.signalPosts.map(post => ({
+          const posts = mobility.signals.filter(signal => signal.signalPosts.length >= 3).flatMap(signal => signal.signalPosts.map(post => ({
             ...post, id: `${signal.id}:${post.approach}`,
           })));
           mobilityPostOrigins = new Map(placeCityMobilitySignalPosts({
@@ -2637,7 +2657,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           }).map(post => [post.id, post.origin]));
           for (const origin of mobilityPostOrigins.values()) animalGraph.delete(key(origin));
           host!.dataset.mobilityPostPathConflicts = String([...mobilityPostOrigins.values()]
-            .filter(origin => walkGraph.has(key(origin)) || roads.has(key(origin)) || blockedCells.has(key(origin))).length);
+            .filter(origin => roads.has(key(origin)) || blockedCells.has(key(origin))).length);
           mobilityRoads = roads;
           mobilityWalkGraph = walkGraph;
           animals = animals.filter(agent => {
@@ -2661,7 +2681,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
             if (!next) continue;
             const variant = MICRO_ANIMAL_SPECIES[animals.length % MICRO_ANIMAL_SPECIES.length]!;
             const position = residentGroundPosition(current, next, 0, CELL_SIZE);
-            const view = sprite(microAmbientSprite("animal", variant).url, position.x, position.y);
+            const view = sprite(microAmbientSprite("animal", variant, microDirection(current, next)).url, position.x, position.y);
             view.anchor.set(0.5);
             worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
             animals.push({ id: `animal-${nextAgentId++}`, view, graph: animalGraph, current, next,

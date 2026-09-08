@@ -4212,7 +4212,7 @@
       "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP"
     },
     "boat-horizontal-a": {
-      "label": "Рыбацкая лодка — горизонтально A",
+      "label": "Гребная лодка",
       "path": "props/boat-horizontal-a.png",
       "size": [
         24,
@@ -4227,16 +4227,16 @@
         8
       ],
       "occupiedSize": [
-        22,
-        7
+        10,
+        6
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
-      "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
       "baseFacing": "EAST"
     },
     "boat-horizontal-b": {
-      "label": "Рыбацкая лодка — горизонтально B",
+      "label": "Рыбацкий катер",
       "path": "props/boat-horizontal-b.png",
       "size": [
         24,
@@ -4251,16 +4251,16 @@
         8
       ],
       "occupiedSize": [
-        22,
-        7
+        12,
+        6
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
-      "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
       "baseFacing": "EAST"
     },
     "boat-vertical-a": {
-      "label": "Рыбацкая лодка — вертикально A",
+      "label": "Гребная лодка",
       "path": "props/boat-vertical-a.png",
       "size": [
         8,
@@ -4276,15 +4276,15 @@
       ],
       "occupiedSize": [
         6,
-        23
+        10
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
-      "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
       "baseFacing": "SOUTH"
     },
     "boat-vertical-b": {
-      "label": "Рыбацкая лодка — вертикально B",
+      "label": "Рыбацкий катер",
       "path": "props/boat-vertical-b.png",
       "size": [
         8,
@@ -4300,11 +4300,11 @@
       ],
       "occupiedSize": [
         6,
-        23
+        12
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/ambient/incidents-special-vehicles-v1.png",
-      "visualProfile": "TASKTOPIA_V5_WATERCRAFT_FRONTAL_TOP",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
       "baseFacing": "SOUTH"
     },
     "hill-small": {
@@ -5269,6 +5269,102 @@
       "artSource": "AI_AUTHORED",
       "sourceSheet": "ai-authored/compact-courtyard-furniture-v1/sources/courtyard-cycle-rack.png",
       "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1"
+    },
+    "boat-vertical-c": {
+      "label": "Буксир",
+      "path": "props/boat-vertical-c.png",
+      "size": [
+        8,
+        24
+      ],
+      "footprintCells": [
+        1,
+        3
+      ],
+      "anchorPx": [
+        4,
+        24
+      ],
+      "occupiedSize": [
+        6,
+        11
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+      "baseFacing": "SOUTH"
+    },
+    "boat-horizontal-c": {
+      "label": "Буксир",
+      "path": "props/boat-horizontal-c.png",
+      "size": [
+        24,
+        8
+      ],
+      "footprintCells": [
+        3,
+        1
+      ],
+      "anchorPx": [
+        12,
+        8
+      ],
+      "occupiedSize": [
+        11,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+      "baseFacing": "EAST"
+    },
+    "boat-vertical-d": {
+      "label": "Парусная лодка",
+      "path": "props/boat-vertical-d.png",
+      "size": [
+        8,
+        24
+      ],
+      "footprintCells": [
+        1,
+        3
+      ],
+      "anchorPx": [
+        4,
+        24
+      ],
+      "occupiedSize": [
+        6,
+        13
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+      "baseFacing": "SOUTH"
+    },
+    "boat-horizontal-d": {
+      "label": "Парусная лодка",
+      "path": "props/boat-horizontal-d.png",
+      "size": [
+        24,
+        8
+      ],
+      "footprintCells": [
+        3,
+        1
+      ],
+      "anchorPx": [
+        12,
+        8
+      ],
+      "occupiedSize": [
+        13,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+      "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+      "baseFacing": "EAST"
     }
   },
   "propAtlas": {
@@ -5380,543 +5476,567 @@
         "width": 8,
         "height": 24
       },
-      "flower-bed-vertical": {
+      "boat-vertical-c": {
         "x": 410,
         "y": 1,
         "width": 8,
         "height": 24
       },
-      "park-bridge": {
+      "boat-vertical-d": {
         "x": 419,
+        "y": 1,
+        "width": 8,
+        "height": 24
+      },
+      "flower-bed-vertical": {
+        "x": 428,
+        "y": 1,
+        "width": 8,
+        "height": 24
+      },
+      "park-bridge": {
+        "x": 437,
         "y": 1,
         "width": 32,
         "height": 16
       },
       "mountain-ridge": {
-        "x": 452,
+        "x": 470,
         "y": 1,
         "width": 24,
         "height": 16
       },
       "park-bench-double": {
-        "x": 477,
-        "y": 1,
-        "width": 24,
-        "height": 16
-      },
-      "park-flower-clock": {
         "x": 1,
         "y": 34,
         "width": 24,
         "height": 16
       },
-      "playground-slide": {
+      "park-flower-clock": {
         "x": 26,
         "y": 34,
         "width": 24,
         "height": 16
       },
-      "playground-small": {
+      "playground-slide": {
         "x": 51,
         "y": 34,
         "width": 24,
         "height": 16
       },
-      "bus-stop-horizontal": {
+      "playground-small": {
         "x": 76,
+        "y": 34,
+        "width": 24,
+        "height": 16
+      },
+      "bus-stop-horizontal": {
+        "x": 101,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "bus-stop-vertical": {
-        "x": 93,
+        "x": 118,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-fountain-stage-3": {
-        "x": 110,
+        "x": 135,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-fountain-stage-4": {
-        "x": 127,
+        "x": 152,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-fountain-stage-5": {
-        "x": 144,
+        "x": 169,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-monument-stage-3": {
-        "x": 161,
+        "x": 186,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-monument-stage-4": {
-        "x": 178,
+        "x": 203,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-monument-stage-5": {
-        "x": 195,
+        "x": 220,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "courtyard-picnic-table": {
-        "x": 212,
+        "x": 237,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "fountain-small": {
-        "x": 229,
+        "x": 254,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "hill-rocky": {
-        "x": 246,
+        "x": 271,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "hill-small": {
-        "x": 263,
+        "x": 288,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "picnic-table": {
-        "x": 280,
+        "x": 305,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "streetlamp-double": {
-        "x": 297,
+        "x": 322,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "streetlamp-double-lit": {
-        "x": 314,
+        "x": 339,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "topiary-animal": {
-        "x": 331,
+        "x": 356,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-apple": {
-        "x": 348,
+        "x": 373,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-aspen": {
-        "x": 365,
+        "x": 390,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-birch": {
-        "x": 382,
+        "x": 407,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-cedar": {
-        "x": 399,
+        "x": 424,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-cherry": {
-        "x": 416,
+        "x": 441,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-conifer": {
-        "x": 433,
+        "x": 458,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-cypress": {
-        "x": 450,
+        "x": 475,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-deadwood": {
-        "x": 467,
+        "x": 492,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "tree-flowering": {
-        "x": 484,
-        "y": 34,
+        "x": 1,
+        "y": 51,
         "width": 16,
         "height": 16
       },
       "tree-magnolia": {
-        "x": 1,
+        "x": 18,
         "y": 51,
         "width": 16,
         "height": 16
       },
       "tree-maple": {
-        "x": 18,
+        "x": 35,
         "y": 51,
         "width": 16,
         "height": 16
       },
       "tree-oak": {
-        "x": 35,
+        "x": 52,
         "y": 51,
         "width": 16,
         "height": 16
       },
       "tree-palm": {
-        "x": 52,
+        "x": 69,
         "y": 51,
         "width": 16,
         "height": 16
       },
       "tree-pine": {
-        "x": 69,
-        "y": 51,
-        "width": 16,
-        "height": 16
-      },
-      "tree-redwood": {
         "x": 86,
         "y": 51,
         "width": 16,
         "height": 16
       },
-      "tree-round": {
+      "tree-redwood": {
         "x": 103,
         "y": 51,
         "width": 16,
         "height": 16
       },
-      "tree-willow": {
+      "tree-round": {
         "x": 120,
         "y": 51,
         "width": 16,
         "height": 16
       },
-      "active-district-flag": {
+      "tree-willow": {
         "x": 137,
+        "y": 51,
+        "width": 16,
+        "height": 16
+      },
+      "active-district-flag": {
+        "x": 154,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "archive-fence-vertical": {
-        "x": 146,
+        "x": 163,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "bench-vertical": {
-        "x": 155,
+        "x": 172,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "city-sign-horizontal": {
-        "x": 164,
+        "x": 181,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "city-sign-vertical": {
-        "x": 173,
+        "x": 190,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "fence-vertical": {
-        "x": 182,
+        "x": 199,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "guardrail-vertical": {
-        "x": 191,
+        "x": 208,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "park-lamp": {
-        "x": 200,
+        "x": 217,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "park-lamp-lit": {
-        "x": 209,
+        "x": 226,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp": {
-        "x": 218,
+        "x": 235,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-festive": {
-        "x": 227,
+        "x": 244,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-festive-lit": {
-        "x": 236,
+        "x": 253,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-industrial": {
-        "x": 245,
+        "x": 262,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-industrial-lit": {
-        "x": 254,
+        "x": 271,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-lit": {
-        "x": 263,
+        "x": 280,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-modern": {
-        "x": 272,
+        "x": 289,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-modern-lit": {
-        "x": 281,
+        "x": 298,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-solar": {
-        "x": 290,
+        "x": 307,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-solar-lit": {
-        "x": 299,
+        "x": 316,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-vintage": {
-        "x": 308,
+        "x": 325,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "streetlamp-vintage-lit": {
-        "x": 317,
+        "x": 334,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "topiary-spiral": {
-        "x": 326,
+        "x": 343,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "traffic-light-green": {
-        "x": 335,
+        "x": 352,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "traffic-light-red": {
-        "x": 344,
+        "x": 361,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "utility-pole": {
-        "x": 353,
+        "x": 370,
         "y": 51,
         "width": 8,
         "height": 16
       },
       "boat-horizontal-a": {
-        "x": 362,
+        "x": 379,
         "y": 51,
         "width": 24,
         "height": 8
       },
       "boat-horizontal-b": {
-        "x": 387,
+        "x": 404,
+        "y": 51,
+        "width": 24,
+        "height": 8
+      },
+      "boat-horizontal-c": {
+        "x": 429,
+        "y": 51,
+        "width": 24,
+        "height": 8
+      },
+      "boat-horizontal-d": {
+        "x": 454,
         "y": 51,
         "width": 24,
         "height": 8
       },
       "flower-bed-horizontal": {
-        "x": 412,
+        "x": 479,
         "y": 51,
         "width": 24,
         "height": 8
       },
       "archive-fence-horizontal": {
-        "x": 437,
-        "y": 51,
-        "width": 16,
-        "height": 8
-      },
-      "archive-security-barrier": {
-        "x": 454,
-        "y": 51,
-        "width": 16,
-        "height": 8
-      },
-      "bench-horizontal": {
-        "x": 471,
-        "y": 51,
-        "width": 16,
-        "height": 8
-      },
-      "bicycle-rack": {
-        "x": 488,
-        "y": 51,
-        "width": 16,
-        "height": 8
-      },
-      "compact-construction-hut": {
         "x": 1,
         "y": 68,
         "width": 16,
         "height": 8
       },
-      "courtyard-cycle-rack": {
+      "archive-security-barrier": {
         "x": 18,
         "y": 68,
         "width": 16,
         "height": 8
       },
-      "fence-horizontal": {
+      "bench-horizontal": {
         "x": 35,
         "y": 68,
         "width": 16,
         "height": 8
       },
-      "guardrail-horizontal": {
+      "bicycle-rack": {
         "x": 52,
         "y": 68,
         "width": 16,
         "height": 8
       },
-      "bollard": {
+      "compact-construction-hut": {
         "x": 69,
+        "y": 68,
+        "width": 16,
+        "height": 8
+      },
+      "courtyard-cycle-rack": {
+        "x": 86,
+        "y": 68,
+        "width": 16,
+        "height": 8
+      },
+      "fence-horizontal": {
+        "x": 103,
+        "y": 68,
+        "width": 16,
+        "height": 8
+      },
+      "guardrail-horizontal": {
+        "x": 120,
+        "y": 68,
+        "width": 16,
+        "height": 8
+      },
+      "bollard": {
+        "x": 137,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "compact-construction-bricks": {
-        "x": 78,
+        "x": 146,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "compact-construction-sand": {
-        "x": 87,
+        "x": 155,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "courtyard-square-planter": {
-        "x": 96,
+        "x": 164,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "fire-hydrant": {
-        "x": 105,
+        "x": 173,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "flower-pink": {
-        "x": 114,
+        "x": 182,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "flower-white": {
-        "x": 123,
+        "x": 191,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "flower-yellow": {
-        "x": 132,
+        "x": 200,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "mailbox": {
-        "x": 141,
+        "x": 209,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "planter-round": {
-        "x": 150,
+        "x": 218,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "recycling-bin": {
-        "x": 159,
+        "x": 227,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "shrub-flowering": {
-        "x": 168,
+        "x": 236,
         "y": 68,
         "width": 8,
         "height": 8
       },
       "trash-bin": {
-        "x": 177,
+        "x": 245,
         "y": 68,
         "width": 8,
         "height": 8
       }
     }
   },
-  "assetRevision": "750f26edc463160e",
+  "assetRevision": "2c6ae552240c0384",
   "buildingProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
   "microAmbient": {
     "schemaVersion": 1,
@@ -5927,6 +6047,14 @@
       "cars": {
         "path": "reference/ai-authored/micro-ambient-v1/sources/cars.png",
         "sha256": "1a03955a49b400bac169fc5d832ee1ddc230340fa15569bde927246b2c4a7a5c",
+        "grid": [
+          4,
+          4
+        ]
+      },
+      "cars-extra": {
+        "path": "reference/ai-authored/micro-ambient-v1/sources/cars-extra-v2.png",
+        "sha256": "ee27db1f7921dc16ce82a974d3e6264b0bdedde18718392d32b5ea6c143c6f2e",
         "grid": [
           4,
           4
@@ -5943,11 +6071,11 @@
         "provenance": "reference/ai-authored/micro-ambient-v1/people-v2-provenance.json"
       },
       "animals": {
-        "path": "reference/ai-authored/micro-ambient-v1/sources/animals.png",
-        "sha256": "b6d6be38648b71a240fc1019d7760334f7eed3f95f7f92ec676b4f18b3097761",
+        "path": "reference/ai-authored/micro-ambient-v1/sources/animals-directions-v2.png",
+        "sha256": "5ba13bba795c0a0c99f2f133286550121f157bcd57a801533973df9684ebb5c9",
         "grid": [
-          4,
-          2
+          8,
+          4
         ]
       },
       "aircraft": {
@@ -5991,7 +6119,7 @@
           318,
           309
         ],
-        "sha256": "50142c815a019b08158218f99b40ba2280b2c7b27754b078f23f9eec18fd3299"
+        "sha256": "23c2fbf9acb552a2f9f5c27778b51317b7ffdf3fb58db837f87aa7331b6f5191"
       },
       "micro-car-red-north": {
         "path": "micro-ambient/micro-car-red-north.png",
@@ -6024,7 +6152,7 @@
           637,
           309
         ],
-        "sha256": "36985312030ed5c080f3685513e40521a8e3b3ba72d575737fa4b08c4ea3927c"
+        "sha256": "2c34b0677a3de9d16cb5f8b1ba90c143d3e689aac33400162e9dd3950ab11e34"
       },
       "micro-car-taxi-north": {
         "path": "micro-ambient/micro-car-taxi-north.png",
@@ -6488,6 +6616,534 @@
         ],
         "sha256": "c85f3f485aa969f14779d3b81d6fc35aa5037082225e1f5c178ec9cde42a3617"
       },
+      "micro-car-pickup-north": {
+        "path": "micro-ambient/micro-car-pickup-north.png",
+        "kind": "car",
+        "variant": "pickup",
+        "direction": "north",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          0,
+          0
+        ],
+        "sourceCellBounds": [
+          0,
+          0,
+          314,
+          314
+        ],
+        "sha256": "665f97ad1f14ae2fa28997a674e3f5f7026a009c27011b2757546a2197332e0c"
+      },
+      "micro-car-minibus-north": {
+        "path": "micro-ambient/micro-car-minibus-north.png",
+        "kind": "car",
+        "variant": "minibus",
+        "direction": "north",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          1,
+          0
+        ],
+        "sourceCellBounds": [
+          314,
+          0,
+          627,
+          314
+        ],
+        "sha256": "95fab6035b1844822e3422684328f4c357299e667cf36763d18af177e97bb205"
+      },
+      "micro-car-hatchback-north": {
+        "path": "micro-ambient/micro-car-hatchback-north.png",
+        "kind": "car",
+        "variant": "hatchback",
+        "direction": "north",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          2,
+          0
+        ],
+        "sourceCellBounds": [
+          627,
+          0,
+          940,
+          314
+        ],
+        "sha256": "9425e3047467a7d4d5901d8fe1ffe30c913ea645dbb56bcf0831d12ad74e7bfc"
+      },
+      "micro-car-delivery-north": {
+        "path": "micro-ambient/micro-car-delivery-north.png",
+        "kind": "car",
+        "variant": "delivery",
+        "direction": "north",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          3,
+          0
+        ],
+        "sourceCellBounds": [
+          940,
+          0,
+          1254,
+          314
+        ],
+        "sha256": "40591329f53f790feee7bd8c7eb1794dfa475e6c7f4e37646bba622c66b1a2bb"
+      },
+      "micro-car-pickup-west": {
+        "path": "micro-ambient/micro-car-pickup-west.png",
+        "kind": "car",
+        "variant": "pickup",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          7,
+          5
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          0,
+          1
+        ],
+        "sourceCellBounds": [
+          0,
+          314,
+          314,
+          627
+        ],
+        "sha256": "5f66a92dfb6abfdf7c4a09f58587c2472d9ed6da91fa01ec408692125609a4d4"
+      },
+      "micro-car-minibus-west": {
+        "path": "micro-ambient/micro-car-minibus-west.png",
+        "kind": "car",
+        "variant": "minibus",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          7,
+          5
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          1,
+          1
+        ],
+        "sourceCellBounds": [
+          314,
+          314,
+          627,
+          627
+        ],
+        "sha256": "f78c8352690b5719ee4f6bd114f81184ad43447d88ea98570bb78de5b993bf96"
+      },
+      "micro-car-hatchback-west": {
+        "path": "micro-ambient/micro-car-hatchback-west.png",
+        "kind": "car",
+        "variant": "hatchback",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          7,
+          5
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          2,
+          1
+        ],
+        "sourceCellBounds": [
+          627,
+          314,
+          940,
+          627
+        ],
+        "sha256": "cb141219f5e2ff5a25b2c2c93f5ab6fa7d1930e97a573665e1d28d593642b262"
+      },
+      "micro-car-delivery-west": {
+        "path": "micro-ambient/micro-car-delivery-west.png",
+        "kind": "car",
+        "variant": "delivery",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          4,
+          6,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          3,
+          1
+        ],
+        "sourceCellBounds": [
+          940,
+          314,
+          1254,
+          627
+        ],
+        "sha256": "9e230ed8f6c7ef1f9963a788f871d91b38d6f0184f3862f535e1476fb2da8fd3"
+      },
+      "micro-car-pickup-south": {
+        "path": "micro-ambient/micro-car-pickup-south.png",
+        "kind": "car",
+        "variant": "pickup",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          0,
+          2
+        ],
+        "sourceCellBounds": [
+          0,
+          627,
+          314,
+          940
+        ],
+        "sha256": "3ceeedf67c0a7f86c89c3357c5f055abd53f1c2f710f7ba519c7bec0b42d997b"
+      },
+      "micro-car-minibus-south": {
+        "path": "micro-ambient/micro-car-minibus-south.png",
+        "kind": "car",
+        "variant": "minibus",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          1,
+          2
+        ],
+        "sourceCellBounds": [
+          314,
+          627,
+          627,
+          940
+        ],
+        "sha256": "c7185e009e716305bd4e210658fe9c9e5069cffdd0a9f49dfdb91989a40687e1"
+      },
+      "micro-car-hatchback-south": {
+        "path": "micro-ambient/micro-car-hatchback-south.png",
+        "kind": "car",
+        "variant": "hatchback",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          2,
+          2
+        ],
+        "sourceCellBounds": [
+          627,
+          627,
+          940,
+          940
+        ],
+        "sha256": "08b60e772b1da1d4f23eeeffbb606aa4e59e6a387d240782e6ea77855aa55ff2"
+      },
+      "micro-car-delivery-south": {
+        "path": "micro-ambient/micro-car-delivery-south.png",
+        "kind": "car",
+        "variant": "delivery",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          3,
+          2
+        ],
+        "sourceCellBounds": [
+          940,
+          627,
+          1254,
+          940
+        ],
+        "sha256": "03cb1d905e8465a477c4f0f5bf6586921e6bd6d573d3845c26da8483ca365765"
+      },
+      "micro-car-pickup-east": {
+        "path": "micro-ambient/micro-car-pickup-east.png",
+        "kind": "car",
+        "variant": "pickup",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          7,
+          5
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          0,
+          3
+        ],
+        "sourceCellBounds": [
+          0,
+          940,
+          314,
+          1254
+        ],
+        "sha256": "8e5a8d1130ae5a39b0655cb2d885623ead782dbb211bec5f6444e483f0b8af8e"
+      },
+      "micro-car-minibus-east": {
+        "path": "micro-ambient/micro-car-minibus-east.png",
+        "kind": "car",
+        "variant": "minibus",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          7,
+          5
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          1,
+          3
+        ],
+        "sourceCellBounds": [
+          314,
+          940,
+          627,
+          1254
+        ],
+        "sha256": "e04fae6f94d0de16917ffbf0db8024c79d5ebf71b74150d2e40d62a52144a113"
+      },
+      "micro-car-hatchback-east": {
+        "path": "micro-ambient/micro-car-hatchback-east.png",
+        "kind": "car",
+        "variant": "hatchback",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          7,
+          5
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          2,
+          3
+        ],
+        "sourceCellBounds": [
+          627,
+          940,
+          940,
+          1254
+        ],
+        "sha256": "5c631e6bbcd64e6a0c465c77a155abf102d45f462377536a1f3bd2c903ed6056"
+      },
+      "micro-car-delivery-east": {
+        "path": "micro-ambient/micro-car-delivery-east.png",
+        "kind": "car",
+        "variant": "delivery",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          7,
+          5
+        ],
+        "frameCount": 1,
+        "sourceFamily": "cars-extra",
+        "sourceCell": [
+          3,
+          3
+        ],
+        "sourceCellBounds": [
+          940,
+          940,
+          1254,
+          1254
+        ],
+        "sha256": "a0cdd715805d292a2fd2cfd8b49f261da695843b1e56740a332c39370e6afb58"
+      },
       "micro-person-ochre-north": {
         "path": "micro-ambient/micro-person-ochre-north.png",
         "kind": "person",
@@ -6752,11 +7408,11 @@
         ],
         "sha256": "4f7c575eba131c7d5a4ccbb4f0542a731ca82636481479a98536cae7e8c5c08e"
       },
-      "micro-animal-fox-static": {
-        "path": "micro-ambient/micro-animal-fox-static.png",
+      "micro-animal-fox-north": {
+        "path": "micro-ambient/micro-animal-fox-north.png",
         "kind": "animal",
         "variant": "fox",
-        "direction": "static",
+        "direction": "north",
         "size": [
           8,
           8
@@ -6766,9 +7422,9 @@
           4
         ],
         "opaqueBounds": [
+          2,
           1,
-          1,
-          6,
+          5,
           7
         ],
         "frameCount": 1,
@@ -6780,16 +7436,16 @@
         "sourceCellBounds": [
           0,
           0,
-          384,
-          512
+          222,
+          222
         ],
-        "sha256": "50cc6a449a07cdafea99113fefdbcbd3e158e3d15382a6a656c9434701821b2a"
+        "sha256": "27a0c04794c4e70c5ab52d4873400ae237731f7b8077a4f5919a2d70ba9537d7"
       },
-      "micro-animal-deer-static": {
-        "path": "micro-ambient/micro-animal-deer-static.png",
+      "micro-animal-deer-north": {
+        "path": "micro-ambient/micro-animal-deer-north.png",
         "kind": "animal",
         "variant": "deer",
-        "direction": "static",
+        "direction": "north",
         "size": [
           8,
           8
@@ -6799,10 +7455,10 @@
           4
         ],
         "opaqueBounds": [
-          1,
           2,
-          6,
-          7
+          1,
+          5,
+          6
         ],
         "frameCount": 1,
         "sourceFamily": "animals",
@@ -6811,18 +7467,18 @@
           0
         ],
         "sourceCellBounds": [
-          384,
+          222,
           0,
-          768,
-          512
+          444,
+          222
         ],
-        "sha256": "6dd317397c314995ffc79f2dab720193ea59aa3e535ab5b3764812e5a6e1ad71"
+        "sha256": "5fbc2ad69e96d27b015eb7d252a25cabc49dc7de20dbc7d29e069ac86379acb1"
       },
-      "micro-animal-rabbit-static": {
-        "path": "micro-ambient/micro-animal-rabbit-static.png",
+      "micro-animal-rabbit-north": {
+        "path": "micro-ambient/micro-animal-rabbit-north.png",
         "kind": "animal",
         "variant": "rabbit",
-        "direction": "static",
+        "direction": "north",
         "size": [
           8,
           8
@@ -6834,7 +7490,7 @@
         "opaqueBounds": [
           2,
           1,
-          6,
+          5,
           7
         ],
         "frameCount": 1,
@@ -6844,18 +7500,18 @@
           0
         ],
         "sourceCellBounds": [
-          768,
+          444,
           0,
-          1152,
-          512
+          665,
+          222
         ],
-        "sha256": "d62ca7b4459363a283afa8449f495ea09569955eb62248ceaa4ab9e0590525b6"
+        "sha256": "95c8dc786deb68db8362b47d9e38737f67dd1bcd3eec0a15e477b4d855a14201"
       },
-      "micro-animal-boar-static": {
-        "path": "micro-ambient/micro-animal-boar-static.png",
+      "micro-animal-boar-north": {
+        "path": "micro-ambient/micro-animal-boar-north.png",
         "kind": "animal",
         "variant": "boar",
-        "direction": "static",
+        "direction": "north",
         "size": [
           8,
           8
@@ -6865,7 +7521,7 @@
           4
         ],
         "opaqueBounds": [
-          1,
+          2,
           1,
           6,
           7
@@ -6877,18 +7533,18 @@
           0
         ],
         "sourceCellBounds": [
-          1152,
+          665,
           0,
-          1536,
-          512
+          887,
+          222
         ],
-        "sha256": "503a929f27c26d3326c32126c8fb88300943fc6e7c04f1e43d87b2fbd708d849"
+        "sha256": "a619b7c3304a69d9da9daf1d54b5b348a454c60075353ffb0be1866867af07f3"
       },
-      "micro-animal-duck-static": {
-        "path": "micro-ambient/micro-animal-duck-static.png",
+      "micro-animal-duck-north": {
+        "path": "micro-ambient/micro-animal-duck-north.png",
         "kind": "animal",
         "variant": "duck",
-        "direction": "static",
+        "direction": "north",
         "size": [
           8,
           8
@@ -6906,22 +7562,121 @@
         "frameCount": 1,
         "sourceFamily": "animals",
         "sourceCell": [
-          0,
-          1
+          4,
+          0
         ],
         "sourceCellBounds": [
+          887,
           0,
-          512,
-          384,
-          1024
+          1109,
+          222
         ],
-        "sha256": "afdb7d49b874d9cfbb3ae3864b4fa4f9b3e9424f5ea7a0c680c4dd08c9c46890"
+        "sha256": "36a29a3bcd98378a036174ad2de189ff20f4210787317d763353c7790073b4d0"
       },
-      "micro-animal-sheep-static": {
-        "path": "micro-ambient/micro-animal-sheep-static.png",
+      "micro-animal-sheep-north": {
+        "path": "micro-ambient/micro-animal-sheep-north.png",
         "kind": "animal",
         "variant": "sheep",
-        "direction": "static",
+        "direction": "north",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          5,
+          0
+        ],
+        "sourceCellBounds": [
+          1109,
+          0,
+          1330,
+          222
+        ],
+        "sha256": "50ba1e3fe1814f646012b07e6aee409201045f85514b14ecc41f47920ea345d4"
+      },
+      "micro-animal-dog-north": {
+        "path": "micro-ambient/micro-animal-dog-north.png",
+        "kind": "animal",
+        "variant": "dog",
+        "direction": "north",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          6,
+          0
+        ],
+        "sourceCellBounds": [
+          1330,
+          0,
+          1552,
+          222
+        ],
+        "sha256": "c9fbddba8644c68f176b9e379637f584061209d22f75920f20d7baef5c2bb96d"
+      },
+      "micro-animal-cat-north": {
+        "path": "micro-ambient/micro-animal-cat-north.png",
+        "kind": "animal",
+        "variant": "cat",
+        "direction": "north",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          7,
+          0
+        ],
+        "sourceCellBounds": [
+          1552,
+          0,
+          1774,
+          222
+        ],
+        "sha256": "98efc98e78054b02c604e61ebe19e0244f05b1b20c69278c7a93801fdfff93c8"
+      },
+      "micro-animal-fox-east": {
+        "path": "micro-ambient/micro-animal-fox-east.png",
+        "kind": "animal",
+        "variant": "fox",
+        "direction": "east",
         "size": [
           8,
           8
@@ -6932,7 +7687,40 @@
         ],
         "opaqueBounds": [
           1,
+          3,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          0,
+          1
+        ],
+        "sourceCellBounds": [
+          0,
+          222,
+          222,
+          444
+        ],
+        "sha256": "fd1cd1c3725c4e13bbbd66952a34b28e1fae512a4ccf248fd497ad5e41cf311a"
+      },
+      "micro-animal-deer-east": {
+        "path": "micro-ambient/micro-animal-deer-east.png",
+        "kind": "animal",
+        "variant": "deer",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
           1,
+          2,
           6,
           7
         ],
@@ -6943,18 +7731,18 @@
           1
         ],
         "sourceCellBounds": [
-          384,
-          512,
-          768,
-          1024
+          222,
+          222,
+          444,
+          444
         ],
-        "sha256": "c262a4cb3c69d62f78dd89019d80494f0e7d81a89e7285ed1fb8de3a0aea0463"
+        "sha256": "575cce9281bc3f36cdc2e1d3fe87fd214ade4205edc1255735eaee0c9ad37061"
       },
-      "micro-animal-dog-static": {
-        "path": "micro-ambient/micro-animal-dog-static.png",
+      "micro-animal-rabbit-east": {
+        "path": "micro-ambient/micro-animal-rabbit-east.png",
         "kind": "animal",
-        "variant": "dog",
-        "direction": "static",
+        "variant": "rabbit",
+        "direction": "east",
         "size": [
           8,
           8
@@ -6966,7 +7754,7 @@
         "opaqueBounds": [
           1,
           1,
-          6,
+          7,
           7
         ],
         "frameCount": 1,
@@ -6976,18 +7764,18 @@
           1
         ],
         "sourceCellBounds": [
-          768,
-          512,
-          1152,
-          1024
+          444,
+          222,
+          665,
+          444
         ],
-        "sha256": "45898e534a149e50500f3ce913b38f54184309b523e4bcbc49d48cc6d73bb281"
+        "sha256": "f516380df85547ceaa622a90dc6d8835c0831da9cbd3bc415e485fc3df2ce5f5"
       },
-      "micro-animal-cat-static": {
-        "path": "micro-ambient/micro-animal-cat-static.png",
+      "micro-animal-boar-east": {
+        "path": "micro-ambient/micro-animal-boar-east.png",
         "kind": "animal",
-        "variant": "cat",
-        "direction": "static",
+        "variant": "boar",
+        "direction": "east",
         "size": [
           8,
           8
@@ -6998,7 +7786,7 @@
         ],
         "opaqueBounds": [
           1,
-          1,
+          3,
           6,
           7
         ],
@@ -7009,12 +7797,672 @@
           1
         ],
         "sourceCellBounds": [
-          1152,
-          512,
-          1536,
-          1024
+          665,
+          222,
+          887,
+          444
         ],
-        "sha256": "c550e62dc59f430bb3a83fa18f25d8994c0e31ed038cdd71866d3d13fd4132a0"
+        "sha256": "2a74a891697e9788d4502eb11bd069836de18578e6b277f058ecf29efe44d9df"
+      },
+      "micro-animal-duck-east": {
+        "path": "micro-ambient/micro-animal-duck-east.png",
+        "kind": "animal",
+        "variant": "duck",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          4,
+          1
+        ],
+        "sourceCellBounds": [
+          887,
+          222,
+          1109,
+          444
+        ],
+        "sha256": "74a6a8ab0d31ff07397a4eebfb23df6ad9b0a3ab6b3a85ed3033bc84c4095781"
+      },
+      "micro-animal-sheep-east": {
+        "path": "micro-ambient/micro-animal-sheep-east.png",
+        "kind": "animal",
+        "variant": "sheep",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          3,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          5,
+          1
+        ],
+        "sourceCellBounds": [
+          1109,
+          222,
+          1330,
+          444
+        ],
+        "sha256": "6acdb2376ecb8165557676dcdc283e00ac3bc40c81782b68dae45f8dfcf6f2a0"
+      },
+      "micro-animal-dog-east": {
+        "path": "micro-ambient/micro-animal-dog-east.png",
+        "kind": "animal",
+        "variant": "dog",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          6,
+          1
+        ],
+        "sourceCellBounds": [
+          1330,
+          222,
+          1552,
+          444
+        ],
+        "sha256": "5851c8e088e5ba6df584cd522657c50d282aa7b5aaaa8088ca4feeab97382b00"
+      },
+      "micro-animal-cat-east": {
+        "path": "micro-ambient/micro-animal-cat-east.png",
+        "kind": "animal",
+        "variant": "cat",
+        "direction": "east",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          3,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          7,
+          1
+        ],
+        "sourceCellBounds": [
+          1552,
+          222,
+          1774,
+          444
+        ],
+        "sha256": "fb1d181a8a4084e0113445737af6e3c5c455e70e81434fd693e4e5ff98fa5baa"
+      },
+      "micro-animal-fox-south": {
+        "path": "micro-ambient/micro-animal-fox-south.png",
+        "kind": "animal",
+        "variant": "fox",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          0,
+          2
+        ],
+        "sourceCellBounds": [
+          0,
+          444,
+          222,
+          665
+        ],
+        "sha256": "0cbe31636e1b2905f0cc713eefbe95e8570fe7d70025d19c557ca24c504b9666"
+      },
+      "micro-animal-deer-south": {
+        "path": "micro-ambient/micro-animal-deer-south.png",
+        "kind": "animal",
+        "variant": "deer",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          1,
+          2
+        ],
+        "sourceCellBounds": [
+          222,
+          444,
+          444,
+          665
+        ],
+        "sha256": "9a62155c05616550295f9907c295871984335ce0679a5e16c58455081dc8fc41"
+      },
+      "micro-animal-rabbit-south": {
+        "path": "micro-ambient/micro-animal-rabbit-south.png",
+        "kind": "animal",
+        "variant": "rabbit",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          2,
+          2
+        ],
+        "sourceCellBounds": [
+          444,
+          444,
+          665,
+          665
+        ],
+        "sha256": "c9daf238c95655842d3fa693d0fa99a2e05ece0e98c4229d06adcdf9489e3d49"
+      },
+      "micro-animal-boar-south": {
+        "path": "micro-ambient/micro-animal-boar-south.png",
+        "kind": "animal",
+        "variant": "boar",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          3,
+          2
+        ],
+        "sourceCellBounds": [
+          665,
+          444,
+          887,
+          665
+        ],
+        "sha256": "91eafa01506c95ce127f43a425553b7cc7e8fc370d2115e832672e68825bea18"
+      },
+      "micro-animal-duck-south": {
+        "path": "micro-ambient/micro-animal-duck-south.png",
+        "kind": "animal",
+        "variant": "duck",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          4,
+          2
+        ],
+        "sourceCellBounds": [
+          887,
+          444,
+          1109,
+          665
+        ],
+        "sha256": "6e86e0a41826ca5375b2efbb71965b2ab4b92c1d36dd3cf06df5a77664decaa7"
+      },
+      "micro-animal-sheep-south": {
+        "path": "micro-ambient/micro-animal-sheep-south.png",
+        "kind": "animal",
+        "variant": "sheep",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          5,
+          2
+        ],
+        "sourceCellBounds": [
+          1109,
+          444,
+          1330,
+          665
+        ],
+        "sha256": "5a4f0db4efe2736edfc21028b9a8c62f89791c70c245c4e3d315fb4c0a878a79"
+      },
+      "micro-animal-dog-south": {
+        "path": "micro-ambient/micro-animal-dog-south.png",
+        "kind": "animal",
+        "variant": "dog",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          6,
+          2
+        ],
+        "sourceCellBounds": [
+          1330,
+          444,
+          1552,
+          665
+        ],
+        "sha256": "a7768e95d23d3bafa5ce5c9be992cf0ae08d5b01ad3c689e2a7dfa8e5c1c874f"
+      },
+      "micro-animal-cat-south": {
+        "path": "micro-ambient/micro-animal-cat-south.png",
+        "kind": "animal",
+        "variant": "cat",
+        "direction": "south",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          2,
+          1,
+          5,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          7,
+          2
+        ],
+        "sourceCellBounds": [
+          1552,
+          444,
+          1774,
+          665
+        ],
+        "sha256": "32ff267c9d461832148f81b230117b9ec7f2852ee76c2d1c579c23326c0a95cd"
+      },
+      "micro-animal-fox-west": {
+        "path": "micro-ambient/micro-animal-fox-west.png",
+        "kind": "animal",
+        "variant": "fox",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          0,
+          3
+        ],
+        "sourceCellBounds": [
+          0,
+          665,
+          222,
+          887
+        ],
+        "sha256": "8f9728437fa31f3def4ee598d5300f16c4d649a2de4dfa17c68b938338399d0c"
+      },
+      "micro-animal-deer-west": {
+        "path": "micro-ambient/micro-animal-deer-west.png",
+        "kind": "animal",
+        "variant": "deer",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          6,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          1,
+          3
+        ],
+        "sourceCellBounds": [
+          222,
+          665,
+          444,
+          887
+        ],
+        "sha256": "d98b668eda2628754aad925358078301b1c7471f54508d10b8c3c8e099e2aaca"
+      },
+      "micro-animal-rabbit-west": {
+        "path": "micro-ambient/micro-animal-rabbit-west.png",
+        "kind": "animal",
+        "variant": "rabbit",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          7
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          2,
+          3
+        ],
+        "sourceCellBounds": [
+          444,
+          665,
+          665,
+          887
+        ],
+        "sha256": "b421068ef89ab2e6bfcb00f6f1c3ee637d44303ff618c4df4414de637d6c4388"
+      },
+      "micro-animal-boar-west": {
+        "path": "micro-ambient/micro-animal-boar-west.png",
+        "kind": "animal",
+        "variant": "boar",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          2,
+          6,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          3,
+          3
+        ],
+        "sourceCellBounds": [
+          665,
+          665,
+          887,
+          887
+        ],
+        "sha256": "14ecddd18ae017346d69bdd2c4034128aa404c2dd74c259acd9e1dc048853ebb"
+      },
+      "micro-animal-duck-west": {
+        "path": "micro-ambient/micro-animal-duck-west.png",
+        "kind": "animal",
+        "variant": "duck",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          4,
+          3
+        ],
+        "sourceCellBounds": [
+          887,
+          665,
+          1109,
+          887
+        ],
+        "sha256": "f8da27a63040520a69690f81f74baf03f0a52b9a9eecfbc4025f05612286a847"
+      },
+      "micro-animal-sheep-west": {
+        "path": "micro-ambient/micro-animal-sheep-west.png",
+        "kind": "animal",
+        "variant": "sheep",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          5,
+          3
+        ],
+        "sourceCellBounds": [
+          1109,
+          665,
+          1330,
+          887
+        ],
+        "sha256": "43876fbe51fdbe8185991c43f942450aa82806be001270ba8931eac85b493458"
+      },
+      "micro-animal-dog-west": {
+        "path": "micro-ambient/micro-animal-dog-west.png",
+        "kind": "animal",
+        "variant": "dog",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          6,
+          3
+        ],
+        "sourceCellBounds": [
+          1330,
+          665,
+          1552,
+          887
+        ],
+        "sha256": "a008e671752068fa4ae618abe935dbcbb37aa4bb914bf19ca6b55a3ff482afe5"
+      },
+      "micro-animal-cat-west": {
+        "path": "micro-ambient/micro-animal-cat-west.png",
+        "kind": "animal",
+        "variant": "cat",
+        "direction": "west",
+        "size": [
+          8,
+          8
+        ],
+        "anchorPx": [
+          4,
+          4
+        ],
+        "opaqueBounds": [
+          1,
+          1,
+          7,
+          6
+        ],
+        "frameCount": 1,
+        "sourceFamily": "animals",
+        "sourceCell": [
+          7,
+          3
+        ],
+        "sourceCellBounds": [
+          1552,
+          665,
+          1774,
+          887
+        ],
+        "sha256": "3dbbc82f8b58aa2a824634640de4959605b6de2e58253ba6d4d01aaeb3151a70"
       },
       "micro-aircraft-regional-north": {
         "path": "micro-ambient/micro-aircraft-regional-north.png",
@@ -7149,5 +8597,11 @@
         "sha256": "a4c3ed5d522b600e4ef83b5b0549a9db66e0ec04e8c06a91813e81a60a724d88"
       }
     }
-  }
+  },
+  "atlasClouds": [
+    "atlas/clouds-v3/cloud-topdown-1.png",
+    "atlas/clouds-v3/cloud-topdown-2.png",
+    "atlas/clouds-v3/cloud-topdown-3.png",
+    "atlas/clouds-v3/cloud-topdown-4.png"
+  ]
 }

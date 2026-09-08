@@ -37,16 +37,21 @@ const OUTWARD_OFFSETS: Record<CityMobilitySignalPost["approach"], readonly (read
 export function placeCityMobilitySignalPosts<T extends CityMobilitySignalPost>(input: CityMobilitySignalPostInput<T>): T[] {
   const placed: T[] = [];
   const occupied = new Set<string>();
+  const claimed = new Set<string>();
   for (const post of [...input.posts].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
+    const intended = `${post.origin.x},${post.origin.y}`;
+    if (claimed.has(intended)) continue;
     if (!Number.isSafeInteger(post.origin.x) || !Number.isSafeInteger(post.origin.y)) continue;
     for (const [dx, dy] of OUTWARD_OFFSETS[post.approach]) {
       const origin = { x: post.origin.x + dx, y: post.origin.y + dy };
       const cellKey = `${origin.x},${origin.y}`;
       const terrain = input.terrain.get(cellKey)?.terrain;
-      if (!terrain || !DRY_GROUND.has(terrain) || occupied.has(cellKey)
-        || input.roads.has(cellKey) || input.walkGraph.has(cellKey) || input.blocked.has(cellKey)) continue;
+      const besideRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([x, y]) => input.roads.has(`${origin.x + x!},${origin.y + y!}`));
+      if (!besideRoad || !terrain || !DRY_GROUND.has(terrain) || occupied.has(cellKey)
+        || input.roads.has(cellKey) || input.blocked.has(cellKey)) continue;
       placed.push({ ...post, origin });
       occupied.add(cellKey);
+      claimed.add(intended);
       break;
     }
   }

@@ -6,7 +6,6 @@ import { loadTaskDetail, peekTaskDetail } from "../task-detail-cache";
 import { taskLink } from "../task-navigation";
 import { ApiError } from "../api";
 import { Markdown } from "./Markdown";
-import { TaskTransferPanel } from "./TaskTransferPanel";
 
 const statusLabel: Record<TaskDto["status"], string> = {
   PLANNING: "Планирование", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
@@ -90,7 +89,7 @@ function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
   </section>;
 }
 
-export function TaskModal({ countryId, taskId, revision, canEdit, onTransferred, onClose }: TaskModalProps) {
+export function TaskModal({ countryId, taskId, revision, onClose }: TaskModalProps) {
   const [task, setTask] = useState<TaskDto | null>(() => peekTaskDetail(countryId, taskId) ?? null);
   const [error, setError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
@@ -142,7 +141,6 @@ export function TaskModal({ countryId, taskId, revision, canEdit, onTransferred,
           <button className="task-share" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "🔗 Ссылка"}</button>
         </header>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
-        {canEdit && <TaskTransferPanel countryId={countryId} task={task} onTransferred={moved => { setTask(moved); onTransferred(moved); }} />}
         <div className="task-grid">
           <div><span>Приоритет</span><strong>{priorityLabel[task.priority]}</strong></div><div><span>Срок</span><strong>{task.dueAt ? new Date(task.dueAt).toLocaleDateString("ru-RU") : "Не задан"}</strong></div>
           <div><span>Создатель</span><strong>{task.creator?.name ?? "Система страны"}</strong></div><div><span>Ответственный</span><strong>{task.assignee?.name ?? "Не назначен"}</strong></div>

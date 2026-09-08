@@ -8,7 +8,7 @@ export type OverviewTerrainPatch = { x: number; y: number; size: number; tile: A
 export function overviewTerrainPatches(
   kind: AtlasTerrainKind, level: "country" | "planet", column: number, row: number, connectionMask: number,
 ): OverviewTerrainPatch[] {
-  const count = level === "country" ? 4 : 2;
+  const count = 2;
   const patches: OverviewTerrainPatch[] = [];
   for (let y = 0; y < count; y++) for (let x = 0; x < count; x++) {
     const mask = (y > 0 || connectionMask & 1 ? 1 : 0) | (x < count - 1 || connectionMask & 2 ? 2 : 0)

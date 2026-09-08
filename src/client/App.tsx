@@ -1,3 +1,4 @@
+import { MapLegend } from "./components/MapLegend";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto, TaskResolutionDto, WorldFeatureDto } from "../shared/contracts";
 import type { CountryOverviewCityDto } from "../shared/country-overview-contract";
@@ -10,7 +11,7 @@ import { CountryPanel } from "./components/CountryPanel";
 import { CountrySwitcher } from "./components/CountrySwitcher";
 import { PlanDrawer } from "./components/PlanDrawer";
 import { TaskSearch } from "./components/TaskSearch";
-import { Button, cx } from "./components/ui";
+import { Button } from "./components/ui";
 import { MapLevelNav, type MapLevel } from "./components/MapLevelNav";
 import { MapLevelTransition } from "./components/MapLevelTransition";
 import { ProfilePresence } from "./components/ProfilePresence";
@@ -423,8 +424,8 @@ export function App() {
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "COUNTRY" ? hoveredAtlasCity : effectiveMapMode === "CITY" ? activeCity : null;
   return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
-    <header className="app-header relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[#2c454d] bg-[#0e1d21]/95 px-3 py-1.5 shadow-[0_8px_28px_#0003] backdrop-blur-xl md:grid-cols-[minmax(0,1fr)_minmax(240px,380px)_minmax(0,1fr)] md:gap-3 md:px-4 md:py-0" aria-label="Панель управления страной">
-      <div className="order-1 flex min-w-0 items-center gap-2.5 md:gap-4">
+    <header className="app-header map-toolbar" aria-label="Панель управления страной">
+      <div className="map-toolbar-location">
         <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
         <div className="relative min-w-0">
         <button className="country-title-button grid min-w-0 border-0 border-l-0 px-0 text-left xl:border-l xl:border-[#304850] xl:pl-5" aria-haspopup="dialog" aria-expanded={countryMenuOpen} onClick={() => { setPlanOpen(false); setCountryMenuOpen((value) => !value); }}>
@@ -439,14 +440,15 @@ export function App() {
         </div>}
       </div>
 
-      <div className="header-search order-3 col-span-2 min-w-0 md:order-2 md:col-span-1">
+      <div className="header-search map-toolbar-search">
         <TaskSearch key={countryId} onSelect={openTaskFromSearch} />
       </div>
 
-      <div className="order-2 flex min-w-0 items-center justify-end gap-2 md:order-3">
+      <div className="map-toolbar-actions">
         <nav className="flex items-center justify-end gap-1.5" aria-label="Действия карты">
           <WorldAmbientLighting />
-          {effectiveMapMode === "CITY" && <Button className={cx("header-control min-h-0 px-3 text-xs", showDistricts && "!border-skyline !bg-[#1a3942] !text-white")} aria-pressed={showDistricts} onClick={() => setShowDistricts((value) => !value)}>Границы</Button>}
+          <Button className="map-toolbar-plan" data-plan-trigger onClick={() => { setCountryMenuOpen(false); setPlanSection("cities"); setPlanOpen(value => !value); }} aria-pressed={planOpen}>План</Button>
+          <MapLegend />
           <ProfilePresence initial={bootstrap.user.name.slice(0, 1).toUpperCase()} online={online} onOpen={() => openSettings("account")} />
         </nav>
       </div>
@@ -531,7 +533,7 @@ export function App() {
                 }} onZoomOutToCountry={(focus = { x: .5, y: .5 }) => { void transitionMap("COUNTRY", focus, () => { setPreparedCityScene(null); setCountryEntryCityId(activeCity?.id ?? null); setMapMode("COUNTRY"); }); }} />
         </Suspense>
       </div>}
-      <MapLevelNav level={effectiveMapMode} hasCity={Boolean(activeCity)} onChange={(nextLevel) => {
+      <MapLevelNav level={effectiveMapMode} hasCity={Boolean(activeCity)} showDistricts={showDistricts} onDistrictsChange={setShowDistricts} onChange={(nextLevel) => {
         if (nextLevel === effectiveMapMode || (nextLevel === "CITY" && !activeCity)) return;
         setHoveredAtlasCity(null);
         void transitionMap(nextLevel, { x: .5, y: .5 }, () => {

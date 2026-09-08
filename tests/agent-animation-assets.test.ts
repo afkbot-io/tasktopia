@@ -12,14 +12,14 @@ describe("moving-agent runtime asset audit", () => {
       ["scripts/verify-micro-ambient.py"],
       { encoding: "utf8" },
     );
-    expect(JSON.parse(output)).toMatchObject({ sprites: 36, valid: true, errors: [] });
+    expect(JSON.parse(output)).toMatchObject({ sprites: 76, valid: true, errors: [] });
   });
 
   it("rejects hidden legacy fallback families and an invented animal animation frame", () => {
     const directory = mkdtempSync(resolve(tmpdir(), "tasktopia-micro-audit-test-"));
     try {
       const changed = structuredClone(manifest);
-      changed.microAmbient.sprites["micro-animal-fox-static"].frameCount = 3;
+      changed.microAmbient.sprites["micro-animal-fox-north"].frameCount = 3;
       const path = resolve(directory, "manifest.json");
       writeFileSync(path, JSON.stringify({ ...changed, vehicles: {} }));
       expect(() => execFileSync(

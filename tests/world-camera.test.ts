@@ -41,7 +41,7 @@ describe("world camera geometry", () => {
     expect(range.maxChunkY - range.minChunkY + 1).toBeLessThanOrEqual(4);
   });
 
-  it("keeps the same zoom floor for every city size and centers a smaller raster", () => {
+  it("keeps the same zoom floor and allows panning a smaller city", () => {
     const bounds = { minX: -50, minY: -30, maxX: 49, maxY: 29 };
     const screen = { width: 1200, height: 800 };
     const scale = CITY_CAMERA_MIN_SCALE;
@@ -49,7 +49,8 @@ describe("world camera geometry", () => {
     expect(nextCameraTargetScale(1, 10000)).toBe(scale);
     expect(nextCameraTargetScale(1, -10000)).toBe(4);
     const clamped = clampCameraPosition({ x: 100_000, y: -100_000 }, scale, screen, bounds, 8);
-    expect(clamped).toEqual({ x: 600, y: 400 });
+    expect(clamped).toEqual({ x: 920, y: 208 });
+    expect(clampCameraPosition({ x: 650, y: 420 }, scale, screen, bounds, 8)).toEqual({ x: 650, y: 420 });
   });
 
   it("fits a tall expanded city while preserving the preferred zoom for compact cities", () => {

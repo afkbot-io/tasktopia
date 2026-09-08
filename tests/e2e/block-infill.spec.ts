@@ -76,7 +76,7 @@ test("infill tasks, block plaques and district boundaries survive a map round tr
     expect(await originalCanvas!.evaluate(node => node.isConnected)).toBe(true);
     await page.screenshot({ path: `${directory}/city-${phase.toLowerCase()}.png` });
   }
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Районы", exact: true }).click();
   await page.screenshot({ path: `${directory}/districts.png` });
   const parks = tasks.filter(t => t.visualKind === "PARK");
   const examples = [1, 3, 5].map(stage => parks.find(t => t.stage === stage)!);
@@ -92,7 +92,7 @@ test("infill tasks, block plaques and district boundaries survive a map round tr
     await expect(page.locator(".task-modal")).toHaveCount(0);
     await page.mouse.move(10, 20); await page.screenshot({ path: `${directory}/park-${i}-stage-${task.stage}.png` });
   }
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Город", exact: true }).click();
   await page.getByRole("button", { name: "Страна", exact: true }).click();
   await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/country.png` });

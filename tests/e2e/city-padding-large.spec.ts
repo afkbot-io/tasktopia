@@ -192,8 +192,8 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   await panTo(page, { x: (scene.city.bounds.minX + scene.city.bounds.maxX) / 2, y: (scene.city.bounds.minY + scene.city.bounds.maxY) / 2 });
   await page.mouse.move(10, 20); await page.screenshot({ path: `${directory}/city-20-districts.png` });
   const noBoundaries = await page.locator("canvas[aria-label='Интерактивная карта города']").screenshot();
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Границы", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Районы", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Районы", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(host(page)).toHaveAttribute("data-district-boundary-visible", "true");
   await expect(host(page)).toHaveAttribute("data-district-boundary-groups", "20");
   expect(Number(await host(page).getAttribute("data-district-boundary-cells"))).toBeGreaterThan(1000);
@@ -214,7 +214,7 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   }, { before: noBoundaries.toString("base64"), after: withBoundaries.toString("base64"), colors: [...new Set(scene.chunks.flatMap(chunk => chunk.districts.map(district => district.color)))] });
   expect(boundaryPixels).toBeGreaterThan(500);
   await page.screenshot({ path: `${directory}/districts-20.png` });
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Город", exact: true }).click();
   const gallery = tasks.filter(task => task.stage >= 3);
   // This SQL scale fixture intentionally remains predominantly PLANNING;
   // assigned art families are not the same as completed visible buildings.
@@ -226,11 +226,11 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   await expect.poll(async () => (await camera(page)).scale).toBeCloseTo(1, 4);
   await panTo(page, gallery[0]!.origin);
   await page.mouse.move(10, 20); await page.screenshot({ path: `${directory}/native-gallery.png` });
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Районы", exact: true }).click();
   await expect(host(page)).toHaveAttribute("data-district-boundary-visible", "true");
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: `${directory}/native-district-edge.png` });
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Город", exact: true }).click();
   const retainedCamera = await camera(page);
   await page.getByRole("button", { name: "Страна", exact: true }).click();
   await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");

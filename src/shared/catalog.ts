@@ -159,3 +159,6 @@ export const TILE_SPRITES = Object.fromEntries(
 export const BLOCK_SURFACE_SPRITES = Object.fromEntries(
   Object.entries(manifest.blockSurfaces.tiles).map(([key, value]) => [key, gameAssetUrl((value as { path: string }).path)]),
 ) as Record<"block-lawn" | "block-water", string>;
+
+/** Reviewed square-cluster cloud family shared by atlas renderers. */
+export const ATLAS_CLOUD_SPRITES = manifest.atlasClouds.map(gameAssetUrl);

@@ -207,6 +207,8 @@ def audit() -> dict[str, Any]:
     violations.extend(audit_micro_ambient(manifest, RUNTIME, PACK))
     for key, entry in manifest.get("microAmbient", {}).get("sprites", {}).items():
         audit_grid_asset(entry["path"], key, tuple(entry["size"]))
+    for index, path in enumerate(manifest.get("atlasClouds", [])):
+        audit_grid_asset(path, f"atlasClouds/{index}", (64, 32))
     runtime_pngs = {str(path.relative_to(RUNTIME)) for path in RUNTIME.rglob("*.png")}
     orphan_pngs = sorted(runtime_pngs - referenced)
     missing_references = sorted(referenced - runtime_pngs)

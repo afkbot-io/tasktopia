@@ -1,6 +1,7 @@
+import { pixelPlanetRows } from "../map-visual-consistency";
 import { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PlanetAtlasDto } from "../../shared/planet-atlas-contract";
-import { gameAssetUrl, getBuilding } from "../../shared/catalog";
+import { gameAssetUrl, getBuilding, ATLAS_CLOUD_SPRITES } from "../../shared/catalog";
 import { overviewBuildingArt } from "../../shared/overview-building-art";
 import { atlasTerrainConnectionMask, type AtlasTerrainKind } from "../../shared/atlas-scene";
 import { overviewTerrainPatches } from "../../shared/overview-terrain-presentation";
@@ -283,11 +284,11 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       event.preventDefault();
     }}>
       <defs>
-        <clipPath id={clipId}><ellipse cx={(map.surface.minX + map.surface.maxX) / 2} cy={(map.surface.minY + map.surface.maxY) / 2} rx={(map.surface.maxX - map.surface.minX) / 2} ry={(map.surface.maxY - map.surface.minY) / 2} /></clipPath>
+        <clipPath id={clipId}>{pixelPlanetRows(map.surface).map(row => <rect key={row.y} {...row} />)}</clipPath>
         <pattern id="planet-ocean-pixels" width="8" height="8" patternUnits="userSpaceOnUse"><image href={gameAssetUrl("atlas/terrain-v4/planet/ocean.png")} width="8" height="8" className="atlas-pixel" /></pattern>
       </defs>
       <rect className="planet-space" width={map.width} height={map.height} />
-      <g className="planet-stars" aria-hidden="true">{map.stars.map((star) => <rect key={star.id} data-star-group={star.group} x={`${star.xPercent}%`} y={`${star.yPercent}%`} width={star.size} height={star.size} opacity={star.opacity} style={{ "--star-delay": `${star.delaySeconds}s` } as CSSProperties} />)}</g>
+      <g className="planet-stars" aria-hidden="true">{map.stars.map((star) => <rect key={star.id} data-star-group={star.group} x={Math.round(map.width * star.xPercent / 100 / 2) * 2} y={Math.round(map.height * star.yPercent / 100 / 2) * 2} width={2} height={star.group === "constellation" ? 4 : 2} opacity={star.opacity} style={{ "--star-delay": `${star.delaySeconds}s` } as CSSProperties} />)}</g>
       <g clipPath={`url(#${clipId})`}>
         <rect className="planet-map-ocean" x={map.surface.minX} y={map.surface.minY} width={map.surface.maxX - map.surface.minX} height={map.surface.maxY - map.surface.minY} fill="url(#planet-ocean-pixels)" />
         <g className="planet-coast" aria-hidden="true">{map.coastCells.map((cell) => <AtlasTerrainImage key={cell.id} cell={cell} mask={terrainMask(cell)} />)}</g>
@@ -299,15 +300,16 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           event.preventDefault(); void selectCountry(country.id);
         }}>{country.cells.map((cell) => <g key={cell.id}><AtlasTerrainImage cell={cell} mask={terrainMask(cell)} /><path d={pixelSquarePath(cell)} fill={country.color} className="planet-country-tint" /></g>)}
           <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon => {
-            const art = overviewBuildingArt(icon.id);
+            const sourceArt = overviewBuildingArt(icon.id);
+            const art = { ...sourceArt, width: sourceArt.width * camera.zoom, height: sourceArt.height * camera.zoom };
             return <image key={icon.id} data-district-id={icon.id} data-city-id={icon.cityId} data-building-family={art.key}
               href={art.url} x={icon.center.x - art.width / 2} y={icon.center.y - art.height / 2}
               width={art.width} height={art.height} className="atlas-pixel" />;
           })}</g>
-          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-4} y={airport.center.y-3} width="8" height="6" className="atlas-pixel" />)}</g>
+          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-4 * camera.zoom} y={airport.center.y-3 * camera.zoom} width={8 * camera.zoom} height={6 * camera.zoom} className="atlas-pixel" />)}</g>
         </g>)}</g>
         <g className="planet-routes" aria-hidden="true">{activeRoutes.map((route) => <g key={route.id}><path d={route.path} className="planet-route-line" /><AtlasAircraft path={route.path} durationSeconds={route.durationSeconds} delaySeconds={route.delaySeconds} kind={route.planeKind} size="planet" rotateWithPath visualScale={route.altitudeScale} startsAtAirport={route.fromAirportId !== null} endsAtAirport /></g>)}</g>
-        <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><image href={gameAssetUrl(`atlas/clouds-v2/cloud-topdown-${index % 8 + 1}.png`)} x="-32" y="-16" width="64" height="32" className="atlas-pixel" /></g>)}</g>
+        <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><image href={ATLAS_CLOUD_SPRITES[index % ATLAS_CLOUD_SPRITES.length]} x="-32" y="-16" width="64" height="32" className="atlas-pixel" /></g>)}</g>
       </g>
       <g className="planet-fog-pixels" aria-hidden="true">{map.edgeFog.map((fog) => <rect key={fog.id} x={fog.point.x - fog.size / 2} y={fog.point.y - fog.size / 2} width={fog.size} height={fog.size} opacity={fog.opacity} />)}</g>
       <g className="planet-country-labels">{labels.map((label) => {

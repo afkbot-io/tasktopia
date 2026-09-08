@@ -55,8 +55,8 @@ def audit_micro_ambient(manifest: dict, runtime: Path, pack: Path) -> list[str]:
     if micro.get("visualProfile") != PROFILE or micro.get("artSource") != "AI_AUTHORED":
         return ["microAmbient: missing reviewed native top-down art profile"]
     sprites = micro.get("sprites", {})
-    if Counter(entry.get("kind") for entry in sprites.values()) != {"car": 16, "person": 8, "animal": 8, "aircraft": 4}:
-        errors.append("microAmbient: expected 16 cars, 8 people, 8 static animals, 4 aircraft")
+    if Counter(entry.get("kind") for entry in sprites.values()) != {"car": 32, "person": 8, "animal": 32, "aircraft": 4}:
+        errors.append("microAmbient: expected 32 cars, 8 people, 32 directional animals, 4 aircraft")
     review_path = pack / "reference/ai-authored/micro-ambient-v1/visual-review.json"
     review = json.loads(review_path.read_text()) if review_path.exists() else {}
     for family, source in micro.get("sources", {}).items():
@@ -94,9 +94,9 @@ def audit_micro_ambient(manifest: dict, runtime: Path, pack: Path) -> list[str]:
                 maximum = (6, 4) if entry["direction"] in ("east", "west") else (4, 6)
             if width > maximum[0] or height > maximum[1]:
                 errors.append(f"{key}: silhouette exceeds micro envelope")
-            if entry["kind"] == "animal" and width < 4:
+            if entry["kind"] == "animal" and max(width, height) < 4:
                 errors.append(f"{key}: animal is an unreadable narrow bar")
-        if entry.get("frameCount") != 1 or (entry["kind"] == "animal" and entry.get("direction") != "static"):
+        if entry.get("frameCount") != 1 or entry.get("direction") not in ("north", "east", "south", "west"):
             errors.append(f"{key}: static-frame contract violated")
         if sha(path) != entry.get("sha256"):
             errors.append(f"{key}: runtime changed after normalization")

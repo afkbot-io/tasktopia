@@ -123,7 +123,7 @@ test("validates and captures ten new-build cities", async ({ page }) => {
       await expect(wideDrawer).toBeVisible();
       await wideDrawer.locator(".plan-row > button:first-child", { hasText: cities[index] }).click();
       await expect(wideDrawer).toBeHidden();
-      await page.getByRole("button", { name: "Границы", exact: true }).click();
+      await page.getByRole("button", { name: "Районы", exact: true }).click();
       await expect.poll(async () => Number(await host.getAttribute("data-resident-chunks") ?? 0), { timeout: 45_000 })
         .toBeGreaterThan(0);
       await page.waitForTimeout(600);

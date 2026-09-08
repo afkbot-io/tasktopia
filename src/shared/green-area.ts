@@ -34,7 +34,7 @@ function boundsOf(footprint: Cell[]) {
 
 /** Ground-only infill: a perimeter would consume the entire planting bed. */
 export function isGroundPlantingStrip(width: number, height: number, assetKey: string): boolean {
-  return assetKey === "urban-park" && (width <= 2 || height <= 2);
+  return assetKey !== "urban-lake" && assetKey !== "urban-parking" && (width <= 2 || height <= 2);
 }
 
 /**
@@ -95,12 +95,8 @@ export function greenAreaSurfaceLayout(
   ].some((neighbor) => !occupied.has(cellKey(neighbor)));
   return footprint.map((cell) => {
     let role: GreenAreaSurfaceRole;
-    if (stage === 1) role = "EARTH";
-    else if (strip) {
-      const index = (cell.y - bounds.minY) * (bounds.maxX - bounds.minX + 1) + cell.x - bounds.minX;
-      role = paths.has(cellKey(cell)) ? "PATH"
-        : stage >= 5 || stage >= 3 && index % 2 === 1 ? "MEADOW" : "EARTH";
-    }
+    if (strip) role = paths.has(cellKey(cell)) ? "PATH" : "MEADOW";
+    else if (stage === 1) role = "EARTH";
     else if (boundary(cell)) role = "BOUNDARY";
     else if (assetKey === "urban-lake") {
       role = stage <= 2 ? "EARTH" : stage >= 5 || stage === 4 && cell.x > (bounds.minX + bounds.maxX) / 2 ? "WATER" : "BASIN";

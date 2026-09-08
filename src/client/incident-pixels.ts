@@ -27,7 +27,7 @@ export function incidentBadge(mode: Exclude<IncidentMode, "NONE">): { label: str
   const verifying = mode === "DEFECT_VERIFYING" || mode === "HOTFIX_VERIFYING";
   const repairing = mode === "DEFECT_REPAIRING";
   const urgent = mode === "HOTFIX_ACTIVE" || mode === "HOTFIX_QUEUED";
-  const rows = verifying ? ["    x", "   x ", "x x  ", " x   ", "     "]
+  const rows = verifying ? ["xxxxx", " x x ", "  x  ", " x x ", "xxxxx"]
     : repairing ? ["x   x", " xxx ", "  x  ", " x   ", "x    "]
     : ["  x  ", "  x  ", "  x  ", "     ", "  x  "];
   const color = verifying ? 0x8bae7a : urgent ? 0xe59043 : 0xe9c77c;

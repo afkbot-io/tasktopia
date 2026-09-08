@@ -715,3 +715,37 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .country-overview-raster, .planet-map-ocean, .planet-coast, .planet-countries {
   filter: var(--world-light-filter, brightness(1));
 }
+
+/* A single compact toolbar; map modes live together at the bottom. */
+.map-toolbar { position: relative; z-index: 20; display: grid; grid-template-columns: minmax(200px, 1fr) minmax(240px, 420px) minmax(160px, 1fr); align-items: center; gap: 20px; padding: 10px 20px; min-height: 64px; border-bottom: 2px solid #536653; background: #122527; box-shadow: 0 3px 0 #07171980; }
+.map-toolbar-location, .map-toolbar-actions { display: flex; min-width: 0; align-items: center; gap: 14px; }
+.map-toolbar-actions { justify-content: end; }
+.map-toolbar-search { min-width: 0; }
+.map-toolbar .brand-mark { color: #d1c68d; font-size: 11px; letter-spacing: .06em; }
+.map-toolbar .country-title-button { border: 0; padding: 0; }
+.map-toolbar .country-title-button strong { font-size: 15px; }
+.map-toolbar .header-city { border-color: #536653; }
+.map-toolbar-plan { min-height: 36px; border-radius: 3px; padding: 6px 15px; }
+.map-legend { position: relative; color: #d1c68d; }
+.map-legend summary { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #536653; border-radius: 3px; font: bold 16px monospace; cursor: pointer; list-style: none; }
+.map-legend summary::-webkit-details-marker { display: none; }
+.map-legend-panel { position: absolute; right: 0; top: 44px; width: min(340px, calc(100vw - 32px)); padding: 18px; border: 2px solid #87916b; background: #122527; box-shadow: 5px 5px 0 #071719b0; font-size: 12px; line-height: 1.5; color: #dce1ce; }
+.map-legend-panel p { margin: 10px 0; }
+.map-legend-panel dl { display: grid; grid-template-columns: 24px 1fr; gap: 7px; }
+.map-legend-panel dt { color: #dfbd6b; font-weight: bold; }
+.map-legend-panel dd { margin: 0; }
+.map-level-nav { grid-template-columns: repeat(4, minmax(68px, 100px)); border-radius: 4px; border: 1px solid #536653; background: #122527; }
+.map-level-button { border-radius: 2px; }
+.planet-stars rect { fill: #b8c29b; animation: none; }
+.planet-stars rect[data-star-group="constellation"] { fill: #d6cea2; }
+.planet-stars rect[data-star-group="milky-way"] { fill: #6e8580; }
+.planet-clouds { opacity: .65; }
+.country-overview { image-rendering: pixelated; background-repeat: repeat; }
+@media (max-width: 850px) {
+  .map-toolbar { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 8px 12px; }
+  .map-toolbar-search { grid-row: 2; grid-column: 1 / -1; }
+  .map-toolbar-actions { grid-column: 2; grid-row: 1; }
+  .map-toolbar .brand-mark { display: none; }
+  .map-toolbar-location { gap: 8px; }
+  .map-level-button { min-width: 64px; padding-left: 9px; padding-right: 9px; }
+}

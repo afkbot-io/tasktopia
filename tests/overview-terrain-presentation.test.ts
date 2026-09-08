@@ -3,19 +3,19 @@ import { atlasTerrainTile } from "../src/shared/atlas-scene";
 import { overviewTerrainPatches } from "../src/shared/overview-terrain-presentation";
 
 describe("overview material detail without new geography", () => {
-  it("makes country material features smaller than a block glyph, on the unchanged raster", () => {
+  it("uses the same material frequency on country and planet", () => {
     const patches = overviewTerrainPatches("forest", "country", 2, 7, 15);
-    expect(patches).toHaveLength(16);
+    expect(patches).toHaveLength(4);
     // A COUNTRY semantic cell is four atlas units; a block glyph is1.45.
-    expect(patches.every(patch => patch.size * 4 < 1.45)).toBe(true);
+    expect(patches.every(patch => patch.size === .5)).toBe(true);
     expect(patches.reduce((area, patch) => area + patch.size ** 2, 0)).toBe(1);
-    expect(new Set(patches.map(patch => `${patch.x}:${patch.y}`)).size).toBe(16);
+    expect(new Set(patches.map(patch => `${patch.x}:${patch.y}`)).size).toBe(4);
   });
 
   it("keeps all four edges exactly inherited, including negative macro coordinates", () => {
     for (const level of ["country", "planet"] as const) for (let mask = 0; mask < 16; mask++) {
       const patches = overviewTerrainPatches("coast", level, -2, -3, mask);
-      const resolution = level === "country" ? 4 : 2;
+      const resolution = 2;
       expect(patches).toHaveLength(resolution ** 2);
       for (const patch of patches) {
         const x = patch.x * resolution, y = patch.y * resolution;

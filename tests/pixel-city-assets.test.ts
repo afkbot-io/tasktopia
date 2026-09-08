@@ -229,7 +229,7 @@ describe("Pixel City active asset contract", () => {
   it("publishes only the micro moving-ambient profile with no old bus, gait or car paths", () => {
     expect(manifest).not.toHaveProperty("vehicles");
     expect(manifest.microAmbient.visualProfile).toBe("TASKTOPIA_MICRO_TOPDOWN_CARTOON_V1");
-    expect(Object.keys(manifest.microAmbient.sprites)).toHaveLength(36);
+    expect(Object.keys(manifest.microAmbient.sprites)).toHaveLength(76);
     expect(Object.keys(manifest.props).filter((key) => /^(walker|resident|fisher|animal|cyclist|scooter|city-bus)-/.test(key))).toEqual([]);
   });
 

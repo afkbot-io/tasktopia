@@ -24,8 +24,9 @@ PROFILE = "TASKTOPIA_MICRO_TOPDOWN_CARTOON_V1"
 DIRECTIONS = ("north", "east", "south", "west")
 SHEETS = {
     "cars": {"grid": (4, 4), "variants": ("blue", "red", "taxi", "van"), "kind": "car", "canvas": 8},
+    "cars-extra": {"grid": (4, 4), "variants": ("pickup", "minibus", "hatchback", "delivery"), "kind": "car", "canvas": 8, "source": "cars-extra-v2.png"},
     "people": {"grid": (2, 4), "variants": ("ochre", "teal"), "kind": "person", "canvas": 8, "source": "people-v2.png"},
-    "animals": {"grid": (4, 2), "variants": ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"), "kind": "animal", "canvas": 8},
+    "animals": {"grid": (8, 4), "source": "animals-directions-v2.png", "variants": ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"), "kind": "animal", "canvas": 8},
     "aircraft": {"grid": (2, 2), "variants": ("regional",), "kind": "aircraft", "canvas": 16},
 }
 
@@ -83,8 +84,8 @@ def build(only_family: str | None = None) -> dict:
         for row in range(rows):
             for column in range(columns):
                 if family == "animals":
-                    variant = spec["variants"][row * columns + column]
-                    direction = "static"
+                    variant = spec["variants"][column]
+                    direction = DIRECTIONS[row]
                     envelope = (6, 6)
                 elif family == "aircraft":
                     variant = "regional"
@@ -92,8 +93,8 @@ def build(only_family: str | None = None) -> dict:
                     envelope = (12, 12)
                 else:
                     variant = spec["variants"][column]
-                    direction = DIRECTIONS[row]
-                    envelope = ((6, 4) if direction in ("east", "west") else (4, 6)) if family == "cars" else (3, 4)
+                    direction = (("north", "west", "south", "east") if family == "cars-extra" else DIRECTIONS)[row]
+                    envelope = ((6, 4) if direction in ("east", "west") else (4, 6)) if spec["kind"] == "car" else (3, 4)
                 cell_bounds = [round(column * image.width / columns), round(row * image.height / rows), round((column + 1) * image.width / columns), round((row + 1) * image.height / rows)]
                 normalized = normalize(image.crop(cell_bounds), spec["canvas"], envelope)
                 key = f"micro-{spec['kind']}-{variant}-{direction}"
@@ -119,7 +120,7 @@ def build(only_family: str | None = None) -> dict:
             target.write_bytes(content)
     manifest = {"schemaVersion": 1, "visualProfile": PROFILE, "cellSizePx": 8, "artSource": "AI_AUTHORED", "sources": sources, "sprites": sprites}
     write_json(PACK / "micro-ambient-manifest.json", manifest)
-    sheet = Image.new("RGBA", (16 * 12, 16 * 3), "#81955c")
+    sheet = Image.new("RGBA", (16 * 12, 16 * ((len(sprites) + 11) // 12)), "#81955c")
     for index, entry in enumerate(sprites.values()):
         image = Image.open(PACK / "runtime" / entry["path"]).convert("RGBA")
         sheet.alpha_composite(image, ((index % 12) * 16 + (16 - image.width) // 2, (index // 12) * 16 + (16 - image.height) // 2))
