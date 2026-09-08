@@ -1,22 +1,59 @@
 {
   "name": "tasktopia",
-  "version": "1.23.1",
+  "version": "1.24.0",
   "private": true,
   "license": "MIT",
   "type": "module",
   "tasktopiaRuntime": {
-    "blockTemplateVersions": [2, 3],
-    "citySceneSchemaVersions": [4],
-    "countryOverviewSchemaVersions": [7],
-    "countryRoadSnapshotTables": ["country_road_snapshots_v1"],
+    "blockTemplateVersions": [
+      2,
+      3
+    ],
+    "citySceneSchemaVersions": [
+      4
+    ],
+    "countryOverviewSchemaVersions": [
+      7
+    ],
+    "countryRoadSnapshotTables": [
+      "country_road_snapshots_v1"
+    ],
     "blockStructuralShapes": {
-      "compact-apartment-v1": { "width": 6, "height": 6, "floors": 3 },
-      "compact-row-v1": { "width": 6, "height": 3, "floors": 1 },
-      "compact-wide-v1": { "width": 6, "height": 4, "floors": 2 },
-      "compact-long-gallery-v1": { "width": 12, "height": 6, "floors": 2 },
-      "compact-corner-court-v1": { "width": 8, "height": 8, "floors": 2 },
-      "compact-u-courtyard-v1": { "width": 12, "height": 8, "floors": 2 },
-      "compact-long-slate-wing-v1": { "width": 6, "height": 12, "floors": 2 }
+      "compact-apartment-v1": {
+        "width": 6,
+        "height": 6,
+        "floors": 3
+      },
+      "compact-row-v1": {
+        "width": 6,
+        "height": 3,
+        "floors": 1
+      },
+      "compact-wide-v1": {
+        "width": 6,
+        "height": 4,
+        "floors": 2
+      },
+      "compact-long-gallery-v1": {
+        "width": 12,
+        "height": 6,
+        "floors": 2
+      },
+      "compact-corner-court-v1": {
+        "width": 8,
+        "height": 8,
+        "floors": 2
+      },
+      "compact-u-courtyard-v1": {
+        "width": 12,
+        "height": 8,
+        "floors": 2
+      },
+      "compact-long-slate-wing-v1": {
+        "width": 6,
+        "height": 12,
+        "floors": 2
+      }
     }
   },
   "engines": {
