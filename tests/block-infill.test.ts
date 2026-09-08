@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blockSlots, BLOCK_TEMPLATES } from "../src/shared/block-templates";
+import { blockSlots, createBlockSitePlan, BLOCK_TEMPLATES } from "../src/shared/block-templates";
 import type { CityBlockV1 } from "../src/shared/block-world";
 import { compileBlockLayout } from "../src/server/world/block-layout-compiler";
 
@@ -30,6 +30,27 @@ describe("directional block infill", () => {
         }
       }
     }
+  });
+  it("leaves thin residual strips outside new durable task parcels", () => {
+    for (const template of BLOCK_TEMPLATES.filter(t => t.kind === "BUILDING")) {
+      for (const corner of ["NW", "NE", "SW", "SE"]) for (let seed = 0; seed < 8; seed++) {
+        const sample = { ...block(corner), seed, templateKey: template.key, width: template.widthModules * 8, height: template.heightModules * 8 };
+        const plan = createBlockSitePlan(sample);
+        for (const parcel of plan.parcels) {
+          expect(parcel.width).toBeGreaterThanOrEqual(3);
+          expect(parcel.height).toBeGreaterThanOrEqual(3);
+        }
+      }
+    }
+  });
+  it("preserves a previously stored one-cell v3 park", () => {
+    const saved = { ...block("NW"), templateVersion: 3, parameters: { infill: true, sitePlan: {
+      version: 1, parcels: [{ x: 3, y: 3, width: 1, height: 8, clearance: 0, kind: "PARK" }],
+    } } };
+    const slots = blockSlots(saved);
+    expect(slots).toHaveLength(1);
+    expect(slots[0]!.footprint).toEqual(Array.from({ length: 8 }, (_, i) => ({ x: 3, y: 3 + i })));
+    expect(blockSlots(JSON.parse(JSON.stringify(saved)))).toEqual(slots);
   });
   it("uses varied block sizes and persists corner/infill policy for newly created blocks", () => {
     const input = { countryId: "c", cityId: "city", seed: 17, revision: 1, districts: [{ id: "d", archetype: "PRIVATE", sequence: 0,

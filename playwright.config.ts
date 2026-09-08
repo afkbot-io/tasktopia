@@ -49,6 +49,7 @@ export default defineConfig({
         serviceWorkers: "block",
       },
     },
+    { name: "webkit-visual", testMatch: /(?:atlas-transport|visual-consistency|visual-services)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
     { name: "mobile-chromium", testMatch: /mobile-pwa\.spec\.ts/, use: { ...devices["Pixel 7"] } },
     { name: "mobile-webkit", testMatch: /mobile-pwa\.spec\.ts/, use: { ...devices["iPhone 13"] } },
   ],

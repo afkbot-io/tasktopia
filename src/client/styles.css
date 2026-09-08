@@ -712,7 +712,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 }
 }
 /* Lighting affects the map art only; task numbers and navigation stay readable. */
-.country-overview-raster, .planet-map-ocean, .planet-coast, .planet-countries {
+.country-overview-raster, .country-city-glyph, .country-railway-overlay, .planet-map-ocean, .planet-coast, .planet-countries {
   filter: var(--world-light-filter, brightness(1));
 }
 
@@ -758,3 +758,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .country-overview-city span { font-size: 8px; }
 .planet-railways { pointer-events: none; }
 .planet-ships { pointer-events: none; }
+
+.country-city-glyph { position: absolute; top: 0; left: 0; image-rendering: pixelated; pointer-events: none; }
+
+.country-railway-overlay { position: absolute; inset: 0; pointer-events: none; }

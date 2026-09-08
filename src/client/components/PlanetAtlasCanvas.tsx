@@ -309,13 +309,12 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           event.preventDefault(); void selectCountry(country.id);
         }}>{country.cells.map((cell) => <g key={cell.id}><AtlasTerrainImage cell={cell} mask={terrainMask(cell)} /><path d={pixelSquarePath(cell)} fill={country.color} className="planet-country-tint" /></g>)}
           <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon => {
-            const sourceArt = overviewBuildingArt(icon.id);
-            const art = { ...sourceArt, width: sourceArt.width * camera.zoom, height: sourceArt.height * camera.zoom };
+            const art = overviewBuildingArt(icon.id);
             return <image key={icon.id} data-district-id={icon.id} data-city-id={icon.cityId} data-building-family={art.key}
               href={art.url} x={icon.center.x - art.width / 2} y={icon.center.y - art.height / 2}
               width={art.width} height={art.height} className="atlas-pixel" />;
           })}</g>
-          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-4 * camera.zoom} y={airport.center.y-3 * camera.zoom} width={8 * camera.zoom} height={6 * camera.zoom} className="atlas-pixel" />)}</g>
+          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-4} y={airport.center.y-3} width={8} height={6} className="atlas-pixel" />)}</g>
         </g>)}</g>
         <g className="planet-railways" aria-hidden="true">{transportPaths.rails.map(route=><g key={route.id}>
           <path d={route.path} fill="none" stroke="#293c39" strokeWidth="2" />

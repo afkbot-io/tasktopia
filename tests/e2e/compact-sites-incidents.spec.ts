@@ -53,7 +53,7 @@ async function screenshot(page: Page, name: string) {
   await page.screenshot({ path: `${screenshots}/${name}.png`, fullPage: true });
 }
 
-test("real UI transfer leaves clickable MOVE; deletion retains both occupied historical sites", async ({ page }, info) => {
+test("API transfer leaves clickable MOVE without a task-modal transfer control; deletion retains both occupied historical sites", async ({ page }, info) => {
   test.setTimeout(120_000);
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   const bootstrap = await login(page);
@@ -63,20 +63,16 @@ test("real UI transfer leaves clickable MOVE; deletion retains both occupied his
   const original = initial.chunks.flatMap(chunk => chunk.tasks).find(task => task.taskNumber === 1)!;
   await page.goto(taskLink(bootstrap.country.id, original));
   await expect(page.locator("#task-title")).toContainText(original.title);
-  await page.getByRole("button", { name: "Перенести в другой спринт" }).click();
-  const selection = page.getByLabel("Спринт в этом городе");
-  // The placeholder is not a destination; both other open sprints are valid.
-  await expect(selection.locator("option[value]:not([value=''])")).toHaveCount(2);
-  await expect(selection.locator(`option[value='${original.districtId}']`)).toHaveCount(0);
-  await selection.selectOption({ index: 1 });
-  const transferResponse = page.waitForResponse(response => response.url().endsWith(`/api/tasks/${original.id}/transfer`) && response.request().method() === "POST");
-  await page.getByRole("button", { name: "Подтвердить перенос" }).click();
-  const response = await transferResponse;
+  await expect(page.getByRole("button", { name: "Перенести в другой спринт" })).toHaveCount(0);
+  const targetDistrictId = initial.chunks.flatMap(chunk => chunk.districts).find(d => d.id !== original.districtId)!.id;
+  const response = await page.request.post(`/api/tasks/${original.id}/transfer`, {
+    data: { targetDistrictId, idempotencyKey: randomUUID() },
+  });
   expect(response.status(), await response.text()).toBe(200);
   const moved = await response.json() as TaskDto;
   expect(moved).toMatchObject({ id: original.id, taskNumber: original.taskNumber, status: original.status, progress: original.progress });
   expect(moved.districtId).not.toBe(original.districtId);
-  await expect(page.locator(".task-transfer-panel")).toContainText("На прежнем участке сохранена метка MOVE");
+  await expect(page.locator(".task-transfer-panel")).toHaveCount(0);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-moved-sites", String(previousMarkers.filter(feature => feature.siteMarker?.kind === "RELOCATED").length + 1));
   const marker = (await scene(page, bootstrap)).chunks.flatMap(chunk => chunk.worldFeatures)

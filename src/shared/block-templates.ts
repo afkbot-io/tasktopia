@@ -223,7 +223,9 @@ function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[]
       const blockedGate = slots.some(s => block.origin.x + gateX >= s.siteBounds.minX && block.origin.x + gateX <= s.siteBounds.maxX
         && block.origin.y + y + height >= s.siteBounds.minY && block.origin.y + y + height <= s.siteBounds.maxY);
       if (blockedGate) height--;
-      if (!height) { reserved[index(x, y)] = 1; continue; }
+      // Only new durable plans exclude thin leftovers. Replaying legacy v2
+      // or an existing v3 plan must keep its task slot keys and geometry.
+      if (!height || (fillNewPlan && (width < 3 || height < 3))) { reserved[index(x, y)] = 1; continue; }
       append(x, y, width, height, "PARK", undefined, 0, true);
       connectSidewalks(slots, block);
       protect();

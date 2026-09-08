@@ -22,7 +22,7 @@ const MAX_ZOOM = 2.6;
 const CITY_LOD_CELL_SIZE = .72;
 
 type Camera = { zoom: number; centerX: number; centerY: number };
-type Flight = { view: HTMLImageElement; elapsed: number; duration: number; delay: number; route: AtlasFlightGeometry; startsAtAirport: boolean };
+type Flight = { view: HTMLImageElement; elapsed: number; duration: number; delay: number; route: AtlasFlightGeometry; startsAtAirport: boolean; fromCityId: string; toCityId: string; from: { x: number; y: number }; to: { x: number; y: number } };
 
 async function loadAtlasImage(url: string): Promise<HTMLImageElement> {
   const image = new Image();
@@ -138,6 +138,19 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     };
     const targetCamera: Camera = { ...camera };
     const flights: Flight[] = [];
+    const citiesById = new Map(overview.cities.map(city => [city.id, city]));
+    const railways = countryRailways(overview);
+    const railwayCanvas = document.createElement("canvas");
+    railwayCanvas.className = "country-railway-overlay";
+    railwayCanvas.setAttribute("aria-hidden", "true");
+    const railwayContext = railwayCanvas.getContext("2d")!;
+    host.append(railwayCanvas);
+    const cityGlyphs: Array<{ city: CountryOverviewCityDto; canvas: HTMLCanvasElement }> = [];
+    const cityUnit = (city: CountryOverviewCityDto) => Math.min(3, 96 / Math.max(1, city.miniature.columns, city.miniature.rows));
+    const screenPoint = (city: CountryOverviewCityDto, x: number, y: number) => ({
+      x: Math.round(sceneX + city.atlasCenter.x * sceneScale + (x - city.miniature.columns / 2) * cityUnit(city)),
+      y: Math.round(sceneY + city.atlasCenter.y * sceneScale + (y - city.miniature.rows / 2) * cityUnit(city)),
+    });
     let sceneScale = 1;
     let sceneX = 0;
     let sceneY = 0;
@@ -164,6 +177,30 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       host.style.backgroundSize = `${overview.geography.cellSize * scale / 2}px ${overview.geography.cellSize * scale / 2}px`;
       host.style.backgroundPosition = `${sceneX}px ${sceneY}px`;
       if (rasterCanvas) rasterCanvas.style.transform = `translate3d(${sceneX}px, ${sceneY}px, 0) scale(${scale})`;
+      railwayCanvas.width = width;
+      railwayCanvas.height = height;
+      for (const railway of railways) {
+        const stationPoint = (id: string) => {
+          const city = citiesById.get(id)!;
+          const station = city.miniature.stations![0]!;
+          return screenPoint(city, station.x, station.y);
+        };
+        const points = railway.points.map(p => ({ x: Math.round(sceneX + p.x * scale), y: Math.round(sceneY + p.y * scale) }));
+        points[0] = stationPoint(railway.fromCityId);
+        points[points.length - 1] = stationPoint(railway.toCityId);
+        railwayContext.beginPath();
+        points.forEach((p, i) => i ? railwayContext.lineTo(p.x, p.y) : railwayContext.moveTo(p.x, p.y));
+        railwayContext.setLineDash([]);
+        railwayContext.strokeStyle = "#293c39"; railwayContext.lineWidth = 3; railwayContext.stroke();
+        railwayContext.strokeStyle = "#b5b69a"; railwayContext.lineWidth = 1; railwayContext.stroke();
+        railwayContext.setLineDash([1, 4]);
+        railwayContext.strokeStyle = "#293c39"; railwayContext.lineWidth = 4; railwayContext.stroke();
+      }
+      for (const { city, canvas } of cityGlyphs) {
+        const center = screenPoint(city, city.miniature.columns / 2, city.miniature.rows / 2);
+        canvas.style.transform = `translate3d(${center.x - Math.floor(canvas.width / 2)}px, ${center.y - Math.floor(canvas.height / 2)}px, 0)`;
+        canvas.hidden = center.x < -canvas.width || center.y < -canvas.height || center.x > width + canvas.width || center.y > height + canvas.height;
+      }
       // Read label geometry once and perform only compositor-friendly transform
       // writes during camera frames. Interleaving offset reads and style writes
       // forced a full document layout for every city on every wheel event.
@@ -175,7 +212,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       const placements = new Map(layoutCountryCityLabels(labelMetrics.map(({ city, width, height }) => ({ id: city.id,
         x: sceneX + city.atlasCenter.x * scale, y: sceneY + city.atlasCenter.y * scale, width, height,
         priority: city.id === activeCityRef.current ? 1 : 0,
-        offset: Math.max(28, (city.miniature.rows * CITY_LOD_CELL_SIZE / 2 + 3) * scale),
+        offset: Math.max(28, city.miniature.rows * cityUnit(city) / 2 + 10),
       })), { width, height }).map(point => [point.id, point]));
       for (const { city, label, leader } of labelMetrics) {
         const chosen = placements.get(city.id);
@@ -242,7 +279,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       if (disposed) return;
       // Compose immutable atlas tiles on a small CPU canvas. At four pixels
       // per world unit every4-unit semantic cell remains16x16px. Its material
-      // now has four finer tiles per axis; neither geography nor texture size
+      // now has two material tiles per axis; neither geography nor texture size
       // grows. Camera motion still moves just this one composited texture.
       const staticCanvas = document.createElement("canvas");
       staticCanvas.width = Math.round(columns * cellSize * rasterScale);
@@ -325,49 +362,34 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       host.dataset.countryGroundRoadPavementPixels = String(COUNTRY_ROAD_PAVEMENT_PIXELS);
       host.dataset.countryGroundRoadBakeMs = (performance.now() - roadBakeStarted).toFixed(2);
 
-      const railways = countryRailways(overview);
       host.dataset.countryRailways = String(railways.length);
-      for (const railway of railways) {
-        context.beginPath();
-        railway.points.forEach((p,i) => i ? context.lineTo(p.x*rasterScale,p.y*rasterScale) : context.moveTo(p.x*rasterScale,p.y*rasterScale));
-        context.strokeStyle="#293c39"; context.lineWidth=1.2*rasterScale; context.stroke();
-        context.strokeStyle="#b5b69a"; context.lineWidth=.45*rasterScale; context.stroke();
-        context.fillStyle="#293c39";
-        for(let i=1;i<railway.points.length;i++) {
-          const a=railway.points[i-1]!,b=railway.points[i]!;
-          const length=Math.abs(b.x-a.x)+Math.abs(b.y-a.y);
-          for(let d=0;d<length;d+=.8) {
-            const x=(a.x+(b.x-a.x)*d/length)*rasterScale, y=(a.y+(b.y-a.y)*d/length)*rasterScale;
-            context.fillRect(Math.round(x-(a.y===b.y?.15:.75)*rasterScale),Math.round(y-(a.y===b.y?.75:.15)*rasterScale),Math.max(1,Math.round((a.y===b.y?.3:1.5)*rasterScale)),Math.max(1,Math.round((a.y===b.y?1.5:.3)*rasterScale)));
-          }
-        }
-      }
       const airportPoints = new Map<string, { x: number; y: number }>();
       for (const city of overview.cities) {
         const miniature = city.miniature;
-        const left = city.atlasCenter.x - miniature.columns * CITY_LOD_CELL_SIZE / 2;
-        const top = city.atlasCenter.y - miniature.rows * CITY_LOD_CELL_SIZE / 2;
-        for (const block of miniature.blocks) {
-          const entry = getBuilding(block.family);
-          const source = textures.get(entry.stages[4]!)!;
-          const width = 1.45 * rasterScale;
-          const height = width * entry.spriteSize.height / entry.spriteSize.width;
-          context.drawImage(source, Math.round((left + block.x * CITY_LOD_CELL_SIZE) * rasterScale - width / 2),
-            Math.round((top + block.y * CITY_LOD_CELL_SIZE) * rasterScale - height / 2), Math.round(width), Math.round(height));
-        }
-        for (const station of miniature.stations ?? []) {
-          const entry=getBuilding("compact-railway-v1"),width=1.6*rasterScale,height=width*entry.spriteSize.height/entry.spriteSize.width;
-          context.drawImage(textures.get(entry.stages[4]!)!,Math.round((left+station.x*CITY_LOD_CELL_SIZE)*rasterScale-width/2),Math.round((top+station.y*CITY_LOD_CELL_SIZE)*rasterScale-height/2),Math.round(width),Math.round(height));
-        }
+        const unit = cityUnit(city);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(miniature.columns * unit) + 16;
+        canvas.height = Math.ceil(miniature.rows * unit) + 16;
+        canvas.className = "country-city-glyph";
+        canvas.dataset.cityId = city.id;
+        canvas.setAttribute("aria-hidden", "true");
+        const glyph = canvas.getContext("2d")!;
+        glyph.imageSmoothingEnabled = false;
+        const draw = (family: string, x: number, y: number, width = 6) => {
+          const entry = getBuilding(family);
+          const height = Math.max(1, Math.round(width * entry.spriteSize.height / entry.spriteSize.width));
+          glyph.drawImage(textures.get(entry.stages[4]!)!, Math.round(canvas.width / 2 + (x - miniature.columns / 2) * unit - width / 2),
+            Math.round(canvas.height / 2 + (y - miniature.rows / 2) * unit - height / 2), width, height);
+        };
+        for (const block of miniature.blocks) draw(block.family, block.x, block.y);
+        for (const station of miniature.stations ?? []) draw("compact-railway-v1", station.x, station.y, 8);
         for (const airport of miniature.airports) {
-          const airportPoint = { x: left + airport.x * CITY_LOD_CELL_SIZE, y: top + airport.y * CITY_LOD_CELL_SIZE };
-          airportPoints.set(city.id, airportPoint);
-          const entry = getBuilding("compact-airport-v1");
-          const width = 1.6 * rasterScale;
-          const height = width * entry.spriteSize.height / entry.spriteSize.width;
-          context.drawImage(textures.get(entry.stages[4]!)!, Math.round(airportPoint.x * rasterScale - width / 2),
-            Math.round(airportPoint.y * rasterScale - height / 2), Math.round(width), Math.round(height));
+          airportPoints.set(city.id, { x: city.atlasCenter.x + (airport.x - miniature.columns / 2) * CITY_LOD_CELL_SIZE,
+            y: city.atlasCenter.y + (airport.y - miniature.rows / 2) * CITY_LOD_CELL_SIZE });
+          draw("compact-airport-v1", airport.x, airport.y, 8);
         }
+        cityGlyphs.push({ city, canvas });
+        host.append(canvas);
       }
       if (disposed) return;
       host.prepend(staticCanvas);
@@ -376,7 +398,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       const routeInputs = overview.connections.flatMap((connection, index) => {
         const from = airportPoints.get(connection.fromCityId);
         const to = airportPoints.get(connection.toCityId);
-        return from && to ? [{ from, to, index, startsAtAirport: true }] : [];
+        return from && to ? [{ from, to, index, startsAtAirport: true, fromCityId: connection.fromCityId, toCityId: connection.toCityId }] : [];
       }).slice(0,5);
       const headingImages = await Promise.all((["north","east","south","west"] as const).map(async heading => {
         const image = await loadAtlasImage(microAmbientSprite("aircraft","regional",heading).url); return image.src;
@@ -398,6 +420,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
           delay: index * 1_250,
           route: buildAtlasFlightGeometry(route.from, route.to, `country:${countryId}:${index}`, 18),
           startsAtAirport: route.startsAtAirport,
+          fromCityId: route.fromCityId, toCityId: route.toCityId, from: route.from, to: route.to,
         });
       }
       let previousFlightFrame = performance.now();
@@ -412,8 +435,15 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
           if (flight.view.hidden) continue;
           const sample = sampleAtlasFlight(flight.route, progress);
           const endpointScale = atlasAircraftEndpointScale(progress, flight.startsAtAirport, true);
-          const screenX = sceneX + sample.x * sceneScale;
-          const screenY = sceneY + sample.y * sceneScale;
+          const endpointDelta = (id: string, point: { x: number; y: number }) => {
+            const city = citiesById.get(id)!;
+            const airport = city.miniature.airports.at(-1)!;
+            const screen = screenPoint(city, airport.x, airport.y);
+            return { x: screen.x - sceneX - point.x * sceneScale, y: screen.y - sceneY - point.y * sceneScale };
+          };
+          const fromDelta = endpointDelta(flight.fromCityId, flight.from), toDelta = endpointDelta(flight.toCityId, flight.to);
+          const screenX = sceneX + sample.x * sceneScale + fromDelta.x * (1 - progress) + toDelta.x * progress;
+          const screenY = sceneY + sample.y * sceneScale + fromDelta.y * (1 - progress) + toDelta.y * progress;
           const heading = (Math.round(sample.angle / (Math.PI / 2)) + 5) % 4;
           if (flight.view.dataset.heading !== String(heading)) { flight.view.src=headingImages[heading]!; flight.view.dataset.heading=String(heading); }
           flight.view.style.opacity=String(endpointScale);
@@ -451,10 +481,10 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       const worldY = (screenY - sceneY) / Math.max(.001, sceneScale);
       const focus = { x: screenX / Math.max(1, width), y: screenY / Math.max(1, height) };
       const cityRect = (city: CountryOverviewCityDto) => ({
-        minX: city.atlasCenter.x - city.miniature.columns * CITY_LOD_CELL_SIZE / 2,
-        minY: city.atlasCenter.y - city.miniature.rows * CITY_LOD_CELL_SIZE / 2,
-        maxX: city.atlasCenter.x + city.miniature.columns * CITY_LOD_CELL_SIZE / 2,
-        maxY: city.atlasCenter.y + city.miniature.rows * CITY_LOD_CELL_SIZE / 2,
+        minX: city.atlasCenter.x - (city.miniature.columns * cityUnit(city) / 2 + 8) / sceneScale,
+        minY: city.atlasCenter.y - (city.miniature.rows * cityUnit(city) / 2 + 8) / sceneScale,
+        maxX: city.atlasCenter.x + (city.miniature.columns * cityUnit(city) / 2 + 8) / sceneScale,
+        maxY: city.atlasCenter.y + (city.miniature.rows * cityUnit(city) / 2 + 8) / sceneScale,
       });
       const city = event.deltaY < 0 && next === MAX_ZOOM
         ? atlasHitTarget({ x: worldX, y: worldY }, orderedCities, candidate => [cityRect(candidate)]) : undefined;
@@ -517,6 +547,8 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       disposeGestures();
       for (const flight of flights) flight.view.remove();
       rasterCanvas?.remove();
+      railwayCanvas.remove();
+      for (const glyph of cityGlyphs) glyph.canvas.remove();
       host.style.backgroundImage = "";
       host.style.backgroundSize = "";
       host.style.backgroundPosition = "";

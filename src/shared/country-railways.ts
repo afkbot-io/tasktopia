@@ -13,5 +13,5 @@ export function countryRailways(overview: CountryOverviewDto) {
     if(cell) positions.set(station.taskId,Math.floor(x/cellSize)===cell.x&&Math.floor(y/cellSize)===cell.y?{x,y}:{x:(cell.x+.5)*cellSize,y:(cell.y+.5)*cellSize});
     return cell?{id:station.taskId,cityId:city.id,cell}:null;
   })).filter(stop=>stop!==null);
-  return atlasRailRoutes(stops,land).map(route=>({id:route.id,points:[positions.get(route.from.id)!,...route.cells.map(cell=>({x:(cell.x+.5)*cellSize,y:(cell.y+.5)*cellSize})),positions.get(route.to.id)!]}));
+  return atlasRailRoutes(stops,land).map(route=>({id:route.id,fromCityId:route.from.cityId,toCityId:route.to.cityId,points:[positions.get(route.from.id)!,...route.cells.map(cell=>({x:(cell.x+.5)*cellSize,y:(cell.y+.5)*cellSize})),positions.get(route.to.id)!]}));
 }
