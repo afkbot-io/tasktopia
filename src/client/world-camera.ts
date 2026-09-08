@@ -63,10 +63,10 @@ export function clampCameraPosition(
   const right = (bounds.maxX + 1) * cellSize * scale;
   const top = bounds.minY * cellSize * scale;
   const bottom = (bounds.maxY + 1) * cellSize * scale;
-  const minX = screen.width - right;
-  const maxX = -left;
-  const minY = screen.height - bottom;
-  const maxY = -top;
+  const minX = screen.width / 2 - right;
+  const maxX = screen.width / 2 - left;
+  const minY = screen.height / 2 - bottom;
+  const maxY = screen.height / 2 - top;
   return {
     x: minX > maxX ? (minX + maxX) / 2 : Math.max(minX, Math.min(maxX, position.x)),
     y: minY > maxY ? (minY + maxY) / 2 : Math.max(minY, Math.min(maxY, position.y)),

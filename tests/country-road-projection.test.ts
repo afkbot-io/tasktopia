@@ -10,7 +10,7 @@ function mapFixture(cells: PlanetTerrainCell[] = [{ id: "macro:0:0", q: 0, r: 0,
   const country: ProjectedPlanetCountry = { id: "country", name: "Country", seed: 424242, worldVersion: 1,
     cityCount: 2, districtCount: 2, buildingCount: 20, unfinishedBuildingCount: 0, progress: 100,
     worldBounds: { minX: 0, minY: 0, maxX: 320, maxY: 160 }, cities: [],
-    continent: 0, cells, airports: [], districtIcons: [], center: { x: 0, y: 0 }, color: "green", accent: "green",
+    continent: 0, cells, airports: [], districtIcons: [], cityAnchors: {}, center: { x: 0, y: 0 }, color: "green", accent: "green",
   };
   const geography = buildCountryGeography({ countryId: country.id, seed: country.seed,
     macroCells: cells.map(cell => ({ ...cell, ownerCountryId: country.id })) });

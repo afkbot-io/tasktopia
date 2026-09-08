@@ -212,8 +212,8 @@ describe("published world chunk payload", () => {
     const fingerprint = createHash("sha256").update(JSON.stringify(decorations)).digest("hex");
 
     expect(decorations.filter((item) => item.kind === "fence-vertical" && (item.origin.x === 63 || item.origin.x === 64))).toEqual([]);
-    expect(decorations.some((item) => /flower|rock-cluster|reed|shrub-patch/.test(item.kind))).toBe(false);
-    // Reviewed overlapping-forest policy; deterministic across chunk boundaries.
-    expect(fingerprint).toBe("d287779ba384de14d8409df17894962f60c36d3a46f3ef41770e0de9afe989d1");
+    expect(decorations.some((item) => /flower|rock-|hill-rocky|hill-small|reed|shrub-patch/.test(item.kind))).toBe(false);
+    // Reviewed forest policy, four boat variants and retired hill-rock sprites.
+    expect(fingerprint).toBe("f221e6c201b1cd97e1c2d5e0ad8cb7de9130db4c16fb169da8aa22a065cec0b9");
   });
 });

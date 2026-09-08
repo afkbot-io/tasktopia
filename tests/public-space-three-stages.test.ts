@@ -11,9 +11,9 @@ it("plants narrow residual strips instead of turning every cell into a pavement 
     const earth = greenAreaSurfaceLayout(cells, 1, "urban-park");
     const planting = greenAreaSurfaceLayout(cells, 3, "urban-park");
     const ready = greenAreaSurfaceLayout(cells, 5, "urban-park");
-    expect(earth.every(c => c.role === "EARTH")).toBe(true);
+    expect(earth).toEqual(ready);
     expect(ready.filter(c => c.role === "MEADOW").length).toBeGreaterThanOrEqual(Math.max(1, cells.length - 1));
-    expect(planting.filter(c => c.role === "MEADOW").length).toBeLessThan(ready.filter(c => c.role === "MEADOW").length);
+    expect(planting).toEqual(ready);
     expect(greenAreaPathCells(cells).length).toBeLessThanOrEqual(1);
     expect(taskParkDecorLayout(cells, 5, "urban-park", 12)).toEqual([]);
   }

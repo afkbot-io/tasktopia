@@ -19,6 +19,25 @@ function cellKey(cell: { q: number; r: number }): string {
 }
 
 describe("planet atlas projection", () => {
+  it("keeps city internal distances fixed during zoom and flight endpoints on airports", () => {
+    const base = projectPlanetAtlas(fixture);
+    const maps = [.6, 1, 2.6].map(zoom => projectProjectedPlanetMap(base, { panX: .2, panY: -.1, zoom }));
+    const offsets = maps.map(map => {
+      const country = map.countries[0]!;
+      const origin = country.districtIcons[0]!.center;
+      return [...country.districtIcons.map(icon => icon.center), ...country.airports.map(a => a.center)]
+        .map(p => ({ x: p.x - origin.x, y: p.y - origin.y }));
+    });
+    expect(offsets[1]).toEqual(offsets[0]);
+    expect(offsets[2]).toEqual(offsets[0]);
+    for (const map of maps) {
+      const airports = new Map(map.countries.flatMap(c => c.airports.map(a => [a.id, a.center] as const)));
+      for (const route of map.routes) {
+        expect(route.from).toEqual(airports.get(route.fromAirportId!));
+        expect(route.to).toEqual(airports.get(route.toAirportId));
+      }
+    }
+  });
   it("is deterministic, connected and never assigns one hex to two countries", () => {
     const first = projectPlanetAtlas(fixture);
     const second = projectPlanetAtlas(fixture);
@@ -205,8 +224,8 @@ describe("planet atlas projection", () => {
   it("lays out equal screen-space country labels without collisions", () => {
     const map = projectPlanetMap(fixture, { panX: 0, panY: 0, zoom: 1 });
     const labels = layoutPlanetCountryLabels(map.countries, map.width, map.height);
-    expect(new Set(labels.map((label) => label.width))).toEqual(new Set([132]));
-    expect(new Set(labels.map((label) => label.height))).toEqual(new Set([34]));
+    expect(new Set(labels.map((label) => label.width))).toEqual(new Set([84]));
+    expect(new Set(labels.map((label) => label.height))).toEqual(new Set([20]));
     for (let left = 0; left < labels.length; left += 1) for (let right = left + 1; right < labels.length; right += 1) {
       const a = labels[left]!;
       const b = labels[right]!;

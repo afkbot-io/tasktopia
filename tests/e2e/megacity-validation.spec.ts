@@ -37,7 +37,7 @@ test("opens and captures the 100-task megacity", async ({ page }) => {
     .toBeGreaterThan(0);
   await expect.poll(async () => Number(await host.getAttribute("data-world-objects") ?? 0), { timeout: 60_000 })
     .toBeGreaterThanOrEqual(100);
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Районы", exact: true }).click();
   await page.waitForTimeout(1_000);
   await page.screenshot({
     path: path.join(screenshotDirectory!, "megacity-overview.png"),

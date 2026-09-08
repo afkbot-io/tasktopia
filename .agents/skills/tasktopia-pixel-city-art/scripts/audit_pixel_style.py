@@ -363,6 +363,9 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
             audit_image(relative, f"transitions/{material}/{direction}", expected_size=(CELL, CELL))
 
 
+    for index, relative in enumerate(manifest.get("atlasClouds", [])):
+        audit_image(relative, f"atlasClouds/{index}", expected_size=(64, 32))
+
     errors.extend(audit_micro_ambient(manifest, runtime, manifest_path.parent))
     for key, entry in manifest.get("microAmbient", {}).get("sprites", {}).items():
         audit_image(entry["path"], key, expected_size=tuple(entry["size"]))

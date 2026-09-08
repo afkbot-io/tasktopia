@@ -14,6 +14,7 @@ export type ProjectedPlanetCountry = PlanetCountryDto & {
   cells: PlanetTerrainCell[];
   airports: PlanetAirport[];
   districtIcons: PlanetDistrictIcon[];
+  cityAnchors: Record<string, PlanetPoint>;
   center: PlanetPoint;
   color: string;
   accent: string;
@@ -105,7 +106,7 @@ function inside(cell: PlanetHex, columns: number, rows: number): boolean {
   return cell.q >= 2 && cell.r >= 2 && cell.q < columns - 2 && cell.r < rows - 2;
 }
 
-function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
+export function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
   return {
     x: cell.q * radius * 2 + radius,
     y: cell.r * radius * 2 + radius,
@@ -269,7 +270,7 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
       terrain: projectedWorldTerrain(country, cell, rawCells) ?? terrainForCell(cell, countryHash, center, hexRadius),
     }));
     const palette = COUNTRY_COLORS[countryHash % COUNTRY_COLORS.length]!;
-    return { ...country, continent, cells, airports: buildAirports(country, cells, hexRadius), districtIcons: buildDistrictIcons(country,cells,hexRadius), center, color: palette[0], accent: palette[1] };
+    return { ...country, continent, cells, airports: buildAirports(country, cells, hexRadius), districtIcons: buildDistrictIcons(country,cells,hexRadius), cityAnchors: Object.fromEntries(country.cities.map(city => [city.id, projectPlanetWorldPoint(country, city.center, cells, hexRadius).point])), center, color: palette[0], accent: palette[1] };
   });
 
   const coast = new Map<string, PlanetTerrainCell>();
@@ -381,7 +382,7 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
   return { width: pixelWidth, height: pixelHeight, hexRadius, viewBox: `0 0 ${pixelWidth} ${pixelHeight}`, oceanCells, coastCells, countries, routes, clouds, stars, edgeFog };
 }
 
-function affineProject(point: PlanetPoint, base: Pick<ProjectedPlanetAtlas, "width" | "height">, camera: PlanetMapCamera): PlanetPoint {
+export function affineProject(point: PlanetPoint, base: Pick<ProjectedPlanetAtlas, "width" | "height">, camera: PlanetMapCamera): PlanetPoint {
   const zoom = Math.max(.82, Math.min(8.5, camera.zoom));
   const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
   const scale = fit * zoom;
@@ -405,6 +406,16 @@ function projectCell(cell: PlanetTerrainCell, base: ProjectedPlanetAtlas, camera
   };
 }
 
+/** Camera moves city anchors; internal city offsets stay at the overview scale. */
+function projectPlanetCityPoint(point: PlanetPoint, city: PlanetCountryDto["cities"][number], country: ProjectedPlanetCountry,
+  base: ProjectedPlanetAtlas, camera: PlanetMapCamera): PlanetPoint {
+  const anchor = country.cityAnchors[city.id]!;
+  const center = affineProject(anchor, base, camera);
+  const nominal = affineProject(point, base, { panX: 0, panY: 0, zoom: 1 });
+  const origin = affineProject(anchor, base, { panX: 0, panY: 0, zoom: 1 });
+  return { x: center.x + nominal.x - origin.x, y: center.y + nominal.y - origin.y };
+}
+
 export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: PlanetMapCamera): ProjectedPlanetMap {
   // The atmosphere and its clip aperture scale with the globe. Pan remains a
   // content operation, so the user can still explore the surface without the
@@ -417,13 +428,15 @@ export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: Pl
   };
   const countries = base.countries.map((country): PlanetMapCountry => {
     const cells = country.cells.map((cell) => projectCell(cell, base, camera));
-    const airports = country.airports.map((airport): PlanetMapAirport => ({ id: airport.id, countryId: airport.countryId, cityIndex: airport.cityIndex, cellId: airport.cellId, center: affineProject(airport.point, base, camera) }));
-    return { ...country, cells, airports, districtIcons:country.districtIcons.map(icon=>({id:icon.id,cityId:icon.cityId,center:affineProject(icon.point,base,camera)})), center: affineProject(country.center, base, camera) };
+    const citiesById = new Map(country.cities.map(city => [city.id, city]));
+    const airports = country.airports.map((airport): PlanetMapAirport => ({ id: airport.id, countryId: airport.countryId, cityIndex: airport.cityIndex, cellId: airport.cellId, center: projectPlanetCityPoint(airport.point, country.cities[airport.cityIndex]!, country, base, camera) }));
+    return { ...country, cells, airports, districtIcons:country.districtIcons.map(icon=>({id:icon.id,cityId:icon.cityId,center:projectPlanetCityPoint(icon.point,citiesById.get(icon.cityId)!,country,base,camera)})), center: affineProject(country.center, base, camera) };
   });
+  const airportCenters = new Map(countries.flatMap(country => country.airports.map(airport => [airport.id, airport.center] as const)));
   const routes = base.routes.map((route): PlanetRoute => {
-    const from = affineProject(route.from, base, camera);
+    const from = airportCenters.get(route.fromAirportId ?? "") ?? affineProject(route.from, base, camera);
     const control = affineProject(route.control, base, camera);
-    const to = affineProject(route.to, base, camera);
+    const to = airportCenters.get(route.toAirportId) ?? affineProject(route.to, base, camera);
     return { ...route, from, control, to, path: atlasRoutePath(from, control, to) };
   });
   const clouds = base.clouds.map((cloud) => {
@@ -462,12 +475,12 @@ function rectanglesOverlap(left: PlanetCountryLabelLayout, right: PlanetCountryL
 }
 
 export function layoutPlanetCountryLabels(countries: PlanetMapCountry[], width: number, height: number): PlanetCountryLabelLayout[] {
-  const labelWidth = 132;
-  const labelHeight = 34;
+  const labelWidth = 84;
+  const labelHeight = 20;
   const margin = 12;
   const placed: PlanetCountryLabelLayout[] = [];
   const offsets = [
-    { x: -labelWidth / 2, y: -62 }, { x: 18, y: -38 }, { x: -labelWidth - 18, y: -38 },
+    { x: -labelWidth / 2, y: -42 }, { x: 18, y: -38 }, { x: -labelWidth - 18, y: -38 },
     { x: -labelWidth / 2, y: 24 }, { x: 26, y: 14 }, { x: -labelWidth - 26, y: 14 },
   ];
   for (const country of [...countries].sort((left, right) => right.progress - left.progress || left.id.localeCompare(right.id))) {

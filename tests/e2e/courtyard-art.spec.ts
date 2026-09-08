@@ -150,13 +150,13 @@ test("published developed families and completed courtyard furniture render thro
     y: (fixture.bounds.minY + fixture.bounds.maxY + 1) / 2 }, tasks.size);
   await page.mouse.move(15, 20);
   await captureMap(page, join(output, "city.png"));
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Районы", exact: true }).click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-district-boundary-visible", "true");
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-district-boundary-groups", "3");
   expect(Number(await page.locator(".world-canvas").getAttribute("data-district-boundary-cells"))).toBeGreaterThan(0);
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await captureMap(page, join(output, "districts.png"));
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Город", exact: true }).click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-district-boundary-visible", "false");
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await canvas.hover(); await page.mouse.wheel(0, -1600);

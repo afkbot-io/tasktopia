@@ -53,9 +53,9 @@ test("480real tasks across20sprints keep compact art, one resident scene and acc
   const tasks = [...new Map([...scene.chunks.flatMap(c => c.tasks), ...scene.completedDistrictSnapshots.flatMap(s => s.tasks)].map(t => [t.id, t])).values()];
   expect(tasks).toHaveLength(480); expect(new Set(tasks.map(t => t.districtId)).size).toBe(20);
   await page.screenshot({ path: `${directory}/city.png`, fullPage: true });
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Районы", exact: true }).click();
   await page.screenshot({ path: `${directory}/districts.png`, fullPage: true });
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Город", exact: true }).click();
   const examples = tasks.filter(t => t.taskNumber <= 240 && (t.taskNumber - 1) % 24 >= 3 && (t.taskNumber - 1) % 24 < 6).sort((a, b) => a.taskNumber - b.taskNumber);
   expect(examples).toHaveLength(30); expect(new Set(examples.map(t => t.buildingType)).size).toBe(10);
   await page.locator("canvas[aria-label='Интерактивная карта города']").hover(); await page.mouse.wheel(0, -600);
@@ -151,6 +151,6 @@ test("whole20sprint city fits one review capture without changing its geography"
   await expect(host).toHaveAttribute("data-ground-bake-queue", "0");
   await page.mouse.move(10, 15);
   await page.screenshot({ path: `${directory}/city-whole.png`, fullPage: true });
-  await page.getByRole("button", { name: "Границы", exact: true }).click();
+  await page.getByRole("button", { name: "Районы", exact: true }).click();
   await page.screenshot({ path: `${directory}/districts-whole.png`, fullPage: true });
 });

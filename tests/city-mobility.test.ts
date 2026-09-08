@@ -30,6 +30,7 @@ describe("deterministic joint city mobility", () => {
   it("spawns native cars and people only off conflict zones with no initial overlaps", () => {
     const input = mobilityGrid(), city = createCityMobility(input);
     expect(city.agents.filter(agent => agent.kind === "CAR")).toHaveLength(12);
+    expect(new Set(city.agents.filter(agent => agent.kind === "CAR").map(agent => agent.variant)).size).toBe(8);
     expect(city.agents.filter(agent => agent.kind === "WALKER")).toHaveLength(16);
     expect(city.agents.every(agent => !input.crosswalks.has(key(agent.current)))).toBe(true);
     expect(city.metrics.vehicleUnsafePairs).toBe(0);

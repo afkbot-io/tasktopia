@@ -45,7 +45,7 @@ print(json.dumps(result))`], { encoding: "utf8" });
     expect(report.counts.buildings).toBe(catalog.buildings.length);
     expect(report.counts.stages).toBe(report.counts.buildings * 5);
     expect(report.counts.props).toBe(Object.keys(manifest.props).length);
-    expect(report.counts.vehicles).toBe(15); // Four cars, two people, eight animals and one plane.
+    expect(report.counts.vehicles).toBe(19); // Eight cars, two people, eight animals and one plane.
     expect(report.counts.areas).toBe(7);
     expect(report.counts.terrainFamilies).toBe(12);
     expect(report.errors).toEqual([]);

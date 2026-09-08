@@ -1,5 +1,5 @@
 import type { Cell } from "../shared/contracts";
-import { microAmbientSprite, type MicroDirection } from "../shared/micro-ambient";
+import { MICRO_CAR_VARIANTS, MICRO_PERSON_VARIANTS, microAmbientSprite, type MicroDirection } from "../shared/micro-ambient";
 import { nextSeededRandom } from "./agent-routing";
 import { buildMobilityNetwork, mobilityCellKey as key, mobilityNetworkSignature, searchMobilityRoutes, type MobilityNetwork, type MobilityNetworkInput, type MobilityZone } from "./city-mobility-network";
 
@@ -221,7 +221,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         if (!current) break;
         const count = actors.filter(actor => actor.kind === kind).length;
         const actor: Agent = {
-          id: `mobility-${input.seed >>> 0}-${idCounter}`, kind, variant: kind === "CAR" ? ["blue", "red", "taxi", "van"][count % 4]! : ["ochre", "teal"][count % 2]!,
+          id: `mobility-${input.seed >>> 0}-${idCounter}`, kind, variant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
           current, next: current, progress: 0, position: { x: current.x + .5, y: current.y + .5 }, direction: "east",
           speed: kind === "CAR" ? .0021 + random() * .00045 : .0012 + random() * .00018,
           steps: 0, activity: "NONE", waitMs: 0, yieldReason: "NONE", route: [current], rng: Math.floor(random() * 0x7fff_ffff) || 1, restMs: 0,

@@ -2,7 +2,7 @@ import manifest from "../../assets/pixel-city-pack/micro-ambient-manifest.json";
 import { gameAssetUrl } from "./catalog";
 import type { Cell } from "./contracts";
 
-export const MICRO_CAR_VARIANTS = ["blue", "red", "taxi", "van"] as const;
+export const MICRO_CAR_VARIANTS = ["blue", "red", "taxi", "van", "pickup", "minibus", "hatchback", "delivery"] as const;
 export const MICRO_PERSON_VARIANTS = ["ochre", "teal"] as const;
 export const MICRO_ANIMAL_SPECIES = ["fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"] as const;
 export const MICRO_DIRECTIONS = ["north", "east", "south", "west"] as const;
@@ -34,9 +34,9 @@ export function microDirection(current: Cell, next: Cell, stoppedDirection: Micr
   return dx > 0 ? "east" : "west";
 }
 
-/** Animals deliberately have one neutral pose: time and movement do not animate it. */
+/** Direction changes the authored silhouette without rotating or stretching pixels. */
 export function microAmbientSprite(kind: MicroAmbientKind, variant: string, direction: MicroDirection = "south"): MicroAmbientSprite {
-  const key = `micro-${kind}-${variant}-${kind === "animal" ? "static" : direction}`;
+  const key = `micro-${kind}-${variant}-${direction}`;
   const sprite = sprites.get(key);
   if (!sprite) throw new Error(`Unknown micro ambient sprite: ${key}`);
   return sprite;

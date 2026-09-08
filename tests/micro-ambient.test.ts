@@ -25,13 +25,13 @@ describe("native top-down micro ambient", () => {
     }
   });
 
-  it("has one static pose per animal with no hidden walk frames", () => {
+  it("selects four distinct directional poses for every animal", () => {
     for (const species of MICRO_ANIMAL_SPECIES) {
       const sprites = MICRO_DIRECTIONS.map((direction) => microAmbientSprite("animal", species, direction));
-      expect(new Set(sprites.map((sprite) => sprite.url)).size).toBe(1);
-      expect(sprites[0]).toMatchObject({ direction: "static", width: 8, height: 8, frameCount: 1 });
+      expect(new Set(sprites.map((sprite) => sprite.url)).size).toBe(4);
+      expect(sprites[0]).toMatchObject({ direction: "north", width: 8, height: 8, frameCount: 1 });
     }
-    expect(Object.keys(manifest.sprites).filter((key) => key.startsWith("micro-animal-"))).toHaveLength(8);
+    expect(Object.keys(manifest.sprites).filter((key) => key.startsWith("micro-animal-"))).toHaveLength(32);
   });
 
   it("maps compass directions explicitly and rejects unpublished variants", () => {
@@ -50,8 +50,8 @@ describe("native top-down micro ambient", () => {
   });
 
   it("publishes every preload from pinned new source sheets and identical runtime/public bytes", () => {
-    expect(microAmbientAssetUrls()).toHaveLength(36);
-    expect(new Set(microAmbientAssetUrls()).size).toBe(36);
+    expect(microAmbientAssetUrls()).toHaveLength(76);
+    expect(new Set(microAmbientAssetUrls()).size).toBe(76);
     for (const source of Object.values(manifest.sources)) {
       expect(sha(resolve("assets/pixel-city-pack", source.path))).toBe(source.sha256);
     }

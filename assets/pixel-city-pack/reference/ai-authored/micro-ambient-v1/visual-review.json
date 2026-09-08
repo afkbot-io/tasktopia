@@ -3,9 +3,32 @@
   "preview": "screenshots/micro-ambient-v1.png",
   "review": "Native 8px/16px sprites and nearest6x sheet inspected. Direct overhead roof/head/back planes, muted square clusters, no tall side elevations. Animals revised to broad silhouettes and accepted after ears/tails/body distinction review; one static pose, no gait. Source projection overrides retired V6 upright ambient sizes.",
   "sources": {
-    "cars": {"accepted": true, "sha256": "1a03955a49b400bac169fc5d832ee1ddc230340fa15569bde927246b2c4a7a5c"},
-    "people": {"accepted": true, "sha256": "bba0f57e1884fabbd553ecd0f82ce2d86a8ef240706e999441b19d9e634de52b", "revision": 2, "preview": "screenshots/micro-people-v2.png", "review": "Native 8x8 and nearest16x inspected by author and parent reviewer. All eight occupied bounds are exactly [2,2,5,6], with identical registration and a 3x4 head/shoulder silhouette. North/south differ by their lower color cluster; east/west retain face-side/color cues. Ochre remains bright in the east view. No extra facial details added at this scale. Only authored cells are extracted and packed; source proportions and paint remain untouched."},
-    "animals": {"accepted": true, "sha256": "b6d6be38648b71a240fc1019d7760334f7eed3f95f7f92ec676b4f18b3097761"},
-    "aircraft": {"accepted": true, "sha256": "249d483594d7f407c78781a4c2022c4e8db0e10a4b0e4c9111a5e32f5533ac67"}
+    "cars": {
+      "accepted": true,
+      "sha256": "1a03955a49b400bac169fc5d832ee1ddc230340fa15569bde927246b2c4a7a5c"
+    },
+    "people": {
+      "accepted": true,
+      "sha256": "bba0f57e1884fabbd553ecd0f82ce2d86a8ef240706e999441b19d9e634de52b",
+      "revision": 2,
+      "preview": "screenshots/micro-people-v2.png",
+      "review": "Native 8x8 and nearest16x inspected by author and parent reviewer. All eight occupied bounds are exactly [2,2,5,6], with identical registration and a 3x4 head/shoulder silhouette. North/south differ by their lower color cluster; east/west retain face-side/color cues. Ochre remains bright in the east view. No extra facial details added at this scale. Only authored cells are extracted and packed; source proportions and paint remain untouched."
+    },
+    "animals": {
+      "accepted": true,
+      "sha256": "5ba13bba795c0a0c99f2f133286550121f157bcd57a801533973df9684ebb5c9",
+      "review": "AI visual inspection of source and normalized contact sheet on 2026-09-08. Four compass views are distinct; source row 2 cars points west and row 4 east, mapped accordingly. No runtime rotation. Native silhouettes remain inside declared bounds.",
+      "preview": "screenshots/micro-ambient-v1.png"
+    },
+    "aircraft": {
+      "accepted": true,
+      "sha256": "249d483594d7f407c78781a4c2022c4e8db0e10a4b0e4c9111a5e32f5533ac67"
+    },
+    "cars-extra": {
+      "accepted": true,
+      "sha256": "ee27db1f7921dc16ce82a974d3e6264b0bdedde18718392d32b5ea6c143c6f2e",
+      "review": "AI visual inspection of source and normalized contact sheet on 2026-09-08. Four compass views are distinct; source row 2 cars points west and row 4 east, mapped accordingly. No runtime rotation. Native silhouettes remain inside declared bounds.",
+      "preview": "screenshots/micro-ambient-v1.png"
+    }
   }
 }

@@ -18,6 +18,8 @@ export type PlanetCountryDto = {
     id: string; center: Cell;
     districts: Array<{ id: string; center: Cell }>;
     airports: Array<{ taskId: string; center: Cell }>;
+    /** Completed task-linked railway stations; absent in older snapshots. */
+    stations?: Array<{ taskId: string; center: Cell }>;
   }>;
 };
 

@@ -15,7 +15,7 @@ export function projectCountryCityMiniature(input: {
     cellSize,
     columns: Math.max(1, (bounds.maxX - bounds.minX + 1) / cellSize),
     rows: Math.max(1, (bounds.maxY - bounds.minY + 1) / cellSize),
-    blocks: [], airports: [],
+    blocks: [], airports: [], stations: [],
   };
   if (!layout) return miniature;
   const districts = new Map(layout.districtLayouts.map((district) => [district.id, district.districtId]));
@@ -33,10 +33,10 @@ export function projectCountryCityMiniature(input: {
       x: (block.origin.x + block.width / 2 - bounds.minX) / cellSize,
       y: (block.origin.y + block.height / 2 - bounds.minY) / cellSize, family,
     });
-    for (const airport of placed.filter((placement) => placement.serviceRole === "AIRPORT" && placement.constructionStage === 5)) {
+    for (const airport of placed.filter((placement) => (placement.serviceRole === "AIRPORT" || placement.serviceRole === "RAILWAY") && placement.constructionStage === 5)) {
       const slot = blockSlots(block).find((candidate) => candidate.key === airport.slotKey)!;
       const point = blockSlotAirportPoint(slot);
-      miniature.airports.push({ taskId: airport.taskId,
+      (airport.serviceRole === "AIRPORT" ? miniature.airports : miniature.stations!).push({ taskId: airport.taskId,
         x: (point.x - bounds.minX) / cellSize,
         y: (point.y - bounds.minY) / cellSize,
       });

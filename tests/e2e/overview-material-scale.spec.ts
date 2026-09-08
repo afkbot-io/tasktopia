@@ -58,7 +58,7 @@ test("finer overview materials retain selected geography and bounded raster on r
   const overview = await (await loaded).json() as CountryOverviewDto;
   const country = page.locator(".country-overview");
   await expect(country).toHaveAttribute("data-country-ready", "true");
-  await expect(country).toHaveAttribute("data-country-material-subdivisions", "4");
+  await expect(country).toHaveAttribute("data-country-material-subdivisions", "2");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   const dimensions = await page.locator(".country-overview-raster").evaluate((canvas: HTMLCanvasElement) => ({
     width: canvas.width, height: canvas.height, scale: new DOMMatrixReadOnly(getComputedStyle(canvas).transform).a,
@@ -66,7 +66,7 @@ test("finer overview materials retain selected geography and bounded raster on r
   const { columns, rows, cellSize } = overview.geography;
   expect(dimensions.width).toBe(columns * cellSize * 4);
   expect(dimensions.height).toBe(rows * cellSize * 4);
-  await expect(country).toHaveAttribute("data-country-material-patches", String(columns * rows * 16));
+  await expect(country).toHaveAttribute("data-country-material-patches", String(columns * rows * 4));
   const materialScreenSize = cellSize / 4 * dimensions.scale;
   const blockGlyphScreenWidth = 1.45 * dimensions.scale;
   expect(materialScreenSize).toBeLessThan(blockGlyphScreenWidth);

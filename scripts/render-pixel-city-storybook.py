@@ -132,16 +132,18 @@ def load_storybook_data() -> tuple[dict[str, Any], list[str]]:
                             else profile == "TASKTOPIA_COMPACT_PARK_HIGH_45_V1" if compact_park
                             else (key in COURTYARD_GEOMETRY and profile == COURTYARD_PROFILE
                                   and (entry["size"], entry["footprintCells"], entry["anchorPx"]) == COURTYARD_GEOMETRY[key]) if key.startswith("courtyard-")
+                            else profile == "TASKTOPIA_MICRO_WATERCRAFT_V2" if key.startswith("boat-")
                             else profile.startswith(("TASKTOPIA_V5_", "TASKTOPIA_V6_")))
         if entry.get("artSource") == "AI_AUTHORED" and not accepted_profile:
             errors.append(f"{key}: active authored prop does not use its accepted visual profile")
 
     vehicles: list[dict[str, Any]] = []
     micro = manifest["microAmbient"]["sprites"]
-    for kind, variants in (("car", ("blue", "red", "taxi", "van")), ("person", ("ochre", "teal")), ("aircraft", ("regional",)), ("animal", ("fox", "deer", "rabbit", "boar", "duck", "sheep", "dog", "cat"))):
+    for kind in ("car", "person", "aircraft", "animal"):
+        variants = sorted({entry["variant"] for entry in micro.values() if entry["kind"] == kind})
         for variant in variants:
             views = []
-            for direction in (("static",) if kind == "animal" else ("north", "east", "south", "west")):
+            for direction in ("north", "east", "south", "west"):
                 key = f"micro-{kind}-{variant}-{direction}"
                 view = micro[key]
                 path = RUNTIME / view["path"]
