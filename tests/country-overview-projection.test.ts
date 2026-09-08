@@ -23,6 +23,11 @@ describe("semantic country projection", () => {
     expect(projectCountryCityMiniature({sourceBounds:layout.bounds,layout}).airports).toEqual([]);
     placement.constructionStage=5;
     expect(projectCountryCityMiniature({sourceBounds:layout.bounds,layout}).airports).toHaveLength(1);
+    placement.serviceRole="RAILWAY"; placement.constructionStage=4;
+    expect(projectCountryCityMiniature({sourceBounds:layout.bounds,layout}).stations).toEqual([]);
+    placement.constructionStage=5;
+    const served=projectCountryCityMiniature({sourceBounds:layout.bounds,layout});
+    expect(served.stations).toHaveLength(1); expect(served.airports).toEqual([]);
     expect(JSON.stringify(first)).not.toMatch(/districtCodes|coverageCodes|terrainCodes|footprint/);
   });
   it("does not fabricate a built core before the first task", () => {

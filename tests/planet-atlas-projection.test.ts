@@ -205,8 +205,8 @@ describe("planet atlas projection", () => {
   it("lays out equal screen-space country labels without collisions", () => {
     const map = projectPlanetMap(fixture, { panX: 0, panY: 0, zoom: 1 });
     const labels = layoutPlanetCountryLabels(map.countries, map.width, map.height);
-    expect(new Set(labels.map((label) => label.width))).toEqual(new Set([132]));
-    expect(new Set(labels.map((label) => label.height))).toEqual(new Set([34]));
+    expect(new Set(labels.map((label) => label.width))).toEqual(new Set([84]));
+    expect(new Set(labels.map((label) => label.height))).toEqual(new Set([20]));
     for (let left = 0; left < labels.length; left += 1) for (let right = left + 1; right < labels.length; right += 1) {
       const a = labels[left]!;
       const b = labels[right]!;

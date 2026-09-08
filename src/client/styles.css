@@ -749,3 +749,12 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
   .map-toolbar-location { gap: 8px; }
   .map-level-button { min-width: 64px; padding-left: 9px; padding-right: 9px; }
 }
+
+/* Overview labels share the subdued city palette and keep land visible. */
+.atlas-overview-card-compact .atlas-overview-card-title, .atlas-overview-card-compact .atlas-overview-card-progress { font-size: 8px; fill: #e3e0bf; }
+.atlas-overview-card-compact .atlas-overview-card-hit { fill: #122527ed; stroke: #81916b; stroke-width: 1px; }
+.country-overview-city { min-width: 100px; padding: 5px 7px; border-width: 1px; background: #122527ed; }
+.country-overview-city strong { font-size: 11px; }
+.country-overview-city span { font-size: 8px; }
+.planet-railways { pointer-events: none; }
+.planet-ships { pointer-events: none; }

@@ -105,7 +105,7 @@ function inside(cell: PlanetHex, columns: number, rows: number): boolean {
   return cell.q >= 2 && cell.r >= 2 && cell.q < columns - 2 && cell.r < rows - 2;
 }
 
-function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
+export function planetHexCenter(cell: PlanetHex, radius: number): PlanetPoint {
   return {
     x: cell.q * radius * 2 + radius,
     y: cell.r * radius * 2 + radius,
@@ -381,7 +381,7 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto): ProjectedPlanetAtlas 
   return { width: pixelWidth, height: pixelHeight, hexRadius, viewBox: `0 0 ${pixelWidth} ${pixelHeight}`, oceanCells, coastCells, countries, routes, clouds, stars, edgeFog };
 }
 
-function affineProject(point: PlanetPoint, base: Pick<ProjectedPlanetAtlas, "width" | "height">, camera: PlanetMapCamera): PlanetPoint {
+export function affineProject(point: PlanetPoint, base: Pick<ProjectedPlanetAtlas, "width" | "height">, camera: PlanetMapCamera): PlanetPoint {
   const zoom = Math.max(.82, Math.min(8.5, camera.zoom));
   const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
   const scale = fit * zoom;
@@ -462,12 +462,12 @@ function rectanglesOverlap(left: PlanetCountryLabelLayout, right: PlanetCountryL
 }
 
 export function layoutPlanetCountryLabels(countries: PlanetMapCountry[], width: number, height: number): PlanetCountryLabelLayout[] {
-  const labelWidth = 132;
-  const labelHeight = 34;
+  const labelWidth = 84;
+  const labelHeight = 20;
   const margin = 12;
   const placed: PlanetCountryLabelLayout[] = [];
   const offsets = [
-    { x: -labelWidth / 2, y: -62 }, { x: 18, y: -38 }, { x: -labelWidth - 18, y: -38 },
+    { x: -labelWidth / 2, y: -42 }, { x: 18, y: -38 }, { x: -labelWidth - 18, y: -38 },
     { x: -labelWidth / 2, y: 24 }, { x: 26, y: 14 }, { x: -labelWidth - 26, y: 14 },
   ];
   for (const country of [...countries].sort((left, right) => right.progress - left.progress || left.id.localeCompare(right.id))) {

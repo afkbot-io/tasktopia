@@ -10,7 +10,7 @@ ASSET_REVISION,
 BUILDING_CATALOG
 } from "../shared/catalog";
 import { CITY_SCENE_SCHEMA_VERSION,type CitySceneDto } from "../shared/city-scene-contract";
-import { airportEndpointFromPlacementRow, readCityAirportConnections } from "./world/city-airport-connections";
+import { transportEndpointFromPlacementRow, readCityAirportConnections } from "./world/city-airport-connections";
 import {
 STATUS_PROGRESS_RANGE,
 TASK_STAGE,
@@ -781,22 +781,23 @@ export class AppService {
               WHERE p.block_id=b.id AND p.layout_id=l.id AND t.district_id=d.id)
           ORDER BY b.sequence,b.id LIMIT 1
         ) site ON true WHERE d.city_id=city.id) AS districts,
-      (SELECT COALESCE(jsonb_agg(jsonb_build_object('taskId',p.task_id,'slotKey',p.slot_key,'block',to_jsonb(b)) ORDER BY p.task_id),'[]')
+      (SELECT COALESCE(jsonb_agg(jsonb_build_object('taskId',p.task_id,'slotKey',p.slot_key,'role',b.parameters_json->'slotRoles'->>p.slot_key,'block',to_jsonb(b)) ORDER BY p.task_id),'[]')
         FROM city_layouts_v1 l JOIN city_blocks_v1 b ON b.layout_id=l.id
         JOIN task_placements_v1 p ON p.block_id=b.id AND p.layout_id=l.id
         JOIN tasks_v3 t ON t.id=p.task_id AND t.city_id=city.id AND t.status='COMPLETED'
         WHERE l.city_id=city.id AND l.country_id=city.country_id AND l.status='ACTIVE' AND p.construction_stage=5
-        AND b.parameters_json->'slotRoles'->>p.slot_key='AIRPORT') AS airports
+        AND b.parameters_json->'slotRoles'->>p.slot_key IN ('AIRPORT','RAILWAY')) AS airports
       FROM cities_v3 city JOIN country_members member ON member.country_id=city.country_id
       WHERE member.user_id=? ORDER BY city.created_at,city.id`).all<Row>(userId);
     const clusters = new Map<string, PlanetAtlasDto["countries"][number]["cities"]>();
     for (const row of clusterRows) {
       const group = clusters.get(String(row.country_id)) ?? [];
-      const airports = json<Array<{ taskId: string; slotKey: string; block: Row }>>(row.airports).map((airport) => ({
-        taskId: airport.taskId,
-        center: airportEndpointFromPlacementRow({ ...airport.block, task_id: airport.taskId, slot_key: airport.slotKey, airport_city_id: row.id }).point,
+      const infrastructure = json<Array<{ taskId: string; slotKey: string; role?: "AIRPORT" | "RAILWAY"; block: Row }>>(row.airports);
+      const endpoints = (role: "AIRPORT" | "RAILWAY") => infrastructure.filter(item => (item.role ?? "AIRPORT") === role).map(item => ({
+        taskId: item.taskId,
+        center: transportEndpointFromPlacementRow({ ...item.block, task_id: item.taskId, slot_key: item.slotKey, airport_city_id: row.id }, role).point,
       }));
-      group.push({id:String(row.id),center:{x:Number(row.center_x),y:Number(row.center_y)},districts:json(row.districts),airports});
+      group.push({id:String(row.id),center:{x:Number(row.center_x),y:Number(row.center_y)},districts:json(row.districts),airports:endpoints("AIRPORT"),stations:endpoints("RAILWAY")});
       clusters.set(String(row.country_id),group);
     }
     const countries = rows.map((row) => ({

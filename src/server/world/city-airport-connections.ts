@@ -9,6 +9,10 @@ const parse = <T>(value: unknown): T => (typeof value === "string" ? JSON.parse(
 
 /** The template owns the exact airport slot; the block or city center is not an endpoint. */
 export function airportEndpointFromPlacementRow(row: Row): CityAirportEndpointDto {
+  return transportEndpointFromPlacementRow(row, "AIRPORT");
+}
+
+export function transportEndpointFromPlacementRow(row: Row, role: "AIRPORT" | "RAILWAY"): CityAirportEndpointDto {
   const block: CityBlockV1 = {
     id: String(row.id), districtLayoutId: String(row.district_layout_id), sequence: Number(row.sequence),
     kind: String(row.kind) as CityBlockV1["kind"], templateKey: String(row.template_key), templateVersion: Number(row.template_version),
@@ -16,7 +20,7 @@ export function airportEndpointFromPlacementRow(row: Row): CityAirportEndpointDt
     width: Number(row.width), height: Number(row.height), parameters: parse(row.parameters_json), summary: parse(row.summary_json),
   };
   const slot = blockSlots(block).find(candidate => candidate.key === row.slot_key);
-  if (!slot || slot.serviceRole !== "AIRPORT") throw new Error(`Invalid airport placement ${row.task_id}`);
+  if (!slot || slot.serviceRole !== role) throw new Error(`Invalid transport placement ${row.task_id}`);
   return { taskId: String(row.task_id), cityId: String(row.airport_city_id), point: blockSlotAirportPoint(slot) };
 }
 

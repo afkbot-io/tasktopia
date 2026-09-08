@@ -22,6 +22,7 @@ export type CountryCityMiniature = {
   blocks: Array<{ id: string; districtId: string; x: number; y: number; family: string }>;
   /** Only completed task-linked airports, never synthetic city markers. */
   airports: Array<{ taskId: string; x: number; y: number }>;
+  stations?: Array<{ taskId: string; x: number; y: number }>;
 };
 export type CountryOverviewCityDto = {
   id: string; name: string; status: CityDto["status"];

@@ -1,3 +1,4 @@
+import { countryRailways } from "../../shared/country-railways";
 import { useEffect, useRef, useState } from "react";
 import type { RealtimeEvent } from "../../shared/contracts";
 import { COUNTRY_OVERVIEW_SCHEMA_VERSION, decodeCountryTerrain, type CountryOverviewCityDto, type CountryOverviewDto } from "../../shared/country-overview-contract";
@@ -236,6 +237,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       if (groundRoadPlan.routes.length) for (const tile of Object.values(COUNTRY_ROAD_ATLAS_TILES)) assetUrls.add(gameAssetUrl(tile.url));
       for (const city of overview.cities) for (const block of city.miniature.blocks) assetUrls.add(getBuilding(block.family).stages[4]!);
       if (overview.cities.some(city => city.miniature.airports.length > 0)) assetUrls.add(getBuilding("compact-airport-v1").stages[4]!);
+      if (overview.cities.some(city => (city.miniature.stations?.length ?? 0) > 0)) assetUrls.add(getBuilding("compact-railway-v1").stages[4]!);
       const textures = new Map(await Promise.all([...assetUrls].map(async (url) => [url, await loadAtlasImage(url)] as const)));
       if (disposed) return;
       // Compose immutable atlas tiles on a small CPU canvas. At four pixels
@@ -253,11 +255,11 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       staticCanvas.style.height = `${rows * cellSize}px`;
       rasterCanvas = staticCanvas;
       const oceanTile = overviewTerrainPatches("deep_water", "country", 0, 0, 15)[0]!.tile;
-      const oceanCanvas = document.createElement("canvas"); oceanCanvas.width = oceanCanvas.height = 16;
+      const oceanCanvas = document.createElement("canvas"); oceanCanvas.width = oceanCanvas.height = Math.round(cellSize * rasterScale / 2);
       const oceanContext = oceanCanvas.getContext("2d")!; oceanContext.imageSmoothingEnabled = false;
       const oceanSource = textures.get(gameAssetUrl(oceanTile.url));
       if (oceanSource) {
-        oceanContext.drawImage(oceanSource, oceanTile.sourceX, oceanTile.sourceY, oceanTile.tileSize, oceanTile.tileSize, 0, 0, 16, 16);
+        oceanContext.drawImage(oceanSource, oceanTile.sourceX, oceanTile.sourceY, oceanTile.tileSize, oceanTile.tileSize, 0, 0, oceanCanvas.width, oceanCanvas.height);
         host.style.backgroundImage = `url(${oceanCanvas.toDataURL()})`;
       }
       let selectedCellCount = 0;
@@ -323,6 +325,23 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       host.dataset.countryGroundRoadPavementPixels = String(COUNTRY_ROAD_PAVEMENT_PIXELS);
       host.dataset.countryGroundRoadBakeMs = (performance.now() - roadBakeStarted).toFixed(2);
 
+      const railways = countryRailways(overview);
+      host.dataset.countryRailways = String(railways.length);
+      for (const railway of railways) {
+        context.beginPath();
+        railway.points.forEach((p,i) => i ? context.lineTo(p.x*rasterScale,p.y*rasterScale) : context.moveTo(p.x*rasterScale,p.y*rasterScale));
+        context.strokeStyle="#293c39"; context.lineWidth=1.2*rasterScale; context.stroke();
+        context.strokeStyle="#b5b69a"; context.lineWidth=.45*rasterScale; context.stroke();
+        context.fillStyle="#293c39";
+        for(let i=1;i<railway.points.length;i++) {
+          const a=railway.points[i-1]!,b=railway.points[i]!;
+          const length=Math.abs(b.x-a.x)+Math.abs(b.y-a.y);
+          for(let d=0;d<length;d+=.8) {
+            const x=(a.x+(b.x-a.x)*d/length)*rasterScale, y=(a.y+(b.y-a.y)*d/length)*rasterScale;
+            context.fillRect(Math.round(x-(a.y===b.y?.15:.75)*rasterScale),Math.round(y-(a.y===b.y?.75:.15)*rasterScale),Math.max(1,Math.round((a.y===b.y?.3:1.5)*rasterScale)),Math.max(1,Math.round((a.y===b.y?1.5:.3)*rasterScale)));
+          }
+        }
+      }
       const airportPoints = new Map<string, { x: number; y: number }>();
       for (const city of overview.cities) {
         const miniature = city.miniature;
@@ -335,6 +354,10 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
           const height = width * entry.spriteSize.height / entry.spriteSize.width;
           context.drawImage(source, Math.round((left + block.x * CITY_LOD_CELL_SIZE) * rasterScale - width / 2),
             Math.round((top + block.y * CITY_LOD_CELL_SIZE) * rasterScale - height / 2), Math.round(width), Math.round(height));
+        }
+        for (const station of miniature.stations ?? []) {
+          const entry=getBuilding("compact-railway-v1"),width=1.6*rasterScale,height=width*entry.spriteSize.height/entry.spriteSize.width;
+          context.drawImage(textures.get(entry.stages[4]!)!,Math.round((left+station.x*CITY_LOD_CELL_SIZE)*rasterScale-width/2),Math.round((top+station.y*CITY_LOD_CELL_SIZE)*rasterScale-height/2),Math.round(width),Math.round(height));
         }
         for (const airport of miniature.airports) {
           const airportPoint = { x: left + airport.x * CITY_LOD_CELL_SIZE, y: top + airport.y * CITY_LOD_CELL_SIZE };
@@ -350,11 +373,14 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       host.prepend(staticCanvas);
       host.dataset.countryCityRender = "one-house-per-block";
 
-      const routeInputs = overview.connections.slice(0, 5).flatMap((connection, index) => {
+      const routeInputs = overview.connections.flatMap((connection, index) => {
         const from = airportPoints.get(connection.fromCityId);
         const to = airportPoints.get(connection.toCityId);
         return from && to ? [{ from, to, index, startsAtAirport: true }] : [];
-      });
+      }).slice(0,5);
+      const headingImages = await Promise.all((["north","east","south","west"] as const).map(async heading => {
+        const image = await loadAtlasImage(microAmbientSprite("aircraft","regional",heading).url); return image.src;
+      }));
       const planeTextures = await Promise.all(routeInputs.map(() => loadAtlasImage(microAmbientSprite("aircraft","regional","east").url)));
       if (disposed) return;
       for (let index = 0; index < routeInputs.length; index += 1) {
@@ -362,8 +388,8 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
         const view = planeTextures[index]!;
         view.className = "country-atlas-aircraft";
         view.setAttribute("aria-hidden", "true");
-        view.style.width = "1.6px";
-        view.style.height = "1.6px";
+        view.style.width = "8px";
+        view.style.height = "8px";
         host.append(view);
         flights.push({
           view,
@@ -388,7 +414,10 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
           const endpointScale = atlasAircraftEndpointScale(progress, flight.startsAtAirport, true);
           const screenX = sceneX + sample.x * sceneScale;
           const screenY = sceneY + sample.y * sceneScale;
-          flight.view.style.transform = `translate3d(${screenX}px, ${screenY}px, 0) translate(-50%, -50%) rotate(${sample.angle}rad) scale(${sceneScale * endpointScale})`;
+          const heading = (Math.round(sample.angle / (Math.PI / 2)) + 5) % 4;
+          if (flight.view.dataset.heading !== String(heading)) { flight.view.src=headingImages[heading]!; flight.view.dataset.heading=String(heading); }
+          flight.view.style.opacity=String(endpointScale);
+          flight.view.style.transform = `translate3d(${Math.round(screenX)-4}px, ${Math.round(screenY)-4}px, 0)`;
         }
         flightFrame = requestAnimationFrame(animateFlights);
       };
@@ -513,8 +542,8 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     data-country-terrain-cells={overview.geography.terrainCodes.length}
     data-country-miniature-cells={overview.cities.reduce((total, city) => total + city.miniature.blocks.length, 0)}
     data-country-airports={overview.cities.reduce((count, city) => count + city.miniature.airports.length, 0)}
-    data-country-flights={overview.connections.slice(0, 5).filter(connection => overview.cities.some(city => city.id === connection.fromCityId && city.miniature.airports.length > 0)
-      && overview.cities.some(city => city.id === connection.toCityId && city.miniature.airports.length > 0)).length}
+    data-country-flights={overview.connections.filter(connection => overview.cities.some(city => city.id === connection.fromCityId && city.miniature.airports.length > 0)
+      && overview.cities.some(city => city.id === connection.toCityId && city.miniature.airports.length > 0)).slice(0, 5).length}
     data-country-ready={renderReady ? "true" : "false"}
     role="group"
     aria-label={`Карта страны: ${overview.cities.length} городов`}

@@ -77,6 +77,19 @@ describe("planet atlas HTTP boundary", () => {
       unfinishedBuildingCount: 1,
     });
 
+    // A real active placement supplies a station only once construction is complete.
+    const placement = await db.prepare("SELECT p.block_id,p.slot_key FROM task_placements_v1 p JOIN city_layouts_v1 l ON l.id=p.layout_id WHERE p.task_id=? AND l.status='ACTIVE'").get<{block_id:string;slot_key:string}>(completed.id);
+    expect(placement).toBeTruthy();
+    await db.prepare("UPDATE city_blocks_v1 SET parameters_json=jsonb_set(parameters_json, '{slotRoles}', COALESCE(parameters_json->'slotRoles','{}'::jsonb) || jsonb_build_object(?::text,'RAILWAY'::text),true) WHERE id=?").run(placement!.slot_key,placement!.block_id);
+    await db.prepare("UPDATE task_placements_v1 SET construction_stage=4 WHERE task_id=?").run(completed.id);
+    const unfinishedStation = (await app.inject({method:"GET",url:"/api/planet-atlas",headers:{cookie}})).json();
+    expect(unfinishedStation.countries.flatMap((c:{cities:Array<{stations:unknown[]}>})=>c.cities.flatMap(city=>city.stations))).toEqual([]);
+    await db.prepare("UPDATE task_placements_v1 SET construction_stage=5 WHERE task_id=?").run(completed.id);
+    const stationResponse = await app.inject({method:"GET",url:"/api/planet-atlas",headers:{cookie}});
+    expect(stationResponse.statusCode).toBe(200);
+    expect(stationResponse.json().countries.flatMap((c:{cities:Array<{stations:unknown[]}>})=>c.cities.flatMap(city=>city.stations))).toEqual([expect.objectContaining({taskId:completed.id,center:{x:expect.any(Number),y:expect.any(Number)}})]);
+    expect(stationResponse.json().revision).not.toBe(unfinishedStation.revision);
+
     const renamedCountry = response.json().countries.find((country: { name: string }) => country.name === "Первая страна") as { id: string };
     const renamed = await app.inject({ method: "PATCH", url: `/api/countries/${renamedCountry.id}`, headers: { cookie }, payload: { name: "Первая республика" } });
     expect(renamed.statusCode).toBe(200);
