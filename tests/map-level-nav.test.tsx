@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { Children, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { MapLevelNav, type MapLevel } from "../src/client/components/MapLevelNav";
@@ -23,7 +23,7 @@ describe("direct map level navigation", () => {
   it.each(levels)("does not restart the active %s level", (level) => {
     const onChange = vi.fn();
     const nav = MapLevelNav({ level, hasCity: true, onChange });
-    const buttons = nav.props.children as ReactElement<{ onClick: () => void }>[];
+    const buttons = Children.toArray(nav.props.children) as ReactElement<{ onClick: () => void }>[];
     buttons[levels.indexOf(level)]!.props.onClick();
     expect(onChange).not.toHaveBeenCalled();
     for (const destination of levels.filter(candidate => candidate !== level)) {

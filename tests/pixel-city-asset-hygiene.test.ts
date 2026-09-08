@@ -25,6 +25,9 @@ describe("Pixel City source hygiene", () => {
         expect(prop.size, prop.key).toEqual([shape.width * 8, shape.height * 8]);
         expect(prop.anchorPx, prop.key).toEqual([shape.width * 4, shape.height * 8]);
         expect(prop.sheet, prop.key).toBe(`ai-authored/compact-courtyard-furniture-v1/sources/${prop.key}.png`);
+      } else if (prop.key.startsWith("boat-")) {
+        expect(prop.visualProfile, prop.key).toBe("TASKTOPIA_MICRO_WATERCRAFT_V2");
+        expect(prop.sheet).toBe("ai-authored/micro-ambient-v1/sources/boats-v2.png");
       } else expect(prop.visualProfile, prop.key).toMatch(/^TASKTOPIA_V[56]_/);
     }
   });

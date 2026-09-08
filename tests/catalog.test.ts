@@ -115,20 +115,22 @@ describe("active building catalog", () => {
     }
   });
 
-  it("registers directional micro aircraft and one static native pose per animal", () => {
+  it("registers four native directions for aircraft and every animal", () => {
     for (const direction of MICRO_DIRECTIONS) {
       const sprite = microAmbientSprite("aircraft", "regional", direction);
       expect(sprite).toMatchObject({ width: 16, height: 16, anchor: { x: 8, y: 8 }, direction, frameCount: 1 });
       expect(existsSync(assetDiskPath(sprite.url))).toBe(true);
     }
     for (const species of MICRO_ANIMAL_SPECIES) {
-      const sprite = microAmbientSprite("animal", species);
-      expect(sprite).toMatchObject({ width: 8, height: 8, anchor: { x: 4, y: 4 }, direction: "static", frameCount: 1 });
-      expect(existsSync(assetDiskPath(sprite.url))).toBe(true);
+      const urls = new Set<string>();
       for (const direction of MICRO_DIRECTIONS) {
-        expect(microAmbientSprite("animal", species, direction)).toBe(sprite);
+        const sprite = microAmbientSprite("animal", species, direction);
+        expect(sprite).toMatchObject({ width: 8, height: 8, anchor: { x: 4, y: 4 }, direction, frameCount: 1 });
+        expect(existsSync(assetDiskPath(sprite.url))).toBe(true);
+        urls.add(sprite.url);
         for (const frame of ["a", "b", "c"]) expect(PROP_CATALOG[`animal-${species}-${direction}-${frame}`]).toBeUndefined();
       }
+      expect(urls.size).toBe(4);
     }
   });
 
