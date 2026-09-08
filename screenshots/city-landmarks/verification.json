@@ -1,0 +1,62 @@
+{
+  "date": "2026-09-09",
+  "base": "9ce27463c2979de38467460bd6caecb0c24c9628",
+  "assetRevision": "99e1ee8d4cb7cbb9",
+  "scope": "10 corrected stage5 drafts; first full construction set;20type registry and uniqueness policy",
+  "checks": {
+    "focusedTests": {
+      "uniqueTests": 74,
+      "result": "passed",
+      "files": [
+        "city-landmarks",
+        "block-layout-grid",
+        "compact-long-gallery",
+        "catalog",
+        "compact-building-art-verifier",
+        "compact-city-runtime"
+      ]
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "assetAudit": {
+      "pngs": 434,
+      "violations": 0
+    },
+    "styleAudit": {
+      "errors": 0,
+      "existingWarnings": 6
+    },
+    "browser": {
+      "test": "city-landmark-art.spec.ts",
+      "result": "passed",
+      "stages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "durationSeconds": 28.6,
+      "evidence": "evidence.json"
+    },
+    "domainDuplicateCreate": {
+      "result": "INVALID_INPUT",
+      "tasksAfterRejectedCreate": 7
+    }
+  },
+  "review": {
+    "reviewer": "main-agent",
+    "result": "No remaining blocking findings in the scoped diff",
+    "fixes": [
+      "Separate uniqueness error from infrastructure-reservation conflict",
+      "Remove copied approval claims from draft geometry",
+      "Preserve original PNG encodings outside the new family"
+    ],
+    "limits": [
+      "Only mall is runtime-ready;19unique types remain art backlog",
+      "Not a merge or release",
+      "No changes or acceptance claims for PR30 map-loading work"
+    ]
+  }
+}

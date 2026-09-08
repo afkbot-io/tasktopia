@@ -1,0 +1,6 @@
+{
+  "generator": "image_gen",
+  "reference": "compact-long-gallery-v1",
+  "prompt": "Edit the attached APPROVED Tasktopia sprite into the subject below. LOCK the exact original source canvas, outer footprint bounding rectangle, source framing, south foundation baseline, small centered doorway, tiny 2x2 native windows, two miniature facade floors and high-overhead orthographic camera. Native floor band rhythm 5px, door3x3 in5x5 frame. Keep roof dominant and ALL roof/floor edges horizontal/vertical, no receding side wall. Do not copy the original roof design; change architecture ONLY within the same physical envelope. Crisp restrained pixel clusters, muted cream/olive/slate/terracotta/teal palette. Uniform saturated MAGENTA outside only, fully opaque floors and roof, no glow, scenery, text, black baseline or oversized windows. Wide cinema-and-bowling entertainment center, 96x48 envelope. Three connected axis-aligned slate, terracotta and olive auditorium roof rectangles, a few narrow flat teal rooflights. A small mustard strip along the two shallow front floor bands and a burgundy entrance lintel. No giant cinema signs.",
+  "status": "DRAFT_NOT_RUNTIME_APPROVED"
+}

@@ -75,7 +75,7 @@ import { blockTaskGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchron
 import { readCountryRoads, synchronizeCountryRoads } from "./world/intercity-road-store";
 import { citySceneIntercityRoads, intercityRoadCorridors, intercityRoadRasterNetwork } from "../shared/intercity-roads";
 import { projectCountryRoads } from "./world/country-road-projection";
-import { rasterizeBlockRoads,BlockPlacementError,BlockReservationConflictError } from "./world/block-layout-compiler";
+import { rasterizeBlockRoads,BlockPlacementError,BlockReservationConflictError,UniqueBuildingConflictError } from "./world/block-layout-compiler";
 import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { buildDecorationHardHalo } from "./world/decoration-halo";
 import {
@@ -375,6 +375,7 @@ export class AppService {
     try {
       layout = await synchronizeCityBlocks(this.db, countryId, cityId, reset);
     } catch (error) {
+      if (error instanceof UniqueBuildingConflictError) throw new DomainError("INVALID_INPUT", error.message);
       if (error instanceof BlockReservationConflictError) throw new DomainError("INFRASTRUCTURE_RESERVATION_CONFLICT", error.message);
       if (error instanceof BlockPlacementError) throw new DomainError("PLACEMENT_UNAVAILABLE", "Для нового квартала нет связанной свободной площадки. Создайте другой город или пересоберите планировку.");
       if (error instanceof CitySceneCapacityError) throw new DomainError("CAPACITY_EXCEEDED", "Город достиг предела размера карты. Создайте новый город для дальнейшего строительства.");

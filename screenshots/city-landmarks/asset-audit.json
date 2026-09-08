@@ -1,0 +1,21 @@
+{
+  "version": 5,
+  "gridPx": 8,
+  "buildings": 36,
+  "buildingStages": 180,
+  "categories": {
+    "CIVIC": 7,
+    "COMMERCIAL": 2,
+    "HOUSE": 27
+  },
+  "terrainFamilies": 12,
+  "props": 110,
+  "microAmbientSprites": 76,
+  "referencedPngs": 434,
+  "runtimePngs": 434,
+  "maximumBuildingPalette": 32,
+  "paletteBudget": 32,
+  "orphanPngs": [],
+  "missingReferences": [],
+  "violations": []
+}

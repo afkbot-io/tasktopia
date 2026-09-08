@@ -1,0 +1,206 @@
+{
+  "key": "compact-city-mall-v1",
+  "contract": "geometry.json",
+  "normalization": "One declared common stage-5 frame with validated background-only margins; uniform nearest-neighbour scale, hard alpha and palette quantization only. The frame fully contains stage5 visible bounds. No geometry repair, stretching or per-stage recentering.",
+  "sourceCanvas": [
+    1774,
+    887
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    78,
+    52,
+    1696,
+    835
+  ],
+  "uniformScale": 0.059332509270704575,
+  "targetSize": [
+    96,
+    46
+  ],
+  "offset": [
+    0,
+    2
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "8beaf21502766e65c5049fac8eff9408aea38fc5d887cbf31d65fb7f0fbc2144",
+      "runtimeSha256": "13edad03d1a60963115b2d11d0df6efbc7d6bf1c3541bca19ac24a1aca04b313",
+      "sourceBounds": [
+        78,
+        52,
+        1696,
+        835
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        96,
+        48
+      ],
+      "occupiedSizePx": [
+        96,
+        46
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "68800df8b16affefc16f7aef19aae53a0d01473f445acce79c20b10feb675a8c",
+      "runtimeSha256": "79bbc336250cd9d1e8b2688d89ce47213b7452dc92c09bb733e98e7c9aa23439",
+      "sourceBounds": [
+        77,
+        51,
+        1697,
+        835
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        96,
+        48
+      ],
+      "occupiedSizePx": [
+        96,
+        46
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "e7fb5bd1d32455a29acb6a774264330e1897ddbb763c544fa0b42682f4d4417a",
+      "runtimeSha256": "293391414a76498a3383c2e0827bfa66ccc80b2ebf2933dd714802ed96d26dbc",
+      "sourceBounds": [
+        77,
+        51,
+        1697,
+        835
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        96,
+        48
+      ],
+      "occupiedSizePx": [
+        96,
+        46
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-city-mall-v1",
+    "reviewedAt": "2026-09-09",
+    "reviewScope": "Source and normalized3/4/5 inspected in the main agent. Runtime map acceptance is a separate gate.",
+    "projection": {
+      "camera": "High frontal-top orthographic, axis-aligned roof and floor bands; no receding side wall.",
+      "roofDepthPx": 37,
+      "roofRegionBoundsPx": [
+        0,
+        2,
+        96,
+        39
+      ],
+      "openPrimaryRoofBoundsPx": [
+        1,
+        3,
+        95,
+        37
+      ],
+      "facadeHeightPx": 9,
+      "floorStepPx": 5,
+      "windowRowsPx": [
+        [
+          40,
+          41
+        ],
+        [
+          45,
+          46
+        ]
+      ],
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorLeafBoundsPx": [
+        46,
+        45,
+        49,
+        48
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "doorFrameBoundsPx": [
+        45,
+        43,
+        50,
+        48
+      ],
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "8beaf21502766e65c5049fac8eff9408aea38fc5d887cbf31d65fb7f0fbc2144",
+        "runtimeSha256": "13edad03d1a60963115b2d11d0df6efbc7d6bf1c3541bca19ac24a1aca04b313",
+        "notes": "Finished olive mall with central teal glazed atrium. Small two-floor frontage and south entrance match the existing long gallery detail scale."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "68800df8b16affefc16f7aef19aae53a0d01473f445acce79c20b10feb675a8c",
+        "runtimeSha256": "79bbc336250cd9d1e8b2688d89ce47213b7452dc92c09bb733e98e7c9aa23439",
+        "notes": "Left roof and half of atrium retained, approximately54percent of roof. Right side exposes opaque room floors and partitions; no final equipment on exposed rooms. Dark unfinished openings."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "e7fb5bd1d32455a29acb6a774264330e1897ddbb763c544fa0b42682f4d4417a",
+        "runtimeSha256": "293391414a76498a3383c2e0827bfa66ccc80b2ebf2933dd714802ed96d26dbc",
+        "notes": "Roofless structural stage. Open floor, isolated columns, partial interior walls, construction materials; full opaque footprint retained. Progress refers to assembled structure, not height."
+      }
+    }
+  }
+}

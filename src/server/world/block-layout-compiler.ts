@@ -6,6 +6,7 @@ import { COMPACT_BUILDING_SHAPES, compactBuildingServiceRole, compactBuildingSha
 import { auditSemanticRoadNetwork, type SemanticRoadNetwork } from "../../shared/semantic-road";
 export { rasterizeBlockRoads } from "../../shared/road-raster";
 import { districtSeparatorBetween, overlapsDistrictSeparator, readDistrictSeparators, type DistrictSeparator } from "../../shared/district-separator";
+import { cityLandmarkCandidates, isCityLandmark } from "../../shared/city-landmarks";
 
 export type BlockLayoutTaskInput = {
   id: string; taskNumber: number; buildingFamily: string; facadeVariant: string;
@@ -33,6 +34,10 @@ export class BlockPlacementError extends Error {
 /** An explicit family must not bypass a stable mandatory infrastructure parcel. */
 export class BlockReservationConflictError extends BlockPlacementError {
   constructor(message: string) { super(message); this.name = "BlockReservationConflictError"; }
+}
+
+export class UniqueBuildingConflictError extends BlockPlacementError {
+  constructor(message: string) { super(message); this.name = "UniqueBuildingConflictError"; }
 }
 
 function canonicalJson(value: unknown): string {
@@ -254,6 +259,25 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   const retainedBlockIds = new Set(input.previous?.blocks.filter((b) => retainedDistrictIds.has(b.districtLayoutId)).map((b) => b.id) ?? []);
   const reservedBlocks = input.previous?.blocks.filter((b) => retainedBlockIds.has(b.id)).map((b) => ({ ...b })) ?? [];
   const siteMarkers = input.previous?.siteMarkers.filter((m) => retainedBlockIds.has(m.blockId)).map((m) => ({ ...m })) ?? [];
+  // Recorded slots keep uniqueness even after deletion. A relocation marker
+  // carries its original task owner, so transferring that task is permitted.
+  const landmarkOwners = new Map<string, Set<string>>();
+  const landmarkBlocks = new Set<string>();
+  const reserveLandmark = (family: string, owner: string, blockId: string) => {
+    if (!isCityLandmark(family)) return;
+    const owners = landmarkOwners.get(family) ?? new Set<string>();
+    owners.add(owner); landmarkOwners.set(family, owners); landmarkBlocks.add(blockId);
+  };
+  const recordedOwners = new Map([...previousPlacements.values()].map(p => [`${p.blockId}:${p.slotKey}`, p.taskId]));
+  for (const marker of input.previous?.siteMarkers ?? []) {
+    if (marker.kind === "RELOCATED" && marker.targetTaskId) recordedOwners.set(`${marker.blockId}:${marker.slotKey}`, marker.targetTaskId);
+  }
+  for (const block of input.previous?.blocks ?? []) {
+    for (const [slot, family] of Object.entries(block.parameters.slotFamilies as Record<string, string> ?? {})) {
+      const key = `${block.id}:${slot}`;
+      reserveLandmark(family, recordedOwners.get(key) ?? `closed:${key}`, block.id);
+    }
+  }
   type DistrictContext = {
     district: BlockLayoutDistrictInput; districtLayoutId: string; districtOrigin: { x: number; y: number };
     districtBlocks: CityBlockV1[]; occupied: Set<string>;
@@ -316,6 +340,10 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       const { district, districtLayoutId, districtBlocks, available, occupied } = context;
       const kind = task.visualKind ?? "BUILDING";
       const requestedFamily = task.requestedFamily ?? (task.serviceRoleAssigned && task.serviceRole ? task.buildingFamily : undefined);
+      if (requestedFamily && isCityLandmark(requestedFamily)
+        && [...landmarkOwners.get(requestedFamily) ?? []].some(owner => owner !== task.id)) {
+        throw new UniqueBuildingConflictError("Такое уникальное здание уже есть в городе или на его сохранённом участке.");
+      }
       if (task.requestedFamily && !task.serviceRoleAssigned) {
         const reserved = available.find(({ block, slot }) => slot.kind === "BUILDING" && !occupied.has(`${block.id}:${slot.key}`)
           && (block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key]);
@@ -375,12 +403,22 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         selected = preferred()!;
       }
       const serviceRole = (selected.block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[selected.slot.key];
+      if (serviceRole && requestedFamily && isCityLandmark(requestedFamily)) {
+        throw new BlockReservationConflictError("Уникальное здание не может занять участок обязательной инфраструктуры.");
+      }
       const requestedServiceRole = requestedFamily && compactBuildingServiceRole(requestedFamily);
       if (serviceRole && requestedServiceRole && requestedServiceRole !== serviceRole) {
         throw new BlockReservationConflictError(`Роль выбранного семейства ${requestedServiceRole} не совпадает с ролью участка ${serviceRole}. Уберите явное указание семейства или выберите подходящее.`);
       }
       occupied.add(`${selected.block.id}:${selected.slot.key}`);
+      const width = selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1;
+      const height = selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1;
+      const landmarkEntropy = Number.parseInt(checksum(`${identity}:${selected.block.id}:landmark`).slice(0, 8), 16);
+      const landmarkCandidates = !requestedFamily && !serviceRole && selected.slot.kind === "BUILDING"
+        && !landmarkBlocks.has(selected.block.id) && landmarkEntropy % 3 !== 0
+        ? cityLandmarkCandidates(width, height).filter(family => !landmarkOwners.has(family)) : [];
       const authoredFamily = requestedFamily ?? (!task.serviceRoleAssigned && serviceRole ? serviceFamilyForSlot(serviceRole,selected.slot) : undefined)
+        ?? (landmarkCandidates.length ? landmarkCandidates[landmarkEntropy % landmarkCandidates.length] : undefined)
         ?? (!serviceRole && selected.slot.kind === "BUILDING" ? compactHomeFamily(
           selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1,
           selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1,
@@ -396,6 +434,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         constructionStage: task.constructionStage, ...(serviceRole ? { serviceRole } : {}) };
       placements.push(placement); activePlacements.set(task.id, placement); kinds.set(task.id, selected.slot.kind);
       recordHome(placement);
+      reserveLandmark(authoredFamily, task.id, selected.block.id);
       reserveNextInfrastructure(district, districtBlocks, reservedBlocks, available, occupied, activePlacements.values(), kinds, durableTriggers);
   }
   const counts = new Map<string, number>(); const markerCounts = new Map<string, number>();

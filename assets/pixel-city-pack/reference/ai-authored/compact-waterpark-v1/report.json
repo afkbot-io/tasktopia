@@ -1,0 +1,66 @@
+{
+  "key": "compact-waterpark-v1",
+  "contract": "geometry.json",
+  "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    47,
+    28,
+    1489,
+    951
+  ],
+  "uniformScale": 0.06657420249653259,
+  "targetSize": [
+    96,
+    61
+  ],
+  "offset": [
+    0,
+    3
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "02a92ba7c6957cc5e2bc9d6dbcd8c1643340ba3175589811d69b3071d9795b45",
+      "runtimeSha256": "cd634563ad278a7e2954ec9461069049ed4ecb4b31efe06dccc476db49e20b7d",
+      "sourceBounds": [
+        47,
+        28,
+        1489,
+        951
+      ],
+      "occupiedBoundsPx": [
+        0,
+        3,
+        96,
+        64
+      ],
+      "occupiedSizePx": [
+        96,
+        61
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ]
+}

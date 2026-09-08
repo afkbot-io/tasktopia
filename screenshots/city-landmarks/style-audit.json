@@ -1,0 +1,990 @@
+{
+  "manifest": "assets/pixel-city-pack/manifest.json",
+  "runtime": "assets/pixel-city-pack/runtime",
+  "buildings": 36,
+  "props": 110,
+  "auditedPngs": 434,
+  "errors": [],
+  "warnings": [
+    "category/CIVIC: identical finished silhouettes: compact-clinic-v1, compact-fire-station-v1, compact-railway-v1",
+    "category/HOUSE: identical finished silhouettes: compact-apartment-v1, compact-blue-bay-v1, compact-courtyard-apartment-v1, compact-garden-house-v1",
+    "category/HOUSE: identical finished silhouettes: compact-bungalow-v1, compact-row-v1, compact-terrace-v1, compact-workshop-home-v1",
+    "category/HOUSE: identical finished silhouettes: compact-corner-balcony-v1, compact-wide-v1",
+    "category/HOUSE: identical finished silhouettes: compact-olive-cafe-v1, compact-teal-mansard-v1",
+    "category/HOUSE: identical finished silhouettes: compact-plum-workshop-v1, compact-rose-clinic-annex-v1, compact-rust-loft-v1"
+  ],
+  "metrics": {
+    "compact-airport-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9388,
+        0.9688,
+        0.9688
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.375,
+        0.0299,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9674,
+        0.9688,
+        0.9688
+      ],
+      "finishedBounds": [
+        0,
+        1,
+        48,
+        32
+      ]
+    },
+    "compact-apartment-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8021,
+        0.9362,
+        0.9366
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2153,
+        0.1341,
+        0.0004
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.8802,
+        0.9362,
+        0.9366
+      ],
+      "finishedBounds": [
+        0,
+        3,
+        48,
+        48
+      ]
+    },
+    "compact-blue-bay-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8958,
+        0.9271,
+        0.9366
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2066,
+        0.0312,
+        0.0095
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9227,
+        0.9271,
+        0.9293
+      ],
+      "finishedBounds": [
+        0,
+        3,
+        48,
+        48
+      ]
+    },
+    "compact-bungalow-v1": {
+      "coverage": [
+        0.0981,
+        0.5564,
+        0.9167,
+        0.9167,
+        0.9167
+      ],
+      "stageMaskDifference": [
+        0.4583,
+        0.4314,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.4583,
+        0.9523,
+        0.9167,
+        0.9167
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        24
+      ]
+    },
+    "compact-city-mall-v1": {
+      "coverage": [
+        0.0753,
+        0.7103,
+        0.9579,
+        0.9579,
+        0.9579
+      ],
+      "stageMaskDifference": [
+        0.635,
+        0.2862,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.635,
+        0.9772,
+        0.9579,
+        0.9579
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        96,
+        48
+      ]
+    },
+    "compact-civic-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9147,
+        0.9076,
+        0.9076
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3509,
+        0.0189,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9434,
+        0.9206,
+        0.9076
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        32
+      ]
+    },
+    "compact-clinic-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9375,
+        0.888,
+        0.9583
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3164,
+        0.0495,
+        0.0703
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9375,
+        0.9375,
+        0.9583
+      ],
+      "finishedBounds": [
+        1,
+        0,
+        47,
+        32
+      ]
+    },
+    "compact-copper-court-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8568,
+        0.9792,
+        0.9792
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.204,
+        0.1224,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9019,
+        0.9792,
+        0.9792
+      ],
+      "finishedBounds": [
+        0,
+        0,
+        47,
+        48
+      ]
+    },
+    "compact-corner-balcony-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9538,
+        0.9583,
+        0.9583
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3327,
+        0.0046,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9538,
+        0.9583,
+        0.9583
+      ],
+      "finishedBounds": [
+        1,
+        0,
+        47,
+        32
+      ]
+    },
+    "compact-corner-court-v1": {
+      "coverage": [
+        0.1145,
+        0.8264,
+        0.8975,
+        0.9114,
+        0.9116
+      ],
+      "stageMaskDifference": [
+        0.7119,
+        0.1667,
+        0.0144,
+        0.0002
+      ],
+      "stagePixelDifference": [
+        0.7119,
+        0.9453,
+        0.9116,
+        0.9116
+      ],
+      "finishedBounds": [
+        0,
+        0,
+        64,
+        64
+      ]
+    },
+    "compact-courtyard-apartment-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8958,
+        0.9366,
+        0.9366
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2118,
+        0.0408,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9253,
+        0.9366,
+        0.9366
+      ],
+      "finishedBounds": [
+        0,
+        3,
+        48,
+        48
+      ]
+    },
+    "compact-fire-station-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9583,
+        0.9583,
+        0.9583
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3372,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9583,
+        0.9583,
+        0.9583
+      ],
+      "finishedBounds": [
+        1,
+        0,
+        47,
+        32
+      ]
+    },
+    "compact-gabled-apartment-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.9232,
+        0.9332,
+        0.9332
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2322,
+        0.01,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9492,
+        0.9293,
+        0.9332
+      ],
+      "finishedBounds": [
+        0,
+        3,
+        48,
+        48
+      ]
+    },
+    "compact-garden-house-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.9167,
+        0.9366,
+        0.9366
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.224,
+        0.02,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9418,
+        0.9362,
+        0.9366
+      ],
+      "finishedBounds": [
+        0,
+        3,
+        48,
+        48
+      ]
+    },
+    "compact-glass-stair-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9792,
+        0.9792,
+        0.9792
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3581,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9792,
+        0.9792,
+        0.9792
+      ],
+      "finishedBounds": [
+        0,
+        0,
+        47,
+        32
+      ]
+    },
+    "compact-ivory-library-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8142,
+        0.9058,
+        0.9232
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2483,
+        0.0916,
+        0.0174
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9028,
+        0.9058,
+        0.9232
+      ],
+      "finishedBounds": [
+        0,
+        3,
+        48,
+        48
+      ]
+    },
+    "compact-long-gallery-v1": {
+      "coverage": [
+        0.0753,
+        0.7103,
+        0.9648,
+        0.9792,
+        0.9787
+      ],
+      "stageMaskDifference": [
+        0.635,
+        0.2819,
+        0.0143,
+        0.0004
+      ],
+      "stagePixelDifference": [
+        0.635,
+        0.9785,
+        0.9792,
+        0.9792
+      ],
+      "finishedBounds": [
+        0,
+        1,
+        96,
+        48
+      ]
+    },
+    "compact-long-slate-wing-v1": {
+      "coverage": [
+        0.0946,
+        0.7804,
+        0.9792,
+        0.9792,
+        0.9792
+      ],
+      "stageMaskDifference": [
+        0.6858,
+        0.2374,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6858,
+        0.9985,
+        0.9792,
+        0.9792
+      ],
+      "finishedBounds": [
+        0,
+        0,
+        47,
+        96
+      ]
+    },
+    "compact-olive-cafe-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8993,
+        0.9462,
+        0.9575
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2083,
+        0.0469,
+        0.0113
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9253,
+        0.9462,
+        0.9575
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        48
+      ]
+    },
+    "compact-paired-townhouse-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9375,
+        0.9375,
+        0.9375
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3737,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9661,
+        0.9375,
+        0.9375
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        32
+      ]
+    },
+    "compact-plum-workshop-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.9119,
+        0.9119,
+        0.9158
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2192,
+        0.0009,
+        0.0039
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9371,
+        0.9123,
+        0.9158
+      ],
+      "finishedBounds": [
+        0,
+        4,
+        48,
+        48
+      ]
+    },
+    "compact-police-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.8177,
+        0.8737,
+        0.8737
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.2552,
+        0.056,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.847,
+        0.8594,
+        0.8737
+      ],
+      "finishedBounds": [
+        2,
+        0,
+        46,
+        32
+      ]
+    },
+    "compact-railway-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9583,
+        0.9583,
+        0.9583
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3372,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9583,
+        0.9583,
+        0.9583
+      ],
+      "finishedBounds": [
+        1,
+        0,
+        47,
+        32
+      ]
+    },
+    "compact-roofgarden-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9167,
+        0.9167,
+        0.9167
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.2956,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9167,
+        0.9167,
+        0.9167
+      ],
+      "finishedBounds": [
+        2,
+        0,
+        46,
+        32
+      ]
+    },
+    "compact-rose-clinic-annex-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.9145,
+        0.9141,
+        0.9158
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2218,
+        0.0004,
+        0.0017
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9397,
+        0.9145,
+        0.9158
+      ],
+      "finishedBounds": [
+        0,
+        4,
+        48,
+        48
+      ]
+    },
+    "compact-row-v1": {
+      "coverage": [
+        0.0981,
+        0.5564,
+        0.9167,
+        0.9167,
+        0.9167
+      ],
+      "stageMaskDifference": [
+        0.4583,
+        0.4314,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.4583,
+        0.9523,
+        0.8924,
+        0.9002
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        24
+      ]
+    },
+    "compact-rust-loft-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8993,
+        0.9158,
+        0.9158
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2066,
+        0.0165,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9245,
+        0.9067,
+        0.8932
+      ],
+      "finishedBounds": [
+        0,
+        4,
+        48,
+        48
+      ]
+    },
+    "compact-sand-balcony-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8602,
+        0.8967,
+        0.8967
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2014,
+        0.0365,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9023,
+        0.8967,
+        0.888
+      ],
+      "finishedBounds": [
+        0,
+        4,
+        47,
+        48
+      ]
+    },
+    "compact-school-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.8418,
+        0.8509,
+        0.8516
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3014,
+        0.0143,
+        0.0007
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.8822,
+        0.8535,
+        0.8516
+      ],
+      "finishedBounds": [
+        0,
+        4,
+        48,
+        32
+      ]
+    },
+    "compact-shop-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.8346,
+        0.8346,
+        0.834
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3229,
+        0.0,
+        0.0007
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.8893,
+        0.8346,
+        0.8346
+      ],
+      "finishedBounds": [
+        0,
+        5,
+        48,
+        32
+      ]
+    },
+    "compact-stepped-apartment-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.9583,
+        0.9657,
+        0.9657
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2543,
+        0.0074,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9779,
+        0.9657,
+        0.9657
+      ],
+      "finishedBounds": [
+        0,
+        1,
+        48,
+        48
+      ]
+    },
+    "compact-teal-mansard-v1": {
+      "coverage": [
+        0.1163,
+        0.7431,
+        0.8993,
+        0.9575,
+        0.9575
+      ],
+      "stageMaskDifference": [
+        0.6267,
+        0.2083,
+        0.0582,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.6267,
+        0.9253,
+        0.9575,
+        0.9575
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        48
+      ]
+    },
+    "compact-terrace-v1": {
+      "coverage": [
+        0.0981,
+        0.5564,
+        0.9167,
+        0.9167,
+        0.9167
+      ],
+      "stageMaskDifference": [
+        0.4583,
+        0.4314,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.4583,
+        0.9523,
+        0.9167,
+        0.9167
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        24
+      ]
+    },
+    "compact-u-courtyard-v1": {
+      "coverage": [
+        0.0934,
+        0.8053,
+        0.8226,
+        0.8226,
+        0.8228
+      ],
+      "stageMaskDifference": [
+        0.7119,
+        0.2907,
+        0.0,
+        0.0002
+      ],
+      "stagePixelDifference": [
+        0.7119,
+        0.9593,
+        0.8213,
+        0.8224
+      ],
+      "finishedBounds": [
+        0,
+        1,
+        95,
+        64
+      ]
+    },
+    "compact-wide-v1": {
+      "coverage": [
+        0.0898,
+        0.6211,
+        0.9583,
+        0.9583,
+        0.9583
+      ],
+      "stageMaskDifference": [
+        0.5312,
+        0.3372,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.5312,
+        0.9583,
+        0.9583,
+        0.9583
+      ],
+      "finishedBounds": [
+        1,
+        0,
+        47,
+        32
+      ]
+    },
+    "compact-workshop-home-v1": {
+      "coverage": [
+        0.0981,
+        0.5564,
+        0.9167,
+        0.9167,
+        0.9167
+      ],
+      "stageMaskDifference": [
+        0.4583,
+        0.4314,
+        0.0,
+        0.0
+      ],
+      "stagePixelDifference": [
+        0.4583,
+        0.9523,
+        0.9167,
+        0.9167
+      ],
+      "finishedBounds": [
+        0,
+        2,
+        48,
+        24
+      ]
+    }
+  }
+}

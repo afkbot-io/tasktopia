@@ -1,0 +1,18 @@
+{
+  "generator": "image_gen",
+  "reference": "compact-long-gallery-v1",
+  "stages": [
+    {
+      "stage": 5,
+      "prompt": "Edit the attached approved game sprite into a DISTINCT shopping mall while LOCKING its exact outer rectangle, source canvas, building bounding box, overall 2:1 width/height, south foundation baseline, doorway size and position, two miniature facade floors and high-overhead camera. Keep exactly the existing building dimensions; do not recenter, scale, crop or change framing. Change only architecture within the roof: replace the middle sandstone roof third with a huge flat teal-glass rectangular atrium running north-south for almost the full roof depth. Keep the left and right wings as broad flat muted olive roofs without striped metal ridges. Add one small cream rooftop service box per wing. Keep tiny windows (2x2 native panes), door (3x3), no storefront glass. Warm pale sandstone facade with olive narrow floor bands, no black outline. Uniform saturated magenta background. Pixel-art crisp flat palette, no blur, no outer shadow or glow. THIS IS THE SAME PHYSICAL 96x48 ENVELOPE AND ROOF DEPTH, not a new perspective illustration. Match the exact roof-to-facade ratio of this image."
+    },
+    {
+      "stage": 4,
+      "prompt": "Edit THIS EXACT shopping mall into construction STAGE 4. LOCK the source canvas, entire outer footprint rectangle, location, south foundation baseline, small centered south doorway, camera and pixel scale exactly. Do not zoom, resize, move or recenter anything. Keep the LEFT HALF of the roof completed (roughly 50% of total roof area, including left part of atrium). REMOVE the RIGHT HALF of roof to expose opaque tan concrete floors with multiple raised straight room partition walls and columns inside the same full right footprint. Interior floors must be opaque, not magenta holes. Front shell is built to full TWO shallow floors, all window apertures dark and unfinished without glass. Remove finished rooftop HVAC objects and landscaping. Modest material piles inside rooms, no cranes/scaffold protruding outside lot. Preserve sandstone/olive/teal identity where roof survives. Crisp pixel blocks, uniform magenta #ff00ff OUTSIDE only. Never flatten to a roofless slab; exposed room walls have visible height. Identical camera and exact common frame as stage5."
+    },
+    {
+      "stage": 3,
+      "prompt": "Edit image1 (stage4 shopping mall) into earlier STAGE3, using image2 finished stage5 ONLY as exact immutable registration authority. Keep exact source canvas, full rectangular lot floor, outer x/y bounds, south bottom foundation baseline and small doorway axis. Remove ALL remaining roof including ALL glass atrium. Expose opaque tan floor throughout, a central broad corridor with low straight room partition walls on both sides; retain the right-half room layout of image1 but make some walls partly built. Structure only roughly half assembled: low exterior masonry, intermittent upright columns, broken unfinished upper wall segments, small material stacks INSIDE the reserved rectangle. The complete opaque ground/foundation remains the full original depth and width. Roofless does NOT mean shorten the building or make the floor transparent. South frontage reduced to a partial one-floor construction wall plus a few unfinished upright second-floor columns, but foundation two bottom rows remain identical full width. No finished windows, landscaping, rooftop equipment, cranes or external scaffolding. Same high-overhead axis-aligned camera, chunky restrained pixel-art palette. Outside is uniform saturated magenta, no magenta inside rooms. No recenter, rescale or new perspective."
+    }
+  ]
+}

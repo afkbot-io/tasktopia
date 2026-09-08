@@ -1,0 +1,76 @@
+{
+  "audit": {
+    "metrics": {
+      "cities": 1,
+      "districts": 1,
+      "tasks": 7,
+      "blocks": 2,
+      "roadSegments": 26,
+      "plannedSlots": 10,
+      "roads": 615,
+      "bridges": 0,
+      "roadClasses": {
+        "LOCAL": 615,
+        "COLLECTOR": 0,
+        "ARTERIAL": 0,
+        "HIGHWAY": 0
+      },
+      "taskStages": {
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 6
+      },
+      "uniqueBuildingTypes": 6,
+      "uniqueBuildingTypesPerCity": {
+        "Торговый центр — стадии": 6
+      },
+      "tasksPerCity": {
+        "Торговый центр — стадии": 7
+      },
+      "districtsPerCity": {
+        "Торговый центр — стадии": 1
+      },
+      "tasksPerDistrict": {
+        "Проверка масштаба": 7
+      },
+      "districtCellRange": {
+        "min": 1792,
+        "max": 1792
+      },
+      "maximumTaskRoadDistance": 12,
+      "maximumEntranceAccessLength": 13,
+      "surfaceCells": 489,
+      "worldFeatures": 0,
+      "greenAreas": 0,
+      "parkDecor": 0,
+      "greenAreasPerCity": {
+        "Торговый центр — стадии": 0
+      },
+      "serviceRolesPerCity": {
+        "Торговый центр — стадии": [
+          "SHOP"
+        ]
+      },
+      "districtArchetypes": {
+        "NEW_BUILD": 1
+      },
+      "zoningCompliance": 1,
+      "zoningPrimarySharePerDistrict": {
+        "Проверка масштаба": 1
+      },
+      "asphaltSharePerDistrict": {
+        "Проверка масштаба": 0.19084821428571427
+      },
+      "maximumResidentialAsphaltShare": 0.19084821428571427,
+      "crosswalkCells": 0,
+      "roadJunctionsPerCity": {
+        "Торговый центр — стадии": 2
+      }
+    },
+    "violations": []
+  },
+  "duplicateCreateRejected": "INVALID_INPUT",
+  "taskCountAfterRejectedCreate": 7
+}

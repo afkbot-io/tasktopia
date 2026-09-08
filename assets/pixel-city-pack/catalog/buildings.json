@@ -1777,6 +1777,57 @@
         "9a22c025bbb4f83f05a067045ec6e47b7cda6793b8629d23d11131819fb42492"
       ],
       "reviewed": true
+    },
+    {
+      "key": "compact-city-mall-v1",
+      "label": "Торговый центр «Атриум»",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "shopping-mall"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stageSources": [
+        "ai-authored/compact-city-mall-v1/sources/stage-3.png",
+        "ai-authored/compact-city-mall-v1/sources/stage-4.png",
+        "ai-authored/compact-city-mall-v1/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "e7fb5bd1d32455a29acb6a774264330e1897ddbb763c544fa0b42682f4d4417a",
+        "68800df8b16affefc16f7aef19aae53a0d01473f445acce79c20b10feb675a8c",
+        "8beaf21502766e65c5049fac8eff9408aea38fc5d887cbf31d65fb7f0fbc2144"
+      ],
+      "reviewed": true
     }
   ]
 }
