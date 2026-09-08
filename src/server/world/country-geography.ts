@@ -57,14 +57,21 @@ export function createCountryWorldProjection(geography: CountryGeography, countr
   };
 }
 
-/** Select one country's planet cells plus the immediately visible world ring. */
-export function countryMacroContext(atlas: ProjectedPlanetAtlas, countryId: string, padding = 1): CountryMacroCell[] {
+/** Select one country's planet cells plus a wider ring of its real continental neighbours. */
+export function countryMacroContext(atlas: ProjectedPlanetAtlas, countryId: string, padding = 3): CountryMacroCell[] {
   const selected = atlas.countries.find((country) => country.id === countryId);
   if (!selected || selected.cells.length === 0) return [];
-  const minQ = Math.min(...selected.cells.map((cell) => cell.q)) - padding;
-  const maxQ = Math.max(...selected.cells.map((cell) => cell.q)) + padding;
-  const minR = Math.min(...selected.cells.map((cell) => cell.r)) - padding;
-  const maxR = Math.max(...selected.cells.map((cell) => cell.r)) + padding;
+  let minQ = Math.min(...selected.cells.map((cell) => cell.q)) - padding;
+  let maxQ = Math.max(...selected.cells.map((cell) => cell.q)) + padding;
+  let minR = Math.min(...selected.cells.map((cell) => cell.r)) - padding;
+  let maxR = Math.max(...selected.cells.map((cell) => cell.r)) + padding;
+  // Include real terrain across the viewport's aspect ratio, instead of
+  // letterboxing a narrow crop with water that may actually be foreign land.
+  const width = maxQ - minQ + 1, height = maxR - minR + 1;
+  const extraQ = Math.max(0, Math.ceil(height * COUNTRY_GEOGRAPHY_COLUMNS / COUNTRY_GEOGRAPHY_ROWS) - width);
+  const extraR = Math.max(0, Math.ceil(width * COUNTRY_GEOGRAPHY_ROWS / COUNTRY_GEOGRAPHY_COLUMNS) - height);
+  minQ -= Math.floor(extraQ / 2); maxQ += Math.ceil(extraQ / 2);
+  minR -= Math.floor(extraR / 2); maxR += Math.ceil(extraR / 2);
   const inside = (cell: { q: number; r: number }) => cell.q >= minQ && cell.q <= maxQ && cell.r >= minR && cell.r <= maxR;
   const context = new Map<string, CountryMacroCell>();
   for (const cell of atlas.oceanCells) if (inside(cell)) context.set(`${cell.q}:${cell.r}`, {

@@ -1,3 +1,4 @@
+import { loadMapWithTimeout } from "./map-load-timeout";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../shared/city-scene-contract";
 import type { CountryOverviewDto } from "../shared/country-overview-contract";
 import { api } from "./api";
@@ -95,9 +96,9 @@ export function advanceMapSceneCaches(event: RealtimeEvent): void {
   }
 }
 export async function loadCityScene(countryId: string, cityId: string, revision: number, force = false,
-  load = () => api<CitySceneDto>(`/api/countries/${countryId}/cities/${cityId}/scene`, {
-      cache: "no-cache", headers: { accept: `application/vnd.tasktopia.city-scene+json; version=${CITY_SCENE_SCHEMA_VERSION}` },
-  })): Promise<CitySceneDto> {
+  load = () => loadMapWithTimeout(signal => api<CitySceneDto>(`/api/countries/${countryId}/cities/${cityId}/scene`, {
+      signal, cache: "no-cache", headers: { accept: `application/vnd.tasktopia.city-scene+json; version=${CITY_SCENE_SCHEMA_VERSION}` },
+  }))): Promise<CitySceneDto> {
   const epoch = sessionEpoch;
   const dirtyRevision = () => Math.max(dirtySceneRevisions.get(countryId) ?? 0, dirtySceneRevisions.get(`${countryId}:${cityId}`) ?? 0);
   for (;;) {

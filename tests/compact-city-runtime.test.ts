@@ -4,7 +4,7 @@ import { createTestDb, type Db } from "../src/server/db";
 import { registerUser } from "../src/server/auth";
 import { readActiveBlockLayout } from "../src/server/world/active-block-layout";
 import { auditWorld } from "../src/server/world/world-audit";
-import { compactBuildingShapeFamily } from "../src/shared/compact-building-families";
+import { compactBuildingShapeFamily, COMPACT_BUILDING_SHAPES } from "../src/shared/compact-building-families";
 
 describe("compact block runtime cutover", { timeout: 60_000 }, () => {
   let db: Db; let service: AppService; let countryId: string;
@@ -18,9 +18,10 @@ describe("compact block runtime cutover", { timeout: 60_000 }, () => {
     const city = await service.createCity(countryId, { name: "Compact City", idempotencyKey: "city" });
     const district = await service.createDistrict(countryId, { cityId: city.id, name: "First District", activate: true, idempotencyKey: "district" });
     const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "First building", estimate: 1, idempotencyKey: "task" });
-    expect(compactBuildingShapeFamily(task.buildingType)).toBe("compact-apartment-v1");
-    expect(task.footprint).toHaveLength(36);
-    expect(new Set(task.footprint.map(cell => cell.x)).size).toBe(6);
+    const shape = COMPACT_BUILDING_SHAPES[compactBuildingShapeFamily(task.buildingType)!];
+    expect(shape).toBeDefined();
+    expect(task.footprint).toHaveLength(shape.width * shape.height);
+    expect(new Set(task.footprint.map(cell => cell.x)).size).toBe(shape.width);
     const layout = (await readActiveBlockLayout(db, city.id))!;
     expect(layout.placements).toHaveLength(1);
     expect(layout.blocks).toHaveLength(1);

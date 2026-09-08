@@ -91,11 +91,11 @@ describe("independent long gallery geometry and durable slots", () => {
       parameters: { firstFamily: GALLERY } })).toThrow(/fit/i);
   });
 
-  it("can include the gallery in new default v3 parcels without changing the first default house", () => {
+  it("can include the gallery among varied default v3 parcels", () => {
     const families = new Set<string | undefined>();
     for (let seed = 0; seed < 32; seed++) {
       const plan = createBlockSitePlan({ ...storedBlock, seed });
-      expect(plan.parcels[0]).toMatchObject({ family: "compact-apartment-v1", width: 6, height: 6 });
+      expect(plan.parcels[0]!.kind).toBe("BUILDING");
       plan.parcels.forEach(parcel => families.add(parcel.family));
     }
     expect(families.has(GALLERY)).toBe(true);
@@ -119,7 +119,7 @@ describe("independent long gallery geometry and durable slots", () => {
   });
 
   it("appends a fitting block for an explicit gallery while preserving a stored old v3 site plan", () => {
-    const previous = compile([task(1)]);
+    const previous = compile([task(1, "compact-apartment-v1")]);
     const old = previous.blocks[0]!;
     old.parameters.sitePlan = structuredClone(oldSitePlan);
     const saved = structuredClone(previous);

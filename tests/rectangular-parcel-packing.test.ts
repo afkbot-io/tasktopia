@@ -39,6 +39,10 @@ describe("rectangular building parcels", () => {
       }
     }
   });
+  it("varies the first building proportion across seeds", () => {
+    const first = Array.from({length: 24}, (_, seed) => packBuildingParcels({width:32,height:32,seed,corner:"NW",shapes})[0]!);
+    expect(new Set(first.map(p => p.family)).size).toBe(3);
+  });
   it("refuses an explicit first shape that cannot fit, rather than substituting a smaller house", () => {
     expect(() => packBuildingParcels({ width: 16, height: 16, seed: 0, corner: "NW", shapes, firstFamily: "long" })).toThrow(/fit/i);
   });

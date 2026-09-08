@@ -123,7 +123,7 @@ describe("independently authored north-south long slate wing", () => {
   });
 
   it("appends a fitting vertical parcel without replanning a recorded older V3 block", () => {
-    const previous = compile([task(1)]), old = previous.blocks[0]!;
+    const previous = compile([task(1, "compact-apartment-v1")]), old = previous.blocks[0]!;
     old.parameters.sitePlan = structuredClone(oldSitePlan);
     const saved = structuredClone(previous);
     const next = compile([task(1), task(2, WING)], previous);

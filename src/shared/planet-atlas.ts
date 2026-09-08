@@ -417,15 +417,8 @@ function projectPlanetCityPoint(point: PlanetPoint, city: PlanetCountryDto["citi
 }
 
 export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: PlanetMapCamera): ProjectedPlanetMap {
-  // The atmosphere and its clip aperture scale with the globe. Pan remains a
-  // content operation, so the user can still explore the surface without the
-  // planet itself sliding through space. The bounded scale prevents the old
-  // circle-plus-rectangle ("keyhole") frame at extreme zoom.
-  const atmosphereCamera = {
-    panX: 0,
-    panY: 0,
-    zoom: Math.max(.96, Math.min(1.45, 1 + (camera.zoom - 1) * .12)),
-  };
+  // Every surface layer shares one camera, including the silhouette and clouds.
+  const atmosphereCamera = camera;
   const countries = base.countries.map((country): PlanetMapCountry => {
     const cells = country.cells.map((cell) => projectCell(cell, base, camera));
     const citiesById = new Map(country.cities.map(city => [city.id, city]));
@@ -441,10 +434,10 @@ export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: Pl
   });
   const clouds = base.clouds.map((cloud) => {
     const point = affineProject(cloud, base, atmosphereCamera);
-    return { ...cloud, x: point.x, y: point.y, scale: cloud.scale * Math.min(1.25, .72 + camera.zoom * .16) };
+    return { ...cloud, x: point.x, y: point.y, scale: cloud.scale * camera.zoom };
   });
   const fit = Math.min(MAP_WIDTH * .76 / base.width, MAP_HEIGHT * .76 / base.height);
-  const fogScale = fit;
+  const fogScale = fit * camera.zoom;
   const surfaceStart = affineProject({ x: 0, y: 0 }, base, atmosphereCamera);
   const surfaceEnd = affineProject({ x: base.width, y: base.height }, base, atmosphereCamera);
   return { width: MAP_WIDTH, height: MAP_HEIGHT, surface: { minX: surfaceStart.x, minY: surfaceStart.y, maxX: surfaceEnd.x, maxY: surfaceEnd.y }, countries, coastCells: base.coastCells.map((cell) => projectCell(cell, base, camera)), routes, clouds, stars: base.stars, edgeFog: base.edgeFog.map((fog) => ({ ...fog, point: affineProject(fog.point, base, atmosphereCamera), size: Math.max(4, Math.round(fog.size * fogScale)) })) };
