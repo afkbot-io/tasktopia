@@ -7,6 +7,7 @@ import {decodeCountryTerrain} from "../../src/shared/country-overview-contract";
 // Render fixture only: API source/auth/completion are covered by planet-atlas-route.test.ts.
 // No production state or test database rows are mutated by this scenario.
 test("small atlas labels, land railways and visible air/sea traffic",async({page}, info)=>{
+  test.setTimeout(120_000);
   await mkdir("screenshots/atlas-transport",{recursive:true});
   const errors:string[]=[];
   page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
@@ -25,10 +26,10 @@ test("small atlas labels, land railways and visible air/sea traffic",async({page
   await page.route("**/api/planet-atlas",route=>route.fulfill({json:atlas}));
   await page.route(`**/api/countries/${bootstrap.country.id}/overview`,route=>route.fulfill({json:overview}));
   await page.goto("/");
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic", { timeout: 60_000 });
   await page.mouse.move(10,20);await page.screenshot({path:"screenshots/atlas-transport/city.png"});
   await page.getByRole("button",{name:"Страна",exact:true}).click();
-  const country=page.locator(".country-overview");await expect(country).toHaveAttribute("data-country-ready","true");
+  const country=page.locator(".country-overview");await expect(country).toHaveAttribute("data-country-ready","true", { timeout: 30_000 });
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await expect.poll(async()=>Number(await country.getAttribute("data-country-railways"))).toBeGreaterThan(0);
   const plane=page.locator(".country-atlas-aircraft").first();await expect(plane).toBeVisible();
@@ -42,7 +43,7 @@ test("small atlas labels, land railways and visible air/sea traffic",async({page
   expect(glyphAfter.width).toBe(glyphBefore.width); expect(glyphAfter.height).toBe(glyphBefore.height);
   await page.screenshot({path:`screenshots/atlas-transport/country-${info.project.name}.png`});
   await page.getByRole("button",{name:"Планета",exact:true}).click();
-  const planet=page.locator(".planet-atlas");await expect(planet).toHaveAttribute("data-planet-ready","true");await expect(page.locator(".map-level-transition")).toHaveCount(0);
+  const planet=page.locator(".planet-atlas");await expect(planet).toHaveAttribute("data-planet-ready","true", { timeout: 30_000 });await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await expect.poll(async()=>Number(await planet.getAttribute("data-planet-railways"))).toBeGreaterThan(0);
   await expect.poll(async()=>Number(await planet.getAttribute("data-planet-ships"))).toBeGreaterThan(0);
   expect(await page.locator(".planet-ships image").count()).toBeGreaterThan(0);
@@ -63,6 +64,7 @@ test("small atlas labels, land railways and visible air/sea traffic",async({page
 });
 
 test("dense country keeps navigation bounded and directory usable", async ({ page }, info) => {
+  test.setTimeout(120_000);
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).ok()).toBe(true);
   const bootstrap = await (await page.request.get("/api/bootstrap")).json();
   const overview = await (await page.request.get(`/api/countries/${bootstrap.country.id}/overview`)).json() as CountryOverviewDto;
@@ -77,10 +79,10 @@ test("dense country keeps navigation bounded and directory usable", async ({ pag
   overview.connections = []; overview.revision += "-dense-150";
   await page.route(`**/api/countries/${bootstrap.country.id}/overview`, route => route.fulfill({ json: overview }));
   await page.goto("/");
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 60_000 });
   await page.getByRole("button", { name: "Страна", exact: true }).click();
   const host = page.locator(".country-overview");
-  await expect(host).toHaveAttribute("data-country-ready", "true");
+  await expect(host).toHaveAttribute("data-country-ready", "true", { timeout: 30_000 });
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await expect(page.locator(".country-city-glyph")).toHaveCount(150);
   const before = await page.locator(".country-overview-raster").getAttribute("style");

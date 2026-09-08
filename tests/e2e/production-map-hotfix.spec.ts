@@ -80,11 +80,17 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
   await page.mouse.wheel(0, 4_000);
   const planet = page.locator(".planet-atlas");
   await expect(planet).toBeVisible({ timeout: 5_000 });
-  expect(Number(await planet.getAttribute("data-globe-zoom"))).toBeGreaterThan(1);
-  const surface = planet.locator("clipPath ellipse");
-  const radii = await surface.evaluate((ellipse) => ({ rx: Number(ellipse.getAttribute("rx")), ry: Number(ellipse.getAttribute("ry")) }));
-  expect(radii.rx).toBeLessThan(500);
-  expect(radii.ry).toBeLessThan(350);
+  expect(Number(await planet.getAttribute("data-globe-zoom"))).toBe(1);
+  await expect(planet).toHaveAttribute("data-planet-ready", "true", { timeout: 30_000 });
+  await expect(planet.locator("clipPath ellipse")).toHaveCount(0);
+  const rows = await planet.locator("clipPath rect").evaluateAll(rects => rects.map(rect => ({
+    x: Number(rect.getAttribute("x")), y: Number(rect.getAttribute("y")),
+    width: Number(rect.getAttribute("width")), height: Number(rect.getAttribute("height")),
+  })));
+  expect(rows.length).toBeGreaterThan(20);
+  expect(rows.every(row => row.width > 0 && row.height > 0)).toBe(true);
+  // The round planet has stepped shoulders rather than a rectangular ocean.
+  expect(rows[0]!.width).toBeLessThan(rows[Math.floor(rows.length / 2)]!.width);
   await page.screenshot({ path: testInfo.outputPath("planet.png"), fullPage: true });
 
   expect(failures.filter((message) => !message.includes("401 (Unauthorized)"))).toEqual([]);

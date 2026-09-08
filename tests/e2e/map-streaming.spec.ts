@@ -129,12 +129,19 @@ test("ten country-city cycles keep one renderer and a stable asset residency", a
     residentAssets.push(Number(await host.getAttribute("data-leased-assets") ?? 0));
     await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Страна" }).click();
     await expect(page.locator(".country-overview")).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator(".country-overview canvas")).toHaveCount(1);
+    const country = page.locator(".country-overview");
+    await expect(country).toHaveAttribute("data-country-ready", "true", { timeout: 30_000 });
+    await expect(country.locator(".country-overview-raster")).toHaveCount(1);
+    await expect(country.locator(".country-railway-overlay")).toHaveCount(1);
+    const cities = Number(await country.getAttribute("data-country-overview-cities"));
+    await expect(country.locator(".country-city-glyph")).toHaveCount(cities);
+    await expect(country.locator("canvas")).toHaveCount(cities + 2);
     await page.locator(".country-overview-city").first().click();
     host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
   }
   await expect(page.locator(".map-region canvas")).toHaveCount(1);
+  await expect(page.locator(".country-city-glyph, .country-railway-overlay")).toHaveCount(0);
   expect(residentAssets.every((value) => value > 0)).toBe(true);
   expect(Math.max(...residentAssets)).toBeLessThanOrEqual(residentAssets[0]!);
 });
