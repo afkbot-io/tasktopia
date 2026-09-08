@@ -9,9 +9,9 @@ import {decodeCountryTerrain} from "../../src/shared/country-overview-contract";
 test("small atlas labels, land railways and visible air/sea traffic",async({page}, info)=>{
   test.setTimeout(120_000);
   await mkdir("screenshots/atlas-transport",{recursive:true});
+  // Keep the browser clock real: this scenario verifies live SVG SMIL motion.
   const errors:string[]=[];
   page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
-  await page.clock.setFixedTime(new Date("2026-09-08T10:00:00Z"));
   expect((await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}})).ok()).toBe(true);
   const bootstrap=await(await page.request.get("/api/bootstrap")).json();
   const overview=await(await page.request.get(`/api/countries/${bootstrap.country.id}/overview`)).json() as CountryOverviewDto;
