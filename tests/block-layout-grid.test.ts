@@ -13,6 +13,22 @@ const input = (tasks: BlockLayoutTaskInput[]): BlockLayoutCompilerInput => ({
 });
 
 describe("incremental rectangular block world", () => {
+  it("keeps automatic task number ranges in non-overlapping consecutive blocks", () => {
+    const tasks = Array.from({ length: 150 }, (_, i) => ({ ...task(i + 1), autoVisualKind: true }));
+    const layout = compileBlockLayout(input(tasks));
+    const blocks = new Map(layout.blocks.map(b => [b.id, b.sequence]));
+    const byTask = new Map(layout.placements.map(p => [p.taskId, blocks.get(p.blockId)!]));
+    const sequence = tasks.map(t => byTask.get(t.id)!);
+    expect(sequence).toEqual([...sequence].sort((a,b) => a-b));
+  });
+  it("continues forward after a task needs a dedicated public-space block", () => {
+    const tasks = [task(1),task(2,"WATER"),task(3),task(4)];
+    const layout = compileBlockLayout(input(tasks));
+    const blocks = new Map(layout.blocks.map(b => [b.id,b.sequence]));
+    const byTask = new Map(layout.placements.map(p => [p.taskId,blocks.get(p.blockId)!]));
+    expect(byTask.get("task-3")).toBeGreaterThanOrEqual(byTask.get("task-2")!);
+    expect(byTask.get("task-4")).toBe(byTask.get("task-3"));
+  });
   it("fills compatible slots before adding a block and preserves every old position", () => {
     const first = compileBlockLayout(input([task(1), task(2)]));
     const capacity = blockSlots(first.blocks[0]!).filter(slot => slot.kind === "BUILDING").length;

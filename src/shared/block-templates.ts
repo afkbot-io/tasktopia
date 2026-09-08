@@ -109,6 +109,19 @@ export function createBlockSitePlan(block: CityBlockV1): BlockSitePlan {
     clearance: slot.origin.x - slot.siteBounds.minX as 0 | 1,
     kind: slot.kind, ...(slot.buildingFamily ? { family: slot.buildingFamily } : {}),
   })) };
+  // Walk neighbouring parcels, mixing small public spaces into the street
+  // instead of allocating every house first and all parks as a trailing row.
+  const remaining = plan.parcels.slice(1);
+  const ordered = plan.parcels.slice(0, 1);
+  while (remaining.length) {
+    const previous = ordered.at(-1)!;
+    const distance = (p: typeof previous) => Math.abs(p.x + p.width / 2 - previous.x - previous.width / 2)
+      + Math.abs(p.y + p.height / 2 - previous.y - previous.height / 2)
+      + (previous.kind === "PARK" && p.kind === "PARK" ? 12 : 0);
+    remaining.sort((a, b) => distance(a) - distance(b) || a.y - b.y || a.x - b.x);
+    ordered.push(remaining.shift()!);
+  }
+  plan.parcels = ordered;
   return readBlockSitePlan(plan, block.width, block.height, approvedShapes);
 }
 

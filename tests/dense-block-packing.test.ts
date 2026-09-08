@@ -144,7 +144,7 @@ describe("dense mixed rectangular parcels", () => {
     expect(large.placements).toHaveLength(60);
   });
 
-  it("reserves shops at two and four nonempty district blocks without inventing tasks or blocks", () => {
+  it("places due shops in the next compatible forward block without inventing tasks", () => {
     const input = spec(1);
     let layout = compileBlockLayout(input);
     const shops = () => layout.blocks.flatMap(block => blockSlots(block)
@@ -169,26 +169,20 @@ describe("dense mixed rectangular parcels", () => {
     // keeping the building count below the competing education threshold.
     append("WATER");
     expect(layout.blocks).toHaveLength(2);
-    expect(shops()).toHaveLength(1);
-    expect(layout.placements.some(placement => placement.serviceRole === "SHOP")).toBe(false);
+    // No compatible forward parcel exists until the next residential block.
+    expect(shops()).toHaveLength(0);
     append("BUILDING");
-    expect(layout.blocks).toHaveLength(2);
-    expect(layout.placements.find(placement => placement.taskId === "task-3")).toMatchObject({ ...shops()[0], serviceRole: "SHOP" });
-
-    append("PARKING");
     expect(layout.blocks).toHaveLength(3);
+    expect(layout.placements.find(placement => placement.taskId === "task-3")).toMatchObject({ serviceRole: "SHOP" });
     expect(shops()).toHaveLength(1);
+    append("PARKING");
     append("WATER");
-    expect(layout.blocks).toHaveLength(4);
-    expect(shops()).toHaveLength(2);
+    expect(layout.blocks).toHaveLength(5);
     expect(layout.placements.filter(placement => placement.serviceRole === "SHOP")).toHaveLength(1);
-    const occupied = new Set(layout.placements.map(placement => `${placement.blockId}:${placement.slotKey}`));
-    const pendingShop = shops().find(slot => !occupied.has(`${slot.blockId}:${slot.slotKey}`))!;
-    expect(pendingShop).toBeDefined();
     append("BUILDING");
-    expect(layout.blocks).toHaveLength(4);
+    expect(layout.blocks).toHaveLength(6);
     expect(layout.placements).toHaveLength(6);
-    expect(layout.placements.find(placement => placement.taskId === "task-6")).toMatchObject({ ...pendingShop, serviceRole: "SHOP" });
+    expect(layout.placements.find(placement => placement.taskId === "task-6")).toMatchObject({ serviceRole: "SHOP" });
     expect(shops()).toHaveLength(2);
   });
 

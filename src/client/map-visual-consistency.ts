@@ -14,9 +14,3 @@ export function pixelPlanetRows(bounds: Rect, step = 8): Array<{ x: number; y: n
   }
   return rows;
 }
-
-export function blockPlaqueText(count: number): string {
-  const mod100 = count % 100, mod10 = count % 10;
-  const noun = mod100 >= 11 && mod100 <= 14 ? "задач" : mod10 === 1 ? "задача" : mod10 >= 2 && mod10 <= 4 ? "задачи" : "задач";
-  return `${count} ${noun}`;
-}

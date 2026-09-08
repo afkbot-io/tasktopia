@@ -164,14 +164,16 @@ describe("planet atlas projection", () => {
     expect(second.routes.every((route) => route.path.startsWith("M") && route.rotateWithPath)).toBe(true);
   });
 
-  it("keeps the planet surface and edge fog fixed while drag rotates only world content", () => {
+  it("moves the surface, clouds and countries together when panning", () => {
     const projected = projectPlanetAtlas(fixture);
     const still = projectProjectedPlanetMap(projected, { panX: 0, panY: 0, zoom: 1 });
     const dragged = projectProjectedPlanetMap(projected, { panX: .45, panY: -.2, zoom: 1 });
 
-    expect(dragged.surface).toEqual(still.surface);
-    expect(dragged.edgeFog).toEqual(still.edgeFog);
-    expect(dragged.clouds).toEqual(still.clouds);
+    expect(dragged.surface).not.toEqual(still.surface);
+    expect(dragged.edgeFog).not.toEqual(still.edgeFog);
+    const delta = dragged.countries[0]!.center.x - still.countries[0]!.center.x;
+    expect(dragged.surface.minX - still.surface.minX).toBeCloseTo(delta);
+    expect(dragged.clouds[0]!.x - still.clouds[0]!.x).toBeCloseTo(delta);
     expect(dragged.countries.map((country) => country.center)).not.toEqual(still.countries.map((country) => country.center));
   });
 
@@ -183,7 +185,7 @@ describe("planet atlas projection", () => {
     const width = (map: typeof still) => map.surface.maxX - map.surface.minX;
 
     expect(width(zoomed)).toBeGreaterThan(width(still));
-    expect(draggedAtZoom.surface).toEqual(zoomed.surface);
+    expect(draggedAtZoom.surface).not.toEqual(zoomed.surface);
     expect(draggedAtZoom.countries.map((country) => country.center)).not.toEqual(zoomed.countries.map((country) => country.center));
   });
 

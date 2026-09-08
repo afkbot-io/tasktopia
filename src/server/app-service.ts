@@ -966,7 +966,8 @@ export class AppService {
 
   async getCountryOverview(userId: string, countryId: string): Promise<CountryOverviewDto> {
     const planetAtlas = await this.getPlanetAtlas(userId);
-    const cacheKey = `${userId}:${countryId}:${planetAtlas.revision}`;
+    const geographyRevision = createHash("sha256").update(`${planetAtlas.revision}:context-3`).digest("hex").slice(0, 16);
+    const cacheKey = `${userId}:${countryId}:${geographyRevision}`;
     const cached = this.countryOverviewCache.get(cacheKey);
     if (cached) {
       this.countryOverviewCache.delete(cacheKey);
@@ -975,7 +976,7 @@ export class AppService {
     }
     const storedSnapshot = await this.db.prepare(`SELECT payload_json FROM country_overview_snapshots_v1
       WHERE user_id = ? AND country_id = ? AND schema_version = ? AND planet_revision = ?`)
-      .get<{ payload_json: CountryOverviewDto }>(userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, planetAtlas.revision);
+      .get<{ payload_json: CountryOverviewDto }>(userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, geographyRevision);
     const storedOverview = storedSnapshot?.payload_json;
     if (storedOverview?.schemaVersion === COUNTRY_OVERVIEW_SCHEMA_VERSION
       && storedOverview.countryId === countryId
@@ -1074,7 +1075,7 @@ export class AppService {
         planet_revision = EXCLUDED.planet_revision,
         payload_json = EXCLUDED.payload_json,
         generated_at = EXCLUDED.generated_at`).run(
-      userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, planetAtlas.revision, JSON.stringify(overview),
+      userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, geographyRevision, JSON.stringify(overview),
     );
     this.countryOverviewCache.set(cacheKey, overview);
     while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);

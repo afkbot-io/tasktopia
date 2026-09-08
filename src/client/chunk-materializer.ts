@@ -26,6 +26,7 @@ type MaterializationRequest = {
 type WorkerSlot = {
   worker: ChunkWorker;
   active?: MaterializationRequest;
+  timeout?: ReturnType<typeof setTimeout>;
 };
 
 const browserWorkerFactory: ChunkWorkerFactory = () => {
@@ -58,6 +59,7 @@ export class ChunkMaterializer {
   private readonly workerFactory: ChunkWorkerFactory;
   private nextRequestId = 1;
   private replacementAttempts = 0;
+  private workerFailureCount = 0;
   private replacementTimer: ReturnType<typeof setTimeout> | undefined;
   private inlineActive: MaterializationRequest | undefined;
   private inlineFallback = false;
@@ -88,24 +90,32 @@ export class ChunkMaterializer {
     worker.addEventListener("message", (event) => {
       const request = slot.active;
       if (!request || request.id !== event.data.id) return;
+      clearTimeout(slot.timeout);
       slot.active = undefined;
       this.replacementAttempts = 0;
+      this.workerFailureCount = 0;
       if (event.data.chunk) this.finish(request, () => request.resolve(event.data.chunk!));
       else this.finish(request, () => request.reject(new Error(event.data.error ?? "Chunk materialization failed")));
       this.dispatch();
     });
     worker.addEventListener("error", (event) => {
       if (!this.workers.includes(slot)) return;
-      const error = new Error(event.message || "Chunk materialization worker failed");
-      if (slot.active) this.finish(slot.active, () => slot.active?.reject(error));
-      slot.active = undefined;
-      worker.terminate();
-      const index = this.workers.indexOf(slot);
-      if (index >= 0) this.workers.splice(index, 1);
-      this.scheduleReplacement();
-      this.dispatch();
+      this.failWorker(slot, new Error(event.message || "Chunk materialization worker failed"));
     });
     this.workers.push(slot);
+  }
+
+  private failWorker(slot: WorkerSlot, error: Error): void {
+    if (!this.workers.includes(slot)) return;
+    clearTimeout(slot.timeout);
+    const active = slot.active;
+    slot.active = undefined;
+    if (active) this.finish(active, () => active.reject(error));
+    slot.worker.terminate();
+    this.workers.splice(this.workers.indexOf(slot), 1);
+    this.workerFailureCount += 1;
+    this.scheduleReplacement();
+    this.dispatch();
   }
 
   private finish(request: MaterializationRequest, settle: () => void): void {
@@ -127,16 +137,11 @@ export class ChunkMaterializer {
       }
       if (!request) return;
       slot.active = request;
+      slot.timeout = setTimeout(() => this.failWorker(slot, new Error("Chunk materialization timed out")), 15_000);
       try {
         slot.worker.postMessage({ id: request.id, payload: request.payload, terrainSamples: request.terrainSamples });
       } catch (error) {
-        slot.active = undefined;
-        this.finish(request, () => request.reject(error instanceof Error ? error : new Error("Chunk materialization worker failed")));
-        slot.worker.terminate();
-        const index = this.workers.indexOf(slot);
-        if (index >= 0) this.workers.splice(index, 1);
-        this.scheduleReplacement();
-        this.dispatch();
+        this.failWorker(slot, error instanceof Error ? error : new Error("Chunk materialization worker failed"));
         return;
       }
     }
@@ -165,7 +170,7 @@ export class ChunkMaterializer {
 
   private scheduleReplacement(): void {
     if (this.destroyed || this.workers.length >= this.targetWorkerCount || this.replacementTimer) return;
-    if (this.replacementAttempts >= 3) {
+    if (this.replacementAttempts >= 3 || this.workerFailureCount >= 3) {
       if (this.workers.length === 0) {
         this.inlineFallback = true;
         this.dispatch();
@@ -204,6 +209,7 @@ export class ChunkMaterializer {
         if (queuedIndex >= 0) this.queue.splice(queuedIndex, 1);
         const slot = this.workers.find((candidate) => candidate.active === request);
         if (slot) {
+          clearTimeout(slot.timeout);
           slot.active = undefined;
           slot.worker.terminate();
           const workerIndex = this.workers.indexOf(slot);
@@ -229,6 +235,7 @@ export class ChunkMaterializer {
     this.destroyed = true;
     if (this.replacementTimer) clearTimeout(this.replacementTimer);
     for (const slot of this.workers) {
+      clearTimeout(slot.timeout);
       slot.worker.terminate();
       if (slot.active) this.finish(slot.active, () => slot.active?.reject(new DOMException("Chunk materializer disposed", "AbortError")));
     }

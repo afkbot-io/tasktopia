@@ -149,7 +149,8 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
           serviceTrigger: t.service_trigger ? String(t.service_trigger) : undefined,
           serviceRoleAssigned: Boolean(t.service_role_assigned),
           constructionStage:TASK_STAGE[String(t.status) as TaskStatus] as ConstructionStage,
-          parkSize: t.visual_kind === "PARK" ? taskParkSize(String(t.visual_asset_key)) : undefined,
+          // AUTO artwork is derived from the selected slot, not durable placement intent.
+          parkSize: !t.visual_auto && t.visual_kind === "PARK" ? taskParkSize(String(t.visual_asset_key)) : undefined,
           visualKind: t.visual_kind === "PARK" ? (t.visual_asset_key === "urban-lake" ? "WATER" : t.visual_asset_key === "urban-parking" ? "PARKING" : "PARK") : "BUILDING",
         })),
       })),

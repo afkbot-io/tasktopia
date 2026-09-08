@@ -35,8 +35,9 @@ export function packBuildingParcels(input: {
     || shapes.some(s => !s.family || ![s.width, s.height].every(n => Number.isInteger(n) && n > 0 && n <= 128))) {
     throw new Error("Invalid rectangular packing input");
   }
+  const fitting = shapes.filter(s => buildingShapeFitsBlock(width, height, s));
   const first = firstFamily === undefined
-    ? shapes.findIndex(s => buildingShapeFitsBlock(width, height, s))
+    ? shapes.indexOf(fitting[choice(seed, 0, 0) % fitting.length]!)
     : shapes.findIndex(s => s.family === firstFamily);
   if (first < 0 || !buildingShapeFitsBlock(width, height, shapes[first]!)) {
     throw new Error("First building shape does not fit the block");
@@ -47,7 +48,7 @@ export function packBuildingParcels(input: {
     const shape = [...shapes.slice(offset), ...shapes.slice(0, offset)].find(s => s.width + 2 <= w && s.height + 2 <= h);
     if (!shape) return;
     // A short residual strip after two houses is an actual public-space site.
-    const park = row >= 2 && h <= 7;
+    const park = row >= 2 && h <= 7 && choice(seed, column, row + 17) % 3 === 0;
     const parcel: BlockParcel = { x, y, width: shape.width, height: park ? h - 2 : shape.height,
       clearance: 1, kind: park ? "PARK" : "BUILDING", ...(!park ? { family: shape.family } : {}) };
     if (corner === "NE" || corner === "SE") parcel.x = width - x - parcel.width - 1;

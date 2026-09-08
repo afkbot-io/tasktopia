@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-09-08T18:54:44.359Z",
+  "generationMs": 22021,
+  "login": {
+    "email": "megacity-validation@tasktopia.local"
+  },
+  "countryId": "980536a1-4945-469f-b1ae-6fcb64af4a32",
+  "country": "Республика Атлас",
+  "city": {
+    "id": "a6944165-9516-4b30-a0f5-983aa103cb51",
+    "name": "Большой Атлас",
+    "morphology": "DENSE_CORE"
+  },
+  "districts": [
+    {
+      "id": "ea6cbce8-36d2-4271-86e2-9beafef8ffe0",
+      "name": "Квартальный район 1",
+      "status": "ACTIVE",
+      "tasks": 17
+    },
+    {
+      "id": "42a72db6-0252-4374-82c5-bdb25d720428",
+      "name": "Квартальный район 2",
+      "status": "COMPLETED",
+      "tasks": 17
+    },
+    {
+      "id": "6515f087-bd3e-4500-bbf0-66673a8fb4f8",
+      "name": "Квартальный район 3",
+      "status": "COMPLETED",
+      "tasks": 17
+    },
+    {
+      "id": "8af2133d-d07f-49b4-a972-6d79276c37df",
+      "name": "Квартальный район 4",
+      "status": "COMPLETED",
+      "tasks": 17
+    },
+    {
+      "id": "9710b52f-1e88-4151-b06a-1f5e5d97c2f7",
+      "name": "Квартальный район 5",
+      "status": "COMPLETED",
+      "tasks": 16
+    },
+    {
+      "id": "1bf35f9d-1a8c-411b-a58d-bcb8c0464e3d",
+      "name": "Квартальный район 6",
+      "status": "PLANNED",
+      "tasks": 16
+    }
+  ],
+  "tasks": 100,
+  "taskStages": {
+    "1": 19,
+    "2": 3,
+    "3": 4,
+    "4": 4,
+    "5": 70
+  },
+  "taskCatalogSize": 35,
+  "metrics": {
+    "cities": 1,
+    "districts": 6,
+    "tasks": 100,
+    "blocks": 12,
+    "roadSegments": 144,
+    "plannedSlots": 8,
+    "roads": 3312,
+    "bridges": 0,
+    "roadClasses": {
+      "LOCAL": 3312,
+      "COLLECTOR": 0,
+      "ARTERIAL": 0,
+      "HIGHWAY": 0
+    },
+    "taskStages": {
+      "1": 19,
+      "2": 3,
+      "3": 4,
+      "4": 4,
+      "5": 70
+    },
+    "uniqueBuildingTypes": 24,
+    "uniqueBuildingTypesPerCity": {
+      "Большой Атлас": 24
+    },
+    "tasksPerCity": {
+      "Большой Атлас": 100
+    },
+    "districtsPerCity": {
+      "Большой Атлас": 6
+    },
+    "tasksPerDistrict": {
+      "Квартальный район 1": 17,
+      "Квартальный район 2": 17,
+      "Квартальный район 3": 17,
+      "Квартальный район 4": 17,
+      "Квартальный район 5": 16,
+      "Квартальный район 6": 16
+    },
+    "districtCellRange": {
+      "min": 1792,
+      "max": 1792
+    },
+    "maximumTaskRoadDistance": 12,
+    "maximumEntranceAccessLength": 15,
+    "surfaceCells": 2502,
+    "worldFeatures": 0,
+    "greenAreas": 35,
+    "parkDecor": 0,
+    "greenAreasPerCity": {
+      "Большой Атлас": 35
+    },
+    "serviceRolesPerCity": {
+      "Большой Атлас": [
+        "SHOP",
+        "EDUCATION",
+        "RAILWAY"
+      ]
+    },
+    "districtArchetypes": {
+      "NEW_BUILD": 2,
+      "PRIVATE": 2,
+      "MIXED_URBAN": 2
+    },
+    "zoningCompliance": 1,
+    "zoningPrimarySharePerDistrict": {
+      "Квартальный район 1": 1,
+      "Квартальный район 2": 1,
+      "Квартальный район 3": 1,
+      "Квартальный район 4": 1,
+      "Квартальный район 5": 1,
+      "Квартальный район 6": 1
+    },
+    "asphaltSharePerDistrict": {
+      "Квартальный район 1": 0.19084821428571427,
+      "Квартальный район 2": 0.19084821428571427,
+      "Квартальный район 3": 0.19084821428571427,
+      "Квартальный район 4": 0.19084821428571427,
+      "Квартальный район 5": 0.19084821428571427,
+      "Квартальный район 6": 0.19084821428571427
+    },
+    "maximumResidentialAsphaltShare": 0.19084821428571427,
+    "crosswalkCells": 0,
+    "roadJunctionsPerCity": {
+      "Большой Атлас": 29
+    }
+  },
+  "violations": []
+}

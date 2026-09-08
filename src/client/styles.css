@@ -214,6 +214,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .country-side-fog-left { left: 0; background: linear-gradient(90deg, #f5f7f0 0 38%, #f5f7f0e8 38% 52%, #f5f7f0a8 52% 66%, #f5f7f066 66% 78%, #f5f7f026 78% 88%, transparent 88%); }
 .country-side-fog-right { right: 0; background: linear-gradient(270deg, #f5f7f0 0 38%, #f5f7f0e8 38% 52%, #f5f7f0a8 52% 66%, #f5f7f066 66% 78%, #f5f7f026 78% 88%, transparent 88%); }
 .country-overview { touch-action: none; user-select: none; }
+.country-overview::before { content: ""; position: absolute; inset: 0; background: inherit; pointer-events: none; filter: var(--world-light-filter, brightness(1)); }
 .country-overview-raster { position: absolute; top: 0; left: 0; display: block; transform-origin: 0 0; image-rendering: pixelated; pointer-events: none; will-change: transform; }
 .country-atlas-aircraft { position: absolute; top: 0; left: 0; z-index: 1; object-fit: contain; image-rendering: pixelated; pointer-events: none; will-change: transform; }
 .country-overview-labels { position: absolute; inset: 0; pointer-events: none; }

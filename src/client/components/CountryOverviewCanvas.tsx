@@ -1,3 +1,4 @@
+import { loadMapWithTimeout } from "../map-load-timeout";
 import { countryRailways } from "../../shared/country-railways";
 import { useEffect, useRef, useState } from "react";
 import type { RealtimeEvent } from "../../shared/contracts";
@@ -29,7 +30,7 @@ async function loadAtlasImage(url: string): Promise<HTMLImageElement> {
   image.decoding = "async";
   image.crossOrigin = "anonymous";
   image.src = url;
-  await image.decode();
+  await loadMapWithTimeout(() => image.decode());
   return image;
 }
 
@@ -89,9 +90,9 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     const cached = countrySceneCache.peek(cacheKey);
     if (cached) setOverview(cached);
     setError("");
-    void countrySceneCache.read(cacheKey, ()=>api<CountryOverviewDto>(`/api/countries/${countryId}/overview`, {
-      headers: { accept: `application/vnd.tasktopia.country-overview+json; version=${COUNTRY_OVERVIEW_SCHEMA_VERSION}` },
-    }))
+    void countrySceneCache.read(cacheKey, ()=>loadMapWithTimeout(signal => api<CountryOverviewDto>(`/api/countries/${countryId}/overview`, {
+      signal, headers: { accept: `application/vnd.tasktopia.country-overview+json; version=${COUNTRY_OVERVIEW_SCHEMA_VERSION}` },
+    })))
       .then((next) => {
         if (controller.signal.aborted) return;
         if (next.schemaVersion !== COUNTRY_OVERVIEW_SCHEMA_VERSION || next.countryId !== countryId) throw new Error("Сервер вернул карту другой страны");
@@ -284,7 +285,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       const staticCanvas = document.createElement("canvas");
       staticCanvas.width = Math.round(columns * cellSize * rasterScale);
       staticCanvas.height = Math.round(rows * cellSize * rasterScale);
-      const context = staticCanvas.getContext("2d", { alpha: false })!;
+      const context = staticCanvas.getContext("2d")!;
       context.imageSmoothingEnabled = false;
       staticCanvas.className = "country-overview-raster";
       staticCanvas.setAttribute("aria-hidden", "true");
@@ -310,7 +311,9 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
           const territory = territoryCodes[index] ?? "0";
           const x = column * cellSize;
           const y = row * cellSize;
-          for (const { x: dx, y: dy, size, tile } of terrainTiles[index]!) {
+          // Deep ocean is one continuous background. Leaving these cells
+          // transparent avoids a rectangular seam from atlas tile variants.
+          for (const { x: dx, y: dy, size, tile } of kind === "deep_water" || kind === "unknown" ? [] : terrainTiles[index]!) {
             const source = textures.get(gameAssetUrl(tile.url))!;
             context.drawImage(source, tile.sourceX, tile.sourceY, tile.tileSize, tile.tileSize,
               (x + dx * cellSize) * rasterScale, (y + dy * cellSize) * rasterScale,
@@ -503,14 +506,9 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       targetCamera.zoom = next;
       targetCamera.centerX = worldX + (width / 2 - screenX) / nextScale;
       targetCamera.centerY = worldY + (height / 2 - screenY) / nextScale;
-      const halfVisibleWidth = width / nextScale / 2;
-      const halfVisibleHeight = height / nextScale / 2;
-      targetCamera.centerX = halfVisibleWidth * 2 >= worldWidth
-        ? (overview.bounds.minX + overview.bounds.maxX) / 2
-        : Math.max(overview.bounds.minX + halfVisibleWidth, Math.min(overview.bounds.maxX - halfVisibleWidth, targetCamera.centerX));
-      targetCamera.centerY = halfVisibleHeight * 2 >= worldHeight
-        ? (overview.bounds.minY + overview.bounds.maxY) / 2
-        : Math.max(overview.bounds.minY + halfVisibleHeight, Math.min(overview.bounds.maxY - halfVisibleHeight, targetCamera.centerY));
+      // Match drag's center bounds; fitting the entire country must not reset a pan.
+      targetCamera.centerX = Math.max(overview.bounds.minX, Math.min(overview.bounds.maxX, targetCamera.centerX));
+      targetCamera.centerY = Math.max(overview.bounds.minY, Math.min(overview.bounds.maxY, targetCamera.centerY));
       scheduleZoom();
     };
     const disposeGestures = bindMapPointerGestures(host, (gesture) => {

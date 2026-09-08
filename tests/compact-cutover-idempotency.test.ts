@@ -43,7 +43,7 @@ describe("compact cutover command identity", { timeout: 30_000 }, () => {
     expect(replay.id).toBe(task.id);
     expect(replay.origin).toEqual(task.origin);
     expect(replay.buildingType).toBe(task.buildingType);
-    expect(replay.footprint).toHaveLength(36);
+    expect(replay.footprint).toEqual(task.footprint);
     expect(await db.prepare("SELECT request_hash,response_json FROM idempotency WHERE country_id=? AND operation=? AND idempotency_key=?")
       .get(countryId, "task.create.v3", payload.idempotencyKey)).toEqual(before);
   });
@@ -59,7 +59,7 @@ describe("compact cutover command identity", { timeout: 30_000 }, () => {
     const revision = (await readActiveBlockLayout(db, city.id))!.revision;
 
     const replay = await service.updateTaskStatus(countryId, input);
-    expect(replay.footprint).toHaveLength(36);
+    expect(replay.footprint).toEqual(task.footprint);
     expect(replay.origin).toEqual(task.origin);
     expect(replay.status).toBe("STARTED");
     expect(replay.events).toEqual(started.events);
@@ -81,7 +81,7 @@ describe("compact cutover command identity", { timeout: 30_000 }, () => {
     const replay = await dispatched.createTask(countryId, input);
     expect(replay.id).toBe(current.id);
     expect(replay.origin).toEqual(current.origin);
-    expect(replay.footprint).toHaveLength(36);
+    expect(replay.footprint).toEqual(current.footprint);
     const deletion = { taskId: current.id, confirmTitle: current.title, idempotencyKey: "delete" };
     const receipt = await service.deleteTask(countryId, deletion);
     await db.prepare("UPDATE idempotency SET operation='task.delete.v1' WHERE country_id=? AND idempotency_key=?")

@@ -1,0 +1,11 @@
+[WebServer] (node:11332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:11362) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/e2e/map-loading-geography.spec.ts:3:1 › 100-task city opens repeatedly and country zoom preserves a panned anchor (5.7s)
+  ✓  2 [chromium] › tests/e2e/map-loading-geography.spec.ts:64:1 › a silent worker cannot leave city loading forever (33.3s)
+
+  2 passed (41.5s)

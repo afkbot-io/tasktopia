@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 /Users/kikasnikita/.codex/worktrees/map-loading-geography
+
+·····································································································································································································
+
+ Test Files  24 passed (24)
+      Tests  197 passed (197)
+   Start at  22:03:12
+   Duration  29.23s (transform 372ms, setup 0ms, import 1.04s, tests 26.61s, environment 1ms)

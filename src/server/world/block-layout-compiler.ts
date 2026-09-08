@@ -84,10 +84,11 @@ function assertCompilerInput(input: BlockLayoutCompilerInput): void {
 /** Reserve only the next already-planned building parcel; never invent a task or block. */
 function reserveNextInfrastructure(district: BlockLayoutDistrictInput, ownBlocks: CityBlockV1[], allBlocks: CityBlockV1[],
   available: Array<{ block: CityBlockV1; slot: BlockSlot }>, occupied: Set<string>, placements: Iterable<TaskPlacementV1>, kinds: Map<string, BlockSlotKind>, durableTriggers: Set<string>, requestedFamily?: string): void {
-  const slots = available.filter(({ block, slot }) => slot.kind === "BUILDING" && !occupied.has(`${block.id}:${slot.key}`));
-  if (!slots.length || slots.some(({ block, slot }) => (block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key])) return;
   const current = [...placements];
   const nonempty = new Set(current.map(p => p.blockId));
+  const latestSequence = Math.max(-1, ...ownBlocks.filter(block => nonempty.has(block.id)).map(block => block.sequence));
+  const slots = available.filter(({ block, slot }) => block.sequence >= latestSequence && slot.kind === "BUILDING" && !occupied.has(`${block.id}:${slot.key}`));
+  if (!slots.length || slots.some(({ block, slot }) => (block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key])) return;
   const ownIds = new Set(ownBlocks.map(b => b.id));
   const count = current.filter(p => ownIds.has(p.blockId) && kinds.get(p.taskId) === "BUILDING").length;
   const triggers = new Set(allBlocks.flatMap(b => Object.values(b.parameters.slotRoleTriggers as Record<string, string> ?? {})));
@@ -115,9 +116,10 @@ const familyFitsSlot = (family:string,slot:BlockSlot) => slot.kind === "BUILDING
   slot.footprintBounds.maxX-slot.footprintBounds.minX+1,slot.footprintBounds.maxY-slot.footprintBounds.minY+1);
 const serviceFamilyForSlot = (role:BlockServiceRole,slot:BlockSlot) => compactServiceFamily(role,
   slot.footprintBounds.maxX-slot.footprintBounds.minX+1,slot.footprintBounds.maxY-slot.footprintBounds.minY+1);
-const parkSizeFitsSlot = (size: BlockLayoutTaskInput["parkSize"], slot: BlockSlot) => !size || slot.kind === "PARK"
+const parkSizeFitsSlot = (size: BlockLayoutTaskInput["parkSize"], slot: BlockSlot, newPlacement = false) => !size || slot.kind === "PARK"
   && slot.footprintBounds.maxX - slot.footprintBounds.minX + 1 >= (size === "BLOCK" ? 17 : 6)
-  && slot.footprintBounds.maxY - slot.footprintBounds.minY + 1 >= (size === "BLOCK" ? 17 : 3);
+  && slot.footprintBounds.maxY - slot.footprintBounds.minY + 1 >= (size === "BLOCK" ? 17 : 3)
+  && (!newPlacement || size !== "POCKET" || slot.footprint.length <= 36);
 
 function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origin: { x: number; y: number }, kind: BlockSlotKind,
   sequence: number, canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], parkSize?: BlockLayoutTaskInput["parkSize"], requestedFamily?: string) {
@@ -328,11 +330,18 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   // Replaying an interleaved city must not move its railway/airport to another
   // task simply because one district happened to be enumerated first.
   const homeUsage = new Map<string, Map<string, number>>();
+  const cityHomeUsage = new Map<string, number>();
+  const latestBlock = new Map<string, number>();
+  const occupiedBlocks = new Set([...activePlacements.values()].map(p => p.blockId));
+  for (const context of contexts) {
+    latestBlock.set(context.district.id, Math.max(-1, ...context.districtBlocks.filter(b => occupiedBlocks.has(b.id)).map(b => b.sequence)));
+  }
   const recordHome = (placement: TaskPlacementV1) => {
     if (placement.serviceRole || kinds.get(placement.taskId) !== "BUILDING") return;
     let counts = homeUsage.get(placement.blockId);
     if (!counts) { counts = new Map(); homeUsage.set(placement.blockId, counts); }
     counts.set(placement.buildingFamily, (counts.get(placement.buildingFamily) ?? 0) + 1);
+    cityHomeUsage.set(placement.buildingFamily, (cityHomeUsage.get(placement.buildingFamily) ?? 0) + 1);
   };
   for (const placement of activePlacements.values()) recordHome(placement);
   pending.sort((a, b) => a.task.taskNumber - b.task.taskNumber || a.task.id.localeCompare(b.task.id));
@@ -352,19 +361,20 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         }
       }
       const eligible = ({ block, slot }: { block: CityBlockV1; slot: BlockSlot }) =>
-        !occupied.has(`${block.id}:${slot.key}`) && (task.autoVisualKind || slot.kind === kind)
-        && parkSizeFitsSlot(task.parkSize, slot)
+        (block.sequence >= (latestBlock.get(district.id) ?? -1)
+          || Boolean((block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key])) && !occupied.has(`${block.id}:${slot.key}`) && (task.autoVisualKind || slot.kind === kind)
+        && parkSizeFitsSlot(task.parkSize, slot, true)
         && (!requestedFamily || familyFitsSlot(requestedFamily,slot))
         && (!task.serviceRoleAssigned || !(block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key]);
       const preferred = () => available.find(value => eligible(value)
         && (value.block.parameters.slotRoles as Record<string,BlockServiceRole> | undefined)?.[value.slot.key]) ?? available.find(eligible);
       const pocketSite = () => {
         if (task.parkSize !== "POCKET") return undefined;
-        const vacant = available.find(({ block, slot }) => slot.kind === "BUILDING"
+        const vacant = available.find(({ block, slot }) => block.sequence >= (latestBlock.get(district.id) ?? -1) && slot.kind === "BUILDING"
           && !occupied.has(`${block.id}:${slot.key}`)
           && !(block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key]
           && !(block.parameters.slotFamilies as Record<string, string> | undefined)?.[slot.key]
-          && parkSizeFitsSlot("POCKET", { ...slot, kind: "PARK" }));
+          && parkSizeFitsSlot("POCKET", { ...slot, kind: "PARK" }, true));
         if (!vacant) return undefined;
         // Persist only the parcel's permitted use, never its dimensions,
         // entrance, access or occupied neighbours. Closed sites are excluded.
@@ -386,7 +396,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
           width: template.widthModules * MODULE, height: template.heightModules * MODULE,
           parameters: { packingCorner: ["NW", "NE", "SW", "SE"][((input.seed + sequence + district.sequence) % 4 + 4) % 4], infill: true,
             ...(site.separator ? { districtSeparator: site.separator } : {}),
-            ...(requestedFamily ? { firstFamily: compactBuildingShapeFamily(requestedFamily)! } : {}) }, summary: {} };
+            ...(requestedFamily ? { firstFamily: compactBuildingShapeFamily(requestedFamily)! } : task.parkSize === "POCKET" ? { firstFamily: "compact-apartment-v1" } : {}) }, summary: {} };
         block.parameters.sitePlan = createBlockSitePlan(block);
         districtBlocks.push(block); reservedBlocks.push(block);
         const slots = blockSlots(block);
@@ -410,6 +420,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       if (serviceRole && requestedServiceRole && requestedServiceRole !== serviceRole) {
         throw new BlockReservationConflictError(`Роль выбранного семейства ${requestedServiceRole} не совпадает с ролью участка ${serviceRole}. Уберите явное указание семейства или выберите подходящее.`);
       }
+      latestBlock.set(district.id, Math.max(latestBlock.get(district.id) ?? -1, selected.block.sequence));
       occupied.add(`${selected.block.id}:${selected.slot.key}`);
       const width = selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1;
       const height = selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1;
@@ -422,7 +433,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         ?? (!serviceRole && selected.slot.kind === "BUILDING" ? compactHomeFamily(
           selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1,
           selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1,
-          Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16), homeUsage.get(selected.block.id)) : undefined)
+          Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16), new Map([...cityHomeUsage].map(([family, count]) => [family, count + (homeUsage.get(selected.block.id)?.get(family) ?? 0) * 100]))) : undefined)
         ?? selected.slot.buildingFamily ?? task.buildingFamily;
       if (selected.slot.kind === "BUILDING") {
         selected.block.parameters = {...selected.block.parameters,
