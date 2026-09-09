@@ -31,12 +31,28 @@ export default defineConfig({
       generateBundle(_options, bundle) {
         const publicAssets = ["/", "/site.webmanifest", "/pwa-icon-192.png", "/pwa-icon-512.png", "/pwa-icon-maskable-512.png"];
         for (const fileName of Object.keys(bundle)) if (!fileName.endsWith(".map")) publicAssets.push(`/${fileName}`);
+        // Precache the entry graph only. Lazy map/worker bundles must not compete
+        // with the foreground map during installation.
+        const installAssets = publicAssets.filter(path => !path.startsWith("/assets/"));
+        const visited = new Set<string>();
+        const visit = (name: string) => {
+          if (visited.has(name)) return;
+          visited.add(name);
+          const chunk = bundle[name];
+          if (!chunk || chunk.type !== "chunk") return;
+          installAssets.push(`/${name}`);
+          for (const dependency of chunk.imports) visit(dependency);
+        };
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type === "chunk" && chunk.isEntry) visit(chunk.fileName);
+          if (chunk.fileName.endsWith(".css")) installAssets.push(`/${chunk.fileName}`);
+        }
         const revisionHash = createHash("sha256").update(JSON.stringify(publicAssets.sort())).update(staticOrigin);
         for (const path of publicAssets.filter((candidate) => candidate !== "/" && !candidate.startsWith("/assets/"))) {
           revisionHash.update(readFileSync(new URL(`./public${path}`, import.meta.url)));
         }
         const revision = revisionHash.digest("hex").slice(0, 12);
-        this.emitFile({ type: "asset", fileName: "sw.js", source: renderServiceWorker(revision, publicAssets, staticOrigin) });
+        this.emitFile({ type: "asset", fileName: "sw.js", source: renderServiceWorker(revision, publicAssets, staticOrigin, installAssets) });
       },
     },
   ],

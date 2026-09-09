@@ -1,6 +1,6 @@
 import { isPrivateAppPath } from "./pwa-cache-policy.ts";
 
-export function renderServiceWorker(revision: string, candidates: readonly string[], staticOrigin = ""): string {
+export function renderServiceWorker(revision: string, candidates: readonly string[], staticOrigin = "", installCandidates: readonly string[] = candidates): string {
   const origin = staticOrigin.replace(/\/$/, "");
   if (origin) {
     const parsed = new URL(origin);
@@ -17,7 +17,8 @@ export function renderServiceWorker(revision: string, candidates: readonly strin
   return `const REVISION = ${JSON.stringify(revision)};
 const CACHE_PREFIX = "tasktopia-shell-";
 const CACHE_NAME = ${JSON.stringify(`tasktopia-shell-${revision}`)};
-const PRECACHE = ${JSON.stringify(precache)};
+const PRECACHE = ${JSON.stringify(precache.filter(path => installCandidates.includes(path) && !(origin && path.startsWith("/assets/"))))};
+const CDN_PRECACHE = ${JSON.stringify(cdnAssets.filter(url => installCandidates.includes(url.slice(origin.length))))};
 const CDN_ASSETS = new Set(${JSON.stringify(cdnAssets)});
 const PRIVATE_PREFIXES = ["/api", "/mcp", "/socket.io", "/health"];
 const isPrivatePath = (path) => PRIVATE_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + "/"));
@@ -26,9 +27,11 @@ const isRuntimeAsset = (request, url) => url.origin === self.location.origin && 
   && ((url.pathname.startsWith("/assets/") && ["script", "style", "font", "image"].includes(request.destination))
     || (url.pathname.startsWith("/game-assets/v5/") && request.destination === "image"));
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll([
-  ...PRECACHE, ...Array.from(CDN_ASSETS).filter((url) => new URL(url).origin !== self.location.origin)
-    .map((url) => new Request(url, { mode: "cors", credentials: "omit" })),
+  ...PRECACHE, ...CDN_PRECACHE.map((url) => new Request(url, { mode: "cors", credentials: "omit" })),
 ]))));
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "TASKTOPIA_SKIP_WAITING") event.waitUntil(self.skipWaiting());
+});
 self.addEventListener("activate", (event) => event.waitUntil((async () => {
   for (const key of await caches.keys()) if (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) await caches.delete(key);
   await self.clients.claim();

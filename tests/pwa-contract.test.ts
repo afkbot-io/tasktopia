@@ -7,11 +7,12 @@ import { renderServiceWorker } from "../src/client/pwa-service-worker-source";
 /** Execute the generated public worker, replacing only browser platform I/O. */
 function workerPlatform(source: string) {
   const origin = "https://tasktopia.online";
-  type WorkerListener = (event: { request?: Request; waitUntil?: (value: Promise<unknown>) => void; respondWith?: (value: Promise<Response>) => void }) => void;
+  type WorkerListener = (event: { data?: unknown; request?: Request; waitUntil?: (value: Promise<unknown>) => void; respondWith?: (value: Promise<Response>) => void }) => void;
   const listeners = new Map<string, WorkerListener>();
   const entries = new Map<string, Response>();
   const requests: Request[] = [];
   let online = true;
+  let activations = 0;
   const network = async (input: Request | string, init?: RequestInit) => {
     const request = new Request(typeof input === "string" ? new URL(input, origin) : input, init);
     requests.push(request);
@@ -29,10 +30,16 @@ function workerPlatform(source: string) {
   runInNewContext(source, {
     URL, Request, Response, fetch: network,
     caches: { open: async () => cache, keys: async () => [], delete: async () => true },
-    self: { location: { origin }, addEventListener: (name: string, listener: WorkerListener) => listeners.set(name, listener) },
+    self: { skipWaiting: async () => { activations += 1; }, location: { origin }, addEventListener: (name: string, listener: WorkerListener) => listeners.set(name, listener) },
   });
   return {
     entries, requests,
+    activations: () => activations,
+    message: async (data: unknown) => {
+      let pending: Promise<unknown> | undefined;
+      listeners.get("message")!({ data, waitUntil: value => { pending = value; } });
+      await pending;
+    },
     offline: () => { online = false; },
     install: async () => {
       let pending: Promise<unknown> | undefined;
@@ -50,6 +57,16 @@ function workerPlatform(source: string) {
 describe("generated worker CDN offline boundary", () => {
   const cdn = "https://store.tasktopia.online";
   const candidates = ["/", "/site.webmanifest", "/assets/app.abc123.js", "/assets/app.abc123.css", "/assets/app.js.map", "/api/bootstrap", "/game-assets/v5/manifest.json"];
+
+  it("activates only on the explicit application update message", async () => {
+    const platform = workerPlatform(renderServiceWorker("update", []));
+    await platform.install();
+    expect(platform.activations()).toBe(0);
+    await platform.message({ type: "unrelated" });
+    expect(platform.activations()).toBe(0);
+    await platform.message({ type: "TASKTOPIA_SKIP_WAITING" });
+    expect(platform.activations()).toBe(1);
+  });
 
   it("serves exact CDN build scripts and styles offline without sending credentials", async () => {
     const platform = workerPlatform(renderServiceWorker("cdn-rev", candidates, cdn));
@@ -95,6 +112,15 @@ describe("generated worker CDN offline boundary", () => {
     expect(platform.requests.at(-1)!.credentials).toBe("omit");
     platform.offline();
     expect(await (await platform.fetch(new Request(url)))!.text()).toBe(`public asset ${url}`);
+  });
+
+  it("does not install lazy chunks or duplicate CDN assets, but caches them on demand", async () => {
+    const platform = workerPlatform(renderServiceWorker("lean", ["/", "/assets/entry.js", "/assets/map.js"], cdn, ["/", "/assets/entry.js"]));
+    await platform.install();
+    expect(platform.requests.map(request => request.url)).toEqual(["https://tasktopia.online/", cdn + "/assets/entry.js"]);
+    expect(await platform.fetch(new Request(cdn + "/assets/map.js"))).toBeDefined();
+    platform.offline();
+    expect(await platform.fetch(new Request(cdn + "/assets/map.js"))).toBeDefined();
   });
 
   it("keeps same-origin public shell installation unchanged when no CDN is configured", async () => {
