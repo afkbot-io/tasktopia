@@ -75,7 +75,7 @@ import { blockTaskGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchron
 import { readCountryRoads, synchronizeCountryRoads } from "./world/intercity-road-store";
 import { citySceneIntercityRoads, intercityRoadCorridors, intercityRoadRasterNetwork } from "../shared/intercity-roads";
 import { projectCountryRoads } from "./world/country-road-projection";
-import { rasterizeBlockRoads,BlockPlacementError,BlockReservationConflictError } from "./world/block-layout-compiler";
+import { rasterizeBlockRoads,BlockPlacementError,BlockReservationConflictError,UniqueBuildingConflictError } from "./world/block-layout-compiler";
 import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { buildDecorationHardHalo } from "./world/decoration-halo";
 import {
@@ -375,6 +375,7 @@ export class AppService {
     try {
       layout = await synchronizeCityBlocks(this.db, countryId, cityId, reset);
     } catch (error) {
+      if (error instanceof UniqueBuildingConflictError) throw new DomainError("INVALID_INPUT", error.message);
       if (error instanceof BlockReservationConflictError) throw new DomainError("INFRASTRUCTURE_RESERVATION_CONFLICT", error.message);
       if (error instanceof BlockPlacementError) throw new DomainError("PLACEMENT_UNAVAILABLE", "Для нового квартала нет связанной свободной площадки. Создайте другой город или пересоберите планировку.");
       if (error instanceof CitySceneCapacityError) throw new DomainError("CAPACITY_EXCEEDED", "Город достиг предела размера карты. Создайте новый город для дальнейшего строительства.");
@@ -965,7 +966,8 @@ export class AppService {
 
   async getCountryOverview(userId: string, countryId: string): Promise<CountryOverviewDto> {
     const planetAtlas = await this.getPlanetAtlas(userId);
-    const cacheKey = `${userId}:${countryId}:${planetAtlas.revision}`;
+    const geographyRevision = createHash("sha256").update(`${planetAtlas.revision}:context-3`).digest("hex").slice(0, 16);
+    const cacheKey = `${userId}:${countryId}:${geographyRevision}`;
     const cached = this.countryOverviewCache.get(cacheKey);
     if (cached) {
       this.countryOverviewCache.delete(cacheKey);
@@ -974,7 +976,7 @@ export class AppService {
     }
     const storedSnapshot = await this.db.prepare(`SELECT payload_json FROM country_overview_snapshots_v1
       WHERE user_id = ? AND country_id = ? AND schema_version = ? AND planet_revision = ?`)
-      .get<{ payload_json: CountryOverviewDto }>(userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, planetAtlas.revision);
+      .get<{ payload_json: CountryOverviewDto }>(userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, geographyRevision);
     const storedOverview = storedSnapshot?.payload_json;
     if (storedOverview?.schemaVersion === COUNTRY_OVERVIEW_SCHEMA_VERSION
       && storedOverview.countryId === countryId
@@ -1073,7 +1075,7 @@ export class AppService {
         planet_revision = EXCLUDED.planet_revision,
         payload_json = EXCLUDED.payload_json,
         generated_at = EXCLUDED.generated_at`).run(
-      userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, planetAtlas.revision, JSON.stringify(overview),
+      userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, geographyRevision, JSON.stringify(overview),
     );
     this.countryOverviewCache.set(cacheKey, overview);
     while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);

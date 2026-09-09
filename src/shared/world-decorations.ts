@@ -223,6 +223,9 @@ export function generateWorldDecorations(
       const own = districtCellKeys.get(district.id)!;
       const edge = DIRECTIONS.findIndex((direction) => !own.has(key({ x: cell.x + direction.x, y: cell.y + direction.y })));
       if (edge >= 0) kind = edge % 2 === 0 ? "fence-horizontal" : "fence-vertical";
+    } else if (district && (cell.terrain === "GRASS" || cell.terrain === "MEADOW") && chance < .028) {
+      const courtyardTrees = ["tree-oak", "tree-round", "tree-maple", "tree-cherry"];
+      kind = courtyardTrees[Math.floor(hashCoordinate(seed, cell.x, cell.y, 747) * courtyardTrees.length)];
     } else if (cell.terrain === "FOREST") {
       const grove = forestGrove(seed, cell);
       if (chance < grove.density) kind = grove.species;

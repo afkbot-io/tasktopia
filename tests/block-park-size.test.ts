@@ -9,7 +9,7 @@ const task = (number: number): BlockLayoutTaskInput => ({ id: `task-${number}`, 
 const park = (number: number, parkSize?: "POCKET" | "BLOCK"): BlockLayoutTaskInput & { parkSize?: "POCKET" | "BLOCK" } =>
   ({ ...task(number), visualKind: "PARK", parkSize });
 const spec = (tasks: BlockLayoutTaskInput[], previous?: CompiledBlockLayoutV1): BlockLayoutCompilerInput => ({
-  countryId: "country", cityId: "city", seed: 9, revision: (previous?.revision ?? 0) + 1, previous,
+  countryId: "country", cityId: "city", seed: previous?.seed ?? 9, revision: (previous?.revision ?? 0) + 1, previous,
   districts: [{ id: "sprint", sequence: 0, archetype: "MIXED_URBAN", tasks }],
 });
 const geometry = ({ buildingFamily, serviceRole, kind, ...slot }: BlockSlot) => {
@@ -24,8 +24,8 @@ const placedSlot = (layout: CompiledBlockLayoutV1, id: string) => {
 
 describe("size-aware task-backed parks without repacking existing parcels", () => {
   it("fills an existing compatible PARK before taking an unused building parcel", () => {
-    const before = compileBlockLayout(spec([task(1)]));
-    const existing = blockSlots(before.blocks[0]!).find(slot => slot.kind === "PARK")!;
+    const before = compileBlockLayout({ ...spec([task(1)]), seed: 2 });
+    const existing = blockSlots(before.blocks[0]!).find(slot => slot.kind === "PARK" && slot.footprint.length <= 36 && slot.footprintBounds.maxX - slot.footprintBounds.minX >= 5)!;
     expect(existing).toBeDefined();
     const next = compileBlockLayout(spec([task(1), park(2, "POCKET")], before));
     expect(next.blocks).toHaveLength(1);
@@ -62,7 +62,7 @@ describe("size-aware task-backed parks without repacking existing parcels", () =
     const occupied = before.placements[0]!.slotKey;
     const free = blockSlots(block).filter(slot => slot.kind === "BUILDING" && slot.key !== occupied);
     expect(free.length).toBeGreaterThanOrEqual(3);
-    const reserved = free[0]!, ruined = free[1]!, target = free[2]!;
+    const reserved = free[0]!, ruined = free[1]!, target = free.slice(2).find(slot => slot.footprint.length <= 36)!;
     block.parameters.slotRoles = { [reserved.key]: "EDUCATION" };
     for (const slot of [ruined, ...blockSlots(block).filter(candidate => candidate.kind === "PARK")]) {
       before.siteMarkers.push({ id: `closed-${slot.key}`, blockId: block.id, slotKey: slot.key,

@@ -7,6 +7,17 @@ import { cellKey, rectangleFootprint } from "../src/server/world/grid";
 import { compactTreeCover } from "../src/shared/compact-tree-placement";
 
 describe("procedural decoration footprints", () => {
+  it("plants sparse courtyard trees on free district grass without covering paths", () => {
+    const cells = rectangleFootprint({ x: 0, y: 0 }, 64, 64);
+    const terrain = cells.map(cell => ({...cell, terrain:"GRASS" as const, variant:0}));
+    const district = { id:"d", status:"ACTIVE" as const, archetype:"MIXED_URBAN" as const, cells };
+    const surfaces = cells.filter(cell => cell.x === 30).map(cell => ({...cell,kind:"PATH" as const,finish:"PAVERS" as const}));
+    const trees = generateWorldDecorations(84721,terrain,new Set(),surfaces,[district],[],[]).filter(d => d.kind.startsWith("tree-"));
+    expect(trees.length).toBeGreaterThan(8);
+    expect(trees.length).toBeLessThan(160);
+    expect(trees.every(tree => compactTreeCover(tree.origin).every(cell => cell.x !== 30))).toBe(true);
+    expect(generateWorldDecorations(84721,terrain,new Set(),surfaces,[district],[],[]).filter(d => d.kind.startsWith("tree-"))).toEqual(trees);
+  });
   it("forms dense mostly single-species forest clusters and keeps plain grass trees rare", () => {
     const forest: TerrainCellDto[] = rectangleFootprint({ x: 0, y: 0 }, 64, 64)
       .map((cell) => ({ ...cell, terrain: "FOREST" as const, variant: 0 }));

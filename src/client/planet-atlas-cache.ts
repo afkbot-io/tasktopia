@@ -1,3 +1,4 @@
+import { loadMapWithTimeout } from "./map-load-timeout";
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../shared/planet-atlas-contract";
 import { api } from "./api";
 import { RevisionCache } from "./map-scene-cache";
@@ -13,7 +14,7 @@ export const PLANET_REVALIDATE_MS = 30_000;
 const checkedAt = new Map<string, number>();
 const lastFrames = new Map<string, PlanetAtlasDto>();
 let sessionEpoch = 0;
-const fetchPlanet = () => api<PlanetAtlasDto>("/api/planet-atlas", { cache: "no-cache" });
+const fetchPlanet = () => loadMapWithTimeout(signal => api<PlanetAtlasDto>("/api/planet-atlas", { signal, cache: "no-cache" }));
 const keyFor = (userId: string, revision: number) => `${planetAtlasCacheKey(userId)}:${revision}`;
 export function clearPlanetAtlasCache(): void { sessionEpoch += 1; cache.clear(); checkedAt.clear(); lastFrames.clear(); }
 export function peekPlanetAtlas(userId: string, revision: number): PlanetAtlasDto | undefined {

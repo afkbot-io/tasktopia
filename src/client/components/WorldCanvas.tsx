@@ -1,4 +1,4 @@
-import { blockPlaqueText } from "../map-visual-consistency";
+import { blockPlaqueRange } from "../../shared/block-plaque";
 import { isGroundPlantingStrip } from "../../shared/green-area";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
@@ -2375,7 +2375,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           blockPlaqueSignature = plaqueSignature;
           for (const child of blockPlaqueLayer.removeChildren()) child.destroy({ children: true });
           for (const plaque of blockPlaques.values()) {
-            const text = blockPlaqueText(plaque.taskCount);
+            const text = blockPlaqueRange(plaque.label);
             const label = new Text({ text, resolution: 2, style: new TextStyle({ fontFamily: "monospace", fontSize: 5, fontWeight: "700", fill: 0xeee0b2 }) });
             label.anchor.set(0.5);
             const panel = new Container();

@@ -1,0 +1,66 @@
+{
+  "key": "compact-city-museum-v1",
+  "contract": "geometry.json",
+  "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    90,
+    86,
+    1168,
+    1161
+  ],
+  "uniformScale": 0.059369202226345084,
+  "targetSize": [
+    64,
+    64
+  ],
+  "offset": [
+    0,
+    0
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "34938d30c26540880e90e5b344abb7ecd1dfcea04f1091c62ca68d9d74f3e8a6",
+      "runtimeSha256": "41dbe05170c76a2d7898aaa93f1c21527830a6d4ee19bf8f51581d3a85e7067a",
+      "sourceBounds": [
+        90,
+        86,
+        1168,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ]
+}

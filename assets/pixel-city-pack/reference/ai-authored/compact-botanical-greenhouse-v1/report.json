@@ -1,0 +1,66 @@
+{
+  "key": "compact-botanical-greenhouse-v1",
+  "contract": "geometry.json",
+  "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    90,
+    86,
+    1166,
+    1160
+  ],
+  "uniformScale": 0.05947955390334572,
+  "targetSize": [
+    64,
+    64
+  ],
+  "offset": [
+    0,
+    0
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "17b238b3109e85726dc8aeab6017e222c02d1c3e0cb3fa2bd158ef4c81c15933",
+      "runtimeSha256": "f9f93d0470340979dc643bde8b805d0f117a824d8a94f62a9ca1e15cf32ddd6f",
+      "sourceBounds": [
+        90,
+        86,
+        1166,
+        1160
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ]
+}

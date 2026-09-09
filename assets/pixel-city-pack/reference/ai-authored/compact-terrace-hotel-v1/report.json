@@ -1,0 +1,66 @@
+{
+  "key": "compact-terrace-hotel-v1",
+  "contract": "geometry.json",
+  "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    46,
+    28,
+    1490,
+    974
+  ],
+  "uniformScale": 0.0664819944598338,
+  "targetSize": [
+    96,
+    63
+  ],
+  "offset": [
+    0,
+    1
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "4ce3fda440b59573d1e6e33a199efdbae86abb56812c0755128448e7091d852c",
+      "runtimeSha256": "ed86715b2d4981555ba22f698dab1c14a66def865e184944820aa31695d370ec",
+      "sourceBounds": [
+        46,
+        28,
+        1490,
+        974
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        96,
+        64
+      ],
+      "occupiedSizePx": [
+        96,
+        63
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ]
+}

@@ -1,6 +1,6 @@
 import {expect,test} from "@playwright/test";
 import {mkdir, writeFile} from "node:fs/promises";
-import type {PlanetAtlasDto} from "../../src/shared/planet-atlas-contract";
+import { transportAtlasFixture } from "../fixtures/atlas-transport";
 import type {CountryOverviewDto} from "../../src/shared/country-overview-contract";
 import {decodeCountryTerrain} from "../../src/shared/country-overview-contract";
 
@@ -15,14 +15,11 @@ test("small atlas labels, land railways and visible air/sea traffic",async({page
   expect((await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}})).ok()).toBe(true);
   const bootstrap=await(await page.request.get("/api/bootstrap")).json();
   const overview=await(await page.request.get(`/api/countries/${bootstrap.country.id}/overview`)).json() as CountryOverviewDto;
-  const atlas=await(await page.request.get("/api/planet-atlas")).json() as PlanetAtlasDto;
+  const atlas = transportAtlasFixture();
   const original=overview.cities[0]!;
   const dry=Array.from(overview.geography.terrainCodes).flatMap((code,index)=>["grass","meadow","forest"].includes(decodeCountryTerrain(code))?[index]:[]);
   overview.cities=[dry[Math.floor(dry.length*.3)]!,dry[Math.floor(dry.length*.7)]!].map((index,i)=>({...structuredClone(original),id:i===0?original.id:"fixture-second-city",name:i===0?"Речной":"Приморский",atlasCenter:{x:(index%overview.geography.columns+.5)*overview.geography.cellSize,y:(Math.floor(index/overview.geography.columns)+.5)*overview.geography.cellSize},miniature:{...original.miniature,columns:8,rows:8,blocks:original.miniature.blocks.slice(0,3).map((b,n)=>({...b,x:3+n,y:3})),airports:[{taskId:`airport-${i}`,x:4,y:4}],stations:[{taskId:`station-${i}`,x:4,y:4}]}}));
   overview.connections=[{fromCityId:overview.cities[0]!.id,toCityId:overview.cities[1]!.id}];overview.revision+="-transport-fixture";
-  const source=atlas.countries[0]!;
-  atlas.countries=Array.from({length:4},(_,i)=>({...structuredClone(source),id:i===0?source.id:`fixture-country-${i}`,name:["Дедлайново","Северия","Островная","Приморье"][i]!,seed:11+i*11,worldBounds:{minX:0,minY:0,maxX:100,maxY:100},cityCount:2,cities:[20,80].map((x,j)=>({id:`city-${i}-${j}`,center:{x,y:50},districts:[{id:`d-${i}-${j}`,center:{x,y:50}}],airports:[{taskId:`airport-${i}-${j}`,center:{x,y:50}}],stations:[{taskId:`station-${i}-${j}`,center:{x,y:50}}]}))}));
-  atlas.revision+="-transport-fixture";atlas.planetSeed=782441;
   await page.route("**/api/planet-atlas",route=>route.fulfill({json:atlas}));
   await page.route(`**/api/countries/${bootstrap.country.id}/overview`,route=>route.fulfill({json:overview}));
   await page.goto("/");

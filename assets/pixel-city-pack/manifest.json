@@ -3001,6 +3001,84 @@
           48
         ]
       ]
+    },
+    "compact-city-mall-v1": {
+      "label": "Торговый центр «Атриум»",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "shopping-mall"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-city-mall-v1/stage-1.png",
+        "buildings/commercial/compact-city-mall-v1/stage-2.png",
+        "buildings/commercial/compact-city-mall-v1/stage-3.png",
+        "buildings/commercial/compact-city-mall-v1/stage-4.png",
+        "buildings/commercial/compact-city-mall-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          0,
+          2,
+          96,
+          48
+        ],
+        [
+          0,
+          2,
+          96,
+          48
+        ],
+        [
+          0,
+          2,
+          96,
+          48
+        ]
+      ]
     }
   },
   "props": {
@@ -6036,7 +6114,7 @@
       }
     }
   },
-  "assetRevision": "2c6ae552240c0384",
+  "assetRevision": "99e1ee8d4cb7cbb9",
   "buildingProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
   "microAmbient": {
     "schemaVersion": 1,

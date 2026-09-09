@@ -1,0 +1,66 @@
+{
+  "key": "compact-sports-arena-v1",
+  "contract": "geometry.json",
+  "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    90,
+    84,
+    1167,
+    1160
+  ],
+  "uniformScale": 0.059424326833797586,
+  "targetSize": [
+    64,
+    64
+  ],
+  "offset": [
+    0,
+    0
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "db176dbb9498d974247303fb458ec78336e5ed708cf402af3960e4343b4bed1b",
+      "runtimeSha256": "e55688ca0249601c2b7b7bc55a3f49d409a6669725a0b09597900de183d09ab2",
+      "sourceBounds": [
+        90,
+        84,
+        1167,
+        1160
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ]
+}

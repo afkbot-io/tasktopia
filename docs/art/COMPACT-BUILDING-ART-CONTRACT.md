@@ -6,7 +6,7 @@ family is `compact-apartment-v1`: a `48×48` sprite on a `6×6` physical lot of
 There is no fallback to the old 18-cell-wide buildings.
 
 The seven approved structural geometry families below are independently
-AI-authored, not scaled copies. The35 registered art families may share a
+AI-authored, not scaled copies. The36 registered art families may share a
 compatible physical envelope, but retain individual source and opening contracts.
 Read each family's immutable `geometry.json` and hash-pinned
 `visual-review.json` before generating or publishing:

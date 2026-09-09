@@ -294,7 +294,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     }}>
       <defs>
         <clipPath id={clipId}>{pixelPlanetRows(map.surface).map(row => <rect key={row.y} {...row} />)}</clipPath>
-        <pattern id="planet-ocean-pixels" width="8" height="8" patternUnits="userSpaceOnUse"><image href={gameAssetUrl("atlas/terrain-v4/planet/ocean.png")} width="8" height="8" className="atlas-pixel" /></pattern>
+        <pattern id="planet-ocean-pixels" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform={`translate(${map.surface.minX} ${map.surface.minY}) scale(${camera.zoom})`}><image href={gameAssetUrl("atlas/terrain-v4/planet/ocean.png")} width="8" height="8" className="atlas-pixel" /></pattern>
       </defs>
       <rect className="planet-space" width={map.width} height={map.height} />
       <g className="planet-stars" aria-hidden="true">{map.stars.map((star) => <rect key={star.id} data-star-group={star.group} x={Math.round(map.width * star.xPercent / 100 / 2) * 2} y={Math.round(map.height * star.yPercent / 100 / 2) * 2} width={2} height={star.group === "constellation" ? 4 : 2} opacity={star.opacity} style={{ "--star-delay": `${star.delaySeconds}s` } as CSSProperties} />)}</g>

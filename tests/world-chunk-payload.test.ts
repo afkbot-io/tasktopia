@@ -213,7 +213,7 @@ describe("published world chunk payload", () => {
 
     expect(decorations.filter((item) => item.kind === "fence-vertical" && (item.origin.x === 63 || item.origin.x === 64))).toEqual([]);
     expect(decorations.some((item) => /flower|rock-|hill-rocky|hill-small|reed|shrub-patch/.test(item.kind))).toBe(false);
-    // Reviewed forest policy, four boat variants and retired hill-rock sprites.
-    expect(fingerprint).toBe("f221e6c201b1cd97e1c2d5e0ad8cb7de9130db4c16fb169da8aa22a065cec0b9");
+    // Reviewed forest/courtyard policy, four boat variants and retired hill-rock sprites.
+    expect(fingerprint).toBe("766c508ba8ed67013c3fc87219ce3ffbafcc786614f075bf958d6f52bbe6136c");
   });
 });

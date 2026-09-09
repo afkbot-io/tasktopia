@@ -64,6 +64,22 @@ describe("ChunkMaterializer", () => {
     }
   });
 
+  it("bounds a silent worker and releases its request", async () => {
+    vi.useFakeTimers();
+    const worker = new FakeChunkWorker();
+    const materializer = new ChunkMaterializer(1, () => worker);
+    try {
+      const request = materializer.materialize(payload(8));
+      const outcome = request.then(() => "resolved", error => error.message);
+      await vi.advanceTimersByTimeAsync(15_001);
+      expect(await Promise.race([outcome, Promise.resolve("pending")])).toMatch(/timed out/);
+      expect(worker.terminated).toBe(true);
+    } finally {
+      materializer.destroy();
+      vi.useRealTimers();
+    }
+  });
+
   it("uses additional desktop cores for a bounded whole-city decode", () => {
     expect(recommendedChunkWorkerCount(1)).toBe(1);
     expect(recommendedChunkWorkerCount(2)).toBe(1);

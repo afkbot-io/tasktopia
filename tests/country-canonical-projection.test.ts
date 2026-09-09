@@ -8,6 +8,18 @@ describe("canonical country settlement projection", () => {
     cityCount: 3, districtCount: 3, buildingCount: 30, unfinishedBuildingCount: 0, progress: 100,
     worldBounds: { minX: -100, minY: -100, maxX: 200, maxY: 200 }, cities: [],
   };
+  it("includes a wider ring of actual continental neighbours", () => {
+    const atlas = projectPlanetAtlas({ schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed: 73, revision: "context",
+      countries: Array.from({length: 12}, (_, index) => ({...country,id:`country-${index}`})) });
+    const selected = atlas.countries[0]!;
+    const nearby = countryMacroContext(atlas, selected.id);
+    const tight = countryMacroContext(atlas, selected.id, 1);
+    expect(nearby.length).toBeGreaterThan(tight.length);
+    expect(nearby.some(cell => cell.ownerCountryId && cell.ownerCountryId !== selected.id)).toBe(true);
+    for (const cell of nearby.filter(cell => cell.ownerCountryId)) {
+      expect(atlas.countries.find(c => c.id === cell.ownerCountryId)!.cells.some(c => c.q === cell.q && c.r === cell.r && c.terrain === cell.terrain)).toBe(true);
+    }
+  });
   it("maps the same world point to the same owned macrocell and subcell position on both levels", () => {
     const atlas = projectPlanetAtlas({ schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed: 73, revision: "canonical", countries: [country] });
     const projected = atlas.countries[0]!;

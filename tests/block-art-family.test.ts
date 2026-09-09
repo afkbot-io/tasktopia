@@ -54,7 +54,7 @@ describe("immutable v2 parcels and independently authored building families",()=
   });
 
   it("rejects explicit service art for a different reserved role even when both footprints match",()=>{
-    const before=grow(8,3),snapshot=structuredClone(before),request=input(9,before);
+    const before=grow(8,1),snapshot=structuredClone(before),request=input(9,before);
     const reserved=before.blocks.flatMap(block=>blockSlots(block)).find(slot=>slot.serviceRole==="EDUCATION")!;
     const base = BUILDING_CATALOG.find(entry => entry.key === reserved.buildingFamily)!;
     BUILDING_CATALOG.push({...base,key:"matching-fire-art",serviceRole:"FIRE"},
