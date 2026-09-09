@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "sprites": {
+    "locomotive-east": {
+      "path": "city-transport/locomotive-east.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        0,
+        9,
+        24,
+        15
+      ],
+      "source": "reference/ai-authored/city-train-v1/sources/locomotive-east.png",
+      "sourceSha256": "910d4918aa0b0d9633beee018820339736770131d22baf7f8e87bf1d70b25f5d",
+      "sha256": "fff459ddb13836ad45360cdff830125e42aeab24a825bbf345af4177d4e40fb0"
+    },
+    "locomotive-north": {
+      "path": "city-transport/locomotive-north.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        15,
+        24
+      ],
+      "source": "reference/ai-authored/city-train-v1/sources/locomotive-north.png",
+      "sourceSha256": "081adf9447dbfa60490d188b6c0ed85841e577060b877a095bf4928fe1a72ae7",
+      "sha256": "35399323ae898b26ac11090aba1190e6c1fe1774a2e8405c8d0b2dadcf55ef40"
+    },
+    "carriage-east": {
+      "path": "city-transport/carriage-east.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        0,
+        9,
+        24,
+        14
+      ],
+      "source": "reference/ai-authored/city-train-v1/sources/carriage-east.png",
+      "sourceSha256": "f6df4a06073ab4d437ebaef94c3cacf685c76e02588e7a61ec44785c50b75937",
+      "sha256": "c6c9ec836bc3981b1a78e8a2541ef0bb89a29fae1bd61e78e893d78c21d3a5f5"
+    },
+    "carriage-north": {
+      "path": "city-transport/carriage-north.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        14,
+        24
+      ],
+      "source": "reference/ai-authored/city-train-v1/sources/carriage-north.png",
+      "sourceSha256": "eb7247c2e37981703866b74ae5519a97c6fdbf03714cbf6b7b3c46587754c748",
+      "sha256": "940c5760aec0bf70cc753507f0e8e242f89fa69a2ce5f8a0f3eeb8d37f050b30"
+    }
+  }
+}

@@ -1637,6 +1637,118 @@
     "visualProfile": "TASKTOPIA_V5_PARK_OBJECT_FRONTAL_TOP"
   },
   {
+    "key": "boat-horizontal-a",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      24,
+      8
+    ],
+    "footprintCells": [
+      3,
+      1
+    ]
+  },
+  {
+    "key": "boat-horizontal-b",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      24,
+      8
+    ],
+    "footprintCells": [
+      3,
+      1
+    ]
+  },
+  {
+    "key": "boat-vertical-a",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      8,
+      24
+    ],
+    "footprintCells": [
+      1,
+      3
+    ]
+  },
+  {
+    "key": "boat-vertical-b",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      8,
+      24
+    ],
+    "footprintCells": [
+      1,
+      3
+    ]
+  },
+  {
+    "key": "boat-vertical-c",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      8,
+      24
+    ],
+    "footprintCells": [
+      1,
+      3
+    ]
+  },
+  {
+    "key": "boat-horizontal-c",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      24,
+      8
+    ],
+    "footprintCells": [
+      3,
+      1
+    ]
+  },
+  {
+    "key": "boat-vertical-d",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      8,
+      24
+    ],
+    "footprintCells": [
+      1,
+      3
+    ]
+  },
+  {
+    "key": "boat-horizontal-d",
+    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
+    "size": [
+      24,
+      8
+    ],
+    "footprintCells": [
+      3,
+      1
+    ]
+  },
+  {
     "key": "compact-park-fountain-stage-3",
     "label": "Фонтан · стадия 3",
     "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-3.png",
@@ -2161,117 +2273,5 @@
     "reviewed": true,
     "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
     "sourceSha256": "01f533ee34aafddc90d00dca15d06270a69da41f8c3c403485713138323dc0fe"
-  },
-  {
-    "key": "boat-horizontal-a",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      24,
-      8
-    ],
-    "footprintCells": [
-      3,
-      1
-    ]
-  },
-  {
-    "key": "boat-horizontal-b",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      24,
-      8
-    ],
-    "footprintCells": [
-      3,
-      1
-    ]
-  },
-  {
-    "key": "boat-vertical-a",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      8,
-      24
-    ],
-    "footprintCells": [
-      1,
-      3
-    ]
-  },
-  {
-    "key": "boat-vertical-b",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      8,
-      24
-    ],
-    "footprintCells": [
-      1,
-      3
-    ]
-  },
-  {
-    "key": "boat-vertical-c",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      8,
-      24
-    ],
-    "footprintCells": [
-      1,
-      3
-    ]
-  },
-  {
-    "key": "boat-horizontal-c",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      24,
-      8
-    ],
-    "footprintCells": [
-      3,
-      1
-    ]
-  },
-  {
-    "key": "boat-vertical-d",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      8,
-      24
-    ],
-    "footprintCells": [
-      1,
-      3
-    ]
-  },
-  {
-    "key": "boat-horizontal-d",
-    "sheet": "ai-authored/micro-ambient-v1/sources/boats-v2.png",
-    "artSource": "AI_AUTHORED",
-    "visualProfile": "TASKTOPIA_MICRO_WATERCRAFT_V2",
-    "size": [
-      24,
-      8
-    ],
-    "footprintCells": [
-      3,
-      1
-    ]
   }
 ]

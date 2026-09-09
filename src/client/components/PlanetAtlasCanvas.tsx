@@ -20,6 +20,7 @@ import { atlasHitTarget, atlasPointInsideEllipse, atlasTargetCoverage, atlasView
 import { peekPlanetAtlas, watchPlanetAtlas } from "../planet-atlas-cache";
 import { smoothCameraScale } from "../world-camera";
 import { bindMapPointerGestures } from "../map-pointer-gesture";
+import { loadMapImage } from "../map-image";
 import { visiblePlanetCountries } from "../planet-visible-countries";
 import { AtlasAircraft } from "./AtlasAircraft";
 import { AtlasOverviewCard, planetOverviewCardModel } from "./AtlasOverviewCard";
@@ -181,19 +182,21 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   useEffect(() => {
     const view = atlasView.current;
     if (!view || !atlasRevision) return;
-    let cancelled = false;
+    const controller = new AbortController();
     setAssetError("");
-    const urls = [...new Set([...view.querySelectorAll("image")].map(node => node.getAttribute("href")).filter((url): url is string => Boolean(url)))];
-    void Promise.all(urls.map(async url => {
-      const image = new Image();
-      image.src = url;
-      await image.decode();
-    })).then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!cancelled) setReadyRevision(atlasRevision);
-    }))).catch(() => {
-      if (!cancelled) setAssetError("Не удалось загрузить текстуры планеты");
+    const urls = [...new Set([...view.querySelectorAll("image")]
+      .filter(node => !node.closest(".planet-clouds, .planet-ships, .atlas-aircraft-flight"))
+      .map(node => node.getAttribute("href")).filter((url): url is string => Boolean(url)))];
+    void Promise.all(urls.map(url => loadMapImage(url, controller.signal)))
+      .then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!controller.signal.aborted) setReadyRevision(atlasRevision);
+    }))).catch(error => {
+      if (!controller.signal.aborted) {
+        setAssetError(error instanceof Error ? error.message : "Не удалось загрузить графику карты");
+        controller.abort();
+      }
     });
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, [atlasRevision, assetAttempt]);
 
   useEffect(() => {

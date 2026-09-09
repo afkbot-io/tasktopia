@@ -1,0 +1,43 @@
+{
+  "key": "compact-city-museum-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 53,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "34938d30c26540880e90e5b344abb7ecd1dfcea04f1091c62ca68d9d74f3e8a6",
+      "runtimeSha256": "41dbe05170c76a2d7898aaa93f1c21527830a6d4ee19bf8f51581d3a85e7067a",
+      "notes": "Ступенчатый силуэт, двор и низкая передняя часть."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "dedc1588fead7c5328a00ea6652b8a2eb9f16feed03b554f6eec3c7d8d6fd9c1",
+      "runtimeSha256": "54f1df3484ee7430e741d804619fd394b6cdff6a7a4d8aa78e51385cb7db529f",
+      "notes": "Открытые перекрытия и колонны, без оборудования готовой крыши."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "f291ee7bdcd6e98606698bae0578090495d53b2ff45b1980a2f1a7601d685666",
+      "runtimeSha256": "207d862f5dfeb45e1fbf765b53fd8cb55f496253d9e4643f9a3af63b95df9291",
+      "notes": "Открытая правая секция и частично закрытые крылья."
+    }
+  }
+}

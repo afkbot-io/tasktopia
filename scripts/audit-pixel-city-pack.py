@@ -11,6 +11,7 @@ from PIL import Image
 
 from compact_asset_contract import audit_compact_building
 from micro_ambient_contract import audit_micro_ambient
+from city_transport_contract import audit_city_transport
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -205,6 +206,9 @@ def audit() -> dict[str, Any]:
 
 
     violations.extend(audit_micro_ambient(manifest, RUNTIME, PACK))
+    violations.extend(audit_city_transport(manifest, RUNTIME, PACK))
+    for key, entry in manifest.get("cityTransport", {}).get("sprites", {}).items():
+        audit_grid_asset(entry["path"], key, (24, 24))
     for key, entry in manifest.get("microAmbient", {}).get("sprites", {}).items():
         audit_grid_asset(entry["path"], key, tuple(entry["size"]))
     for index, path in enumerate(manifest.get("atlasClouds", [])):

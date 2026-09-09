@@ -1,0 +1,43 @@
+{
+  "key": "compact-sports-arena-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 53,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "db176dbb9498d974247303fb458ec78336e5ed708cf402af3960e4343b4bed1b",
+      "runtimeSha256": "e55688ca0249601c2b7b7bc55a3f49d409a6669725a0b09597900de183d09ab2",
+      "notes": "Крупная оливковая кровля и маленький световой фонарь."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "70ed330a29f368a6dc5c02b112aeb8c06853fd4eb1c5e6836ac8af55b52f36c1",
+      "runtimeSha256": "8a62bc0ab8b2f04f140d42164cabe9eeed4ae4dd6902018d0b4875c2d2c262a9",
+      "notes": "Открытый зал с колоннами и непрозрачным перекрытием."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "f29621c42846ba528960cccbb949ac31f1b284a176e3d5119b85f5a697679c22",
+      "runtimeSha256": "d3418f98ace0538dfc6d7a052afa8d74ff202f3cc186f09fab8184cee2225c2b",
+      "notes": "Часть покрытия собрана, другая открыта; масштаб фасада сохранён."
+    }
+  }
+}

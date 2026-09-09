@@ -1,0 +1,43 @@
+{
+  "key": "compact-aquarium-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Просмотрена последовательность нормализованных стадий3/4/5 в целочисленном масштабе8x. Геометрия сверена с контрактом; сцена проверяется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху; горизонтальная линия переднего фасада.",
+    "roofDepthPx": 54,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "c1bf59263ff35ac655bbeef72bd28cee064c1213fcdc0e36367d59c7936b39c2",
+      "runtimeSha256": "f895d54030bb8f60045f44e695e5060ed1365e8c44c29c0f9e73e483b53548f4",
+      "notes": "Самостоятельный узнаваемый силуэт; осевой вид сверху, низкий южный фасад без боковой стены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "5a901932df832f397df3c7a4e137610f3354405abc62d2309789e5218e73e560",
+      "runtimeSha256": "43329ad5017df650d7b1e5623fe43da4689e0245390bfb20b992c2859d770dc7",
+      "notes": "Частично закрытая кровля с открытой строительной секцией; готовые детали остаются только на завершённой части."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "cc89f4bc2fb6c8565de7971b7a70f7d7e02af26143064007ec13949e6ff3e7b8",
+      "runtimeSha256": "d415e735e6783b1b4858e099a5b1987fcfc7d1744e604928831d0404b97b69d5",
+      "notes": "Открытые перекрытия и незавершённые стены; тот же участок, вход и линия основания."
+    }
+  }
+}

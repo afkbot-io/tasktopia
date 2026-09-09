@@ -1,0 +1,43 @@
+{
+  "key": "compact-entertainment-centre-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 37,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "e74b24d6cb0491aad5b7bf2ce8237222cf1aefe7250998572d197cb8dd814c74",
+      "runtimeSha256": "1a5448772c38fb3d640c64e302981a14863b2e1cd3413c51053e2d8c314c4719",
+      "notes": "Три различимых кровельных пролёта; низкий двухэтажный фасад."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "0c1a765ee2184a4a853c26f5e47e1dd34d0c3b106103e889ee8014a445bfff97",
+      "runtimeSha256": "c92a59034adde2135c84074e53d56d452546307c0fe70b95ff57bf120f2a96d6",
+      "notes": "Открытые перекрытия и колонны, без кровли."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "658ce27fdba49d882aea3dbdbc4d440b5f062141544e786acc9137f25bea3ea8",
+      "runtimeSha256": "697aa8481f5bf3c83aa572d0b70595701f1262929b4792298f3d4c15c3b240f0",
+      "notes": "Частично перекрытые пролёты; открытые помещения и материалы."
+    }
+  }
+}

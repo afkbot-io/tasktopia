@@ -3,6 +3,9 @@ import { mkdir } from "node:fs/promises";
 
 // Runs against the isolated seed:test country, never a production fixture.
 test("map navigation, labels and task controls follow the revised visual contract", async ({ page }) => {
+  // The journey opens three independently bounded scenes and captures them.
+  // Keep its overall budget consistent with the mobile three-map journey.
+  test.setTimeout(180_000);
   await mkdir("screenshots/visual-consistency", { recursive: true });
   await page.clock.setFixedTime(new Date("2026-09-08T10:00:00Z"));
   const errors: string[] = [];

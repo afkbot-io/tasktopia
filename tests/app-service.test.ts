@@ -455,7 +455,11 @@ describe("Tasktopia compact-block application service", { timeout: 20_000 }, () 
     expect(parking).toMatchObject({
       visualKind: "BUILDING",
     });
-    expect(getBuilding(parking.buildingType)?.category).toBe("HOUSE");
+    // AUTO slots may select a home or a unique commercial/civic landmark.
+    // Task prose must not override that selection with a park.
+    expect(getBuilding(parking.buildingType)).toBeDefined();
+    expect(await db.prepare("SELECT visual_auto FROM tasks_v3 WHERE id=?").get(parking.id))
+      .toMatchObject({ visual_auto: true });
   }, 20_000);
 
   it("rejects reused idempotency keys and invalid building hints", async () => {

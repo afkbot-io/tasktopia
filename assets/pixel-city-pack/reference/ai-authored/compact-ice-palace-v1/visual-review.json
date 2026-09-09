@@ -1,0 +1,43 @@
+{
+  "key": "compact-ice-palace-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 54,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "3abd11156fdf76678c4147a7a10b1bb30ad306d748a295d417ead56689dd9885",
+      "runtimeSha256": "5559dbbec2dc5f5f4c6e433ca31cfd189a21085819be7663f705679e910d5acf",
+      "notes": "Отдельный силуэт, тот же осевой ракурс и небольшой передний фасад."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "dffb3b5b6338b113da38f4872382f1c8da927138f29bed522534a1ec9b4b9b60",
+      "runtimeSha256": "a5e4383559e19c6fc18c167f686e76f28d136c3401c182cb94b050d4f8fc6dab",
+      "notes": "Открытая конструкция с незастеклёнными проёмами; неизменное основание."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "dfe310581e78cf4e75be0beeb0f0df7ed291556ec11a5a55476f9f5440ab71ef",
+      "runtimeSha256": "ae0b706df9399a0286e89d3b2f67da4c5caf98512b023dae973df00c0f6c1e65",
+      "notes": "Закрытая и открытая секции; оборудование на незавершённой части не установлено."
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "key": "compact-observatory-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 46,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "40110262ddeefd472146ec549495dc2f2b46ef6bc35f63d6bb76ff2deccb390d",
+      "runtimeSha256": "b07e340fc61fa5f91f88fb6a303c87e8c6e939b7fa7129533dd3a50b03edec46",
+      "notes": "Отдельный силуэт, тот же осевой ракурс и небольшой передний фасад."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "6116ee902d14ce081bec106539065cd7de9d313ea5aa9745a1f9f4788f518916",
+      "runtimeSha256": "829719376d8a4e18e0053c7c439c360e0fc38af1985d7566fbc937f5a0e66fbf",
+      "notes": "Открытая конструкция с незастеклёнными проёмами; неизменное основание."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "8e82da1b83b1369f16f95af1bcbadd5c217183935a803f7699c089af5358822b",
+      "runtimeSha256": "80aa4a6f674df0c307d9f2dafe7a60e70e1c26cf93de98d79ba6c1fac7281519",
+      "notes": "Закрытая и открытая секции; оборудование на незавершённой части не установлено."
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "key": "compact-thermal-baths-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 54,
+    "facadeHeightPx": 10,
+    "floorStepPx": 10,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "1ab6cde2bf864e5669a1c51cf75749c8b43662aef9fc2b803c5ce0a467010596",
+      "runtimeSha256": "72de72870ecf5a61d1c9c02a101f9e5e42b8fa59ec30b9cc6ba38145d1ba8f32",
+      "notes": "Отдельный силуэт, тот же осевой ракурс и небольшой передний фасад."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "a3a6c4a7c0c19c6ec62de97bbb900ca2f35667eee1aa26fbf79884ce7e00ed31",
+      "runtimeSha256": "b3480c4c046fdb62a1b4c819eefedc4ce01c21cb0c8163b048971afc48b504ed",
+      "notes": "Открытая конструкция с незастеклёнными проёмами; неизменное основание."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "27fcbb07698c4350357973c384a582ef899b526b1ab30f83736db9186c542e75",
+      "runtimeSha256": "8e7798b009a09eebe37016b138a1609b4017863cda9521cc523e94dee42b36c5",
+      "notes": "Закрытая и открытая секции; оборудование на незавершённой части не установлено."
+    }
+  }
+}

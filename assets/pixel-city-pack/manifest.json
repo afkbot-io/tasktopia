@@ -3079,6 +3079,1568 @@
           48
         ]
       ]
+    },
+    "compact-entertainment-centre-v1": {
+      "label": "Кинотеатр и боулинг",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "entertainment-centre"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-entertainment-centre-v1/stage-1.png",
+        "buildings/commercial/compact-entertainment-centre-v1/stage-2.png",
+        "buildings/commercial/compact-entertainment-centre-v1/stage-3.png",
+        "buildings/commercial/compact-entertainment-centre-v1/stage-4.png",
+        "buildings/commercial/compact-entertainment-centre-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ]
+      ]
+    },
+    "compact-waterpark-v1": {
+      "label": "Аквапарк",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        64
+      ],
+      "footprintCells": [
+        12,
+        8
+      ],
+      "anchorPx": [
+        48,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "waterpark"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-waterpark-v1/stage-1.png",
+        "buildings/commercial/compact-waterpark-v1/stage-2.png",
+        "buildings/commercial/compact-waterpark-v1/stage-3.png",
+        "buildings/commercial/compact-waterpark-v1/stage-4.png",
+        "buildings/commercial/compact-waterpark-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          3,
+          0,
+          92,
+          64
+        ],
+        [
+          3,
+          0,
+          92,
+          64
+        ],
+        [
+          0,
+          3,
+          96,
+          64
+        ],
+        [
+          0,
+          3,
+          96,
+          64
+        ],
+        [
+          0,
+          3,
+          96,
+          64
+        ]
+      ]
+    },
+    "compact-sports-arena-v1": {
+      "label": "Спортивная арена",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "sports-arena"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-sports-arena-v1/stage-1.png",
+        "buildings/commercial/compact-sports-arena-v1/stage-2.png",
+        "buildings/commercial/compact-sports-arena-v1/stage-3.png",
+        "buildings/commercial/compact-sports-arena-v1/stage-4.png",
+        "buildings/commercial/compact-sports-arena-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ]
+      ]
+    },
+    "compact-covered-market-v1": {
+      "label": "Крытый рынок",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "covered-market"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-covered-market-v1/stage-1.png",
+        "buildings/commercial/compact-covered-market-v1/stage-2.png",
+        "buildings/commercial/compact-covered-market-v1/stage-3.png",
+        "buildings/commercial/compact-covered-market-v1/stage-4.png",
+        "buildings/commercial/compact-covered-market-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ]
+      ]
+    },
+    "compact-city-museum-v1": {
+      "label": "Музей с внутренним двором",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "city-museum"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-city-museum-v1/stage-1.png",
+        "buildings/commercial/compact-city-museum-v1/stage-2.png",
+        "buildings/commercial/compact-city-museum-v1/stage-3.png",
+        "buildings/commercial/compact-city-museum-v1/stage-4.png",
+        "buildings/commercial/compact-city-museum-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ]
+      ]
+    },
+    "compact-botanical-greenhouse-v1": {
+      "label": "Ботаническая оранжерея",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "botanical-greenhouse"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-botanical-greenhouse-v1/stage-1.png",
+        "buildings/commercial/compact-botanical-greenhouse-v1/stage-2.png",
+        "buildings/commercial/compact-botanical-greenhouse-v1/stage-3.png",
+        "buildings/commercial/compact-botanical-greenhouse-v1/stage-4.png",
+        "buildings/commercial/compact-botanical-greenhouse-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ]
+      ]
+    },
+    "compact-terrace-hotel-v1": {
+      "label": "Отель с террасами",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        64
+      ],
+      "footprintCells": [
+        12,
+        8
+      ],
+      "anchorPx": [
+        48,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "terrace-hotel"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-terrace-hotel-v1/stage-1.png",
+        "buildings/commercial/compact-terrace-hotel-v1/stage-2.png",
+        "buildings/commercial/compact-terrace-hotel-v1/stage-3.png",
+        "buildings/commercial/compact-terrace-hotel-v1/stage-4.png",
+        "buildings/commercial/compact-terrace-hotel-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          3,
+          0,
+          92,
+          64
+        ],
+        [
+          3,
+          0,
+          92,
+          64
+        ],
+        [
+          0,
+          1,
+          96,
+          64
+        ],
+        [
+          0,
+          1,
+          96,
+          64
+        ],
+        [
+          0,
+          1,
+          96,
+          64
+        ]
+      ]
+    },
+    "compact-business-centre-v1": {
+      "label": "Деловой центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        48,
+        96
+      ],
+      "footprintCells": [
+        6,
+        12
+      ],
+      "anchorPx": [
+        24,
+        96
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "business-centre"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-business-centre-v1/stage-1.png",
+        "buildings/commercial/compact-business-centre-v1/stage-2.png",
+        "buildings/commercial/compact-business-centre-v1/stage-3.png",
+        "buildings/commercial/compact-business-centre-v1/stage-4.png",
+        "buildings/commercial/compact-business-centre-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          0,
+          7,
+          48,
+          96
+        ],
+        [
+          0,
+          7,
+          48,
+          96
+        ],
+        [
+          0,
+          0,
+          47,
+          96
+        ],
+        [
+          0,
+          0,
+          47,
+          96
+        ],
+        [
+          0,
+          0,
+          47,
+          96
+        ]
+      ]
+    },
+    "compact-planetarium-v1": {
+      "label": "Планетарий",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "planetarium"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-planetarium-v1/stage-1.png",
+        "buildings/commercial/compact-planetarium-v1/stage-2.png",
+        "buildings/commercial/compact-planetarium-v1/stage-3.png",
+        "buildings/commercial/compact-planetarium-v1/stage-4.png",
+        "buildings/commercial/compact-planetarium-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          63,
+          64
+        ]
+      ]
+    },
+    "compact-theatre-v1": {
+      "label": "Городской театр",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "theatre"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-theatre-v1/stage-1.png",
+        "buildings/commercial/compact-theatre-v1/stage-2.png",
+        "buildings/commercial/compact-theatre-v1/stage-3.png",
+        "buildings/commercial/compact-theatre-v1/stage-4.png",
+        "buildings/commercial/compact-theatre-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          3,
+          62,
+          64
+        ],
+        [
+          1,
+          0,
+          62,
+          64
+        ],
+        [
+          1,
+          0,
+          62,
+          64
+        ]
+      ]
+    },
+    "compact-concert-hall-v1": {
+      "label": "Концертный зал",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "concert-hall"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-concert-hall-v1/stage-1.png",
+        "buildings/commercial/compact-concert-hall-v1/stage-2.png",
+        "buildings/commercial/compact-concert-hall-v1/stage-3.png",
+        "buildings/commercial/compact-concert-hall-v1/stage-4.png",
+        "buildings/commercial/compact-concert-hall-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ]
+      ]
+    },
+    "compact-aquarium-v1": {
+      "label": "Океанариум",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "aquarium"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-aquarium-v1/stage-1.png",
+        "buildings/commercial/compact-aquarium-v1/stage-2.png",
+        "buildings/commercial/compact-aquarium-v1/stage-3.png",
+        "buildings/commercial/compact-aquarium-v1/stage-4.png",
+        "buildings/commercial/compact-aquarium-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ]
+      ]
+    },
+    "compact-exhibition-centre-v1": {
+      "label": "Выставочный центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "exhibition-centre"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-exhibition-centre-v1/stage-1.png",
+        "buildings/commercial/compact-exhibition-centre-v1/stage-2.png",
+        "buildings/commercial/compact-exhibition-centre-v1/stage-3.png",
+        "buildings/commercial/compact-exhibition-centre-v1/stage-4.png",
+        "buildings/commercial/compact-exhibition-centre-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          0,
+          96,
+          48
+        ],
+        [
+          0,
+          0,
+          96,
+          48
+        ]
+      ]
+    },
+    "compact-central-library-v1": {
+      "label": "Центральная библиотека",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "central-library"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-central-library-v1/stage-1.png",
+        "buildings/commercial/compact-central-library-v1/stage-2.png",
+        "buildings/commercial/compact-central-library-v1/stage-3.png",
+        "buildings/commercial/compact-central-library-v1/stage-4.png",
+        "buildings/commercial/compact-central-library-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ]
+      ]
+    },
+    "compact-science-centre-v1": {
+      "label": "Научный центр",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "science-centre"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-science-centre-v1/stage-1.png",
+        "buildings/commercial/compact-science-centre-v1/stage-2.png",
+        "buildings/commercial/compact-science-centre-v1/stage-3.png",
+        "buildings/commercial/compact-science-centre-v1/stage-4.png",
+        "buildings/commercial/compact-science-centre-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ]
+      ]
+    },
+    "compact-art-gallery-v1": {
+      "label": "Художественная галерея",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        96,
+        48
+      ],
+      "footprintCells": [
+        12,
+        6
+      ],
+      "anchorPx": [
+        48,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "art-gallery"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 6
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-art-gallery-v1/stage-1.png",
+        "buildings/commercial/compact-art-gallery-v1/stage-2.png",
+        "buildings/commercial/compact-art-gallery-v1/stage-3.png",
+        "buildings/commercial/compact-art-gallery-v1/stage-4.png",
+        "buildings/commercial/compact-art-gallery-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          5,
+          0,
+          90,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ],
+        [
+          0,
+          1,
+          96,
+          48
+        ]
+      ]
+    },
+    "compact-four-floor-house-v1": {
+      "label": "Четырёхэтажный дом с мансардой",
+      "category": "HOUSE",
+      "rarity": "COMMON",
+      "spriteSize": [
+        48,
+        48
+      ],
+      "footprintCells": [
+        6,
+        6
+      ],
+      "anchorPx": [
+        24,
+        48
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "residential",
+        "low-rise-residential",
+        "compact-building"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/house/compact-four-floor-house-v1/stage-1.png",
+        "buildings/house/compact-four-floor-house-v1/stage-2.png",
+        "buildings/house/compact-four-floor-house-v1/stage-3.png",
+        "buildings/house/compact-four-floor-house-v1/stage-4.png",
+        "buildings/house/compact-four-floor-house-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          47,
+          48
+        ],
+        [
+          1,
+          0,
+          47,
+          48
+        ],
+        [
+          0,
+          5,
+          48,
+          48
+        ],
+        [
+          0,
+          5,
+          48,
+          48
+        ],
+        [
+          0,
+          5,
+          48,
+          48
+        ]
+      ]
+    },
+    "compact-observatory-v1": {
+      "label": "Обсерватория",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "observatory"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-observatory-v1/stage-1.png",
+        "buildings/commercial/compact-observatory-v1/stage-2.png",
+        "buildings/commercial/compact-observatory-v1/stage-3.png",
+        "buildings/commercial/compact-observatory-v1/stage-4.png",
+        "buildings/commercial/compact-observatory-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          7,
+          64,
+          64
+        ],
+        [
+          0,
+          7,
+          64,
+          64
+        ],
+        [
+          0,
+          7,
+          64,
+          64
+        ]
+      ]
+    },
+    "compact-thermal-baths-v1": {
+      "label": "Термальные купальни",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "thermal-baths"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-thermal-baths-v1/stage-1.png",
+        "buildings/commercial/compact-thermal-baths-v1/stage-2.png",
+        "buildings/commercial/compact-thermal-baths-v1/stage-3.png",
+        "buildings/commercial/compact-thermal-baths-v1/stage-4.png",
+        "buildings/commercial/compact-thermal-baths-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ],
+        [
+          0,
+          0,
+          64,
+          64
+        ]
+      ]
+    },
+    "compact-ice-palace-v1": {
+      "label": "Ледовый дворец",
+      "category": "COMMERCIAL",
+      "rarity": "UNIQUE",
+      "spriteSize": [
+        64,
+        64
+      ],
+      "footprintCells": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        32,
+        64
+      ],
+      "platform": "STONE",
+      "estimates": [
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-landmark",
+        "ice-palace"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 4
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": null,
+      "stages": [
+        "buildings/commercial/compact-ice-palace-v1/stage-1.png",
+        "buildings/commercial/compact-ice-palace-v1/stage-2.png",
+        "buildings/commercial/compact-ice-palace-v1/stage-3.png",
+        "buildings/commercial/compact-ice-palace-v1/stage-4.png",
+        "buildings/commercial/compact-ice-palace-v1/stage-5.png"
+      ],
+      "stageOpaqueBounds": [
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          1,
+          0,
+          63,
+          64
+        ],
+        [
+          0,
+          1,
+          64,
+          64
+        ],
+        [
+          0,
+          1,
+          64,
+          64
+        ],
+        [
+          0,
+          1,
+          64,
+          64
+        ]
+      ]
     }
   },
   "props": {
@@ -6114,7 +7676,7 @@
       }
     }
   },
-  "assetRevision": "99e1ee8d4cb7cbb9",
+  "assetRevision": "05d33bc518040ad3",
   "buildingProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
   "microAmbient": {
     "schemaVersion": 1,
@@ -8681,5 +10243,90 @@
     "atlas/clouds-v3/cloud-topdown-2.png",
     "atlas/clouds-v3/cloud-topdown-3.png",
     "atlas/clouds-v3/cloud-topdown-4.png"
-  ]
+  ],
+  "cityTransport": {
+    "schemaVersion": 1,
+    "sprites": {
+      "locomotive-east": {
+        "path": "city-transport/locomotive-east.png",
+        "size": [
+          24,
+          24
+        ],
+        "anchorPx": [
+          12,
+          12
+        ],
+        "opaqueBounds": [
+          0,
+          9,
+          24,
+          15
+        ],
+        "source": "reference/ai-authored/city-train-v1/sources/locomotive-east.png",
+        "sourceSha256": "910d4918aa0b0d9633beee018820339736770131d22baf7f8e87bf1d70b25f5d",
+        "sha256": "fff459ddb13836ad45360cdff830125e42aeab24a825bbf345af4177d4e40fb0"
+      },
+      "locomotive-north": {
+        "path": "city-transport/locomotive-north.png",
+        "size": [
+          24,
+          24
+        ],
+        "anchorPx": [
+          12,
+          12
+        ],
+        "opaqueBounds": [
+          9,
+          0,
+          15,
+          24
+        ],
+        "source": "reference/ai-authored/city-train-v1/sources/locomotive-north.png",
+        "sourceSha256": "081adf9447dbfa60490d188b6c0ed85841e577060b877a095bf4928fe1a72ae7",
+        "sha256": "35399323ae898b26ac11090aba1190e6c1fe1774a2e8405c8d0b2dadcf55ef40"
+      },
+      "carriage-east": {
+        "path": "city-transport/carriage-east.png",
+        "size": [
+          24,
+          24
+        ],
+        "anchorPx": [
+          12,
+          12
+        ],
+        "opaqueBounds": [
+          0,
+          9,
+          24,
+          14
+        ],
+        "source": "reference/ai-authored/city-train-v1/sources/carriage-east.png",
+        "sourceSha256": "f6df4a06073ab4d437ebaef94c3cacf685c76e02588e7a61ec44785c50b75937",
+        "sha256": "c6c9ec836bc3981b1a78e8a2541ef0bb89a29fae1bd61e78e893d78c21d3a5f5"
+      },
+      "carriage-north": {
+        "path": "city-transport/carriage-north.png",
+        "size": [
+          24,
+          24
+        ],
+        "anchorPx": [
+          12,
+          12
+        ],
+        "opaqueBounds": [
+          9,
+          0,
+          14,
+          24
+        ],
+        "source": "reference/ai-authored/city-train-v1/sources/carriage-north.png",
+        "sourceSha256": "eb7247c2e37981703866b74ae5519a97c6fdbf03714cbf6b7b3c46587754c748",
+        "sha256": "940c5760aec0bf70cc753507f0e8e242f89fa69a2ce5f8a0f3eeb8d37f050b30"
+      }
+    }
+  }
 }

@@ -1,0 +1,43 @@
+{
+  "key": "compact-botanical-greenhouse-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 53,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "17b238b3109e85726dc8aeab6017e222c02d1c3e0cb3fa2bd158ef4c81c15933",
+      "runtimeSha256": "f9f93d0470340979dc643bde8b805d0f117a824d8a94f62a9ca1e15cf32ddd6f",
+      "notes": "Ступенчатая стеклянная кровля с зеленью, маленький кирпичный фасад."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "9869971bc2784075449a413f9c079a73cb766d835f0b981afc3d4aed7e89cdf9",
+      "runtimeSha256": "479f98e816ce317ba482b10f5a46e66b45727aded57762fccd4e5896cc428a36",
+      "notes": "Исправлены отверстия: перекрытие полностью непрозрачное, проёмы тёмные."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "58720c87966ce0dffd3de3410eb62274325f2fe4b433600c1cce5105e027e2cf",
+      "runtimeSha256": "9d9fdda3c2c5238ca5d1c1dd9d17fcc4c4eba2be5f7aba524b683537f235c170",
+      "notes": "Часть остекления смонтирована, внутри видны балки и материалы."
+    }
+  }
+}

@@ -40,6 +40,11 @@ test("PWA offers a waiting release and activates it only on explicit update", as
     await expect(notice).toBeVisible({ timeout: 30_000 });
     await expect(page.getByLabel("Email")).toHaveValue("draft@example.test");
     await testInfo.attach("pwa-update-notice", { body: await page.screenshot({ path: testInfo.outputPath("pwa-update-notice.png") }), contentType: "image/png" });
+    await notice.getByRole("button", { name: "Позже", exact: true }).click();
+    await expect(notice).toBeHidden();
+    await expect(page.getByLabel("Email")).toHaveValue("draft@example.test");
+    await page.reload();
+    await expect(notice).toBeVisible();
     const navigation = page.waitForEvent("framenavigated", frame => frame === page.mainFrame());
     await notice.getByRole("button", { name: "Обновить", exact: true }).click();
     await navigation;

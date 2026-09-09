@@ -17,6 +17,7 @@ REPOSITORY = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPOSITORY / "scripts"))
 from compact_asset_contract import audit_compact_building
 from micro_ambient_contract import audit_micro_ambient
+from city_transport_contract import audit_city_transport
 
 
 CELL = 8
@@ -367,6 +368,9 @@ def audit(manifest_path: Path, runtime: Path) -> dict[str, Any]:
         audit_image(relative, f"atlasClouds/{index}", expected_size=(64, 32))
 
     errors.extend(audit_micro_ambient(manifest, runtime, manifest_path.parent))
+    errors.extend(audit_city_transport(manifest, runtime, manifest_path.parent))
+    for key, entry in manifest.get("cityTransport", {}).get("sprites", {}).items():
+        audit_image(entry["path"], key, expected_size=(24, 24))
     for key, entry in manifest.get("microAmbient", {}).get("sprites", {}).items():
         audit_image(entry["path"], key, expected_size=tuple(entry["size"]))
     runtime_paths = {str(path.relative_to(runtime)) for path in runtime.rglob("*.png")}

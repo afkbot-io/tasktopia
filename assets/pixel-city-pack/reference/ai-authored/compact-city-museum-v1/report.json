@@ -1,7 +1,7 @@
 {
   "key": "compact-city-museum-v1",
   "contract": "geometry.json",
-  "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
+  "normalization": "\u0415\u0434\u0438\u043d\u0430\u044f \u0440\u0430\u043c\u043a\u0430 \u0438\u0441\u0445\u043e\u0434\u043d\u0438\u043a\u0430 \u0441\u0442\u0430\u0434\u0438\u04385; \u0440\u0430\u0432\u043d\u043e\u043c\u0435\u0440\u043d\u044b\u0439 nearest-neighbour \u043c\u0430\u0441\u0448\u0442\u0430\u0431, \u0436\u0451\u0441\u0442\u043a\u0430\u044f \u0430\u043b\u044c\u0444\u0430, \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u043d\u0430\u044f \u043f\u0430\u043b\u0438\u0442\u0440\u0430. \u0411\u0435\u0437 \u0440\u0430\u0441\u0442\u044f\u0436\u0435\u043d\u0438\u044f \u043f\u043e \u043e\u0441\u044f\u043c \u0438 \u0441\u043c\u0435\u0449\u0435\u043d\u0438\u044f \u0441\u0442\u0430\u0434\u0438\u0439.",
   "sourceCanvas": [
     1254,
     1254
@@ -50,7 +50,69 @@
       ],
       "transparentHolePixels": 0,
       "centreDriftPx": 0.0,
-      "baselineDriftPx": 0
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "f291ee7bdcd6e98606698bae0578090495d53b2ff45b1980a2f1a7601d685666",
+      "runtimeSha256": "207d862f5dfeb45e1fbf765b53fd8cb55f496253d9e4643f9a3af63b95df9291",
+      "sourceBounds": [
+        90,
+        86,
+        1168,
+        1160
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "dedc1588fead7c5328a00ea6652b8a2eb9f16feed03b554f6eec3c7d8d6fd9c1",
+      "runtimeSha256": "54f1df3484ee7430e741d804619fd394b6cdff6a7a4d8aa78e51385cb7db529f",
+      "sourceBounds": [
+        90,
+        86,
+        1168,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
     }
   },
   "errors": [],
@@ -62,5 +124,48 @@
     "stage-3 open rooms with opaque floor and interior walls",
     "no external fence, scenery or black baseline",
     "same building identity in all stages"
-  ]
+  ],
+  "visualReview": {
+    "key": "compact-city-museum-v1",
+    "reviewedAt": "2026-09-09",
+    "reviewScope": "\u041e\u0441\u043d\u043e\u0432\u043d\u043e\u0439 \u0430\u0433\u0435\u043d\u0442 \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u043b \u0438\u0441\u0445\u043e\u0434\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c normalized3/4/5 \u0432 \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u04358x. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0432 \u0438\u0433\u0440\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0438\u0439 \u0444\u0440\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u044b\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443, \u043e\u0441\u0435\u0432\u044b\u0435 \u043b\u0438\u043d\u0438\u0438 \u043a\u0440\u043e\u0432\u043b\u0438 \u0438 \u044d\u0442\u0430\u0436\u0435\u0439.",
+      "roofDepthPx": 53,
+      "facadeHeightPx": 10,
+      "floorStepPx": 5,
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "34938d30c26540880e90e5b344abb7ecd1dfcea04f1091c62ca68d9d74f3e8a6",
+        "runtimeSha256": "41dbe05170c76a2d7898aaa93f1c21527830a6d4ee19bf8f51581d3a85e7067a",
+        "notes": "\u0421\u0442\u0443\u043f\u0435\u043d\u0447\u0430\u0442\u044b\u0439 \u0441\u0438\u043b\u0443\u044d\u0442, \u0434\u0432\u043e\u0440 \u0438 \u043d\u0438\u0437\u043a\u0430\u044f \u043f\u0435\u0440\u0435\u0434\u043d\u044f\u044f \u0447\u0430\u0441\u0442\u044c."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "dedc1588fead7c5328a00ea6652b8a2eb9f16feed03b554f6eec3c7d8d6fd9c1",
+        "runtimeSha256": "54f1df3484ee7430e741d804619fd394b6cdff6a7a4d8aa78e51385cb7db529f",
+        "notes": "\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043f\u0435\u0440\u0435\u043a\u0440\u044b\u0442\u0438\u044f \u0438 \u043a\u043e\u043b\u043e\u043d\u043d\u044b, \u0431\u0435\u0437 \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u044f \u0433\u043e\u0442\u043e\u0432\u043e\u0439 \u043a\u0440\u044b\u0448\u0438."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "f291ee7bdcd6e98606698bae0578090495d53b2ff45b1980a2f1a7601d685666",
+        "runtimeSha256": "207d862f5dfeb45e1fbf765b53fd8cb55f496253d9e4643f9a3af63b95df9291",
+        "notes": "\u041e\u0442\u043a\u0440\u044b\u0442\u0430\u044f \u043f\u0440\u0430\u0432\u0430\u044f \u0441\u0435\u043a\u0446\u0438\u044f \u0438 \u0447\u0430\u0441\u0442\u0438\u0447\u043d\u043e \u0437\u0430\u043a\u0440\u044b\u0442\u044b\u0435 \u043a\u0440\u044b\u043b\u044c\u044f."
+      }
+    }
+  }
 }

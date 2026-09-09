@@ -22,11 +22,11 @@
   ],
   "roofDepthPxRange": [
     22,
-    28
+    24
   ],
   "facadeHeightPxRange": [
-    18,
-    22
+    20,
+    21
   ],
   "floorHeightPxRange": [
     4,
@@ -78,11 +78,11 @@
     "2": "Same fence and foundation with compact crane, cabin and materials composed inside the footprint.",
     "3": "About half assembled: full unchanged physical lot and interior plane, unfinished structural walls and room partitions, no roof, internal material piles.",
     "4": "Same shell and front entrance, unfinished dark windows, roughly half the roof fitted, no finished rooftop equipment.",
-    "5": "Finished three-storey red/cream/teal apartment with a roof-dominant high frontal-top camera."
+    "5": "Готовый четырёхэтажный дом, тот же участок6x6 и осевой ракурс."
   },
   "overrides": "The user's compact-city redesign supersedes the legacy 18x14 lot, 8x16 door, shallow roof and stage-3 silhouette-height ratio. Assembly progress is semantic: removing a roof must not shrink the physical footprint or projected interior depth.",
   "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
-  "authoringStatus": "DRAFT_FINISHED_STAGE",
+  "authoringStatus": "REVIEWED_COMPLETE",
   "sourceBackgroundRationale": "Reserved magenta backdrop in the generated source. Native transparency holes must be checked before acceptance.",
   "floorCount": 4,
   "occupiedClearanceReview": "Reviewed5px top clearance inside48x48. Four5px floor bands and a22px roof retain small windows and the existing6x6 physical lot."

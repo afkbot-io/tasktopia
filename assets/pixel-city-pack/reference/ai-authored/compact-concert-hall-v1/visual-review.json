@@ -1,0 +1,43 @@
+{
+  "key": "compact-concert-hall-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Просмотрена последовательность нормализованных стадий3/4/5 в целочисленном масштабе8x. Геометрия сверена с контрактом; сцена проверяется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху; горизонтальная линия переднего фасада.",
+    "roofDepthPx": 54,
+    "facadeHeightPx": 10,
+    "floorStepPx": 10,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "a366517e9978368e1ff36767a0128e0acbe553054769d2bb72ba1a60f60a4e78",
+      "runtimeSha256": "0b334317cee71a2ee83e81c7e0fce601ffbf0d88059746984e99fbac2fc5b427",
+      "notes": "Самостоятельный узнаваемый силуэт; осевой вид сверху, низкий южный фасад без боковой стены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "31e78bc9077e19cd31ee31d5822cf204bd06ec2b061b3c0b5e93ee9926522320",
+      "runtimeSha256": "267904d67a7ec780ff348893f0d533f8f457953389b5c00cb46df0d026ac43a1",
+      "notes": "Частично закрытая кровля с открытой строительной секцией; готовые детали остаются только на завершённой части."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "3e5364da877c28a6c6daf818d596121697923c69ba442e08969d39a9fc037f01",
+      "runtimeSha256": "7676c46bbc1b3faeec75c1f0ca00ba85ebae0e689859c9f179e96268f761a4a2",
+      "notes": "Открытые перекрытия и незавершённые стены; тот же участок, вход и линия основания."
+    }
+  }
+}

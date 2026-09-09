@@ -1,0 +1,43 @@
+{
+  "key": "compact-terrace-hotel-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Просмотрена последовательность нормализованных стадий3/4/5 в целочисленном масштабе8x. Геометрия сверена с контрактом; сцена проверяется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху; горизонтальная линия переднего фасада.",
+    "roofDepthPx": 54,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "4ce3fda440b59573d1e6e33a199efdbae86abb56812c0755128448e7091d852c",
+      "runtimeSha256": "ed86715b2d4981555ba22f698dab1c14a66def865e184944820aa31695d370ec",
+      "notes": "Самостоятельный узнаваемый силуэт; осевой вид сверху, низкий южный фасад без боковой стены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "4592a06adc3bc2409430d9adb2dd25b2333a676692c90efa68261e42398e7f90",
+      "runtimeSha256": "c4ab13a857cf5379f1847b855d29f26d39b5a35c6b74f40d4a4028042406ea63",
+      "notes": "Частично закрытая кровля с открытой строительной секцией; готовые детали остаются только на завершённой части."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "ce09df650af3543d4e974a16984050baaaeb00c3007ca1a71b299a036aa953e0",
+      "runtimeSha256": "48971a44b3b86eb7794fba2f54d9f5260021b79c53790514799b3e864c207be8",
+      "notes": "Открытые перекрытия и незавершённые стены; тот же участок, вход и линия основания."
+    }
+  }
+}

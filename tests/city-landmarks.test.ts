@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { compileBlockLayout, type BlockLayoutCompilerInput } from "../src/server/world/block-layout-compiler";
-import { CITY_LANDMARKS } from "../src/shared/city-landmarks";
+import { CITY_LANDMARKS, cityLandmarkCandidates, isCityLandmark } from "../src/shared/city-landmarks";
 import { BUILDING_CATALOG } from "../src/shared/catalog";
 
 const mall = "compact-city-mall-v1";
@@ -18,20 +18,25 @@ describe("городские уникальные здания", () => {
     expect(CITY_LANDMARKS).toHaveLength(20);
     expect(new Set(CITY_LANDMARKS.map(item => item.family)).size).toBe(20);
     expect(CITY_LANDMARKS.some(item => item.family === "compact-four-floor-house-v1")).toBe(false);
+    for (const item of CITY_LANDMARKS) {
+      const building = BUILDING_CATALOG.find(entry => entry.key === item.family)!;
+      expect(building, item.family).toBeDefined();
+      expect(cityLandmarkCandidates(building.footprint.width, building.footprint.height)).toContain(item.family);
+    }
   });
 
   it("выдаёт готовый торговый центр один раз и сохраняет его при росте", () => {
     const spec = input(180);
     const first = compileBlockLayout(spec);
-    const landmarks = first.placements.filter(p => p.buildingFamily === mall);
-    expect(landmarks).toHaveLength(1);
+    const landmarks = first.placements.filter(p => isCityLandmark(p.buildingFamily));
+    expect(landmarks.length).toBeGreaterThan(1);
+    expect(new Set(landmarks.map(p => p.buildingFamily)).size).toBe(landmarks.length);
     expect(landmarks[0]!.serviceRole).toBeUndefined();
     const next = compileBlockLayout({ ...input(220), previous: first, revision: 2 });
-    expect(next.placements.filter(p => p.buildingFamily === mall)).toEqual(landmarks);
+    for (const landmark of landmarks) expect(next.placements.find(p => p.taskId === landmark.taskId)).toEqual(landmark);
     expect(compileBlockLayout({ ...spec, districts: spec.districts.map(d => ({ ...d, tasks: [...d.tasks].reverse() })) })).toEqual(first);
-    const homes = first.placements.filter(p => p.buildingFamily === "compact-apartment-v1");
-    expect(homes.length).toBeGreaterThan(1);
-    expect(first.placements.every(p => !CITY_LANDMARKS.some(l => l.family === p.buildingFamily) || p.buildingFamily === mall)).toBe(true);
+    const homes = first.placements.filter(p => BUILDING_CATALOG.find(entry => entry.key === p.buildingFamily)?.category === "HOUSE");
+    expect(homes.length).toBeGreaterThan(new Set(homes.map(p => p.buildingFamily)).size);
   });
 
   it("запрещает повторный явный выбор уникального семейства", () => {
@@ -41,30 +46,24 @@ describe("городские уникальные здания", () => {
   });
 
   it("распределяет разные готовые типы по кварталам, не группируя их вместе", () => {
-    // Synthetic publication metadata exercises tomorrow's expanded pool;
-    // these fixtures are not art approvals and never enter the runtime pack.
-    const originalSize = BUILDING_CATALOG.length;
-    const reference = BUILDING_CATALOG.find(entry => entry.key === mall)!;
-    BUILDING_CATALOG.push(...CITY_LANDMARKS.slice(1, 6).map(item => ({ ...reference, key: item.family })));
-    try {
-      const layout = compileBlockLayout(input(500));
-      const unique = layout.placements.filter(p => CITY_LANDMARKS.some(item => item.family === p.buildingFamily));
-      expect(unique).toHaveLength(6);
-      expect(new Set(unique.map(p => p.blockId)).size).toBe(6);
-      expect(new Set(unique.map(p => p.buildingFamily)).size).toBe(6);
-    } finally { BUILDING_CATALOG.splice(originalSize); }
+    const layout = compileBlockLayout(input(500));
+    const unique = layout.placements.filter(p => isCityLandmark(p.buildingFamily));
+    expect(unique.length).toBeGreaterThanOrEqual(10);
+    expect(new Set(unique.map(p => p.blockId)).size).toBe(unique.length);
+    expect(new Set(unique.map(p => p.buildingFamily)).size).toBe(unique.length);
   });
 
   it("разные города получают отличающееся, но воспроизводимое место здания", () => {
     const owners = new Set(Array.from({ length: 6 }, (_, i) =>
-      compileBlockLayout({ ...input(180), cityId: `city-${i}` }).placements.find(p => p.buildingFamily === mall)?.taskId));
+      compileBlockLayout({ ...input(180), cityId: `city-${i}` }).placements.find(p => isCityLandmark(p.buildingFamily))?.taskId));
     expect(owners.has(undefined)).toBe(false);
     expect(owners.size).toBeGreaterThan(1);
   });
 
   it("помнит закрытый участок и разрешает перенос тому же владельцу", () => {
     const first = compileBlockLayout(input(180));
-    const landmark = first.placements.find(p => p.buildingFamily === mall)!;
+    const landmark = first.placements.find(p => isCityLandmark(p.buildingFamily))!;
+    const mall = landmark.buildingFamily;
     expect(landmark).toBeDefined();
     first.placements = first.placements.filter(p => p.taskId !== landmark.taskId);
     first.siteMarkers.push({ id: "closed", blockId: landmark.blockId, slotKey: landmark.slotKey,

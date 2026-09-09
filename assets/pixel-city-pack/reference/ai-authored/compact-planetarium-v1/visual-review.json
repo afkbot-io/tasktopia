@@ -1,0 +1,43 @@
+{
+  "key": "compact-planetarium-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Просмотрена последовательность нормализованных стадий3/4/5 в целочисленном масштабе8x. Геометрия сверена с контрактом; сцена проверяется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху; горизонтальная линия переднего фасада.",
+    "roofDepthPx": 54,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "d0385b8151a92b094d47a56bd9ac43c88af2908520f4d487bf639ba5dce4a29a",
+      "runtimeSha256": "ee2cf6ff6202f12dc0a0f011c8fc68f74616e48b91db82dd906c5dcba2b353e8",
+      "notes": "Самостоятельный узнаваемый силуэт; осевой вид сверху, низкий южный фасад без боковой стены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "0b966cbbace595b5cace6fd2e077704db1cf1b43eabd0e3772cc6dfe5c561d16",
+      "runtimeSha256": "66cd81ae6ba19f57c2e59a25edabbd58cd4dd97d38cbb2eab633e408ce3e81ed",
+      "notes": "Частично закрытая кровля с открытой строительной секцией; готовые детали остаются только на завершённой части."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "287a3b59231c680c7b0b34e522198861e653311b5e2258e7a111a7a857325666",
+      "runtimeSha256": "1c747fff09d5346959993e89cb97b3b8bdd6cbb51c1dadc3e362b735d961c88c",
+      "notes": "Открытые перекрытия и незавершённые стены; тот же участок, вход и линия основания."
+    }
+  }
+}
