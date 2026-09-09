@@ -1,6 +1,6 @@
 import { blockPlaqueRange } from "../../shared/block-plaque";
 import { waitForVisibleMapWork } from "../map-frame-work";
-import { planCityRailway, cityTrainPosition, railwayIntersectsRect, type CityRailway } from "../city-railway";
+import { planCityRailway, cityTrainPosition, cityTrainState, railwayIntersectsRect, type CityRailway } from "../city-railway";
 import { drawCityRailway } from "../city-railway-view";
 import { transportBuildingArt } from "../../shared/transport-building-art";
 import { drawAirportApron } from "../airport-apron-view";
@@ -1217,7 +1217,11 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           const allTasks = new Map(cityScene.chunks.flatMap(chunk => chunk.tasks).map(task => [task.id, task]));
           for (const snapshot of cityScene.completedDistrictSnapshots) for (const task of snapshot.tasks) allTasks.set(task.id, task);
           const sites = [...new Map(cityScene.chunks.flatMap(chunk => chunk.plannedSites ?? []).map(site => [site.id, site])).values()];
-          railway = planCityRailway(cityScene.city.bounds, [...allTasks.values()], sites);
+          const roadBounds = cityScene.chunks.flatMap(chunk => chunk.roadRuns.map(run => ({
+            minX:Math.min(run.start.x,run.end.x),maxX:Math.max(run.start.x,run.end.x),
+            minY:Math.min(run.start.y,run.end.y),maxY:Math.max(run.start.y,run.end.y),
+          })));
+          railway = planCityRailway(cityScene.city.bounds, [...allTasks.values()], sites, roadBounds);
           railwayVersion = Math.max(-1, ...cityScene.chunks.filter(chunk => chunk.tasks.some(task => task.id === railway?.stationId)).map(chunk => chunk.publishedVersion));
         }
         if (railway) {
@@ -1255,7 +1259,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
           if (disposed || generation !== trainLoadGeneration) return;
           if (!railway) return;
           const distance = railway.axis === "horizontal" ? railway.platform.x - railway.from.x : railway.platform.y - railway.from.y;
-          trainElapsed = (distance + 4) / .005;
+          trainElapsed = Math.max(0, (distance + 4) / .005 - 4000);
           const positions = cityTrainPosition(railway, trainElapsed);
           for (let index = 0; index < 4; index++) {
             const view = new Sprite(Texture.from(urls[index === 0 ? 0 : 1]!));
@@ -1645,8 +1649,12 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (railway?.running && trainLayer.children.length) {
           trainElapsed += elapsed;
           const positions = cityTrainPosition(railway, trainElapsed);
+          const service = cityTrainState(railway, trainElapsed);
+          host.dataset.cityTrainPhase = service.phase;
           trainLayer.children.forEach((view, index) => {
             const point = positions[index]!;
+            const along = railway!.axis === "horizontal" ? point.x - railway!.from.x : point.y - railway!.from.y;
+            view.visible = service.phase !== "waiting" && along >= 1.5 && along <= service.length - 1.5;
             view.position.set(Math.round(point.x * CELL_SIZE), Math.round(point.y * CELL_SIZE));
           });
           host.dataset.cityTrainLead = `${trainLayer.children[0]!.x},${trainLayer.children[0]!.y}`;

@@ -31,7 +31,7 @@ export async function synchronizeCountryRoads(db: Db, countryId: string, planner
       .all<{ city_id: string; checksum: string }>(countryId);
     const topologyHash = countryRoadTopologyHash(Number(country.seed), heads);
     const previous = await readCountryRoads(db, countryId);
-    if (previous?.topologyHash === topologyHash) return previous;
+    if (previous?.topologyHash === topologyHash && previous.plan.plannerVersion === 2) return previous;
     const rows = await db.prepare(`SELECT l.city_id,r.nodes_json,
       (SELECT COALESCE(jsonb_agg(jsonb_build_object('origin',jsonb_build_object('x',b.origin_x,'y',b.origin_y),
         'width',b.width,'height',b.height) ORDER BY b.id),'[]') FROM city_blocks_v1 b WHERE b.layout_id=l.id) AS blocks
@@ -44,7 +44,7 @@ export async function synchronizeCountryRoads(db: Db, countryId: string, planner
     const ids = new Set(developed.map(row => row.city_id));
     // City deletion explicitly removes its incident routes, not surviving ones.
     const retained = previous?.plan.routes.filter(route => ids.has(route.fromCityId) && ids.has(route.toCityId));
-    const plan = planner({ countryId, seed: Number(country.seed),
+    const plan = planner({ countryId, seed: Number(country.seed), allowBridges:true,
       cities: developed.map(row => ({ id: row.city_id, nodes: row.nodes_json, blocks: row.blocks })),
       protectedSites: await permanentSiteBounds(db, countryId, true),
       ...(previous ? { previous: { countryId, seed: previous.plan.seed, routes: retained! } } : {}),

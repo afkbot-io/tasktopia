@@ -49,6 +49,11 @@ test("completed city station has a moving locomotive and three coupled wagons", 
   expect(await city.getAttribute("data-city-railway")).toMatch(/horizontal|vertical/);
   const first=await city.getAttribute("data-city-train-lead");
   await expect.poll(()=>city.getAttribute("data-city-train-lead")).not.toBe(first);
+  await expect(city).toHaveAttribute("data-city-train-phase","stopped",{timeout:15_000});
+  const stopped = await city.getAttribute("data-city-train-lead");
+  await page.waitForTimeout(1000);
+  expect(await city.getAttribute("data-city-train-lead")).toBe(stopped);
+  await expect(city).toHaveAttribute("data-city-train-phase","moving",{timeout:15_000});
   await page.getByLabel("Поиск здания по номеру или названию").fill("46");
   await page.getByRole("option").filter({hasText:"#46"}).click();
   await page.getByRole("button",{name:"Закрыть",exact:true}).click();
@@ -59,8 +64,8 @@ test("completed city station has a moving locomotive and three coupled wagons", 
   // Pan with the actual input gesture to include the straight corridor.
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + (camera.x - geometry.platform.x) * 4 * camera.scale,
-    box.y + box.height / 2 + (camera.y - geometry.platform.y) * 4 * camera.scale, {steps: 12});
+  await page.mouse.move(box.x + box.width / 2 + (camera.x - geometry.platform.x) * 8 * camera.scale,
+    box.y + box.height / 2 + (camera.y - geometry.platform.y) * 8 * camera.scale, {steps: 12});
   await page.mouse.up();
   await page.mouse.move(50,70);
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));

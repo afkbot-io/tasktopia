@@ -11,10 +11,18 @@ spec=importlib.util.spec_from_file_location('micro_builder',ROOT/'scripts/build-
 micro=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(micro)
 entries={}
+sheetPath=PACK/'reference/ai-authored/city-train-v2/sheet.png'
+sheet=Image.open(sheetPath).convert('RGBA')
 preview=Image.new('RGBA',(24*4,24),'#81955c')
 for index,(part,direction) in enumerate((p,d) for p in ('locomotive','carriage') for d in ('east','north')):
- source=PACK/f'reference/ai-authored/city-train-v1/sources/{part}-{direction}.png'
- image=micro.normalize(Image.open(source).convert('RGBA'),24,(24,8) if direction=='east' else (8,24))
+ source=sheetPath
+ column=0 if part=='locomotive' else 1
+ row=0 if direction=='east' else 1
+ top,bottom=(.16,.35) if row==0 else (.43,.97)
+ cell=sheet.crop((column*sheet.width//2,round(top*sheet.height),(column+1)*sheet.width//2,round(bottom*sheet.height)))
+ # Authored vertical cells face south; cardinal transpose preserves pixel edges.
+ if direction=='north': cell=cell.transpose(Image.Transpose.ROTATE_180)
+ image=micro.normalize(cell,24,(24,8) if direction=='east' else (8,24))
  bounds=image.getbbox()
  if not bounds or set(image.getchannel('A').getdata())-set((0,255)):
   raise ValueError(f'{part}-{direction}: empty or blurred train sprite')
@@ -27,4 +35,4 @@ for index,(part,direction) in enumerate((p,d) for p in ('locomotive','carriage')
  entries[f'{part}-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(source.relative_to(PACK)),'sourceSha256':hashlib.sha256(source.read_bytes()).hexdigest(),'sha256':hashlib.sha256(output.read_bytes()).hexdigest()}
  preview.alpha_composite(image,(index*24,0))
 (PACK/'city-train-manifest.json').write_text(json.dumps({'schemaVersion':1,'sprites':entries},indent=2)+'\n')
-preview.resize((768,192),Image.Resampling.NEAREST).save(PACK/'reference/ai-authored/city-train-v1/preview.png')
+preview.resize((768,192),Image.Resampling.NEAREST).save(PACK/'reference/ai-authored/city-train-v2/preview.png')

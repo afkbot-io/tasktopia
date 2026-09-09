@@ -235,7 +235,7 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
       violations.push({ code: "COUNTRY_ROADS_STALE", message: countryId });
     }
     try {
-      const validated = planIntercityRoads({ countryId, seed: Number(country.seed), validateOnly: true,
+      const validated = planIntercityRoads({ countryId, seed: Number(country.seed), validateOnly: true, allowBridges:true,
         cities: layouts.filter(layout => layout.blocks.length > 0).map(layout => ({ id: layout.cityId, nodes: layout.roadNetwork.nodes, blocks: layout.blocks })),
         protectedSites: await permanentSiteBounds(db, countryId, true), previous: snapshot.plan });
       if (JSON.stringify(validated.components) !== JSON.stringify(snapshot.plan.components)) throw new Error("Stored road components differ from actual connectivity");

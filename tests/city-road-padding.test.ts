@@ -85,3 +85,13 @@ describe("canonical city road padding", () => {
     expect(padding.get(1, 0)).toBeUndefined();
   });
 });
+
+describe("recorded intercity bridges", () => {
+  it("keeps bridge deck cells in the same padding network as their approach road", () => {
+    const r = {...route(), geometry:{start:{x:0,y:16},runs:[{direction:"E" as const,length:160}]},
+      bridges:[{start:{x:72,y:16},runs:[{direction:"E" as const,length:24}]}]};
+    const chunk = new CityRoadPadding({chunkSize:64,chunks:[],intercityRoads:[r]},()=>true).get(1,0)!;
+    expect(chunk.roads.find(p=>p.x===80 && p.y===16)?.structure).toBe("BRIDGE");
+    expect(chunk.roads.find(p=>p.x===112 && p.y===16)?.structure).toBe("ROAD");
+  });
+});

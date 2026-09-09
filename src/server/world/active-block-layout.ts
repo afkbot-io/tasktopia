@@ -123,6 +123,7 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
     const terrain = new Map<string, boolean>();
     let nextSequence = Math.max(-1,...existingSequence.values()) + 1;
     const input: BlockLayoutCompilerInput = {
+      compactReplay: reset,
       countryId,cityId,seed:Number(city.seed),revision:(old?.revision ?? 0)+1,
       origin:{x:Number(city.center_x),y:Number(city.center_y)},previous,
       canPlaceBlock: (bounds) => {
