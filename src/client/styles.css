@@ -765,14 +765,15 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .country-railway-overlay { position: absolute; inset: 0; pointer-events: none; }
 
 .pwa-update-notice {
-  position: fixed; z-index: 10000;
-  top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  position: fixed; z-index: 15;
+  bottom: calc(84px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
   width: min(480px, calc(100% - 24px)); box-sizing: border-box;
   display: flex; align-items: center; gap: 16px; padding: 16px;
   border: 1px solid #a38e46; border-radius: 10px; background: #142b2d; color: #f3f2db;
   box-shadow: 0 6px 24px #0006;
 }
 .pwa-update-notice p { margin: 4px 0 0; font-size: 13px; }
+.pwa-update-actions { display: flex; gap: 8px; }
 .pwa-update-notice button { flex-shrink: 0; padding: 10px; border: 1px solid #a38e46; border-radius: 6px; background: #38321d; color: #ffe280; cursor: pointer; }
 .pwa-update-notice button:disabled { opacity: .6; cursor: wait; }
 @media (max-width: 400px) { .pwa-update-notice { flex-direction: column; align-items: stretch; } }

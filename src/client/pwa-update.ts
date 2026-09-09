@@ -7,13 +7,13 @@ export function watchPwaUpdate(
   publish: (state: PwaUpdateState) => void,
   reload: () => void,
 ) {
-  const wasControlled = !!serviceWorker.controller;
+  let previousController = serviceWorker.controller;
   let offered: ServiceWorker | null = null;
   let accepted = false;
   let reloaded = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const announce = () => {
-    if (registration.waiting && serviceWorker.controller && !accepted) {
+    if (registration.waiting && serviceWorker.controller && registration.waiting !== serviceWorker.controller && !accepted) {
       offered = registration.waiting;
       publish("available");
     }
@@ -25,8 +25,10 @@ export function watchPwaUpdate(
   };
   serviceWorker.addEventListener("controllerchange", () => {
     if (reloaded) return;
+    const replacedController = !!previousController && serviceWorker.controller !== previousController;
+    previousController = serviceWorker.controller;
     if (!accepted) {
-      if (wasControlled) { offered = serviceWorker.controller; publish("available"); }
+      if (replacedController) { offered = serviceWorker.controller; publish("available"); }
       return;
     }
     reloaded = true;

@@ -31,6 +31,27 @@ describe("explicit PWA update", () => {
     expect(x.publish).toHaveBeenLastCalledWith("available");
     expect(setup(true, false).publish).not.toHaveBeenCalled();
   });
+  it("ignores a controller notification for the worker already controlling this page", () => {
+    const x = setup(false);
+    x.sw.dispatchEvent(new Event("controllerchange"));
+    expect(x.publish).not.toHaveBeenCalled();
+  });
+  it("does not offer the first worker during a waiting/controller transition", () => {
+    const x = setup(false, false);
+    x.sw.controller = x.worker;
+    x.registration.waiting = x.worker;
+    x.worker.dispatchEvent(new Event("statechange"));
+    expect(x.publish).not.toHaveBeenCalled();
+  });
+  it("tracks a later replacement after the first worker claims the page", () => {
+    const x = setup(false, false);
+    x.sw.controller = x.worker;
+    x.sw.dispatchEvent(new Event("controllerchange"));
+    expect(x.publish).not.toHaveBeenCalled();
+    x.sw.controller = {};
+    x.sw.dispatchEvent(new Event("controllerchange"));
+    expect(x.publish).toHaveBeenLastCalledWith("available");
+  });
   it("offers a reload when another tab has already activated the update", () => {
     const x = setup();
     x.registration.waiting = null;
