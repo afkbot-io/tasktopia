@@ -17,6 +17,7 @@ export type SemanticRoadSegment = {
   toNodeId: string;
   roadClass: SemanticRoadClass;
   widthCells: number;
+  structure?: "ROAD" | "BRIDGE";
   geometry: OrthogonalRoadGeometry;
 };
 

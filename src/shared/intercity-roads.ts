@@ -5,6 +5,7 @@ import type { OrthogonalRoadGeometry, SemanticRoadNetwork } from "./semantic-roa
 export type IntercityRoadRoute = {
   id: string; fromCityId: string; toCityId: string; fromNodeId: string; toNodeId: string;
   widthCells: 3; geometry: OrthogonalRoadGeometry;
+  bridges?: OrthogonalRoadGeometry[];
 };
 
 /** O(compressed runs), never an unbounded per-cell allocation. */
@@ -47,8 +48,11 @@ export function citySceneIntercityRoads(routes: readonly IntercityRoadRoute[], c
 /** Raster input only. Junction topology is derived from the union of all road
  * cells by the existing mobility graph, not from these unsplit long segments. */
 export function intercityRoadRasterNetwork(routes: readonly IntercityRoadRoute[]): SemanticRoadNetwork {
-  return { schemaVersion: 1, nodes: [], segments: routes.map(route => ({
+  return { schemaVersion: 1, nodes: [], segments: routes.flatMap(route => [{
     id: route.id, fromNodeId: route.fromNodeId, toNodeId: route.toNodeId,
     roadClass: "LOCAL", widthCells: route.widthCells, geometry: route.geometry,
-  })) };
+  }, ...(route.bridges ?? []).map((geometry, index) => ({
+    id: `${route.id}:bridge:${index}`, fromNodeId: route.fromNodeId, toNodeId: route.toNodeId,
+    roadClass: "LOCAL" as const, widthCells: route.widthCells, geometry, structure: "BRIDGE" as const,
+  }))]) };
 }

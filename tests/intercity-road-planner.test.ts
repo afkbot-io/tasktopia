@@ -168,3 +168,26 @@ describe("bounded canonical intercity roads", () => {
     expect(() => planIntercityRoads({ ...input, cities: [city("a", 0), city("b", 0)] })).toThrow(/coordinate.*owner/i);
   });
 });
+
+describe("explicit bounded river bridges", () => {
+  const river = (p: {x:number;y:number}) => p.x >= 40 && p.x <= 52;
+  const bridgeInput = {...input, isBuildable:(p: {x:number;y:number})=>!river(p), isBridgeable:river, allowBridges:true};
+  it("connects both dry banks with a recorded straight bridge and validates the retained route", () => {
+    const result = planIntercityRoads(bridgeInput);
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0]!.bridges).toHaveLength(1);
+    const bridge = result.routes[0]!.bridges![0]!;
+    expect(bridge.runs).toHaveLength(1);
+    expect(bridge.runs[0]!.length).toBeLessThanOrEqual(64);
+    const corrupt=structuredClone(result);
+    corrupt.routes[0]!.bridges![0]!.runs[0]!.length=1_000_000_000;
+    expect(()=>planIntercityRoads({...bridgeInput,previous:corrupt,validateOnly:true})).toThrow(/bridge span/);
+    expect(planIntercityRoads({...bridgeInput,previous:result,validateOnly:true}).routes).toEqual(result.routes);
+    expect(() => planIntercityRoads({...bridgeInput,previous:result,validateOnly:true,isBridgeable:()=>false})).toThrow(/bridge/);
+  });
+  it("never turns a long ocean or protected parcel into a bridge", () => {
+    const ocean=(p: {x:number;y:number})=>p.x>=24 && p.x<=160;
+    expect(planIntercityRoads({...input,cities:[city('a',0),city('b',192)],allowBridges:true,isBuildable:p=>!ocean(p),isBridgeable:ocean}).routes).toEqual([]);
+    expect(planIntercityRoads({...bridgeInput,protectedSites:[{minX:40,maxX:52,minY:-1000,maxY:1000}]}).routes).toEqual([]);
+  });
+});

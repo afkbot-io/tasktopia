@@ -85,3 +85,23 @@ describe("canonical city road padding", () => {
     expect(padding.get(1, 0)).toBeUndefined();
   });
 });
+
+describe("recorded intercity bridges", () => {
+  it("keeps bridge deck cells in the same padding network as their approach road", () => {
+    const r = {...route(), geometry:{start:{x:0,y:16},runs:[{direction:"E" as const,length:160}]},
+      bridges:[{start:{x:72,y:16},runs:[{direction:"E" as const,length:24}]}]};
+    const chunk = new CityRoadPadding({chunkSize:64,chunks:[],intercityRoads:[r]},()=>true).get(1,0)!;
+    expect(chunk.roads.find(p=>p.x===80 && p.y===16)?.structure).toBe("BRIDGE");
+    expect(chunk.roads.find(p=>p.x===112 && p.y===16)?.structure).toBe("ROAD");
+  });
+});
+
+it("preserves the bridge deck and higher road class regardless of raster input order", () => {
+  const geometry={start:{x:0,y:0},runs:[{direction:"E" as const,length:24}]};
+  const bridge={id:"bridge",fromNodeId:"a",toNodeId:"b",roadClass:"LOCAL" as const,widthCells:3,geometry,structure:"BRIDGE" as const};
+  const approach={...bridge,id:"approach",roadClass:"COLLECTOR" as const,structure:"ROAD" as const};
+  for(const segments of [[bridge,approach],[approach,bridge]]) {
+    const cell=rasterizeBlockRoads({schemaVersion:1,nodes:[],segments}).find(p=>p.x===8 && p.y===0)!;
+    expect(cell).toMatchObject({structure:"BRIDGE",roadClass:"COLLECTOR"});
+  }
+});

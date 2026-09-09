@@ -23,6 +23,7 @@ export type BlockLayoutDistrictInput = { id: string; archetype: string; sequence
 export type BlockLayoutCompilerInput = {
   countryId: string; cityId: string; origin?: { x: number; y: number }; seed: number; revision: number;
   districts: BlockLayoutDistrictInput[]; previous?: CompiledBlockLayoutV1;
+  compactReplay?: boolean;
   canPlaceBlock?: (bounds: BlockWorldBounds) => boolean;
 };
 
@@ -122,12 +123,19 @@ const parkSizeFitsSlot = (size: BlockLayoutTaskInput["parkSize"], slot: BlockSlo
   && (!newPlacement || size !== "POCKET" || slot.footprint.length <= 36);
 
 function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origin: { x: number; y: number }, kind: BlockSlotKind,
-  sequence: number, canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], parkSize?: BlockLayoutTaskInput["parkSize"], requestedFamily?: string) {
+  sequence: number, canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], parkSize?: BlockLayoutTaskInput["parkSize"], requestedFamily?: string, remainingTasks?: number) {
   const shapeKey = requestedFamily ? compactBuildingShapeFamily(requestedFamily) : undefined;
   if (requestedFamily && !shapeKey) throw new BlockPlacementError(`Unknown building geometry: ${requestedFamily}`);
   const templates = kind === "BUILDING"
     ? buildingBlockCandidates(sequence, shapeKey ? COMPACT_BUILDING_SHAPES[shapeKey] : undefined)
     : [blockTemplate(kind === "PARK" ? parkSize === "BLOCK" ? "park-grand" : "park-court" : kind === "WATER" ? "water-garden" : "parking-court")];
+  // A replay knows the surviving tasks, rather than the highest task number.
+  // Prefer compact blocks for a short district tail; never resize stored blocks.
+  if (kind === "BUILDING" && remainingTasks !== undefined && remainingTasks <= 3) {
+    const target = remainingTasks === 1 ? "residential-single" : "residential-square";
+    templates.sort((a,b) => Number(b.key === target) - Number(a.key === target)
+      || a.widthModules*a.heightModules-b.widthModules*b.heightModules);
+  }
   if (!templates.length) throw new BlockPlacementError(`No block template fits building geometry: ${requestedFamily}`);
   let failure: BlockPlacementError | undefined;
   // A sprint owns tasks, not an exclusive rectangular territory. Keep its
@@ -345,7 +353,12 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   };
   for (const placement of activePlacements.values()) recordHome(placement);
   pending.sort((a, b) => a.task.taskNumber - b.task.taskNumber || a.task.id.localeCompare(b.task.id));
+  const remainingByDistrict = new Map<string,number>();
+  for (const {context} of pending) remainingByDistrict.set(context.district.id,
+    (remainingByDistrict.get(context.district.id) ?? 0) + 1);
   for (const { task, context } of pending) {
+      const remainingTasks = remainingByDistrict.get(context.district.id)!;
+      remainingByDistrict.set(context.district.id, remainingTasks - 1);
       const { district, districtLayoutId, districtBlocks, available, occupied } = context;
       const kind = task.visualKind ?? "BUILDING";
       const requestedFamily = task.requestedFamily ?? (task.serviceRoleAssigned && task.serviceRole ? task.buildingFamily : undefined);
@@ -387,7 +400,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       if (!selected) {
         const sequence = districtBlocks.reduce((high, block) => Math.max(high, block.sequence), -1) + 1;
         const site = nextBlockSite(districtBlocks, districtLayoutId,
-          origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, input.canPlaceBlock, reservedBlocks, task.parkSize, requestedFamily);
+          origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, input.canPlaceBlock, reservedBlocks, task.parkSize, requestedFamily, input.compactReplay ? remainingTasks : undefined);
         const template = site.template;
         const block: CityBlockV1 = { id: deterministicId(`${identity}:district:${district.id}:block:${sequence}`), districtLayoutId, sequence,
           kind: template.kind === "BUILDING" ? "RESIDENTIAL" : template.kind === "PARKING" ? "TRANSPORT" : template.kind,

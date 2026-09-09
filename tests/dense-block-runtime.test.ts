@@ -5,6 +5,7 @@ import { createTestDb, type Db } from "../src/server/db";
 import { blockTaskGeometry, readActiveBlockLayout, synchronizeCityBlocks } from "../src/server/world/active-block-layout";
 import { getBuilding } from "../src/shared/catalog";
 import { auditWorld } from "../src/server/world/world-audit";
+import { synchronizeCountryRoads } from "../src/server/world/intercity-road-store";
 import type { TaskDto } from "../src/shared/contracts";
 import { requestErrorStatus } from "../src/server/routes";
 import { blockSlots } from "../src/shared/block-templates";
@@ -69,6 +70,9 @@ describe("persisted dense slot planning", { timeout: 60_000 }, () => {
     const replay = await synchronizeCityBlocks(db, countryId, city.id, true);
     expect(replay.placements).toEqual(rebuilt.placements);
     expect(replay.blocks).toEqual(rebuilt.blocks);
+    // Low-level reset defers country routing until all cities are rebuilt,
+    // just as AppService.regenerateCountry does in its transaction.
+    await synchronizeCountryRoads(db, countryId);
     expect((await auditWorld(db, new AppService(db), countryId)).violations).toEqual([]);
   });
 

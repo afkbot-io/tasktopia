@@ -19,7 +19,7 @@ export function railwayIntersectsRect(line: CityRailway | undefined, origin: Cel
 /** Derived once from the whole resident scene, never from viewport chunks.
  * A five-cell clear corridor includes ballast and platform. Existing parcels
  * and reservations remain immutable; the pedestrian approach may bend. */
-export function planCityRailway(bounds: Rect, tasks: readonly ChunkTaskDto[], sites: readonly PlannedSiteDto[]): CityRailway | undefined {
+export function planCityRailway(bounds: Rect, tasks: readonly ChunkTaskDto[], sites: readonly PlannedSiteDto[], roads: readonly Rect[] = []): CityRailway | undefined {
   const station = tasks.filter(t => t.serviceRole === "RAILWAY" && t.footprint.length)
     .sort((a,b) => a.id.localeCompare(b.id))[0];
   if (!station) return undefined;
@@ -40,12 +40,18 @@ export function planCityRailway(bounds: Rect, tasks: readonly ChunkTaskDto[], si
   // This bound prevents malformed/extreme worlds from blocking a browser frame.
   for (let head=0;head<queue.length && head<50_000;head++) {
     const p=queue[head]!;
-    const axis=!rows.has(p.y)?"horizontal":!columns.has(p.x)?"vertical":undefined;
+    // A free parcel row can still be a street. Keep the entire railway
+    // corridor outside the resident city envelope, including sidewalks.
+    const horizontal = (p.y < bounds.minY - 4 || p.y > bounds.maxY + 4) && !rows.has(p.y)
+      && !roads.some(r => p.y >= r.minY - 4 && p.y <= r.maxY + 4);
+    const vertical = (p.x < bounds.minX - 4 || p.x > bounds.maxX + 4) && !columns.has(p.x)
+      && !roads.some(r => p.x >= r.minX - 4 && p.x <= r.maxX + 4);
+    const axis = horizontal ? "horizontal" : vertical ? "vertical" : undefined;
     if (axis) {
       const access:Cell[]=[];
       for(let cursor:Cell|undefined=p;cursor;cursor=parents.get(key(cursor))) access.push(cursor);
       access.reverse();
-      return {stationId:station.id,axis,from:axis==="horizontal"?{x:minX,y:p.y}:{x:p.x,y:minY},to:axis==="horizontal"?{x:maxX,y:p.y}:{x:p.x,y:maxY},platform:p,access,stage:station.stage,running:station.stage===5 && station.status==="COMPLETED"};
+      return {stationId:station.id,axis,from:axis==="horizontal"?{x:minX-240,y:p.y}:{x:p.x,y:minY-240},to:axis==="horizontal"?{x:maxX+240,y:p.y}:{x:p.x,y:maxY+240},platform:p,access,stage:station.stage,running:station.stage===5 && station.status==="COMPLETED"};
     }
     for(const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]) {
       const next={x:p.x+dx!,y:p.y+dy!}, id=key(next);
@@ -56,11 +62,27 @@ export function planCityRailway(bounds: Rect, tasks: readonly ChunkTaskDto[], si
   return undefined;
 }
 
-/** Four coupled vehicles. The complete consist exits before its next arrival. */
+export const CITY_TRAIN_DWELL_MS = 12_000;
+export const CITY_TRAIN_INTERVAL_MS = 60_000;
+const TRAIN_SPEED = .005;
+export const CITY_TRAIN_SPACING = 3.125;
+
+/** One arrival, a platform stop, departure, then a minute without a train. */
+export function cityTrainState(line: CityRailway, elapsedMs: number) {
+  const length = Math.abs(line.to.x-line.from.x)+Math.abs(line.to.y-line.from.y);
+  const platform = line.axis === "horizontal" ? line.platform.x-line.from.x : line.platform.y-line.from.y;
+  const arrivalMs = (platform + 4) / TRAIN_SPEED;
+  const travelMs = (length + 18) / TRAIN_SPEED;
+  const phase = Math.max(0, elapsedMs) % (travelMs + CITY_TRAIN_DWELL_MS + CITY_TRAIN_INTERVAL_MS);
+  const stopped = phase >= arrivalMs && phase < arrivalMs + CITY_TRAIN_DWELL_MS;
+  const waiting = phase >= travelMs + CITY_TRAIN_DWELL_MS;
+  const lead = stopped ? platform : (phase - (phase >= arrivalMs ? CITY_TRAIN_DWELL_MS : 0)) * TRAIN_SPEED - 4;
+  return { lead, length, phase: waiting ? "waiting" : stopped ? "stopped" : "moving" } as const;
+}
+
 export function cityTrainPosition(line:CityRailway,elapsedMs:number):Cell[] {
-  const length=Math.abs(line.to.x-line.from.x)+Math.abs(line.to.y-line.from.y);
-  const lead=(Math.max(0,elapsedMs)*.005)%(length+18)-4;
+  const { lead } = cityTrainState(line, elapsedMs);
   return Array.from({length:4},(_,index)=>line.axis==="horizontal"
-    ? {x:line.from.x+lead-index*3.5,y:line.from.y+.5}
-    : {x:line.from.x+.5,y:line.from.y+lead-index*3.5});
+    ? {x:line.from.x+lead-index*CITY_TRAIN_SPACING,y:line.from.y+.5}
+    : {x:line.from.x+.5,y:line.from.y+lead-index*CITY_TRAIN_SPACING});
 }

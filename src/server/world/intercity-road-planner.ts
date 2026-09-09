@@ -20,7 +20,7 @@ export type IntercityRoadLimits = {
   maxTerrainSamples: number; maxEndpointNodes: number; maxGeometrySteps: number;
 };
 export type IntercityRoadPlan = {
-  countryId: string; seed: number; routes: IntercityRoadRoute[]; unreachable: IntercityRoadFailure[];
+  countryId: string; seed: number; plannerVersion?: 2; routes: IntercityRoadRoute[]; unreachable: IntercityRoadFailure[];
   /** Actual accepted connectivity, including isolated cities. Never implies a full country network. */
   components: string[][];
   metrics: { candidates: number; attemptedRoutes: number; retainedRoutes: number; visited: number; terrainSamples: number; edgeChecks: number };
@@ -30,6 +30,8 @@ export type IntercityRoadPlannerInput = {
   protectedSites?: readonly BlockWorldBounds[];
   previous?: Pick<IntercityRoadPlan, "countryId" | "seed" | "routes">;
   isBuildable?: (cell: GridPoint) => boolean;
+  allowBridges?: boolean;
+  isBridgeable?: (cell: GridPoint) => boolean;
   limits?: Partial<IntercityRoadLimits>;
   /** Read-only audit: validate retained roads and return their components,
    * without candidate generation or discovering/replacing any connection. */
@@ -41,7 +43,7 @@ const key = (p: GridPoint) => `${p.x}:${p.y}`;
 const distance = (a: GridPoint, b: GridPoint) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 const pointIn = (p: GridPoint, b: BlockWorldBounds) => p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY;
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
-type SearchNode = GridPoint & { heading: number; cost: number; score: number; order: number; previous?: SearchNode; startId: string };
+type SearchNode = GridPoint & { heading: number; cost: number; score: number; order: number; previous?: SearchNode; startId: string; bridge?: boolean };
 
 /** Small search-local heap: no change to the legacy router's fallback policy. */
 class Frontier {
@@ -157,6 +159,25 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     }
     edgeCache.set(id, true); return true;
   };
+  const bridgeCache = new Map<string, boolean>();
+  const bridgeable = input.isBridgeable ?? ((p: GridPoint) => ["DEEP_WATER", "SHALLOW_WATER", "WET_SAND"].includes(terrainAt(input.seed,p.x,p.y).terrain));
+  const bridgeOpen = (from: GridPoint, to: GridPoint): boolean => {
+    const id = `${key(from)}/${key(to)}`;
+    if (bridgeCache.has(id)) return bridgeCache.get(id)!;
+    const length = distance(from,to);
+    if (!input.allowBridges || length > 64 || length < GRID || from.x !== to.x && from.y !== to.y
+      || !pointOpen(from) || !pointOpen(to)) { bridgeCache.set(id,false); return false; }
+    let water = false;
+    for (let step=0;step<=length;step++) for (let dy=-RADIUS;dy<=RADIUS;dy++) for(let dx=-RADIUS;dx<=RADIUS;dx++) {
+      const p = {x:from.x+Math.sign(to.x-from.x)*step+dx,y:from.y+Math.sign(to.y-from.y)*step+dy};
+      if (cellOpen(p)) continue;
+      if (sampleBudgetExhausted || protection.get(`${Math.floor(p.x/BUCKET)}:${Math.floor(p.y/BUCKET)}`)?.some(b=>pointIn(p,b)) || !bridgeable(p)) {
+        bridgeCache.set(id,false); return false;
+      }
+      water = true;
+    }
+    bridgeCache.set(id,water); return water;
+  };
   const parents = new Map(cities.map(city => [city.id, city.id]));
   const root = (id: string): string => { const p = parents.get(id)!; if (p === id) return id; const result = root(p); parents.set(id, result); return result; };
   const join = (a: string, b: string) => parents.set(root(b), root(a));
@@ -180,10 +201,21 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     if (root(route.fromCityId) === root(route.toCityId)) throw new Error("Previous intercity routes must form a forest");
     const path = decodeOrthogonalRoadRuns(route.geometry);
     if (key(path[0]!) !== key(a) || key(path.at(-1)!) !== key(b)) throw new Error("Previous intercity geometry/endpoints disagree");
-    if (path.some(point => !pointOpen(point))) throw new Error(sampleBudgetExhausted ? "Previous intercity validation exceeds sample budget" : "Previous accepted road is obstructed; do not move it silently");
+    const bridgeCells = new Set<string>();
+    const routeCells = new Set(path.map(key));
+    if ((route.bridges?.length ?? 0) > Math.ceil(length / GRID)) throw new Error("Retained bridge count exceeds route budget");
+    for (const geometry of route.bridges ?? []) {
+      if (geometry.runs.length !== 1 || !Number.isSafeInteger(geometry.runs[0]!.length)
+        || geometry.runs[0]!.length < GRID || geometry.runs[0]!.length > 64) throw new Error("Invalid retained intercity bridge span");
+      const points = decodeOrthogonalRoadRuns(geometry);
+      if (!bridgeOpen(points[0]!,points.at(-1)!)) throw new Error("Invalid retained intercity bridge");
+      if (points.some(p=>!routeCells.has(key(p)))) throw new Error("Bridge outside retained route");
+      points.forEach(p=>bridgeCells.add(key(p)));
+    }
+    if (path.some(point => !bridgeCells.has(key(point)) && !pointOpen(point))) throw new Error(sampleBudgetExhausted ? "Previous intercity validation exceeds sample budget" : "Previous accepted road is obstructed; do not move it silently");
     join(route.fromCityId, route.toCityId);
   }
-  if (input.validateOnly) return { countryId: input.countryId, seed: input.seed, routes,
+  if (input.validateOnly) return { countryId: input.countryId, seed: input.seed, plannerVersion:2, routes,
     unreachable: [], components: components(), metrics };
   const centers = new Map(cities.map(city => [city.id, {
     x: city.nodes.reduce((sum, n) => sum + n.x, 0) / Math.max(1, city.nodes.length),
@@ -256,20 +288,36 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
       if (goalAt.has(key(current))) { found = current; break; }
       for (let i = 0; i < 4; i++) {
         const heading = (i + offset) % 4, [dx, dy] = directions[heading]!;
-        const point = { x: current.x + dx, y: current.y + dy };
-        if (!pointIn(point, bounds) || !edgeOpen(current, point)) continue;
-        const cost = current.cost + GRID + (current.heading >= 0 && current.heading !== heading ? 2 : 0);
-        const next: SearchNode = { ...point, heading, cost, score: cost + heuristic(point), order: order++, previous: current, startId: current.startId };
+        let point = { x: current.x + dx, y: current.y + dy };
+        let bridge = false;
+        if (!pointIn(point, bounds)) continue;
+        if (!edgeOpen(current, point)) {
+          if (!input.allowBridges) continue;
+          let landing: GridPoint | undefined;
+          for(let span=1;span<=8;span++) {
+            const candidate={x:current.x+dx*span,y:current.y+dy*span};
+            if(pointIn(candidate,bounds) && bridgeOpen(current,candidate)) {landing=candidate;break;}
+          }
+          if (!landing) continue;
+          point=landing; bridge=true;
+        }
+        const cost = current.cost + distance(current,point) + (bridge ? 48 : 0) + (current.heading >= 0 && current.heading !== heading ? 2 : 0);
+        const next: SearchNode = { ...point, heading, cost, score: cost + heuristic(point), order: order++, previous: current, startId: current.startId, bridge };
         if (cost >= (best.get(state(next)) ?? Infinity)) continue;
         best.set(state(next), cost); open.push(next);
       }
     }
     if (!found) { fail(sampleBudgetExhausted || metrics.visited >= limits.maxTotalVisited ? "TOTAL_BUDGET" : visited >= limits.maxVisitedPerRoute ? "ROUTE_BUDGET" : "NO_PATH"); continue; }
     const coarse: GridPoint[] = [];
-    for (let at: SearchNode | undefined = found; at; at = at.previous) coarse.push({ x: at.x, y: at.y });
+    const bridges: IntercityRoadRoute["geometry"][] = [];
+    for (let at: SearchNode | undefined = found; at; at = at.previous) {
+      coarse.push({x:at.x,y:at.y});
+      if(at.bridge && at.previous) bridges.push({start:{x:at.previous.x,y:at.previous.y},runs:[{
+        direction:at.x>at.previous.x?"E":at.x<at.previous.x?"W":at.y>at.previous.y?"S":"N",length:distance(at,at.previous)}]});
+    }
     coarse.reverse();
     const path: GridPoint[] = [coarse[0]!];
-    for (let i = 1; i < coarse.length; i++) for (let step = 1; step <= GRID; step++) path.push({
+    for (let i = 1; i < coarse.length; i++) for (let step = 1; step <= distance(coarse[i-1]!,coarse[i]!); step++) path.push({
       x: coarse[i - 1]!.x + Math.sign(coarse[i]!.x - coarse[i - 1]!.x) * step,
       y: coarse[i - 1]!.y + Math.sign(coarse[i]!.y - coarse[i - 1]!.y) * step,
     });
@@ -278,9 +326,9 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     geometrySteps += path.length - 1;
     const geometry = encodeOrthogonalRoadPath(path), toNodeId = goalAt.get(key(found))!.id;
     routes.push({ id: `intercity:${digest(JSON.stringify([input.countryId, input.seed, a.id, b.id, found.startId, toNodeId, geometry])).slice(0, 24)}`,
-      fromCityId: a.id, toCityId: b.id, fromNodeId: found.startId, toNodeId, widthCells: 3, geometry });
+      fromCityId: a.id, toCityId: b.id, fromNodeId: found.startId, toNodeId, widthCells: 3, geometry, ...(bridges.length ? {bridges:bridges.reverse()} : {}) });
     join(a.id, b.id);
   }
   const unreachable = failures.filter(failure => root(failure.fromCityId) !== root(failure.toCityId));
-  return { countryId: input.countryId, seed: input.seed, routes, unreachable, components: components(), metrics };
+  return { countryId: input.countryId, seed: input.seed, plannerVersion:2, routes, unreachable, components: components(), metrics };
 }

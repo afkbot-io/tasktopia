@@ -266,3 +266,15 @@ describe("incremental rectangular block world", () => {
     expect(auditSemanticRoadNetwork(layout.roadNetwork)).toBe(layout.roadNetwork);
   });
 });
+
+describe("sparse replay blocks", () => {
+  it("does not reserve a large quarter for a district with one surviving task", () => {
+    const layout = compileBlockLayout({...input([task(93)]), compactReplay:true});
+    expect(layout.blocks[0]!.width * layout.blocks[0]!.height).toBeLessThanOrEqual(16 * 16);
+  });
+  it("uses the surviving task count, not gaps between their numbers", () => {
+    const a = compileBlockLayout({...input([task(1), task(2)]), compactReplay:true});
+    const b = compileBlockLayout({...input([task(85), task(93)]), compactReplay:true});
+    expect(b.blocks.map(block => [block.width,block.height])).toEqual(a.blocks.map(block => [block.width,block.height]));
+  });
+});
