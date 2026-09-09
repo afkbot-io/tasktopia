@@ -23,12 +23,18 @@ service worker. Кэширование авторизованных API или S
   device pixel ratio значением `2`, COUNTRY компонуется один раз в нативный raster,
   PLANET сохраняет crisp square sprites.
 - PWA precache содержит только публичный application shell, manifest, иконки и
-  content-addressed bundles. `/api`, `/mcp`, `/socket.io` и `/health` никогда не
+  entry bundle, его статические зависимости и CSS. Lazy-модули карт и worker
+  загружаются по требованию, а CDN-ресурсы не дублируются на app-origin. `/api`, `/mcp`, `/socket.io` и `/health` никогда не
   попадают ни в precache, ни в runtime cache. Offline navigation возвращает shell,
   но не имитирует авторизованные данные.
 - Имя PWA-кэша включает revision, вычисленную из bundle filenames и содержимого
   стабильных public-файлов. `sw.js` и manifest всегда revalidate; managed static
   release публикует их атомарно вместе с bundle.
+- Ожидающая версия показывает уведомление «Обновить». Только явное нажатие
+  отправляет `TASKTOPIA_SKIP_WAITING`; страница перезагружается один раз после
+  смены controller. Возврат в приложение и online проверяют обновления
+  с ограничением частоты; открытое приложение проверяет их каждые 30 минут.
+  Другие открытые вкладки получают предложение обновиться без автоперезагрузки.
 - Safe areas задаются на корневом shell, мобильные основные controls имеют touch
   target не меньше `44×44`, модальные панели используют `100dvh`.
 

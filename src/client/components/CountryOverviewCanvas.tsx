@@ -1,3 +1,4 @@
+import { loadMapImage } from "../map-image";
 import { loadMapWithTimeout } from "../map-load-timeout";
 import { countryRailways } from "../../shared/country-railways";
 import { useEffect, useRef, useState } from "react";
@@ -25,15 +26,6 @@ const CITY_LOD_CELL_SIZE = .72;
 type Camera = { zoom: number; centerX: number; centerY: number };
 type Flight = { view: HTMLImageElement; elapsed: number; duration: number; delay: number; route: AtlasFlightGeometry; startsAtAirport: boolean; fromCityId: string; toCityId: string; from: { x: number; y: number }; to: { x: number; y: number } };
 
-async function loadAtlasImage(url: string): Promise<HTMLImageElement> {
-  const image = new Image();
-  image.decoding = "async";
-  image.crossOrigin = "anonymous";
-  image.src = url;
-  await loadMapWithTimeout(() => image.decode());
-  return image;
-}
-
 export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, initialFocusCityId, events, onEventsProcessed, onCitySelect, onCityHover, onZoomOut, wheelNavigation }: {
   countryId: string;
   worldRevision: number;
@@ -48,7 +40,9 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
 }) {
   const cacheKey = `${countryId}:${worldRevision}`;
   const [overview, setOverview] = useState<CountryOverviewDto | null>(()=>countrySceneCache.peek(cacheKey)??null);
+  const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState("");
+  const retry = () => { setError(""); setAttempt(value => value + 1); };
   const [renderReady, setRenderReady] = useState(false);
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [cityQuery, setCityQuery] = useState("");
@@ -102,7 +96,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось загрузить страну");
       });
     return () => controller.abort();
-  }, [countryId, cacheKey]);
+  }, [countryId, cacheKey, attempt]);
 
   useEffect(() => {
     if (!overview) return;
@@ -124,6 +118,8 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     if (!host || !labels || !overview) return;
     setRenderReady(false);
     let disposed = false;
+    const imageController = new AbortController();
+    const loadAtlasImage = (url: string) => loadMapImage(url, imageController.signal);
     let frame = 0;
     let zoomFrame = 0;
     let flightFrame = 0;
@@ -403,58 +399,63 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
         const to = airportPoints.get(connection.toCityId);
         return from && to ? [{ from, to, index, startsAtAirport: true, fromCityId: connection.fromCityId, toCityId: connection.toCityId }] : [];
       }).slice(0,5);
-      const headingImages = await Promise.all((["north","east","south","west"] as const).map(async heading => {
-        const image = await loadAtlasImage(microAmbientSprite("aircraft","regional",heading).url); return image.src;
-      }));
-      const planeTextures = await Promise.all(routeInputs.map(() => loadAtlasImage(microAmbientSprite("aircraft","regional","east").url)));
-      if (disposed) return;
-      for (let index = 0; index < routeInputs.length; index += 1) {
-        const route = routeInputs[index]!;
-        const view = planeTextures[index]!;
-        view.className = "country-atlas-aircraft";
-        view.setAttribute("aria-hidden", "true");
-        view.style.width = "8px";
-        view.style.height = "8px";
-        host.append(view);
-        flights.push({
-          view,
-          elapsed: 0,
-          duration: 9_000 + index * 1_700,
-          delay: index * 1_250,
-          route: buildAtlasFlightGeometry(route.from, route.to, `country:${countryId}:${index}`, 18),
-          startsAtAirport: route.startsAtAirport,
-          fromCityId: route.fromCityId, toCityId: route.toCityId, from: route.from, to: route.to,
-        });
-      }
-      let previousFlightFrame = performance.now();
-      const animateFlights = (timestamp: number) => {
+      // Aircraft are decoration: their network latency must not hold the map.
+      void (async () => {
+        const headingImages = routeInputs.length ? await Promise.all((["north","east","south","west"] as const).map(async heading => {
+          const image = await loadAtlasImage(microAmbientSprite("aircraft","regional",heading).url); return image.src;
+        })) : [];
+        const planeTextures = await Promise.all(routeInputs.map(() => loadAtlasImage(microAmbientSprite("aircraft","regional","east").url)));
         if (disposed) return;
-        const deltaMs = Math.min(64, timestamp - previousFlightFrame);
-        previousFlightFrame = timestamp;
-        for (const flight of flights) {
-          flight.elapsed = (flight.elapsed + deltaMs) % (flight.duration + flight.delay);
-          const progress = Math.max(0, flight.elapsed - flight.delay) / flight.duration;
-          flight.view.hidden = !(progress > 0 && progress <= 1);
-          if (flight.view.hidden) continue;
-          const sample = sampleAtlasFlight(flight.route, progress);
-          const endpointScale = atlasAircraftEndpointScale(progress, flight.startsAtAirport, true);
-          const endpointDelta = (id: string, point: { x: number; y: number }) => {
-            const city = citiesById.get(id)!;
-            const airport = city.miniature.airports.at(-1)!;
-            const screen = screenPoint(city, airport.x, airport.y);
-            return { x: screen.x - sceneX - point.x * sceneScale, y: screen.y - sceneY - point.y * sceneScale };
-          };
-          const fromDelta = endpointDelta(flight.fromCityId, flight.from), toDelta = endpointDelta(flight.toCityId, flight.to);
-          const screenX = sceneX + sample.x * sceneScale + fromDelta.x * (1 - progress) + toDelta.x * progress;
-          const screenY = sceneY + sample.y * sceneScale + fromDelta.y * (1 - progress) + toDelta.y * progress;
-          const heading = (Math.round(sample.angle / (Math.PI / 2)) + 5) % 4;
-          if (flight.view.dataset.heading !== String(heading)) { flight.view.src=headingImages[heading]!; flight.view.dataset.heading=String(heading); }
-          flight.view.style.opacity=String(endpointScale);
-          flight.view.style.transform = `translate3d(${Math.round(screenX)-4}px, ${Math.round(screenY)-4}px, 0)`;
+        for (let index = 0; index < routeInputs.length; index += 1) {
+          const route = routeInputs[index]!;
+          const view = planeTextures[index]!;
+          view.className = "country-atlas-aircraft";
+          view.setAttribute("aria-hidden", "true");
+          view.style.width = "8px";
+          view.style.height = "8px";
+          host.append(view);
+          flights.push({
+            view,
+            elapsed: 0,
+            duration: 9_000 + index * 1_700,
+            delay: index * 1_250,
+            route: buildAtlasFlightGeometry(route.from, route.to, `country:${countryId}:${index}`, 18),
+            startsAtAirport: route.startsAtAirport,
+            fromCityId: route.fromCityId, toCityId: route.toCityId, from: route.from, to: route.to,
+          });
         }
-        flightFrame = requestAnimationFrame(animateFlights);
-      };
-      if (flights.length > 0) flightFrame = requestAnimationFrame(animateFlights);
+        let previousFlightFrame = performance.now();
+        const animateFlights = (timestamp: number) => {
+          if (disposed) return;
+          const deltaMs = Math.min(64, timestamp - previousFlightFrame);
+          previousFlightFrame = timestamp;
+          for (const flight of flights) {
+            flight.elapsed = (flight.elapsed + deltaMs) % (flight.duration + flight.delay);
+            const progress = Math.max(0, flight.elapsed - flight.delay) / flight.duration;
+            flight.view.hidden = !(progress > 0 && progress <= 1);
+            if (flight.view.hidden) continue;
+            const sample = sampleAtlasFlight(flight.route, progress);
+            const endpointScale = atlasAircraftEndpointScale(progress, flight.startsAtAirport, true);
+            const endpointDelta = (id: string, point: { x: number; y: number }) => {
+              const city = citiesById.get(id)!;
+              const airport = city.miniature.airports.at(-1)!;
+              const screen = screenPoint(city, airport.x, airport.y);
+              return { x: screen.x - sceneX - point.x * sceneScale, y: screen.y - sceneY - point.y * sceneScale };
+            };
+            const fromDelta = endpointDelta(flight.fromCityId, flight.from), toDelta = endpointDelta(flight.toCityId, flight.to);
+            const screenX = sceneX + sample.x * sceneScale + fromDelta.x * (1 - progress) + toDelta.x * progress;
+            const screenY = sceneY + sample.y * sceneScale + fromDelta.y * (1 - progress) + toDelta.y * progress;
+            const heading = (Math.round(sample.angle / (Math.PI / 2)) + 5) % 4;
+            if (flight.view.dataset.heading !== String(heading)) { flight.view.src=headingImages[heading]!; flight.view.dataset.heading=String(heading); }
+            flight.view.style.opacity=String(endpointScale);
+            flight.view.style.transform = `translate3d(${Math.round(screenX)-4}px, ${Math.round(screenY)-4}px, 0)`;
+          }
+          flightFrame = requestAnimationFrame(animateFlights);
+        };
+        if (flights.length > 0) flightFrame = requestAnimationFrame(animateFlights);
+      })().catch(() => {
+        if (!disposed) setError("Не удалось загрузить самолёты. Карта доступна.");
+      });
       applyCamera();
       readyTimer = window.setTimeout(() => requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -535,6 +536,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     host.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       disposed = true;
+      imageController.abort();
       scheduleLabelsRef.current = null;
       observer.disconnect();
       if (frame) cancelAnimationFrame(frame);
@@ -551,9 +553,9 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       host.style.backgroundSize = "";
       host.style.backgroundPosition = "";
     };
-  }, [countryId, initialFocusCityId, overview, wheelNavigation]);
+  }, [countryId, initialFocusCityId, overview, wheelNavigation, attempt]);
 
-  if (error && !overview) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span></div>;
+  if (error && !overview) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span><button type="button" onClick={retry}>Повторить загрузку карты</button></div>;
   if (!overview) return <div className="atlas-state" role="status"><i /><span>Загружаем города страны…</span></div>;
 
   const dense = overview.cities.length > COUNTRY_FULL_LABEL_LIMIT;
@@ -617,7 +619,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
         <span>{city.districts.length} районов · {city.progress}%</span>
       </button></div>)}
     </div>
-    {!renderReady && <div className="atlas-state country-overview-loader" role="status"><i /><span>Готовим карту страны…</span></div>}
-    {error && <div className="country-overview-warning" role="status">{error}</div>}
+    {!renderReady && !error && <div className="atlas-state country-overview-loader" role="status"><i /><span>Готовим карту страны…</span></div>}
+    {error && <div className="country-overview-warning" data-country-control role="status">{error} <button type="button" onClick={retry}>Повторить загрузку карты</button></div>}
   </div>;
 }
