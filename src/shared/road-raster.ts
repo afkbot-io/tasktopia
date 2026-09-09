@@ -26,7 +26,11 @@ export function rasterizeBlockRoads(network: SemanticRoadNetwork, bounds?: Rect)
           if (bounds && (px < bounds.minX - 1 || px > bounds.maxX + 1 || py < bounds.minY - 1 || py > bounds.maxY + 1)) continue;
           const roadClass = segment.roadClass === "SERVICE" ? "LOCAL" : segment.roadClass;
           const previous = cells.get(`${px}:${py}`);
-          if (!previous || rank[roadClass] > rank[previous.roadClass] || segment.structure === "BRIDGE") cells.set(`${px}:${py}`, { x: px, y: py, mask: 0, structure: segment.structure ?? "ROAD", roadClass });
+          if (!previous || rank[roadClass] > rank[previous.roadClass] || segment.structure === "BRIDGE" && previous.structure !== "BRIDGE") {
+            cells.set(`${px}:${py}`, {x:px,y:py,mask:0,
+              structure:previous?.structure === "BRIDGE" || segment.structure === "BRIDGE" ? "BRIDGE" : "ROAD",
+              roadClass:previous && rank[previous.roadClass] > rank[roadClass] ? previous.roadClass : roadClass});
+          }
         }
       }
       x += dx * run.length; y += dy * run.length;

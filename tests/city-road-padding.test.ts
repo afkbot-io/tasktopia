@@ -95,3 +95,13 @@ describe("recorded intercity bridges", () => {
     expect(chunk.roads.find(p=>p.x===112 && p.y===16)?.structure).toBe("ROAD");
   });
 });
+
+it("preserves the bridge deck and higher road class regardless of raster input order", () => {
+  const geometry={start:{x:0,y:0},runs:[{direction:"E" as const,length:24}]};
+  const bridge={id:"bridge",fromNodeId:"a",toNodeId:"b",roadClass:"LOCAL" as const,widthCells:3,geometry,structure:"BRIDGE" as const};
+  const approach={...bridge,id:"approach",roadClass:"COLLECTOR" as const,structure:"ROAD" as const};
+  for(const segments of [[bridge,approach],[approach,bridge]]) {
+    const cell=rasterizeBlockRoads({schemaVersion:1,nodes:[],segments}).find(p=>p.x===8 && p.y===0)!;
+    expect(cell).toMatchObject({structure:"BRIDGE",roadClass:"COLLECTOR"});
+  }
+});
