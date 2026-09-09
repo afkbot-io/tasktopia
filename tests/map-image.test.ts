@@ -15,6 +15,13 @@ describe("map image cancellation", () => {
     await expect(loadMapImage("/terrain.png")).resolves.toHaveProperty("src", "/terrain.png");
     expect(vi.getTimerCount()).toBe(0);
   });
+  it("uses the SVG request mode for display-only CDN images and retains CORS for canvas", async () => {
+    vi.stubGlobal("Image", class { src = ""; crossOrigin = null; decode() { return Promise.resolve(); } });
+    await expect(loadMapImage("https://cdn.example/terrain.png", undefined, { crossOrigin: null }))
+      .resolves.toHaveProperty("crossOrigin", null);
+    await expect(loadMapImage("https://cdn.example/terrain.png"))
+      .resolves.toHaveProperty("crossOrigin", "anonymous");
+  });
   it("releases pending image requests on map unmount", async () => {
     const remove = vi.fn();
     vi.stubGlobal("Image", class { removeAttribute = remove; decode() { return new Promise(() => {}); } });
