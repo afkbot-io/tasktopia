@@ -1,0 +1,43 @@
+{
+  "key": "compact-central-library-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Просмотрена последовательность нормализованных стадий3/4/5 в целочисленном масштабе8x. Геометрия сверена с контрактом; сцена проверяется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху; горизонтальная линия переднего фасада.",
+    "roofDepthPx": 37,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "00df0df6d92665153734bfbfec40eb99ffb2ef8e03d238ec059877b7f7af5286",
+      "runtimeSha256": "c05590cfaef50bd0a612a744f1471e6ea8abd633b5654444f5e669b7865b3424",
+      "notes": "Самостоятельный узнаваемый силуэт; осевой вид сверху, низкий южный фасад без боковой стены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "8f6d3057d5e6b79c4035495c6fbc914b604054b231d05d720ca10f7000df5002",
+      "runtimeSha256": "93ef741c4093af520a0d94dd42492c7c3ff4f819805ba131d1f36bc6d7295258",
+      "notes": "Частично закрытая кровля с открытой строительной секцией; готовые детали остаются только на завершённой части."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "aa62e0ac382df809bc83c43bf5504f22bbbd5e8d35906372664ee1e00825e652",
+      "runtimeSha256": "1b1cbfec9d434ac5aa6afdf900fca53edc86aa70171fb948e53e32e6e6d2afb7",
+      "notes": "Открытые перекрытия и незавершённые стены; тот же участок, вход и линия основания."
+    }
+  }
+}

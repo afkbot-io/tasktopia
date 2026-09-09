@@ -1,0 +1,171 @@
+{
+  "key": "compact-theatre-v1",
+  "contract": "geometry.json",
+  "normalization": "\u0415\u0434\u0438\u043d\u0430\u044f \u0440\u0430\u043c\u043a\u0430 \u0438\u0441\u0445\u043e\u0434\u043d\u0438\u043a\u0430 \u0441\u0442\u0430\u0434\u0438\u04385; \u0440\u0430\u0432\u043d\u043e\u043c\u0435\u0440\u043d\u044b\u0439 nearest-neighbour \u043c\u0430\u0441\u0448\u0442\u0430\u0431, \u0436\u0451\u0441\u0442\u043a\u0430\u044f \u0430\u043b\u044c\u0444\u0430, \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u043d\u0430\u044f \u043f\u0430\u043b\u0438\u0442\u0440\u0430. \u0411\u0435\u0437 \u0440\u0430\u0441\u0442\u044f\u0436\u0435\u043d\u0438\u044f \u043f\u043e \u043e\u0441\u044f\u043c \u0438 \u0441\u043c\u0435\u0449\u0435\u043d\u0438\u044f \u0441\u0442\u0430\u0434\u0438\u0439.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    89,
+    39,
+    1167,
+    1161
+  ],
+  "uniformScale": 0.0570409982174688,
+  "targetSize": [
+    61,
+    64
+  ],
+  "offset": [
+    1,
+    0
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "96d19552e95b6c97f8fb8cef0d4c5dd3188cd1073848480c47cf140cda9b08a6",
+      "runtimeSha256": "66933955c95031c7c065eb660aa256a3be2df9bfda3d445ef76fd900b9574c6d",
+      "sourceBounds": [
+        89,
+        39,
+        1167,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        62,
+        64
+      ],
+      "occupiedSizePx": [
+        61,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "9fbb0cd850814d933dbe53071a9525df8940a6dfd25531fdb8e70cae9e3be87d",
+      "runtimeSha256": "789cdd30a07eb2372c741434c7b09b0166030bc41506f2a34db947662353a144",
+      "sourceBounds": [
+        89,
+        39,
+        1167,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        62,
+        64
+      ],
+      "occupiedSizePx": [
+        61,
+        64
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "6e068a197b76b84ed3ee9af96a7d4b134b01d431ff0ac17518f5b37dc11fd6eb",
+      "runtimeSha256": "ec400bcd83241c6d22471960a203a94e50341d545dbd8288728eac62a81436ec",
+      "sourceBounds": [
+        89,
+        87,
+        1167,
+        1161
+      ],
+      "occupiedBoundsPx": [
+        1,
+        3,
+        62,
+        64
+      ],
+      "occupiedSizePx": [
+        61,
+        61
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-theatre-v1",
+    "reviewedAt": "2026-09-09",
+    "reviewScope": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u043d\u0430 \u043f\u043e\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u043d\u043e\u0440\u043c\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u0441\u0442\u0430\u0434\u0438\u04393/4/5 \u0432 \u0446\u0435\u043b\u043e\u0447\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u043c \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u04358x. \u0413\u0435\u043e\u043c\u0435\u0442\u0440\u0438\u044f \u0441\u0432\u0435\u0440\u0435\u043d\u0430 \u0441 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u043e\u043c; \u0441\u0446\u0435\u043d\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442\u0441\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0438\u0439 \u0444\u0440\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u044b\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443; \u0433\u043e\u0440\u0438\u0437\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u043d\u0438\u044f \u043f\u0435\u0440\u0435\u0434\u043d\u0435\u0433\u043e \u0444\u0430\u0441\u0430\u0434\u0430.",
+      "roofDepthPx": 54,
+      "facadeHeightPx": 10,
+      "floorStepPx": 10,
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "96d19552e95b6c97f8fb8cef0d4c5dd3188cd1073848480c47cf140cda9b08a6",
+        "runtimeSha256": "66933955c95031c7c065eb660aa256a3be2df9bfda3d445ef76fd900b9574c6d",
+        "notes": "\u0421\u0430\u043c\u043e\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0443\u0437\u043d\u0430\u0432\u0430\u0435\u043c\u044b\u0439 \u0441\u0438\u043b\u0443\u044d\u0442; \u043e\u0441\u0435\u0432\u043e\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443, \u043d\u0438\u0437\u043a\u0438\u0439 \u044e\u0436\u043d\u044b\u0439 \u0444\u0430\u0441\u0430\u0434 \u0431\u0435\u0437 \u0431\u043e\u043a\u043e\u0432\u043e\u0439 \u0441\u0442\u0435\u043d\u044b."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "9fbb0cd850814d933dbe53071a9525df8940a6dfd25531fdb8e70cae9e3be87d",
+        "runtimeSha256": "789cdd30a07eb2372c741434c7b09b0166030bc41506f2a34db947662353a144",
+        "notes": "\u0427\u0430\u0441\u0442\u0438\u0447\u043d\u043e \u0437\u0430\u043a\u0440\u044b\u0442\u0430\u044f \u043a\u0440\u043e\u0432\u043b\u044f \u0441 \u043e\u0442\u043a\u0440\u044b\u0442\u043e\u0439 \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u0441\u0435\u043a\u0446\u0438\u0435\u0439; \u0433\u043e\u0442\u043e\u0432\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0439 \u0447\u0430\u0441\u0442\u0438."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "6e068a197b76b84ed3ee9af96a7d4b134b01d431ff0ac17518f5b37dc11fd6eb",
+        "runtimeSha256": "ec400bcd83241c6d22471960a203a94e50341d545dbd8288728eac62a81436ec",
+        "notes": "\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043f\u0435\u0440\u0435\u043a\u0440\u044b\u0442\u0438\u044f \u0438 \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u0441\u0442\u0435\u043d\u044b; \u0442\u043e\u0442 \u0436\u0435 \u0443\u0447\u0430\u0441\u0442\u043e\u043a, \u0432\u0445\u043e\u0434 \u0438 \u043b\u0438\u043d\u0438\u044f \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u044f. \u0412\u0435\u0440\u0445\u043d\u0438\u0439 \u0434\u0435\u043a\u043e\u0440\u0430\u0442\u0438\u0432\u043d\u044b\u0439 \u0433\u0435\u0440\u0431 \u0435\u0449\u0451 \u043d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d: \u0441\u0438\u043b\u0443\u044d\u0442 \u043d\u04303px \u043d\u0438\u0436\u0435, \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u043d\u0435\u043f\u043e\u0434\u0432\u0438\u0436\u043d\u043e."
+      }
+    }
+  }
+}

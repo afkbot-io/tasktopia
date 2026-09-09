@@ -1,0 +1,43 @@
+{
+  "key": "compact-waterpark-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 53,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "02a92ba7c6957cc5e2bc9d6dbcd8c1643340ba3175589811d69b3071d9795b45",
+      "runtimeSha256": "cd634563ad278a7e2954ec9461069049ed4ecb4b31efe06dccc476db49e20b7d",
+      "notes": "Стеклянный зал, бассейн и горка в одном участке."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "55fa24c8f6bfcbce77985e4dea67f776b625dbfa48eea4079cbac34089511a9a",
+      "runtimeSha256": "0b8b4e83739a1acdcee3f24592824afac87bc9903e5a48dee9b87750009f4b38",
+      "notes": "Пустая чаша и открытый каркас зала."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "269fcbabc608ce588fe8e117e25b030b258b7a497a52624f6d7e93b3fb857d14",
+      "runtimeSha256": "3f765fae216f8926ad2a8a3a1dedcf152baca435d4b327481b7219b9555eb53c",
+      "notes": "Неполная стеклянная кровля, пустая облицованная чаша, монтаж горки."
+    }
+  }
+}

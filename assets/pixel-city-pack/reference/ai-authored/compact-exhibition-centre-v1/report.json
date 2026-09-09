@@ -1,0 +1,171 @@
+{
+  "key": "compact-exhibition-centre-v1",
+  "contract": "geometry.json",
+  "normalization": "\u0415\u0434\u0438\u043d\u0430\u044f \u0440\u0430\u043c\u043a\u0430 \u0438\u0441\u0445\u043e\u0434\u043d\u0438\u043a\u0430 \u0441\u0442\u0430\u0434\u0438\u04385; \u0440\u0430\u0432\u043d\u043e\u043c\u0435\u0440\u043d\u044b\u0439 nearest-neighbour \u043c\u0430\u0441\u0448\u0442\u0430\u0431, \u0436\u0451\u0441\u0442\u043a\u0430\u044f \u0430\u043b\u044c\u0444\u0430, \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u043d\u0430\u044f \u043f\u0430\u043b\u0438\u0442\u0440\u0430. \u0411\u0435\u0437 \u0440\u0430\u0441\u0442\u044f\u0436\u0435\u043d\u0438\u044f \u043f\u043e \u043e\u0441\u044f\u043c \u0438 \u0441\u043c\u0435\u0449\u0435\u043d\u0438\u044f \u0441\u0442\u0430\u0434\u0438\u0439.",
+  "sourceCanvas": [
+    1774,
+    887
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    80,
+    34,
+    1696,
+    836
+  ],
+  "uniformScale": 0.0594059405940594,
+  "targetSize": [
+    96,
+    48
+  ],
+  "offset": [
+    0,
+    0
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "d8515608db8b11516116d0767ef80fa60cb54ebcf5782ca61c7d3c1b75e7df50",
+      "runtimeSha256": "09a8840d615775e2aff10ac5a7f4a66e3d03ae303c9f03845caac9dc17e63612",
+      "sourceBounds": [
+        80,
+        34,
+        1696,
+        836
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        96,
+        48
+      ],
+      "occupiedSizePx": [
+        96,
+        48
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "560d6b5a2a8f8d0478f55d44e1e589e4a80f62e923887e601a5465f38c551f5f",
+      "runtimeSha256": "511d0f42b4d9a3aebb6b4e4fdb5a180e9c85fede9579a79e6cbfbfd097b863c6",
+      "sourceBounds": [
+        80,
+        34,
+        1695,
+        837
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        96,
+        48
+      ],
+      "occupiedSizePx": [
+        96,
+        48
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "d0d2b61b08664a395c494f6e3bf84f17cd9f9e702f742969a58758a9d5ae3ba6",
+      "runtimeSha256": "a103c1ed0f65b106c0daa2d47e6ef81e127c5b6f4daac39eb4223d2785a8bc50",
+      "sourceBounds": [
+        80,
+        50,
+        1696,
+        836
+      ],
+      "occupiedBoundsPx": [
+        0,
+        1,
+        96,
+        48
+      ],
+      "occupiedSizePx": [
+        96,
+        47
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-exhibition-centre-v1",
+    "reviewedAt": "2026-09-09",
+    "reviewScope": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u043d\u0430 \u043f\u043e\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u043d\u043e\u0440\u043c\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u0441\u0442\u0430\u0434\u0438\u04393/4/5 \u0432 \u0446\u0435\u043b\u043e\u0447\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u043c \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u04358x. \u0413\u0435\u043e\u043c\u0435\u0442\u0440\u0438\u044f \u0441\u0432\u0435\u0440\u0435\u043d\u0430 \u0441 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u043e\u043c; \u0441\u0446\u0435\u043d\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442\u0441\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0438\u0439 \u0444\u0440\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u044b\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443; \u0433\u043e\u0440\u0438\u0437\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u043d\u0438\u044f \u043f\u0435\u0440\u0435\u0434\u043d\u0435\u0433\u043e \u0444\u0430\u0441\u0430\u0434\u0430.",
+      "roofDepthPx": 37,
+      "facadeHeightPx": 10,
+      "floorStepPx": 5,
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "d8515608db8b11516116d0767ef80fa60cb54ebcf5782ca61c7d3c1b75e7df50",
+        "runtimeSha256": "09a8840d615775e2aff10ac5a7f4a66e3d03ae303c9f03845caac9dc17e63612",
+        "notes": "\u0421\u0430\u043c\u043e\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0443\u0437\u043d\u0430\u0432\u0430\u0435\u043c\u044b\u0439 \u0441\u0438\u043b\u0443\u044d\u0442; \u043e\u0441\u0435\u0432\u043e\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443, \u043d\u0438\u0437\u043a\u0438\u0439 \u044e\u0436\u043d\u044b\u0439 \u0444\u0430\u0441\u0430\u0434 \u0431\u0435\u0437 \u0431\u043e\u043a\u043e\u0432\u043e\u0439 \u0441\u0442\u0435\u043d\u044b."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "560d6b5a2a8f8d0478f55d44e1e589e4a80f62e923887e601a5465f38c551f5f",
+        "runtimeSha256": "511d0f42b4d9a3aebb6b4e4fdb5a180e9c85fede9579a79e6cbfbfd097b863c6",
+        "notes": "\u0427\u0430\u0441\u0442\u0438\u0447\u043d\u043e \u0437\u0430\u043a\u0440\u044b\u0442\u0430\u044f \u043a\u0440\u043e\u0432\u043b\u044f \u0441 \u043e\u0442\u043a\u0440\u044b\u0442\u043e\u0439 \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u0441\u0435\u043a\u0446\u0438\u0435\u0439; \u0433\u043e\u0442\u043e\u0432\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0439 \u0447\u0430\u0441\u0442\u0438."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "d0d2b61b08664a395c494f6e3bf84f17cd9f9e702f742969a58758a9d5ae3ba6",
+        "runtimeSha256": "a103c1ed0f65b106c0daa2d47e6ef81e127c5b6f4daac39eb4223d2785a8bc50",
+        "notes": "\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043f\u0435\u0440\u0435\u043a\u0440\u044b\u0442\u0438\u044f \u0438 \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u0441\u0442\u0435\u043d\u044b; \u0442\u043e\u0442 \u0436\u0435 \u0443\u0447\u0430\u0441\u0442\u043e\u043a, \u0432\u0445\u043e\u0434 \u0438 \u043b\u0438\u043d\u0438\u044f \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u044f."
+      }
+    }
+  }
+}

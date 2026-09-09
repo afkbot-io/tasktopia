@@ -1,0 +1,43 @@
+{
+  "key": "compact-covered-market-v1",
+  "reviewedAt": "2026-09-09",
+  "reviewScope": "Основной агент просмотрел исходники и последовательность normalized3/4/5 в масштабе8x. Проверка в игре выполняется отдельно.",
+  "projection": {
+    "camera": "Высокий фронтальный вид сверху, осевые линии кровли и этажей.",
+    "roofDepthPx": 37,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "33310e4e175d8302de4a7a93922066ce5660e10bf18ff09a25ff45a1321d54d5",
+      "runtimeSha256": "f794a3618bdcb24715cc3c7f5430f6ac6482e32c4630717efe05968ba81d0ce4",
+      "notes": "Три терракотовых пролёта и маленькие маркизы."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "7cf898d332621ab08c59c8ef96b32bd3cb17885021210a11ae5674698ba2b30c",
+      "runtimeSha256": "ae3b782dc40098e3cb4df8eeaebd46521d0b4e5a38e8971921f5133a7931c5d5",
+      "notes": "Низкие перегородки, колонны, тёмные незастеклённые проёмы."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "e1d8a038716898b8c8cf8e202d25f55d73672828b5e82731bfc1e2ed3a77ba1e",
+      "runtimeSha256": "a446597d3257e4f7ef38b06982f8c1724e8397733d2867fc0a03c1a323649bde",
+      "notes": "Половина кровли, открытые помещения, частично готовые окна."
+    }
+  }
+}

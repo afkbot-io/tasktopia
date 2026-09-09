@@ -157,6 +157,7 @@ def building_contact_sheet(family_images: list[list[Image.Image]]) -> Image.Imag
 
 
 def main() -> None:
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "build-city-train.py")], cwd=ROOT, check=True)
     subprocess.run([sys.executable, str(ROOT / "scripts" / "verify-compact-building-art.py"), "--require-complete", "--require-review"], cwd=ROOT, check=True)
     catalog = json.loads((CATALOG / "buildings.json").read_text())
     entries = catalog["buildings"]
@@ -171,6 +172,7 @@ def main() -> None:
         if not entry.get("reviewed") or entry["stageSha256"] != [hashlib.sha256((family / "sources" / f"stage-{stage}.png").read_bytes()).hexdigest() for stage in (3, 4, 5)]:
             raise ValueError(f"{entry['key']}: stale catalog provenance")
     manifest = json.loads((PACK / "manifest.json").read_text())
+    manifest["cityTransport"] = json.loads((PACK / "city-train-manifest.json").read_text())
     preserved_sections = {key: manifest[key] for key in ("terrain", "transitions", "blockSurfaces")}
     backup = retire_legacy({entry["key"] for entry in entries})
     subprocess.run([sys.executable, str(ROOT / "scripts" / "build-compact-construction-kit.py")], cwd=ROOT, check=True)

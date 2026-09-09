@@ -50,7 +50,69 @@
       ],
       "transparentHolePixels": 0,
       "centreDriftPx": 0.0,
-      "baselineDriftPx": 0
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "38edd1aaffb3c8724160c9e848098c44cd4460a74fea177c972cadb67928b8c0",
+      "runtimeSha256": "63481869292ab07e9af7f496d98feeef0dafe656b22c54fe83a4f485102f40f0",
+      "sourceBounds": [
+        24,
+        23,
+        862,
+        1750
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        47,
+        96
+      ],
+      "occupiedSizePx": [
+        47,
+        96
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "d49c0653f1a90eaa459714808cf4ea4fa3a69b832c0bc10b414739fe70ea3810",
+      "runtimeSha256": "6b5cc4374cd6260eaab01075364b2a250baf78df75df5bf8dba624d237ec7636",
+      "sourceBounds": [
+        24,
+        23,
+        862,
+        1750
+      ],
+      "occupiedBoundsPx": [
+        0,
+        0,
+        47,
+        96
+      ],
+      "occupiedSizePx": [
+        47,
+        96
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
     }
   },
   "errors": [],
@@ -62,5 +124,48 @@
     "stage-3 open rooms with opaque floor and interior walls",
     "no external fence, scenery or black baseline",
     "same building identity in all stages"
-  ]
+  ],
+  "visualReview": {
+    "key": "compact-business-centre-v1",
+    "reviewedAt": "2026-09-09",
+    "reviewScope": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u043d\u0430 \u043f\u043e\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u043d\u043e\u0440\u043c\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u0441\u0442\u0430\u0434\u0438\u04393/4/5 \u0432 \u0446\u0435\u043b\u043e\u0447\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u043c \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u04358x. \u0413\u0435\u043e\u043c\u0435\u0442\u0440\u0438\u044f \u0441\u0432\u0435\u0440\u0435\u043d\u0430 \u0441 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u043e\u043c; \u0441\u0446\u0435\u043d\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442\u0441\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0438\u0439 \u0444\u0440\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u044b\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443; \u0433\u043e\u0440\u0438\u0437\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u043d\u0438\u044f \u043f\u0435\u0440\u0435\u0434\u043d\u0435\u0433\u043e \u0444\u0430\u0441\u0430\u0434\u0430.",
+      "roofDepthPx": 85,
+      "facadeHeightPx": 10,
+      "floorStepPx": 5,
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorFrameSizePx": [
+        5,
+        5
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "a07d93e67c5ac78a2bf79065944673b1204ec73ef84e820f9b260f3863f36a5b",
+        "runtimeSha256": "5cd44bfe0b10c5d8ce56f0a58ace4b20a99caf49be451158e628ea75dbe32dee",
+        "notes": "\u0421\u0430\u043c\u043e\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0443\u0437\u043d\u0430\u0432\u0430\u0435\u043c\u044b\u0439 \u0441\u0438\u043b\u0443\u044d\u0442; \u043e\u0441\u0435\u0432\u043e\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443, \u043d\u0438\u0437\u043a\u0438\u0439 \u044e\u0436\u043d\u044b\u0439 \u0444\u0430\u0441\u0430\u0434 \u0431\u0435\u0437 \u0431\u043e\u043a\u043e\u0432\u043e\u0439 \u0441\u0442\u0435\u043d\u044b."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "38edd1aaffb3c8724160c9e848098c44cd4460a74fea177c972cadb67928b8c0",
+        "runtimeSha256": "63481869292ab07e9af7f496d98feeef0dafe656b22c54fe83a4f485102f40f0",
+        "notes": "\u0427\u0430\u0441\u0442\u0438\u0447\u043d\u043e \u0437\u0430\u043a\u0440\u044b\u0442\u0430\u044f \u043a\u0440\u043e\u0432\u043b\u044f \u0441 \u043e\u0442\u043a\u0440\u044b\u0442\u043e\u0439 \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u0441\u0435\u043a\u0446\u0438\u0435\u0439; \u0433\u043e\u0442\u043e\u0432\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0439 \u0447\u0430\u0441\u0442\u0438."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "d49c0653f1a90eaa459714808cf4ea4fa3a69b832c0bc10b414739fe70ea3810",
+        "runtimeSha256": "6b5cc4374cd6260eaab01075364b2a250baf78df75df5bf8dba624d237ec7636",
+        "notes": "\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043f\u0435\u0440\u0435\u043a\u0440\u044b\u0442\u0438\u044f \u0438 \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u0441\u0442\u0435\u043d\u044b; \u0442\u043e\u0442 \u0436\u0435 \u0443\u0447\u0430\u0441\u0442\u043e\u043a, \u0432\u0445\u043e\u0434 \u0438 \u043b\u0438\u043d\u0438\u044f \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u044f."
+      }
+    }
+  }
 }

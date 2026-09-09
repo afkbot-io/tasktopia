@@ -1,0 +1,89 @@
+{
+  "fixture": "100 tasks / 6 districts / seed987321",
+  "runtime": "local production build, Chromium, 3 isolated contexts",
+  "assetRevision": "05d33bc518040ad3",
+  "baselineColdCityMs": [
+    2620
+  ],
+  "samples": [
+    {
+      "mode": "CITY",
+      "cold": true,
+      "samples": [
+        1433,
+        1492,
+        1481
+      ],
+      "medianMs": 1481,
+      "maxMs": 1492
+    },
+    {
+      "mode": "CITY",
+      "cold": false,
+      "samples": [
+        103,
+        32,
+        53,
+        80,
+        45,
+        26,
+        61,
+        23,
+        33
+      ],
+      "medianMs": 45,
+      "maxMs": 103
+    },
+    {
+      "mode": "COUNTRY",
+      "cold": true,
+      "samples": [
+        470,
+        530,
+        483
+      ],
+      "medianMs": 483,
+      "maxMs": 530
+    },
+    {
+      "mode": "COUNTRY",
+      "cold": false,
+      "samples": [
+        99,
+        149,
+        229,
+        146,
+        129,
+        87
+      ],
+      "medianMs": 137.5,
+      "maxMs": 229
+    },
+    {
+      "mode": "PLANET",
+      "cold": true,
+      "samples": [
+        219,
+        226,
+        227
+      ],
+      "medianMs": 226,
+      "maxMs": 227
+    },
+    {
+      "mode": "PLANET",
+      "cold": false,
+      "samples": [
+        66,
+        91,
+        72,
+        61,
+        46,
+        66
+      ],
+      "medianMs": 66.0,
+      "maxMs": 91
+    }
+  ],
+  "limitations": "Без сетевого/CPU ограничения; базовый замер одиночный. Серверная задержка пользователя исторически не воспроизведена."
+}

@@ -50,7 +50,69 @@
       ],
       "transparentHolePixels": 0,
       "centreDriftPx": 0.0,
-      "baselineDriftPx": 0
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "b2cdd22d45dda833f319d9ab4dc280629f90c631747769fec38449f4ca79abfc",
+      "runtimeSha256": "6b9780091510f4686e9d2e159b274ea9fb76b7368ac7931f2dd505614a4892a5",
+      "sourceBounds": [
+        136,
+        170,
+        1118,
+        1059
+      ],
+      "occupiedBoundsPx": [
+        0,
+        5,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        43
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "128c426974630531fde07f081dc20824ae07c705531b6d34a0af549d9f3214f8",
+      "runtimeSha256": "16fdd7b5f254395b8aaa6ed88d32016138ad7400554f56482f446de5c1a8272c",
+      "sourceBounds": [
+        136,
+        171,
+        1118,
+        1059
+      ],
+      "occupiedBoundsPx": [
+        0,
+        5,
+        48,
+        48
+      ],
+      "occupiedSizePx": [
+        48,
+        43
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
     }
   },
   "errors": [],
@@ -62,5 +124,48 @@
     "stage-3 open rooms with opaque floor and interior walls",
     "no external fence, scenery or black baseline",
     "same building identity in all stages"
-  ]
+  ],
+  "visualReview": {
+    "key": "compact-four-floor-house-v1",
+    "reviewedAt": "2026-09-09",
+    "reviewScope": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u043d\u0430 \u043f\u043e\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u043d\u043e\u0440\u043c\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u0441\u0442\u0430\u0434\u0438\u04393/4/5 \u0432 \u0446\u0435\u043b\u043e\u0447\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u043c \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u04358x. \u0413\u0435\u043e\u043c\u0435\u0442\u0440\u0438\u044f \u0441\u0432\u0435\u0440\u0435\u043d\u0430 \u0441 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u043e\u043c; \u0441\u0446\u0435\u043d\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442\u0441\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0438\u0439 \u0444\u0440\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u044b\u0439 \u0432\u0438\u0434 \u0441\u0432\u0435\u0440\u0445\u0443; \u0433\u043e\u0440\u0438\u0437\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u043d\u0438\u044f \u043f\u0435\u0440\u0435\u0434\u043d\u0435\u0433\u043e \u0444\u0430\u0441\u0430\u0434\u0430.",
+      "roofDepthPx": 22,
+      "facadeHeightPx": 21,
+      "floorStepPx": 5,
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "5f4c3bba928d6c6d08da453392d54d6857a2a488762a4845b56594cea391e4ac",
+        "runtimeSha256": "3690d942a55886705d7478f75768aad29bb9b346ccfb678c25679fb20ecd26bc",
+        "notes": "\u0427\u0435\u0442\u044b\u0440\u0435 \u043d\u0438\u0437\u043a\u0438\u0445 \u044d\u0442\u0430\u0436\u0430; \u0431\u043e\u043b\u0435\u0435 \u0432\u044b\u0441\u043e\u043a\u0430\u044f \u043f\u0435\u0440\u0435\u0434\u043d\u044f\u044f \u0447\u0430\u0441\u0442\u044c, \u043a\u0440\u044b\u0448\u0430 \u0437\u0430\u043d\u0438\u043c\u0430\u0435\u044222px, \u0444\u0430\u0441\u0430\u043420px, \u0438\u0441\u0445\u043e\u0434\u043d\u044b\u0439 \u0443\u0447\u0430\u0441\u0442\u043e\u043a6x6."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "b2cdd22d45dda833f319d9ab4dc280629f90c631747769fec38449f4ca79abfc",
+        "runtimeSha256": "6b9780091510f4686e9d2e159b274ea9fb76b7368ac7931f2dd505614a4892a5",
+        "notes": "\u0427\u0430\u0441\u0442\u0438\u0447\u043d\u043e \u0437\u0430\u043a\u0440\u044b\u0442\u0430\u044f \u043a\u0440\u043e\u0432\u043b\u044f \u0441 \u043e\u0442\u043a\u0440\u044b\u0442\u043e\u0439 \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u0441\u0435\u043a\u0446\u0438\u0435\u0439; \u0433\u043e\u0442\u043e\u0432\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0439 \u0447\u0430\u0441\u0442\u0438."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "128c426974630531fde07f081dc20824ae07c705531b6d34a0af549d9f3214f8",
+        "runtimeSha256": "16fdd7b5f254395b8aaa6ed88d32016138ad7400554f56482f446de5c1a8272c",
+        "notes": "\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043f\u0435\u0440\u0435\u043a\u0440\u044b\u0442\u0438\u044f \u0438 \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u0441\u0442\u0435\u043d\u044b; \u0442\u043e\u0442 \u0436\u0435 \u0443\u0447\u0430\u0441\u0442\u043e\u043a, \u0432\u0445\u043e\u0434 \u0438 \u043b\u0438\u043d\u0438\u044f \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u044f."
+      }
+    }
+  }
 }
