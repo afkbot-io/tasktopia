@@ -1534,7 +1534,7 @@ export function WorldCanvas({ countryId, chunkSize, worldManifest, viewBounds, f
         if (lightElapsed >= 100) {
           lightElapsed = 0;
           const light = readWorldLighting();
-          for (const layer of [backdropLayer, terrainLayer, surfaceLayer, roadLayer, platformLayer, featurePlatformLayer, worldObjectLayer, flightLayer]) layer.tint = light.tint;
+          for (const layer of [backdropLayer, terrainLayer, surfaceLayer, roadLayer, platformLayer, featurePlatformLayer, worldObjectLayer, flightLayer, railwayGround, airportGround, trainLayer]) layer.tint = light.tint;
           lampGlow.alpha = light.lamps;
           propShadows.alpha = light.shadowAlpha;
           propShadows.x = Math.round(light.shadowOffsetX);
