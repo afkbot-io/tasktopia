@@ -1,8 +1,11 @@
 /** A stalled map image must release its network slot before a retry. */
-export async function loadMapImage(url: string, signal?: AbortSignal, timeoutMs = 20_000): Promise<HTMLImageElement> {
+export async function loadMapImage(url: string, signal?: AbortSignal, options: { timeoutMs?: number; crossOrigin?: "anonymous" | null } = {}): Promise<HTMLImageElement> {
   const image = new Image();
   image.decoding = "async";
-  image.crossOrigin = "anonymous";
+  // Display-only SVG images must keep the same request mode as their element.
+  // Canvas consumers still need an origin-clean image.
+  if (options.crossOrigin !== null) image.crossOrigin = "anonymous";
+  const timeoutMs = options.timeoutMs ?? 20_000;
   return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (error?: Error) => {

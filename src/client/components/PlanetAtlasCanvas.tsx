@@ -187,7 +187,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     const urls = [...new Set([...view.querySelectorAll("image")]
       .filter(node => !node.closest(".planet-clouds, .planet-ships, .atlas-aircraft-flight"))
       .map(node => node.getAttribute("href")).filter((url): url is string => Boolean(url)))];
-    void Promise.all(urls.map(url => loadMapImage(url, controller.signal)))
+    void Promise.all(urls.map(url => loadMapImage(url, controller.signal, { crossOrigin: null })))
       .then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!controller.signal.aborted) setReadyRevision(atlasRevision);
     }))).catch(error => {
