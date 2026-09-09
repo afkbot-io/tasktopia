@@ -331,9 +331,14 @@ describe("Tasktopia compact-block application service", { timeout: 20_000 }, () 
     expect(preserved.comments?.map((comment) => comment.body)).toContain("History survives");
     expect(preserved.events?.some((event) => event.type === "STATUS_CHANGED")).toBe(true);
     const geometryAfter = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
-    expect(geometryAfter).toBe(geometryBefore);
+    // Explicit regeneration compacts the singleton block; repeating that
+    // regeneration must then reproduce its geometry while retaining identity.
+    expect(geometryAfter).not.toBe(geometryBefore);
+    expect(JSON.parse(geometryAfter).district.length).toBeLessThan(JSON.parse(geometryBefore).district.length);
+    await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world-again" });
+    expect(JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin })).toBe(geometryAfter);
     expect(await db.prepare("SELECT 1 FROM countries WHERE name LIKE 'regeneration-%'").get()).toBeUndefined();
-    expect((await service.listEvents(countryId)).filter((event) => event.type === "country.regenerated")).toHaveLength(1);
+    expect((await service.listEvents(countryId)).filter((event) => event.type === "country.regenerated")).toHaveLength(2);
   }, 30_000);
 
   it("creates a planned district and advances a sprite building through five stages", async () => {
