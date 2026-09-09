@@ -406,14 +406,14 @@ function projectCell(cell: PlanetTerrainCell, base: ProjectedPlanetAtlas, camera
   };
 }
 
-/** Camera moves city anchors; internal city offsets stay at the overview scale. */
+/** Buildings and internal offsets share the map zoom, preserving city proportions. */
 function projectPlanetCityPoint(point: PlanetPoint, city: PlanetCountryDto["cities"][number], country: ProjectedPlanetCountry,
   base: ProjectedPlanetAtlas, camera: PlanetMapCamera): PlanetPoint {
   const anchor = country.cityAnchors[city.id]!;
   const center = affineProject(anchor, base, camera);
   const nominal = affineProject(point, base, { panX: 0, panY: 0, zoom: 1 });
   const origin = affineProject(anchor, base, { panX: 0, panY: 0, zoom: 1 });
-  return { x: center.x + nominal.x - origin.x, y: center.y + nominal.y - origin.y };
+  return { x: center.x + (nominal.x - origin.x) * camera.zoom, y: center.y + (nominal.y - origin.y) * camera.zoom };
 }
 
 export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: PlanetMapCamera): ProjectedPlanetMap {
