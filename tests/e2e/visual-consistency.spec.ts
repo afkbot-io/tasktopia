@@ -42,10 +42,10 @@ test("map navigation, labels and task controls follow the revised visual contrac
   await expect(country).toHaveAttribute("data-country-ready", "true", { timeout: 60_000 });
   await expect(country).toHaveAttribute("data-country-material-subdivisions", "2");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
-  const before = await page.locator(".country-overview-raster").getAttribute("style");
+  const before = await page.locator(".country-overview").getAttribute("style");
   const cb = (await country.boundingBox())!;
   await page.mouse.move(cb.x + 200, cb.y + 100); await page.mouse.down(); await page.mouse.move(cb.x + 320, cb.y + 100, { steps: 8 }); await page.mouse.up();
-  await expect.poll(() => page.locator(".country-overview-raster").getAttribute("style")).not.toBe(before);
+  await expect.poll(() => page.locator(".country-overview").getAttribute("style")).not.toBe(before);
   expect(await country.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("data:image/png");
   await page.screenshot({ path: "screenshots/visual-consistency/country.png" });
   await page.getByRole("button", { name: "Планета", exact: true }).click();

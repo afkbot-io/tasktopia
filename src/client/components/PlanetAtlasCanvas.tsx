@@ -1,3 +1,4 @@
+import { atlasShipPath } from "../../shared/atlas-ship-path";
 import { buildPlanetSurfaceTransport } from "../../shared/planet-surface-transport";
 import { affineProject } from "../../shared/planet-atlas";
 import { pixelPlanetRows } from "../map-visual-consistency";
@@ -160,7 +161,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     const path = (points: Array<{x:number;y:number}>) => points.map((point,index) => {
       const p=affineProject(point,projectedAtlas!,camera);return `${index?"L":"M"}${p.x},${p.y}`;
     }).join(" ");
-    return {rails:surfaceTransport?.rails.map(route=>({id:route.id,path:path(route.points)}))??[],ships:surfaceTransport?.ships.map(route=>({id:route.id,path:path([...route.points,...route.points.slice(0,-1).reverse()])}))??[]};
+    return {rails:surfaceTransport?.rails.map(route=>({id:route.id,path:path(route.points)}))??[],ships:surfaceTransport?.ships.map(route=>({id:route.id,path:atlasShipPath([...route.points,...route.points.slice(0,-1).reverse()].map(point => affineProject(point, projectedAtlas!, camera)))}))??[]};
   },[surfaceTransport,projectedAtlas,camera]);
   const visibleCountries = useMemo(() => map ? visiblePlanetCountries(map.countries, map.surface, map) : [], [map]);
   const labels = useMemo(() => map ? layoutPlanetCountryLabels(visibleCountries, map.width, map.height) : [], [map, visibleCountries]);
@@ -312,12 +313,12 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           event.preventDefault(); void selectCountry(country.id);
         }}>{country.cells.map((cell) => <g key={cell.id}><AtlasTerrainImage cell={cell} mask={terrainMask(cell)} /><path d={pixelSquarePath(cell)} fill={country.color} className="planet-country-tint" /></g>)}
           <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon => {
-            const art = overviewBuildingArt(icon.id);
+            const art = overviewBuildingArt(icon.id, camera.zoom);
             return <image key={icon.id} data-district-id={icon.id} data-city-id={icon.cityId} data-building-family={art.key}
               href={art.url} x={icon.center.x - art.width / 2} y={icon.center.y - art.height / 2}
               width={art.width} height={art.height} className="atlas-pixel" />;
           })}</g>
-          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-4} y={airport.center.y-3} width={8} height={6} className="atlas-pixel" />)}</g>
+          <g className="planet-airport-markers" aria-hidden="true">{country.airports.map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-6*camera.zoom} y={airport.center.y-4.5*camera.zoom} width={12*camera.zoom} height={9*camera.zoom} className="atlas-pixel" />)}</g>
         </g>)}</g>
         <g className="planet-railways" aria-hidden="true">{transportPaths.rails.map(route=><g key={route.id}>
           <path d={route.path} fill="none" stroke="#293c39" strokeWidth="2" />
@@ -325,8 +326,8 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           <path d={route.path} fill="none" stroke="#293c39" strokeWidth="3" strokeDasharray=".7 3" />
         </g>)}</g>
         <g className="planet-ships" aria-hidden="true">{transportPaths.ships.map((route,index)=><g key={route.id}>
-          <animateMotion path={route.path} dur={`${45+index*7}s`} begin={`${-12-index*5}s`} repeatCount="indefinite" rotate="auto" />
-          <image href={PROP_SPRITES["boat-horizontal-b"]} x="-3" y="-1" width="6" height="2" className="atlas-pixel" />
+          <animateMotion path={route.path} dur={`${90+index*11}s`} begin={`${-12-index*5}s`} repeatCount="indefinite" rotate="auto" />
+          <image href={PROP_SPRITES["boat-horizontal-b"]} x={-9 * camera.zoom} y={-3 * camera.zoom} width={18 * camera.zoom} height={6 * camera.zoom} className="atlas-pixel" />
         </g>)}</g>
         <g className="planet-routes" aria-hidden="true">{activeRoutes.map((route) => <g key={route.id}><path d={route.path} className="planet-route-line" /><AtlasAircraft path={route.path} durationSeconds={route.durationSeconds} delaySeconds={route.delaySeconds} kind={route.planeKind} size="planet" rotateWithPath visualScale={route.altitudeScale} startsAtAirport={route.fromAirportId !== null} endsAtAirport /></g>)}</g>
         <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><image href={ATLAS_CLOUD_SPRITES[index % ATLAS_CLOUD_SPRITES.length]} x="-32" y="-16" width="64" height="32" className="atlas-pixel" /></g>)}</g>

@@ -6,7 +6,7 @@ it("uses at least ten stable reviewed house variants without stretching their pr
     const icon = overviewBuildingArt(`district-${i}`);
     kinds.add(icon.key);
     expect(overviewBuildingArt(`district-${i}`)).toEqual(icon);
-    expect(Math.max(icon.width, icon.height)).toBe(6);
+    expect(Math.max(icon.width, icon.height)).toBe(10);
     expect(icon.width / icon.height).toBe(icon.nativeWidth / icon.nativeHeight);
     expect(icon.url).toContain("stage-5");
   }

@@ -37,7 +37,7 @@ test("small atlas labels, land railways and visible air/sea traffic",async({page
   await page.mouse.move(700, 400); await page.mouse.wheel(0, -220);
   await expect.poll(() => country.getAttribute("data-country-zoom")).not.toBe(countryZoom);
   const glyphAfter = (await glyph.boundingBox())!;
-  expect(glyphAfter.width).toBe(glyphBefore.width); expect(glyphAfter.height).toBe(glyphBefore.height);
+  expect(glyphAfter.width).toBeGreaterThan(glyphBefore.width); expect(glyphAfter.height).toBeGreaterThan(glyphBefore.height);
   await page.screenshot({path:`screenshots/atlas-transport/country-${info.project.name}.png`});
   await page.getByRole("button",{name:"Планета",exact:true}).click();
   const planet=page.locator(".planet-atlas");await expect(planet).toHaveAttribute("data-planet-ready","true", { timeout: 30_000 });await expect(page.locator(".map-level-transition")).toHaveCount(0);
@@ -54,7 +54,7 @@ test("small atlas labels, land railways and visible air/sea traffic",async({page
   await page.mouse.move(700, 400); await page.mouse.wheel(0, -220);
   await expect.poll(() => planet.getAttribute("data-globe-zoom")).not.toBe(planetZoom);
   const houseAfter = (await house.boundingBox())!;
-  expect(houseAfter.width).toBeCloseTo(houseBefore.width, 2); expect(houseAfter.height).toBeCloseTo(houseBefore.height, 2);
+  expect(houseAfter.width).toBeGreaterThan(houseBefore.width); expect(houseAfter.height).toBeGreaterThan(houseBefore.height);
   await page.screenshot({path:`screenshots/atlas-transport/planet-${info.project.name}.png`});
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:"screenshots/atlas-transport/mobile.png"});
   expect(errors).toEqual([]);
@@ -82,9 +82,9 @@ test("dense country keeps navigation bounded and directory usable", async ({ pag
   await expect(host).toHaveAttribute("data-country-ready", "true", { timeout: 30_000 });
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await expect(page.locator(".country-city-glyph")).toHaveCount(150);
-  const before = await page.locator(".country-overview-raster").getAttribute("style");
+  const before = await page.locator(".country-overview").getAttribute("style");
   await page.mouse.move(400, 150); await page.mouse.down(); await page.mouse.move(600, 150, { steps: 12 }); await page.mouse.up();
-  await expect.poll(() => page.locator(".country-overview-raster").getAttribute("style")).not.toBe(before);
+  await expect.poll(() => page.locator(".country-overview").getAttribute("style")).not.toBe(before);
   const timing = Number(await host.getAttribute("data-country-camera-frame-max-ms"));
   expect(timing).toBeLessThan(100); // 150 cached glyphs; avoid main-thread stalls during pan.
   await page.locator(".country-city-directory-toggle").click();

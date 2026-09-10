@@ -19,7 +19,7 @@ function cellKey(cell: { q: number; r: number }): string {
 }
 
 describe("planet atlas projection", () => {
-  it("keeps city internal distances fixed during zoom and flight endpoints on airports", () => {
+  it("scales city internal distances with zoom and flight endpoints on airports", () => {
     const base = projectPlanetAtlas(fixture);
     const maps = [.6, 1, 2.6].map(zoom => projectProjectedPlanetMap(base, { panX: .2, panY: -.1, zoom }));
     const offsets = maps.map(map => {
@@ -28,8 +28,12 @@ describe("planet atlas projection", () => {
       return [...country.districtIcons.map(icon => icon.center), ...country.airports.map(a => a.center)]
         .map(p => ({ x: p.x - origin.x, y: p.y - origin.y }));
     });
-    expect(offsets[1]).toEqual(offsets[0]);
-    expect(offsets[2]).toEqual(offsets[0]);
+    for (const [index, zoom] of [.6, 1, 2.6].entries()) {
+      offsets[index]!.forEach((point, i) => {
+        expect(point.x / zoom).toBeCloseTo(offsets[1]![i]!.x, 5);
+        expect(point.y / zoom).toBeCloseTo(offsets[1]![i]!.y, 5);
+      });
+    }
     for (const map of maps) {
       const airports = new Map(map.countries.flatMap(c => c.airports.map(a => [a.id, a.center] as const)));
       for (const route of map.routes) {
