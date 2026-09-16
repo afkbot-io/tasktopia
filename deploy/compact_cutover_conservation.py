@@ -20,15 +20,20 @@ EXCLUDE = {
 APPEND_ONLY = {"events", "idempotency", "schema_migrations"}
 
 
-def project_row(table, row):
+def project_row(table, row, preserve_world=False):
+    if preserve_world:
+        # 0035 adds one nullable field; all existing values, including geometry,
+        # remain part of the immutable row fingerprint.
+        return {key: value for key, value in row.items()
+                if not (table == "countries" and key == "terrain_profile_json" and value is None)}
     return {key: value for key, value in row.items() if key not in EXCLUDE.get(table, [])}
 
 
-def capture_business(database, tables=None):
+def capture_business(database, tables=None, preserve_world=False):
     if tables is None:
         tables = database.json("SELECT COALESCE(jsonb_agg(tablename ORDER BY tablename),'[]') "
                                "FROM pg_tables WHERE schemaname='public'")
-        tables = [table for table in tables if table not in SPATIAL_TABLES]
+        tables = [table for table in tables if preserve_world or table not in SPATIAL_TABLES]
     result = {}
     for table in tables:
         require(re.fullmatch(r"[a-z_][a-z_0-9]*", table), "Invalid conservation table")
@@ -42,7 +47,7 @@ def capture_business(database, tables=None):
                 if not line:
                     break
                 require(len(line) <= 32 * 1024 ** 2 and line.endswith(b"\n"), "Oversized conservation row")
-                hashes.append(hashlib.sha256(canonical(project_row(table, json.loads(line)))).hexdigest())
+                hashes.append(hashlib.sha256(canonical(project_row(table, json.loads(line), preserve_world))).hexdigest())
         (database.runner.directory / name).unlink()
         result[table] = sorted(hashes)
     return result
