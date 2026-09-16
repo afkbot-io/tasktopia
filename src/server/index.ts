@@ -1,3 +1,5 @@
+import { foreignTransportRecipients } from "./transport-invalidation";
+import { serializeRequest } from "./request-logging";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import fastifyCookie from "@fastify/cookie";
@@ -25,6 +27,7 @@ import { startPushDeliveryWorker } from "./push-delivery";
 const app = Fastify({
   logger: {
     level: config.LOG_LEVEL,
+    serializers: { req: serializeRequest },
     redact: { paths: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"], censor: "[REDACTED]" },
   },
   bodyLimit: 20_000_000,
@@ -81,7 +84,8 @@ io?.use(async (socket, next) => {
 });
 
 io?.on("connection", (socket) => {
-  const user = socket.data.user as { countryId: string };
+  const user = socket.data.user as { id: string; countryId: string };
+  void socket.join(`user:${user.id}`);
   void socket.join(`country:${user.countryId}`);
   // Long-lived sockets must not outlive their session or keep a stale active
   // country forever. Explicit logout/member revocation disconnects immediately;
@@ -110,8 +114,15 @@ const sharedWorldCache = createOptionalRedisWorldCache(config.redisUrl, {
   ttlSeconds: config.redisChunkTtlSeconds,
   operationTimeoutMs: config.redisOperationTimeoutMs,
 });
+async function invalidateForeignTransport(event: import("../shared/contracts").RealtimeEvent) {
+  if (!io) return;
+  try {
+    const users=await foreignTransportRecipients(db,event);
+    if (users.length) io.to(users.map(id=>`user:${id}`)).except(`country:${event.countryId}`).emit("atlas:invalidate");
+  } catch(error) { app.log.error({err:error,eventId:event.id},"Transport invalidation failed"); }
+}
 const service = new AppService(db, (event) => {
-  if (config.runtimeRole === "combined") io?.to(`country:${event.countryId}`).emit("world:event", event);
+  if (config.runtimeRole === "combined") { io?.to(`country:${event.countryId}`).emit("world:event", event); void invalidateForeignTransport(event); }
   else void publishWorldEvent(db, event).catch((error) => app.log.error({ err: error, eventId: event.id }, "World event publish failed"));
 }, config.uploadDir, generationDispatcher, sharedWorldCache);
 const worldGenerationWorker = config.runtimeRole === "world"
@@ -122,6 +133,7 @@ const worldEventSubscription = config.runtimeRole === "web"
       try {
         service.acceptExternalEvent(event);
         io?.to(`country:${event.countryId}`).emit("world:event", event);
+        await invalidateForeignTransport(event);
       } catch (error) {
         app.log.error({ err: error, eventId: event.id }, "World event relay failed");
       }
@@ -138,6 +150,7 @@ if (servesApiRoutes) await registerRoutes(app, db, service, servesWeb ? {
   worldOperationsEnabled: true,
   pushPublicKey: config.pushVapid?.publicKey,
   async onCountryAccessRevoked(countryId, userId) {
+    io?.to(`user:${userId}`).emit("atlas:invalidate");
     const sockets = await io!.in(`country:${countryId}`).fetchSockets();
     for (const socket of sockets) {
       const connectedUser = socket.data.user as { id?: string } | undefined;

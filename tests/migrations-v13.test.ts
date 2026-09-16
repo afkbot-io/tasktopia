@@ -33,6 +33,12 @@ describe("PostgreSQL migrations", () => {
       "0027_task_public_spaces.sql",
       "0028_civic_service_role.sql",
       "0029_country_road_snapshots.sql",
+      "0030_task_share_previews.sql",
+      "0031_world_digest_index.sql",
+      "0032_personal_planet_geography.sql",
+      "0033_city_railway_corridors.sql",
+      "0034_port_service_role.sql",
+      "0035_world_terrain_profile.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
   });

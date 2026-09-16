@@ -1,3 +1,4 @@
+import { TaskSharePreview } from "./TaskSharePreview";
 import { useEffect, useRef, useState } from "react";
 import { getBuilding } from "../../shared/catalog";
 import { TASK_PARK_LABELS } from "../../shared/task-park-catalog";
@@ -15,7 +16,7 @@ const workItemLabel: Record<TaskDto["workItemType"], string> = { TASK: "Зада
 const serviceLabel: Record<NonNullable<TaskDto["serviceRole"]>, string> = {
   SHOP: "Магазин", EDUCATION: "Школа / детский сад", MEDICAL: "Медицинский центр",
   FIRE: "Пожарная часть", POLICE: "Полиция", RAILWAY: "Железнодорожная станция", AIRPORT: "Аэропорт",
-  CIVIC: "Администрация города",
+  CIVIC: "Администрация города", PORT: "Морской порт",
 };
 const parkLabel: Readonly<Record<string, string>> = TASK_PARK_LABELS;
 const defectStatusLabel: Record<NonNullable<TaskDto["defects"]>[number]["status"], string> = {
@@ -44,6 +45,7 @@ type TaskModalProps = {
   canEdit: boolean;
   onTransferred: (task: TaskDto) => void;
   onClose: () => void;
+  onShowDependencies?: (taskId: string) => void;
 };
 
 function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
@@ -89,7 +91,7 @@ function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
   </section>;
 }
 
-export function TaskModal({ countryId, taskId, revision, onClose }: TaskModalProps) {
+export function TaskModal({ countryId, taskId, revision, onClose, onShowDependencies }: TaskModalProps) {
   const [task, setTask] = useState<TaskDto | null>(() => peekTaskDetail(countryId, taskId) ?? null);
   const [error, setError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
@@ -140,6 +142,7 @@ export function TaskModal({ countryId, taskId, revision, onClose }: TaskModalPro
           <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
           <button className="task-share" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "🔗 Ссылка"}</button>
         </header>
+        <TaskSharePreview key={`${countryId}:${task.id}`} countryId={countryId} task={task} />
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
         <div className="task-grid">
           <div><span>Приоритет</span><strong>{priorityLabel[task.priority]}</strong></div><div><span>Срок</span><strong>{task.dueAt ? new Date(task.dueAt).toLocaleDateString("ru-RU") : "Не задан"}</strong></div>
@@ -148,6 +151,7 @@ export function TaskModal({ countryId, taskId, revision, onClose }: TaskModalPro
         </div>
         <section className="task-description"><h3>Описание</h3>{task.description ? <Markdown text={task.description} /> : <p>Описание пока не передано через MCP.</p>}</section>
         {task.acceptanceCriteria && <section className="task-description"><h3>Критерии приёмки</h3><Markdown text={task.acceptanceCriteria} /></section>}
+        {task.dependencies?.length ? <section className="task-description"><h3>Зависит от задач</h3><p>{task.dependencies.map(d => `#${d.taskNumber} · ${d.title}`).join("; ")}</p>{onShowDependencies && <button onClick={() => onShowDependencies(task.id)}>Показать зависимости на карте</button>}</section> : null}
         <DocumentShelf documents={task.documents ?? []} />
         <section className="task-checklist">
           <div className="task-section-title"><div><h3>Чек-лист</h3><p>Шаги реализации и их фактический прогресс.</p></div><span>{task.checklist?.filter((item) => item.done).length ?? 0}/{task.checklist?.length ?? 0}</span></div>

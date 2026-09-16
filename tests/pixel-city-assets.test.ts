@@ -195,8 +195,10 @@ describe("Pixel City active asset contract", () => {
 
   it("publishes the compact shared construction kit and no oversized legacy pieces", () => {
     const props = manifest.props as Record<string, { size: number[]; footprintCells: number[]; artSource?: string; anchorPx: number[] }>;
-    const details = Object.entries(props).filter(([key]) => key.startsWith("compact-construction-"));
-    expect(details).toHaveLength(4);
+    const details = Object.entries(props).filter(([key]) => key.startsWith("compact-construction-") && !key.startsWith("compact-construction-worker-"));
+    expect(details.map(([key]) => key).sort()).toEqual([
+      "compact-construction-bricks", "compact-construction-crane", "compact-construction-hut", "compact-construction-sand",
+    ]);
     expect(Object.keys(props).some((key) => key.startsWith("construction-"))).toBe(false);
     for (const [key, detail] of details) {
       expect(detail.artSource, key).toBe("PROCEDURAL_TILE_KIT");
@@ -204,6 +206,12 @@ describe("Pixel City active asset contract", () => {
       expect(Math.max(...detail.size), key).toBeLessThanOrEqual(24);
       expect(Math.max(...detail.footprintCells), key).toBeLessThanOrEqual(2);
     }
+    const workers = Object.entries(props).filter(([key]) => key.startsWith("compact-construction-worker-"));
+    expect(workers.map(([key]) => key).sort()).toEqual(["north", "east", "south", "west"]
+      .flatMap(direction => [0, 1].map(frame => `compact-construction-worker-${direction}-${frame}`)).sort());
+    for (const [key, worker] of workers) expect(worker, key).toMatchObject({
+      artSource: "AI_AUTHORED", size: [8, 8], footprintCells: [1, 1], anchorPx: [4, 8],
+    });
   });
 
 

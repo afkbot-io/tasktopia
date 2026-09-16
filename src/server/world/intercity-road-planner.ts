@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { BlockWorldBounds, CityBlockV1 } from "../../shared/block-world";
 import { decodeOrthogonalRoadRuns, encodeOrthogonalRoadPath, type GridPoint, type SemanticRoadNode } from "../../shared/semantic-road";
 import { isBuildableTerrain, terrainAt } from "../../shared/world-terrain";
+import type { WorldTerrainProfile } from "../../shared/world-terrain-profile";
 import type { IntercityRoadRoute } from "../../shared/intercity-roads";
 export type { IntercityRoadRoute } from "../../shared/intercity-roads";
 
@@ -27,6 +28,7 @@ export type IntercityRoadPlan = {
 };
 export type IntercityRoadPlannerInput = {
   countryId: string; seed: number; cities: readonly IntercityRoadCity[];
+  terrainProfile?: WorldTerrainProfile;
   protectedSites?: readonly BlockWorldBounds[];
   previous?: Pick<IntercityRoadPlan, "countryId" | "seed" | "routes">;
   isBuildable?: (cell: GridPoint) => boolean;
@@ -132,7 +134,7 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
   input.protectedSites?.forEach(protect);
   const dry = new Map<string, boolean>();
   let sampleBudgetExhausted = false;
-  const isBuildable = input.isBuildable ?? ((cell: GridPoint) => isBuildableTerrain(terrainAt(input.seed, cell.x, cell.y).terrain));
+  const isBuildable = input.isBuildable ?? ((cell: GridPoint) => isBuildableTerrain(terrainAt(input.seed, cell.x, cell.y, input.terrainProfile).terrain));
   const cellOpen = (cell: GridPoint): boolean => {
     const id = key(cell), cached = dry.get(id);
     if (cached !== undefined) return cached;
@@ -160,7 +162,7 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     edgeCache.set(id, true); return true;
   };
   const bridgeCache = new Map<string, boolean>();
-  const bridgeable = input.isBridgeable ?? ((p: GridPoint) => ["DEEP_WATER", "SHALLOW_WATER", "WET_SAND"].includes(terrainAt(input.seed,p.x,p.y).terrain));
+  const bridgeable = input.isBridgeable ?? ((p: GridPoint) => ["DEEP_WATER", "SHALLOW_WATER", "WET_SAND"].includes(terrainAt(input.seed,p.x,p.y,input.terrainProfile).terrain));
   const bridgeOpen = (from: GridPoint, to: GridPoint): boolean => {
     const id = `${key(from)}/${key(to)}`;
     if (bridgeCache.has(id)) return bridgeCache.get(id)!;

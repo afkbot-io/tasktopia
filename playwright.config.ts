@@ -22,6 +22,8 @@ export default defineConfig({
     env: {
       APP_ORIGIN: baseURL,
       AUTH_RATE_LIMIT_MAX: "100",
+      // One local IP drives many independent users and reload journeys in CI.
+      CITY_SCENE_RATE_LIMIT_MAX: "300",
       REGISTRATION_ENABLED: "true",
       DATABASE_URL: process.env.E2E_DATABASE_URL ?? testDatabaseURL,
       TEST_DATABASE_URL: testDatabaseURL,
@@ -49,7 +51,7 @@ export default defineConfig({
         serviceWorkers: "block",
       },
     },
-    { name: "webkit-visual", testMatch: /(?:atlas-transport|visual-consistency|visual-services)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "webkit-visual", testMatch: /(?:atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|visual-consistency|visual-services|world-preferences|city-asset-overlap)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
     { name: "mobile-chromium", testMatch: /mobile-pwa\.spec\.ts/, use: { ...devices["Pixel 7"] } },
     { name: "mobile-webkit", testMatch: /(?:mobile-pwa|pwa-update)\.spec\.ts/, use: { ...devices["iPhone 13"] } },
   ],

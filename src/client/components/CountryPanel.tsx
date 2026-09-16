@@ -13,6 +13,7 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
 }) {
   const [members, setMembers] = useState<CountryMemberDto[]>([]);
   const [countryName, setCountryName] = useState("");
+  const [landscape, setLandscape] = useState<"CLASSIC"|"COASTAL">("CLASSIC");
   const [renameValue, setRenameValue] = useState(bootstrap.country.name);
   const [description, setDescription] = useState(bootstrap.country.description);
   const [goal, setGoal] = useState(bootstrap.country.goal);
@@ -58,7 +59,7 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
   };
   const reloadBootstrap = async () => onBootstrap(await api<BootstrapDto>("/api/bootstrap"));
   const create = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    const country = await api<{ id: string }>("/api/countries", { method: "POST", json: { name: countryName } });
+    const country = await api<{ id: string }>("/api/countries", { method: "POST", json: { name: countryName, landscape } });
     const next = await api<BootstrapDto>(`/api/countries/${country.id}/select`, { method: "POST" });
     onBootstrap(next); onClose();
   }); };
@@ -103,6 +104,13 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
         {mode === "create" ? <form className="country-create-form" onSubmit={create}>
           <span className="country-large-seal" aria-hidden="true">＋</span>
           <Field label="Название страны" value={countryName} onChange={(event) => setCountryName(event.target.value)} maxLength={100} minLength={2} required autoFocus placeholder="Например, Атутаелия" />
+          <label className="country-textarea-field">Ландшафт
+            <select value={landscape} disabled={pending} onChange={event=>setLandscape(event.target.value==="COASTAL"?"COASTAL":"CLASSIC")}>
+              <option value="CLASSIC">Реки и озёра</option>
+              <option value="COASTAL">Морское побережье</option>
+            </select>
+          </label>
+          <p>{landscape==="COASTAL"?"Прибрежная страна с лесами и выходом к морю. Порт появится в подходящем месте по мере развития города.":"Зелёные равнины, леса, реки и озёра."}</p>
           <Button type="submit" disabled={pending || countryName.trim().length < 2}>{pending ? "Создаём…" : "Создать страну"}</Button>
         </form> : <div className="country-government-grid">
           <div className="grid content-start gap-5">

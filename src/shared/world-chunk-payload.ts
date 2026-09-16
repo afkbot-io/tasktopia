@@ -39,7 +39,7 @@ export function materializeChunkPayload(payload: ChunkPayloadDto, encodedTerrain
     for (let x = originX; x < originX + payload.size; x += step) {
       const sample = encodedTerrain
         ? decodeTerrainSample(encodedTerrain[terrainIndex]!)
-        : terrainAt(payload.terrainSeed, x, y);
+        : terrainAt(payload.terrainSeed, x, y, payload.terrainProfile);
       terrain.push({ x, y, ...sample });
       terrainIndex += 1;
     }
@@ -79,7 +79,7 @@ export function materializeChunkPayload(payload: ChunkPayloadDto, encodedTerrain
     for (let y = originY - 4; y < originY + payload.size + 4; y++) {
       for (let x = originX - 4; x < originX + payload.size + 4; x++) {
         if (x >= originX && x < originX + payload.size && y >= originY && y < originY + payload.size) continue;
-        decorationTerrain.push({ x, y, ...terrainAt(payload.terrainSeed, x, y) });
+        decorationTerrain.push({ x, y, ...terrainAt(payload.terrainSeed, x, y, payload.terrainProfile) });
       }
     }
   }
@@ -94,7 +94,7 @@ export function materializeChunkPayload(payload: ChunkPayloadDto, encodedTerrain
       payload.decorationContext.cityBounds,
       payload.decorationContext.tasks,
       decorationTerrain,
-      cell => terrainAt(payload.terrainSeed, cell.x, cell.y).terrain,
+      cell => terrainAt(payload.terrainSeed, cell.x, cell.y, payload.terrainProfile).terrain,
       furnitureExclusions,
       ),
       ...worldFeatures.filter((feature) => feature.assetKind === "AREA" && feature.kind !== "AIRPORT").flatMap((area) => (

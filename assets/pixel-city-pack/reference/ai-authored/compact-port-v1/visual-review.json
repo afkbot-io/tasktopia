@@ -1,0 +1,96 @@
+{
+  "key": "compact-port-v1",
+  "reviewedAt": "2026-09-16",
+  "reviewMethod": "Главный агент просмотрел исходники, нормализованный спрайт1x и последовательность3/4/5 при8x; измерил пиксели входа. Это приёмка графики, не runtime/browser-проверка.",
+  "projection": {
+    "camera": "High frontal-top orthographic, axis-aligned edges, no side facade",
+    "roofDepthPx": 21,
+    "facadeHeightPx": 11,
+    "floorStepPx": 5,
+    "floorCount": 2,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "doorLeafRectPx": [
+      22,
+      29,
+      4,
+      3
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "4600ac36be0e271a7da6165722868887396f48d48e771255aed0107d84941e6b",
+      "runtimeSha256": "47fdcba5ef1318a16d324297ca88d243c2366811895f6f991f790da4fd35dd48",
+      "notes": "Open structural lattice, cream shell and empty windows; same footprint."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "5aa0495f35b361fe6010ae13abb5f034b6782c38807da5a8a838e3f4b84ed639",
+      "runtimeSha256": "79f8d6623daf1321022d83c710cf598b372f0ca2fb0f48b31860eb643e32ffcd",
+      "notes": "Half roof installed on right, left unfinished slab and broad beams; dark windows, no cabin or signal equipment."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "b96a956254a41d46f99bb541e2409f017d9a178814ecda523640f65c676cbfc0",
+      "runtimeSha256": "46f9e0209881a3b0c39d4d48d8380e2fd2e6c70af1d5562e4ced30d9369c92bf",
+      "notes": "Coastal passenger terminal, broad teal roof, central harbour control cabin and signal light, cream facade."
+    }
+  },
+  "pendingIntegration": [],
+  "runtimeReview": {
+    "scope": "Только изображения терминала в CITY; не выдача порта и не гидрологическая связность",
+    "reviewedAt": "2026-09-16",
+    "viewport": [
+      1440,
+      900
+    ],
+    "browser": "Chromium",
+    "fixture": "tests/e2e/port-terminal-art.spec.ts: подмена существующего6x4участка на HTTP-границе; БД не менялась",
+    "stages": {
+      "1": {
+        "accepted": true,
+        "screenshot": "runtime-review/stage-1.png",
+        "screenshotSha256": "68618c885a41f765309c3d81d38cebc8502b6c46da3d941710024d35127c5562"
+      },
+      "2": {
+        "accepted": true,
+        "screenshot": "runtime-review/stage-2.png",
+        "screenshotSha256": "ae32662cc0710c4e1fc6eeca9a795d083274cae823813741df561952a6b18220"
+      },
+      "3": {
+        "accepted": true,
+        "screenshot": "runtime-review/stage-3.png",
+        "screenshotSha256": "ed304adea81e4cfa4021e52e72bff7b666a14d583459d3ec02416405bc52a08c"
+      },
+      "4": {
+        "accepted": true,
+        "screenshot": "runtime-review/stage-4.png",
+        "screenshotSha256": "f947e761af18f822b054aa834c234c9eb02cbe60b704b23e6b6052acb508c4a2"
+      },
+      "5": {
+        "accepted": true,
+        "screenshot": "runtime-review/stage-5.png",
+        "screenshotSha256": "28990b5c87fac54a3048a66e747e9a44ad11589f3890a08130a97111cbbfb17e"
+      }
+    }
+  },
+  "integrationReview": {
+    "reviewedAt": "2026-09-16",
+    "status": "LOCAL_VERIFIED",
+    "evidence": "docs/plans/LIVING-WORLD-VISUAL-REVIEW.md",
+    "notes": "PORT подключён к каталогу, сохранённому береговому плану и трём масштабам. Пять настоящих CITY-стадий и морской рейс проверены отдельно от renderer-only кадров. Общая квалификация и релиз не завершены."
+  }
+}

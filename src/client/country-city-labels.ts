@@ -44,7 +44,8 @@ export function layoutCountryCityLabels(cities: readonly LabelInput[], viewport:
   if (cities.length > COUNTRY_FULL_LABEL_LIMIT) return layoutDenseLabels(cities, viewport);
   const margin = 8, gap = 6, bottom = 80;
   const placed: LabelPlacement[] = [];
-  for (const city of [...cities].sort((a, b) => a.y - b.y || a.x - b.x || a.id.localeCompare(b.id))) {
+  const visible = cities.filter(city => city.x >= 0 && city.x <= viewport.width && city.y >= 0 && city.y <= viewport.height);
+  for (const city of [...visible].sort((a, b) => a.y - b.y || a.x - b.x || a.id.localeCompare(b.id))) {
     const width = Math.min(city.width, viewport.width - margin * 2), height = city.height;
     const clamp = (x: number, y: number) => ({ x: Math.max(margin + width / 2, Math.min(viewport.width - margin - width / 2, x)),
       y: Math.max(margin + height / 2, Math.min(viewport.height - bottom - height / 2, y)) });
@@ -62,7 +63,7 @@ export function layoutCountryCityLabels(cities: readonly LabelInput[], viewport:
     }
     const free = (point: { x: number; y: number }) => !placed.some(other => Math.abs(other.x - point.x) < (other.width + width) / 2 + gap
       && Math.abs(other.y - point.y) < (other.height + height) / 2 + gap)
-      && !cities.some(anchor => Math.abs(anchor.x - point.x) < width / 2 + 5 && Math.abs(anchor.y - point.y) < height / 2 + 5);
+      && !visible.some(anchor => Math.abs(anchor.x - point.x) < width / 2 + 5 && Math.abs(anchor.y - point.y) < height / 2 + 5);
     const preferred = candidates[0]!;
     candidates.sort((a, b) => ((a.x - preferred.x) ** 2 + (a.y - preferred.y) ** 2) - ((b.x - preferred.x) ** 2 + (b.y - preferred.y) ** 2) || a.y - b.y || a.x - b.x);
     const point = candidates.find(free) ?? preferred;

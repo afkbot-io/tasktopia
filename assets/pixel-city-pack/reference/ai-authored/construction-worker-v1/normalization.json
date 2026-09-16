@@ -1,0 +1,150 @@
+{
+  "sourceSha256": "75c5bcce0fca23b1290b4b13df7793c6e7ad2b5ac1275c502ee4e65c5bb6fe02",
+  "scale": 0.029940119760479042,
+  "frames": [
+    {
+      "key": "construction-worker-north-0",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        6,
+        7
+      ],
+      "sha256": "f7a2159d2b36b182d47a57450a84cd7b853e6a53315cc24ef5a4541e7a221e91"
+    },
+    {
+      "key": "construction-worker-east-0",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        3,
+        2,
+        6,
+        7
+      ],
+      "sha256": "0f8eb34bd51b55d84c057c6742120d13d2c6b8b40436e3dbabc7b3972104a457"
+    },
+    {
+      "key": "construction-worker-south-0",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        6,
+        7
+      ],
+      "sha256": "239d202117fdd500e122470ae0b16a7698c01664a0f62b87d0ab805f3781fead"
+    },
+    {
+      "key": "construction-worker-west-0",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        7
+      ],
+      "sha256": "8377bd2c02d9360167618828038cd8a69d0dc05f9d4a4ff288b2bd3274ffbdaf"
+    },
+    {
+      "key": "construction-worker-north-1",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        7,
+        7
+      ],
+      "sha256": "503a106b190d80af724ec3767f9c1faa5fe4b81ea17aa007f555543e8452c124"
+    },
+    {
+      "key": "construction-worker-east-1",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        3,
+        2,
+        8,
+        7
+      ],
+      "sha256": "53770724bea801be9ca60e589f1aa1fdba7595f5227ccee5729124940180c796"
+    },
+    {
+      "key": "construction-worker-south-1",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        7,
+        7
+      ],
+      "sha256": "7aac5f73c88b4d06dc2b852757328649d657e7a9f29bbfbc5df2a5ba6752b707"
+    },
+    {
+      "key": "construction-worker-west-1",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        6,
+        7
+      ],
+      "sha256": "100a00f14f82c127991d02ce4b5fe4600f23e5edb2c6f99ea9d6b724790e80b6"
+    }
+  ]
+}

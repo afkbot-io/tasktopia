@@ -1,4 +1,4 @@
-import { isPrivateAppPath } from "./pwa-cache-policy.ts";
+import { isPrivateAppPath, PRIVATE_PREFIXES } from "./pwa-cache-policy.ts";
 
 export function renderServiceWorker(revision: string, candidates: readonly string[], staticOrigin = "", installCandidates: readonly string[] = candidates): string {
   const origin = staticOrigin.replace(/\/$/, "");
@@ -20,7 +20,7 @@ const CACHE_NAME = ${JSON.stringify(`tasktopia-shell-${revision}`)};
 const PRECACHE = ${JSON.stringify(precache.filter(path => installCandidates.includes(path) && !(origin && path.startsWith("/assets/"))))};
 const CDN_PRECACHE = ${JSON.stringify(cdnAssets.filter(url => installCandidates.includes(url.slice(origin.length))))};
 const CDN_ASSETS = new Set(${JSON.stringify(cdnAssets)});
-const PRIVATE_PREFIXES = ["/api", "/mcp", "/socket.io", "/health"];
+const PRIVATE_PREFIXES = ${JSON.stringify(PRIVATE_PREFIXES)};
 const isPrivatePath = (path) => PRIVATE_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + "/"));
 const isRuntimeAsset = (request, url) => url.origin === self.location.origin && !isPrivatePath(url.pathname)
   && !url.pathname.endsWith(".map") && url.pathname !== "/game-assets/v5/manifest.json"

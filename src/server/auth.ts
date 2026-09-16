@@ -4,6 +4,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { MCP_READ_SCOPES, MCP_SCOPES, type CountryMemberDto, type CountryRole, type McpScope } from "../shared/contracts";
 import type { Db } from "./db";
 import { now, transaction } from "./db";
+import { parseWorldTerrainProfile, type WorldTerrainProfile } from "../shared/world-terrain-profile";
 
 const scrypt = promisify(scryptCallback);
 export const SESSION_COOKIE = "tasktopia_session";
@@ -95,14 +96,15 @@ export async function listCountryMembers(db: Db, countryId: string): Promise<Cou
     }));
 }
 
-export async function createCountry(db: Db, userId: string, nameInput: string): Promise<string> {
+export async function createCountry(db: Db, userId: string, nameInput: string, terrainProfile?: WorldTerrainProfile): Promise<string> {
   const name = nameInput.trim();
   const id = randomUUID();
   const createdAt = now();
   const seed = randomBytes(4).readUInt32LE(0) & 0x7fffffff;
+  const profile = parseWorldTerrainProfile(terrainProfile);
   await transaction(db, async () => {
-                    await db.prepare("INSERT INTO countries (id, user_id, name, seed, world_version, created_at) VALUES (?, ?, ?, ?, 1, ?)")
-                                              .run(id, userId, name, seed, createdAt);
+                    await db.prepare("INSERT INTO countries (id, user_id, name, seed, world_version, created_at, terrain_profile_json) VALUES (?, ?, ?, ?, 1, ?, ?)")
+                                              .run(id, userId, name, seed, createdAt, profile ? JSON.stringify(profile) : null);
                     await db.prepare("INSERT INTO country_members (country_id, user_id, role, invited_by_user_id, created_at) VALUES (?, ?, 'OWNER', ?, ?)")
                                               .run(id, userId, userId, createdAt);
                     await db.prepare("UPDATE users SET active_country_id = ? WHERE id = ?").run(id, userId);

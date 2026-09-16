@@ -3,7 +3,7 @@ import type { ArchiveRecordDto, BootstrapDto, PlanCityDto, PlanCityPageDto, Plan
 import { api } from "../api";
 
 const districtStatus: Record<PlanDistrictDto["status"], string> = {
-  PLANNED: "Запланирован", ACTIVE: "Строится", COMPLETED: "Завершён", ABANDONED: "Заброшен",
+  PLANNED: "Запланирован", ACTIVE: "Активный", COMPLETED: "Завершён", ABANDONED: "Заброшен",
 };
 
 const taskStatus: Record<PlanTaskDto["status"], string> = {
@@ -15,18 +15,19 @@ const kindLabel: Record<ArchiveRecordDto["kind"], string> = {
   CONVENTION: "Правило", ENVIRONMENT: "Окружение", TEMPLATE: "Шаблон",
 };
 
-export function PlanDrawer({ bootstrap, refreshToken, initialSection, onClose, onCityFocus, onTaskSelect, onArchiveRecordSelect, onMutation }: {
+export function PlanDrawer({ bootstrap, refreshToken, initialSection, initialFocus, onClose, onCityFocus, onTaskSelect, onArchiveRecordSelect, onMutation }: {
   bootstrap: BootstrapDto;
   refreshToken: number;
   initialSection: "cities" | "archive";
+  initialFocus?: { cityId: string; districtId: string };
   onClose: () => void;
   onCityFocus: (city: PlanCityDto) => void;
   onTaskSelect: (taskId: string) => void;
   onArchiveRecordSelect: (recordId: string) => void;
   onMutation: () => Promise<void>;
 }) {
-  const [cityId, setCityId] = useState(bootstrap.initialCity?.id ?? "");
-  const [districtId, setDistrictId] = useState("");
+  const [cityId, setCityId] = useState(initialFocus?.cityId ?? bootstrap.initialCity?.id ?? "");
+  const [districtId, setDistrictId] = useState(initialFocus?.districtId ?? "");
   const [cities, setCities] = useState<PlanCityDto[]>([]);
   const [districts, setDistricts] = useState<PlanDistrictDto[]>([]);
   const [tasks, setTasks] = useState<PlanTaskDto[]>([]);

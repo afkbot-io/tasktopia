@@ -1,3 +1,9 @@
+import Fastify from "fastify";
+import fastifyCookie from "@fastify/cookie";
+import { registerRoutes } from "../src/server/routes";
+import type { CountryOverviewDto } from "../src/shared/country-overview-contract";
+import type { PlanetAtlasDto } from "../src/shared/planet-atlas-contract";
+import type { CitySceneDto } from "../src/shared/city-scene-contract";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
@@ -5,6 +11,7 @@ import { createTestDb, type Db } from "../src/server/db";
 import { blockSlotAirportPoint } from "../src/shared/airport-location";
 import { blockSlots } from "../src/shared/block-templates";
 import { readActiveBlockLayout } from "../src/server/world/active-block-layout";
+import { transportSchedule } from "../src/shared/transport-schedule";
 import { projectPlanetAtlas } from "../src/shared/planet-atlas";
 
 describe("task-backed cross-city airport scene connections", { timeout: 30_000 }, () => {
@@ -70,6 +77,69 @@ describe("task-backed cross-city airport scene connections", { timeout: 30_000 }
     expect(removed.sceneRevision).not.toBe(after.sceneRevision);
     expect(removed.airportConnections).toEqual([]);
     expect((await service.getCityScene(countryId, unfinished.city.id)).airportConnections).toEqual([]);
+  });
+
+  it("publishes the same three-city domestic graph on CITY, COUNTRY and PLANET and reconnects after deletion",async()=>{
+    const app=Fastify();await app.register(fastifyCookie);await registerRoutes(app,db,service);await app.ready();
+    try {
+    const login=await app.inject({method:"POST",url:"/api/auth/login",payload:{email:"airports@example.test",password:"password123"}});
+    expect(login.statusCode).toBe(200);
+    const setCookie=login.headers["set-cookie"]!;
+    const cookie=(Array.isArray(setCookie)?setCookie[0]!:setCookie).split(";")[0]!;
+    const get=async<T,>(url:string):Promise<T>=>{
+      const response=await app.inject({method:"GET",url,headers:{cookie}});expect(response.statusCode).toBe(200);return response.json() as T;
+    };
+    const airports=await Promise.all(["Graph A","Graph B","Graph C"].map(name=>airportInCity(countryId,name,true)));
+    const verify=async(active:typeof airports)=>{
+      const overview=await get<CountryOverviewDto>(`/api/countries/${countryId}/overview`);
+      const planet=projectPlanetAtlas(await get<PlanetAtlasDto>("/api/planet-atlas"));
+      const identity=(a:string,b:string)=>transportSchedule("AIR",a,b).id;
+      const expected=overview.connections.map(route=>identity(route.fromAirportId!,route.toAirportId!)).sort();
+      expect(expected).toHaveLength(active.length-1);
+      expect(planet.routes.filter(r=>r.fromCountryId===countryId&&r.toCountryId===countryId).map(r=>r.id).sort()).toEqual(expected);
+      const fromScenes=new Set<string>();
+      for(const airport of active){
+        const scene=await get<CitySceneDto>(`/api/countries/${countryId}/cities/${airport.city.id}/scene`);
+        for(const route of scene.airportConnections){
+          const id=identity(route.from.taskId,route.to.taskId);expect(expected).toContain(id);fromScenes.add(id);
+          expect([route.from.cityId,route.to.cityId]).toContain(airport.city.id);
+        }
+      }
+      expect([...fromScenes].sort()).toEqual(expected);
+    };
+    await verify(airports);
+    const middle=[...airports].sort((a,b)=>a.city.id.localeCompare(b.city.id))[1]!;
+    await service.deleteTask(countryId,{taskId:middle.task.id,confirmTitle:middle.task.title,idempotencyKey:"graph-delete-middle"});
+    await verify(airports.filter(a=>a!==middle));
+    } finally {await app.close();}
+  });
+
+  it("shows the same authorized international flight at all scales and removes it on access revocation",async()=>{
+    const local=await airportInCity(countryId,"Local international",true);
+    const owner=(await registerUser(db,{email:"foreign-flight@example.test",name:"Foreign",password:"password123"})).user;
+    const foreign=await airportInCity(owner.countryId,"Foreign international",true);
+    const scene=()=>service.getCitySceneForUser(userId,countryId,local.city.id);
+    expect((await scene()).airportConnections).toEqual([]);
+    await db.prepare("INSERT INTO country_members(country_id,user_id,role,created_at) VALUES (?,?,'MEMBER',now())").run(owner.countryId,userId);
+    const atlas=projectPlanetAtlas(await service.getPlanetAtlas(userId));
+    const route=atlas.routes.find(r=>r.fromCountryId!==r.toCountryId)!;
+    expect(route).toBeDefined();
+    const city=await scene();
+    expect(city.airportConnections).toHaveLength(2);
+    const ids=[...new Set(city.airportConnections.map(r=>transportSchedule("AIR",r.from.taskId,r.to.taskId).id))];
+    expect(ids).toEqual([route.id]);
+    const endpoint=city.airportConnections.flatMap(r=>[r.from,r.to]).find(e=>e.taskId===foreign.task.id)!;
+    expect(endpoint.point).not.toEqual(foreign.point);
+    expect(city.airportConnections.flatMap(r=>[r.from,r.to]).find(e=>e.taskId===local.task.id)!.point).toEqual(local.point);
+    const overview=await service.getCountryOverview(userId,countryId);
+    expect(overview.connections.map(r=>transportSchedule("AIR",r.fromAirportId!,r.toAirportId!).id)).toEqual(ids);
+    expect(overview.cities.some(c=>c.id===foreign.city.id)).toBe(false);
+    const cards=(await service.getCityDevelopment(userId,countryId,local.city.id)).transport!;
+    expect(cards.find(c=>c.kind==="AIR")!.routes[0]).toMatchObject({id:route.id,destinationName:"Foreign international"});
+    await db.prepare("DELETE FROM country_members WHERE country_id=? AND user_id=?").run(owner.countryId,userId);
+    expect((await scene()).airportConnections).toEqual([]);
+    expect((await service.getCountryOverview(userId,countryId)).connections).toEqual([]);
+    expect((await service.getCityDevelopment(userId,countryId,local.city.id)).transport!.find(c=>c.kind==="AIR")!.routes).toEqual([]);
   });
 
   it("keeps routes closed through allowed airport rework and rejects reopening a completed airport at every map level", async () => {

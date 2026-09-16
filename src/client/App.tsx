@@ -1,4 +1,9 @@
+import { WorldDigest } from "./components/WorldDigest";
+import { MapDependencies } from "./components/MapDependencies";
+import type { MapDependencySelection } from "./map-dependencies";
+import { MapAttention } from "./components/MapAttention";
 import { MapLegend } from "./components/MapLegend";
+import { DistrictPlans } from "./components/DistrictPlans";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto, TaskResolutionDto, WorldFeatureDto } from "../shared/contracts";
 import type { CountryOverviewCityDto } from "../shared/country-overview-contract";
@@ -21,16 +26,18 @@ import { acknowledgeMapInvalidations, enqueueMapInvalidation, eventInvalidation,
 import { clearPushSubscriptionForLogout } from "./push-notifications";
 import { PushNotificationCard } from "./components/PushNotificationCard";
 import { SiteHistoryModal } from "./components/SiteHistoryModal";
-import { advanceMapSceneCaches, clearMapSceneCaches, loadCityScene, rememberCountryRevision } from "./map-scene-cache";
+import { advanceMapSceneCaches, clearMapSceneCaches, invalidateTransportSceneCaches, loadCityScene, rememberCountryRevision } from "./map-scene-cache";
 import { clearTaskDetailCache, invalidateTaskDetails } from "./task-detail-cache";
 import { taskResolutionQuery } from "./task-navigation";
 import { clearPlanetAtlasCache } from "./planet-atlas-cache";
 import { CoalescedRefresh } from "./coalesced-refresh";
+import { WorldPreferences } from "./components/WorldPreferences";
 import { WorldAmbientLighting } from "./components/WorldAmbientLighting";
 
 const WorldCanvas = lazy(() => import("./components/WorldCanvas").then((module) => ({ default: module.WorldCanvas })));
 const CountryOverviewCanvas = lazy(() => import("./components/CountryOverviewCanvas").then((module) => ({ default: module.CountryOverviewCanvas })));
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
+const CityDevelopmentPanel = lazy(() => import("./components/CityDevelopmentPanel").then(module => ({ default: module.CityDevelopmentPanel })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
@@ -84,6 +91,7 @@ export function App() {
   const [tokensOpen, setTokensOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<"mcp" | "account">("mcp");
   const [planOpen, setPlanOpen] = useState(false);
+  const [planFocus, setPlanFocus] = useState<{ cityId: string; districtId: string }>();
   const [planSection, setPlanSection] = useState<"cities" | "archive">("cities");
   const [countryMenuOpen, setCountryMenuOpen] = useState(false);
   const [countryDialog, setCountryDialog] = useState<"manage" | "create" | null>(null);
@@ -103,6 +111,14 @@ export function App() {
   const lastWorldEventIdRef = useRef(0);
   const [revision, setRevision] = useState(0);
   const [planetRevision, setPlanetRevision] = useState(0);
+  const [transportRevision,setTransportRevision]=useState(0);
+  const [attention, setAttention] = useState<{ scope: string; ids: string[] }>({ scope: "", ids: [] });
+  const [dependencyTask, setDependencyTask] = useState<{ scope: string; id: string }>();
+  const [dependencyData, setDependencyData] = useState<{ scope: string; selection?: MapDependencySelection }>({ scope: "" });
+  const [developmentOpen, setDevelopmentOpen] = useState(false);
+  const closeDevelopment = useCallback(() => setDevelopmentOpen(false), []);
+  const [attentionRevision, setAttentionRevision] = useState(0);
+  useEffect(() => { if (selectedTask) { setDependencyTask(undefined); setDependencyData({ scope: "" }); } }, [selectedTask]);
   const [mapInvalidations, setMapInvalidations] = useState<MapInvalidation[]>([]);
   const acknowledgeCityInvalidations = useCallback((cursor: number) => {
     setMapInvalidations(current => acknowledgeMapInvalidations(current, cursor));
@@ -114,7 +130,7 @@ export function App() {
   const [pushOfferDismissed, setPushOfferDismissed] = useState(() => localStorage.getItem("tasktopia:push-offer-dismissed") === "1");
   const cityReadyResolverRef = useRef<(() => void) | null>(null);
   const countryId = bootstrap?.country.id;
-  useEffect(() => { setSelectedSite(null); }, [countryId, sessionState]);
+  useEffect(() => { setSelectedSite(null); setPlanFocus(undefined); }, [countryId, sessionState]);
   const closeSite = useCallback(() => setSelectedSite(null), []);
   const prefetchCityId = focusCity?.id ?? bootstrap?.initialCity?.id;
   const closeTask = useCallback(() => setSelectedTask(null), []);
@@ -345,6 +361,7 @@ export function App() {
   }, [bootstrap, openCanonicalTask]);
   const applyRealtimeEvent = useCallback((event: RealtimeEvent) => {
     if (event.countryId !== countryId || event.id <= lastWorldEventIdRef.current) return;
+    if (!event.type.startsWith("task.comment") && (event.type.startsWith("task.") || event.type.startsWith("district.") || event.type === "country.regenerated")) setAttentionRevision(value => value + 1);
     advanceMapSceneCaches(event);
     const affectedTask = invalidateTaskDetails(event);
     if (affectedTask === null || affectedTask === selectedTaskRef.current) setTaskRevision(value => value + 1);
@@ -369,6 +386,13 @@ export function App() {
     // Replay bursts commit together; one bootstrap refresh owns the batch.
     void load().catch(() => setOnline(false));
   }, [bootstrapRefresh, load]);
+  const invalidateForeignTransport = useCallback(() => {
+    invalidateTransportSceneCaches();
+    setPreparedCityScene(null);
+    setTransportRevision(value=>value+1);
+    setPlanetRevision(value=>value+1);
+    setAttentionRevision(value=>value+1);
+  }, []);
   useEffect(() => {
     if (!countryId) return;
     let active = true;
@@ -385,6 +409,7 @@ export function App() {
         else applyRealtimeEvent(event);
       };
       socket.on("connect", () => {
+        invalidateForeignTransport();
         setOnline(true);
         replaying = true;
         void (async () => {
@@ -411,9 +436,10 @@ export function App() {
       });
       socket.on("disconnect", () => setOnline(false));
       socket.on("world:event", receive);
+      socket.on("atlas:invalidate", invalidateForeignTransport);
     });
     return () => { active = false; disconnect?.(); };
-  }, [applyRealtimeEvent, countryId]);
+  }, [applyRealtimeEvent, countryId, invalidateForeignTransport]);
 
   if (sessionState === "INITIALIZING" && !bootstrap) return <div className="app-loading" role="status"><div className="loader-square" /><span>Открываем страну…</span></div>;
   if (sessionState === "ANONYMOUS" || sessionState === "RECOVERABLE_ERROR" || !bootstrap) {
@@ -421,6 +447,7 @@ export function App() {
   }
 
   const activeCity = focusCity ?? bootstrap.initialCity;
+  const dependencyScope = `${bootstrap.user.id}:${countryId}:${activeCity?.id}`;
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "COUNTRY" ? hoveredAtlasCity : effectiveMapMode === "CITY" ? activeCity : null;
   return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
@@ -447,7 +474,8 @@ export function App() {
       <div className="map-toolbar-actions">
         <nav className="flex items-center justify-end gap-1.5" aria-label="Действия карты">
           <WorldAmbientLighting />
-          <Button className="map-toolbar-plan" data-plan-trigger onClick={() => { setCountryMenuOpen(false); setPlanSection("cities"); setPlanOpen(value => !value); }} aria-pressed={planOpen}>План</Button>
+          <Button className="map-toolbar-plan" data-plan-trigger onClick={() => { setCountryMenuOpen(false); setPlanFocus(undefined); setPlanSection("cities"); setPlanOpen(value => !value); }} aria-pressed={planOpen}>План</Button>
+          <WorldPreferences />
           <MapLegend />
           <ProfilePresence initial={bootstrap.user.name.slice(0, 1).toUpperCase()} online={online} onOpen={() => openSettings("account")} />
         </nav>
@@ -482,7 +510,7 @@ export function App() {
                 }}
               />
             : effectiveMapMode === "COUNTRY" && bootstrap.stats.cities > 0
-              ? <CountryOverviewCanvas
+              ? <CountryOverviewCanvas transportRevision={transportRevision}
                 wheelNavigation={wheelNavigation}
                 key={bootstrap.country.id}
                 countryId={bootstrap.country.id}
@@ -518,7 +546,7 @@ export function App() {
       </Suspense>
       {bootstrap.stats.cities > 0 && <div aria-hidden={effectiveMapMode !== "CITY"} style={{ position:"absolute", inset:0, visibility:effectiveMapMode === "CITY" ? "visible" : "hidden", pointerEvents:effectiveMapMode === "CITY" ? "auto" : "none" }}>
         <Suspense fallback={<div className="app-loading" role="status">Готовим город…</div>}>
-          <WorldCanvas active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
+          <WorldCanvas transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setPlanFocus({ cityId: activeCity.id, districtId }); setPlanSection("cities"); setPlanOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
                 }} wheelNavigation={wheelNavigation} onFatalError={(message) => {
@@ -544,7 +572,15 @@ export function App() {
       }} />
       {mapTransition && <MapLevelTransition transition={mapTransition} />}
       {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
-      {planOpen && <PlanDrawer bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => {
+      <WorldDigest key={`${bootstrap.user.id}:${countryId}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} onTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString()); }} />
+      {effectiveMapMode === "CITY" && dependencyTask?.scope === dependencyScope && <MapDependencies key={`${dependencyScope}:${dependencyTask.id}`} countryId={bootstrap.country.id} taskId={dependencyTask.id} scope={dependencyScope} revision={attentionRevision} onChange={setDependencyData} onClose={() => { setDependencyTask(undefined); setDependencyData({ scope: "" }); }} />}
+      {effectiveMapMode === "CITY" && activeCity && <button className="city-development-toggle" onClick={() => setDevelopmentOpen(value => !value)} aria-expanded={developmentOpen}>Развитие</button>}
+      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <Suspense fallback={<div className="city-development-panel" role="status">Загрузка…</div>}><CityDevelopmentPanel key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} /></Suspense>}
+      {effectiveMapMode === "CITY" && activeCity && <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} />}
+      {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
+        setPlanFocus({ cityId: activeCity.id, districtId }); setPlanSection("cities"); setPlanOpen(true);
+      }} />}
+      {planOpen && <PlanDrawer key={`${countryId}:${planFocus?.districtId ?? "general"}`} initialFocus={planFocus} bootstrap={bootstrap} refreshToken={revision} initialSection={planSection} onClose={() => setPlanOpen(false)} onCityFocus={(city) => {
         setPlanOpen(false);
         void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
           const scene = await loadCityScene(bootstrap.country.id, city.id, bootstrap.country.worldVersion);
@@ -560,7 +596,7 @@ export function App() {
       }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
     </section>
 
-    {selectedTask && <Suspense fallback={<TaskModalFallback />}><TaskModal key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} canEdit={bootstrap.countryRole !== "VIEWER"} onTransferred={task => setFocusTask({ origin: task.origin, token: Date.now() })} onClose={closeTask} /></Suspense>}
+    {selectedTask && <Suspense fallback={<TaskModalFallback />}><TaskModal key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} canEdit={bootstrap.countryRole !== "VIEWER"} onTransferred={task => setFocusTask({ origin: task.origin, token: Date.now() })} onClose={closeTask} /></Suspense>}
     {selectedSite?.countryId === bootstrap.country.id && <SiteHistoryModal feature={selectedSite.feature} onClose={closeSite} onTaskOpen={taskId => {
       closeSite(); void openCanonicalTask(new URLSearchParams({ id: taskId }).toString());
     }} />}

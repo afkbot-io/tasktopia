@@ -4,6 +4,7 @@ import { BLOCK_WORLD_GENERATOR_VERSION, type BlockSlotKind, type BlockWorldBound
 import { BLOCK_MODULE_CELLS, blockSlots, type BlockSlot } from "../../shared/block-templates";
 import { auditSemanticRoadNetwork } from "../../shared/semantic-road";
 import { isBuildableTerrain, terrainAt } from "../../shared/world-terrain";
+import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 import type { AppService } from "../app-service";
 import type { Db } from "../db";
 import { readActiveBlockLayout } from "./active-block-layout";
@@ -152,6 +153,8 @@ type TaskRow = { id: string; city_id: string; district_id: string; status: TaskS
 
 /** Audit only canonical layouts and product records; never old spatial tables. */
 export async function auditWorld(db: Db, _service: AppService, countryId: string): Promise<WorldAuditResult> {
+  const country = await db.prepare("SELECT seed,terrain_profile_json FROM countries WHERE id=?").get<{ seed: number; terrain_profile_json: unknown }>(countryId);
+  const terrainProfile = parseWorldTerrainProfile(country?.terrain_profile_json);
   const [cities, districts, tasks] = await Promise.all([
     db.prepare("SELECT id,name,bounds_json FROM cities_v3 WHERE country_id=? ORDER BY created_at,id").all<CityRow>(countryId),
     db.prepare("SELECT d.id,d.city_id,d.name,d.archetype,d.status FROM districts_v3 d JOIN cities_v3 c ON c.id=d.city_id WHERE c.country_id=? ORDER BY d.created_at,d.id").all<DistrictRow>(countryId),
@@ -192,7 +195,7 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
     layouts.push(layout);
     const expectations = cityTasks.map((t) => ({ id: t.id, districtId: t.district_id, constructionStage: TASK_STAGE[t.status],
       kind: taskKind(t.visual_kind, t.visual_asset_key), buildingFamily: t.building_type }));
-    violations.push(...auditBlockLayout(layout, expectations, (point) => isBuildableTerrain(terrainAt(layout.seed, point.x, point.y).terrain)));
+    violations.push(...auditBlockLayout(layout, expectations, (point) => isBuildableTerrain(terrainAt(layout.seed, point.x, point.y, terrainProfile).terrain)));
     const roads = rasterizeBlockRoads(layout.roadNetwork); const roadKeys = new Set(roads.map(key));
     metrics.roads += roads.length; metrics.blocks += layout.blocks.length; metrics.roadSegments += layout.roadNetwork.segments.length;
     metrics.worldFeatures += layout.siteMarkers.length;
@@ -227,7 +230,6 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
       && left.bounds.minY <= right.bounds.maxY && left.bounds.maxY >= right.bounds.minY) violations.push({ code: "CITY_OVERLAP", message: `${left.cityId} intersects ${right.cityId}` });
   }
   const snapshot = await readCountryRoads(db, countryId);
-  const country = await db.prepare("SELECT seed FROM countries WHERE id=?").get<{ seed: number }>(countryId);
   if (!snapshot && layouts.some(layout => layout.blocks.length > 0)) {
     violations.push({ code: "COUNTRY_ROADS_REGENERATION_REQUIRED", message: countryId });
   } else if (snapshot && country) {
@@ -236,6 +238,7 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
     }
     try {
       const validated = planIntercityRoads({ countryId, seed: Number(country.seed), validateOnly: true, allowBridges:true,
+        terrainProfile,
         cities: layouts.filter(layout => layout.blocks.length > 0).map(layout => ({ id: layout.cityId, nodes: layout.roadNetwork.nodes, blocks: layout.blocks })),
         protectedSites: await permanentSiteBounds(db, countryId, true), previous: snapshot.plan });
       if (JSON.stringify(validated.components) !== JSON.stringify(snapshot.plan.components)) throw new Error("Stored road components differ from actual connectivity");

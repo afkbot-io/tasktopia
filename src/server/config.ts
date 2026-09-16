@@ -24,6 +24,7 @@ const schema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   UPLOAD_DIR: z.string().default("data/uploads"),
   MAX_ATTACHMENT_BYTES: z.coerce.number().int().min(1024).max(50 * 1024 * 1024).default(10 * 1024 * 1024),
+  CITY_SCENE_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1000).default(30),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(5).max(1000).default(10),
   REGISTRATION_ENABLED: z.enum(["true", "false"]).optional(),
   VAPID_SUBJECT: z.preprocess((value) => value === "" ? undefined : value, z.string().regex(/^(mailto:|https:\/\/)/).optional()),
@@ -50,6 +51,7 @@ export const config = {
   uploadDir: raw.UPLOAD_DIR,
   maxAttachmentBytes: raw.MAX_ATTACHMENT_BYTES,
   authRateLimitMax: raw.AUTH_RATE_LIMIT_MAX,
+  citySceneRateLimitMax: raw.CITY_SCENE_RATE_LIMIT_MAX,
   registrationEnabled: raw.REGISTRATION_ENABLED === undefined
     ? raw.NODE_ENV !== "production"
     : raw.REGISTRATION_ENABLED === "true",

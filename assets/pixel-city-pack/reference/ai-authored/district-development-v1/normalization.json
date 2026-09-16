@@ -1,0 +1,74 @@
+{
+  "active": {
+    "sourceSha256": "ee25ffe4d2ea416feea09da11232a5cf98b4b250240b2d925713412820e58102",
+    "runtimeSha256": "26f1497ab509a6283139ee989413090e590be5d3d86cecc5fc66c12637dbeeac",
+    "sourceFrame": [
+      431,
+      196,
+      862,
+      1058
+    ],
+    "nativeSize": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "opaqueBounds": [
+      4,
+      0,
+      12,
+      16
+    ]
+  },
+  "planned": {
+    "sourceSha256": "78fb776a0f5a6416928e26be48bb4064e664c7e9ecffe638b22b08aa42038cd4",
+    "runtimeSha256": "fc443920980dd41389bd42447327cedec9f1eaccc5c513c1e6025f76465a8519",
+    "sourceFrame": [
+      431,
+      196,
+      862,
+      1058
+    ],
+    "nativeSize": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "opaqueBounds": [
+      4,
+      5,
+      11,
+      16
+    ]
+  },
+  "active-frame2": {
+    "sourceSha256": "6bf2a1a98fa2df173521e3964b614554f1fda15f5118ee4ca6edd48d262a14ee",
+    "runtimeSha256": "582d8a819806109aa05f390c5e4f3cc3a6ec503ad83c95893733ba3bab5d9890",
+    "sourceFrame": [
+      431,
+      196,
+      862,
+      1058
+    ],
+    "nativeSize": [
+      16,
+      16
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "opaqueBounds": [
+      4,
+      0,
+      12,
+      16
+    ]
+  }
+}

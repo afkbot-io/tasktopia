@@ -1,9 +1,12 @@
+import { countryPortReservations } from "./port-reservations";
+import { countryRailwayReservations } from "./city-railway-store";
 import { createHash } from "node:crypto";
 import type { CityBlockV1 } from "../../shared/block-world";
 import type { SemanticRoadNode } from "../../shared/semantic-road";
 import { transaction, type Db } from "../db";
 import { permanentSiteBounds } from "./permanent-task-sites";
 import { planIntercityRoads, type IntercityRoadPlan } from "./intercity-road-planner";
+import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 
 export type CountryRoadSnapshot = { revision: number; topologyHash: string; plan: IntercityRoadPlan };
 type StoredRow = { revision: number; topology_hash: string; plan_json: IntercityRoadPlan };
@@ -24,7 +27,7 @@ export async function readCountryRoads(db: Db, countryId: string): Promise<Count
  * The injected pure planner is a test seam, not a production fallback. */
 export async function synchronizeCountryRoads(db: Db, countryId: string, planner = planIntercityRoads): Promise<CountryRoadSnapshot> {
   return transaction(db, async () => {
-    const country = await db.prepare("SELECT seed FROM countries WHERE id=? FOR UPDATE").get<{ seed: number }>(countryId);
+    const country = await db.prepare("SELECT seed,terrain_profile_json FROM countries WHERE id=? FOR UPDATE").get<{ seed: number; terrain_profile_json: unknown }>(countryId);
     if (!country) throw new Error("Unknown intercity road country");
     const heads = await db.prepare(`SELECT l.city_id,r.checksum FROM city_layouts_v1 l
       JOIN road_networks_v1 r ON r.layout_id=l.id WHERE l.country_id=? AND l.status='ACTIVE' ORDER BY l.city_id`)
@@ -45,8 +48,9 @@ export async function synchronizeCountryRoads(db: Db, countryId: string, planner
     // City deletion explicitly removes its incident routes, not surviving ones.
     const retained = previous?.plan.routes.filter(route => ids.has(route.fromCityId) && ids.has(route.toCityId));
     const plan = planner({ countryId, seed: Number(country.seed), allowBridges:true,
+      terrainProfile: parseWorldTerrainProfile(country.terrain_profile_json),
       cities: developed.map(row => ({ id: row.city_id, nodes: row.nodes_json, blocks: row.blocks })),
-      protectedSites: await permanentSiteBounds(db, countryId, true),
+      protectedSites: [...await permanentSiteBounds(db, countryId, true),...await countryRailwayReservations(db,countryId),...await countryPortReservations(db,countryId)],
       ...(previous ? { previous: { countryId, seed: previous.plan.seed, routes: retained! } } : {}),
     });
     const revision = (previous?.revision ?? 0) + 1;

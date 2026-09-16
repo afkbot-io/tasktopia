@@ -4,6 +4,7 @@ import type { CityTerrainPadding } from "./city-terrain-padding";
 import { expandCellRuns, expandRoadRuns, expandSurfaceRuns } from "../shared/world-cell-runs";
 import { generateWorldDecorations } from "../shared/world-decorations";
 import { terrainAt } from "../shared/world-terrain";
+import type { WorldTerrainProfile } from "../shared/world-terrain-profile";
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 const EMPTY: readonly DecorationDto[] = [];
@@ -13,7 +14,8 @@ export class CityTreePadding {
   private readonly residents;
   private readonly cache = new Map<string, readonly DecorationDto[]>();
   constructor(private readonly scene: CityRoadPaddingScene, private readonly seed: number,
-    private readonly terrain: CityTerrainPadding, private readonly roads: CityRoadPadding) {
+    private readonly terrain: CityTerrainPadding, private readonly roads: CityRoadPadding,
+    private readonly terrainProfile?: WorldTerrainProfile) {
     this.residents = new Map(scene.chunks.map(chunk => [`${chunk.chunkX},${chunk.chunkY}`, chunk]));
   }
   get(x: number, y: number): readonly DecorationDto[] {
@@ -50,7 +52,7 @@ export class CityTreePadding {
     const context = new Map(material.chunk.terrain.map(cell => [key(cell), cell]));
     const sample = (cell: Cell): TerrainCellDto => {
       const cached = context.get(key(cell)); if (cached) return cached;
-      const value = { ...cell, ...terrainAt(this.seed, cell.x, cell.y) }; context.set(key(cell), value); return value;
+      const value = { ...cell, ...terrainAt(this.seed, cell.x, cell.y, this.terrainProfile) }; context.set(key(cell), value); return value;
     };
     for (let row = bounds.minY; row <= bounds.maxY; row++) for (let column = bounds.minX; column <= bounds.maxX; column++) sample({ x: column, y: row });
     const trees = generateWorldDecorations(this.seed, material.chunk.terrain, blocked, [...surfaces.values()], [], [], [], [...context.values()],

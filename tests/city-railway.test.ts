@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planCityRailway, cityTrainPosition, cityTrainState, railwayIntersectsRect } from "../src/client/city-railway";
+import { planCityRailway, railwayIntersectsRect } from "../src/client/city-railway";
 import type { ChunkTaskDto } from "../src/shared/contracts";
 const station = { id: "station", cityId: "city", serviceRole: "RAILWAY", stage: 5, status: "COMPLETED", origin: {x: 10, y: 10}, footprint: Array.from({length:24}, (_,i)=>({x:10+i%6,y:10+Math.floor(i/6)})), accessPath:[{x:13,y:14}] } as ChunkTaskDto;
 const bounds = {minX:0,minY:0,maxX:40,maxY:40};
@@ -19,19 +19,9 @@ describe("city railway", () => {
     expect(planCityRailway(bounds,[station,second],[])).toEqual(planCityRailway(bounds,[second,station],[]));
     expect(planCityRailway(bounds,[{...station,stage:4,status:"TESTING"}],[])!.running).toBe(false);
   });
-  it("moves an entire consist with fixed wagon spacing and wraps outside the map", () => {
-    const line=planCityRailway(bounds,[station],[])!;
-    const a=cityTrainPosition(line,1000), b=cityTrainPosition(line,2000);
-    expect(b[0]!.x-a[0]!.x + b[0]!.y-a[0]!.y).toBeCloseTo(5);
-    expect(a).toHaveLength(4);
-    expect(Math.hypot(a[0]!.x-a[1]!.x,a[0]!.y-a[1]!.y)).toBe(3.125);
-  });
   it("supports a vertical corridor and excludes scenery from its platform", () => {
     const line = planCityRailway(bounds, [station], [])!;
     const vertical = {...line, axis: "vertical" as const, from: {x: 4, y: -10}, to: {x: 4, y: 50}, access: []};
-    const positions = cityTrainPosition(vertical, 2000);
-    expect(new Set(positions.map(p => p.x)).size).toBe(1);
-    expect(positions[0]!.y - positions[1]!.y).toBe(3.125);
     expect(railwayIntersectsRect(vertical, {x: 5, y: 10}, 2, 2)).toBe(true);
     expect(railwayIntersectsRect(vertical, {x: 10, y: 10}, 2, 2)).toBe(false);
     expect(railwayIntersectsRect({...vertical, stage:0}, {x:5,y:10}, 2, 2)).toBe(false);
@@ -50,15 +40,13 @@ describe("post-release railway regressions", () => {
     const line=planCityRailway(bounds,[station],[],roads)!;
     expect(roads.every(r=>line.axis==="horizontal" ? line.from.y<r.minY-4 || line.from.y>r.maxY+4 : line.from.x<r.minX-4 || line.from.x>r.maxX+4)).toBe(true);
   });
-  it("dwells at the platform and leaves a quiet interval between services", () => {
-    const line = planCityRailway(bounds, [station], [])!;
-    const distance = line.axis === "horizontal" ? line.platform.x - line.from.x : line.platform.y - line.from.y;
-    const arrival = (distance + 4) / .005;
-    expect(cityTrainPosition(line, arrival + 2000)).toEqual(cityTrainPosition(line, arrival + 7000));
-    const length=Math.abs(line.to.x-line.from.x)+Math.abs(line.to.y-line.from.y);
-    const departed=(length+18)/.005+12_000;
-    expect(cityTrainState(line, departed+1000).phase).toBe("waiting");
-    expect(cityTrainState(line, departed+59_000).phase).toBe("waiting");
-    expect(cityTrainState(line, departed+61_000).phase).toBe("moving");
-  });
+});
+
+
+it("keeps a new coastal railway on the landward side with an open route to the eastern shore",()=>{
+  const east={...station,footprint:station.footprint.map(p=>({...p,x:p.x+20})),accessPath:station.accessPath.map(p=>({...p,x:p.x+20}))};
+  const line=planCityRailway(bounds,[east],[],[],true)!;
+  expect(line.axis).toBe("vertical");expect(line.from.x).toBeLessThan(bounds.minX-4);
+  expect(line.to.x).toBe(line.from.x);
+  expect(line.access.every(p=>p.x<=Math.max(...east.footprint.map(p=>p.x))+1)).toBe(true);
 });

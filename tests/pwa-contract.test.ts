@@ -158,6 +158,17 @@ describe("generated worker CDN offline boundary", () => {
 });
 
 describe("PWA public/private cache boundary", () => {
+  it("leaves revocable share previews to the server even during offline navigation", async () => {
+    const path = "/share/task/" + "a".repeat(43);
+    const platform = workerPlatform(renderServiceWorker("share", ["/", path]));
+    await platform.install();
+    expect(platform.entries.has("https://tasktopia.online" + path)).toBe(false);
+    platform.offline();
+    const request = new Request("https://tasktopia.online" + path);
+    Object.defineProperty(request, "mode", { value: "navigate" });
+    expect(await platform.fetch(request)).toBeUndefined();
+  });
+
   it.each(["/api/bootstrap", "/api/countries/x/cities/y/scene", "/mcp", "/socket.io/", "/health"])(
     "never caches %s",
     (path) => expect(isPrivateAppPath(path)).toBe(true),

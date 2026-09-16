@@ -1749,6 +1749,146 @@
     ]
   },
   {
+    "key": "district-development-active",
+    "sheet": "ai-authored/district-development-v1/sources/active.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ]
+  },
+  {
+    "key": "district-development-planned",
+    "sheet": "ai-authored/district-development-v1/sources/planned.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_STREET_FURNITURE_FRONTAL_TOP",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ]
+  },
+  {
+    "key": "compact-construction-worker-north-0",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "compact-construction-worker-east-0",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "compact-construction-worker-south-0",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "compact-construction-worker-west-0",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "compact-construction-worker-north-1",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "compact-construction-worker-east-1",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "compact-construction-worker-south-1",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "compact-construction-worker-west-1",
+    "sheet": "ai-authored/construction-worker-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_V5_MICRO_DIRECTIONAL",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
     "key": "compact-park-fountain-stage-3",
     "label": "Фонтан · стадия 3",
     "sheet": "ai-authored/compact-park-fountain-v1/sources/stage-3.png",

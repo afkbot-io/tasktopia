@@ -1,3 +1,4 @@
+import { preferredProfileHomes, type BuildingProfile } from "./building-profiles";
 import { BUILDING_CATALOG } from "./catalog";
 import { BLOCK_SERVICE_ROLES, type BlockServiceRole } from "./block-world";
 
@@ -44,12 +45,13 @@ export function compactServiceFamily(role: BlockServiceRole, width: number, heig
 }
 
 /** Only used for a newly occupied slot. Persist the result in slotFamilies. */
-export function compactHomeFamily(width: number, height: number, entropy: number, usage?: ReadonlyMap<string, number>): string | undefined {
+export function compactHomeFamily(width: number, height: number, entropy: number, usage?: ReadonlyMap<string, number>, profile?: BuildingProfile): string | undefined {
   const candidates = BUILDING_CATALOG.filter(entry => entry.category === "HOUSE" && !entry.serviceRole
     && compactFamilyMatchesFootprint(entry.key, width, height)).map(entry => entry.key).sort();
   if (!candidates.length) return undefined;
-  const minimum = Math.min(...candidates.map(key => usage?.get(key) ?? 0));
-  const leastUsed = candidates.filter(key => (usage?.get(key) ?? 0) === minimum);
+  const pool = preferredProfileHomes(candidates, profile);
+  const minimum = Math.min(...pool.map(key => usage?.get(key) ?? 0));
+  const leastUsed = pool.filter(key => (usage?.get(key) ?? 0) === minimum);
   return leastUsed[entropy % leastUsed.length];
 }
 

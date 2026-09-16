@@ -19,7 +19,8 @@ export type CountryCityMiniature = {
   cellSize: number;
   columns: number;
   rows: number;
-  blocks: Array<{ id: string; districtId: string; x: number; y: number; family: string }>;
+  blocks: Array<{ id: string; districtId: string; x: number; y: number; family: string; stage?: number }>;
+  transport?: Array<{taskId:string;x:number;y:number;family:string;stage:number}>;
   /** Only completed task-linked airports, never synthetic city markers. */
   airports: Array<{ taskId: string; x: number; y: number }>;
   stations?: Array<{ taskId: string; x: number; y: number }>;
@@ -35,8 +36,12 @@ export type CountryOverviewDto = {
   countryId: string; revision: string; terrainSeed: number; bounds: Rect;
   geography: { columns: number; rows: number; cellSize: number; topology: "SQUARE_4"; terrainCodes: string; territoryCodes: string };
   cities: CountryOverviewCityDto[];
+  seaConnections?: import("./city-scene-contract").SeaConnectionDto[];
+  railConnections?: import("./city-scene-contract").CityRailConnectionDto[];
   /** Logical flight connections only; never rendered as inter-city roads. */
-  connections: Array<{ fromCityId: string; toCityId: string }>;
+  connections: Array<{ fromCityId: string; toCityId: string; fromAirportId?: string; toAirportId?: string;
+    /** A foreign endpoint is beyond this view; local endpoints use real miniatures. */
+    fromPoint?: Cell; toPoint?: Cell; fromCityName?: string; toCityName?: string }>;
   /** Cartographic read model of actual world roads, separate from flights.
    * corridorCells are indices in the inherited geography grid, not CITY tiles. */
   groundRoads: {

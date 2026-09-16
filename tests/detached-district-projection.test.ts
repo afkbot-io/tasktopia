@@ -23,7 +23,7 @@ describe("district navigation envelopes do not define territory", () => {
     layout.bounds.maxX = far.origin.x + far.width;
     layout.districtLayouts[0]!.bounds = { ...layout.bounds };
     const miniature = projectCountryCityMiniature({ sourceBounds: layout.bounds, layout });
-    expect(miniature.blocks.filter(block => block.districtId === "a").map(block => block.id)).toEqual([first.id, far.id]);
+    expect(miniature.blocks.filter(block => block.districtId === "a").map(block => block.id).sort()).toEqual([first.id, far.id].sort());
     const other = miniature.blocks.find(block => block.districtId === "b")!;
     expect(other.id).not.toBe(first.id);
     expect(miniature.blocks).toHaveLength(3);

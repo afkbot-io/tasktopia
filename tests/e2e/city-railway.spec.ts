@@ -1,3 +1,5 @@
+import { transportSchedule,TRANSPORT_EPOCH } from "../../src/shared/transport-schedule";
+import { planCityRailway } from "../../src/client/city-railway";
 import { expect, test } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 
@@ -13,6 +15,11 @@ for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage}
       if (task.serviceRole !== "AIRPORT" && task.serviceRole !== "RAILWAY") continue;
       task.stage = stage;
       task.status = stage === 5 ? "COMPLETED" : "IN_PROGRESS";
+    }
+    if(scene.railway){
+      scene.railway={...scene.railway,stage,running:stage===5};
+      const stationId=scene.railway.stationId,schedule=transportSchedule("RAIL",stationId,"z-other-station");
+      scene.railConnections=stage===5?[{id:schedule.id,fromStationId:stationId,toStationId:"z-other-station",fromCityId:scene.city.id,toCityId:"other-city"}]:[];
     }
     await route.fulfill({ response, json: scene });
   });
@@ -36,7 +43,26 @@ for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage}
 
 test("completed city station has a moving locomotive and three coupled wagons", async ({ page }, testInfo) => {
   test.skip(process.env.E2E_MAP_LOADING_FIXTURE !== "true", "Dedicated local fixture with completed transport services");
-  await page.clock.setFixedTime(new Date("2026-09-09T09:00:00Z"));
+  // Supply the authoritative clock at the HTTP boundary, not the device clock.
+  await page.route("**/api/**", async route => {
+    const response = await route.fetch();
+    const headers = { ...response.headers() };
+    delete headers["x-tasktopia-server-time"];
+    if (/\/cities\/[^/]+\/scene(?:\?|$)/.test(route.request().url())) {
+      const scene = await response.json() as CitySceneDto;
+      const tasks = [...new Map([...scene.chunks.flatMap(c => c.tasks), ...scene.completedDistrictSnapshots.flatMap(s => s.tasks)].map(t => [t.id,t])).values()];
+      const sites = [...new Map(scene.chunks.flatMap(c => c.plannedSites ?? []).map(s => [s.id,s])).values()];
+      const roads = scene.chunks.flatMap(c => c.roadRuns.map(r => ({minX:Math.min(r.start.x,r.end.x),maxX:Math.max(r.start.x,r.end.x),minY:Math.min(r.start.y,r.end.y),maxY:Math.max(r.start.y,r.end.y)})));
+      const line = planCityRailway(scene.city.bounds,tasks,sites,roads)!;
+      const schedule=transportSchedule("RAIL","0-other-station",line.stationId);
+      scene.railway=line;
+      scene.railConnections=[{id:schedule.id,fromStationId:"0-other-station",toStationId:line.stationId,fromCityId:"other-city",toCityId:scene.city.id}];
+      headers["cache-control"] = "private, no-store";
+      headers["x-tasktopia-server-time"] = String(TRANSPORT_EPOCH-schedule.offsetMs+schedule.dwellMs+schedule.travelMs-4000);
+      await route.fulfill({response,headers,json:scene});return;
+    }
+    await route.fulfill({ response, headers });
+  });
   const errors:string[]=[];
   page.on("pageerror",e=>errors.push(e.message));
   await page.goto("/");

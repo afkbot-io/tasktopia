@@ -47,7 +47,14 @@ export function createCountryWorldProjection(geography: CountryGeography, countr
   }
   return (source: PlanetPoint): { point: PlanetPoint; macroCellId: string; macro: { q: number; r: number } } | null => {
     if (!country.cells.length) return null;
-    const projected = projectPlanetWorldPoint(country, source, country.cells, .5);
+    let projected = projectPlanetWorldPoint(country, source, country.cells, .5);
+    const city = country.cities.find(city => city.center.x === source.x && city.center.y === source.y);
+    const fixed = city && country.cityAnchors[city.id];
+    if (fixed) {
+      const point = { x:fixed.x / 8, y:fixed.y / 8 };
+      const cell = country.cells.find(cell => cell.q === Math.floor(point.x) && cell.r === Math.floor(point.y));
+      if (cell) projected = { cell, point };
+    }
     const rect = macroRects.get(projected.cell.id);
     if (!rect) return null;
     return { point: {

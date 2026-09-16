@@ -1,3 +1,18 @@
+import { buildPlanetSeaRoutes } from "../shared/planet-port-transport";
+import { projectForeignSea, projectForeignRail } from "./world/country-foreign-rail";
+import { internationalAirConnections } from "./world/international-air-connections";
+import { transportOffmapPoint } from "../shared/transport-offmap-point";
+import { cityDevelopment } from "./city-development-read";
+import { cityTransportDevelopment } from "./city-transport-development";
+import { buildPlanetRailways } from "../shared/planet-surface-transport";
+import { freezeMissingCountryRailways } from "./world/active-block-layout";
+import { intercityRoadCorridors as railwayRoadObstacles } from "../shared/intercity-roads";
+import { countryPortReservations } from "./world/port-reservations";
+import { readCityRailway, railwayForLayout, countryRailwayReservations } from "./world/city-railway-store";
+import { countryAirNetwork } from "../shared/air-network";
+import { readOrExtendPersonalPlanet } from "./personal-planet-geography";
+import { visiblePersonalPlanet } from "../shared/planet-geography";
+import { readPlanetMiniatures } from "./planet-miniature-read";
 import { createHash,randomUUID } from "node:crypto";
 import { mkdir,unlink,writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -63,6 +78,7 @@ import { PLANET_ATLAS_SCHEMA_VERSION,type PlanetAtlasDto } from "../shared/plane
 import { compactCellRuns,compactRoadRuns,compactSurfaceRuns } from "../shared/world-cell-runs";
 import { materializeChunkPayload } from "../shared/world-chunk-payload";
 import { hashCoordinate,isBuildableTerrain,terrainAt } from "../shared/world-terrain";
+import { parseWorldTerrainProfile } from "../shared/world-terrain-profile";
 import { findCompactCitySite } from "./world/compact-city-site";
 import { freezePermanentSiteGeometry, permanentSiteBounds, readPermanentSiteFeatures } from "./world/permanent-task-sites";
 import { listAccessibleCountries,registerUser,type AuthUser,type RegistrationInput } from "./auth";
@@ -75,7 +91,7 @@ import { blockTaskGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchron
 import { readCountryRoads, synchronizeCountryRoads } from "./world/intercity-road-store";
 import { citySceneIntercityRoads, intercityRoadCorridors, intercityRoadRasterNetwork } from "../shared/intercity-roads";
 import { projectCountryRoads } from "./world/country-road-projection";
-import { rasterizeBlockRoads,BlockPlacementError,BlockReservationConflictError,UniqueBuildingConflictError } from "./world/block-layout-compiler";
+import { rasterizeBlockRoads,BlockPlacementError,BlockReservationConflictError,UniqueBuildingConflictError,PortPlacementError } from "./world/block-layout-compiler";
 import { chunkPayloadContentHash } from "./world/chunk-payload-hash";
 import { buildDecorationHardHalo } from "./world/decoration-halo";
 import {
@@ -202,6 +218,7 @@ function taskDto(row: Row): TaskDto {
     platformType: String(row.platform_type) as TaskDto["platformType"],
     origin,
     footprint: json<Cell[]>(row.footprint_json),
+    ...(row.site_bounds_json ? { siteBounds: json<Rect>(row.site_bounds_json) } : {}),
     entrance: row.entrance_x == null || row.entrance_y == null
       ? fallbackEntrance
       : { x: Number(row.entrance_x), y: Number(row.entrance_y) },
@@ -377,6 +394,7 @@ export class AppService {
     } catch (error) {
       if (error instanceof UniqueBuildingConflictError) throw new DomainError("INVALID_INPUT", error.message);
       if (error instanceof BlockReservationConflictError) throw new DomainError("INFRASTRUCTURE_RESERVATION_CONFLICT", error.message);
+      if (error instanceof PortPlacementError) throw new DomainError("PORT_UNAVAILABLE", error.message);
       if (error instanceof BlockPlacementError) throw new DomainError("PLACEMENT_UNAVAILABLE", "Для нового квартала нет связанной свободной площадки. Создайте другой город или пересоберите планировку.");
       if (error instanceof CitySceneCapacityError) throw new DomainError("CAPACITY_EXCEEDED", "Город достиг предела размера карты. Создайте новый город для дальнейшего строительства.");
       throw error;
@@ -399,7 +417,7 @@ export class AppService {
         service_role: slot.serviceRole,
         visual_asset_key: row.visual_kind === "BUILDING" ? slot.buildingFamily ?? row.building_type : row.visual_asset_key,
         origin_x: slot.origin.x, origin_y: slot.origin.y,
-        footprint_json: slot.footprint, entrance_x: slot.entrance.x, entrance_y: slot.entrance.y,
+        footprint_json: slot.footprint, site_bounds_json: slot.siteBounds, entrance_x: slot.entrance.x, entrance_y: slot.entrance.y,
         access_json: slot.accessPath, access_kind: "PATH" });
     });
   }
@@ -419,6 +437,7 @@ export class AppService {
       && payload.chunkX === chunkX && payload.chunkY === chunkY && payload.lod === lod
       && payload.payloadVersion === 2 && payload.generatorVersion === "block-v1"
       && Array.isArray(payload.blockPlaques)
+      && payload.tasks.every(task => Boolean(task.siteBounds))
       && payload.decorationContext?.treeGeometryVersion === 7
       && payload.decorationContext.lightingVersion === 1
       && Array.isArray(payload.decorationContext.surfaceHaloRuns));
@@ -461,12 +480,16 @@ export class AppService {
   }
 
   private storeChunk(key: string, chunk: ChunkPayloadDto): ChunkPayloadDto {
-    this.chunkCache.set(key, chunk);
-    while (this.chunkCache.size > AppService.CHUNK_CACHE_LIMIT) {
-      const oldest = this.chunkCache.keys().next().value as string | undefined;
-      if (!oldest) break;
-      this.chunkCache.delete(oldest);
-    }
+    onTransactionCommit(() => {
+      const countryId = key.split(":")[0]!;
+      if ((this.knownWorldVersions.get(countryId) ?? 0) > chunk.publishedVersion) return;
+      this.chunkCache.set(key, chunk);
+      while (this.chunkCache.size > AppService.CHUNK_CACHE_LIMIT) {
+        const oldest = this.chunkCache.keys().next().value as string | undefined;
+        if (!oldest) break;
+        this.chunkCache.delete(oldest);
+      }
+    });
     return chunk;
   }
 
@@ -698,6 +721,7 @@ export class AppService {
     const countryRow = await this.countryRow(user.countryId);
     const worldManifest: BootstrapDto["worldManifest"] = {
       terrainSeed: Number(countryRow.seed),
+      terrainProfile: parseWorldTerrainProfile(countryRow.terrain_profile_json),
       generatorVersion: country.generatorVersion,
       assetRevision: ASSET_REVISION,
       worldRevision: country.worldVersion,
@@ -725,10 +749,32 @@ export class AppService {
     };
   }
 
+  private async readWorldSnapshot<T>(read: () => Promise<T>): Promise<T> {
+    // Composed callers own their transaction; standalone reads share one MVCC
+    // snapshot across geography, geometry, statistics and transport readiness.
+    if (isTransactionActive()) return read();
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await transaction(this.db, async () => {
+          await this.db.exec("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+          return read();
+        });
+      } catch (error) {
+        const stale = error instanceof StaleChunkBuildError;
+        const serialization = Boolean(error && typeof error === "object" && "code" in error && error.code === "40001");
+        if (attempt >= 2 || (!stale && !serialization)) throw error;
+      }
+    }
+  }
+
   async getPlanetAtlas(userId: string): Promise<PlanetAtlasDto> {
+    return this.readWorldSnapshot(()=>this.readPlanetAtlas(userId));
+  }
+
+  private async readPlanetAtlas(userId: string): Promise<PlanetAtlasDto> {
     const rows = await this.db.prepare(`
       WITH accessible AS (
-        SELECT c.id, c.name, c.seed, c.world_version, c.created_at
+        SELECT c.id, c.name, c.seed, c.terrain_profile_json, c.world_version, c.created_at
         FROM country_members membership
         JOIN countries c ON c.id = membership.country_id
         WHERE membership.user_id = ?
@@ -757,7 +803,7 @@ export class AppService {
         JOIN tasks_v3 task ON task.city_id = city.id
         GROUP BY city.country_id
       )
-      SELECT country.id, country.name, country.seed, country.world_version, country.created_at,
+      SELECT country.id, country.name, country.seed, country.terrain_profile_json, country.world_version, country.created_at,
         COALESCE(city_stats.city_count, 0) AS city_count,
         city_stats.min_x, city_stats.min_y, city_stats.max_x, city_stats.max_y,
         COALESCE(district_stats.district_count, 0) AS district_count,
@@ -770,7 +816,7 @@ export class AppService {
       LEFT JOIN task_stats ON task_stats.country_id = country.id
       ORDER BY country.created_at, country.id
     `).all(userId) as Row[];
-    const clusterRows = await this.db.prepare(`SELECT city.country_id,city.id,city.center_x,city.center_y,
+    const clusterRows = await this.db.prepare(`SELECT city.country_id,city.id,city.name,city.center_x,city.center_y,
       (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',d.id,'center',jsonb_build_object(
         'x',site.origin_x+site.width/2,'y',site.origin_y+site.height/2)) ORDER BY d.created_at,d.id),'[]')
         FROM districts_v3 d JOIN LATERAL (
@@ -787,22 +833,29 @@ export class AppService {
         JOIN task_placements_v1 p ON p.block_id=b.id AND p.layout_id=l.id
         JOIN tasks_v3 t ON t.id=p.task_id AND t.city_id=city.id AND t.status='COMPLETED'
         WHERE l.city_id=city.id AND l.country_id=city.country_id AND l.status='ACTIVE' AND p.construction_stage=5
-        AND b.parameters_json->'slotRoles'->>p.slot_key IN ('AIRPORT','RAILWAY')) AS airports
+        AND b.parameters_json->'slotRoles'->>p.slot_key IN ('AIRPORT','RAILWAY','PORT')) AS airports
       FROM cities_v3 city JOIN country_members member ON member.country_id=city.country_id
       WHERE member.user_id=? ORDER BY city.created_at,city.id`).all<Row>(userId);
+    const miniatures = await readPlanetMiniatures(this.db, userId);
     const clusters = new Map<string, PlanetAtlasDto["countries"][number]["cities"]>();
     for (const row of clusterRows) {
       const group = clusters.get(String(row.country_id)) ?? [];
-      const infrastructure = json<Array<{ taskId: string; slotKey: string; role?: "AIRPORT" | "RAILWAY"; block: Row }>>(row.airports);
+      const infrastructure = json<Array<{ taskId: string; slotKey: string; role?: "AIRPORT" | "RAILWAY" | "PORT"; block: Row }>>(row.airports);
       const endpoints = (role: "AIRPORT" | "RAILWAY") => infrastructure.filter(item => (item.role ?? "AIRPORT") === role).map(item => ({
         taskId: item.taskId,
         center: transportEndpointFromPlacementRow({ ...item.block, task_id: item.taskId, slot_key: item.slotKey, airport_city_id: row.id }, role).point,
       }));
-      group.push({id:String(row.id),center:{x:Number(row.center_x),y:Number(row.center_y)},districts:json(row.districts),airports:endpoints("AIRPORT"),stations:endpoints("RAILWAY")});
+      const ports = infrastructure.filter(item => item.role === "PORT").flatMap(item => {
+        const parameters = json<{ slotPortPlans?: Record<string, import("../shared/port-site").LocalPortSitePlan> }>(item.block.parameters_json);
+        const plan = parameters.slotPortPlans?.[item.slotKey];
+        return plan?.waterPath.length ? [{ taskId: item.taskId, berth: plan.berth, waterOutlet: plan.waterPath.at(-1)!, stage: 5 as const }] : [];
+      });
+      group.push({ports,id:String(row.id),name:String(row.name),miniature:miniatures.get(String(row.id)) ?? [],center:{x:Number(row.center_x),y:Number(row.center_y)},districts:json(row.districts),airports:endpoints("AIRPORT"),stations:endpoints("RAILWAY")});
       clusters.set(String(row.country_id),group);
     }
     const countries = rows.map((row) => ({
       id: String(row.id), name: String(row.name), seed: Number(row.seed), worldVersion: Number(row.world_version),
+      terrainProfile: parseWorldTerrainProfile(row.terrain_profile_json),
       cityCount: Number(row.city_count), districtCount: Number(row.district_count), buildingCount: Number(row.building_count),
       unfinishedBuildingCount: Number(row.unfinished_building_count),
       progress: Math.max(0, Math.min(100, Number(row.progress))),
@@ -811,10 +864,22 @@ export class AppService {
         minX: Number(row.min_x), minY: Number(row.min_y), maxX: Number(row.max_x), maxY: Number(row.max_y),
       },
     }));
-    const revisionSource = JSON.stringify(countries);
-    const revision = createHash("sha256").update(revisionSource).digest("hex").slice(0, 16);
     const planetSeed = createHash("sha256").update(`tasktopia-planet:${userId}`).digest().readUInt32LE(0) & 0x7fffffff;
-    return { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed, revision, countries };
+    const source: PlanetAtlasDto = { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed, revision: "", countries };
+    const privateGeography=await readOrExtendPersonalPlanet(this.db,userId,source);
+    const geography = visiblePersonalPlanet(privateGeography,source);
+    const sectors=new Set(countries.filter(country=>country.cities.some(city=>city.ports?.length)).map(country=>geography.countries[country.id]?.sector??0));
+    const seaRoutes=[...sectors].sort((a,b)=>a-b).flatMap(sector=>{
+      const blocked=new Set([
+        ...Object.values(privateGeography.countries).filter(country=>(country.sector??0)===sector).flatMap(country=>country.cells),
+        ...privateGeography.coastCells.filter(cell=>(cell.sector??0)===sector),
+      ].map(cell=>`${cell.q},${cell.r}`));
+      return buildPlanetSeaRoutes(projectPlanetAtlas({...source,geography},sector),{blocked,coastOwners:privateGeography.coastOwners});
+    });
+    const canonical = JSON.stringify({countries,geography,seaRoutes}, (_key,value: unknown) => value && typeof value === "object" && !Array.isArray(value)
+      ? Object.fromEntries(Object.keys(value).sort().map(key=>[key,(value as Record<string,unknown>)[key]])) : value);
+    const revision = createHash("sha256").update(canonical).digest("hex").slice(0,16);
+    return { ...source, geography, seaRoutes, revision };
   }
 
   async getWorldManifest(user: AuthUser): Promise<BootstrapDto["worldManifest"]> {
@@ -838,6 +903,7 @@ export class AppService {
       };
     return {
       terrainSeed: Number(row.seed), generatorVersion: country.generatorVersion,
+      terrainProfile: parseWorldTerrainProfile(row.terrain_profile_json),
       assetRevision: ASSET_REVISION, worldRevision: country.worldVersion,
       chunkSize: CHUNK_SIZE, viewBounds,
     };
@@ -889,7 +955,7 @@ export class AppService {
         const rejected:CityDto[]=[];
         let completed=false;
         for(let attempt=0;attempt<8;attempt++) {
-          const center=old && attempt===0 ? city.center : await this.nextCityCenter(countryId,Number(country.seed),[...rebuilt,...rejected]);
+          const center=old && attempt===0 ? city.center : await this.nextCityCenter(countryId,Number(country.seed),[...rebuilt,...rejected],parseWorldTerrainProfile(country.terrain_profile_json));
           await this.db.prepare("UPDATE cities_v3 SET center_x=?,center_y=? WHERE id=?").run(center.x,center.y,city.id);
           try {
             const layout=await this.synchronizeBlocks(countryId,city.id,true);
@@ -965,8 +1031,12 @@ export class AppService {
   }
 
   async getCountryOverview(userId: string, countryId: string): Promise<CountryOverviewDto> {
+    return this.readWorldSnapshot(()=>this.readCountryOverview(userId,countryId));
+  }
+
+  private async readCountryOverview(userId: string, countryId: string): Promise<CountryOverviewDto> {
     const planetAtlas = await this.getPlanetAtlas(userId);
-    const geographyRevision = createHash("sha256").update(`${planetAtlas.revision}:context-3`).digest("hex").slice(0, 16);
+    const geographyRevision = createHash("sha256").update(`${planetAtlas.revision}:context-7-foreign-rail`).digest("hex").slice(0, 16);
     const cacheKey = `${userId}:${countryId}:${geographyRevision}`;
     const cached = this.countryOverviewCache.get(cacheKey);
     if (cached) {
@@ -983,7 +1053,10 @@ export class AppService {
       && storedOverview.geography.terrainCodes.length === storedOverview.geography.columns * storedOverview.geography.rows
       && storedOverview.geography.territoryCodes.length === storedOverview.geography.columns * storedOverview.geography.rows
       && storedOverview.cities.every((city) => city.miniature.cellSize === 8)) {
-      this.countryOverviewCache.set(cacheKey, storedOverview);
+      onTransactionCommit(()=>{
+        this.countryOverviewCache.set(cacheKey, storedOverview);
+        while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);
+      });
       return storedOverview;
     }
     const [country, cities, districtRows] = await Promise.all([
@@ -999,7 +1072,7 @@ export class AppService {
         GROUP BY d.id, d.city_id, d.name, d.status, d.color, d.created_at
         ORDER BY d.created_at, d.id`).all(countryId) as Promise<Row[]>,
     ]);
-    const projectedPlanet = projectPlanetAtlas(planetAtlas);
+    const projectedPlanet = projectPlanetAtlas(planetAtlas, planetAtlas.geography?.countries[countryId]?.sector ?? 0);
     const geography = buildCountryGeography({
       countryId,
       seed: Number(country.seed),
@@ -1022,7 +1095,24 @@ export class AppService {
       const cityId = String(row.city_id);
       districtsByCity.set(cityId, [...districtsByCity.get(cityId) ?? [], district]);
     }
+    const railNames = new Map(projectedPlanet.countries.flatMap(country=>country.cities.map(city=>[city.id,city.name??country.name] as const)));
+    const railConnections = buildPlanetRailways(projectedPlanet)
+      .filter(route=>route.fromCountryId===countryId || route.toCountryId===countryId)
+      .map(({id,fromStationId,toStationId,fromCityId,toCityId,fromCountryId,toCountryId,points})=>{
+        const foreign=fromCountryId!==toCountryId;
+        const segment=foreign?projectForeignRail(points,[...projectedPlanet.countries.flatMap(c=>c.cells),...projectedPlanet.coastCells],geography,projectedPlanet.hexRadius,fromCountryId===countryId):null;
+        return {id,fromStationId,toStationId,fromCityId,toCityId,
+          ...(foreign?{fromCityName:railNames.get(fromCityId),toCityName:railNames.get(toCityId),points:segment?.points??[],progressRange:segment?.progressRange}:{}),};
+      });
+    const seaConnections = buildPlanetSeaRoutes(projectedPlanet)
+      .filter(route => route.fromCountryId === countryId || route.toCountryId === countryId)
+      .flatMap(route => {
+        const segment = projectForeignSea(route.points, projectedPlanet.oceanCells.map(c => ({...c,id:`ocean:${c.q}:${c.r}`})), geography, projectedPlanet.hexRadius, route.fromCountryId === countryId);
+        return [{id:route.id,fromPortId:route.fromPortId,toPortId:route.toPortId,
+          fromCityId:route.fromCityId,toCityId:route.toCityId,fromCityName:railNames.get(route.fromCityId),toCityName:railNames.get(route.toCityId),...(segment??{points:[],progressRange:[0,0] as [number,number]})}];
+      });
     const overviewWithoutRevision = {
+      railConnections, seaConnections,
       schemaVersion: COUNTRY_OVERVIEW_SCHEMA_VERSION,
       countryId,
       terrainSeed: Number(country.seed),
@@ -1047,12 +1137,24 @@ export class AppService {
           }),
         };
       }),
-      connections: projection.connections,
+      connections: projection.connections as CountryOverviewDto["connections"],
     };
-    const airportCities = overviewWithoutRevision.cities.filter((city) => city.miniature.airports.length > 0);
-    for (let index = 1; index < airportCities.length; index += 1) overviewWithoutRevision.connections.push({
-      fromCityId: airportCities[index - 1]!.id, toCityId: airportCities[index]!.id,
-    });
+    overviewWithoutRevision.connections = countryAirNetwork(overviewWithoutRevision.cities.flatMap(city=>
+      city.miniature.airports.map(airport=>({...airport,cityId:city.id}))))
+      .map(({from,to})=>({fromCityId:from.cityId,toCityId:to.cityId,fromAirportId:from.taskId,toAirportId:to.taskId}));
+    for (const route of internationalAirConnections(projectedPlanet,countryId)) {
+      const localFrom = route.from.countryId === countryId;
+      const local = localFrom ? route.from : route.to;
+      const city = overviewWithoutRevision.cities.find(city=>city.id===local.cityId);
+      const airport = city?.miniature.airports.find(airport=>airport.taskId===local.taskId);
+      if (!city || !airport) continue;
+      const point = {x:city.atlasCenter.x+(airport.x-city.miniature.columns/2)*.72,y:city.atlasCenter.y+(airport.y-city.miniature.rows/2)*.72};
+      const remote = transportOffmapPoint(point,localFrom?route.atlasFrom:route.atlasTo,localFrom?route.atlasTo:route.atlasFrom,
+        {minX:0,minY:0,maxX:geography.grid.columns*geography.grid.cellSize,maxY:geography.grid.rows*geography.grid.cellSize});
+      overviewWithoutRevision.connections.push({fromCityId:route.from.cityId,toCityId:route.to.cityId,
+        fromAirportId:route.from.taskId,toAirportId:route.to.taskId,
+        fromCityName:route.from.cityName,toCityName:route.to.cityName,...(localFrom?{toPoint:remote}:{fromPoint:remote})});
+    }
     const countryRoads = await readCountryRoads(this.db, countryId);
     if (!countryRoads && [...layoutsByCity.values()].some(layout => layout.blocks.length > 0)) {
       throw new DomainError("WORLD_REGENERATION_REQUIRED", "Межгородские дороги ещё не пересобраны. Требуется перегенерация мира.");
@@ -1077,9 +1179,73 @@ export class AppService {
         generated_at = EXCLUDED.generated_at`).run(
       userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, geographyRevision, JSON.stringify(overview),
     );
-    this.countryOverviewCache.set(cacheKey, overview);
-    while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);
+    onTransactionCommit(()=>{
+      this.countryOverviewCache.set(cacheKey, overview);
+      while (this.countryOverviewCache.size > 128) this.countryOverviewCache.delete(this.countryOverviewCache.keys().next().value!);
+    });
     return overview;
+  }
+
+  async getCityDevelopment(userId: string, countryId: string, cityId: string) {
+    return this.readWorldSnapshot(async () => {
+      const access = await this.db.prepare("SELECT 1 FROM cities_v3 c JOIN country_members m ON m.country_id=c.country_id WHERE c.id=? AND c.country_id=? AND m.user_id=?").get(cityId,countryId,userId);
+      if (!access) throw new DomainError("FORBIDDEN", "Нет доступа к городу");
+      const layout = await this.activeLayout(cityId);
+      const result = cityDevelopment(layout ?? undefined);
+      const names = await this.db.prepare("SELECT id,name FROM districts_v3 WHERE city_id=?").all<{id:string;name:string}>(cityId);
+      const nameById = new Map(names.map(d => [d.id,d.name]));
+      for (const district of result.districts) district.name = nameById.get(district.id);
+      const needsNetwork = result.services.some(service => (service.role === "AIRPORT" || service.role === "RAILWAY" || service.role === "PORT") && service.state === "READY");
+      result.transport = cityTransportDevelopment(cityId, result.services, needsNetwork ? await this.getCountryOverview(userId,countryId) : undefined);
+      return result;
+    });
+  }
+
+  async getCitySceneForUser(userId: string, countryId: string, cityId: string): Promise<CitySceneDto> {
+    return this.readWorldSnapshot(()=>this.readCitySceneForUser(userId,countryId,cityId));
+  }
+
+  private async readCitySceneForUser(userId: string, countryId: string, cityId: string): Promise<CitySceneDto> {
+    if (!await this.db.prepare("SELECT 1 FROM country_members WHERE country_id=? AND user_id=?").get(countryId,userId))
+      throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+    const scene = await this.getCityScene(countryId,cityId);
+    // Ordinary cities must not load/project the planet just to open their scene.
+    const hasAirport = [...scene.chunks.flatMap(chunk=>chunk.tasks),...scene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)]
+      .some(task=>task.cityId===cityId && task.serviceRole==="AIRPORT" && task.stage===5 && task.status==="COMPLETED");
+    if (!scene.railway?.running && !hasAirport && !scene.ports?.some(port=>port.stage===5)) {
+      // A coastal owner can develop a port without first opening PLANET. Only
+      // the viewer's missing city anchor is initialized; ordinary inland scenes
+      // retain the cheap path, and existing anchors never project again here.
+      if(scene.chunks.some(chunk=>chunk.terrainProfile) && !await this.db.prepare(
+        "SELECT 1 FROM personal_planet_geography_v1 WHERE user_id=? AND jsonb_extract_path(geography_json,'countries',?,'cities',?) IS NOT NULL"
+      ).get(userId,countryId,cityId))await this.getPlanetAtlas(userId);
+      return {...scene,railConnections:[],seaConnections:[]};
+    }
+    const atlas = await this.getPlanetAtlas(userId);
+    const projected = projectPlanetAtlas(atlas,atlas.geography?.countries[countryId]?.sector??0);
+    const airportConnections = [...scene.airportConnections];
+    if (hasAirport) for (const route of internationalAirConnections(projected,countryId)) {
+      const localFrom = route.from.countryId===countryId, local=localFrom?route.from:route.to;
+      if (local.cityId!==cityId) continue;
+      const remote=transportOffmapPoint(local.point,localFrom?route.atlasFrom:route.atlasTo,localFrom?route.atlasTo:route.atlasFrom,scene.city.bounds);
+      const endpoint=(value:typeof route.from,point:Cell)=>({taskId:value.taskId,cityId:value.cityId,point});
+      const from=endpoint(route.from,localFrom?route.from.point:remote),to=endpoint(route.to,localFrom?remote:route.to.point);
+      airportConnections.push({id:`${from.taskId}:${to.taskId}`,from,to},{id:`${to.taskId}:${from.taskId}`,from:to,to:from});
+    }
+    const railConnections = buildPlanetRailways(projected)
+      .filter(route=>(route.fromCityId===cityId || route.toCityId===cityId))
+      .map(({id,fromStationId,toStationId,fromCityId,toCityId})=>({id,fromStationId,toStationId,fromCityId,toCityId}));
+    const seaConnections = buildPlanetSeaRoutes(projected).flatMap(route => {
+      const localFrom=route.fromCityId===cityId;
+      if(!localFrom && route.toCityId!==cityId)return [];
+      const port=scene.ports?.find(p=>p.stage===5 && p.taskId===(localFrom?route.fromPortId:route.toPortId));
+      if(!port || port.plan.waterPath.length<2)return [];
+      const points=port.plan.waterPath.map(p=>({x:p.x+.5,y:p.y+.5}));
+      if(!localFrom)points.reverse();
+      return [{id:route.id,fromPortId:route.fromPortId,toPortId:route.toPortId,fromCityId:route.fromCityId,toCityId:route.toCityId,
+        points,progressRange:(localFrom?[0,.12]:[.88,1]) as [number,number]}];
+    });
+    return {...scene,airportConnections,railConnections,seaConnections,sceneRevision:stableHash({scene:scene.sceneRevision,airportConnections,railConnections,seaConnections})};
   }
 
   async getCityScene(countryId: string, cityId: string): Promise<CitySceneDto> {
@@ -1106,7 +1272,14 @@ export class AppService {
     // boundary. A city scene is the atomic read model for the whole city so
     // panning never exposes unloaded space or falls back to viewport/chunk
     // endpoints.
-    const sceneBounds = city.bounds;
+    const ports: NonNullable<CitySceneDto["ports"]> = layout.placements.filter(p => p.serviceRole === "PORT").flatMap(p => {
+      const plan = (layout.blocks.find(block => block.id === p.blockId)?.parameters.slotPortPlans as Record<string, import("../shared/port-site").LocalPortSitePlan> | undefined)?.[p.slotKey];
+      return plan ? [{ taskId: p.taskId, stage: p.constructionStage, plan }] : [];
+    });
+    const sceneBounds = ports.flatMap(port => [...port.plan.approach, ...port.plan.pier, ...port.plan.waterPath, port.plan.berth]).reduce((bounds, p) => ({
+      minX: Math.min(bounds.minX, p.x - 2), minY: Math.min(bounds.minY, p.y - 2),
+      maxX: Math.max(bounds.maxX, p.x + 2), maxY: Math.max(bounds.maxY, p.y + 2),
+    }), { ...city.bounds });
     const minChunkX = Math.floor(sceneBounds.minX / CHUNK_SIZE);
     const minChunkY = Math.floor(sceneBounds.minY / CHUNK_SIZE);
     const maxChunkX = Math.floor(sceneBounds.maxX / CHUNK_SIZE);
@@ -1137,7 +1310,12 @@ export class AppService {
       };
       return { ...compactContent, contentHash: chunkPayloadContentHash(compactContent) } as ChunkPayloadDto;
     });
-    const airportConnections = await readCityAirportConnections(this.db, countryId, cityId, city.center);
+    const airportConnections = await readCityAirportConnections(this.db, countryId, cityId);
+    const storedRailway = await readCityRailway(this.db,layout);
+    const railwayObstacles = !storedRailway && layout.placements.some(p=>p.serviceRole==="RAILWAY")
+      ? (await this.db.prepare("SELECT bounds_json FROM city_layouts_v1 WHERE country_id=? AND city_id<>? AND status='ACTIVE'")
+        .all<{bounds_json:Rect}>(countryId,cityId)).map(row=>row.bounds_json) : [];
+    const railway = storedRailway ?? railwayForLayout(layout,[...railwayRoadObstacles(groundRoadSnapshot?.plan.routes ?? []),...railwayObstacles,...(!storedRailway && layout.placements.some(p=>p.serviceRole==="RAILWAY") ? await permanentSiteBounds(this.db,countryId,true) : [])],parseWorldTerrainProfile(country.terrain_profile_json)?.kind==="EAST_COAST") ?? null;
     const intercityRoads = citySceneIntercityRoads(groundRoadSnapshot?.plan.routes ?? [], cityId, {
       minX: minChunkX * CHUNK_SIZE, minY: minChunkY * CHUNK_SIZE,
       maxX: (maxChunkX + 1) * CHUNK_SIZE - 1, maxY: (maxChunkY + 1) * CHUNK_SIZE - 1,
@@ -1145,24 +1323,30 @@ export class AppService {
     const sceneIdentity = {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       cityId,
-      bounds: city.bounds,
+      bounds: sceneBounds,
+      ports,
       airportConnections,
+      railway,
       intercityRoads,
       chunks: sceneChunks.map((chunk) => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash, version: chunk.publishedVersion })),
     };
     const scene: CitySceneDto = {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       sceneRevision: stableHash(sceneIdentity),
-      city: { id: city.id, name: city.name, center: city.center, bounds: city.bounds },
+      city: { id: city.id, name: city.name, center: city.center, bounds: sceneBounds },
+      ports,
       lod: "DETAIL",
       chunkSize: CHUNK_SIZE,
       chunks: sceneChunks,
       completedDistrictSnapshots,
       airportConnections,
+      railway,
       intercityRoads,
     };
-    this.citySceneCache.set(cacheKey, scene);
-    while (this.citySceneCache.size > 8) this.citySceneCache.delete(this.citySceneCache.keys().next().value!);
+    onTransactionCommit(()=>{
+      this.citySceneCache.set(cacheKey, scene);
+      while (this.citySceneCache.size > 8) this.citySceneCache.delete(this.citySceneCache.keys().next().value!);
+    });
     return scene;
   }
 
@@ -1580,12 +1764,13 @@ export class AppService {
     await this.db.prepare(`INSERT INTO task_events_v7 (task_id, actor_user_id, actor_label, event_type, details_json, created_at)
       VALUES (?, ?, ?, ?, ?, ?)`).run(taskId, actorUserId ?? null, actor, type, JSON.stringify(details), createdAt);
   }
-  private async nextCityCenter(countryId: string, seed: number, existingCities?: CityDto[]): Promise<Cell> {
+  private async nextCityCenter(countryId: string, seed: number, existingCities?: CityDto[], terrainProfile?: BootstrapDto["worldManifest"]["terrainProfile"]): Promise<Cell> {
+    await freezeMissingCountryRailways(this.db,countryId);
     const cities = existingCities ?? await this.listCities(countryId);
     if (cities.length >= 100) throw new DomainError("CAPACITY_EXCEEDED", "В стране уже 100 городов. Создайте другую страну для дальнейшего расширения.");
     const historical = await permanentSiteBounds(this.db,countryId,true);
     const roads = intercityRoadCorridors((await readCountryRoads(this.db, countryId))?.plan.routes ?? []);
-    const site = findCompactCitySite(seed, [...cities.map(city => city.bounds),...historical], roads);
+    const site = findCompactCitySite(seed, [...cities.map(city => city.bounds),...historical], [...roads,...await countryRailwayReservations(this.db,countryId),...await countryPortReservations(this.db,countryId)], terrainProfile);
     if (site) return site;
     throw new DomainError("PLACEMENT_UNAVAILABLE","Не удалось найти сухую площадку для квартальной сетки города");
   }
@@ -1601,7 +1786,7 @@ export class AppService {
     if(this.generationDispatcher) return this.rehydrateGenerationResult(countryId,"city.create",await this.generationDispatcher.execute<CityDto>(countryId,"city.create",input.idempotencyKey,input));
     return this.mutate(countryId,"city.create.v3",input.idempotencyKey,input,async()=>{
       const country=await this.countryRow(countryId);
-      const center=await this.nextCityCenter(countryId,Number(country.seed));
+      const center=await this.nextCityCenter(countryId,Number(country.seed),undefined,parseWorldTerrainProfile(country.terrain_profile_json));
       const id=randomUUID(),createdAt=now();
       const bounds={minX:center.x-4,minY:center.y-4,maxX:center.x+36,maxY:center.y+36};
       await this.db.prepare("INSERT INTO cities_v3(id,country_id,name,description,goal,acceptance_criteria,deadline,status,center_x,center_y,bounds_json,style_id,morphology,created_at) VALUES(?,?,?,?,?,?,?,'ACTIVE',?,?,?,'compact-cartoon',?,?)")
@@ -2305,7 +2490,7 @@ export class AppService {
   ): Promise<ChunkPayloadDto> {
     const country = await this.countryRow(countryId);
     const worldVersion = Number(country.world_version);
-    this.knownWorldVersions.set(countryId, Math.max(worldVersion, this.knownWorldVersions.get(countryId) ?? 0));
+    onTransactionCommit(() => this.knownWorldVersions.set(countryId, Math.max(worldVersion, this.knownWorldVersions.get(countryId) ?? 0)));
     return this.getChunkPayloadAtVersion(countryId, chunkX, chunkY, lod, country, worldVersion, retryAttempt);
   }
 
@@ -2320,7 +2505,7 @@ export class AppService {
   ): Promise<ChunkPayloadDto[]> {
     const country = await this.countryRow(countryId);
     const worldVersion = Number(country.world_version);
-    this.knownWorldVersions.set(countryId, Math.max(worldVersion, this.knownWorldVersions.get(countryId) ?? 0));
+    onTransactionCommit(() => this.knownWorldVersions.set(countryId, Math.max(worldVersion, this.knownWorldVersions.get(countryId) ?? 0)));
     const width = maxChunkX - minChunkX + 1;
     const height = maxChunkY - minChunkY + 1;
     const coordinates = Array.from({ length: width * height }, (_, index) => {
@@ -2355,7 +2540,7 @@ export class AppService {
         if (this.validChunkIdentity(payload, Number(row.chunk_x), Number(row.chunk_y), lod)) {
           const current = payload.publishedVersion === worldVersion ? payload : { ...payload, publishedVersion: worldVersion };
           resolved.set(cacheKey, this.storeChunk(cacheKey, current));
-          void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, worldVersion), current);
+          onTransactionCommit(() => { void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, worldVersion), current); });
         }
       }
       for (const { cacheKey } of unresolved) if (!resolved.has(cacheKey)) this.chunkCache.delete(cacheKey);
@@ -2376,7 +2561,7 @@ export class AppService {
           const build = async () => this.buildChunkPayload(
             countryId, chunkX, chunkY, lod, country, cacheKey, worldVersion, false, await getSpatialSnapshot(),
           );
-          if (this.sharedWorldCache?.getOrBuildChunk) {
+          if (!isTransactionActive() && this.sharedWorldCache?.getOrBuildChunk) {
             // The lease owner publishes to PostgreSQL before Optional Redis is
             // allowed to expose its content blob. This makes the cache a pure
             // acceleration layer even if a mutation wins while geometry is
@@ -2402,7 +2587,7 @@ export class AppService {
         }
       }
     } catch (error) {
-      if (error instanceof StaleChunkBuildError && retryAttempt < 2) {
+      if (error instanceof StaleChunkBuildError && retryAttempt < 2 && !isTransactionActive()) {
         return this.getViewportPayloads(
           countryId, minChunkX, minChunkY, maxChunkX, maxChunkY, lod, retryAttempt + 1,
         );
@@ -2410,7 +2595,7 @@ export class AppService {
       throw error;
     }
     if (locallyBuilt.length > 0 && !await this.publishChunkPayloads(countryId, locallyBuilt.map((entry) => entry.payload))) {
-      if (retryAttempt < 2) {
+      if (retryAttempt < 2 && !isTransactionActive()) {
         return this.getViewportPayloads(
           countryId, minChunkX, minChunkY, maxChunkX, maxChunkY, lod, retryAttempt + 1,
         );
@@ -2418,14 +2603,14 @@ export class AppService {
       throw new StaleChunkBuildError();
     }
     for (const { cacheKey, payload } of locallyBuilt) {
-      if (!this.sharedWorldCache?.getOrBuildChunk) {
-        void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, worldVersion), payload);
+      if (isTransactionActive() || !this.sharedWorldCache?.getOrBuildChunk) {
+        onTransactionCommit(() => { void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, worldVersion), payload); });
       }
     }
     if (this.sharedWorldCache) {
       const fence = await this.db.prepare("SELECT world_version FROM countries WHERE id = ?").get(countryId) as Row | undefined;
       if (!fence || Number(fence.world_version) !== worldVersion) {
-        if (retryAttempt < 2) {
+        if (retryAttempt < 2 && !isTransactionActive()) {
           return this.getViewportPayloads(
             countryId, minChunkX, minChunkY, maxChunkX, maxChunkY, lod, retryAttempt + 1,
           );
@@ -2472,7 +2657,7 @@ export class AppService {
       const payload = json<ChunkPayloadDto>(published.payload_json);
       if (this.validChunkIdentity(payload, chunkX, chunkY, lod)) {
         const current = payload.publishedVersion === worldVersion ? payload : { ...payload, publishedVersion: worldVersion };
-        void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, worldVersion), current);
+        onTransactionCommit(() => { void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, worldVersion), current); });
         return this.storeChunk(cacheKey, current);
       }
     }
@@ -2485,10 +2670,10 @@ export class AppService {
     }
     try {
       const payload = await pending;
-      void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, payload.publishedVersion), payload);
+      onTransactionCommit(() => { void this.sharedWorldCache?.setChunk(this.sharedChunkKey(cacheKey, payload.publishedVersion), payload); });
       return payload;
     } catch (error) {
-      if (error instanceof StaleChunkBuildError && retryAttempt < 2) {
+      if (error instanceof StaleChunkBuildError && retryAttempt < 2 && !isTransactionActive()) {
         return await this.getChunkPayload(countryId, chunkX, chunkY, lod, retryAttempt + 1);
       }
       throw error;
@@ -2555,6 +2740,7 @@ export class AppService {
     spatialSnapshot?: ViewportSpatialSnapshot,
   ): Promise<ChunkPayloadDto> {
     const seed = Number(country.seed);
+    const terrainProfile = parseWorldTerrainProfile(country.terrain_profile_json);
     const minX = chunkX * CHUNK_SIZE;
     const minY = chunkY * CHUNK_SIZE;
     const chunkBounds = { minX, minY, maxX: minX + CHUNK_SIZE - 1, maxY: minY + CHUNK_SIZE - 1 };
@@ -2648,7 +2834,7 @@ export class AppService {
         tasks: nearbyTasks,
         roads: new Map(roads.map((road) => [cellKey(road), road])),
         blocked: blockedKeys,
-        isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
+        isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y, terrainProfile).terrain),
       })) publish(cell);
       for (const task of nearbyTasks) if (task.visualKind === "PARK" && task.stage >= 2) {
         for (const cell of greenAreaPathCells(task.footprint, task.visualAssetKey)) {
@@ -2667,7 +2853,7 @@ export class AppService {
       districts: nearbyDistricts,
       tasks: nearbyTasks,
       features: nearbyFeatures,
-      isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y).terrain),
+      isSurfaceTerrain: (cell) => isBuildableTerrain(terrainAt(seed, cell.x, cell.y, terrainProfile).terrain),
     }).values()];
     const surfaces = surfaceContext.filter(surface => contains(chunkBounds, surface));
     const decorationHalo = buildDecorationHardHalo({
@@ -2679,6 +2865,7 @@ export class AppService {
       payloadVersion: 2,
       generatorVersion: "block-v1",
       terrainSeed: seed,
+      terrainProfile,
       publishedVersion: worldVersion,
       lod,
       chunkX,
@@ -2696,7 +2883,7 @@ export class AppService {
         ...(lod === "DETAIL" && defectSummaryByTask.has(task.id) ? { defectSummary: defectSummaryByTask.get(task.id) } : {}),
         status: task.status, progress: task.progress, stage: task.stage,
         buildingType: task.buildingType, serviceRole: task.serviceRole, visualKind: task.visualKind, visualAssetKey: task.visualAssetKey,
-        platformType: task.platformType, origin: task.origin, footprint: task.footprint, accessPath: task.accessPath,
+        platformType: task.platformType, origin: task.origin, footprint: task.footprint, accessPath: task.accessPath, siteBounds: task.siteBounds,
       })),
       worldFeatures: [...worldFeatures].sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
       decorationContext: {
@@ -2724,7 +2911,7 @@ export class AppService {
       },
     };
     const payload: ChunkPayloadV2Dto = { ...content, contentHash: chunkPayloadContentHash(content) };
-    if ((this.knownWorldVersions.get(countryId) ?? worldVersion) !== worldVersion) throw new StaleChunkBuildError();
+    if ((this.knownWorldVersions.get(countryId) ?? worldVersion) > worldVersion) throw new StaleChunkBuildError();
     if (!publish) return payload;
     if (!await this.publishChunkPayload(countryId, payload)) throw new StaleChunkBuildError();
     return this.storeChunk(cacheKey, payload);

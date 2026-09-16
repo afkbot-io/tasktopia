@@ -1,0 +1,1 @@
+ImageGen precise edit of stage5 reference. Preserve1536x1024 registration245..1290,149..875 and high frontal-top camera. Stage3: Open structural lattice, cream shell and empty windows; same footprint. No objects outside footprint; magenta background. Stage4 exterior scaffold rejected and removed by second ImageGen edit. Generated2026-09-16.

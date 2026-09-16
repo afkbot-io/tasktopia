@@ -1,3 +1,5 @@
+import { countryTransportNetwork } from "./transport-network";
+import { transportSchedule } from "./transport-schedule";
 import type { Cell } from "./contracts";
 export type AtlasTransportStop = { id: string; cityId: string; cell: Cell };
 export type AtlasGroundRoute = { id: string; from: AtlasTransportStop; to: AtlasTransportStop; cells: Cell[] };
@@ -24,15 +26,29 @@ export function atlasGridPath(start: Cell, goals: ReadonlySet<string>, allowed: 
 
 /** One deterministic connection per additional served city, never across water. */
 export function atlasRailRoutes(stops: readonly AtlasTransportStop[], land: readonly Cell[]): AtlasGroundRoute[] {
-  const allowed = new Set(land.map(key)), previous: AtlasTransportStop[] = [], routes: AtlasGroundRoute[] = [];
-  for (const stop of [...stops].sort((a, b) => a.cityId.localeCompare(b.cityId) || a.id.localeCompare(b.id))) {
-    if (previous.some(other => other.cityId === stop.cityId)) continue;
-    const goals = new Map(previous.map(other => [key(other.cell), other]));
-    const cells = atlasGridPath(stop.cell, new Set(goals.keys()), allowed);
-    const target = cells.length ? goals.get(key(cells.at(-1)!)) : undefined;
-    if (target) routes.push({ id: `rail:${stop.id}:${target.id}`, from: stop, to: target, cells });
-    previous.push(stop);
+  const allowed = new Set(land.map(key)), component = new Map<string,number>();
+  let nextComponent=0;
+  for(const cell of land){
+    if(component.has(key(cell)))continue;
+    const queue=[cell];component.set(key(cell),nextComponent);
+    for(let i=0;i<queue.length;i++)for(const next of neighbors(queue[i]!)){
+      const id=key(next);if(!allowed.has(id)||component.has(id))continue;
+      component.set(id,nextComponent);queue.push(next);
+    }
+    nextComponent++;
   }
+  const groups=new Map<number,AtlasTransportStop[]>();
+  const primary=new Map<string,AtlasTransportStop>();
+  for(const stop of [...stops].sort((a,b)=>a.id.localeCompare(b.id)))if(!primary.has(stop.cityId))primary.set(stop.cityId,stop);
+  for(const stop of primary.values()){const id=component.get(key(stop.cell));if(id===undefined)continue;
+    const group=groups.get(id)??[];group.push(stop);groups.set(id,group);
+  }
+  const routes:AtlasGroundRoute[]=[];
+  for(const group of groups.values())for(const {from,to} of countryTransportNetwork(group.map(stop=>({...stop,taskId:stop.id})))){
+    const cells=atlasGridPath(from.cell,new Set([key(to.cell)]),allowed);
+    if(cells.length)routes.push({id:transportSchedule("RAIL",from.id,to.id).id,from,to,cells});
+  }
+  routes.sort((a,b)=>a.id.localeCompare(b.id));
   return routes;
 }
 

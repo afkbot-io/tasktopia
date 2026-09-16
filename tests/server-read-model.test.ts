@@ -69,7 +69,9 @@ describe("bounded server task and spatial reads", { timeout: 30_000 }, () => {
     queries.length = 0;
     const overview = await new AppService(counted).getCountryOverview(userId,countryId);
     expect(overview.cities.map(city => city.id)).toEqual(expect.arrayContaining([task.cityId,otherCityId]));
-    expect(queries.filter(value => value.query.includes("AS placements"))).toHaveLength(1);
+    // Count the full layout snapshot separately from the bounded planet miniature projection.
+    expect(queries.filter(value => value.query.includes("AS placements") && value.query.includes("AS road"))).toHaveLength(1);
+    expect(queries.filter(value => value.query.includes("placed.placements"))).toHaveLength(1);
     expect(queries.filter(value => value.query.includes("SELECT revision FROM city_layouts_v1"))).toHaveLength(0);
   });
 });

@@ -1,0 +1,31 @@
+{
+  "countryId": "4201d605-751a-469b-8d5f-a7e322a7ece1",
+  "cityId": "7368b6dc-b6cd-4d75-bb39-21331c367477",
+  "districtId": "6782f1e1-efe2-43a8-92ab-04492be15d85",
+  "tasks": {
+    "city-miniatures": {
+      "id": "22e6f6c2-4078-488b-a709-121520be98b5",
+      "number": 30
+    },
+    "personal-geography": {
+      "id": "a67c1ed6-8482-4df7-a7ed-1e2fe4cac472",
+      "number": 31
+    },
+    "shared-transport": {
+      "id": "b01f173b-d214-4cb7-8968-ac41e9bd8b5c",
+      "number": 32
+    },
+    "coastal-port": {
+      "id": "1cd8cc57-97d7-4b39-9b29-9c54a913e84b",
+      "number": 33
+    },
+    "world-digest": {
+      "id": "2e2f06e1-3d9c-45c3-8338-48f60cc9d8a3",
+      "number": 34
+    },
+    "world-quality": {
+      "id": "e0d909c6-1e76-4bbe-8db2-9af1440dc881",
+      "number": 35
+    }
+  }
+}

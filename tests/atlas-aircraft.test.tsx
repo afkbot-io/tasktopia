@@ -1,27 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
-import { AtlasAircraft } from "../src/client/components/AtlasAircraft";
-
-describe("atlas aircraft", () => {
-  it("keeps one top-down body visible, follows the route tangent and animates airport endpoints", () => {
-    const markup = renderToStaticMarkup(<svg><AtlasAircraft
-      path="M10 10 Q20 0 30 10"
-      durationSeconds={12}
-      delaySeconds={-3}
-      kind={3}
-      size="planet"
-      rotateWithPath
-      startsAtAirport
-      endsAtAirport
-    /></svg>);
-
-    expect(markup).toContain("micro-ambient/micro-aircraft-regional-east.png");
-    expect(markup).toContain('rotate="auto"');
-    expect(markup.match(/atlas-aircraft-sprite/g)).toHaveLength(1);
-    expect(markup).not.toContain("atlas-aircraft-trail");
-    expect(markup).toContain('width="8" height="8"');
-    expect(markup).toContain('values="0.05;1;1;0.05"');
-    expect(markup).not.toContain("scale(-1 1)");
-    expect(markup).not.toContain("atlas-aircraft-frame-b");
-  });
+import { expect, it } from "vitest";
+import { ScheduledAtlasFlights } from "../src/client/components/ScheduledAtlasFlights";
+it("keeps aircraft hidden until the absolute schedule is sampled, without a load-relative animation", () => {
+  const markup=renderToStaticMarkup(<svg><ScheduledAtlasFlights routes={[{
+    id:"route",fromCountryId:"country",toCountryId:"country",fromAirportId:"a",toAirportId:"b",
+    from:{x:10,y:10},control:{x:20,y:0},to:{x:30,y:10},path:"M10 10 Q20 0 30 10",
+    durationSeconds:12,delaySeconds:-3,planeKind:3,altitudeScale:1,rotateWithPath:true,
+  }]} /></svg>);
+  expect(markup).toContain("visibility:hidden");
+  expect(markup).not.toContain("animateMotion");
+  expect(markup.match(/atlas-aircraft-sprite/g)).toHaveLength(1);
 });

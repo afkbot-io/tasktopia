@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppService, DomainError } from "../src/server/app-service";
 import { createMcpToken, hashToken, registerUser } from "../src/server/auth";
 import { createTestDb, transaction, type Db } from "../src/server/db";
+import { blockSlots } from "../src/shared/block-templates";
 import { getBuilding } from "../src/shared/catalog";
 import { GRID_DIRECTIONS, boundsOf, cellKey, connected } from "../src/server/world/grid";
 import { readActiveBlockLayout } from "../src/server/world/active-block-layout";
@@ -38,6 +39,29 @@ describe("Tasktopia compact-block application service", { timeout: 20_000 }, () 
     expect(Array.isArray(after.decorationContext.surfaceHaloRuns)).toBe(true);
     expect(after.publishedVersion).toBe(before.publishedVersion);
     expect(after.tasks).toEqual(before.tasks);
+  });
+
+  it("publishes canonical parcel bounds through task and chunk projections", async () => {
+    const city = await service.createCity(countryId, { name: "Parcel City", idempotencyKey: "parcel-city" });
+    const district = await service.createDistrict(countryId, { cityId: city.id, name: "Parcel District", activate: true, idempotencyKey: "parcel-district" });
+    const created = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Parcel task", estimate: 1, idempotencyKey: "parcel-task" });
+    const layout = (await readActiveBlockLayout(db, city.id))!;
+    const placement = layout.placements.find(p => p.taskId === created.id)!;
+    const block = layout.blocks.find(b => b.id === placement.blockId)!;
+    const bounds = blockSlots(block).find(s => s.key === placement.slotKey)!.siteBounds;
+    const task = await service.getTask(countryId, created.id);
+    expect(task.siteBounds).toEqual(bounds);
+    const coordinate = service.chunkForCell(task.origin);
+    const payload = await service.getChunkPayload(countryId, coordinate.chunkX, coordinate.chunkY, "DETAIL");
+    expect(payload.tasks.find(t => t.id === task.id)?.siteBounds).toEqual(bounds);
+    expect(materializeChunkPayload(payload).tasks.find(t => t.id === task.id)?.siteBounds).toEqual(bounds);
+    const stale = structuredClone(payload);
+    for (const item of stale.tasks) delete item.siteBounds;
+    await db.prepare("UPDATE world_chunk_payloads_v1 SET payload_json=? WHERE country_id=? AND chunk_x=? AND chunk_y=? AND lod='DETAIL'")
+      .run(JSON.stringify(stale), countryId, coordinate.chunkX, coordinate.chunkY);
+    const rebuilt = await new AppService(db).getChunkPayload(countryId, coordinate.chunkX, coordinate.chunkY, "DETAIL");
+    expect(rebuilt.publishedVersion).toBe(payload.publishedVersion);
+    expect(rebuilt.tasks.find(t => t.id === task.id)?.siteBounds).toEqual(bounds);
   });
 
   it("creates an idempotent city with reciprocal square-road masks", async () => {

@@ -56,6 +56,11 @@ export const countrySceneCache = new RevisionCache<CountryOverviewDto>(2);
 const latestCountryRevisions = new Map<string, number>();
 const dirtySceneRevisions = new Map<string, number>();
 let sessionEpoch = 0;
+let transportEpoch = 0;
+export function invalidateTransportSceneCaches(): void {
+  transportEpoch += 1;
+  citySceneCache.clear(); countrySceneCache.clear();
+}
 export function rememberCountryRevision(countryId: string, revision: number): void {
   latestCountryRevisions.set(countryId, Math.max(revision, latestCountryRevisions.get(countryId) ?? 0));
 }
@@ -103,7 +108,7 @@ export async function loadCityScene(countryId: string, cityId: string, revision:
   const dirtyRevision = () => Math.max(dirtySceneRevisions.get(countryId) ?? 0, dirtySceneRevisions.get(`${countryId}:${cityId}`) ?? 0);
   for (;;) {
     const requestedRevision = Math.max(revision, latestCountryRevisions.get(countryId) ?? 0);
-    const dirtyAtRequest = dirtyRevision();
+    const dirtyAtRequest = dirtyRevision(), transportAtRequest = transportEpoch;
     const key = `${countryId}:${cityId}:${requestedRevision}`;
     if (force) { citySceneCache.delete(key); force = false; }
     const scene = await citySceneCache.read(key, async () => {
@@ -114,7 +119,7 @@ export async function loadCityScene(countryId: string, cityId: string, revision:
     if (epoch !== sessionEpoch) throw new DOMException("Map session changed", "AbortError");
     // The destination can change while a different retained city ACKs events.
     // Fence the transition result itself, not only publication into the cache.
-    if (dirtyRevision() > dirtyAtRequest) continue;
+    if (dirtyRevision() > dirtyAtRequest || transportAtRequest !== transportEpoch) continue;
     return scene;
   }
 }
