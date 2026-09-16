@@ -11,6 +11,7 @@ for (const dpr of [1, 2]) test.describe(`country labels DPR ${dpr}`, () => {
     await page.getByRole("button", { name: "Страна", exact: true }).click();
     const map = page.locator(".country-overview");
     await expect(map).toHaveAttribute("data-country-ready", "true");
+    await expect(page.locator(".map-level-transition")).toHaveCount(0);
     await expect(map).toHaveAttribute("data-country-label-mode", "full");
     const labels = map.locator(".country-overview-city:visible");
     const original = await labels.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-city-id")));
@@ -30,7 +31,13 @@ for (const dpr of [1, 2]) test.describe(`country labels DPR ${dpr}`, () => {
     for (let i = 0; i < 2; i++) await drag(left, right);
     await expect(labels).toHaveCount(0);
     await expect(map.locator(".country-city-leader:visible")).toHaveCount(0);
-    for (let i = 0; i < 2; i++) await drag(right, left);
+    // The outward drag reaches a clamped camera boundary, so reversing its
+    // full distance overshoots the starting city. Return in smaller gestures
+    // until the original labels re-enter the viewport.
+    for (let i = 0; i < 24 && await labels.count() === 0; i++) {
+      await drag(right, right - 100);
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    }
     await expect.poll(() => labels.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-city-id")))).toEqual(original);
     expect(reads).toEqual([]);
     expect(errors).toEqual([]);

@@ -67,7 +67,7 @@ test("city reuses the authored prop atlas instead of fetching individual park an
   await page.screenshot({ path: info.outputPath("city-props.png") });
 });
 
-test("initial transport synchronization is not restarted by first-frame activation", async ({ page }) => {
+test("a delayed first connection preserves the initial scene through first-frame activation", async ({ page }) => {
   expect((await page.request.post("/api/auth/login", { data: {
     email: "demo@tasktopia.local", password: "tasktopia-demo",
   } })).ok()).toBe(true);
@@ -75,10 +75,14 @@ test("initial transport synchronization is not restarted by first-frame activati
   const connected = new Promise<void>(resolve => { release = resolve; });
   let rendererStarted!: () => void;
   const rendererGate = new Promise<void>(resolve => { rendererStarted = resolve; });
-  // Connect only after WorldCanvas has mounted, then deliver the transport
-  // hint before its first frame. This fixes the race order under test.
+  // Connect only after WorldCanvas has mounted, before its first frame.
+  // A first connection must not invalidate the freshly bootstrapped scene.
+  let scenes = 0;
   await page.route("**/socket.io/**", async route => { await rendererGate; await route.continue(); });
-  page.on("request", request => { if (request.url().includes("/api/events?")) release(); });
+  page.on("request", request => {
+    if (new URL(request.url()).pathname.endsWith("/scene")) scenes++;
+    if (request.url().includes("/api/events?")) release();
+  });
   await page.route("**/atlas/terrain-v4/city/*.png", async route => {
     rendererStarted(); await connected; await route.continue();
   });
@@ -87,7 +91,8 @@ test("initial transport synchronization is not restarted by first-frame activati
     await page.getByRole("button", { name: "Город", exact: true }).click();
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
-    await expect.poll(async () => Number(await host.getAttribute("data-transport-only-refreshes") ?? 0)).toBeGreaterThan(0);
+    expect(Number(await host.getAttribute("data-transport-only-refreshes") ?? 0)).toBe(0);
+    expect(scenes).toBe(1);
     expect(await host.getAttribute("data-ground-rebuilds")).toBe(await host.getAttribute("data-city-scene-chunks"));
   } finally { rendererStarted(); release(); }
 });
