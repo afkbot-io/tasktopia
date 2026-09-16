@@ -65,7 +65,10 @@ describe("planet atlas HTTP boundary", () => {
       countryName: "Чужая страна", cityName: "Чужой город",
     } });
 
-    const response = await app.inject({ method: "GET", url: "/api/planet-atlas", headers: { cookie } });
+    const requestAtlas = () => app.inject({ method: "GET", url: "/api/planet-atlas", headers: { cookie } });
+    const [response, twin] = await Promise.all([requestAtlas(), requestAtlas()]);
+    expect(twin!.statusCode).toBe(200);
+    expect(twin!.json().revision).toBe(response!.json().revision);
     expect(response.statusCode).toBe(200);
     expect(response.headers["cache-control"]).toContain("private");
     expect(response.json()).toMatchObject({ schemaVersion: 4 });
@@ -76,6 +79,20 @@ describe("planet atlas HTTP boundary", () => {
       buildingCount: 2,
       unfinishedBuildingCount: 1,
     });
+
+    const repeated = await app.inject({ method:"GET", url:"/api/planet-atlas",headers:{cookie,"if-none-match":response.headers.etag!} });
+    expect(repeated.statusCode).toBe(304);
+    expect(repeated.headers["cache-control"]).toBe("private, no-cache");
+    const secondCountry = response.json().countries.find((c:{name:string})=>c.name === "Вторая страна").id as string;
+    const owner = (await db.prepare("SELECT id FROM users WHERE email='planet@example.com'").get<{id:string}>())!;
+    await db.prepare("DELETE FROM country_members WHERE user_id=? AND country_id=?").run(owner.id,secondCountry);
+    const restricted = await app.inject({method:"GET",url:"/api/planet-atlas",headers:{cookie}});
+    expect(restricted.statusCode).toBe(200);
+    expect(restricted.body).not.toContain(secondCountry);
+    expect(Object.keys(restricted.json().geography.countries)).toEqual([registered.country.id]);
+    await db.prepare("INSERT INTO country_members(country_id,user_id,role,created_at) VALUES (?,?,'OWNER',?)").run(secondCountry,owner.id,new Date().toISOString());
+    const restored = await app.inject({method:"GET",url:"/api/planet-atlas",headers:{cookie}});
+    expect(restored.json().geography).toEqual(response.json().geography);
 
     // A real active placement supplies a station only once construction is complete.
     const placement = await db.prepare("SELECT p.block_id,p.slot_key FROM task_placements_v1 p JOIN city_layouts_v1 l ON l.id=p.layout_id WHERE p.task_id=? AND l.status='ACTIVE'").get<{block_id:string;slot_key:string}>(completed.id);

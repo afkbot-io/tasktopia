@@ -26,6 +26,15 @@ function payload(lod: "DETAIL" | "OVERVIEW"): ChunkPayloadV2Dto {
 }
 
 describe("published world chunk payload", () => {
+  it("uses the same authored coast in worker terrain and decoration halos", () => {
+    const compact: ChunkPayloadV2Dto = { ...payload("DETAIL"), chunkX: 1, chunkY: 0,
+      terrainProfile: { version: 1, kind: "EAST_COAST", coastX: 32 } };
+    const sea = materializeChunkPayload(compact);
+    expect(sea.terrain.every(cell => cell.terrain === "DEEP_WATER")).toBe(true);
+    expect(sea.decorations.some(decoration => decoration.kind.startsWith("tree-"))).toBe(false);
+    const samples = Uint8Array.from(sea.terrain.map(encodeTerrainSample));
+    expect(materializeChunkPayload(compact, samples)).toEqual(sea);
+  });
   it("uses the paving halo for seam-side lamps without rendering adjacent chunks", () => {
     const compact = { ...payload("DETAIL"), terrainSeed:42, chunkX:0, chunkY:0 };
     const paving = Array.from({length:64},(_,y)=>({x:64,y,kind:"SIDEWALK" as const,variant:0}));

@@ -20,7 +20,9 @@ describe("semantic country projection", () => {
     expect(first).toEqual(projectCountryCityMiniature({sourceBounds:layout.bounds,layout}));
     const placement=layout.placements[0]!;
     placement.serviceRole="AIRPORT"; placement.constructionStage=4;
-    expect(projectCountryCityMiniature({sourceBounds:layout.bounds,layout}).airports).toEqual([]);
+    const buildingAirport=projectCountryCityMiniature({sourceBounds:layout.bounds,layout});
+    expect(buildingAirport.airports).toEqual([]);
+    expect(buildingAirport.transport).toEqual([expect.objectContaining({taskId:placement.taskId,stage:4})]);
     placement.constructionStage=5;
     expect(projectCountryCityMiniature({sourceBounds:layout.bounds,layout}).airports).toHaveLength(1);
     placement.serviceRole="RAILWAY"; placement.constructionStage=4;

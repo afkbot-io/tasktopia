@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { advanceMapSceneCaches, citySceneCache, countrySceneCache, clearMapSceneCaches, loadCityScene, RevisionCache } from "../src/client/map-scene-cache";
+import { advanceMapSceneCaches, invalidateTransportSceneCaches, citySceneCache, countrySceneCache, clearMapSceneCaches, loadCityScene, RevisionCache } from "../src/client/map-scene-cache";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../src/shared/city-scene-contract";
 import type { RealtimeEvent } from "../src/shared/contracts";
 
@@ -103,19 +103,36 @@ describe("bounded revision scene cache", () => {
     clearMapSceneCaches();
   });
 
-  it("refetches an in-flight destination when a different city creates its connecting road", async () => {
+  it.each([
+    { type: "task.created", payload: { cityId: "b", groundRoadTopologyChanged: true } },
+    { type: "task.status_changed", payload: { cityId: "b", serviceRole: "PORT", taskId: "port", status: "COMPLETED", stage: 5, progress: 100, groundChanged: false } },
+  ])("refetches an in-flight destination after a remote transport change: $type $payload.serviceRole", async ({ type, payload }) => {
     clearMapSceneCaches();
     const old = { schemaVersion: CITY_SCENE_SCHEMA_VERSION, city: { id: "a" }, lod: "DETAIL", sceneRevision: "old" } as CitySceneDto;
     const fresh = { ...old, sceneRevision: "connected" };
     let resolve!: (value: CitySceneDto) => void;
     const load = vi.fn().mockImplementationOnce(() => new Promise<CitySceneDto>(done => { resolve = done; })).mockResolvedValue(fresh);
     const opening = loadCityScene("country", "a", 1, false, load);
-    advanceMapSceneCaches({ countryId: "country", id: 2, worldVersion: 2, createdAt: "2026-09-07", type: "task.created",
-      payload: { cityId: "b", groundRoadTopologyChanged: true } });
+    advanceMapSceneCaches({ countryId: "country", id: 2, worldVersion: 2, createdAt: "2026-09-07", type,
+      payload });
     resolve(old);
     expect(await opening).toBe(fresh);
     expect(load).toHaveBeenCalledTimes(2);
     expect(citySceneCache.peek("country:a:2")).toBe(fresh);
     clearMapSceneCaches();
   });
+});
+
+it("retries an in-flight scene when foreign transport changes without advancing the local world version",async()=>{
+  clearMapSceneCaches();
+  const old={schemaVersion:CITY_SCENE_SCHEMA_VERSION,city:{id:"a"},lod:"DETAIL",sceneRevision:"old"} as CitySceneDto;
+  const fresh={...old,sceneRevision:"fresh"};
+  let release!:(value:CitySceneDto)=>void;
+  const load=vi.fn().mockImplementationOnce(()=>new Promise<CitySceneDto>(resolve=>{release=resolve;})).mockResolvedValueOnce(fresh);
+  const pending=loadCityScene("country","a",1,false,load);
+  invalidateTransportSceneCaches();release(old);
+  expect(await pending).toBe(fresh);
+  expect(load).toHaveBeenCalledTimes(2);
+  expect(citySceneCache.peek("country:a:1")).toBe(fresh);
+  clearMapSceneCaches();
 });

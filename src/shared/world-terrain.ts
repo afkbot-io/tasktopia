@@ -1,4 +1,5 @@
 import type { TerrainCellDto, TerrainKind } from "./contracts";
+import { coastlineX, type WorldTerrainProfile } from "./world-terrain-profile";
 
 export function hashCoordinate(seed: number, x: number, y: number, salt = 0): number {
   let value = Math.imul(x, 0x1f123bb5) ^ Math.imul(y, 0x5f356495) ^ Math.imul(seed + salt, 0x6c8e9cf5);
@@ -102,8 +103,8 @@ function waterDistance(seed: number, x: number, y: number): number {
   return Math.min(horizontal * 1.28, vertical * 1.35, tributary * 1.5, lakes);
 }
 
-export function terrainAt(seed: number, x: number, y: number): Omit<TerrainCellDto, "x" | "y"> {
-  const distance = waterDistance(seed, x, y);
+export function terrainAt(seed: number, x: number, y: number, profile?: WorldTerrainProfile): Omit<TerrainCellDto, "x" | "y"> {
+  const distance = Math.min(waterDistance(seed, x, y), profile ? coastlineX(seed, y, profile) - x + 5 : Infinity);
   let terrain: TerrainKind;
   if (distance < 2.2) terrain = "DEEP_WATER";
   else if (distance < 4.5) terrain = "SHALLOW_WATER";

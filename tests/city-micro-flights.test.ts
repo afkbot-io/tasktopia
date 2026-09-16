@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cityMicroFlightDuration, cityMicroFlightPosition, cityMicroFlightRoutes, cityMicroFlightIsCurrent } from "../src/client/city-micro-flights";
 import { connectCityAirports } from "../src/server/world/city-airport-connections";
-import { CITY_AIRPORT_CONNECTION_LIMIT, type CityAirportEndpointDto } from "../src/shared/city-scene-contract";
+import { type CityAirportEndpointDto } from "../src/shared/city-scene-contract";
 
 const airport = (taskId: string, cityId: string, x: number, y: number): CityAirportEndpointDto => ({ taskId, cityId, point: { x, y } });
 
@@ -33,7 +33,7 @@ describe("task-backed compact city flights", () => {
     expect(cityMicroFlightPosition(routes[0]!, 0.5).scale).toBe(1);
     expect(cityMicroFlightPosition(routes[0]!, 1)).toMatchObject({ x: 10.5, y: 10.5, scale: .05 });
     expect(cityMicroFlightPosition(routes[1]!, 1)).toMatchObject({ x: 0.5, y: 0.5, scale: .05 });
-    expect(cityMicroFlightDuration(routes[0]!)).toBe(8_000);
+    expect(cityMicroFlightDuration(routes[0]!)).toBe(30_000);
     const samples = [.498, .499, .5, .501, .502].map(p => cityMicroFlightPosition(routes[0]!, p));
     for (let i = 1; i < samples.length - 1; i++) {
       const left = samples[i - 1]!, current = samples[i]!, right = samples[i + 1]!;
@@ -51,12 +51,12 @@ describe("task-backed compact city flights", () => {
       }
     }
   });
-  it("bounds route count and duration, retaining nearest actual airport pairs", () => {
+  it("bounds city degree and duration independently of input order", () => {
     const local = airport("a", "home", -10, -20);
     const endpoints = [local, ...Array.from({ length: 20 }, (_, i) => airport(`remote-${i}`, `city-${i}`, i * 100 + 100, 20))];
     const connections = connectCityAirports("home", endpoints.reverse());
-    expect(connections).toHaveLength(CITY_AIRPORT_CONNECTION_LIMIT);
-    expect(new Set(connections.flatMap(c => [c.from.taskId, c.to.taskId]))).toEqual(new Set(["a", "remote-0", "remote-1", "remote-2", "remote-3"]));
+    expect(connections).toHaveLength(2);
+    expect(new Set(connections.flatMap(c => [c.from.taskId, c.to.taskId]))).toEqual(new Set(["a", "remote-9"]));
     const far = cityMicroFlightRoutes([{ id: "far", from: local, to: airport("far", "far-city", 5000, 5000) }])[0]!;
     expect(cityMicroFlightDuration(far)).toBe(30_000);
     expect(cityMicroFlightPosition(far, 1)).toMatchObject({ x: 5000, y: 5000, scale: .05 });

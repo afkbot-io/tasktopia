@@ -1,3 +1,4 @@
+import { synchronizeWorldClock } from "./server-world-clock";
 import { SAFE_HTTP_ERROR_MESSAGES } from "../shared/http-errors";
 
 export class ApiError extends Error {
@@ -49,6 +50,7 @@ export async function apiWithMetrics<T>(path: string, init?: ApiInit): Promise<A
     body,
     headers,
   });
+  if (response.ok) synchronizeWorldClock(response.headers, requestStartedAt, performance.now());
   const raw = await response.text();
   const requestMs = performance.now() - requestStartedAt;
   const parseStartedAt = performance.now();

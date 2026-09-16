@@ -1,10 +1,18 @@
+import { seaVessel } from "../../shared/sea-vessel";
+import { railPolyline, railConvoy, type RailPolyline } from "../../shared/rail-convoy";
+import { readServerWorldTime } from "../server-world-clock";
+import { transportSchedule, transportProgress, type TransportSchedule } from "../../shared/transport-schedule";
+import { useAtlasQuality } from "../use-atlas-quality";
+import { startVisibleAnimation } from "../visible-animation";
+import { retainCountryRenderSnapshot } from "../country-render-snapshot";
+import { miniatureBuildingArt, miniatureTransportMarkers } from "../../shared/city-miniature";
 import { loadMapImage } from "../map-image";
 import { loadMapWithTimeout } from "../map-load-timeout";
 import { countryRailways } from "../../shared/country-railways";
 import { useEffect, useRef, useState } from "react";
 import type { RealtimeEvent } from "../../shared/contracts";
 import { COUNTRY_OVERVIEW_SCHEMA_VERSION, decodeCountryTerrain, type CountryOverviewCityDto, type CountryOverviewDto } from "../../shared/country-overview-contract";
-import { gameAssetUrl, getBuilding } from "../../shared/catalog";
+import { gameAssetUrl, PROP_SPRITES } from "../../shared/catalog";
 import { atlasAircraftEndpointScale, atlasTerrainConnectionMask, buildAtlasFlightGeometry, sampleAtlasFlight, type AtlasFlightGeometry } from "../../shared/atlas-scene";
 import { api } from "../api";
 import { countrySceneCache } from "../map-scene-cache";
@@ -24,11 +32,12 @@ const MAX_ZOOM = 2.6;
 const CITY_LOD_CELL_SIZE = .72;
 
 type Camera = { zoom: number; centerX: number; centerY: number };
-type Flight = { view: HTMLImageElement; elapsed: number; duration: number; delay: number; route: AtlasFlightGeometry; startsAtAirport: boolean; fromCityId: string; toCityId: string; from: { x: number; y: number }; to: { x: number; y: number } };
+type Flight = { view: HTMLImageElement; schedule:TransportSchedule; fromAirportId:string; toAirportId:string; route: AtlasFlightGeometry; startsAtAirport: boolean; fromCityId: string; toCityId: string; from: { x: number; y: number }; to: { x: number; y: number } };
 
-export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, initialFocusCityId, events, onEventsProcessed, onCitySelect, onCityHover, onZoomOut, wheelNavigation }: {
+export function CountryOverviewCanvas({ countryId, transportRevision = 0, worldRevision, activeCityId, initialFocusCityId, events, onEventsProcessed, onCitySelect, onCityHover, onZoomOut, wheelNavigation }: {
   countryId: string;
   worldRevision: number;
+  transportRevision?: number;
   activeCityId?: string;
   initialFocusCityId?: string;
   events: RealtimeEvent[];
@@ -40,6 +49,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
 }) {
   const cacheKey = `${countryId}:${worldRevision}`;
   const [overview, setOverview] = useState<CountryOverviewDto | null>(()=>countrySceneCache.peek(cacheKey)??null);
+  const [renderOverview, setRenderOverview] = useState(overview);
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState("");
   const retry = () => { setError(""); setAttempt(value => value + 1); };
@@ -47,6 +57,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [cityQuery, setCityQuery] = useState("");
   const hostRef = useRef<HTMLDivElement>(null);
+  useAtlasQuality(hostRef, renderReady);
   const labelsRef = useRef<HTMLDivElement>(null);
   const directoryRef = useRef<HTMLDivElement>(null);
   const directoryToggleRef = useRef<HTMLButtonElement>(null);
@@ -66,7 +77,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
   useEffect(() => {
     activeCityRef.current = activeCityId;
     scheduleLabelsRef.current?.();
-  }, [activeCityId]);
+  }, [activeCityId, overview]);
 
   useEffect(() => {
     if (!directoryOpen) return;
@@ -82,7 +93,11 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     const controller = new AbortController();
     mountedAtRef.current = performance.now();
     const cached = countrySceneCache.peek(cacheKey);
-    if (cached) setOverview(cached);
+    const publish = (next: CountryOverviewDto) => {
+      setOverview(next);
+      setRenderOverview(previous => retainCountryRenderSnapshot(previous,next));
+    };
+    if (cached) publish(cached);
     setError("");
     void countrySceneCache.read(cacheKey, ()=>loadMapWithTimeout(signal => api<CountryOverviewDto>(`/api/countries/${countryId}/overview`, {
       signal, headers: { accept: `application/vnd.tasktopia.country-overview+json; version=${COUNTRY_OVERVIEW_SCHEMA_VERSION}` },
@@ -90,13 +105,13 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       .then((next) => {
         if (controller.signal.aborted) return;
         if (next.schemaVersion !== COUNTRY_OVERVIEW_SCHEMA_VERSION || next.countryId !== countryId) throw new Error("Сервер вернул карту другой страны");
-        setOverview(next);
+        publish(next);
       })
       .catch((reason) => {
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось загрузить страну");
       });
     return () => controller.abort();
-  }, [countryId, cacheKey, attempt]);
+  }, [countryId, cacheKey, attempt, transportRevision]);
 
   useEffect(() => {
     if (!overview) return;
@@ -113,16 +128,20 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
   }, [countryId, events, onEventsProcessed, overview, worldRevision]);
 
   useEffect(() => {
+    const overview = renderOverview;
     const host = hostRef.current;
     const labels = labelsRef.current;
-    if (!host || !labels || !overview) return;
+    if (!host || !labels || !overview || overview.countryId !== countryId) return;
+    host.dataset.countrySceneBuilds = String(Number(host.dataset.countrySceneBuilds ?? 0)+1);
     setRenderReady(false);
     let disposed = false;
     const imageController = new AbortController();
     const loadAtlasImage = (url: string) => loadMapImage(url, imageController.signal);
     let frame = 0;
     let zoomFrame = 0;
-    let flightFrame = 0;
+    let stopFlights: (() => void) | undefined;
+    let stopShips: (() => void) | undefined;
+    let stopTrains: (() => void) | undefined;
     let lastZoomFrame = 0;
     let readyTimer = 0;
     let maxCameraFrameMs = 0;
@@ -138,11 +157,18 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     const flights: Flight[] = [];
     const citiesById = new Map(overview.cities.map(city => [city.id, city]));
     const railways = countryRailways(overview);
+    let renderShips=()=>{};
+    let shipTime:number|undefined;
+    const shipPaths=new Map<string,RailPolyline>();
+    const ships:Array<{route:NonNullable<CountryOverviewDto["seaConnections"]>[number];view:HTMLImageElement;schedule:TransportSchedule}>=[];
+    const trainPaths=new Map<string,RailPolyline>();
+    const trains:Array<{route:typeof railways[number];view:HTMLDivElement;cars:HTMLImageElement[];schedule:TransportSchedule}>=[];
     const railwayCanvas = document.createElement("canvas");
     railwayCanvas.className = "country-railway-overlay";
     railwayCanvas.setAttribute("aria-hidden", "true");
     const railwayContext = railwayCanvas.getContext("2d")!;
     host.append(railwayCanvas);
+    let miniatureTextureRevision = 0;
     const cityGlyphs: Array<{ city: CountryOverviewCityDto; canvas: HTMLCanvasElement; draw: () => void }> = [];
     const cityZoom = () => camera.zoom / .72;
     const cityUnit = (city: CountryOverviewCityDto) => Math.min(3, 96 / Math.max(1, city.miniature.columns, city.miniature.rows)) * cityZoom();
@@ -191,15 +217,21 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       }
       railwayCanvas.width = width;
       railwayCanvas.height = height;
+      for (const route of overview.seaConnections ?? []) {
+        shipPaths.set(route.id,railPolyline(route.points.map(p=>({x:sceneX+p.x*scale,y:sceneY+p.y*scale}))));
+      }
+      renderShips();
       for (const railway of railways) {
-        const stationPoint = (id: string) => {
-          const city = citiesById.get(id)!;
-          const station = city.miniature.stations![0]!;
+        const stationPoint = (id: string, stationId: string) => {
+          const city = citiesById.get(id);
+          const station = city?.miniature.stations?.find(station=>station.taskId===stationId);
+          if (!city || !station) return undefined;
           return screenPoint(city, station.x, station.y);
         };
         const points = railway.points.map(p => ({ x: Math.round(sceneX + p.x * scale), y: Math.round(sceneY + p.y * scale) }));
-        points[0] = stationPoint(railway.fromCityId);
-        points[points.length - 1] = stationPoint(railway.toCityId);
+        points[0] = stationPoint(railway.fromCityId,railway.fromStationId) ?? points[0]!;
+        points[points.length - 1] = stationPoint(railway.toCityId,railway.toStationId) ?? points.at(-1)!;
+        trainPaths.set(railway.id,railPolyline(points));
         railwayContext.beginPath();
         points.forEach((p, i) => i ? railwayContext.lineTo(p.x, p.y) : railwayContext.moveTo(p.x, p.y));
         railwayContext.setLineDash([]);
@@ -249,7 +281,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     const scheduleCamera = () => {
       if (!frame) frame = requestAnimationFrame(applyCamera);
     };
-    scheduleLabelsRef.current = scheduleCamera;
+    scheduleLabelsRef.current = () => { labelMetrics = null; scheduleCamera(); };
     const animateZoom = (timestamp: number) => {
       zoomFrame = 0;
       if (disposed) return;
@@ -285,10 +317,24 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       const assetUrls = new Set(terrainTiles.flatMap(patches => patches.map(patch => gameAssetUrl(patch.tile.url))));
       assetUrls.add(gameAssetUrl(overviewTerrainPatches("deep_water", "country", 0, 0, 15)[0]!.tile.url));
       if (groundRoadPlan.routes.length) for (const tile of Object.values(COUNTRY_ROAD_ATLAS_TILES)) assetUrls.add(gameAssetUrl(tile.url));
-      for (const city of overview.cities) for (const block of city.miniature.blocks) assetUrls.add(getBuilding(block.family).stages[4]!);
-      if (overview.cities.some(city => city.miniature.airports.length > 0)) assetUrls.add(getBuilding("compact-airport-v1").stages[4]!);
-      if (overview.cities.some(city => (city.miniature.stations?.length ?? 0) > 0)) assetUrls.add(getBuilding("compact-railway-v1").stages[4]!);
+      const miniatureUrls = new Set<string>();
+      for (const city of overview.cities) {
+        for (const block of city.miniature.blocks) miniatureUrls.add(miniatureBuildingArt(block.family,1,10,block.stage).url);
+        for (const marker of miniatureTransportMarkers(city.miniature)) miniatureUrls.add(miniatureBuildingArt(marker.family,1,8,marker.stage).url);
+      }
+      // Land and navigation are usable even when a building image fails or stalls.
       const textures = new Map(await Promise.all([...assetUrls].map(async (url) => [url, await loadAtlasImage(url)] as const)));
+      let loadedMiniatures = 0;
+      host.dataset.countryMiniaturesLoaded = "0";
+      host.dataset.countryMiniaturesExpected = String(miniatureUrls.size);
+      for (const url of miniatureUrls) void loadAtlasImage(url).then(image => {
+        if (disposed) return;
+        textures.set(url, image); miniatureTextureRevision++;
+        host.dataset.countryMiniaturesLoaded = String(++loadedMiniatures);
+        scheduleCamera();
+      }).catch(() => {
+        if (!disposed) setError("Часть зданий не загрузилась. Карта доступна.");
+      });
       if (disposed) return;
       // Compose immutable atlas tiles on a small CPU canvas. At four pixels
       // per world unit every4-unit semantic cell remains16x16px. Its material
@@ -382,32 +428,33 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       const airportPoints = new Map<string, { x: number; y: number }>();
       for (const city of overview.cities) {
         const miniature = city.miniature;
-        let renderedZoom = -1;
+        let renderedZoom = -1, renderedTextures = -1;
         const canvas = document.createElement("canvas");
         canvas.className = "country-city-glyph";
         canvas.dataset.cityId = city.id;
         canvas.setAttribute("aria-hidden", "true");
         const renderGlyph = () => {
-          if (renderedZoom === camera.zoom) return;
+          if (renderedZoom === camera.zoom && renderedTextures === miniatureTextureRevision) return;
+          renderedTextures = miniatureTextureRevision;
           renderedZoom = camera.zoom;
           const unit = cityUnit(city);
           canvas.width = Math.ceil(miniature.columns * unit) + Math.ceil(24 * cityZoom());
           canvas.height = Math.ceil(miniature.rows * unit) + Math.ceil(24 * cityZoom());
           const glyph = canvas.getContext("2d")!;
           glyph.imageSmoothingEnabled = false;
-          const draw = (family: string, x: number, y: number, baseWidth = 10) => {
-            const width = Math.max(1, Math.round(baseWidth * cityZoom()));
-            const entry = getBuilding(family);
-            const height = Math.max(1, Math.round(width * entry.spriteSize.height / entry.spriteSize.width));
-            glyph.drawImage(textures.get(entry.stages[4]!)!, Math.round(canvas.width / 2 + (x - miniature.columns / 2) * unit - width / 2),
+          const draw = (family: string, x: number, y: number, baseWidth = 10, stage = 5) => {
+            const { width, height, url } = miniatureBuildingArt(family, cityZoom(), baseWidth, stage);
+            const image = textures.get(url);
+            if (!image) return;
+            glyph.drawImage(image, Math.round(canvas.width / 2 + (x - miniature.columns / 2) * unit - width / 2),
               Math.round(canvas.height / 2 + (y - miniature.rows / 2) * unit - height / 2), width, height);
           };
-          for (const block of miniature.blocks) draw(block.family, block.x, block.y);
-          for (const station of miniature.stations ?? []) draw("compact-railway-v1", station.x, station.y, 8);
+          for (const block of miniature.blocks) draw(block.family, block.x, block.y,10,block.stage);
+          for (const marker of miniatureTransportMarkers(miniature)) draw(marker.family, marker.x, marker.y, 8,marker.stage);
           for (const airport of miniature.airports) {
-            airportPoints.set(city.id, { x: city.atlasCenter.x + (airport.x - miniature.columns / 2) * CITY_LOD_CELL_SIZE,
+            airportPoints.set(airport.taskId, { x: city.atlasCenter.x + (airport.x - miniature.columns / 2) * CITY_LOD_CELL_SIZE,
               y: city.atlasCenter.y + (airport.y - miniature.rows / 2) * CITY_LOD_CELL_SIZE });
-            draw("compact-airport-v1", airport.x, airport.y, 8);
+
           }
         };
         renderGlyph();
@@ -418,10 +465,76 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       host.prepend(viewportCanvas);
       host.dataset.countryCityRender = "one-house-per-block";
 
+      // Optional traffic assets never hold the map's first frame.
+      if (overview.seaConnections?.length) void (async()=>{
+        const source=await loadAtlasImage(PROP_SPRITES["boat-horizontal-b"]!);
+        if(disposed)return;
+        for(const route of overview.seaConnections!.slice(0,3)){
+          const view=document.createElement("img");view.src=source.src;view.alt="";
+          view.className="country-atlas-ship";view.dataset.routeId=route.id;view.hidden=true;
+          host.append(view);ships.push({route,view,schedule:transportSchedule("SEA",route.fromPortId,route.toPortId)});
+        }
+        const animate=()=>{
+          if(shipTime===undefined || !document.hidden && !matchMedia("(prefers-reduced-motion: reduce)").matches)shipTime=readServerWorldTime()??Date.now();
+          const now=shipTime,budget=host.dataset.worldQuality==="ECONOMY"?1:3;
+          ships.forEach((ship,index)=>{
+            const path=shipPaths.get(ship.route.id);
+            if(!path||index>=budget){ship.view.hidden=true;return;}
+            const state=seaVessel(path,ship.schedule,ship.route.fromPortId,now,ship.route.progressRange);
+            ship.view.hidden=!state.visible;ship.view.dataset.phase=state.phase;ship.view.dataset.progress=String(state.progress);
+            if(!state.point)return;
+            const width=36*cityZoom(),height=12*cityZoom();
+            ship.view.style.width=`${width}px`;ship.view.style.height=`${height}px`;
+            ship.view.style.transform=`translate3d(${state.point.x-width/2}px,${state.point.y-height/2}px,0) rotate(${state.point.angle}rad)`;
+          });
+        };
+        renderShips=animate;animate();stopShips=startVisibleAnimation(animate);
+      })().catch(()=>{if(!disposed)host.dataset.countryShipAssets="unavailable";});
+      void (async()=>{
+        const sources=new Map<string,string>();
+        await Promise.all(["locomotive","carriage"].flatMap(part=>["east","north"].map(async direction=>{
+          const key=`${part}-${direction}`;
+          const image=await loadAtlasImage(gameAssetUrl(`city-transport/${key}.png`));sources.set(key,image.src);
+        })));
+        if(disposed)return;
+        for(const route of railways.slice(0,4)){
+          const view=document.createElement("div");view.className="country-atlas-train";view.dataset.routeId=route.id;
+          view.setAttribute("aria-hidden","true");view.hidden=true;
+          const cars=Array.from({length:4},()=>{const image=document.createElement("img");image.alt="";view.append(image);return image;});
+          host.append(view);trains.push({route,view,cars,schedule:transportSchedule("RAIL",route.fromStationId,route.toStationId)});
+        }
+        const animate=()=>{
+          const now=readServerWorldTime()??Date.now(),budget=host.dataset.worldQuality==="ECONOMY"?2:4;
+          trains.forEach((train,index)=>{
+            const path=trainPaths.get(train.route.id);
+            if(!path||index>=budget){train.view.hidden=true;return;}
+            const state=railConvoy(path,train.schedule,train.route.fromStationId,now,7*cityZoom(),train.route.progressRange);
+            train.view.hidden=!state.visible;train.view.dataset.phase=state.phase;train.view.dataset.progress=state.progress.toFixed(4);
+            if(!state.visible)return;
+            state.cars.forEach((car,i)=>{
+              const vertical=car.heading==="north"||car.heading==="south",image=train.cars[i]!;
+              const source=sources.get(`${i===0?"locomotive":"carriage"}-${vertical?"north":"east"}`)!;
+              if(image.getAttribute("src")!==source)image.src=source;
+              const width=(vertical?3:6)*cityZoom(),height=(vertical?6:3)*cityZoom();
+              image.style.width=`${width}px`;image.style.height=`${height}px`;
+              image.style.transform=`translate3d(${Math.round(car.x-width/2)}px,${Math.round(car.y-height/2)}px,0) rotate(${car.heading==="west"||car.heading==="south"?180:0}deg)`;
+            });
+          });
+        };
+        animate();stopTrains=startVisibleAnimation(animate);
+      })().catch(()=>{if(!disposed)host.dataset.countryTrainAssets="unavailable";});
+
       const routeInputs = overview.connections.flatMap((connection, index) => {
-        const from = airportPoints.get(connection.fromCityId);
-        const to = airportPoints.get(connection.toCityId);
-        return from && to ? [{ from, to, index, startsAtAirport: true, fromCityId: connection.fromCityId, toCityId: connection.toCityId }] : [];
+        const primary = (cityId: string, airportId?: string) => {
+          const airports=citiesById.get(cityId)?.miniature.airports ?? [];
+          return airportId ? airports.find(airport=>airport.taskId===airportId) : [...airports].sort((a,b)=>a.taskId.localeCompare(b.taskId))[0];
+        };
+        const fromAirport=primary(connection.fromCityId,connection.fromAirportId);
+        const toAirport=primary(connection.toCityId,connection.toAirportId);
+        const from=fromAirport ? airportPoints.get(fromAirport.taskId) : connection.fromPoint;
+        const to=toAirport ? airportPoints.get(toAirport.taskId) : connection.toPoint;
+        const fromId=fromAirport?.taskId ?? connection.fromAirportId, toId=toAirport?.taskId ?? connection.toAirportId;
+        return from && to && fromId && toId ? [{ from, to, index, schedule:transportSchedule("AIR",fromId,toId),fromAirportId:fromId,toAirportId:toId, startsAtAirport: true, fromCityId: connection.fromCityId, toCityId: connection.toCityId }] : [];
       }).slice(0,5);
       // Aircraft are decoration: their network latency must not hold the map.
       void (async () => {
@@ -440,43 +553,44 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
           host.append(view);
           flights.push({
             view,
-            elapsed: 0,
-            duration: 9_000 + index * 1_700,
-            delay: index * 1_250,
+            schedule:route.schedule, fromAirportId:route.fromAirportId,toAirportId:route.toAirportId,
             route: buildAtlasFlightGeometry(route.from, route.to, `country:${countryId}:${index}`, 18),
             startsAtAirport: route.startsAtAirport,
             fromCityId: route.fromCityId, toCityId: route.toCityId, from: route.from, to: route.to,
           });
         }
-        let previousFlightFrame = performance.now();
-        const animateFlights = (timestamp: number) => {
+        const animateFlights = () => {
           if (disposed) return;
-          const deltaMs = Math.min(64, timestamp - previousFlightFrame);
-          previousFlightFrame = timestamp;
+          const now=readServerWorldTime() ?? Date.now();
           for (const flight of flights) {
-            flight.elapsed = (flight.elapsed + deltaMs) % (flight.duration + flight.delay);
-            const progress = Math.max(0, flight.elapsed - flight.delay) / flight.duration;
-            flight.view.hidden = !(progress > 0 && progress <= 1);
+            const state=transportProgress(flight.schedule,flight.fromAirportId,now);
+            const progress=state.progress;
+            flight.view.hidden = state.phase!=="MOVING";
+            flight.view.dataset.routeId=flight.schedule.id;
+            flight.view.dataset.progress=progress.toFixed(4);
             if (flight.view.hidden) continue;
             const sample = sampleAtlasFlight(flight.route, progress);
             const endpointScale = atlasAircraftEndpointScale(progress, flight.startsAtAirport, true);
-            const endpointDelta = (id: string, point: { x: number; y: number }) => {
-              const city = citiesById.get(id)!;
-              const airport = city.miniature.airports.at(-1)!;
+            const endpointDelta = (id: string, airportId: string, point: { x: number; y: number }) => {
+              const city = citiesById.get(id);
+              const airport = city?.miniature.airports.find(airport=>airport.taskId===airportId);
+              if (!city || !airport) return {x:0,y:0};
               const screen = screenPoint(city, airport.x, airport.y);
               return { x: screen.x - sceneX - point.x * sceneScale, y: screen.y - sceneY - point.y * sceneScale };
             };
-            const fromDelta = endpointDelta(flight.fromCityId, flight.from), toDelta = endpointDelta(flight.toCityId, flight.to);
+            const fromDelta = endpointDelta(flight.fromCityId, flight.fromAirportId, flight.from), toDelta = endpointDelta(flight.toCityId, flight.toAirportId, flight.to);
             const screenX = sceneX + sample.x * sceneScale + fromDelta.x * (1 - progress) + toDelta.x * progress;
             const screenY = sceneY + sample.y * sceneScale + fromDelta.y * (1 - progress) + toDelta.y * progress;
-            const heading = (Math.round(sample.angle / (Math.PI / 2)) + 5) % 4;
+            const heading = (Math.round((sample.angle + (state.direction === -1 ? Math.PI : 0)) / (Math.PI / 2)) + 5) % 4;
             if (flight.view.dataset.heading !== String(heading)) { flight.view.src=headingImages[heading]!; flight.view.dataset.heading=String(heading); }
             flight.view.style.opacity=String(endpointScale);
             flight.view.style.transform = `translate3d(${Math.round(screenX)-4}px, ${Math.round(screenY)-4}px, 0)`;
           }
-          flightFrame = requestAnimationFrame(animateFlights);
         };
-        if (flights.length > 0) flightFrame = requestAnimationFrame(animateFlights);
+        if (flights.length > 0) {
+          animateFlights();
+          stopFlights = startVisibleAnimation(animateFlights);
+        }
       })().catch(() => {
         if (!disposed) setError("Не удалось загрузить самолёты. Карта доступна.");
       });
@@ -565,7 +679,11 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       observer.disconnect();
       if (frame) cancelAnimationFrame(frame);
       if (zoomFrame) cancelAnimationFrame(zoomFrame);
-      if (flightFrame) cancelAnimationFrame(flightFrame);
+      stopFlights?.();
+      stopTrains?.();
+      stopShips?.();
+      for(const ship of ships)ship.view.remove();
+      for(const train of trains)train.view.remove();
       if (readyTimer) clearTimeout(readyTimer);
       host.removeEventListener("wheel", onWheel);
       disposeGestures();
@@ -577,7 +695,7 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
       host.style.backgroundSize = "";
       host.style.backgroundPosition = "";
     };
-  }, [countryId, initialFocusCityId, overview, wheelNavigation, attempt]);
+  }, [countryId, initialFocusCityId, renderOverview, wheelNavigation, attempt]);
 
   if (error && !overview) return <div className="atlas-state" role="alert"><strong>Карта страны недоступна</strong><span>{error}</span><button type="button" onClick={retry}>Повторить загрузку карты</button></div>;
   if (!overview) return <div className="atlas-state" role="status"><i /><span>Загружаем города страны…</span></div>;
@@ -598,8 +716,8 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
     data-country-terrain-cells={overview.geography.terrainCodes.length}
     data-country-miniature-cells={overview.cities.reduce((total, city) => total + city.miniature.blocks.length, 0)}
     data-country-airports={overview.cities.reduce((count, city) => count + city.miniature.airports.length, 0)}
-    data-country-flights={overview.connections.filter(connection => overview.cities.some(city => city.id === connection.fromCityId && city.miniature.airports.length > 0)
-      && overview.cities.some(city => city.id === connection.toCityId && city.miniature.airports.length > 0)).slice(0, 5).length}
+    data-country-flights={overview.connections.filter(connection => (connection.fromPoint || overview.cities.some(city => city.id === connection.fromCityId && city.miniature.airports.length > 0))
+      && (connection.toPoint || overview.cities.some(city => city.id === connection.toCityId && city.miniature.airports.length > 0))).slice(0, 5).length}
     data-country-ready={renderReady ? "true" : "false"}
     role="group"
     aria-label={`Карта страны: ${overview.cities.length} городов`}
@@ -639,7 +757,8 @@ export function CountryOverviewCanvas({ countryId, worldRevision, activeCityId, 
         onPointerLeave={() => onCityHover(null)}
         onClick={() => onCitySelect(city)}
       >
-        <strong>{city.name}</strong>
+        <strong>{city.districts.some(d => d.status === "ACTIVE" && d.taskCount > 0 && d.progress < 100)
+          && <img className="city-development-icon" src={PROP_SPRITES["district-development-active"]} alt="" title="Район развивается" />}{city.name}</strong>
         <span>{city.districts.length} районов · {city.progress}%</span>
       </button></div>)}
     </div>

@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
+// Fixture safety checks in workers must see the same resolved target as the
+// runner, including the default isolated server started by `test:e2e`.
+process.env.E2E_BASE_URL = baseURL;
 const seedCommand = process.env.E2E_SEED_COMMAND ?? "npm run seed:test";
 const testDatabaseURL = process.env.TEST_DATABASE_URL
   ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
@@ -11,6 +14,9 @@ const webCommand = process.env.E2E_WEB_COMMAND
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 60_000,
+  // Hosted software renderers need longer for first-scene readiness. Explicit
+  // performance budgets and fault-injection timeouts remain in their tests.
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   // Stateful UI scenarios intentionally share one seeded country. Running
   // them concurrently makes tests rename/delete data underneath each other.
   workers: 1,
@@ -22,6 +28,8 @@ export default defineConfig({
     env: {
       APP_ORIGIN: baseURL,
       AUTH_RATE_LIMIT_MAX: "100",
+      // One local IP drives many independent users and reload journeys in CI.
+      CITY_SCENE_RATE_LIMIT_MAX: "300",
       REGISTRATION_ENABLED: "true",
       DATABASE_URL: process.env.E2E_DATABASE_URL ?? testDatabaseURL,
       TEST_DATABASE_URL: testDatabaseURL,
@@ -49,7 +57,7 @@ export default defineConfig({
         serviceWorkers: "block",
       },
     },
-    { name: "webkit-visual", testMatch: /(?:atlas-transport|visual-consistency|visual-services)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "webkit-visual", testMatch: /(?:atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|visual-consistency|visual-services|world-preferences|city-asset-overlap)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
     { name: "mobile-chromium", testMatch: /mobile-pwa\.spec\.ts/, use: { ...devices["Pixel 7"] } },
     { name: "mobile-webkit", testMatch: /(?:mobile-pwa|pwa-update)\.spec\.ts/, use: { ...devices["iPhone 13"] } },
   ],

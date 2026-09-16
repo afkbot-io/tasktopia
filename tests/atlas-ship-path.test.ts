@@ -6,8 +6,10 @@ describe("atlas presentation", () => {
   it("grows houses with the map while preserving their native aspect", () => {
     for (const zoom of [.55, 1, 2.6, 8.5]) {
       const art = overviewBuildingArt("city", zoom);
-      expect(Math.max(art.width, art.height)).toBeCloseTo(10 * zoom);
-      expect(art.width / art.height).toBeCloseTo(art.nativeWidth / art.nativeHeight);
+      expect(Math.max(art.width, art.height)).toBe(Math.round(10 * zoom));
+      const scale = 10 * zoom / Math.max(art.nativeWidth, art.nativeHeight);
+      expect(Math.abs(art.width - art.nativeWidth * scale)).toBeLessThanOrEqual(.5);
+      expect(Math.abs(art.height - art.nativeHeight * scale)).toBeLessThanOrEqual(.5);
     }
   });
   it("rounds a sea corner locally without moving route endpoints", () => {

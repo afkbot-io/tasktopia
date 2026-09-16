@@ -1,3 +1,6 @@
+import type { PortSitePlan } from "../../shared/port-site";
+import { nextInfrastructure, PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
+import { buildingProfile } from "../../shared/building-profiles";
 import { createHash } from "node:crypto";
 import { BLOCK_WORLD_GENERATOR_VERSION, type BlockServiceRole, type BlockSlotKind, type BlockWorldBounds, type CityBlockV1,
   type CompiledBlockLayoutV1, type ConstructionStage, type DistrictLayoutV1, type TaskPlacementV1 } from "../../shared/block-world";
@@ -24,6 +27,8 @@ export type BlockLayoutCompilerInput = {
   countryId: string; cityId: string; origin?: { x: number; y: number }; seed: number; revision: number;
   districts: BlockLayoutDistrictInput[]; previous?: CompiledBlockLayoutV1;
   compactReplay?: boolean;
+  /** Trusted coastal allocator; never accepted from a task request. */
+  planPort?: (terminal: BlockWorldBounds, blocks: readonly CityBlockV1[]) => PortSitePlan | null;
   canPlaceBlock?: (bounds: BlockWorldBounds) => boolean;
 };
 
@@ -35,6 +40,10 @@ export class BlockPlacementError extends Error {
 /** An explicit family must not bypass a stable mandatory infrastructure parcel. */
 export class BlockReservationConflictError extends BlockPlacementError {
   constructor(message: string) { super(message); this.name = "BlockReservationConflictError"; }
+}
+
+export class PortPlacementError extends BlockPlacementError {
+  constructor() { super("Для морского порта нужен подтверждённый морской берег и план причала"); this.name = "PortPlacementError"; }
 }
 
 export class UniqueBuildingConflictError extends BlockPlacementError {
@@ -93,17 +102,11 @@ function reserveNextInfrastructure(district: BlockLayoutDistrictInput, ownBlocks
   const ownIds = new Set(ownBlocks.map(b => b.id));
   const count = current.filter(p => ownIds.has(p.blockId) && kinds.get(p.taskId) === "BUILDING").length;
   const triggers = new Set(allBlocks.flatMap(b => Object.values(b.parameters.slotRoleTriggers as Record<string, string> ?? {})));
-  const pending: Array<{ id: string; role: BlockServiceRole }> = [];
-  for (const [ordinal, role] of [[9, "EDUCATION"], [12, "MEDICAL"], [16, "FIRE"], [20, "POLICE"]] as const) {
-    if (count >= ordinal - 1) pending.push({ id: `district:${district.id}:${role}:${ordinal}`, role });
-  }
   const cityNonempty = allBlocks.filter(b => nonempty.has(b.id));
-  if (cityNonempty.length >= 6) pending.push({ id: "city:RAILWAY:6", role: "RAILWAY" });
-  if (new Set(cityNonempty.map(b => b.districtLayoutId)).size >= 3) pending.push({ id: "city:AIRPORT:3", role: "AIRPORT" });
-  if (cityNonempty.length >= 18) pending.push({ id: "city:CIVIC:18", role: "CIVIC" });
-  const ownNonempty = ownBlocks.filter(b => nonempty.has(b.id)).length;
-  for (let n = 2; n <= ownNonempty; n += 2) pending.push({ id: `district:${district.id}:SHOP:${n}`, role: "SHOP" });
-  const next = pending.find(p => !triggers.has(p.id) && !durableTriggers.has(p.id));
+  const next = nextInfrastructure({ districtId: district.id, buildings: count,
+    districtBlocks: ownBlocks.filter(b => nonempty.has(b.id)).length,
+    cityBlocks: cityNonempty.length, cityDistricts: new Set(cityNonempty.map(b => b.districtLayoutId)).size,
+  }, new Set([...triggers, ...durableTriggers]));
   if (!next) return;
   const candidates = requestedFamily ? slots.filter(({slot}) => familyFitsSlot(requestedFamily,slot)) : slots;
   // Art is a preference, never a reason to defer the next business service.
@@ -190,6 +193,12 @@ function nextBlockOrigin(frontierBlocks: CityBlockV1[], districtLayoutId: string
   }
   if (occupied.size === 0) frontier.add("0:0");
   const separators = readDistrictSeparators(allBlocks);
+  const portCells = allBlocks.flatMap(block => Object.values(
+    block.parameters.slotPortPlans as Record<string, Omit<PortSitePlan, "link">> ?? {},
+  ).flatMap(plan => [
+    ...plan.approach, ...plan.pier,
+    ...plan.waterPath.flatMap(point => [-1, 0, 1].flatMap(dy => [-1, 0, 1].map(dx => ({ x: point.x + dx, y: point.y + dy })))),
+  ]));
   const candidates: Array<{ x: number; y: number; dimension: number; area: number; distance: number; separator?: DistrictSeparator }> = [];
   for (const cell of frontier) {
     const [x, y] = cell.split(":").map(Number) as [number, number];
@@ -201,9 +210,13 @@ function nextBlockOrigin(frontierBlocks: CityBlockV1[], districtLayoutId: string
     const candidate = { x: origin.x + x * MODULE, y: origin.y + y * MODULE };
     const rectangle = { origin: candidate, width: template.widthModules * MODULE, height: template.heightModules * MODULE };
     if (separators.some(separator => overlapsDistrictSeparator(rectangle, separator))) continue;
+    if (portCells.some(cell => cell.x >= candidate.x - 2 && cell.x <= candidate.x + rectangle.width + 1
+      && cell.y >= candidate.y - 2 && cell.y <= candidate.y + rectangle.height + 1)) continue;
     const separator = separated ? allBlocks.filter(b => b.districtLayoutId !== districtLayoutId)
       .map(b => districtSeparatorBetween(rectangle, b)).find(Boolean) : undefined;
     if (separated && !separator) continue;
+    if (separator && portCells.some(cell => cell.x >= separator.bounds.minX && cell.x <= separator.bounds.maxX
+      && cell.y >= separator.bounds.minY && cell.y <= separator.bounds.maxY)) continue;
     // Do not reserve a strip through a third, already occupied quarter.
     if (separator && allBlocks.some(b => overlapsDistrictSeparator(b, separator))) continue;
     const width = Math.max(extent.maxX, candidate.x + template.widthModules * MODULE) - Math.min(extent.minX, candidate.x);
@@ -362,6 +375,22 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       const { district, districtLayoutId, districtBlocks, available, occupied } = context;
       const kind = task.visualKind ?? "BUILDING";
       const requestedFamily = task.requestedFamily ?? (task.serviceRoleAssigned && task.serviceRole ? task.buildingFamily : undefined);
+      const wantsPort = task.serviceRole === "PORT" || compactBuildingServiceRole(requestedFamily ?? task.buildingFamily) === "PORT";
+      if (wantsPort && !input.planPort) throw new PortPlacementError();
+      if (wantsPort && [...activePlacements.values()].some(placement => placement.serviceRole === "PORT")) {
+        throw new UniqueBuildingConflictError("В городе уже есть морской порт.");
+      }
+      const portPlans = new Map<string, PortSitePlan | null>();
+      const portPlan = ({ block, slot }: { block: CityBlockV1; slot: BlockSlot }) => {
+        const id = `${block.id}:${slot.key}`;
+        if (!portPlans.has(id)) {
+          const plan = familyFitsSlot("compact-port-v1", slot) ? input.planPort?.(slot.footprintBounds, reservedBlocks) : null;
+          const scoped = plan && plan.link.countryId === input.countryId && plan.link.cityId === input.cityId
+            && plan.link.worldSeed === input.seed && canonicalJson(plan.terminal) === canonicalJson(slot.footprintBounds);
+          portPlans.set(id, scoped ? plan! : null);
+        }
+        return portPlans.get(id);
+      };
       if (requestedFamily && isCityLandmark(requestedFamily)
         && [...landmarkOwners.get(requestedFamily) ?? []].some(owner => owner !== task.id)) {
         throw new UniqueBuildingConflictError("Такое уникальное здание уже есть в городе или на его сохранённом участке.");
@@ -377,6 +406,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         (block.sequence >= (latestBlock.get(district.id) ?? -1)
           || Boolean((block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key])) && !occupied.has(`${block.id}:${slot.key}`) && (task.autoVisualKind || slot.kind === kind)
         && parkSizeFitsSlot(task.parkSize, slot, true)
+        && (!wantsPort || Boolean(portPlan({ block, slot })))
         && (!requestedFamily || familyFitsSlot(requestedFamily,slot))
         && (!task.serviceRoleAssigned || !(block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key]);
       const preferred = () => available.find(value => eligible(value)
@@ -407,7 +437,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
           templateKey: template.key, templateVersion: BLOCK_TEMPLATE_VERSION, variant: "south", seed: input.seed + sequence,
           origin: site.origin,
           width: template.widthModules * MODULE, height: template.heightModules * MODULE,
-          parameters: { packingCorner: ["NW", "NE", "SW", "SE"][((input.seed + sequence + district.sequence) % 4 + 4) % 4], infill: true,
+          parameters: { buildingProfile: buildingProfile(district.archetype) ?? "MIXED_URBAN", buildingProfileVersion: 1, packingCorner: ["NW", "NE", "SW", "SE"][((input.seed + sequence + district.sequence) % 4 + 4) % 4], infill: true,
             ...(site.separator ? { districtSeparator: site.separator } : {}),
             ...(requestedFamily ? { firstFamily: compactBuildingShapeFamily(requestedFamily)! } : task.parkSize === "POCKET" ? { firstFamily: "compact-apartment-v1" } : {}) }, summary: {} };
         block.parameters.sitePlan = createBlockSitePlan(block);
@@ -417,13 +447,40 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         for (const slot of slots) available.push({ block, slot });
         selected = (preferred() ?? pocketSite())!;
       }
+      if (wantsPort && !selected) throw new PortPlacementError();
+      const placePort = (selected: {block:CityBlockV1;slot:BlockSlot},plan:PortSitePlan) => {
+        // Atlas coordinates belong to the viewer. Store the immutable local
+        // terminal/approach/pier only; resolve the ocean destination per view.
+        const { terminal, approach, pier, berth, waterPath } = plan;
+        selected.block.parameters = { ...selected.block.parameters,
+          slotPortPlans: { ...selected.block.parameters.slotPortPlans as Record<string, unknown>,
+            [selected.slot.key]: structuredClone({ terminal, approach, pier, berth, waterPath }) },
+          slotRoles: { ...selected.block.parameters.slotRoles as Record<string, BlockServiceRole>, [selected.slot.key]: "PORT" },
+          slotRoleTriggers: { ...selected.block.parameters.slotRoleTriggers as Record<string, string>, [selected.slot.key]: "city:PORT:6" } };
+      };
+      if (wantsPort) {
+        const plan=portPlan(selected);
+        if(!plan)throw new PortPlacementError();
+        placePort(selected,plan);
+      }
       if (task.serviceRole) selected.block.parameters = { ...selected.block.parameters,
         slotRoles: { ...selected.block.parameters.slotRoles as Record<string,BlockServiceRole>, [selected.slot.key]: task.serviceRole },
         slotRoleTriggers: { ...selected.block.parameters.slotRoleTriggers as Record<string,string>,
           [selected.slot.key]: task.serviceTrigger ?? `task:${task.id}:${task.serviceRole}` } };
-      else if (!task.serviceRoleAssigned) {
+      else if (!task.serviceRoleAssigned && !wantsPort) {
         reserveNextInfrastructure(district, districtBlocks, reservedBlocks, available, occupied, activePlacements.values(), kinds, durableTriggers,requestedFamily);
         selected = preferred()!;
+        // Ordinary mandatory services keep priority. The port may use only an
+        // already available new parcel: no extra remote block and no relocation.
+        const occupiedBlocks=new Set([...activePlacements.values()].map(p=>p.blockId));
+        const existingPort=reservedBlocks.some(block=>Object.values(block.parameters.slotRoles as Record<string,BlockServiceRole>??{}).includes("PORT"));
+        if(!requestedFamily && input.planPort && occupiedBlocks.size>=PORT_MIN_CITY_BLOCKS && !existingPort
+          && !(selected.block.parameters.slotRoles as Record<string,BlockServiceRole> | undefined)?.[selected.slot.key]) {
+          const candidate=available.find(value=>eligible(value)
+            && !(value.block.parameters.slotRoles as Record<string,BlockServiceRole> | undefined)?.[value.slot.key]
+            && Boolean(portPlan(value)));
+          if(candidate){selected=candidate;placePort(selected,portPlan(selected)!);}
+        }
       }
       const serviceRole = (selected.block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[selected.slot.key];
       if (serviceRole && requestedFamily && isCityLandmark(requestedFamily)) {
@@ -446,7 +503,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         ?? (!serviceRole && selected.slot.kind === "BUILDING" ? compactHomeFamily(
           selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1,
           selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1,
-          Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16), new Map([...cityHomeUsage].map(([family, count]) => [family, count + (homeUsage.get(selected.block.id)?.get(family) ?? 0) * 100]))) : undefined)
+          Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16), new Map([...cityHomeUsage].map(([family, count]) => [family, count + (homeUsage.get(selected.block.id)?.get(family) ?? 0) * 100])), selected.block.parameters.buildingProfileVersion === 1 ? buildingProfile(selected.block.parameters.buildingProfile) : undefined) : undefined)
         ?? selected.slot.buildingFamily ?? task.buildingFamily;
       if (selected.slot.kind === "BUILDING") {
         selected.block.parameters = {...selected.block.parameters,

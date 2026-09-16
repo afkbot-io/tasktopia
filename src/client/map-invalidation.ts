@@ -23,11 +23,11 @@ export type MapInvalidation = {
 export type MapInvalidationImpact = 'NONE' | 'TASK_STATUS' | 'SCENE';
 const TASK_DETAIL_FIELDS = new Set(['description', 'acceptanceCriteria', 'documents', 'attachments', 'mergeRequests', 'checklist', 'dependencies']);
 export function mapInvalidationAffectsCity(event: MapInvalidation, cityId?: string): boolean {
-  // Each city contains routes to remote completed airports. Deletion payloads
+  // Each city contains routes to remote completed transport stops. Deletion payloads
   // may no longer contain the removed task's role, so invalidate conservatively.
   return !cityId || !event.cityId || event.cityId === cityId || event.resync === true
     || event.groundRoadTopologyChanged === true
-    || event.serviceRole === 'AIRPORT'
+    || event.serviceRole === 'AIRPORT' || event.serviceRole === 'RAILWAY' || event.serviceRole === 'PORT'
     || ['country.regenerated', 'task.deleted', 'district.deleted', 'city.deleted'].includes(event.type);
 }
 
@@ -36,7 +36,7 @@ export function mapInvalidationImpact(event: MapInvalidation): MapInvalidationIm
   if (['task.comment_added', 'task.assignee_changed', 'country.profile_updated', 'archive.record_updated'].includes(event.type)) return 'NONE';
   if (event.type === 'task.fields_updated' && event.changedFields?.length
     && event.changedFields.every(field => TASK_DETAIL_FIELDS.has(field))) return 'NONE';
-  return event.type === 'task.status_changed' && event.groundChanged === false && event.serviceRole !== 'AIRPORT'
+  return event.type === 'task.status_changed' && event.groundChanged === false && event.serviceRole !== 'AIRPORT' && event.serviceRole !== 'RAILWAY' && event.serviceRole !== 'PORT'
     && event.taskId && event.status && event.progress !== undefined && event.stage !== undefined ? 'TASK_STATUS' : 'SCENE';
 }
 

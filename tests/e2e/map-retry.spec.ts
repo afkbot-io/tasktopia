@@ -53,7 +53,9 @@ test("a stalled terrain image can be retried without leaving the country", async
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 45_000 });
   let delayed = false;
-  await page.route("**/deep_water.png*", async route => {
+  // Scope the fault to the country renderer: city padding can still request
+  // its own ocean texture after its canvas has become visible.
+  await page.route("**/atlas/terrain-v4/country/deep_water.png*", async route => {
     if (!delayed) {
       delayed = true;
       await new Promise(resolve => setTimeout(resolve, 22_000));

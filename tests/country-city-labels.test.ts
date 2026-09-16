@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { COUNTRY_DENSE_LEADER_LIMIT_PX, layoutCountryCityLabels } from "../src/client/country-city-labels";
 
 describe("country screen-space city labels", () => {
+  it("hides offscreen cities on small maps and restores their labels when the camera returns", () => {
+    const viewport = { width: 390, height: 748 };
+    const cities = [
+      { id: "visible", x: 190, y: 300, width: 140, height: 44, offset: 32 },
+      { id: "outside", x: 600, y: 300, width: 140, height: 44, offset: 32 },
+    ];
+    expect(layoutCountryCityLabels(cities, viewport).map(label => label.id)).toEqual(["visible"]);
+    const returned = cities.map(city => ({ ...city, x: city.x - 400 }));
+    expect(layoutCountryCityLabels(returned, viewport).map(label => label.id)).toEqual(["outside"]);
+    expect(layoutCountryCityLabels(cities.map(city => ({ ...city, y: -30 })), viewport)).toEqual([]);
+  });
   it("never overlaps dense labels when a hundred city cards cannot fit on a mobile map", () => {
     const viewport = { width: 390, height: 748 };
     const input = Array.from({ length: 100 }, (_, n) => ({ id: `city-${n}`, x: 60 + n % 10 * 27,

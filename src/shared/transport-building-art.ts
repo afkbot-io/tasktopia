@@ -5,7 +5,7 @@ type TransportParcel = { buildingType:string; serviceRole?:string|null; origin:C
 /** A historical service assignment may occupy a house-sized lot. Keep the lot
  * immutable while placing the native terminal on its south frontage. */
 export function transportBuildingArt(task:TransportParcel) {
-  const requested=task.serviceRole==="AIRPORT"?"compact-airport-v1":task.serviceRole==="RAILWAY"?"compact-railway-v1":task.buildingType;
+  const requested=task.serviceRole==="AIRPORT"?"compact-airport-v1":task.serviceRole==="RAILWAY"?"compact-railway-v1":task.serviceRole==="PORT"?"compact-port-v1":task.buildingType;
   const entry=getBuilding(requested);
   if(requested===task.buildingType || !task.footprint.length) return {key:task.buildingType,entry:getBuilding(task.buildingType),origin:task.origin};
   let minX=Infinity,maxX=-Infinity,maxY=-Infinity;

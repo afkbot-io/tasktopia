@@ -1,0 +1,103 @@
+{
+  "project_id": "game3",
+  "provider_id": "tasktopia-main",
+  "role": "developer",
+  "tasks": [
+    {
+      "key": "P00",
+      "depends_on": []
+    },
+    {
+      "key": "P01",
+      "depends_on": [
+        "P00"
+      ]
+    },
+    {
+      "key": "P02",
+      "depends_on": [
+        "P00"
+      ]
+    },
+    {
+      "key": "P03",
+      "depends_on": [
+        "P00"
+      ]
+    },
+    {
+      "key": "P04",
+      "depends_on": [
+        "P01"
+      ]
+    },
+    {
+      "key": "P05",
+      "depends_on": [
+        "P01"
+      ]
+    },
+    {
+      "key": "P06",
+      "depends_on": [
+        "P00"
+      ]
+    },
+    {
+      "key": "P07",
+      "depends_on": [
+        "P00"
+      ]
+    },
+    {
+      "key": "P08",
+      "depends_on": [
+        "P07"
+      ]
+    },
+    {
+      "key": "P09",
+      "depends_on": [
+        "P04",
+        "P08"
+      ]
+    },
+    {
+      "key": "P10",
+      "depends_on": [
+        "P02",
+        "P05"
+      ]
+    },
+    {
+      "key": "P11",
+      "depends_on": [
+        "P01",
+        "P02",
+        "P03",
+        "P05",
+        "P06",
+        "P08",
+        "P09",
+        "P10"
+      ]
+    },
+    {
+      "key": "P12",
+      "depends_on": [
+        "P03",
+        "P04",
+        "P09",
+        "P10",
+        "P11",
+        "P13"
+      ]
+    },
+    {
+      "key": "P13",
+      "depends_on": [
+        "P00"
+      ]
+    }
+  ]
+}

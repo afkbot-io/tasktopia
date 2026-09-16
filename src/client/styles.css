@@ -145,7 +145,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .government-title p { margin: 5px 0 0; color: #789095; font-size: 11px; }
 .government-title > span { color: #79bdd9; font: 700 12px/1 monospace; }
 .government-invite { display: grid; grid-template-columns: minmax(0, 1fr) 145px auto; align-items: end; gap: 10px; padding: 15px; border-bottom: 1px solid #263e45; }
-.government-invite select { min-height: 46px; padding: 10px 12px; border: 1px solid #365159; border-radius: 9px; background: #0b171a; color: #e8eee9; }
+.government-invite select, .country-create-form select { min-height: 46px; padding: 10px 12px; border: 1px solid #365159; border-radius: 9px; background: #0b171a; color: #e8eee9; }
 .government-list { display: grid; gap: 2px; padding: 8px; }
 .government-list article { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 9px; border-radius: 11px; }
 .government-list article:hover { background: #10252b; }
@@ -328,8 +328,8 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .planet-country { cursor: grab; outline: none; pointer-events: bounding-box; }
 .planet-country-hit { fill: transparent; stroke: none; pointer-events: all; }
 .planet-country-tint { opacity: .18; shape-rendering: crispEdges; pointer-events: none; }
-.planet-country:hover .planet-terrain-sprite, .planet-country:focus .planet-terrain-sprite { filter: brightness(1.12) saturate(1.05); }
-.planet-country[data-active="true"] .planet-terrain-sprite { filter: brightness(1.1) saturate(1.08); }
+.planet-country:hover .planet-country-terrain, .planet-country:focus .planet-country-terrain { filter: brightness(1.12) saturate(1.05); }
+.planet-country[data-active="true"] .planet-country-terrain { filter: brightness(1.1) saturate(1.08); }
 .planet-country[data-selecting="true"] { opacity: .68; }
 .atlas-overview-card { cursor: pointer; outline: none; }
 .atlas-overview-card-hit { fill: #0a1b1ef2; stroke: #c3b06c; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
@@ -589,7 +589,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
-  .atlas-aircraft-flight { display: none; }
+  .atlas-aircraft-flight, .atlas-train, .country-atlas-train { display: none; }
   .country-atlas-aircraft { display: none; }
   .planet-clouds > g { animation: none !important; }
   .planet-stars rect { animation: none !important; }
@@ -777,3 +777,63 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .pwa-update-notice button { flex-shrink: 0; padding: 10px; border: 1px solid #a38e46; border-radius: 6px; background: #38321d; color: #ffe280; cursor: pointer; }
 .pwa-update-notice button:disabled { opacity: .6; cursor: wait; }
 @media (max-width: 400px) { .pwa-update-notice { flex-direction: column; align-items: stretch; } }
+
+.district-plans { position: absolute; left: 16px; top: 16px; z-index: 12; display: flex; gap: 6px; flex-wrap: wrap; max-width: min(440px, calc(100% - 32px)); }
+.district-plans button { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #9b925e; background: #152d2c; color: #eee8ce; cursor: pointer; font-size: 12px; }
+.district-plans img { width: 24px; height: 24px; image-rendering: pixelated; }
+.district-plans small { display: block; color: #a5b3a5; font-size: 10px; }
+.district-plans button:focus-visible { outline: 2px solid #e4c86d; outline-offset: 2px; }
+.city-development-icon { display: inline-block; width: 12px; height: 12px; margin-right: 4px; image-rendering: pixelated; vertical-align: middle; }
+
+.map-attention { position:absolute; top:76px; left:16px; display:flex; flex-wrap:wrap; gap:4px; max-width:calc(100% - 32px); padding:6px; background:#142c2c; border:1px solid #456059; z-index:12; }
+.map-attention button { background:transparent; color:#c9d5cc; border:1px solid transparent; padding:6px 10px; cursor:pointer; }
+.map-attention button[aria-pressed="true"] { color:#ffe285; border-color:#b39748; background:#3d3825; }
+.map-attention span { color:#bdcbbb; font-size:12px; align-self:center; padding:0 6px; }
+
+.map-dependencies { position:absolute; left:16px; bottom:80px; max-width:min(520px,calc(100% - 32px)); z-index:12; background:#142c2c; color:#dbeddf; padding:12px 36px 12px 12px; border:1px solid #7acbcc; }
+.map-dependencies small { display:block; color:#9ab9b0; margin-top:4px; }
+.map-dependencies button { position:absolute; right:8px; top:8px; background:transparent; color:inherit; border:0; cursor:pointer; }
+
+.city-development-toggle { position:absolute; top:76px; right:16px; z-index:12; background:#18322e; color:#e8d8a6; padding:10px 14px; border:1px solid #8c8555; cursor:pointer; }
+.city-development-panel { position:absolute; right:16px; top:16px; bottom:76px; width:min(420px,calc(100% - 32px)); padding:18px; overflow:auto; z-index:20; background:#132b29; border:1px solid #597a6b; color:#dbe3ca; box-shadow:0 8px 36px #0008; }
+.city-development-panel header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.city-development-panel h2 { margin:0; font-size:20px; }
+.city-development-panel h3 { margin-top:24px; color:#e8cd83; }
+.city-development-panel p { color:#aebfb3; line-height:1.5; }
+.city-development-panel ul { list-style:none; padding:0; }
+.city-development-panel li { display:flex; flex-direction:column; gap:5px; padding:10px 0; border-bottom:1px solid #314b42; }
+.city-development-panel li span { font-size:12px; color:#abc2b4; }
+.city-development-panel button { background:#254039; color:#e8d9ac; border:1px solid #577465; padding:6px 10px; cursor:pointer; align-self:flex-start; }
+@media(max-width:600px) { .city-development-toggle { top:auto; bottom:128px; } }
+
+.task-share-preview { margin: 12px 0; }
+.task-share-preview > div { margin-top: 8px; padding: 12px; border: 1px solid #35564f; background: #102726; }
+.task-share-preview p { font-size: 13px; line-height: 1.5; }
+.task-share-preview blockquote { margin: 12px 0; padding: 10px; background: #18322c; }
+.task-share-preview input { display: block; width: 100%; margin: 8px 0; }
+.task-share-preview button { margin: 4px 8px 4px 0; }
+
+.world-preferences label { display: grid; gap: 6px; margin-top: 14px; }
+.world-preferences select { width: 100%; color: #edf0e7; background: #122527; border: 1px solid #87916b; padding: 8px; }
+:root[data-world-quality="ECONOMY"] .planet-clouds > g,
+:root[data-world-quality="ECONOMY"] .atlas-clouds > g { animation-play-state: paused; }
+@media (max-width: 640px) {
+  .world-preferences .map-legend-panel { position: fixed; left: 16px; right: 16px; top: 112px; width: auto; }
+}
+
+.world-digest { position: absolute; z-index: 35; left: 16px; bottom: 70px; max-width: calc(100vw - 32px); }
+.world-digest button { background: #122527; color: #edf0e7; border: 1px solid #87916b; padding: 9px 12px; text-align: left; cursor: pointer; }
+.world-digest section { width: min(390px, calc(100vw - 32px)); max-height: min(500px, 65vh); overflow: auto; background: #122527; border: 2px solid #87916b; padding: 12px; }
+.world-digest-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.world-digest p, .world-digest small { font-size: 12px; color: #c2cbbd; }
+.world-digest ul { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; }
+.world-digest li button { display: grid; gap: 5px; width: 100%; overflow-wrap: anywhere; }
+.world-digest li span { font-size: 11px; color: #c2cbbd; }
+
+.planet-sector-select { position: absolute; left: 16px; top: 16px; z-index: 4; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #102728; border: 1px solid #536847; color: #e7eadb; font-size: 12px; }
+.planet-sector-select select { max-width: 150px; min-height: 36px; background: #102728; color: inherit; border: 1px solid #647650; padding: 4px 8px; }
+
+.country-atlas-train { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.country-atlas-train img { position: absolute; top: 0; left: 0; image-rendering: pixelated; object-fit: contain; }
+
+.country-atlas-ship { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; image-rendering: pixelated; object-fit: contain; }

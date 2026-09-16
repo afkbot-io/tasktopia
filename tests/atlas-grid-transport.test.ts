@@ -9,6 +9,11 @@ describe("atlas transport", () => {
     expect(routes[0]!.cells).not.toContainEqual({x:1,y:1});
     expect(atlasRailRoutes([...stops].reverse(),land)).toEqual(routes);
   });
+  it("does not substitute another station across water for a city's primary stop",()=>{
+    const isolated=[{x:0,y:0},{x:10,y:0},{x:11,y:0}];
+    const stations=[{id:"a-primary",cityId:"a",cell:{x:0,y:0}},{id:"z-secondary",cityId:"a",cell:{x:10,y:0}},{id:"b",cityId:"b",cell:{x:11,y:0}}];
+    expect(atlasRailRoutes(stations,isolated)).toEqual([]);
+  });
   it("does not invent a railway without stations", () => {expect(atlasRailRoutes([],land)).toEqual([]);});
   it("ships use water cells around an intervening island", () => {
     const ocean=Array.from({length:21},(_,i)=>({x:i%7,y:Math.floor(i/7)})).filter(c=>!((c.x===0||c.x===3||c.x===6)&&c.y===1));

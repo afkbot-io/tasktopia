@@ -1,0 +1,42 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { createTestDb, type Db } from "../src/server/db";
+import { createCountry, registerUser } from "../src/server/auth";
+import { AppService } from "../src/server/app-service";
+import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
+import { isBuildableTerrain, terrainAt } from "../src/shared/world-terrain";
+
+let db: Db | undefined;
+afterEach(async () => { await db?.close(); });
+
+it("keeps old geography unchanged and publishes an immutable new coastal source", async () => {
+  db = await createTestDb();
+  const { user } = await registerUser(db, { email: "coast@example.test", name: "Coast", password: "password123" });
+  const profile = { version: 1, kind: "EAST_COAST", coastX: 256 } as const;
+  const countryId = await createCountry(db, user.id, "Приморье", profile);
+  expect(await db.prepare("SELECT terrain_profile_json FROM countries WHERE id=?").get(user.countryId)).toEqual({ terrain_profile_json: null });
+  expect(await db.prepare("SELECT terrain_profile_json FROM countries WHERE id=?").get(countryId)).toEqual({ terrain_profile_json: profile });
+  await expect(db.prepare("UPDATE countries SET terrain_profile_json=? WHERE id=?").run(JSON.stringify(profile), user.countryId)).rejects.toThrow(/immutable/);
+  await expect(db.prepare("UPDATE countries SET terrain_profile_json=NULL WHERE id=?").run(countryId)).rejects.toThrow(/immutable/);
+  await db.prepare("UPDATE countries SET name=? WHERE id=?").run("Морская страна", countryId);
+  const service = new AppService(db);
+  const manifest = await service.getWorldManifest({ ...user, countryId });
+  expect(manifest.terrainProfile).toEqual(profile);
+  expect((await service.getWorldManifest(user)).terrainProfile).toBeUndefined();
+  expect((await service.getBootstrap({ ...user, countryId })).worldManifest.terrainProfile).toEqual(profile);
+  const chunk = await service.getChunkPayload(countryId, 5, 0);
+  expect(chunk.terrainProfile).toEqual(profile);
+  expect(materializeChunkPayload(chunk).terrain.every(cell => cell.terrain === "DEEP_WATER")).toBe(true);
+  expect((await service.getPlanetAtlas(user.id)).countries.find(country => country.id === countryId)?.terrainProfile).toEqual(profile);
+  const city = await service.createCity(countryId, { name: "Прибрежный город", idempotencyKey: "city" });
+  const district = await service.createDistrict(countryId, { cityId: city.id, name: "Первый район", activate: true, idempotencyKey: "district" });
+  const task = await service.createTask(countryId, { cityId: city.id, districtId: district.id, title: "Первое здание", estimate: 1, idempotencyKey: "task" });
+  const atlasReads=vi.spyOn(service,"getPlanetAtlas");
+  await service.getCitySceneForUser(user.id,countryId,city.id);
+  await service.getCitySceneForUser(user.id,countryId,city.id);
+  expect(atlasReads).toHaveBeenCalledTimes(1);
+  atlasReads.mockRestore();
+  const geography=(await db.prepare("SELECT geography_json FROM personal_planet_geography_v1 WHERE user_id=?").get<{geography_json:import("../src/shared/planet-geography").PersonalPlanetGeography}>(user.id))!.geography_json;
+  expect(geography.countries[countryId]!.cities).toHaveProperty(city.id);
+  expect(geography.countries[countryId]!.worldBounds).not.toBeNull();
+  expect(task.footprint.every(cell => isBuildableTerrain(terrainAt(manifest.terrainSeed, cell.x, cell.y, profile).terrain))).toBe(true);
+});

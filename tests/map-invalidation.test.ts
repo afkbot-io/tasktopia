@@ -29,3 +29,11 @@ describe("canonical road topology invalidation", () => {
     }
   });
 });
+
+it.each(["RAILWAY", "PORT"])("refreshes local and remote %s route readiness instead of patching only the building sprite",(serviceRole)=>{
+  const event=eventInvalidation({id:9,worldVersion:14,countryId:"country",type:"task.status_changed",createdAt:"2026-09-16",
+    payload:{cityId:"other",taskId:"station",stage:5,status:"COMPLETED",progress:100,groundChanged:false,serviceRole}});
+  expect(mapInvalidationAffectsCity(event,"local")).toBe(true);
+  expect(mapInvalidationImpact(event)).toBe("SCENE");
+  expect(mapInvalidationImpact({...event,serviceRole:undefined})).toBe("TASK_STATUS");
+});

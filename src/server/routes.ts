@@ -1,3 +1,6 @@
+import { readWorldDigest } from "./world-digest-read";
+import { registerTaskShareRoutes } from "./task-share-routes";
+import { readMapAttention } from "./map-attention-read";
 import type { FastifyInstance } from "fastify";
 import { createReadStream } from "node:fs";
 import type { AppService } from "./app-service";
@@ -51,7 +54,7 @@ const tokenSchema = z.object({
   scopes: z.array(z.enum(MCP_SCOPES as [McpScope, ...McpScope[]])).min(1).max(MCP_SCOPES.length).optional(),
   expiresInDays: z.union([z.literal(30), z.literal(90), z.literal(365)]).optional(),
 }).strict();
-const countrySchema = z.object({ name: z.string().trim().min(2).max(100) }).strict();
+const countrySchema = z.object({ name: z.string().trim().min(2).max(100), landscape: z.enum(["CLASSIC", "COASTAL"]).default("CLASSIC") }).strict();
 const countryProfileSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(), description: z.string().max(8000).optional(), goal: z.string().max(4000).optional(),
   productContext: z.string().max(8000).optional(), successCriteria: z.string().max(8000).optional(), constraints: z.string().max(8000).optional(),
@@ -136,6 +139,13 @@ export type RouteRuntimeHooks = {
 };
 
 export async function registerRoutes(app: FastifyInstance, db: Db, service: AppService, hooks: RouteRuntimeHooks = {}): Promise<void> {
+  await registerTaskShareRoutes(app,db);
+  app.addHook("onSend", async (request, reply, payload) => {
+    if (request.url.split("?")[0] === "/api/bootstrap") reply.header("Cache-Control", "private, no-store");
+    if (request.url.startsWith("/api/") && reply.statusCode < 400 && String(reply.getHeader("cache-control") ?? "").includes("no-store"))
+      reply.header("X-Tasktopia-Server-Time", String(Date.now()));
+    return payload;
+  });
   app.addHook("onRequest", async (request, reply) => {
     if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method) || !request.url.startsWith("/api/")) return;
     const origin = request.headers.origin;
@@ -259,6 +269,37 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     return { subscribed: false };
   });
 
+  app.get("/api/city-development", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const query = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid() }).strict(), request.query);
+    reply.header("Cache-Control", "private, no-store");
+    return service.getCityDevelopment(user.id, query.countryId, query.cityId);
+  });
+
+  app.get("/api/world-digest", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const query = parse(z.object({ countryId: z.string().uuid(), after: z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional() }).strict(), request.query);
+    reply.header("Cache-Control", "private, no-store");
+    const digest = await readWorldDigest(db, user.id, query.countryId, query.after ?? null);
+    return digest ?? reply.code(403).send({ error: "FORBIDDEN", message: "Нет доступа к стране" });
+  });
+
+  app.get("/api/map-attention", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const query = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid(),
+      after: z.string().uuid().optional(), revision: z.coerce.number().int().nonnegative().optional(),
+    }).strict(), request.query);
+    const page = await readMapAttention(db, user.id, query.countryId, query.cityId, query.after ?? null);
+    reply.header("Cache-Control", "private, no-store");
+    if (!page) return reply.code(403).send({ error: "FORBIDDEN", message: "Нет доступа к городу" });
+    if (query.revision !== undefined && query.revision !== page.revision)
+      return reply.code(409).send({ error: "SNAPSHOT_CHANGED", message: "Данные изменились. Обновите подсветку." });
+    return page;
+  });
+
   app.get("/api/bootstrap", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             return user ? await service.getBootstrap(user) : reply;
@@ -297,12 +338,12 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
           });
 
   app.get("/api/cities/:cityId/scene", {
-            config: { rateLimit: { max: 30, timeWindow: "1 minute", groupId: "city-scene" } },
+            config: { rateLimit: { max: config.citySceneRateLimitMax, timeWindow: "1 minute", groupId: "city-scene" } },
           }, async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
             const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
-            const scene = await service.getCityScene(user.countryId, cityId);
+            const scene = await service.getCitySceneForUser(user.id, user.countryId, cityId);
             const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
@@ -312,13 +353,13 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
           });
 
   app.get("/api/countries/:countryId/cities/:cityId/scene", {
-            config: { rateLimit: { max: 30, timeWindow: "1 minute", groupId: "country-city-scene" } },
+            config: { rateLimit: { max: config.citySceneRateLimitMax, timeWindow: "1 minute", groupId: "country-city-scene" } },
           }, async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
             const params = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid() }).strict(), request.params);
             if (!await countryRole(db, user.id, params.countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
-            const scene = await service.getCityScene(params.countryId, params.cityId);
+            const scene = await service.getCitySceneForUser(user.id, params.countryId, params.cityId);
             const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
@@ -333,8 +374,9 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (!user) return reply;
             const atlas = await service.getPlanetAtlas(user.id);
             const etag = `"${atlas.revision}-planet-${atlas.schemaVersion}"`;
+            reply.header("Cache-Control", "private, no-cache");
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
-            return reply.header("ETag", etag).header("Cache-Control", "private, max-age=60, stale-while-revalidate=600").send(atlas);
+            return reply.header("ETag", etag).send(atlas);
           });
 
   app.get("/api/plan/cities", async (request, reply) => {
@@ -386,7 +428,7 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
     const body = parse(countrySchema, request.body);
-    const countryId = await createCountry(db, user.id, body.name);
+    const countryId = await createCountry(db, user.id, body.name, body.landscape === "COASTAL" ? {version:1,kind:"EAST_COAST",coastX:128} : undefined);
     return { ...await service.getCountry(countryId), role: "OWNER", memberCount: 1 };
   });
 

@@ -7,7 +7,7 @@ export type BlockWorldLayoutStatus = "GENERATING" | "VALIDATING" | "READY" | "AC
 export type BlockWorldKind = "RESIDENTIAL" | "CIVIC" | "PARK" | "WATER" | "INDUSTRIAL" | "TRANSPORT";
 export type ConstructionStage = 1 | 2 | 3 | 4 | 5;
 export type BlockSlotKind = "BUILDING" | "PARK" | "WATER" | "PARKING";
-export const BLOCK_SERVICE_ROLES = ["SHOP", "EDUCATION", "MEDICAL", "FIRE", "POLICE", "RAILWAY", "AIRPORT", "CIVIC"] as const;
+export const BLOCK_SERVICE_ROLES = ["SHOP", "EDUCATION", "MEDICAL", "FIRE", "POLICE", "RAILWAY", "AIRPORT", "CIVIC", "PORT"] as const;
 export type BlockServiceRole = typeof BLOCK_SERVICE_ROLES[number];
 
 export type DistrictLayoutV1 = {

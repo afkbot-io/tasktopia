@@ -1,3 +1,4 @@
+import { BUILDING_PROFILES, buildingProfile } from "./building-profiles";
 import { BLOCK_SERVICE_ROLES, type BlockServiceRole, type BlockSlotKind, type BlockWorldBounds, type CityBlockV1 } from "./block-world";
 import { COMPACT_BUILDING_SHAPES, STRUCTURAL_BUILDING_FAMILIES, STRUCTURAL_BUILDING_FAMILIES_V2, compactFamilyMatchesFootprint, type CompactBuildingFamily } from "./compact-building-families";
 import { buildingShapeFitsBlock, packBuildingParcels, readBlockSitePlan, type BlockSitePlan, type PackingCorner, type ParcelShape } from "./block-parcel-plan";
@@ -96,9 +97,13 @@ export function createBlockSitePlan(block: CityBlockV1): BlockSitePlan {
     throw new Error(`Cannot replan a reserved block ${block.id}`);
   }
   const template = blockTemplate(block.templateKey);
+  const profile = block.parameters.buildingProfileVersion === 1 ? buildingProfile(block.parameters.buildingProfile) : undefined;
+  const preferred: readonly string[] = profile ? BUILDING_PROFILES[profile].shapes : [];
+  const profileShapes = preferred.length ? approvedShapes.filter(shape => preferred.includes(shape.family)
+    || shape.family === block.parameters.firstFamily) : approvedShapes;
   const initial: BlockSitePlan = { version: 1, parcels: template.kind === "BUILDING"
     ? packBuildingParcels({ width: block.width, height: block.height, seed: block.seed,
-      corner: (block.parameters.packingCorner ?? "NW") as PackingCorner, shapes: approvedShapes,
+      corner: (block.parameters.packingCorner ?? "NW") as PackingCorner, shapes: profileShapes,
       firstFamily: block.parameters.firstFamily as string | undefined })
     : [{ x: 3, y: 3, width: block.width - 7, height: block.height - 7, clearance: 1, kind: template.kind }] };
   const slots = materializeSlots({ ...block, templateVersion: BLOCK_TEMPLATE_VERSION, parameters: { ...block.parameters, sitePlan: initial } }, true);

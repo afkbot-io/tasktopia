@@ -1,0 +1,1 @@
+ImageGen edit of stage5. Final accepted candidate: exactly right half of roof installed, left half unfinished slab with broad ochre beams, no cabin or signal light, dark unfinished windows. All camera/bounds/entrance unchanged. Earlier almost-finished roof and external scaffold candidates rejected. Native48x32, magenta background. Generated2026-09-16.

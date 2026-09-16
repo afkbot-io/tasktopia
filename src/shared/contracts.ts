@@ -42,6 +42,7 @@ export type CountryAccessDto = CountryDto & {
 
 export type WorldManifestDto = {
   terrainSeed: number;
+  terrainProfile?: import("./world-terrain-profile").WorldTerrainProfile;
   generatorVersion: CountryDto["generatorVersion"];
   assetRevision: string;
   worldRevision: number;
@@ -268,6 +269,7 @@ export type TaskDto = {
   platformType: PlatformKind;
   origin: Cell;
   footprint: Cell[];
+  siteBounds?: Rect;
   entrance: Cell;
   accessPath: Cell[];
   accessKind: Extract<SurfaceKind, "PATH" | "DRIVEWAY">;
@@ -339,7 +341,7 @@ export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "name" | "dea
 };
 
 export type ChunkTaskDto = Pick<TaskDto,
-  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "serviceRole" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint" | "accessPath"
+  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "serviceRole" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint" | "accessPath" | "siteBounds"
 > & {
   defectSummary?: { open: number; inProgress: number; verifying: number; active: number };
 };
@@ -388,6 +390,7 @@ export type ChunkPayloadV2Dto = Pick<ChunkDto, "chunkX" | "chunkY" | "size" | "t
   contentHash: string;
   generatorVersion: "block-v1";
   terrainSeed: number;
+  terrainProfile?: import("./world-terrain-profile").WorldTerrainProfile;
   publishedVersion: number;
   lod: ChunkLod;
   baseLayerOnly?: true;

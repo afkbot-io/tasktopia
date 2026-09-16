@@ -28,7 +28,7 @@ test("map navigation, labels and task controls follow the revised visual contrac
   await expect.poll(() => city.getAttribute("data-camera-world-x")).not.toBe(initialX);
   await page.screenshot({ path: "screenshots/visual-consistency/city.png" });
   await page.getByLabel("Обозначения карты").click();
-  await expect(page.locator(".map-legend-panel")).toContainText("Исправление проверяется");
+  await expect(page.locator(".map-legend[open] .map-legend-panel")).toContainText("Исправление проверяется");
   await page.getByLabel("Обозначения карты").click();
   const search = page.getByLabel("Поиск здания по номеру или названию");
   await search.fill("1");

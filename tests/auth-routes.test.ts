@@ -29,6 +29,26 @@ describe("authentication HTTP boundary", { timeout: 60_000 }, () => {
     await db.close();
   });
 
+  it("creates an opt-in coastal country without changing existing terrain",async()=>{
+    const owner=await registerUser(db,{email:"coastal-http@example.test",name:"Coast",password:"password123"});
+    const headers={cookie:`tasktopia_session=${owner.session}`};
+    const created=await app.inject({method:"POST",url:"/api/countries",headers,payload:{name:"Приморье",landscape:"COASTAL"}});
+    expect(created.statusCode).toBe(200);
+    const countryId=created.json().id as string;
+    expect(await db.prepare("SELECT terrain_profile_json FROM countries WHERE id=?").get(countryId))
+      .toEqual({terrain_profile_json:{version:1,kind:"EAST_COAST",coastX:128}});
+    const bootstrap=await app.inject({method:"POST",url:`/api/countries/${countryId}/select`,headers});
+    expect(bootstrap.json().worldManifest.terrainProfile).toEqual({version:1,kind:"EAST_COAST",coastX:128});
+    const classic=await app.inject({method:"POST",url:"/api/countries",headers,payload:{name:"Обычная страна"}});
+    expect(classic.statusCode).toBe(200);
+    for(const id of [owner.user.countryId,classic.json().id])expect(await db.prepare("SELECT terrain_profile_json FROM countries WHERE id=?").get(id)).toEqual({terrain_profile_json:null});
+    const invalid=await app.inject({method:"POST",url:"/api/countries",headers,payload:{name:"Ошибка",landscape:"OCEAN"}});
+    expect(invalid.statusCode).toBe(400);
+    const raw=await app.inject({method:"POST",url:"/api/countries",headers,payload:{name:"Ошибка",terrainProfile:{version:1,kind:"EAST_COAST",coastX:-9999}}});
+    expect(raw.statusCode).toBe(400);
+    expect((await app.inject({method:"POST",url:"/api/countries",payload:{name:"Чужая страна",landscape:"COASTAL"}})).statusCode).toBe(401);
+  });
+
   it("reports the package version from the health endpoint", async () => {
     const response = await app.inject({ method: "GET", url: "/health" });
     expect(response.statusCode).toBe(200);

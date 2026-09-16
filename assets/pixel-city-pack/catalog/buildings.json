@@ -2924,6 +2924,59 @@
         "3abd11156fdf76678c4147a7a10b1bb30ad306d748a295d417ead56689dd9885"
       ],
       "reviewed": true
+    },
+    {
+      "label": "Морской порт",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        32
+      ],
+      "footprintCells": [
+        6,
+        4
+      ],
+      "anchorPx": [
+        24,
+        32
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-service",
+        "port"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": 1,
+      "maxPerDistrict": null,
+      "serviceRole": "PORT",
+      "key": "compact-port-v1",
+      "reviewed": true,
+      "stageSources": [
+        "ai-authored/compact-port-v1/sources/stage-3.png",
+        "ai-authored/compact-port-v1/sources/stage-4.png",
+        "ai-authored/compact-port-v1/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "4600ac36be0e271a7da6165722868887396f48d48e771255aed0107d84941e6b",
+        "5aa0495f35b361fe6010ae13abb5f034b6782c38807da5a8a838e3f4b84ed639",
+        "b96a956254a41d46f99bb541e2409f017d9a178814ecda523640f65c676cbfc0"
+      ]
     }
   ]
 }

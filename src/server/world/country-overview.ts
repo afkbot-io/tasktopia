@@ -1,3 +1,4 @@
+import { selectMiniatureBuildings, miniatureRepresentative } from "../../shared/city-miniature";
 import type { Cell, Rect } from "../../shared/contracts";
 import type { CompiledBlockLayoutV1 } from "../../shared/block-world";
 import type { CountryCityMiniature } from "../../shared/country-overview-contract";
@@ -15,7 +16,7 @@ export function projectCountryCityMiniature(input: {
     cellSize,
     columns: Math.max(1, (bounds.maxX - bounds.minX + 1) / cellSize),
     rows: Math.max(1, (bounds.maxY - bounds.minY + 1) / cellSize),
-    blocks: [], airports: [], stations: [],
+    blocks: [], airports: [], stations: [], transport: [],
   };
   if (!layout) return miniature;
   const districts = new Map(layout.districtLayouts.map((district) => [district.id, district.districtId]));
@@ -28,20 +29,24 @@ export function projectCountryCityMiniature(input: {
     const placed = placements.get(block.id) ?? [];
     const districtId = districts.get(block.districtLayoutId);
     if (!districtId || placed.length === 0) continue;
-    const family = [...placed].sort((a, b) => a.slotKey.localeCompare(b.slotKey))[0]!.buildingFamily;
-    miniature.blocks.push({ id: block.id, districtId,
+    const representative = miniatureRepresentative(placed);
+    if (representative) miniature.blocks.push({ id: block.id, districtId,
       x: (block.origin.x + block.width / 2 - bounds.minX) / cellSize,
-      y: (block.origin.y + block.height / 2 - bounds.minY) / cellSize, family,
+      y: (block.origin.y + block.height / 2 - bounds.minY) / cellSize, family: representative.buildingFamily, stage: representative.constructionStage,
     });
-    for (const airport of placed.filter((placement) => (placement.serviceRole === "AIRPORT" || placement.serviceRole === "RAILWAY") && placement.constructionStage === 5)) {
+    for (const airport of placed.filter((placement) => (placement.serviceRole === "AIRPORT" || placement.serviceRole === "RAILWAY" || placement.serviceRole === "PORT"))) {
       const slot = blockSlots(block).find((candidate) => candidate.key === airport.slotKey)!;
       const point = blockSlotAirportPoint(slot);
+      miniature.transport!.push({taskId:airport.taskId,x:(point.x-bounds.minX)/cellSize,y:(point.y-bounds.minY)/cellSize,
+        family:airport.buildingFamily,stage:airport.constructionStage});
+      if(airport.constructionStage !== 5 || airport.serviceRole === "PORT") continue;
       (airport.serviceRole === "AIRPORT" ? miniature.airports : miniature.stations!).push({ taskId: airport.taskId,
         x: (point.x - bounds.minX) / cellSize,
         y: (point.y - bounds.minY) / cellSize,
       });
     }
   }
+  miniature.blocks = selectMiniatureBuildings(miniature.blocks);
   return miniature;
 }
 

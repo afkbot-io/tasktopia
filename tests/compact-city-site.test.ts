@@ -3,6 +3,18 @@ import { findCompactCitySite } from "../src/server/world/compact-city-site";
 import { isBuildableTerrain, terrainAt } from "../src/shared/world-terrain";
 
 describe("bounded compact city site search", () => {
+  it("places new coastal cities within reach of their sea while keeping the starter block dry", () => {
+    const profile = { version: 1, kind: "EAST_COAST", coastX: 128 } as const;
+    for (const seed of [123, 424242, 42]) {
+      const site = findCompactCitySite(seed, [], [], profile)!;
+      expect(site).toBeDefined();
+      expect(profile.coastX - site.x).toBeGreaterThanOrEqual(48);
+      expect(profile.coastX - site.x).toBeLessThanOrEqual(128);
+      for (let y = site.y - 2; y <= site.y + 34; y++) for (let x = site.x - 2; x <= site.x + 34; x++) {
+        expect(isBuildableTerrain(terrainAt(seed, x, y, profile).terrain)).toBe(true);
+      }
+    }
+  });
   it("preserves the established first-city location before extending the search", () => {
     expect(findCompactCitySite(424242, [])).toEqual({ x: 96, y: -128 });
   });

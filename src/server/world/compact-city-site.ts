@@ -1,14 +1,15 @@
 import type { Cell, Rect } from "../../shared/contracts";
 import { hashCoordinate, isBuildableTerrain, terrainAt } from "../../shared/world-terrain";
+import type { WorldTerrainProfile } from "../../shared/world-terrain-profile";
 
 /** Preserve the approved inner search, then explore bounded outer bands only
  * when it is exhausted. The world is procedural beyond the initial composition;
  * existing coordinates, terrain seeds and the 48-cell city separation stay fixed.
  */
-export function findCompactCitySite(seed: number, cityBounds: readonly Rect[], roadCorridors: readonly Rect[] = []): Cell | undefined {
+export function findCompactCitySite(seed: number, cityBounds: readonly Rect[], roadCorridors: readonly Rect[] = [], terrainProfile?: WorldTerrainProfile): Cell | undefined {
   const occupied = cityBounds.map(b => ({ minX: b.minX - 48, minY: b.minY - 48, maxX: b.maxX + 48, maxY: b.maxY + 48 }));
   const intersects = (a: Rect, b: Rect) => a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY;
-  const dry = (x: number, y: number) => isBuildableTerrain(terrainAt(seed, x, y).terrain);
+  const dry = (x: number, y: number) => isBuildableTerrain(terrainAt(seed, x, y, terrainProfile).terrain);
   let firstRadius = 0;
   for (const lastRadius of [16, 32, 64]) {
     const candidates: Array<{ cell: Cell; score: number }> = [];
@@ -31,7 +32,17 @@ export function findCompactCitySite(seed: number, cityBounds: readonly Rect[], r
         }
       }
     }
-    candidates.sort((a, b) => b.score - a.score);
+    candidates.sort((a, b) => {
+      // A coastal world should actually start near its coast. Dry-area scores
+      // alone prefer the deepest inland plain, making the sea unreachable from
+      // the city's bounded camera. The full starter parcel is still validated.
+      if (terrainProfile) {
+        const targetX = terrainProfile.coastX - 64;
+        const distance = Math.abs(a.cell.x - targetX) - Math.abs(b.cell.x - targetX);
+        if (distance) return distance;
+      }
+      return b.score - a.score;
+    });
     for (const { cell } of candidates) {
       let buildable = true;
       for (let y = cell.y - 2; y <= cell.y + 34 && buildable; y++) {

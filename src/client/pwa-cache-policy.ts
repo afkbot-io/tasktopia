@@ -1,4 +1,4 @@
-const PRIVATE_PREFIXES = ["/api", "/mcp", "/socket.io", "/health"] as const;
+export const PRIVATE_PREFIXES = ["/api", "/mcp", "/socket.io", "/health", "/share/task"] as const;
 
 export function isPrivateAppPath(pathname: string): boolean {
   return PRIVATE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

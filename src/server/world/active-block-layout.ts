@@ -1,3 +1,7 @@
+import { PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
+import { countryPortReservations, portReservationRects, type LocalPortPlan } from "./port-reservations";
+import { createPortSiteProvider } from "./port-site-provider";
+import { freezeCityRailway, countryRailwayReservations } from "./city-railway-store";
 import type { BlockServiceRole, CompiledBlockLayoutV1, ConstructionStage } from "../../shared/block-world";
 import { blockSlots } from "../../shared/block-templates";
 import { isTaskParkVariant, selectTaskParkVariant, taskParkSize } from "../../shared/task-park-catalog";
@@ -6,6 +10,7 @@ import { compileBlockLayout, type BlockLayoutCompilerInput } from "./block-layou
 import { persistReadyBlockLayout, activateBlockLayout } from "./block-layout-store";
 import { now, transaction, type Db } from "../db";
 import { isBuildableTerrain, terrainAt } from "../../shared/world-terrain";
+import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 import { freezePermanentSiteGeometry, permanentSiteBounds } from "./permanent-task-sites";
 import { readCountryRoads, synchronizeCountryRoads } from "./intercity-road-store";
 import { intercityRoadCorridors } from "../../shared/intercity-roads";
@@ -95,22 +100,49 @@ async function saveActiveDelta(db: Db, previous: CompiledBlockLayoutV1, layout: 
     .run(layout.revision,JSON.stringify(layout.bounds),layout.checksum,timestamp,layout.id);
 }
 
+/** Import all legacy station corridors before any country topology changes.
+ * The country lock serializes this with city creation and block allocation. */
+export async function freezeMissingCountryRailways(db:Db,countryId:string):Promise<void>{
+  return transaction(db,async()=>{
+    await db.prepare("SELECT id FROM countries WHERE id=? FOR UPDATE").get(countryId);
+    const missing=await db.prepare(`SELECT l.city_id FROM city_layouts_v1 l
+      LEFT JOIN city_railway_corridors_v1 r ON r.layout_id=l.id
+      WHERE l.country_id=? AND l.status='ACTIVE' AND r.layout_id IS NULL
+      AND EXISTS(SELECT 1 FROM task_placements_v1 p JOIN city_blocks_v1 b ON b.id=p.block_id
+        WHERE p.layout_id=l.id AND b.parameters_json->'slotRoles'->>p.slot_key='RAILWAY')
+      ORDER BY l.city_id`).all<{city_id:string}>(countryId);
+    if(!missing.length)return;
+    const layouts=await readActiveBlockLayouts(db,missing.map(row=>row.city_id));
+    const bounds=await db.prepare("SELECT city_id,bounds_json FROM city_layouts_v1 WHERE country_id=? AND status='ACTIVE'")
+      .all<{city_id:string;bounds_json:Rect}>(countryId);
+    const roads=intercityRoadCorridors((await readCountryRoads(db,countryId))?.plan.routes??[]);
+    const historical=[...await permanentSiteBounds(db,countryId,true),...await countryPortReservations(db,countryId)];
+    for(const layout of layouts)await freezeCityRailway(db,layout,[...roads,...historical,
+      ...bounds.filter(row=>row.city_id!==layout.cityId).map(row=>row.bounds_json)]);
+  });
+}
+
 export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: string, reset = false): Promise<CompiledBlockLayoutV1> {
   return transaction(db, async () => {
     // Match the application mutation lock order even for direct CLI/test calls.
     await db.prepare("SELECT id FROM countries WHERE id=? FOR UPDATE").get(countryId);
     await db.prepare("SELECT pg_advisory_xact_lock(hashtext(?))").get(`block-city:${cityId}`);
-    const city = await db.prepare("SELECT c.*,country.seed FROM cities_v3 c JOIN countries country ON country.id=c.country_id WHERE c.id=? AND c.country_id=?").get<Row>(cityId,countryId);
+    const city = await db.prepare("SELECT c.*,country.seed,country.terrain_profile_json FROM cities_v3 c JOIN countries country ON country.id=c.country_id WHERE c.id=? AND c.country_id=?").get<Row>(cityId,countryId);
     if (!city) throw new Error("Unknown city for block layout");
+    const terrainProfile = parseWorldTerrainProfile(city.terrain_profile_json);
+    await freezeMissingCountryRailways(db,countryId);
     const old = await readActiveBlockLayout(db,cityId);
     await freezePermanentSiteGeometry(db,countryId);
     const historicalBounds = await permanentSiteBounds(db,countryId,true);
+    const portReservations = await countryPortReservations(db,countryId);
     const otherCities = await db.prepare("SELECT bounds_json FROM city_layouts_v1 WHERE country_id=? AND city_id<>? AND status='ACTIVE'").all<Row>(countryId,cityId);
     const otherBounds = otherCities.map(row=>parse<Rect>(row.bounds_json));
     const roadCorridors = intercityRoadCorridors((await readCountryRoads(db, countryId))?.plan.routes ?? []);
     // A rebuild cannot erase occupied historical parcels. Their block/street
     // topology remains fixed; only disposable projections are regenerated.
     const previous = reset && !old?.siteMarkers.length ? undefined : old;
+    if (previous) await freezeCityRailway(db,previous,[...roadCorridors,...otherBounds,...historicalBounds,...portReservations]);
+    const railwayReservations = await countryRailwayReservations(db,countryId,reset&&!previous?old?.id:undefined);
     const districts = await db.prepare("SELECT id,archetype,created_at FROM districts_v3 WHERE city_id=? ORDER BY created_at,id").all<Row>(cityId);
     const tasks = await db.prepare("SELECT id,district_id,task_number,status,visual_kind,visual_asset_key,visual_auto,building_type,requested_building_family,service_role,service_trigger,service_role_assigned FROM tasks_v3 WHERE city_id=? ORDER BY task_number,id").all<Row>(cityId);
     const existingSequence = new Map(previous?.districtLayouts.map((d) => [d.districtId,d.sequence]));
@@ -120,14 +152,26 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
       const group = byDistrict.get(id) ?? [];
       group.push(task); byDistrict.set(id, group);
     }
+    const existingTasks = new Set(previous?.placements.map(placement => placement.taskId));
+    const explicitPort = tasks.some(task => !existingTasks.has(String(task.id)) &&
+      (task.service_role === "PORT" || task.requested_building_family === "compact-port-v1" || task.building_type === "compact-port-v1"));
+    const pendingTasks=tasks.filter(task=>!existingTasks.has(String(task.id)));
+    const mayAutoPort=((previous?.blocks.length??0)>=PORT_MIN_CITY_BLOCKS-1 || pendingTasks.length>=PORT_MIN_CITY_BLOCKS)
+      && !previous?.placements.some(placement=>placement.serviceRole==="PORT")
+      && pendingTasks.some(task=>!task.requested_building_family&&!task.service_role_assigned);
+    const planPort = terrainProfile && (explicitPort || mayAutoPort) ? await createPortSiteProvider(db, {
+      countryId, cityId, seed: Number(city.seed), profile: terrainProfile,
+      center: { x: Number(city.center_x), y: Number(city.center_y) },
+      reservations: [...otherBounds, ...historicalBounds, ...railwayReservations, ...roadCorridors, ...portReservations],
+    }) : undefined;
     const terrain = new Map<string, boolean>();
     let nextSequence = Math.max(-1,...existingSequence.values()) + 1;
     const input: BlockLayoutCompilerInput = {
-      compactReplay: reset,
+      compactReplay: reset, planPort,
       countryId,cityId,seed:Number(city.seed),revision:(old?.revision ?? 0)+1,
       origin:{x:Number(city.center_x),y:Number(city.center_y)},previous,
       canPlaceBlock: (bounds) => {
-        if ([...otherBounds,...historicalBounds].some(other=>blockBoundsIntersect(bounds,other))) return false;
+        if ([...otherBounds,...historicalBounds,...railwayReservations,...portReservations].some(other=>blockBoundsIntersect(bounds,other))) return false;
         // Compiler envelopes include two clearance cells. The block interior
         // starts three cells inside its perimeter, hence envelope +5. An old
         // road may become a shared perimeter; it may never become a parcel.
@@ -137,7 +181,7 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
         for (let y=bounds.minY;y<=bounds.maxY;y++) for(let x=bounds.minX;x<=bounds.maxX;x++) {
           const key = `${x},${y}`;
           let dry = terrain.get(key);
-          if (dry === undefined) { dry = isBuildableTerrain(terrainAt(Number(city.seed),x,y).terrain); terrain.set(key,dry); }
+          if (dry === undefined) { dry = isBuildableTerrain(terrainAt(Number(city.seed),x,y,terrainProfile).terrain); terrain.set(key,dry); }
           if (!dry) return false;
         }
         return true;
@@ -195,6 +239,10 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
     for (const d of layout.districtLayouts) {
       await db.prepare("UPDATE districts_v3 SET spatial_bounds_json=?::jsonb WHERE id=?").run(JSON.stringify(d.bounds),d.districtId);
     }
+    // Freeze newly assigned stations before future blocks or country roads can
+    // claim their corridor. Existing lines only refresh task readiness on read.
+    await freezeCityRailway(db,layout,[...roadCorridors,...otherBounds,...historicalBounds,...portReservations,
+      ...portReservationRects(layout.blocks.flatMap(block => Object.values(block.parameters.slotPortPlans as Record<string, LocalPortPlan> ?? {})))]);
     // A country-wide rebuild refreshes once after all cities. Normal task stage
     // updates do not pay for country routing or rewrite its snapshot.
     if (!reset && (!old || old.roadNetwork.checksum !== layout.roadNetwork.checksum)) await synchronizeCountryRoads(db, countryId);
