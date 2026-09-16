@@ -33,6 +33,8 @@ test("planet uses the same real landmark families as country and grows them on z
   const overview:CountryOverviewDto=await (await page.request.get(`/api/countries/${bootstrap.country.id}/overview`)).json();
   await page.goto("/");
   await page.getByRole("button",{name:"Планета",exact:true}).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+  await expect(page.locator(".map-level-transition")).toHaveCount(0);
   const houses=page.locator(`.planet-country[data-country-id="${bootstrap.country.id}"] .planet-district-houses image`);
   await expect(houses.first()).toBeVisible();
   const families=await houses.evaluateAll(nodes=>nodes.map(n=>n.getAttribute("data-building-family")).sort());
@@ -47,7 +49,7 @@ test("planet uses the same real landmark families as country and grows them on z
 test("country remains usable when building images fail and restores them on retry",async({page})=>{
   expect((await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}})).ok()).toBe(true);
   await page.goto("/");
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic", { timeout: 60_000 });
   await page.route("**/buildings/**",route=>route.abort("failed"));
   await page.getByRole("button",{name:"Страна",exact:true}).click();
   const country=page.locator(".country-overview");

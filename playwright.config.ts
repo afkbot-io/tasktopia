@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
+// Fixture safety checks in workers must see the same resolved target as the
+// runner, including the default isolated server started by `test:e2e`.
+process.env.E2E_BASE_URL = baseURL;
 const seedCommand = process.env.E2E_SEED_COMMAND ?? "npm run seed:test";
 const testDatabaseURL = process.env.TEST_DATABASE_URL
   ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
@@ -11,6 +14,9 @@ const webCommand = process.env.E2E_WEB_COMMAND
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 60_000,
+  // Hosted software renderers need longer for first-scene readiness. Explicit
+  // performance budgets and fault-injection timeouts remain in their tests.
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   // Stateful UI scenarios intentionally share one seeded country. Running
   // them concurrently makes tests rename/delete data underneath each other.
   workers: 1,

@@ -1,5 +1,33 @@
 import { expect, test, type Page } from "@playwright/test";
 
+test("initial realtime connection preserves the scene but reconnect refreshes transport", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.addInitScript(() => {
+    const NativeSocket = window.WebSocket;
+    const sockets = new Set<WebSocket>();
+    window.WebSocket = class extends NativeSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        super(url, protocols);
+        sockets.add(this);
+        this.addEventListener("close", () => sockets.delete(this));
+      }
+    };
+    Object.assign(window, {
+      qaOpenSockets: () => [...sockets].filter(socket => socket.readyState === NativeSocket.OPEN).length,
+      qaCloseSockets: () => { for (const socket of sockets) socket.close(); },
+    });
+  });
+  let scenes = 0;
+  page.on("request", request => { if (new URL(request.url()).pathname.endsWith("/scene")) scenes++; });
+  const { host } = await openDemoCity(page);
+  await expect.poll(() => page.evaluate(() => (window as unknown as { qaOpenSockets(): number }).qaOpenSockets())).toBeGreaterThan(0);
+  expect(scenes).toBe(1);
+  const refreshes = Number(await host.getAttribute("data-transport-only-refreshes") ?? 0);
+  await page.evaluate(() => (window as unknown as { qaCloseSockets(): void }).qaCloseSockets());
+  await expect.poll(() => scenes, { timeout: 20_000 }).toBeGreaterThan(1);
+  await expect.poll(async () => Number(await host.getAttribute("data-transport-only-refreshes") ?? 0), { timeout: 20_000 }).toBeGreaterThan(refreshes);
+});
+
 async function openDemoCity(page: Page) {
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");

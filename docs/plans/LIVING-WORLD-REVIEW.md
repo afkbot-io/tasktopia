@@ -431,3 +431,51 @@ reconcile и не выдаётся за них. Реальнаястоимост
 | tests/e2e/atlas-flight-geometry.spec.ts | ec45242d043af8dc59371d14eaed62169f78c06d6961f6712f1e319f0016572c |
 | tests/e2e/atlas-pixel-zoom.spec.ts | 35b6384329d11e4b223f15a1534e2c0a1dd5d952c7172e732235803f00e8683c |
 | playwright.config.ts | d3ef8d7a97e5f378f664767d0b72de6357a0e85f81362fcbd08f815d5e916596 |
+
+## Исправления после первого CI-прогона PR №37
+
+Прогон35125946435 на5488fcb: assets, typecheck, lint, все262файла/1370тестов,
+backup/recovery, Linux maintenance, build и MCP прошли. Браузеры:58passed,
+8failed,101skipped. Это не успешный общий gate. Причины разобраны отдельно:
+
+- Первое socket-соединение очищало свежий кеш сцены и делало второй HTTP-запрос.
+  После bootstrap кеш уже очищен; повторная транспортная инвалидация выполняется
+  при reconnect. Replay событий своей страны и atlas:invalidate сохранены.
+  Тест закрывает настоящий WebSocket: первый вход делает один запрос, повторное
+  соединение обновляет транспорт. Отдельный foreign-airport live-тест прошёл.
+- Селектор легенды уточнён до открытой map-legend: настройки используют общий
+  класс оформления, но не являются легендой.
+- WebKit zoom ждёт готовности планеты и ухода перекрывающего перехода.
+- Инъекция сбоя воды адресована atlas/terrain-v4/country, чтобы её не перехватил
+  ещё загружаемый городской фон. Сбой и успешный retry воспроизведены локально.
+- Начальная готовность тяжёлой сцены явно ждётся до60с; обычные CIожидания15с
+  учитывают software renderer. Явные performance-бюджеты не изменены.
+- Playwright передаёт свой разрешённый baseURL работникам: loopback-сценарии
+  больше не пропускаются из-за отсутствующей переменной при штатном test:e2e.
+  Отдельные сценарии специальных art/scale-фикстур по-прежнему требуют своих флагов.
+- При падении CI сохраняет test-results на7дней для воспроизводимой диагностики.
+
+Повторно просмотрен весь изменённый участок App, его bootstrap/очистка и socket
+cleanup; подключение новой страны заново очищает кеш, reconnect и atlas-события
+сохраняют обновление. Проверены области перехватов и отсутствие ослабления
+проверки числа scene-запросов. AI-ревью не является SCM approval.
+
+`src/client/App.tsx` SHA256 `2932853b3fb6d303d834e498f770fc735ce26ce8c60445017d86810454d67d7d`.
+
+`playwright.config.ts` SHA256 `a1f301819f987331274c48ee52804d418eec54bc5662a2dbcb097b195586aaf8`.
+
+`tests/e2e/map-streaming.spec.ts` SHA256 `52c8b45cb205f48b525e6d9085ea84e452124c623b0b5da3e5701ee1fdbbce60`.
+
+`tests/e2e/map-retry.spec.ts` SHA256 `bda4a83718f96a265d63ced64a09716b99623e8631ae595e93b7b8a30db37e66`.
+
+`tests/e2e/atlas-pixel-zoom.spec.ts` SHA256 `9255cc0786dec0e875facf8ca9fb92bcd621b5f35a10d8f8ef4728fb187be1fc`.
+
+`tests/e2e/visual-consistency.spec.ts` SHA256 `570f52f934c567cd6e0db1e291d5bc28a73e7c0d947d37a5956372149e3b3974`.
+
+`.github/workflows/ci.yml` SHA256 `e167f6b754c8e6be3b85b660fce5fa81e2889ecaa70601aa08fc7141efa28e73`.
+
+Локальный повтор после исправлений:23/23 Chromium/WebKit прошли за2,6мин,
+`/tmp/living-world-ci-fixes-browser.log`. Включены все восемь падений первого CI,
+реальное переподключение и обновление чужого аэропорта. Новый production build,
+typecheck и scoped ESLint прошли. `npm audit --audit-level=high` прошёл;
+остались три moderate замечания в тестовом Vitest, без high/critical.

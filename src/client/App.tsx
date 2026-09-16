@@ -402,6 +402,7 @@ export function App() {
       const socket = io({ path: "/socket.io", withCredentials: true });
       disconnect = () => socket.disconnect();
       let replaying = true;
+      let connectedOnce = false;
       let buffered: RealtimeEvent[] = [];
       const receive = (event: RealtimeEvent) => {
         if (event.countryId !== countryId) return;
@@ -409,7 +410,10 @@ export function App() {
         else applyRealtimeEvent(event);
       };
       socket.on("connect", () => {
-        invalidateForeignTransport();
+        // The initial country bootstrap already clears scene caches. Only a
+        // reconnect can have missed foreign transport events while offline.
+        if (connectedOnce) invalidateForeignTransport();
+        connectedOnce = true;
         setOnline(true);
         replaying = true;
         void (async () => {
