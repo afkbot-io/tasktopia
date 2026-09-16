@@ -11,6 +11,28 @@ from compact_cutover_state import CutoverError
 
 
 class DriverTests(unittest.TestCase):
+    def test_migration_only_requires_completion_and_does_not_accept_regeneration(self):
+        self.assertEqual(validate_cli_log(b'{"event":"world-migration.finished"}\n', "migrate-worlds", 3)["countries"], 3)
+        for output in (b'', b'{"event":"world-regeneration.finished"}\n'):
+            with self.assertRaises(CutoverError):
+                validate_cli_log(output, "migrate-worlds", 3)
+
+    def test_preserve_mode_dispatches_migration_under_same_freeze(self):
+        for preserve, expected in ((False, "regenerate-worlds"), (True, "migrate-worlds")):
+            driver = object.__new__(HostDriver)
+            plan = {"revision": "fixed"}
+            driver.j = SimpleNamespace(plan=plan)
+            driver.lock = SimpleNamespace(fd=9)
+            driver.b = {"preserveWorld": preserve}
+            driver.fixed_binding = lambda: None
+            driver.evidence = lambda evidence, name: {"nginx": "closed"} if name == "inspect" else {"countries": 2}
+            calls = []
+            driver.assert_frozen = lambda nginx: calls.append(("freeze", nginx))
+            driver.run_cli = lambda entry, countries: calls.append((entry, countries)) or {"ok": True}
+            driver.publish = lambda value: value
+            driver._run("migrate_and_regenerate", plan, {})
+            self.assertEqual(calls, [("freeze", "closed"), (expected, 2)])
+
     def test_recovery_repairs_only_owned_readable_run_under_private_parent(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -208,6 +208,30 @@ country, session и первый city фиксируются одной тран
 
 Откат contract cutover — восстановление **предыдущей БД и предыдущего образа вместе**, пока запись остаётся остановленной. Нельзя автоматически возвращать только старый образ к новой схеме, использовать старый spatial renderer или переписывать checksum миграций. Для последующих schema-compatible обновлений остаётся обычный updater с проверенным предыдущим образом. Проверка на локальном fixture не является production backup/restore acceptance.
 
+### Выпуск нового каталога без перегенерации
+
+Если обычный updater отклоняет прежний образ из-за нового семейства (например,
+PORT), не обходите его rollback guard. Для уже установленной compact-схемы
+используйте тот же maintenance-протокол с `--preserve-world` при `prepare`:
+
+```sh
+TASKTOPIA_EXPECTED_REVISION=<полный_merged_SHA> \
+  /srv/tasktopia/app/deploy/update-server.sh compact-cutover prepare \
+  compact-living-<уникальная-дата> --previous-revision <прежний_SHA> --preserve-world
+```
+
+Этот режим фиксируется в immutable binding и plan digest. Read-only preflight
+требует уже применённые0023/0024/0029 и совместимые сохранённые layouts/roads;
+он не заменяет первый compact cutover. Трафик и writers останавливаются,
+свежие БД/файлы независимо восстанавливаются, затем CLI применяет только
+миграции. Генерация, repair и перемещение объектов не выполняются. Проверка
+сохранности включает все прежние таблицы и spatial-поля; допускается только
+новое nullable поле `countries.terrain_profile_json=NULL` и новые строки
+append-only истории/миграций. Далее обязателен полный read-only world audit.
+Любое отличие запрещает accept. `recover` и `accept` используют сохранённый
+режим без повторного флага. Восстановление БД+образа разрешено до открытия
+трафика; после новых записей — только совместимое исправление вперёд.
+
 ### Исполняемый первый переход tasktopia.online
 
 В Builder 1.4.3 публичный beta/dev-сервер `tasktopia.online` имеет target

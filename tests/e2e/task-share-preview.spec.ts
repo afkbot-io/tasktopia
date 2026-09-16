@@ -1,5 +1,5 @@
 import {expect,test} from "@playwright/test";
-test("publishes a reviewable preview and revokes it from the task",async({page,browser},info)=>{
+test("publishes a reviewable preview and revokes it from the task",async({page,browser})=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local fixture only");
   expect((await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}})).ok()).toBe(true);
   const bootstrap=await (await page.request.get("/api/bootstrap")).json();
@@ -14,7 +14,6 @@ test("publishes a reviewable preview and revokes it from the task",async({page,b
     const url=await field.inputValue(),preview=await anonymous.newPage();
     await preview.goto(url);await expect(preview.locator("h1")).toContainText("#1");
     await expect(preview.locator('meta[property="og:title"]')).toHaveAttribute("content",/#1/);
-    await preview.screenshot({path:info.outputPath("shared-preview.png")});
     await page.getByRole("button",{name:"Отозвать мои превью",exact:true}).click();
     await expect(page.locator(".task-share-preview")).toContainText("отозваны");
     const response=await preview.reload();expect(response!.status()).toBe(404);

@@ -103,7 +103,10 @@ def validate_cli_log(output, entry, countries):
                 rows.append(value)
         except ValueError:
             continue
-    if entry == "regenerate-worlds":
+    if entry == "migrate-worlds":
+        require(sum(v.get("event") == "world-migration.finished" for v in rows) == 1,
+                "Missing migration completion")
+    elif entry == "regenerate-worlds":
         completed = [v for v in rows if v.get("event") == "world-regeneration.completed"]
         finished = [v for v in rows if v.get("event") == "world-regeneration.finished"]
         require(len(completed) == countries and all(v.get("violationsAfter") == 0 for v in completed)
@@ -208,7 +211,7 @@ class HostDriver:
         self.db.assert_quiescent(allow_missing=restoring, restoring=restoring)
 
     def run_cli(self, entry, countries):
-        require(entry in ("regenerate-worlds", "audit-worlds"), "Unplanned application command")
+        require(entry in ("regenerate-worlds", "migrate-worlds", "audit-worlds"), "Unplanned application command")
         name = "tasktopia-compact-" + uuid.uuid4().hex
         env = read_json(self.r, self.b["candidateCompose"])["services"]["world"]["environment"]
         values = {"NODE_ENV": "production", "RUNTIME_ROLE": "world", "DATABASE_POOL_MAX": "4",
@@ -344,7 +347,7 @@ class HostDriver:
                 database = self.db.capture()
                 files = [self.files.capture("volume-" + str(i), Path(path)) for i, path in enumerate(self.b["volumes"].values())]
                 files.append(self.files.capture("static", Path(plan["previousStatic"])))
-                business = self.r.publish_json("business-before.json", capture_business(self.db))
+                business = self.r.publish_json("business-before.json", capture_business(self.db, preserve_world=self.b.get("preserveWorld", False)))
                 result = {"database": database, "files": files, "business": business,
                           "countries": self.db.json("SELECT to_jsonb(count(*)) FROM countries")}
             elif operation == "prove_backup_restore":
@@ -354,12 +357,13 @@ class HostDriver:
                           "files": [self.files.prove(record) for record in backup["files"]]}
             elif operation == "migrate_and_regenerate":
                 self.assert_frozen(nginx)
-                result = self.run_cli("regenerate-worlds", self.evidence(evidence, "backup")["countries"])
+                result = self.run_cli("migrate-worlds" if self.b.get("preserveWorld", False) else "regenerate-worlds",
+                                      self.evidence(evidence, "backup")["countries"])
             elif operation == "verify_conservation_and_audit":
                 self.assert_frozen(nginx)
                 backup = self.evidence(evidence, "backup")
                 before = read_json(self.r, backup["business"])
-                result = verify_business(before, capture_business(self.db, list(before)))
+                result = verify_business(before, capture_business(self.db, list(before), preserve_world=self.b.get("preserveWorld", False)))
                 result["audit"] = self.run_cli("audit-worlds", backup["countries"])
             elif operation == "activate_candidate_assets":
                 self.assert_frozen(nginx)
@@ -409,8 +413,13 @@ class HostDriver:
         return self.publish(result)
 
 
-def prepare_binding(runner, app, previous_revision, revision, run_id):
+def prepare_binding(runner, app, previous_revision, revision, run_id, preserve_world=False):
     docker = shutil.which("docker")
+    if preserve_world:
+        # This is a subsequent compatible-schema transition, never a way to
+        # skip the first compact cutover's mandatory regeneration.
+        runner.run(["/bin/bash", "-c", 'set -euo pipefail; cd "$1"; APP_DIR="$1"; source "$1/deploy/compact-release-preflight.sh"; check_compact_release_database',
+                    "bash", str(app)], timeout=60)
     env_path = app / ".env"
     require(env_path.is_file() and not env_path.is_symlink() and env_path.stat().st_uid == os.getuid()
             and env_path.stat().st_mode & 0o077 == 0, "Environment must be a private owned regular file")
@@ -490,6 +499,8 @@ def prepare_binding(runner, app, previous_revision, revision, run_id):
         "nginx": {"site": site, "enabled": "/etc/nginx/sites-enabled/tasktopia.online.conf", "prefix": "/etc/nginx",
                   "configuration": "/etc/nginx/nginx.conf", "certRoot": "/etc/letsencrypt", "staticRoot": str(STATIC),
                   "domain": "tasktopia.online", "httpPort": 80, "httpsPort": 443, "caFile": None, "loopbackOnly": False}}
+    if preserve_world:
+        binding["preserveWorld"] = True
     plan = {"version": 1, "runId": run_id, "project": project, "appDir": str(app), "revision": revision,
             "previousImage": previous, "candidateImage": candidate, "previousStatic": previous_static,
             "database": "tasktopia", "targetId": hashlib.sha256(canonical(binding)).hexdigest()}
@@ -503,7 +514,9 @@ def main():
     parser.add_argument("--previous-revision")
     parser.add_argument("--plan-digest")
     parser.add_argument("--recovery-revision")
+    parser.add_argument("--preserve-world", action="store_true")
     args = parser.parse_args()
+    require(not args.preserve_world or args.action == "prepare", "Preserve mode is bound at prepare only")
     require(os.getuid() == 0 and Path(__file__).resolve().parent == APP / "deploy", "Use the installed managed target")
     require(re.fullmatch(r"compact-[a-z0-9-]{8,48}", args.run_id), "Invalid run ID")
     revision = os.environ.get("TASKTOPIA_EXPECTED_REVISION", "")
@@ -527,7 +540,7 @@ def main():
         if args.action == "prepare":
             require(args.previous_revision is not None and re.fullmatch(r"[a-f0-9]{40}", args.previous_revision), "Previous revision required")
             runner.run(["git", "-C", str(APP), "merge-base", "--is-ancestor", args.previous_revision, revision])
-            plan, binding = prepare_binding(runner, APP, args.previous_revision, revision, args.run_id)
+            plan, binding = prepare_binding(runner, APP, args.previous_revision, revision, args.run_id, args.preserve_world)
             runner.publish_json("binding.json", binding)
             runner.publish_json("plan.json", plan)
         else:
