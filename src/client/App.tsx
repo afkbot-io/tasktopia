@@ -484,6 +484,10 @@ export function App() {
           <ProfilePresence initial={bootstrap.user.name.slice(0, 1).toUpperCase()} online={online} onOpen={() => openSettings("account")} />
         </nav>
       </div>
+      {effectiveMapMode === "CITY" && activeCity && <div className="map-toolbar-city" aria-label="Управление городом">
+        <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} />
+        <button className="city-development-toggle" onClick={() => setDevelopmentOpen(value => !value)} aria-expanded={developmentOpen}><span aria-hidden="true">▥</span> Развитие</button>
+      </div>}
     </header>
 
     <section className="map-region" onWheelCapture={event => {
@@ -578,9 +582,7 @@ export function App() {
       {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
       <WorldDigest key={`${bootstrap.user.id}:${countryId}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} onTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString()); }} />
       {effectiveMapMode === "CITY" && dependencyTask?.scope === dependencyScope && <MapDependencies key={`${dependencyScope}:${dependencyTask.id}`} countryId={bootstrap.country.id} taskId={dependencyTask.id} scope={dependencyScope} revision={attentionRevision} onChange={setDependencyData} onClose={() => { setDependencyTask(undefined); setDependencyData({ scope: "" }); }} />}
-      {effectiveMapMode === "CITY" && activeCity && <button className="city-development-toggle" onClick={() => setDevelopmentOpen(value => !value)} aria-expanded={developmentOpen}>Развитие</button>}
       {effectiveMapMode === "CITY" && activeCity && developmentOpen && <Suspense fallback={<div className="city-development-panel" role="status">Загрузка…</div>}><CityDevelopmentPanel key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} /></Suspense>}
-      {effectiveMapMode === "CITY" && activeCity && <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} />}
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
         setPlanFocus({ cityId: activeCity.id, districtId }); setPlanSection("cities"); setPlanOpen(true);
       }} />}

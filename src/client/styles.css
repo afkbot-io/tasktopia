@@ -785,16 +785,34 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .district-plans button:focus-visible { outline: 2px solid #e4c86d; outline-offset: 2px; }
 .city-development-icon { display: inline-block; width: 12px; height: 12px; margin-right: 4px; image-rendering: pixelated; vertical-align: middle; }
 
-.map-attention { position:absolute; top:76px; left:16px; display:flex; flex-wrap:wrap; gap:4px; max-width:calc(100% - 32px); padding:6px; background:#142c2c; border:1px solid #456059; z-index:12; }
-.map-attention button { background:transparent; color:#c9d5cc; border:1px solid transparent; padding:6px 10px; cursor:pointer; }
-.map-attention button[aria-pressed="true"] { color:#ffe285; border-color:#b39748; background:#3d3825; }
-.map-attention span { color:#bdcbbb; font-size:12px; align-self:center; padding:0 6px; }
+/* City tools belong to the header so they never obscure or intercept the map. */
+.map-toolbar:has(.map-toolbar-city) { height: auto; row-gap: 8px; }
+.map-toolbar-city { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding-top: 8px; border-top: 1px solid #304850; }
+.map-attention { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.map-attention button, .city-development-toggle { min-height: 32px; padding: 6px 10px; border: 1px solid #405953; border-radius: 3px; background: #182e2e; color: #bfcbbd; font: 700 11px/1.2 "IBM Plex Mono", monospace; white-space: nowrap; cursor: pointer; }
+.map-attention button:hover, .city-development-toggle:hover { background: #263d36; color: #eee4ba; border-color: #87916b; }
+.map-attention button:focus-visible, .city-development-toggle:focus-visible { outline: 2px solid #dfbd6b; outline-offset: 2px; }
+.map-attention button[aria-pressed="true"], .city-development-toggle[aria-expanded="true"] { color: #ffe285; border-color: #b39748; background: #3d3825; box-shadow: inset 0 -2px #b39748; }
+.map-attention span { color: #bdcbbb; font-size: 11px; align-self: center; padding: 0 6px; }
+.city-development-toggle { flex: 0 0 auto; border-color: #727953; color: #dfcf94; }
+.city-development-toggle > span { margin-right: 4px; }
+@media (max-width: 850px) {
+  .map-toolbar-city { grid-row: 3; gap: 8px; }
+  .map-attention { flex: 1; }
+  .map-attention button, .city-development-toggle { min-height: 44px; }
+}
+@media (max-width: 480px) {
+  .map-toolbar-city { flex-wrap: wrap; }
+  .map-attention { flex: 1 1 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .map-attention button { white-space: normal; padding: 5px 3px; font-size: 10px; }
+  .map-attention span { grid-column: 1 / -1; }
+  .city-development-toggle { width: 100%; }
+}
 
 .map-dependencies { position:absolute; left:16px; bottom:80px; max-width:min(520px,calc(100% - 32px)); z-index:12; background:#142c2c; color:#dbeddf; padding:12px 36px 12px 12px; border:1px solid #7acbcc; }
 .map-dependencies small { display:block; color:#9ab9b0; margin-top:4px; }
 .map-dependencies button { position:absolute; right:8px; top:8px; background:transparent; color:inherit; border:0; cursor:pointer; }
 
-.city-development-toggle { position:absolute; top:76px; right:16px; z-index:12; background:#18322e; color:#e8d8a6; padding:10px 14px; border:1px solid #8c8555; cursor:pointer; }
 .city-development-panel { position:absolute; right:16px; top:16px; bottom:76px; width:min(420px,calc(100% - 32px)); padding:18px; overflow:auto; z-index:20; background:#132b29; border:1px solid #597a6b; color:#dbe3ca; box-shadow:0 8px 36px #0008; }
 .city-development-panel header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .city-development-panel h2 { margin:0; font-size:20px; }
@@ -804,7 +822,6 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .city-development-panel li { display:flex; flex-direction:column; gap:5px; padding:10px 0; border-bottom:1px solid #314b42; }
 .city-development-panel li span { font-size:12px; color:#abc2b4; }
 .city-development-panel button { background:#254039; color:#e8d9ac; border:1px solid #577465; padding:6px 10px; cursor:pointer; align-self:flex-start; }
-@media(max-width:600px) { .city-development-toggle { top:auto; bottom:128px; } }
 
 .task-share-preview { margin: 12px 0; }
 .task-share-preview > div { margin-top: 8px; padding: 12px; border: 1px solid #35564f; background: #102726; }

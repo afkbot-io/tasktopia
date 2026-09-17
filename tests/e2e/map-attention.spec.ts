@@ -26,6 +26,9 @@ test("attention outlines assigned buildings without camera or terrain changes", 
     await service.assignTask(bootstrap.country.id, { taskId: task.id, assigneeUserId: bootstrap.user.id, idempotencyKey: crypto.randomUUID() });
     if (!alreadyLinked) await service.addTaskDependency(bootstrap.country.id, { taskId: dependent.id, dependsOnTaskId: task.id, idempotencyKey: crypto.randomUUID() });
     await page.goto("/");
+    await expect(page.getByRole("navigation", { name: "Подсветка задач" })).toBeVisible();
+    await expect(page.locator(".app-header").getByRole("navigation", { name: "Подсветка задач" })).toBeVisible();
+    await expect(page.locator(".app-header").getByRole("button", { name: "Развитие" })).toBeVisible();
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     const before = await host.evaluate(el => [el.getAttribute("data-camera-world-x"), el.getAttribute("data-camera-world-y"), el.getAttribute("data-ground-rebuilds")]);
