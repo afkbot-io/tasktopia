@@ -140,9 +140,11 @@ export function TaskModal({ countryId, taskId, revision, onClose, onShowDependen
         <header className="task-header">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
           <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
-          <button className="task-share" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "🔗 Ссылка"}</button>
         </header>
-        <TaskSharePreview key={`${countryId}:${task.id}`} countryId={countryId} task={task} />
+        <div className="task-actions" role="group" aria-label="Ссылки задачи">
+          <button className="task-action" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "Ссылка"}</button>
+          <TaskSharePreview key={`${countryId}:${task.id}`} countryId={countryId} task={task} />
+        </div>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
         <div className="task-grid">
           <div><span>Приоритет</span><strong>{priorityLabel[task.priority]}</strong></div><div><span>Срок</span><strong>{task.dueAt ? new Date(task.dueAt).toLocaleDateString("ru-RU") : "Не задан"}</strong></div>

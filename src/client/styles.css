@@ -374,7 +374,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: clamp(16px, 4vh, 32px); background: #020607c7; backdrop-filter: blur(6px); }
 .task-modal, .token-panel { position: relative; width: min(680px, 100%); max-height: min(840px, 92vh); overflow: auto; padding: 30px; border: 1px solid #3a5259; border-radius: 16px; background: #111e22; box-shadow: 0 28px 90px #000a; }
-.task-modal { width: min(760px, 100%); scrollbar-gutter: stable; }
+.task-modal { width: min(820px, 100%); scrollbar-gutter: stable; }
 .modal-close { position: absolute; right: 14px; top: 12px; width: 34px; height: 34px; border: 1px solid #3b535a; border-radius: 8px; background: #17292e; color: #dce6e3; font-size: 22px; cursor: pointer; }
 .task-header { display: flex; align-items: center; gap: 16px; padding-right: 38px; }
 .task-header h2 { margin: 0; font-size: 28px; line-height: 1.1; }
@@ -647,8 +647,6 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 @keyframes realtime-notice-in { from { opacity: 0; transform: translate3d(18px, 0, 0); } to { opacity: 1; transform: none; } }
 
 /* ── Task modal extras: share, MR links, attachments ───────── */
-.task-share { flex: 0 0 auto; align-self: flex-start; min-height: 34px; padding: 5px 11px; border: 1px solid #3b535a; border-radius: 8px; background: #17292e; color: #9fc6d5; font-size: 11px; font-weight: 800; cursor: pointer; }
-.task-share:hover { background: #1d343b; color: #e8f2f0; }
 .task-links, .task-attachments { margin-top: 24px; }
 .task-links h3, .task-attachments h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #aab9ba; }
 .task-links h3 span, .task-attachments h3 span { float: right; color: #8fb9c9; font-size: 10px; }
@@ -823,12 +821,6 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .city-development-panel li span { font-size:12px; color:#abc2b4; }
 .city-development-panel button { background:#254039; color:#e8d9ac; border:1px solid #577465; padding:6px 10px; cursor:pointer; align-self:flex-start; }
 
-.task-share-preview { margin: 12px 0; }
-.task-share-preview > div { margin-top: 8px; padding: 12px; border: 1px solid #35564f; background: #102726; }
-.task-share-preview p { font-size: 13px; line-height: 1.5; }
-.task-share-preview blockquote { margin: 12px 0; padding: 10px; background: #18322c; }
-.task-share-preview input:not([type="checkbox"]) { display: block; width: 100%; margin: 8px 0; }
-.task-share-preview button { margin: 4px 8px 4px 0; }
 
 .world-preferences label { display: grid; gap: 6px; margin-top: 14px; }
 .world-preferences select { width: 100%; color: #edf0e7; background: #122527; border: 1px solid #87916b; padding: 8px; }
@@ -855,18 +847,23 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 
 .country-atlas-ship { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; image-rendering: pixelated; object-fit: contain; }
 
-.task-share-preview fieldset { min-width: 0; border: 1px solid #35564f; display: grid; gap: 10px; }
-.task-share-preview fieldset label { display: block; overflow-wrap: anywhere; }
-.task-share-preview input[type="checkbox"] { width: auto; margin-right: 8px; }
-.task-share-preview textarea { box-sizing: border-box; width: 100%; resize: vertical; }
-.task-share-preview blockquote { overflow-wrap: anywhere; }
-.task-share-card-image { display: block; width: 100%; height: auto; margin-bottom: 12px; }
-
-.task-share-preview button { min-height: 44px; padding: 9px 14px; border: 1px solid #456056; border-radius: 8px; background: #18322c; color: #edf0df; font-size: 13px; font-weight: 700; cursor: pointer; }
-.task-share-preview > button, .task-share-preview button[aria-expanded="true"] { border-color: #b69b4e; color: #f1d780; background: #34351f; }
-.task-share-preview button:hover:not(:disabled) { border-color: #d9bd65; }
-.task-share-preview button:disabled { opacity: .6; cursor: default; }
-.task-share-preview :is(button,input,textarea):focus-visible { outline: 2px solid #d9bd65; outline-offset: 3px; }
-.task-share-preview :is(textarea,input:not([type="checkbox"])) { padding: 10px; border: 1px solid #456056; border-radius: 6px; background: #0c2023; color: #edf0df; font: inherit; box-sizing: border-box; }
-.task-share-preview input[type="checkbox"] { accent-color: #d9bd65; }
-.task-share-preview fieldset label:has(input[type="checkbox"]) { display: flex; align-items: center; gap: 6px; min-height: 36px; }
+.task-actions { position: relative; display: flex; align-items: center; gap: 8px; margin: 18px 0; }
+.task-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; border: 1px solid #405953; border-radius: 3px; background: #182e2e; color: #bfcbbd; font: inherit; font-size: 12px; font-weight: 700; line-height: 1.3; cursor: pointer; }
+.task-action:hover:not(:disabled) { background: #263d36; color: #eee4ba; border-color: #87916b; }
+.task-action[aria-expanded="true"] { color: #ffe285; border-color: #b39748; background: #3d3825; }
+.task-action:disabled { opacity: .6; cursor: default; }
+.task-action:focus-visible, .task-preview-popover :is(input,textarea,summary):focus-visible { outline: 2px solid #dfbd6b; outline-offset: 2px; }
+.task-preview-popover { position: absolute; z-index: 5; left: 0; top: calc(100% + 6px); box-sizing: border-box; width: min(360px, 100%); max-height: min(440px, 55dvh); overflow: auto; overscroll-behavior: contain; padding: 14px; border: 1px solid #405953; border-radius: 4px; background: #132628; box-shadow: 0 10px 28px #0007; }
+.task-preview-popover p { margin: 0 0 10px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.task-preview-popover p:last-child { margin-bottom: 0; }
+.task-preview-hint { color: #a9bcb8; }
+.task-preview-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.task-preview-link { display: block; font-size: 12px; margin-bottom: 12px; }
+.task-preview-popover :is(textarea,input:not([type="checkbox"])) { display: block; box-sizing: border-box; width: 100%; min-width: 0; margin-top: 6px; padding: 8px; border: 1px solid #405953; border-radius: 3px; background: #0c2023; color: #edf0df; font: inherit; }
+.task-preview-popover textarea { resize: vertical; }
+.task-preview-settings { margin-bottom: 12px; font-size: 12px; }
+.task-preview-settings summary { cursor: pointer; padding: 8px 0; color: #d5c58b; }
+.task-preview-settings fieldset { min-width: 0; border: 0; padding: 4px 0; display: grid; gap: 8px; }
+.task-preview-settings label { overflow-wrap: anywhere; }
+.task-preview-settings label:has(input[type="checkbox"]) { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.task-preview-settings input[type="checkbox"] { flex: 0 0 auto; width: auto; margin: 0; accent-color: #d9bd65; }
