@@ -27,6 +27,10 @@ export function TaskSharePreview({countryId,task}:{countryId:string;task:TaskDto
     catch(error){setMessage(error instanceof Error?error.message:"Не удалось создать ссылку");}
     finally{setBusy(false);}
   };
+  const copy=async()=>{
+    try {await navigator.clipboard.writeText(url);setMessage("Ссылка скопирована");}
+    catch {setMessage("Выделите и скопируйте ссылку из поля.");}
+  };
   const revoke=async()=>{
     setBusy(true);setMessage("");
     try {await api(`/api/task-share-previews?countryId=${countryId}&taskId=${task.id}`,{method:"DELETE"});setUrl("");attempt.current=null;setMessage("Все созданные вами превью этой задачи отозваны.");}
@@ -49,7 +53,7 @@ export function TaskSharePreview({countryId,task}:{countryId:string;task:TaskDto
         {url?<><img className="task-share-card-image" src={`${url}/image.png`} width="1200" height="630" alt="Опубликованная OG-карточка"/><label>Ссылка с превью<input aria-label="Ссылка с превью" readOnly value={url} onFocus={event=>event.target.select()}/></label></>:<button type="button" disabled={busy} onClick={()=>void publish()}>Создать ссылку с превью</button>}
       </>}
       {!url&&<button type="button" disabled={busy} onClick={()=>void load()}>{busy?'Загрузка…':'Обновить данные превью'}</button>}
-      {url&&<button type="button" onClick={()=>void navigator.clipboard.writeText(url).then(()=>setMessage("Ссылка скопирована"),()=>setMessage("Выделите и скопируйте ссылку из поля."))}>Скопировать превью</button>}
+      {url&&<button type="button" onClick={()=>void copy()}>Скопировать превью</button>}
       <button type="button" disabled={busy} onClick={()=>void revoke()}>Отозвать мои превью</button>
       <p>Превью — снимок: изменения задачи не публикуются автоматически. После отзыва мессенджер может сохранять ранее загруженную карточку.</p>
       {message&&<p role="status">{message}</p>}
