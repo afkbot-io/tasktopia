@@ -1,13 +1,23 @@
-import { useRef, useState } from "react";
-import { api } from "../api";
-import { taskSharePublicText, taskShareLocationText, type TaskShareDraft } from "../../shared/task-share-preview";
+import { useEffect, useId, useRef, useState } from "react";
+import { api, ApiError } from "../api";
+import { taskSharePublicText, type TaskShareDraft } from "../../shared/task-share-preview";
 import type { TaskDto } from "../../shared/contracts";
 
 export function TaskSharePreview({countryId,task}:{countryId:string;task:TaskDto}) {
   const [open,setOpen]=useState(false),[url,setUrl]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
   const [draft,setDraft]=useState<TaskShareDraft|null>(null);
-  const [description,setDescription]=useState(""),[includeDescription,setIncludeDescription]=useState(true);
+  const [description,setDescription]=useState(""),[includeDescription,setIncludeDescription]=useState(false);
   const [included,setIncluded]=useState({country:true,city:true,district:false});
+  const panelId=useId();
+  const root=useRef<HTMLElement>(null),toggle=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    if(!open)return;
+    const outside=(event:PointerEvent)=>{if(!root.current?.contains(event.target as Node))setOpen(false);};
+    const escape=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.stopPropagation();setOpen(false);toggle.current?.focus();}};
+    document.addEventListener("pointerdown",outside);
+    document.addEventListener("keydown",escape,true);
+    return ()=>{document.removeEventListener("pointerdown",outside);document.removeEventListener("keydown",escape,true);};
+  },[open]);
   const attempt=useRef<{token:string;payload:string}|null>(null);
   const load=async()=>{
     setBusy(true);setMessage("");
@@ -24,7 +34,7 @@ export function TaskSharePreview({countryId,task}:{countryId:string;task:TaskDto
     if(attempt.current?.payload!==payload)attempt.current={payload,token:btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")};
     setBusy(true);setMessage("");
     try {const result=await api<{url:string}>("/api/task-share-previews",{method:"POST",json:{countryId,taskId:task.id,requestToken:attempt.current.token,preview}});setUrl(result.url);}
-    catch(error){setMessage(error instanceof Error?error.message:"Не удалось создать ссылку");}
+    catch(error){if(error instanceof ApiError&&error.status===409){setDraft(null);attempt.current=null;}setMessage(error instanceof Error?error.message:"Не удалось создать ссылку");}
     finally{setBusy(false);}
   };
   const copy=async()=>{
@@ -37,25 +47,28 @@ export function TaskSharePreview({countryId,task}:{countryId:string;task:TaskDto
     catch(error){setMessage(error instanceof Error?error.message:"Не удалось отозвать ссылки");}
     finally{setBusy(false);}
   };
-  return <section className="task-share-preview">
-    <button type="button" aria-expanded={open} onClick={()=>{setOpen(!open);if(!open&&!draft&&!busy)void load();}}>Поделиться превью</button>
-    {open&&<div>
-      <p>Любой со ссылкой увидит выбранные поля. Сама задача, комментарии, вложения и участники останутся закрытыми.</p>
+  return <section className="task-share-preview" ref={root}>
+    <button ref={toggle} className="task-action" type="button" aria-expanded={open} aria-controls={panelId} onClick={()=>{setOpen(!open);if(!open&&!draft&&!busy)void load();}}>Превью <span aria-hidden="true">▾</span></button>
+    {open&&<div className="task-preview-popover" id={panelId} role="region" aria-label="Публичное превью">
+      <p className="task-preview-hint">Публичная ссылка: название, страна и город. Описание — по желанию.</p>
       {draft&&preview&&<>
-        <fieldset disabled={busy||Boolean(url)}>
-          <legend>Что показать публично</legend>
-          <label><input type="checkbox" checked={includeDescription} onChange={event=>setIncludeDescription(event.target.checked)}/>Краткое описание</label>
-          {includeDescription&&<label>Публичное описание<textarea aria-label="Публичное описание" value={description} maxLength={400} rows={3} onChange={event=>setDescription(event.target.value)}/></label>}
-          {(['country','city','district'] as const).map(key=>draft.location[key]&&<label key={key}><input type="checkbox" checked={included[key]} onChange={event=>setIncluded({...included,[key]:event.target.checked})}/>{{country:'Страна',city:'Город',district:'Район'}[key]}: {draft.location[key]}</label>)}
-        </fieldset>
-        <p>Проверьте текст ниже перед публикацией. Ссылки, email и типичные секреты скрываются автоматически, но личные данные нужно убрать самостоятельно.</p>
-        <blockquote><strong>#{preview.taskNumber} · {preview.title}</strong>{preview.description&&<p>{preview.description}</p>}<p>{taskShareLocationText(preview.location)}</p></blockquote>
-        {url?<><img className="task-share-card-image" src={`${url}/image.png`} width="1200" height="630" alt="Опубликованная OG-карточка"/><label>Ссылка с превью<input aria-label="Ссылка с превью" readOnly value={url} onFocus={event=>event.target.select()}/></label></>:<button type="button" disabled={busy} onClick={()=>void publish()}>Создать ссылку с превью</button>}
+        <div className="task-preview-actions">
+          {url?<button className="task-action" type="button" onClick={()=>void copy()}>Скопировать</button>:<button className="task-action" type="button" disabled={busy} onClick={()=>void publish()}>{busy?'Создаём…':'Создать ссылку на превью'}</button>}
+          <button className="task-action" type="button" disabled={busy} title="Отозвать все созданные вами превью этой задачи" onClick={()=>void revoke()}>Отозвать</button>
+        </div>
+        {url?<label className="task-preview-link">Ссылка на превью<input aria-label="Ссылка с превью" readOnly value={url} onFocus={event=>event.target.select()}/></label>:<details className="task-preview-settings">
+          <summary>Настроить поля</summary>
+          <fieldset disabled={busy}>
+            <legend>Что показать публично</legend>
+            <label><input type="checkbox" checked={includeDescription} onChange={event=>setIncludeDescription(event.target.checked)}/>Краткое описание</label>
+            {includeDescription&&<label>Публичное описание<textarea aria-label="Публичное описание" value={description} maxLength={400} rows={3} onChange={event=>setDescription(event.target.value)}/></label>}
+            {(['country','city','district'] as const).map(key=>draft.location[key]&&<label key={key}><input type="checkbox" checked={included[key]} onChange={event=>setIncluded({...included,[key]:event.target.checked})}/>{{country:'Страна',city:'Город',district:'Район'}[key]}: {draft.location[key]}</label>)}
+          </fieldset>
+          {includeDescription&&<p>Проверьте описание перед публикацией и удалите личные данные.</p>}
+        </details>}
+        <p className="task-preview-hint">Задача и её материалы закрыты. Отзыв отключит все ваши ссылки на её превью; карточка может остаться в кеше мессенджера.</p>
       </>}
-      {!url&&<button type="button" disabled={busy} onClick={()=>void load()}>{busy?'Загрузка…':'Обновить данные превью'}</button>}
-      {url&&<button type="button" onClick={()=>void copy()}>Скопировать превью</button>}
-      <button type="button" disabled={busy} onClick={()=>void revoke()}>Отозвать мои превью</button>
-      <p>Превью — снимок: изменения задачи не публикуются автоматически. После отзыва мессенджер может сохранять ранее загруженную карточку.</p>
+      {!draft&&<button className="task-action" type="button" disabled={busy} onClick={()=>void load()}>{busy?'Загрузка…':'Повторить загрузку'}</button>}
       {message&&<p role="status">{message}</p>}
     </div>}
   </section>;

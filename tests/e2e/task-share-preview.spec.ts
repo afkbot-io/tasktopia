@@ -5,14 +5,16 @@ test("publishes a reviewable preview and revokes it from the task",async({page,b
   const bootstrap=await (await page.request.get("/api/bootstrap")).json();
   await page.goto(`/task/1?countryId=${bootstrap.country.id}`);
   await expect(page.locator("#task-title")).toBeVisible();
-  await page.getByRole("button",{name:"Поделиться превью",exact:true}).click();
-  await expect(page.locator(".task-share-preview blockquote")).toContainText("#1");
+  await page.getByRole("button",{name:"Превью",exact:true}).click();
+  await page.locator(".task-modal").screenshot({path:"test-results/compact-preview-desktop.png"});
+  await page.getByText("Настроить поля",{exact:true}).click();
+  await page.getByRole("checkbox",{name:"Краткое описание",exact:true}).check();
   await page.getByRole("textbox",{name:"Публичное описание",exact:true}).fill("Текст для гостей");
   await page.getByRole("checkbox",{name:/Город:/}).uncheck();
   const browserErrors:string[]=[];page.on("pageerror",error=>browserErrors.push(error.message));
   const anonymous=await browser.newContext();
   try {
-    await page.getByRole("button",{name:"Создать ссылку с превью",exact:true}).click();
+    await page.getByRole("button",{name:"Создать ссылку на превью",exact:true}).click();
     const field=page.getByRole("textbox",{name:"Ссылка с превью",exact:true});await expect(field).toBeVisible();
     const url=await field.inputValue(),preview=await anonymous.newPage();
     preview.on("pageerror",error=>browserErrors.push(error.message));
@@ -41,23 +43,23 @@ test("publishes a reviewable preview and revokes it from the task",async({page,b
     await expect(preview.getByRole("heading",{name:"Войти в Tasktopia",exact:true})).toBeVisible();
     await expect(preview.locator("#task-title")).toHaveCount(0);
     await preview.goto(url);
-    await page.getByRole("button",{name:"Отозвать мои превью",exact:true}).click();
+    await page.getByRole("button",{name:"Отозвать",exact:true}).click();
     await expect(page.locator(".task-share-preview")).toContainText("отозваны");
     expect((await anonymous.request.get(`${url}/image.png`)).status()).toBe(404);
     const response=await preview.reload();expect(response!.status()).toBe(404);
     await expect(preview.locator("h1")).toContainText("ссылка недоступна");
     expect(browserErrors).toEqual([]);
-  } finally {await anonymous.close();await page.getByRole("button",{name:"Отозвать мои превью",exact:true}).click();}
+  } finally {await anonymous.close();await page.getByRole("button",{name:"Отозвать",exact:true}).click();}
 });
 
 test("recovers the same preview after losing a successful publication response",async({page})=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local fixture only");
-  await page.setViewportSize({width:390,height:844});
+  await page.setViewportSize({width:320,height:740});
   await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
   const bootstrap=await (await page.request.get("/api/bootstrap")).json();
   await page.goto(`/task/1?countryId=${bootstrap.country.id}`);
   await expect(page.locator("#task-title")).toBeVisible();
-  await page.getByRole("button",{name:"Поделиться превью",exact:true}).click();
+  await page.getByRole("button",{name:"Превью",exact:true}).click();
   let lostUrl="",loseNext=true;
   await page.route("**/api/task-share-previews",async route=>{
     if(route.request().method()==="POST"&&loseNext){
@@ -66,18 +68,28 @@ test("recovers the same preview after losing a successful publication response",
     } else await route.continue();
   });
   try {
-    const create=page.getByRole("button",{name:"Создать ссылку с превью",exact:true});
+    const create=page.getByRole("button",{name:"Создать ссылку на превью",exact:true});
     await create.click();await expect(page.locator(".task-share-preview [role=status]")).toBeVisible();
     await create.click();
     const field=page.getByRole("textbox",{name:"Ссылка с превью",exact:true});await expect(field).toBeVisible();
     expect(await field.inputValue()).toBe(lostUrl);
     await page.context().grantPermissions(["clipboard-read","clipboard-write"]);
-    await page.getByRole("button",{name:"Скопировать превью",exact:true}).click();
+    await page.getByRole("button",{name:"Скопировать",exact:true}).click();
     await expect(page.locator(".task-share-preview [role=status]")).toHaveText("Ссылка скопирована");
     expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe(lostUrl);
-    expect((await field.boundingBox())!.width).toBeLessThan(390);
+    expect((await field.boundingBox())!.width).toBeLessThan(320);
+    expect(await page.locator(".task-modal").evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".task-preview-popover")).toHaveCount(0);
+    await expect(page.locator("#task-title")).toBeVisible();
+    await expect(page.getByRole("button",{name:"Превью",exact:true})).toBeFocused();
+    await page.getByRole("button",{name:"Превью",exact:true}).click();
+    await expect(field).toHaveValue(lostUrl);
+    await page.locator("#task-title").click();
+    await expect(page.locator(".task-preview-popover")).toHaveCount(0);
+    await page.getByRole("button",{name:"Превью",exact:true}).click();
     await page.screenshot({path:"test-results/public-og-mobile.png"});
-  } finally {await page.getByRole("button",{name:"Отозвать мои превью",exact:true}).click();}
+  } finally {await page.getByRole("button",{name:"Отозвать",exact:true}).click();}
 });
 
 
@@ -93,20 +105,21 @@ test("offers visible controls, recovers draft loading and publishes only the sel
     if(route.request().method()==="GET"&&fail){fail=false;await route.fulfill({status:503,contentType:"application/json",body:JSON.stringify({error:"Unavailable",message:"Временная ошибка"})});}
     else await route.continue();
   });
-  const toggle=page.getByRole("button",{name:"Поделиться превью",exact:true});
+  const toggle=page.getByRole("button",{name:"Превью",exact:true});
   expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   expect(await toggle.evaluate(el=>getComputedStyle(el).borderTopStyle)).toBe("solid");
   await toggle.focus();await page.keyboard.press("Enter");
   await expect(toggle).toHaveAttribute("aria-expanded","true");
   await expect(page.locator(".task-share-preview [role=status]")).toContainText("Временная ошибка");
-  await expect(page.getByRole("button",{name:"Создать ссылку с превью",exact:true})).toHaveCount(0);
-  await page.getByRole("button",{name:"Обновить данные превью",exact:true}).click();
-  await page.getByRole("checkbox",{name:"Краткое описание",exact:true}).uncheck();
+  await expect(page.getByRole("button",{name:"Создать ссылку на превью",exact:true})).toHaveCount(0);
+  await page.getByRole("button",{name:"Повторить загрузку",exact:true}).click();
+  await page.getByText("Настроить поля",{exact:true}).click();
+  await expect(page.getByRole("checkbox",{name:"Краткое описание",exact:true})).not.toBeChecked();
   await page.getByRole("checkbox",{name:/Страна:/}).uncheck();
   await page.getByRole("checkbox",{name:/Город:/}).uncheck();
   await expect(page.getByRole("textbox",{name:"Публичное описание",exact:true})).toHaveCount(0);
   await page.locator(".task-share-preview").screenshot({path:"test-results/public-og-controls-mobile.png"});
-  await page.getByRole("button",{name:"Создать ссылку с превью",exact:true}).click();
+  await page.getByRole("button",{name:"Создать ссылку на превью",exact:true}).click();
   const field=page.getByRole("textbox",{name:"Ссылка с превью",exact:true});await expect(field).toBeVisible();
   const url=await field.inputValue(),guest=await browser.newContext();
   try {
@@ -115,8 +128,33 @@ test("offers visible controls, recovers draft loading and publishes only the sel
     expect(html).not.toContain(b.country.name);expect(html).not.toContain(b.initialCity.name);
     expect(html).toContain('property="og:description" content=""');
     await page.evaluate(()=>Object.defineProperty(navigator,"clipboard",{configurable:true,value:undefined}));
-    await page.getByRole("button",{name:"Скопировать превью",exact:true}).click();
+    await page.getByRole("button",{name:"Скопировать",exact:true}).click();
     await expect(page.locator(".task-share-preview [role=status]")).toContainText("скопируйте ссылку из поля");
     expect((await field.boundingBox())!.width).toBeLessThan(390);
-  } finally {await guest.close();await page.getByRole("button",{name:"Отозвать мои превью",exact:true}).click();}
+  } finally {await guest.close();await page.getByRole("button",{name:"Отозвать",exact:true}).click();}
+});
+
+
+test("refreshes a changed draft without silently publishing it",async({page})=>{
+  test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local fixture only");
+  await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
+  const b=await (await page.request.get("/api/bootstrap")).json();
+  await page.goto(`/task/1?countryId=${b.country.id}`);
+  await page.getByRole("button",{name:"Превью",exact:true}).click();
+  let posts=0;
+  await page.route("**/api/task-share-previews",async route=>{
+    if(route.request().method()==="POST"&&posts++===0)await route.fulfill({status:409,contentType:"application/json",body:JSON.stringify({error:"PREVIEW_CHANGED",message:"Данные изменились"})});
+    else await route.continue();
+  });
+  await page.getByRole("button",{name:"Создать ссылку на превью",exact:true}).click();
+  await expect(page.getByRole("button",{name:"Повторить загрузку",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Повторить загрузку",exact:true}).click();
+  await expect(page.getByRole("button",{name:"Создать ссылку на превью",exact:true})).toBeEnabled();
+  expect(posts).toBe(1);
+  await page.getByRole("button",{name:"Создать ссылку на превью",exact:true}).click();
+  const field=page.getByRole("textbox",{name:"Ссылка с превью",exact:true});
+  await expect(field).toBeVisible();
+  const html=await (await page.request.get(await field.inputValue())).text();
+  expect(html).toContain(`property="og:description" content="${b.country.name} · ${b.initialCity.name}"`);
+  await page.getByRole("button",{name:"Отозвать",exact:true}).click();
 });
