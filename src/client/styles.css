@@ -827,7 +827,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .task-share-preview > div { margin-top: 8px; padding: 12px; border: 1px solid #35564f; background: #102726; }
 .task-share-preview p { font-size: 13px; line-height: 1.5; }
 .task-share-preview blockquote { margin: 12px 0; padding: 10px; background: #18322c; }
-.task-share-preview input { display: block; width: 100%; margin: 8px 0; }
+.task-share-preview input:not([type="checkbox"]) { display: block; width: 100%; margin: 8px 0; }
 .task-share-preview button { margin: 4px 8px 4px 0; }
 
 .world-preferences label { display: grid; gap: 6px; margin-top: 14px; }
@@ -854,3 +854,10 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .country-atlas-train img { position: absolute; top: 0; left: 0; image-rendering: pixelated; object-fit: contain; }
 
 .country-atlas-ship { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; image-rendering: pixelated; object-fit: contain; }
+
+.task-share-preview fieldset { min-width: 0; border: 1px solid #35564f; display: grid; gap: 10px; }
+.task-share-preview fieldset label { display: block; overflow-wrap: anywhere; }
+.task-share-preview input[type="checkbox"] { width: auto; margin-right: 8px; }
+.task-share-preview textarea { box-sizing: border-box; width: 100%; resize: vertical; }
+.task-share-preview blockquote { overflow-wrap: anywhere; }
+.task-share-card-image { display: block; width: 100%; height: auto; margin-bottom: 12px; }
