@@ -26,16 +26,16 @@ test("attention outlines assigned buildings without camera or terrain changes", 
     await service.assignTask(bootstrap.country.id, { taskId: task.id, assigneeUserId: bootstrap.user.id, idempotencyKey: crypto.randomUUID() });
     if (!alreadyLinked) await service.addTaskDependency(bootstrap.country.id, { taskId: dependent.id, dependsOnTaskId: task.id, idempotencyKey: crypto.randomUUID() });
     await page.goto("/");
-    await expect(page.getByRole("navigation", { name: "Подсветка задач" })).toBeVisible();
-    await expect(page.locator(".app-header").getByRole("navigation", { name: "Подсветка задач" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Подсветка построек" })).toBeVisible();
+    await expect(page.locator(".app-header").getByRole("navigation", { name: "Подсветка построек" })).toBeVisible();
     await expect(page.locator(".app-header").getByRole("button", { name: "Развитие" })).toBeVisible();
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     const before = await host.evaluate(el => [el.getAttribute("data-camera-world-x"), el.getAttribute("data-camera-world-y"), el.getAttribute("data-ground-rebuilds")]);
-    const menu = page.getByRole("navigation", { name: "Подсветка задач" });
+    const menu = page.getByRole("navigation", { name: "Подсветка построек" });
     let requests = 0;
     page.on("request", req => { if (req.url().includes("/api/map-attention?")) requests++; });
-    await menu.getByRole("button", { name: "Мои", exact: true }).click();
+    await menu.getByRole("button", { name: "Мои объекты", exact: true }).click();
     await expect.poll(async () => Number(await host.getAttribute("data-attention-tasks"))).toBeGreaterThan(0);
     await page.screenshot({ path: info.outputPath("mine.png") });
     const unassigned = await client.callTool({ name: "task.assign", arguments: { countryId: bootstrap.country.id, taskId: task.id, assigneeEmail: null, idempotencyKey: crypto.randomUUID() } });
@@ -45,19 +45,19 @@ test("attention outlines assigned buildings without camera or terrain changes", 
     expect(assigned.isError).not.toBe(true);
     await expect.poll(async () => Number(await host.getAttribute("data-attention-tasks"))).toBeGreaterThan(0);
     const loadedRequests = requests;
-    await menu.getByRole("button", { name: "На проверке", exact: true }).click();
-    await expect(menu.getByRole("button", { name: "На проверке", exact: true })).toHaveAttribute("aria-pressed", "true");
-    await menu.getByRole("button", { name: "Мои", exact: true }).click();
+    await menu.getByRole("button", { name: "Приёмка", exact: true }).click();
+    await expect(menu.getByRole("button", { name: "Приёмка", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await menu.getByRole("button", { name: "Мои объекты", exact: true }).click();
     await expect.poll(async () => Number(await host.getAttribute("data-attention-tasks"))).toBeGreaterThan(0);
     expect(requests).toBe(loadedRequests);
     expect(await host.evaluate(el => [el.getAttribute("data-camera-world-x"), el.getAttribute("data-camera-world-y"), el.getAttribute("data-ground-rebuilds")])).toEqual(before);
-    await menu.getByRole("button", { name: "Мои", exact: true }).click();
+    await menu.getByRole("button", { name: "Мои объекты", exact: true }).click();
     await expect(host).toHaveAttribute("data-attention-tasks", "0");
     const offRequests = requests;
-    await menu.getByRole("button", { name: "Мои", exact: true }).click();
+    await menu.getByRole("button", { name: "Мои объекты", exact: true }).click();
     await expect.poll(async () => Number(await host.getAttribute("data-attention-tasks"))).toBeGreaterThan(0);
     expect(requests).toBe(offRequests);
-    await menu.getByRole("button", { name: "Мои", exact: true }).click();
+    await menu.getByRole("button", { name: "Мои объекты", exact: true }).click();
     await page.goto(`/task/${dependent.taskNumber}?countryId=${bootstrap.country.id}&taskId=${dependent.id}`);
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("button", { name: "Показать зависимости на карте" }).click();
@@ -92,8 +92,8 @@ test("overdue attention advances with time and retry recovers metadata", async (
     await page.route("**/api/map-attention?*", route => fail ? route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Temporary QA failure" }) }) : route.continue());
     await page.goto("/");
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic");
-    const menu = page.getByRole("navigation", { name: "Подсветка задач" });
-    await menu.getByRole("button", { name: "Просрочено", exact: true }).click();
+    const menu = page.getByRole("navigation", { name: "Подсветка построек" });
+    await menu.getByRole("button", { name: "Срыв сроков", exact: true }).click();
     await expect(menu.getByRole("button", { name: "Повторить загрузку" })).toBeVisible();
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-attention-tasks", "0");
     fail = false;
@@ -102,8 +102,14 @@ test("overdue attention advances with time and retry recovers metadata", async (
     const before = Number((await menu.getByRole("status").innerText()).split(":")[1]);
     await page.clock.fastForward(35_000);
     await expect(menu.getByRole("status")).toHaveText(`Найдено: ${before + 1}`);
-    await page.setViewportSize({ width: 390, height: 844 });
-    for (const label of ["Мои", "На проверке", "Дефекты", "Просрочено"]) await expect(menu.getByRole("button", { name: label, exact: true })).toBeInViewport();
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 844 });
+      for (const label of ["Мои объекты", "Приёмка", "Нужен ремонт", "Срыв сроков"]) {
+        const button = menu.getByRole("button", { name: label, exact: true });
+        await expect(button).toBeInViewport();
+        expect(await button.evaluate(el => el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight)).toBe(true);
+      }
+    }
   } finally {
     await service.updateTaskFields(bootstrap.country.id, { taskId: task.id, dueAt: task.dueAt, idempotencyKey: crypto.randomUUID() });
     await db.close();

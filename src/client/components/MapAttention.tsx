@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { loadMapAttention } from "../map-attention-loader";
 import { matchesMapAttention, type MapAttentionMode, type MapAttentionTask } from "../../shared/map-attention";
-const MODES: [MapAttentionMode, string][] = [["MINE", "Мои"], ["TESTING", "На проверке"], ["DEFECTS", "Дефекты"], ["OVERDUE", "Просрочено"]];
+const MODES: [MapAttentionMode, string][] = [["MINE", "Мои объекты"], ["TESTING", "Приёмка"], ["DEFECTS", "Нужен ремонт"], ["OVERDUE", "Срыв сроков"]];
 export function MapAttention({ countryId, cityId, userId, revision, onChange }: {
   countryId: string; cityId: string; userId: string; revision: number; onChange: (value: { scope: string; ids: string[] }) => void;
 }) {
@@ -55,7 +55,7 @@ export function MapAttention({ countryId, cityId, userId, revision, onChange }: 
     onChange({ scope, ids: mode && tasks ? tasks.filter(task => matchesMapAttention(task, mode, now)).map(task => task.id) : [] });
   }, [scope, mode, tasks, now, onChange]);
   const count = mode && tasks ? tasks.filter(task => matchesMapAttention(task, mode, now)).length : 0;
-  return <nav className="map-attention" aria-label="Подсветка задач">
+  return <nav className="map-attention" aria-label="Подсветка построек">
     {MODES.map(([value, label]) => <button key={value} aria-pressed={mode === value} onClick={() => { setNow(Date.now()); setMode(mode === value ? null : value); }}>{label}</button>)}
     {mode && <span role="status">{error ? <button onClick={() => setRetry(n => n + 1)}>Повторить загрузку</button> : tasks ? `Найдено: ${count}` : "Загрузка…"}</span>}
   </nav>;
