@@ -158,8 +158,8 @@ describe("generated worker CDN offline boundary", () => {
 });
 
 describe("PWA public/private cache boundary", () => {
-  it("leaves revocable share previews to the server even during offline navigation", async () => {
-    const path = "/share/task/" + "a".repeat(43);
+  it.each(["", "/image.png"])("leaves revocable share previews %s to the server even offline", async (suffix) => {
+    const path = "/share/task/" + "a".repeat(43) + suffix;
     const platform = workerPlatform(renderServiceWorker("share", ["/", path]));
     await platform.install();
     expect(platform.entries.has("https://tasktopia.online" + path)).toBe(false);
