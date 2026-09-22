@@ -4,6 +4,6 @@
   "src/client/district-development-view.ts": "f1b4f3b6dc353b918f6ef0daee855231c00e9796849b8eeecae99e70e94e4973",
   "src/client/game-ui.css": "023e07f0ae7948bc347d58f53eb58f0c5c9954e9b4ddff8aa1d5f602e666ad81",
   "tests/district-development.test.ts": "33318c25d94bc4caa0ea84d9fa563297bba67df4fd9591dce56d6103dab30d30",
-  "tests/e2e/district-development.spec.ts": "6b10d665c361fc8f8de242227334d4c75de4781e5d7542e91c09ba609679e10c",
+  "tests/e2e/district-development.spec.ts": "9c096a5bfe87c8af274c5243c18e1cd4d7049634758315b4e5b09f00deef03b6",
   "tests/e2e/task-entry.spec.ts": "eb6fb4feed9b189466aa7152bb96d4cd1400ac79bc553524761db4a1568ee7f0"
 }
