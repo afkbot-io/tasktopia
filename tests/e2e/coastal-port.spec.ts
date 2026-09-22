@@ -5,6 +5,10 @@ import { AppService } from "../../src/server/app-service";
 import type { PersonalPlanetGeography } from "../../src/shared/planet-geography";
 import { taskLink } from "../../src/client/task-navigation";
 test("shows five real port stages with a continuous approach and pier", async ({ page }, info) => {
+  // Five cold city entries and native screenshots share this test. Hosted
+  // software rendering took 62 s cumulatively while every readiness check
+  // passed in its original budget; bound the whole visual sequence separately.
+  test.setTimeout(120_000);
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL ?? ""), "Local fixture only");
   const url = process.env.E2E_DATABASE_URL ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
   expect(["localhost", "127.0.0.1"]).toContain(new URL(url).hostname);
