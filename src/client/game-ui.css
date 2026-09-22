@@ -45,12 +45,12 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .directory-content .plan-row { border-bottom:1px solid #c5c2a5; }
 .directory-content .plan-row > button { min-height:48px;color:var(--game-ink);border-radius:2px; }
 .directory-content .plan-row > button:hover,.directory-content .plan-row > button.selected { background:#d5ddbe;color:#1f422f; }
-.directory-content .plan-row small,.directory-content .plan-placeholder,.directory-content .plan-section-note { color:#626e60; }
+.directory-content .plan-row small,.directory-content .plan-placeholder,.directory-content .plan-section-note { color:#526048; }
 .directory-back { color:#446447;padding:8px 0;background:none;border:0;cursor:pointer; }
 .modal-backdrop { background:#0b201e70;backdrop-filter:none; }
 .task-modal,.token-panel,.country-government-dialog { border-radius:4px;border:2px solid var(--game-brass);box-shadow:0 0 0 4px var(--game-frame),8px 10px 0 #0d201a50;background:var(--game-paper);color:var(--game-ink);--muted:var(--game-muted);--line:#bcb99c; }
-.task-inspector-backdrop { justify-items:end;padding:16px;background:#0a231835; }
-.task-modal.task-inspector { display:flex;flex-direction:column;width:min(620px,100%);height:calc(100dvh - 32px);max-height:none;overflow:hidden;padding:0;scrollbar-gutter:auto; }
+.task-inspector-backdrop { inset:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);justify-items:end;padding:16px;background:#0a231835; }
+.task-modal.task-inspector { display:flex;flex-direction:column;width:min(620px,100%);height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-height:none;overflow:hidden;padding:0;scrollbar-gutter:auto; }
 .task-inspector .modal-close { z-index:3;top:14px;right:14px;border-radius:2px;background:#304e3d;border-color:#9a9f6f;color:#ead7a5; }
 .task-inspector .task-header { background:var(--game-frame);padding:20px 58px 12px 20px;gap:12px;color:#f1e4bd; }
 .task-inspector .task-header .eyebrow { color:#b9c9af;font-size:9px;line-height:1.6; }
@@ -123,7 +123,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
  .world-menu .game-popover-panel { position:fixed;top:62px;right:12px;max-height:calc(100dvh - 74px);overflow-y:auto;overscroll-behavior:contain; }
  .city-directory { top:10px;right:10px;max-width:calc(100% - 20px);max-height:calc(100% - 86px); }
  .task-inspector-backdrop { padding:0; }
- .task-modal.task-inspector { width:100%;height:100dvh;border-width:0;border-radius:0; }
+ .task-modal.task-inspector { width:100%;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border-width:0;border-radius:0; }
  .task-tab-content { padding:16px; }
  .task-inspector .task-header { padding:16px 50px 12px 16px; }
  .game-tabs { padding:0 6px; }
@@ -252,3 +252,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .task-tab-content :is(.comment-meta time,.task-document-preview > header code) {color:#526248;}
 .task-tab-content:focus-visible {outline:2px solid #718452;outline-offset:-3px;}
 @media(max-width:600px) {.task-inspector .task-header .eyebrow {font-size:9px;}}
+
+.directory-district-summary {padding:10px;border-left:3px solid #799165;background:#dce3c6;color:#354c3d;font-size:12px;line-height:1.6;}
+.directory-district-summary p {margin:0;}
+@media(max-width:600px) {.city-directory .plan-head button {width:44px;height:44px;flex-shrink:0;} .directory-back {min-height:44px;}}

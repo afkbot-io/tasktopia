@@ -138,3 +138,23 @@ test("контраст и прокрутка четырёх разделов с�
     expect(result.violations).toEqual([]);
   }
 });
+
+test("карточка PWA остаётся внутри безопасной области экрана", async ({page,browserName}, info) => {
+  test.skip(browserName!=="chromium","CDP-эмуляция выреза экрана доступна в Chromium");
+  await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
+  const cdp=await page.context().newCDPSession(page);
+  for(const viewport of [{width:390,height:844,insets:{top:47,bottom:34,left:0,right:0}},{width:844,height:390,insets:{top:0,bottom:21,left:47,right:47}}]) {
+    await page.setViewportSize(viewport);
+    await cdp.send("Emulation.setSafeAreaInsetsOverride",{insets:viewport.insets});
+    await page.goto('/task/1');await expect(page.locator('#task-title')).toBeVisible();
+    const card=await page.getByRole('dialog').boundingBox();
+    expect(card!.y).toBeGreaterThanOrEqual(viewport.insets.top);
+    expect(card!.y+card!.height).toBeLessThanOrEqual(viewport.height-viewport.insets.bottom);
+    expect(card!.x).toBeGreaterThanOrEqual(viewport.insets.left);
+    expect(card!.x+card!.width).toBeLessThanOrEqual(viewport.width-viewport.insets.right);
+    const close=await page.getByRole('button',{name:'Закрыть',exact:true}).boundingBox();
+    expect(close!.y).toBeGreaterThanOrEqual(viewport.insets.top);
+    await page.getByRole('tab',{name:'История',exact:true}).click();
+    await page.screenshot({path:info.outputPath(`task-safe-area-${viewport.width}.png`)});
+  }
+});

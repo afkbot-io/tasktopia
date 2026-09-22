@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { ArchiveRecordDto, BootstrapDto, PlanCityDto, PlanCityPageDto, PlanDistrictDto, PlanTaskDto } from "../../shared/contracts";
 import { api } from "../api";
+import { districtDevelopmentSummary } from "../district-development";
 
 const districtStatus: Record<PlanDistrictDto["status"], string> = {
   PLANNED: "Запланирован", ACTIVE: "Активный", COMPLETED: "Завершён", ABANDONED: "Заброшен",
 };
 
 const taskStatus: Record<PlanTaskDto["status"], string> = {
-  PLANNING: "Планирование", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
+  PLANNING: "Планирование", STARTED: "В работе", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
 };
 const taskType: Record<PlanTaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
 const kindLabel: Record<ArchiveRecordDto["kind"], string> = {
@@ -137,6 +138,8 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
     if (city) onCityFocus(city);
   };
   const visibleCities = cities.filter(city=>city.name.toLocaleLowerCase().includes(cityQuery.trim().toLocaleLowerCase()));
+  const selectedDistrict = districts.find(district => district.id === districtId);
+  const districtSummary = districtDevelopmentSummary(selectedDistrict?.name ?? "", tasks);
   const canEdit = bootstrap.countryRole !== "VIEWER";
   const removeEntity = async (path: string, id: string, label: string, field: "confirmName" | "confirmTitle") => {
     const confirmation = window.prompt(`Удаление нельзя отменить. Введите точное название:\n${label}`);
@@ -183,7 +186,9 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
           <i className={`district-dot district-${district.status.toLowerCase()}`} /><span><strong>{district.name}</strong><small>{districtStatus[district.status]} · {district.taskCount} задач{district.deadline ? ` · до ${new Date(district.deadline).toLocaleDateString("ru-RU")}` : ""}</small></span>
         </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить район «${district.name}»`} aria-label={`Удалить район «${district.name}»`} onClick={() => void removeEntity(`/api/districts/${district.id}`, district.id, district.name, "confirmName")}>{deletingId === district.id ? "…" : "×"}</button>}</div>)}
       </section>}
-      {districtId && <section className="plan-tasks"><button className="directory-back" onClick={()=>setDistrictId("")}>← Все районы</button><p className="directory-district-name">{districts.find(district=>district.id===districtId)?.name}</p><h3>Задачи <span>{tasks.length}</span></h3>
+      {districtId && <section className="plan-tasks"><button className="directory-back" onClick={()=>setDistrictId("")}>← Все районы</button><p className="directory-district-name">{districtSummary.title}</p>
+        {!tasksLoading && !error && tasks.length > 0 && <div className="directory-district-summary" role="group" aria-label="Сводка района"><p>{districtSummary.line}</p><p>{districtSummary.detail}</p></div>}
+        <h3>Задачи <span>{tasks.length}</span></h3>
         {!districtId && <p className="plan-placeholder">Выберите район</p>}
         {tasksLoading && !error && <p className="plan-placeholder">Загружаем задачи…</p>}
         {!tasksLoading && tasks.length === 0 && !error && <p className="plan-placeholder">В районе пока нет задач</p>}

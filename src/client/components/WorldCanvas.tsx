@@ -1,7 +1,6 @@
 import { planCityParking } from "../city-parking";
 import { cityLifeSites, planCityLife, cityLifePose, type CityLifeSite, type CityLifePlan } from "../city-life";
 import { createCityLifeView } from "../city-life-view";
-import { districtDevelopmentSummary } from "../district-development";
 import { worldDetailProfile } from "../world-detail-profile";
 import { seaVessel } from "../../shared/sea-vessel";
 import { railPolyline } from "../../shared/rail-convoy";
@@ -386,12 +385,6 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
   graphics.stroke({ color, width: district.status === "ACTIVE" ? 2.6 : 1.2, alpha: district.status === "ACTIVE" ? 1 : 0.62, cap: "square" });
   hit.fill({ color, alpha: 0.001 });
   group.addChild(hit, graphics);
-  if (district.status === "ACTIVE" && district.cells.length > 0) {
-    const markerCell = district.cells.reduce((best, cell) => cell.y < best.y || cell.y === best.y && cell.x < best.x ? cell : best, district.cells[0]!);
-    const marker = sprite(PROP_SPRITES["active-district-flag"]!, markerCell.x * CELL_SIZE + CELL_SIZE / 2, markerCell.y * CELL_SIZE + CELL_SIZE);
-    marker.anchor.set(0.5, 1);
-    group.addChild(marker);
-  }
   let tooltip: Container | undefined;
   let tooltipHeight = 0;
   const showTooltip = (event: FederatedPointerEvent) => {
@@ -2959,6 +2952,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
               developmentEmphasis.set(district.id, { status: district.status, until: performance.now() + 3_000 });
           }
           let fenceCount = 0;
+          const markers: { districtId: string; x: number; y: number; width: number; height: number }[] = [];
           for (const { district, state } of activity) {
             for (const cell of district.cells) if (railwayIntersectsRect(railway, cell, 1, 1)) blocked.add(key(cell));
             const canonical = developmentGeometry?.plan(district.id, state) ?? planDistrictDevelopment(district.cells, blocked, state);
@@ -2969,10 +2963,11 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             fenceCount += plan.fences.length;
             for (const prop of [...plan.fences, ...(plan.marker ? [plan.marker] : [])])
               for (const cell of prop.cells) developmentOccupied.add(key(cell));
-            const anchor = district.cells.reduce((a, b) => b.y < a.y || b.y === a.y && b.x < a.x ? b : a);
-            const view = drawDistrictDevelopment(plan, state, anchor, CELL_SIZE, developmentTexture, () => {
+            const view = drawDistrictDevelopment(plan, state, CELL_SIZE, developmentTexture, () => {
               if (performance.now() >= suppressSelectionUntil) onDistrictSelectRef.current?.(district.id);
-            }, districtDevelopmentSummary(district.name,[...developmentTasks.values()].filter(task=>task.districtId===district.id).map(task=>({id:task.id,status:latestTaskStatusPatches.get(task.id)?.status??task.status}))));
+            });
+            const marker = view.getChildByLabel("district-development-marker");
+            if (marker) markers.push({ districtId: district.id, x: marker.x, y: marker.y, width: marker.width, height: marker.height });
             const remaining = (developmentEmphasis.get(district.id)?.until ?? 0) - performance.now();
             if (district.status === "ACTIVE" && remaining > 0) {
               const emphasis = drawDevelopmentEmphasis(district.cells, CELL_SIZE);
@@ -2985,6 +2980,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             }
             developmentLayer.addChild(view);
           }
+          host!.dataset.developmentMarkers = JSON.stringify(markers);
           host!.dataset.developmentFences = String(fenceCount);
           host!.dataset.developmentDistricts = String(activity.length);
           host!.dataset.developmentStates = JSON.stringify(activity.map(({ district, state }) => ({ id: district.id, state })));
