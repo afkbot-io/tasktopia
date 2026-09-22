@@ -13,8 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     # Asset regeneration, the full unit suite, and the ultra-wide streaming
     # browser gate intentionally run together and exceed 15 minutes on hosted
-    # runners. Keep a bounded ceiling without cancelling a healthy release.
-    timeout-minutes: 45
+    # runners. The complete matrix measured 44+ minutes, leaving no margin
+    # under the old 45-minute job ceiling. This only bounds the whole job;
+    # browser readiness, simulation and performance budgets stay in each test.
+    timeout-minutes: 60
     services:
       postgres:
         image: postgres:16-alpine

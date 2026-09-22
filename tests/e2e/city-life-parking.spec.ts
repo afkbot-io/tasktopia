@@ -5,6 +5,9 @@ import {materializeChunkPayload} from '../../src/shared/world-chunk-payload';
 import {buildCityWalkNetwork} from '../../src/client/city-walk-network';
 import {cityLifeSites,planCityLife} from '../../src/client/city-life';
 import {planCityParking} from '../../src/client/city-parking';
+// Framebuffer readback for trace thumbnails starves a software renderer. Keep
+// DOM/source traces and the explicit visual captures, as in city-mobility.
+test.use({trace:{mode:'retain-on-failure',screenshots:false,snapshots:true,sources:true}});
 const key=(c:{x:number;y:number})=>`${c.x},${c.y}`;
 function geometry(scene:CitySceneDto){
  const chunks=scene.chunks.map(c=>materializeChunkPayload(c));
@@ -44,6 +47,7 @@ test('событие у завершённого дома прибывает, д
 
 test('машина заезжает на существующий мощёный участок парковки и возвращается на дорогу',async({page},info)=>{
  test.setTimeout(110000);
+ await page.setViewportSize({width:800,height:600});
  await page.addInitScript(()=>{
   localStorage.setItem('tasktopia:world-preferences:v1',JSON.stringify({quality:'ECONOMY'}));
   // Replay the traffic seed captured in the Linux CI failure.
@@ -69,8 +73,14 @@ test('машина заезжает на существующий мощёный
  await page.goto(`/task/${target!.taskNumber}?countryId=${bootstrap.country.id}&taskId=${target!.id}`);
  const host=page.locator('.world-canvas');await expect(host).toHaveAttribute('data-loading','false',{timeout:45000});await page.getByRole('button',{name:'Закрыть',exact:true}).click();
  await expect.poll(async()=>Number(await host.getAttribute('data-parking-lots'))).toBeGreaterThan(0);
- await expect.poll(async()=>Number(await host.getAttribute('data-parked-cars')),{timeout:45000}).toBeGreaterThan(0);
- const parkedId=(await host.getAttribute('data-parked-car-ids'))!.split(',')[0]!;
+ const state=()=>host.evaluate(el=>({steps:Number(el.dataset.mobilityFixedSteps),parked:el.dataset.parkedCarIds?.split(',').filter(Boolean)??[],road:el.dataset.roadCarIds?.split(',')??[],alive:el.dataset.agentIds?.split(',')??[]}));
+ const arrivalStarted=(await state()).steps;
+ // Entry uses the same simulation clock as the stop below: the CI trace had
+ // advanced only 10.4 simulation seconds in 45 wall seconds, still en route.
+ // Keep a 45-second simulation bound and the original whole-test deadline.
+ await expect.poll(async()=>{const s=await state();return s.parked.length>0||s.steps-arrivalStarted>=900;},{timeout:75000}).toBe(true);
+ const arrival=await state();expect(arrival.parked.length).toBeGreaterThan(0);
+ const parkedId=arrival.parked[0]!;
  expect(parkedId).toBeTruthy();
  const parkedAt=Number(await host.getAttribute('data-mobility-fixed-steps'));
  await page.screenshot({path:info.outputPath('parking-stop.png')});
@@ -79,11 +89,10 @@ test('машина заезжает на существующий мощёный
  // Rendering caps a tick at 50 ms. On a software renderer 25 wall seconds
  // may contain fewer than the 16 simulation seconds of a normal stop.
  // Keep a strict 25-second simulation budget, with a bounded wall deadline.
- const state=()=>host.evaluate(el=>({steps:Number(el.dataset.mobilityFixedSteps),road:el.dataset.roadCarIds?.split(',')??[],alive:el.dataset.agentIds?.split(',')??[]}));
  await expect.poll(async()=>{const s=await state();return s.road.includes(parkedId)||!s.alive.includes(parkedId)||s.steps-parkedAt>=500;},{timeout:75000}).toBe(true);
  expect((await state()).road).toContain(parkedId);
  expect((await host.getAttribute('data-agent-ids'))?.split(',')).toContain(parkedId);
  await expect(host).toHaveAttribute('data-mobility-vehicle-unsafe-total','0');
  expect(writes).toEqual([]);
- await info.attach('parking-evidence',{body:Buffer.from(JSON.stringify({parcel:target!.id,parkedId,parking,writes,metrics:await host.evaluate(el=>({cars:el.dataset.cars,unsafe:el.dataset.mobilityVehicleUnsafeTotal,parked:el.dataset.parkedCars}))})),contentType:'application/json'});
+ await info.attach('parking-evidence',{body:Buffer.from(JSON.stringify({parcel:target!.id,parkedId,parking,writes,arrivalStarted,parkedAt,returnedAt:(await state()).steps,metrics:await host.evaluate(el=>({cars:el.dataset.cars,unsafe:el.dataset.mobilityVehicleUnsafeTotal,parked:el.dataset.parkedCars}))})),contentType:'application/json'});
 });
