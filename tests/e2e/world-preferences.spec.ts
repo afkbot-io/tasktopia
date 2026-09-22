@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 const world=(page:Page)=>page.locator('.world-canvas');
 const preferences=(page:Page)=>page.locator('.world-preferences:visible');
 async function login(page:Page){await page.request.post('/api/auth/login',{data:{email:'demo@tasktopia.local',password:'tasktopia-demo'}});await page.goto('/');await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready','true',{timeout:45000});}
@@ -24,16 +25,24 @@ test('детализация и уменьшение движения сохра
 });
 
 test('мобильные настройки работают при недоступном localStorage и помещаются на экран',async({page},info)=>{
- await page.setViewportSize({width:390,height:844});
+ await page.setViewportSize({width:390,height:700});
  await page.addInitScript(()=>{
+  // Exercise the offer/menu overlap even on hosts without native Web Push.
+  Object.defineProperty(window,'PushManager',{configurable:true,value:class {}});
+  Object.defineProperty(window,'Notification',{configurable:true,value:{permission:'default'}});
   const get=Storage.prototype.getItem,set=Storage.prototype.setItem;
   Storage.prototype.getItem=function(k){if(k.startsWith('tasktopia:world-preferences:'))throw new DOMException('Blocked','SecurityError');return get.call(this,k);};
   Storage.prototype.setItem=function(k,v){if(k.startsWith('tasktopia:world-preferences:'))throw new DOMException('Blocked','SecurityError');set.call(this,k,v);};
  });
- await login(page);await page.locator('.world-menu > summary').click();await preferences(page).locator('> summary').click();
+ await login(page);await expect(page.locator('.push-card-compact')).toBeVisible();
+ await page.locator('.world-menu > summary').click();await preferences(page).locator('> summary').click();
  await preferences(page).getByLabel('Детализация').selectOption('ECONOMY');await expect(page.locator('html')).toHaveAttribute('data-world-quality','ECONOMY');
  const box=(await preferences(page).locator('.map-legend-panel').boundingBox())!;expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(390);
+ const menu=(await page.locator('.world-menu > .game-popover-panel').boundingBox())!;
+ expect(menu.y+menu.height).toBeLessThanOrEqual(700);
  await preferences(page).getByLabel('Уменьшить движение').check();await expect(page.locator('html')).toHaveAttribute('data-world-motion','REDUCED');
+ const accessibility=await new AxeBuilder({page}).include('.world-menu').analyze();
+ expect(accessibility.violations.filter(v=>v.impact==='serious'||v.impact==='critical').map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)}))).toEqual([]);
  await page.screenshot({path:info.outputPath('mobile-preferences.png')});
  await page.locator('.world-menu > summary').click();await city(page);await expect(world(page)).toHaveAttribute('data-animation-active','false');
  await expect(world(page)).toHaveAttribute('data-frame-limit','30');

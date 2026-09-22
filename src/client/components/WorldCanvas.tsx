@@ -1719,6 +1719,8 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         host.dataset.trafficMovingVehicles = String(cars.filter(agent => agent.waitMs === 0 && agent.activity === "NONE").length);
         host.dataset.mobilityTrips = String(metrics.completedTrips);
         host.dataset.parkedCars=String(agents.filter(agent=>agent.activity==="PARKED").length);
+        host.dataset.parkedCarIds=cars.filter(agent=>agent.activity==="PARKED").map(agent=>agent.id).join(",");
+        host.dataset.roadCarIds=cars.filter(agent=>mobilityRoads.has(key(agent.current))&&mobilityRoads.has(key(agent.next))).map(agent=>agent.id).join(",");
         host.dataset.mobilityCrossings = String(metrics.crossingsCompleted);
         host.dataset.trafficJunctions = String(mobility.signals.length);
         host.dataset.trafficSignals = String(trafficSignalViews.size);

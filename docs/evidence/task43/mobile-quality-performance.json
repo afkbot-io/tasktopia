@@ -4,7 +4,7 @@
   "mobile": [
     {
       "repetition": 0,
-      "entryMs": 1750.6402079999998,
+      "entryMs": 1580.0959590000002,
       "metrics": {
         "fps": "60",
         "ratio": "2",
@@ -14,7 +14,7 @@
     },
     {
       "repetition": 1,
-      "entryMs": 1673.8935000000001,
+      "entryMs": 1523.4698749999998,
       "metrics": {
         "fps": "60",
         "ratio": "2",
@@ -24,7 +24,7 @@
     },
     {
       "repetition": 2,
-      "entryMs": 2078.5087919999996,
+      "entryMs": 1561.2420000000002,
       "metrics": {
         "fps": "60",
         "ratio": "2",
@@ -37,9 +37,9 @@
     {
       "profile": "NORMAL",
       "windowSeconds": 5,
-      "taskMs": 5009.42,
-      "scriptMs": 149.40900000000002,
-      "heapMB": 53.42616653442383,
+      "taskMs": 5026.571000000001,
+      "scriptMs": 124.56800000000001,
+      "heapMB": 46.97050476074219,
       "world": {
         "frameLimit": "60",
         "worldPixelRatio": "2",
@@ -53,9 +53,9 @@
     {
       "profile": "ECONOMY",
       "windowSeconds": 5,
-      "taskMs": 2143.723999999999,
-      "scriptMs": 93.33400000000003,
-      "heapMB": 48.183753967285156,
+      "taskMs": 2051.321,
+      "scriptMs": 70.99199999999995,
+      "heapMB": 47.69900131225586,
       "world": {
         "frameLimit": "30",
         "worldPixelRatio": "1",
@@ -69,9 +69,9 @@
     {
       "profile": "NORMAL",
       "windowSeconds": 5,
-      "taskMs": 5038.316,
-      "scriptMs": 89.44600000000014,
-      "heapMB": 70.68043518066406,
+      "taskMs": 5048.102999999999,
+      "scriptMs": 91.11700000000012,
+      "heapMB": 49.4922981262207,
       "world": {
         "frameLimit": "60",
         "worldPixelRatio": "2",
@@ -85,9 +85,9 @@
     {
       "profile": "ECONOMY",
       "windowSeconds": 5,
-      "taskMs": 2109.4280000000012,
-      "scriptMs": 89.04899999999994,
-      "heapMB": 46.600406646728516,
+      "taskMs": 2071.8919999999985,
+      "scriptMs": 82.646,
+      "heapMB": 47.687950134277344,
       "world": {
         "frameLimit": "30",
         "worldPixelRatio": "1",

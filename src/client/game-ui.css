@@ -2,7 +2,7 @@
 :root { --game-frame:#183932; --game-frame-dark:#102820; --game-brass:#b7a374; --game-paper:#ece3c8; --game-ink:#2e4139; --game-muted:#647064; --layout-header-height:56px; --layout-header-mobile-height:56px; }
 button,summary,a,input,select,textarea { -webkit-tap-highlight-color:transparent; }
 button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus-visible { outline:2px solid #e1bf6d;outline-offset:3px; }
-.app-header.map-toolbar { grid-template-columns:minmax(170px,1fr) minmax(180px,380px) auto;gap:16px;height:56px;min-height:56px;padding:7px 16px;background:var(--game-frame-dark);border-bottom:2px solid #9e8d60;box-shadow:0 3px #10261e80; }
+.app-header.map-toolbar { z-index:45;grid-template-columns:minmax(170px,1fr) minmax(180px,380px) auto;gap:16px;height:56px;min-height:56px;padding:7px 16px;background:var(--game-frame-dark);border-bottom:2px solid #9e8d60;box-shadow:0 3px #10261e80; }
 .map-toolbar-location { gap:12px; }
 .map-toolbar .brand-mark { font-size:10px;letter-spacing:.05em; }
 .map-toolbar .country-title-button { display:block;max-width:150px; }
@@ -26,6 +26,8 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .game-popover-panel .map-attention button { width:100%; }
 .game-popover-panel .map-attention button[aria-pressed="true"] { background:#cdd8b9;border-color:#70866a; }
 .map-legend-panel p,.map-legend-panel dd { color:#586759;font-size:12px; }
+.map-legend-panel dt { color:#755c28; }
+.world-preferences label { color:var(--game-ink); }
 .world-preferences select { color:var(--game-ink);background:#fff6df;border-color:#b3ad90;border-radius:2px;min-height:36px; }
 .map-level-nav { padding:4px;background:#17352eea;border:1px solid var(--game-brass);border-radius:4px;box-shadow:0 3px 0 #071e19,0 0 0 3px #1d372d80;gap:4px; }
 .map-level-button { min-width:85px;border-radius:2px;color:#bcc9b3; }
@@ -118,7 +120,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
  .map-toolbar-actions .map-legend:not(.world-preferences),.map-toolbar-actions .profile-presence { display:none; }
  .game-popover summary,.map-toolbar .map-legend summary { min-width:32px;height:36px;padding:0 6px; }
  .map-toolbar .world-preferences { display:none; }
- .world-menu .game-popover-panel { position:fixed;top:62px;right:12px; }
+ .world-menu .game-popover-panel { position:fixed;top:62px;right:12px;max-height:calc(100dvh - 74px);overflow-y:auto;overscroll-behavior:contain; }
  .city-directory { top:10px;right:10px;max-width:calc(100% - 20px);max-height:calc(100% - 86px); }
  .task-inspector-backdrop { padding:0; }
  .task-modal.task-inspector { width:100%;height:100dvh;border-width:0;border-radius:0; }
@@ -131,7 +133,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 
 
 .mobile-menu-tools { display:none; }
-@media(max-width:600px) { .mobile-menu-tools { display:grid;gap:8px; }.mobile-menu-tools .world-preferences,.mobile-menu-tools .map-legend {display:block!important;}.mobile-menu-tools .map-legend-panel {position:static;margin-top:10px;width:100%;max-width:none;box-shadow:none;border:1px solid #b7ac86;}.mobile-menu-tools summary {justify-content:start!important;}.mobile-menu-tools .map-legend summary::after {content:attr(title);font-size:12px;} }
+@media(max-width:600px) { .mobile-menu-tools { display:grid;gap:8px; }.mobile-menu-tools .world-preferences,.mobile-menu-tools .map-legend {display:block!important;}.mobile-menu-tools .map-legend-panel {position:static;margin-top:10px;width:100%;max-width:none;box-shadow:none;border:1px solid #b7ac86;}.mobile-menu-tools summary {justify-content:start!important;}.mobile-menu-tools .map-legend summary {width:100%;}.mobile-menu-tools .map-legend summary::after {content:attr(title);font-size:12px;} }
 .planet-stars rect { animation:game-star-glimmer 7s ease-in-out infinite alternate;animation-delay:var(--star-delay,0s); }
 @keyframes game-star-glimmer { from {opacity:.25;} to {opacity:.7;} }
 .planet-water-shimmer path { opacity:.06;animation:game-water-glint 6s ease-in-out infinite; }

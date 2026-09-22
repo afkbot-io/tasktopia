@@ -1,7 +1,7 @@
 {
   "base": "330b48708449be3adc6ddd476eca7a75c7426dae",
   "branch": "codex/planet-city-ui",
-  "changedSourceSha256": "3a96d0c8c7f68db6561c5becba1711338d48b790c33ba2f04f291f9f14076782",
+  "changedSourceSha256": "963e50c024d63ab6b7933b8bed7dc7f0f70efafc562936784282e25965666ba6",
   "changedSourceFiles": [
     "src/client/App.tsx",
     "src/client/adaptive-world-quality.ts",
@@ -51,5 +51,6 @@
     "src/shared/task-park.ts"
   ],
   "measurementDate": "2026-09-22",
-  "runtime": "Node.js 24.15.0, local production build, isolated PostgreSQL, Playwright headless Chromium"
+  "runtime": "Node.js 24.15.0, local production build, isolated PostgreSQL, Playwright headless Chromium",
+  "hashMethod": "SHA256 of each listed path, NUL, file bytes (or DELETED), NUL, in listed order"
 }

@@ -44,6 +44,14 @@ test('событие у завершённого дома прибывает, д
 
 test('машина заезжает на существующий мощёный участок парковки и возвращается на дорогу',async({page},info)=>{
  test.setTimeout(110000);
+ await page.addInitScript(()=>{
+  localStorage.setItem('tasktopia:world-preferences:v1',JSON.stringify({quality:'ECONOMY'}));
+  // Replay the traffic seed captured in the Linux CI failure.
+  const random=crypto.getRandomValues.bind(crypto);
+  Object.defineProperty(crypto,'getRandomValues',{value:(array:ArrayBufferView<ArrayBuffer>)=>{
+   const result=random(array);if(array instanceof Uint32Array&&array.length===1)array[0]=3139827732;return result;
+  }});
+ });
  await page.request.post('/api/auth/login',{data:{email:'demo@tasktopia.local',password:'tasktopia-demo'}});
  const bootstrap=await (await page.request.get('/api/bootstrap')).json();
  const scene=await (await page.request.get(`/api/countries/${bootstrap.country.id}/cities/${bootstrap.initialCity.id}/scene`)).json() as CitySceneDto;
@@ -62,8 +70,20 @@ test('машина заезжает на существующий мощёный
  const host=page.locator('.world-canvas');await expect(host).toHaveAttribute('data-loading','false',{timeout:45000});await page.getByRole('button',{name:'Закрыть',exact:true}).click();
  await expect.poll(async()=>Number(await host.getAttribute('data-parking-lots'))).toBeGreaterThan(0);
  await expect.poll(async()=>Number(await host.getAttribute('data-parked-cars')),{timeout:45000}).toBeGreaterThan(0);
+ const parkedId=(await host.getAttribute('data-parked-car-ids'))!.split(',')[0]!;
+ expect(parkedId).toBeTruthy();
+ const parkedAt=Number(await host.getAttribute('data-mobility-fixed-steps'));
  await page.screenshot({path:info.outputPath('parking-stop.png')});
- await expect.poll(async()=>Number(await host.getAttribute('data-parked-cars')),{timeout:25000}).toBe(0);
+ // Other cars can arrive meanwhile. Follow the same car through its exit
+ // instead of requiring every parking space in the city to be empty at once.
+ // Rendering caps a tick at 50 ms. On a software renderer 25 wall seconds
+ // may contain fewer than the 16 simulation seconds of a normal stop.
+ // Keep a strict 25-second simulation budget, with a bounded wall deadline.
+ const state=()=>host.evaluate(el=>({steps:Number(el.dataset.mobilityFixedSteps),road:el.dataset.roadCarIds?.split(',')??[],alive:el.dataset.agentIds?.split(',')??[]}));
+ await expect.poll(async()=>{const s=await state();return s.road.includes(parkedId)||!s.alive.includes(parkedId)||s.steps-parkedAt>=500;},{timeout:75000}).toBe(true);
+ expect((await state()).road).toContain(parkedId);
+ expect((await host.getAttribute('data-agent-ids'))?.split(',')).toContain(parkedId);
+ await expect(host).toHaveAttribute('data-mobility-vehicle-unsafe-total','0');
  expect(writes).toEqual([]);
- await info.attach('parking-evidence',{body:Buffer.from(JSON.stringify({parcel:target!.id,parking,writes,metrics:await host.evaluate(el=>({cars:el.dataset.cars,unsafe:el.dataset.mobilityUnsafe,parked:el.dataset.parkedCars}))})),contentType:'application/json'});
+ await info.attach('parking-evidence',{body:Buffer.from(JSON.stringify({parcel:target!.id,parkedId,parking,writes,metrics:await host.evaluate(el=>({cars:el.dataset.cars,unsafe:el.dataset.mobilityVehicleUnsafeTotal,parked:el.dataset.parkedCars}))})),contentType:'application/json'});
 });
