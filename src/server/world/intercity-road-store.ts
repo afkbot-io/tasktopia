@@ -50,7 +50,7 @@ export async function synchronizeCountryRoads(db: Db, countryId: string, planner
     const plan = planner({ countryId, seed: Number(country.seed), allowBridges:true,
       terrainProfile: parseWorldTerrainProfile(country.terrain_profile_json),
       cities: developed.map(row => ({ id: row.city_id, nodes: row.nodes_json, blocks: row.blocks })),
-      protectedSites: [...await permanentSiteBounds(db, countryId, true),...await countryRailwayReservations(db,countryId),...await countryPortReservations(db,countryId)],
+      protectedSites: [...await permanentSiteBounds(db, countryId, true),...await countryRailwayReservations(db,countryId,undefined,"ROAD"),...await countryPortReservations(db,countryId)],
       ...(previous ? { previous: { countryId, seed: previous.plan.seed, routes: retained! } } : {}),
     });
     const revision = (previous?.revision ?? 0) + 1;

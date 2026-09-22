@@ -5,6 +5,7 @@ import { createTestDb, type Db } from "../src/server/db";
 import { readActiveBlockLayout } from "../src/server/world/active-block-layout";
 import { readCountryRoads } from "../src/server/world/intercity-road-store";
 import { auditWorld } from "../src/server/world/world-audit";
+import { decodeOrthogonalRoadRuns } from "../src/shared/semantic-road";
 import { intercityRoadCorridors } from "../src/shared/intercity-roads";
 
 describe("release regeneration with roads and permanent task history", { timeout: 60_000 }, () => {
@@ -69,6 +70,30 @@ describe("release regeneration with roads and permanent task history", { timeout
       };
     }));
   }
+
+  it("creates ordinary, backlog and park tasks beside a retained station approach", async () => {
+    const roads=(await readCountryRoads(db,countryId))!.plan.routes;
+    const layout=(await readActiveBlockLayout(db,cityIds[0]!))!;
+    const point=decodeOrthogonalRoadRuns(roads[0]!.geometry)[0]!;
+    await db.prepare("INSERT INTO city_railway_corridors_v1(layout_id,geometry_json) VALUES(?,?::jsonb)").run(layout.id,JSON.stringify({
+      stationId:"historic-station",axis:"horizontal",from:{x:-1000,y:-1000},to:{x:1000,y:-1000},
+      platform:{x:point.x,y:-1000},access:[{x:point.x,y:point.y+3}],stage:5,running:false,
+    }));
+    const district=await service.createDistrict(countryId,{cityId:cityIds[1]!,name:"New work",activate:false,idempotencyKey:"new-work"});
+    for(const mode of ["ordinary","backlog","park"] as const){
+      const task=await service.createTask(countryId,{cityId:cityIds[1]!,
+        ...(mode==="backlog"?{}:{districtId:district.id}),title:mode,estimate:1,
+        ...(mode==="park"?{visualKind:"PARK" as const,parkVariant:"urban-formal"}:{}),idempotencyKey:`approach-${mode}`});
+      const saved=await service.getTask(countryId,task.id);
+      expect(saved.title).toBe(mode);
+      if(mode==="park")expect(saved.visualKind).toBe("PARK");
+    }
+    expect((await readCountryRoads(db,countryId))!.plan.routes).toEqual(expect.arrayContaining(roads));
+    expect((await auditWorld(db,service,countryId)).violations.filter(v=>v.code==='COUNTRY_ROADS_INVALID')).toEqual([]);
+    await db.prepare("UPDATE city_railway_corridors_v1 SET geometry_json=jsonb_set(jsonb_set(geometry_json,'{from,y}',?::jsonb),'{to,y}',?::jsonb) WHERE layout_id=?")
+      .run(JSON.stringify(point.y),JSON.stringify(point.y),layout.id);
+    expect((await auditWorld(db,service,countryId)).violations.some(v=>v.code==="COUNTRY_ROADS_INVALID")).toBe(true);
+  });
 
   it("keeps MOVE/RUIN geometry and task content through replay and serves one new canonical road model", async () => {
     const before = await durableTasks();
