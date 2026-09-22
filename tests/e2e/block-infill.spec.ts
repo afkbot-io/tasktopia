@@ -68,9 +68,9 @@ test("infill tasks, block plaques and district boundaries survive a map round tr
   await expect(page.getByLabel("Освещение мира")).toHaveCount(0);
   for (const phase of ["DAWN", "DUSK", "NIGHT", "DAY"] as const) {
     await setMoscowPhase(page, phase);
-    await expect(host).toHaveAttribute("data-light-phase", phase);
+    await expect(host).toHaveAttribute("data-light-phase", "DAY");
     if (phase === "NIGHT") {
-      await expect(host).toHaveAttribute("data-lamp-intensity", "1.000");
+      await expect(host).toHaveAttribute("data-lamp-intensity", "0.000");
       await expect.poll(async () => Number(await host.getAttribute("data-illuminated-lamps"))).toBeGreaterThan(0);
     }
     expect(await originalCanvas!.evaluate(node => node.isConnected)).toBe(true);
@@ -93,27 +93,26 @@ test("infill tasks, block plaques and district boundaries survive a map round tr
     await page.mouse.move(10, 20); await page.screenshot({ path: `${directory}/park-${i}-stage-${task.stage}.png` });
   }
   await page.getByRole("button", { name: "Город", exact: true }).click();
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/country.png` });
   await setMoscowPhase(page, "NIGHT");
-  await expect.poll(() => page.locator(".country-overview-raster").evaluate(node => getComputedStyle(node).filter)).not.toBe("brightness(1)");
   await page.screenshot({ path: `${directory}/country-night.png` });
   await setMoscowPhase(page, "DAY");
   await page.getByRole("button", { name: "Планета", exact: true }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/planet.png` });
   await setMoscowPhase(page, "NIGHT");
-  await expect.poll(() => page.locator(".planet-map-ocean").evaluate(node => getComputedStyle(node).filter)).not.toBe("brightness(1)");
+  await expect.poll(() => page.locator(".planet-map-ocean").evaluate(node => getComputedStyle(node).filter)).toBe("brightness(1)");
   await page.screenshot({ path: `${directory}/planet-night.png` });
   await setMoscowPhase(page, "DAY");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("button", { name: /^Открыть страну .*, 1 городов,/ }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
-  await page.getByRole("button", { name: /^Открыть город Разнообразные кварталы,/ }).click(); await ready(page);
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
   await pointAt(page, examples[2]!); await page.screenshot({ path: `${directory}/mobile.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  for (const suffix of ["/scene", "/overview", "/planet-atlas"]) expect(reads.filter(p => p.endsWith(suffix))).toHaveLength(1);
+  expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);
+  for (const suffix of ["/scene", "/planet-atlas"]) expect(reads.filter(p => p.endsWith(suffix))).toHaveLength(1);
   expect(reads.filter(p => /\/world\/viewport|\/chunks\//.test(p))).toEqual([]); expect(errors).toEqual([]);
   await info.attach("block-infill", { body: JSON.stringify({ sceneRevision: scene.sceneRevision, plaques, parkCount: parks.length, examples: examples.map(t => ({ id: t.id, stage: t.stage, cells: t.footprint.length })), reads, errors }), contentType: "application/json" });
 });

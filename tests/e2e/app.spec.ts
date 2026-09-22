@@ -63,7 +63,8 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page).toHaveTitle("Tasktopia — Тестовая страна");
-  await expect(page.getByText("Riverside", { exact: true })).toBeVisible();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await expect(page.locator(".header-city strong")).toContainText("Riverside");
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible();
   const mapWarmup = { timeout: 90_000 };
   const mapHost = page.locator(".world-canvas");
@@ -81,7 +82,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
     await expect.poll(async () => Number(await mapHost.getAttribute("data-walkers")), { timeout: 30_000 }).toBeGreaterThan(0);
     expect(Number(await mapHost.getAttribute("data-walkers"))).toBeLessThanOrEqual(32);
   }
-  const districtsToggle = page.getByRole("button", { name: "Районы" });
+  const districtsToggle = page.getByRole("button", { name: "Районы", exact: true });
   await expect(districtsToggle).toHaveAttribute("aria-pressed", "false");
   // The anonymous bootstrap request is expected to return 401 before login.
   consoleErrors.length = 0;
@@ -93,19 +94,23 @@ test("login, map and MCP token management", async ({ page, context }) => {
 
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await page.locator(".country-title-button").click();
-  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
-  let cityDirectory = page.getByRole("complementary", { name: "План страны" });
+  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "Города" }).click();
+  let cityDirectory = page.getByRole("complementary", { name: "Города" });
   await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
+  await cityDirectory.getByRole("button", { name: "Закрыть список" }).click();
+  await page.locator(".header-city").click();
+  cityDirectory = page.getByRole("complementary", { name: "Районы города" });
   await cityDirectory.getByRole("button", { name: /^Квартальный район 1 / }).click();
   await cityDirectory.getByRole("button", { name: /^\d+ #1 · Задача района 1\.1/ }).click();
   const taskDialog = page.getByRole("dialog");
   await expect(taskDialog).toBeVisible();
-  await expect(taskDialog.getByRole("heading", { name: "Материалы для реализации" })).toBeVisible();
-  await expect(taskDialog.getByRole("tab")).toHaveCount(4);
-  await taskDialog.getByRole("tab", { name: /Архитектура/ }).click();
-  await expect(taskDialog.getByRole("tabpanel")).toContainText("Markdown-документы и пункты чек-листа");
+  await expect(taskDialog.locator(".game-tabs [role=tab]")).toHaveCount(4);
   await expect(taskDialog.locator(".task-checklist li")).toHaveCount(3);
   await expect(taskDialog.locator(".task-checklist li.done")).toHaveCount(2);
+  await taskDialog.getByRole("tab", { name: /Материалы/ }).click();
+  await expect(taskDialog.getByRole("heading", { name: "Материалы для реализации" })).toBeVisible();
+  await taskDialog.getByRole("tab", { name: /Архитектура/ }).click();
+  await expect(taskDialog.getByRole("tabpanel").last()).toContainText("Markdown-документы и пункты чек-листа");
   await expect(taskDialog.locator('input[type="file"]')).toHaveCount(0);
   await expect(taskDialog.getByRole("button", { name: /Удалить задачу|Добавить/ })).toHaveCount(0);
   await capture(page, "screenshots/release-task-modal.png");
@@ -113,27 +118,27 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(cityDirectory).toBeHidden();
 
   await canvas.hover();
-  for (let step = 0; step < 8; step += 1) await page.mouse.wheel(0, 800);
-  // City view stays in detail mode at the shared 0.8 minimum zoom.
-  // The complete resident scene remains authoritative without a second request.
+  await page.mouse.wheel(0, 4000);
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await expect(mapHost).toHaveAttribute("data-map-lod", "detail", mapWarmup);
-  await expect.poll(async () => Number(await mapHost.getAttribute("data-resident-chunks")), mapWarmup).toBeGreaterThan(0);
-  await expect.poll(async () => Number(await mapHost.getAttribute("data-cars")), mapWarmup).toBeGreaterThan(0);
-  await expect.poll(async () => Number(await mapHost.getAttribute("data-walkers")), mapWarmup).toBeGreaterThan(0);
   const residentChunks = Number(await mapHost.getAttribute("data-resident-chunks"));
   expect(residentChunks).toBeLessThanOrEqual(36);
   await capture(page, "screenshots/release-city-zoomed-out.png");
 
   await page.locator(".country-title-button").click();
-  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
-  cityDirectory = page.getByRole("complementary", { name: "План страны" });
+  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "Города" }).click();
+  cityDirectory = page.getByRole("complementary", { name: "Города" });
   await expect(cityDirectory).toBeVisible();
   await expect(cityDirectory.getByText(/^\d+ зданий$/)).toBeVisible();
   await capture(page, "screenshots/release-city-directory.png");
+  await cityDirectory.getByRole("button", { name: "Закрыть список" }).click();
+  await page.locator(".header-city").click();
+  cityDirectory = page.getByRole("complementary", { name: "Районы города" });
   await cityDirectory.getByRole("button", { name: /^Квартальный район 1 / }).click();
   await expect(cityDirectory.getByText("#1 · Задача района 1.1", { exact: true })).toBeVisible();
   await capture(page, "screenshots/release-plan-tasks.png");
-  await cityDirectory.getByRole("button", { name: "Закрыть план" }).click();
+  await cityDirectory.getByRole("button", { name: "Закрыть список" }).click();
 
   await page.getByRole("button", { name: "Настройки аккаунта" }).click();
   await page.getByRole("button", { name: "MCP-интеграция" }).click();
@@ -190,15 +195,16 @@ test("login, map and MCP token management", async ({ page, context }) => {
     await page.getByRole("button", { name: "Создать страну" }).click();
     await expect(page.locator(".country-title-button")).toContainText("Временная страна");
     await page.locator(".country-title-button").click();
-    await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
-    await expect(page.getByRole("complementary", { name: "План страны" }).getByText("Нет городов", { exact: true })).toBeVisible();
+    await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "Города" }).click();
+    await expect(page.getByRole("complementary", { name: "Города" }).getByText("Нет городов", { exact: true })).toBeVisible();
     await page.locator(".map-region").click({ position: { x: 20, y: 20 } });
-    await expect(page.getByRole("complementary", { name: "План страны" })).toBeHidden();
+    await expect(page.getByRole("complementary", { name: "Города" })).toBeHidden();
     await page.locator(".country-title-button").click();
     await countrySwitcher.getByRole("button", { name: "Редактировать страну" }).click();
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Удалить страну" }).click();
     await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     await expect(canvas).toBeVisible();
   } finally {
     // Other real-world journeys reuse this seed and validate its identity.
@@ -214,13 +220,15 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toBeVisible();
-  await page.locator(".country-title-button").click();
-  await expect(page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" })).toBeVisible();
+  await page.locator(".world-menu > summary").click();
+  await page.getByRole("button", { name: "Выбрать мир", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "Города" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Районы" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Районы", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await capture(page, "screenshots/release-city-mobile.png");
-  await page.getByRole("button", { name: "Настройки аккаунта" }).click();
+  await page.locator(".world-menu > summary").click();
+  await page.getByRole("button", { name: "Аккаунт и настройки" }).click();
   await page.getByRole("button", { name: "MCP-интеграция" }).click();
   await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
   await capture(page, "screenshots/release-mcp-mobile.png");
@@ -241,8 +249,9 @@ test("registration creates the named country and first city", async ({ page }) =
   await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
   await page.getByLabel("Повторите пароль", { exact: true }).fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
-  await expect(page.getByText("Новый продукт", { exact: true })).toBeVisible({ timeout: 90_000 });
-  await expect(page.getByText("Первый релиз", { exact: true })).toBeVisible({ timeout: 90_000 });
+  await expect(page.locator(".country-title-button strong")).toBeVisible({ timeout: 90_000 });
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await expect(page.locator(".header-city strong")).toContainText("Первый релиз", { timeout: 90_000 });
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 90_000 });
   await capture(page, "screenshots/release-onboarding-city.png");
 });

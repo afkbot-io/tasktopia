@@ -1,3 +1,4 @@
+import { selectCountrySession } from "../country-selection";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { BootstrapDto, CountryMemberDto, CountryRole } from "../../shared/contracts";
 import { api, ApiError } from "../api";
@@ -60,7 +61,7 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
   const reloadBootstrap = async () => onBootstrap(await api<BootstrapDto>("/api/bootstrap"));
   const create = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
     const country = await api<{ id: string }>("/api/countries", { method: "POST", json: { name: countryName, landscape } });
-    const next = await api<BootstrapDto>(`/api/countries/${country.id}/select`, { method: "POST" });
+    const next = await selectCountrySession(country.id);
     onBootstrap(next); onClose();
   }); };
   const rename = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
@@ -79,7 +80,7 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
   const deleteCountry = () => void safely(async () => {
     if (!window.confirm(`Удалить страну «${bootstrap.country.name}» со всеми городами? Это действие нельзя отменить.`)) return;
     const result = await api<{ activeCountryId: string }>(`/api/countries/${bootstrap.country.id}`, { method: "DELETE" });
-    onBootstrap(await api<BootstrapDto>(`/api/countries/${result.activeCountryId}/select`, { method: "POST" }));
+    onBootstrap(await selectCountrySession(result.activeCountryId));
     onClose();
   });
   const regenerateCountry = () => void safely(async () => {
@@ -93,7 +94,7 @@ export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
     setRegenerationNotice(`Мир пересобран: ${result.cities} городов, ${result.districts} районов, ${result.tasks} зданий.`);
   });
 
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-[#020607]/85 p-0 backdrop-blur-md sm:p-4" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
     <section ref={panelRef} className="country-government-dialog" role="dialog" aria-modal="true" aria-labelledby="country-dialog-title">
       <header className="country-government-head">
         <div><p className="eyebrow">{mode === "create" ? "СОЗДАНИЕ СТРАНЫ" : "УПРАВЛЕНИЕ СТРАНОЙ"}</p><h2 id="country-dialog-title">{mode === "create" ? "Новая страна" : bootstrap.country.name}</h2><p>{mode === "create" ? "Дайте стране имя. После создания она откроется автоматически." : "Название, правительство и доступы выбранной страны."}</p></div>

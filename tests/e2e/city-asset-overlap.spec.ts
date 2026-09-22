@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("resident images finishing in country mode do not rebuild the hidden city", async ({ page }) => {
+test("resident images finishing on the planet do not rebuild the hidden city", async ({ page }) => {
   expect((await page.request.post("/api/auth/login", { data: {
     email: "demo@tasktopia.local", password: "tasktopia-demo",
   } })).ok()).toBe(true);
@@ -13,8 +13,8 @@ test("resident images finishing in country mode do not rebuild the hidden city",
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     const rebuilds = await host.getAttribute("data-entity-rebuilds");
-    await page.getByRole("button", { name: "Страна", exact: true }).click();
-    await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+    await page.getByRole("button", { name: "Планета", exact: true }).click();
+    await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
     release();
     await expect(host).toHaveAttribute("data-ambient-assets", "ready");
     // Allow pending animation-frame reconciliation to run, if incorrectly scheduled.

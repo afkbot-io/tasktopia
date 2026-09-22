@@ -25,7 +25,8 @@ test("construction life reacts live to task stages and defects without reloading
     district=await service.createDistrict(countryId,{cityId,name:`Стройка QA ${crypto.randomUUID().slice(0,8)}`,activate:false,idempotencyKey:crypto.randomUUID()});
     await service.activateDistrict(countryId,district.id,crypto.randomUUID());
     task=await service.createTask(countryId,{cityId,districtId:district.id,title:"Строительство QA",estimate:3,idempotencyKey:crypto.randomUUID()});
-    await page.goto("/");const host=page.locator(".world-canvas");
+    await page.goto("/");
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();const host=page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit","atomic");
     await expect(host).toHaveAttribute("data-construction-workers","0");
     const status=async(status:string,progress?:number)=>call("task.set_status",{taskId:task!.id,status,progress,comment:"Локальная браузерная проверка"});

@@ -24,6 +24,7 @@ test("active district is visible in city mode and empty plans never reserve land
   let empty: Awaited<ReturnType<typeof service.createDistrict>> | undefined;
   try {
     await page.goto("/");
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     await expect(host).toHaveAttribute("data-district-boundary-visible", "false");
@@ -36,12 +37,14 @@ test("active district is visible in city mode and empty plans never reserve land
     // Reduced motion must work in a populated active district, not only an empty plan.
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.reload();
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     await expect(host).toHaveAttribute("data-construction-workers", "0");
     await expect.poll(async () => Number(await host.getAttribute("data-development-fences"))).toBeGreaterThan(0);
     await page.screenshot({ path: info.outputPath("active-district-static.png") });
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.reload();
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     await expect.poll(async () => Number(await host.getAttribute("data-construction-workers"))).toBeGreaterThan(0);
     const bakes = await host.getAttribute("data-ground-rebuilds");
     await page.getByRole("button", { name: "Районы", exact: true }).click();
@@ -52,10 +55,11 @@ test("active district is visible in city mode and empty plans never reserve land
     expect(empty.cells).toEqual([]);
     expect(empty.lots).toEqual([]);
     await page.reload();
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     const notice = page.getByRole("navigation", { name: "Районы без участков" });
     await expect(notice).toContainText(empty.name);
     await notice.getByRole("button", { name: new RegExp(empty.name) }).click();
-    await expect(page.locator(".plan-drawer")).toContainText(empty.name);
+    await expect(page.locator(".city-directory")).toContainText(empty.name);
     await page.keyboard.press("Escape");
     const activated = await client.callTool({ name: "district.activate", arguments: {
       countryId: bootstrap.country.id, districtId: empty.id, idempotencyKey: crypto.randomUUID(),
@@ -67,6 +71,7 @@ test("active district is visible in city mode and empty plans never reserve land
     await expect(host).toHaveAttribute("data-construction-materials", "0");
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.reload();
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     await expect(notice).toContainText(empty.name);
     expect(errors).toEqual([]);
   } finally {

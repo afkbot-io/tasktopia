@@ -10,10 +10,19 @@ import { eventInvalidation, mapInvalidationAffectsCity, mapInvalidationImpact } 
 export class RevisionCache<T> {
   private readonly values = new Map<string, T>();
   private readonly pending = new Map<string, Promise<T>>();
-  constructor(private readonly capacity: number) {}
+  private readonly weights=new Map<string,number>();
+  constructor(private readonly capacity: number,private readonly budget?:{limit:number;weight:(value:T)=>number}) {}
+  private retain(key:string,value:T):void {
+    const weight=this.budget?.weight(value)??1;
+    if(this.budget&&weight>this.budget.limit)return;
+    this.values.delete(key);this.values.set(key,value);this.weights.set(key,weight);
+    while(this.values.size>this.capacity||this.budget&&[...this.weights.values()].reduce((a,b)=>a+b,0)>this.budget.limit) {
+      const oldest=this.values.keys().next().value!;this.values.delete(oldest);this.weights.delete(oldest);
+    }
+  }
   peek(key: string): T | undefined { return this.values.get(key); }
-  clear(): void { this.values.clear(); this.pending.clear(); }
-  delete(key: string): void { this.values.delete(key); this.pending.delete(key); }
+  clear(): void { this.values.clear(); this.pending.clear(); this.weights.clear(); }
+  delete(key: string): void { this.values.delete(key); this.pending.delete(key); this.weights.delete(key); }
   keys(): string[] { return [...new Set([...this.values.keys(), ...this.pending.keys()])]; }
   hasPending(key: string): boolean { return this.pending.has(key); }
   promote(from: string, to: string): void {
@@ -23,8 +32,7 @@ export class RevisionCache<T> {
     this.delete(from);
     if (value !== undefined || pending) this.delete(to);
     if (value !== undefined) {
-      this.values.set(to, value);
-      while (this.values.size > this.capacity) this.values.delete(this.values.keys().next().value!);
+      this.retain(to,value);
     } else if (pending) {
       // A new identity owns publication; clearing either session cannot restore
       // the old key when its original HTTP request eventually completes.
@@ -41,8 +49,7 @@ export class RevisionCache<T> {
     if (existing) return existing;
     const promise = load().then((value) => {
       if (this.pending.get(key) === promise) {
-        this.values.set(key, value);
-        while (this.values.size > this.capacity) this.values.delete(this.values.keys().next().value!);
+        this.retain(key,value);
       }
       return value;
     }).finally(() => { if (this.pending.get(key) === promise) this.pending.delete(key); });
@@ -51,7 +58,24 @@ export class RevisionCache<T> {
   }
 }
 
-export const citySceneCache = new RevisionCache<CitySceneDto>(3);
+/** Conservative retained-heap estimate. Memoized by immutable DTO identity,
+ * stops at the budget and avoids allocating a second full JSON string. */
+const SCENE_DATA_BUDGET=48*1024*1024;
+const sceneWeights=new WeakMap<CitySceneDto,number>();
+export function citySceneDataWeight(scene:CitySceneDto):number {
+  const existing=sceneWeights.get(scene);if(existing!==undefined)return existing;
+  let weight=0;const seen=new WeakSet<object>();
+  const visit=(value:unknown):void=>{
+    if(weight>SCENE_DATA_BUDGET)return;
+    if(typeof value==='string'){weight+=value.length*2+24;return;}
+    if(!value||typeof value!=='object'){weight+=8;return;}
+    if(seen.has(value))return;seen.add(value);weight+=64;
+    if(Array.isArray(value)) {for(const item of value){visit(item);if(weight>SCENE_DATA_BUDGET)break;}}
+    else for(const name in value){weight+=name.length*2+16;visit((value as Record<string,unknown>)[name]);if(weight>SCENE_DATA_BUDGET)break;}
+  };
+  visit(scene);sceneWeights.set(scene,weight);return weight;
+}
+export const citySceneCache = new RevisionCache<CitySceneDto>(3,{limit:SCENE_DATA_BUDGET,weight:citySceneDataWeight});
 export const countrySceneCache = new RevisionCache<CountryOverviewDto>(2);
 const latestCountryRevisions = new Map<string, number>();
 const dirtySceneRevisions = new Map<string, number>();

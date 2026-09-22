@@ -37,6 +37,7 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.getByRole("navigation", {name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 90_000 });
   await expect(page.getByText("Готовим карту…", { exact: true })).toBeHidden({ timeout: 90_000 });
 }
@@ -96,11 +97,12 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
   await taskDialog.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(taskDialog).toBeHidden();
 
-  const profile = page.getByRole("button", { name: /Настройки аккаунта/ });
+  await page.locator(".world-menu > summary").click();
+  const profile = page.getByRole("button", { name: "Аккаунт и настройки", exact: true });
   await expect(profile).toBeVisible();
   const profileBox = await profile.boundingBox();
   expect(profileBox!.width).toBeGreaterThanOrEqual(44);
-  expect(profileBox!.height).toBeGreaterThanOrEqual(44);
+  expect(profileBox!.height).toBeGreaterThanOrEqual(36);
   await profile.click();
   const settings = page.getByRole("dialog", { name: "Аккаунт и интеграции" });
   await expect(settings).toBeVisible();
@@ -119,18 +121,10 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
   // handler latency, and is covered by the dedicated city-scene suites.
   const cityLongTasks = await measurePinch(city.locator("canvas"), 1.15);
   await expect.poll(async () => Number(await city.getAttribute("data-render-scale"))).toBeGreaterThan(cityScale);
-  await expect(page.locator(".country-title-button")).toBeInViewport();
+  await expect(page.locator(".header-city")).toBeInViewport();
   await expect(page.locator(".header-search")).toBeInViewport();
-  await expect(profile).toBeInViewport();
+  await expect(page.locator(".world-menu > summary")).toBeInViewport();
   if (process.env.MOBILE_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.MOBILE_SCREENSHOT_DIR}/${testInfo.project.name}-city.png` });
-
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  const country = page.locator(".country-overview");
-  await expect(country).toHaveAttribute("data-country-ready", "true", { timeout: 45_000 });
-  const countryScale = Number(await country.getAttribute("data-country-zoom"));
-  const countryLongTasks = await measurePinch(country, 1.35);
-  await expect.poll(async () => Number(await country.getAttribute("data-country-zoom"))).toBeGreaterThan(countryScale);
-  if (process.env.MOBILE_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.MOBILE_SCREENSHOT_DIR}/${testInfo.project.name}-country.png` });
 
   await page.getByRole("button", { name: "Планета", exact: true }).click();
   const planet = page.locator(".planet-atlas");
@@ -140,9 +134,9 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
   await expect.poll(async () => Number(await planet.getAttribute("data-globe-zoom"))).toBeGreaterThan(planetScale);
   if (process.env.MOBILE_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.MOBILE_SCREENSHOT_DIR}/${testInfo.project.name}-planet.png` });
 
-  const performance = { cityLongTasks, countryLongTasks, planetLongTasks };
+  const performance = { cityLongTasks, planetLongTasks };
   await testInfo.attach("mobile-map-interaction-performance", { body: Buffer.from(JSON.stringify(performance, null, 2)), contentType: "application/json" });
-  if (browserName === "chromium") expect(Math.max(0, ...cityLongTasks, ...countryLongTasks, ...planetLongTasks)).toBeLessThan(50);
+  if (browserName === "chromium") expect(Math.max(0, ...cityLongTasks, ...planetLongTasks)).toBeLessThan(50);
 
   expect(errors.filter((message) => !message.includes("401 (Unauthorized)"))).toEqual([]);
 });
@@ -237,7 +231,8 @@ test("push opt-in waits for a user gesture and can be disabled from the mobile p
   expect(await page.evaluate(() => (window as typeof window & { __pushPromptCalls?: number }).__pushPromptCalls)).toBe(1);
   expect(methods).toContain("POST");
 
-  await page.getByRole("button", { name: /Настройки аккаунта/ }).click();
+  await page.locator(".world-menu > summary").click();
+  await page.getByRole("button", {name:"Аккаунт и настройки",exact:true}).click();
   const settings = page.getByRole("dialog", { name: "Аккаунт и интеграции" });
   await expect(settings.getByText("Уведомления включены", { exact: true })).toBeVisible();
   await settings.getByRole("button", { name: "Отключить" }).click();

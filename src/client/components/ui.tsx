@@ -12,14 +12,14 @@ const buttonVariants = {
 } as const;
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: keyof typeof buttonVariants }>(function Button({ variant = "secondary", className, type = "button", ...props }, ref) {
-  return <button ref={ref} type={type} className={cx(
+  return <button ref={ref} type={type} data-game-variant={variant} className={cx(
     "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 text-sm font-extrabold transition-colors disabled:pointer-events-none disabled:opacity-45",
     buttonVariants[variant], className,
   )} {...props} />;
 });
 
 export function Field({ label, hint, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: ReactNode }) {
-  return <label className="grid gap-1.5 text-sm font-bold text-[#c7d2d1]">
+  return <label className="game-field grid gap-1.5 text-sm font-bold text-[#c7d2d1]">
     <span>{label}</span>
     <input className={cx("min-h-12 w-full rounded-xl border border-[#34515a] bg-[#091518] px-3.5 text-base text-[#f0f3e9] outline-none transition focus:border-skyline focus:ring-4 focus:ring-[#73bddc]/10", className)} {...props} />
     {hint && <small className="font-normal leading-5 text-[#789095]">{hint}</small>}

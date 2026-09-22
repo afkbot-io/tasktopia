@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 export async function armWarmCityTiming(page: Page): Promise<void> {
   await page.evaluate(() => {
     const host = document.querySelector<HTMLElement>(".world-canvas")!;
-    const button = document.querySelector<HTMLElement>(".country-overview-city")!;
+    const button = Array.from(document.querySelectorAll<HTMLElement>(".map-level-nav button")).find(button => button.textContent === "Город")!;
     delete host.dataset.qaWarmReturnMs;
     button.addEventListener("click", () => {
       const started = performance.now();

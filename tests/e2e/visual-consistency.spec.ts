@@ -14,6 +14,7 @@ test("map navigation, labels and task controls follow the revised visual contrac
   page.on("response", response => { if (response.status() >= 400 && !response.url().includes("/push/")) errors.push(`${response.status()} ${new URL(response.url()).pathname}`); });
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).ok()).toBe(true);
   await page.goto("/");
+  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
   const city = page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 60_000 });
   await expect(page.getByRole("button", { name: "Границы", exact: true })).toHaveCount(0);
@@ -27,9 +28,9 @@ test("map navigation, labels and task controls follow the revised visual contrac
   await page.mouse.down(); await page.mouse.move(box.x + box.width / 2 + 100, box.y + box.height / 2, { steps: 8 }); await page.mouse.up();
   await expect.poll(() => city.getAttribute("data-camera-world-x")).not.toBe(initialX);
   await page.screenshot({ path: "screenshots/visual-consistency/city.png" });
-  await page.getByLabel("Обозначения карты").click();
+  await page.locator(".map-legend:not(.world-preferences):visible > summary").click();
   await expect(page.locator(".map-legend[open] .map-legend-panel")).toContainText("Исправление проверяется");
-  await page.getByLabel("Обозначения карты").click();
+  await page.locator(".map-legend:not(.world-preferences):visible > summary").click();
   const search = page.getByLabel("Поиск здания по номеру или названию");
   await search.fill("1");
   await page.locator(".task-search-results [role=option]").first().click();
@@ -37,17 +38,6 @@ test("map navigation, labels and task controls follow the revised visual contrac
   await expect(page.getByRole("button", { name: "Перенести в другой спринт" })).toHaveCount(0);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(page.locator(".task-modal")).toHaveCount(0);
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  const country = page.locator(".country-overview");
-  await expect(country).toHaveAttribute("data-country-ready", "true", { timeout: 60_000 });
-  await expect(country).toHaveAttribute("data-country-material-subdivisions", "2");
-  await expect(page.locator(".map-level-transition")).toHaveCount(0);
-  const before = await page.locator(".country-overview").getAttribute("style");
-  const cb = (await country.boundingBox())!;
-  await page.mouse.move(cb.x + 200, cb.y + 100); await page.mouse.down(); await page.mouse.move(cb.x + 320, cb.y + 100, { steps: 8 }); await page.mouse.up();
-  await expect.poll(() => page.locator(".country-overview").getAttribute("style")).not.toBe(before);
-  expect(await country.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("data:image/png");
-  await page.screenshot({ path: "screenshots/visual-consistency/country.png" });
   await page.getByRole("button", { name: "Планета", exact: true }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 60_000 });
   expect(await page.locator(".planet-atlas clipPath rect").count()).toBeGreaterThan(20);

@@ -12,12 +12,12 @@ test("records cold and repeated map opening on the fixed 100-task city", async (
   await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
   const start = Date.now();
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const city = page.locator(".world-canvas");
   await expect(city).toBeVisible();
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 45_000 });
   samples.push({ mode: "CITY", attempt: 0, ms: Date.now() - start, metrics: await city.evaluate(el => ({ ...(el as HTMLElement).dataset }) as Record<string,string>) });
   for (let attempt = 0; attempt < 3; attempt++) for (const [mode, label, selector, attribute] of [
-    ["COUNTRY", "Страна", ".country-overview", "data-country-ready"],
     ["PLANET", "Планета", ".planet-atlas", "data-planet-ready"],
     ["CITY", "Город", ".world-canvas", "data-city-scene-commit"],
   ]) {

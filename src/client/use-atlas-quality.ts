@@ -21,7 +21,7 @@ export function useAtlasQuality(hostRef: RefObject<HTMLElement | SVGSVGElement |
       stop?.(); stop = undefined;
       quality.sample(0, false);
       publish();
-      if (ready && readWorldPreferences().quality === "AUTO") {
+      if (ready && !readWorldPreferences().reduceMotion && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && readWorldPreferences().quality === "AUTO") {
         stop = startVisibleAnimation((_timestamp, delta) => {
           const previous = quality.economy;
           quality.sample(delta, true);
@@ -31,6 +31,8 @@ export function useAtlasQuality(hostRef: RefObject<HTMLElement | SVGSVGElement |
     };
     reconcile();
     const unsubscribe = subscribeWorldPreferences(reconcile);
-    return () => { stop?.(); unsubscribe(); };
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    motion.addEventListener("change", reconcile);
+    return () => { stop?.(); unsubscribe(); motion.removeEventListener("change", reconcile); };
   }, [hostRef, ready]);
 }

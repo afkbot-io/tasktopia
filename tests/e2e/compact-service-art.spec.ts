@@ -88,12 +88,7 @@ test("real auto-assigned clinic and fire station render at native proportions an
   expect(bootstrap.country.name).toBe("Compact service art QA");
   expect(bootstrap.initialCity?.name).toBe("Compact service art");
   expect(bootstrap.stats).toMatchObject({ cities: 1, districts: 1, tasks: 16, activeDistricts: 1 });
-  // Bootstrap may deliberately start at COUNTRY. Enter the actual city through
-  // the visible map; never force a camera mode through internal state.
-  if (await page.locator(".country-overview").isVisible()) {
-    await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true", { timeout: 45_000 });
-    await page.locator(".country-overview-city").first().click();
-  }
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await ready(page);
   const sceneResponse = await page.request.get(`/api/countries/${bootstrap.country.id}/cities/${bootstrap.initialCity!.id}/scene`, {
     headers: { accept: `application/vnd.tasktopia.city-scene+json; version=${CITY_SCENE_SCHEMA_VERSION}` },

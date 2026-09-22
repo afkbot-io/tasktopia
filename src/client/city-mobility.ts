@@ -7,7 +7,7 @@ export type CityMobilityInput = MobilityNetworkInput & { seed: number; carLimit:
 export type CityMobilityAgent = {
   id: string; kind: "CAR" | "WALKER"; variant: string; current: Cell; next: Cell; progress: number;
   position: Cell; direction: MicroDirection; speed: number; steps: number;
-  activity: "NONE" | "REST"; waitMs: number;
+  activity: "NONE" | "REST" | "PARKED"; waitMs: number;
   yieldReason: "NONE" | "RESERVATION" | "OCCUPIED_EXIT" | "BODY";
 };
 export type CityMobilitySignal = Pick<MobilityZone, "id" | "bounds" | "signalPosts"> & {
@@ -187,6 +187,9 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       return neighbors.length === 2 && neighbors[0]!.x + neighbors[1]!.x === cell.x * 2 && neighbors[0]!.y + neighbors[1]!.y === cell.y * 2;
     });
     let preferred = agent.kind === "WALKER" && agent.steps % 3 === 0 ? destinations.filter(cell => network.activityCells.has(key(cell))) : [];
+    if(agent.kind==='CAR'&&agent.steps%3===0&&!network.parkingBays.has(key(agent.current))) {
+      preferred=destinations.filter(cell=>network.parkingBays.has(key(cell)));
+    }
     if (!preferred.length) preferred = destinations;
     let best: Cell[] = [];
     for (let attempt = 0; attempt < 6 && preferred.length; attempt++) {
@@ -214,7 +217,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
 
   const spawn = (): void => {
     for (const kind of ["CAR", "WALKER"] as const) {
-      const candidates = [...graph(kind).values()].filter(cell => safeDestination(cell) && (edges(kind).get(key(cell))?.length ?? 0) > 0);
+      const candidates = [...graph(kind).values()].filter(cell => (kind!=="CAR"||network.roads.has(key(cell))) && safeDestination(cell) && (edges(kind).get(key(cell))?.length ?? 0) > 0);
       let remaining = limits[kind] - actors.filter(actor => actor.kind === kind).length;
       for (let attempt = 0; remaining > 0 && attempt < candidates.length * 2; attempt++) {
         const current = candidates[Math.floor(random() * candidates.length)];
@@ -366,6 +369,9 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (actor.kind === "CAR") metrics.vehicleSteps += steps; else metrics.walkerSteps += steps;
       if (actor.route.length > 1 && next.route.length < 2) {
         metrics.completedTrips++;
+        if(actor.kind==='CAR'&&network.parkingBays.has(key(next.current))) {
+          next.activity='PARKED';next.restMs=7000+Math.abs(next.rng%9000);
+        }
         if (actor.kind === "WALKER" && !network.roads.has(key(next.current)) && !next.zoneId && network.activityCells.has(key(next.current))) {
           next.activity = "REST"; next.restMs = 650 + Math.abs(next.rng % 700);
         }
@@ -381,6 +387,12 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       const oldCarLimit = limits.CAR, oldWalkerLimit = limits.WALKER;
       if (updated.carLimit !== undefined) limits.CAR = Math.max(0, Math.min(48, Math.floor(updated.carLimit)));
       if (updated.walkerLimit !== undefined) limits.WALKER = Math.max(0, Math.min(64, Math.floor(updated.walkerLimit)));
+      if (limits.CAR < oldCarLimit || limits.WALKER < oldWalkerLimit) {
+        const counts={CAR:0,WALKER:0};
+        actors=actors.filter(actor=>++counts[actor.kind]<=limits[actor.kind]);
+        const alive=new Set(actors.map(actor=>actor.id));
+        for(const [id,reservation] of reservations) if(!alive.has(reservation.owner)) reservations.delete(id);
+      }
       if (mobilityNetworkSignature(updated) === network.signature) {
         if (oldCarLimit !== limits.CAR || oldWalkerLimit !== limits.WALKER) { spawn(); recordMetrics(); publish(); }
         return;

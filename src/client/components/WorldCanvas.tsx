@@ -1,3 +1,8 @@
+import { planCityParking } from "../city-parking";
+import { cityLifeSites, planCityLife, cityLifePose, type CityLifeSite, type CityLifePlan } from "../city-life";
+import { createCityLifeView } from "../city-life-view";
+import { districtDevelopmentSummary } from "../district-development";
+import { worldDetailProfile } from "../world-detail-profile";
 import { seaVessel } from "../../shared/sea-vessel";
 import { railPolyline } from "../../shared/rail-convoy";
 import { transportSchedule } from "../../shared/transport-schedule";
@@ -273,6 +278,9 @@ function terrainSprite(cell: ChunkDto["terrain"][number], terrainAtCell: (column
   const p = position(cell);
   const result = new Sprite(texture);
   result.position.set(p.x, p.y);
+  // Let the coherent seed ground soften the dense grass stamp. Water and all
+  // semantic road/building surfaces keep their original authored opacity.
+  if(kind==='grass'||kind==='meadow')result.alpha=.74;
   return result;
 }
 
@@ -300,7 +308,9 @@ function addTerrainPlacements(group: Container, placements: TerrainPlacement[]):
   for (const cell of placements) {
     const mask = atlasTerrainConnectionMask(cell.kind, cell.x, cell.y, (column, row) => kinds.get(key({ x: column, y: row })));
     const tile = atlasTerrainTile(cell.kind, "city", cell.x, cell.y, mask);
-    group.addChild(atlasSprite(tile, cell));
+    const view=atlasSprite(tile,cell);
+    if(cell.kind==='grass'||cell.kind==='meadow')view.alpha=.74;
+    group.addChild(view);
   }
 }
 
@@ -960,7 +970,7 @@ function ambientDetailAssets(): string[] {
   return microAmbientAssetUrls();
 }
 
-export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds, countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, startAtMinimumScale = false, active = true, focusTask, invalidations, onInvalidationsProcessed, showDistricts, onTaskSelect, onDistrictSelect, onArchiveSelect, onSiteSelect, onReady, onFatalError, onZoomOutToCountry, wheelNavigation }: {
+export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds, countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, startAtMinimumScale = false, active = true, focusTask, invalidations, onInvalidationsProcessed, showDistricts, onTaskSelect, onDistrictSelect, onArchiveSelect, onSiteSelect, onReady, onFatalError, onZoomOutToPlanet, wheelNavigation }: {
   transportRevision?: number;
   dependencies?: MapDependencySelection;
   attentionIds?: readonly string[];
@@ -982,7 +992,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
   onSiteSelect: (feature: WorldFeatureDto) => void;
   onReady?: () => void;
   onFatalError?: (message: string) => void;
-  onZoomOutToCountry?: (focus?: { x: number; y: number }) => void;
+  onZoomOutToPlanet?: (focus?: { x: number; y: number }) => void;
   wheelNavigation: AtlasWheelNavigation;
 }) {
   const [firstFrameReady, setFirstFrameReady] = useState(false);
@@ -1006,7 +1016,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
   const onDistrictSelectRef = useRef(onDistrictSelect);
   const onArchiveSelectRef = useRef(onArchiveSelect);
   const onSiteSelectRef = useRef(onSiteSelect);
-  const onZoomOutToCountryRef = useRef(onZoomOutToCountry);
+  const onZoomOutToPlanetRef = useRef(onZoomOutToPlanet);
   const wheelNavigationRef = useRef(wheelNavigation);
   const onFatalErrorRef = useRef(onFatalError);
   const terrainSeed = worldManifest.terrainSeed;
@@ -1042,10 +1052,10 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
     onDistrictSelectRef.current = onDistrictSelect;
     onArchiveSelectRef.current = onArchiveSelect;
     onSiteSelectRef.current = onSiteSelect;
-    onZoomOutToCountryRef.current = onZoomOutToCountry;
+    onZoomOutToPlanetRef.current = onZoomOutToPlanet;
     wheelNavigationRef.current = wheelNavigation;
     onFatalErrorRef.current = onFatalError;
-  }, [onArchiveSelect, onSiteSelect, onFatalError, onTaskSelect, onDistrictSelect, onZoomOutToCountry, wheelNavigation]);
+  }, [onArchiveSelect, onSiteSelect, onFatalError, onTaskSelect, onDistrictSelect, onZoomOutToPlanet, wheelNavigation]);
 
   useEffect(() => {
     if (focusX == null || focusY == null || focusMinX == null || focusMinY == null || focusMaxX == null || focusMaxY == null) return;
@@ -1190,7 +1200,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
     const initialFocus = initialFocusRef.current;
 
     void (async () => {
-      await app.init({ resizeTo: host, backgroundColor: 0x101d20, antialias: false, autoDensity: true, resolution: Math.min(devicePixelRatio, 2), preference: "webgl" });
+      await app.init({ resizeTo: host, backgroundColor: 0x101d20, antialias: false, autoDensity: true, resolution: Math.min(devicePixelRatio, worldDetailProfile(readWorldPreferences().quality === "ECONOMY").pixelRatio), preference: "webgl" });
       if (!activeRef.current) app.stop();
       if (disposed) { app.destroy({ removeView: true }, { children: true }); return; }
       const canvas = app.canvas;
@@ -1445,7 +1455,6 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       lampGlow.eventMode = "none";
       world.addChildAt(lampGlow, world.getChildIndex(worldObjectLayer));
       let lampSignature = "";
-      let lightElapsed = 500;
       let lampSprites: Array<{ view: Sprite; day: Texture; night: Texture }> = [];
       let lampsOn = false;
       app.stage.addChild(world);
@@ -1520,7 +1529,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       };
       type MobilityAgent = ReturnType<typeof createCityMobility>["agents"][number];
       let mobility: ReturnType<typeof createCityMobility> | undefined;
-      const mobilityViews = new Map<string, { view: Sprite; marker?: Graphics; activity: MobilityAgent["activity"]; visualKey: string }>();
+      const mobilityViews = new Map<string, { view: Sprite; marker?: Graphics; activity: MobilityAgent["activity"]; visualKey: string; cueKey?:string }>();
       const trafficSignalViews = new Map<string, { view: Sprite; state: "RED" | "GREEN" }>();
       let mobilityPostOrigins = new Map<string, Cell>();
       const sessionSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 0x6d2b79f5;
@@ -1529,6 +1538,29 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       let simulationTimeMs = 0;
       const constructionWorkers = new Map<string, { worker: ConstructionLifeSite["workers"][number]; view: Sprite }>();
       const constructionMaterials = new Map<string, Sprite>();
+      let completedLifeSites:CityLifeSite[]=[];
+      let completedLifeCandidates:string[]=[];
+      let completedLifePlan:CityLifePlan|undefined;
+      let completedLifeWindow=-1;
+      const completedLifeView=createCityLifeView(cachedTexture);
+      agentOverlayLayer.addChild(completedLifeView.root);
+      const updateCompletedLife=()=>{
+        const now=readServerWorldTime()??Date.now(),window=Math.floor(now/180_000);
+        if(window!==completedLifeWindow) {
+          completedLifeWindow=window;
+          completedLifePlan=planCityLife(focusCityId??'',completedLifeSites,now,completedLifeCandidates);
+          host.dataset.cityLifeStartsIn=String(completedLifePlan?Math.round(completedLifePlan.start-now):-1);
+          host.dataset.cityLifePlannedTask=completedLifePlan?.taskId??'';
+        }
+        const size=CELL_SIZE*world.scale.x;
+        const pose=cityLifePose(completedLifePlan,now,{
+          minX:-world.x/size,minY:-world.y/size,
+          maxX:(app.screen.width-world.x)/size,maxY:(app.screen.height-world.y)/size,
+        },{enabled:readWorldPreferences().cityLife&&currentLod==='DETAIL'&&ambientAssetsReady,reducedMotion});
+        completedLifeView.update(pose,now);
+        if(host.dataset.cityLifeEvent!==(pose?.kind??''))host.dataset.cityLifeEvent=pose?.kind??'';
+        if(host.dataset.cityLifePhase!==(pose?.phase??''))host.dataset.cityLifePhase=pose?.phase??'';
+      };
       const updateConstructionWorkers = () => {
         for (const { worker, view } of constructionWorkers.values()) {
           const pose = constructionWorkerPose(worker, simulationTimeMs);
@@ -1573,6 +1605,8 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         if (!mobility) return;
         const visible = currentLod === "DETAIL" && ambientAssetsReady;
         const wanted = new Set(mobility.agents.map(agent => agent.id));
+        const drillVehicle=completedLifeView.root.visible&&completedLifePlan?.kind==='DRILL'
+          ?mobility.agents.find(agent=>agent.kind==='CAR'&&agent.variant==='red')?.id:undefined;
         for (const [id, entry] of mobilityViews) {
           if (wanted.has(id)) continue;
           entry.view.destroy(); entry.marker?.destroy(); mobilityViews.delete(id);
@@ -1584,7 +1618,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             const view = sprite(url, agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE);
             view.anchor.set(0.5);
             worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
-            const marker = agent.kind === "WALKER" ? new Graphics() : undefined;
+            const marker = new Graphics({eventMode:"none"});
             if (marker) agentOverlayLayer.addChild(marker);
             entry = { view, marker, activity: "NONE", visualKey: url };
             mobilityViews.set(agent.id, entry);
@@ -1597,7 +1631,15 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           entry.view.visible = visible;
           placePixelAgent(entry.view, agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE);
           entry.view.rotation = 0;
-          if (entry.marker) {
+          if(entry.marker&&agent.kind==='CAR') {
+            const beacon=agent.id===drillVehicle&&Math.floor(simulationTimeMs/450)%2===0;
+            if(entry.cueKey!==String(beacon)) {
+              entry.marker.clear();if(beacon)entry.marker.rect(-1,-3,2,1).fill(0x96c6df);
+              entry.cueKey=String(beacon);
+            }
+            entry.marker.position.copyFrom(entry.view.position);entry.marker.visible=visible&&beacon;
+          }
+          if (entry.marker&&agent.kind==='WALKER') {
             if (entry.activity !== agent.activity) {
               entry.marker.clear();
               // Native pixel cues, not oversized smooth speech balloons.
@@ -1646,6 +1688,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       let lastMeasuredMobilityStep = 0;
       let mobilityRoads = new Map<string, RoadCellDto>();
       let mobilityWalkGraph = new Map<string, Cell>();
+      let parkingCells=new Set<string>();
       const reportMobility = (): void => {
         if (!mobility) return;
         const agents = mobility.agents;
@@ -1675,6 +1718,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         host.dataset.trafficBlockedVehicles = String(cars.filter(agent => agent.waitMs > 0).length);
         host.dataset.trafficMovingVehicles = String(cars.filter(agent => agent.waitMs === 0 && agent.activity === "NONE").length);
         host.dataset.mobilityTrips = String(metrics.completedTrips);
+        host.dataset.parkedCars=String(agents.filter(agent=>agent.activity==="PARKED").length);
         host.dataset.mobilityCrossings = String(metrics.crossingsCompleted);
         host.dataset.trafficJunctions = String(mobility.signals.length);
         host.dataset.trafficSignals = String(trafficSignalViews.size);
@@ -1683,6 +1727,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           const dx = agent.next.x - agent.current.x, dy = agent.next.y - agent.current.y;
           if (dx === 0 && dy === 0) return false;
           const road = mobilityRoads.get(key(agent.current));
+          if(parkingCells.has(key(agent.current))||parkingCells.has(key(agent.next)))return false;
           if (!road || !mobilityRoads.has(key(agent.next)) || Math.abs(dx) + Math.abs(dy) !== 1) return true;
           const band = roadBandRole(mobilityRoads, road);
           return band.kind === "TRAVEL" && (band.dx !== dx || band.dy !== dy);
@@ -1710,15 +1755,11 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       const adaptiveQuality = new AdaptiveWorldQuality();
       let economy = readWorldPreferences().quality === "ECONOMY";
       const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-      let reducedMotion = motionPreference.matches;
+      let reducedMotion = motionPreference.matches || readWorldPreferences().reduceMotion;
       host.dataset.animationActive = String(!reducedMotion);
       host.dataset.vehicleAnimationFrames = "4";
-      let renderedLight = "";
-      const lightKey = (light: ReturnType<typeof readWorldLighting>) =>
-        `${light.tint}:${light.lamps}:${light.shadowAlpha}:${light.shadowOffsetX}`;
       const applyLighting = () => {
           const light = readWorldLighting();
-          renderedLight = lightKey(light);
           for (const layer of [backdropLayer, terrainLayer, surfaceLayer, roadLayer, platformLayer, featurePlatformLayer, worldObjectLayer, flightLayer, railwayGround, airportGround, portGround, portShipLayer, trainLayer, developmentLayer]) layer.tint = light.tint;
           lampGlow.alpha = light.lamps;
           propShadows.alpha = light.shadowAlpha;
@@ -1737,6 +1778,12 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         const next = preference === "ECONOMY" || preference === "AUTO" && adaptiveQuality.economy;
         if (activeRef.current) document.documentElement.dataset.worldQuality = next ? "ECONOMY" : "NORMAL";
         host.dataset.worldQuality = next ? "ECONOMY" : "NORMAL";
+        const detail = worldDetailProfile(next);
+        app.ticker.maxFPS = detail.fps;
+        const resolution = Math.min(devicePixelRatio, detail.pixelRatio);
+        if (app.renderer.resolution !== resolution) app.renderer.resize(app.screen.width, app.screen.height, resolution);
+        host.dataset.frameLimit=String(detail.fps);
+        host.dataset.worldPixelRatio=String(resolution);
         if (next !== economy) {
           economy = next;
           // A downgrade also bounds bursts already on screen, not only new events.
@@ -1747,24 +1794,18 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           renderEntities(false);
         }
         applyLighting();
+        updateCompletedLife();
         if (reducedMotion) app.render();
       };
+      app.ticker.maxFPS = worldDetailProfile(economy).fps;
+      host.dataset.frameLimit=String(worldDetailProfile(economy).fps);
+      host.dataset.worldPixelRatio=String(app.renderer.resolution);
+      applyLighting();
       startupDisposers.push(subscribeWorldPreferences(applyPreferences));
-      // Reduced motion stops the simulation ticker, not civil time. One cheap
-      // check per second updates a visible static map only when its light changes.
-      const staticLightingTimer = window.setInterval(() => {
-        if (!reducedMotion || !activeRef.current || document.hidden || disposed) return;
-        if (renderedLight === lightKey(readWorldLighting())) return;
-        applyLighting();
-        app.render();
-      }, 1000);
-      startupDisposers.push(() => window.clearInterval(staticLightingTimer));
       app.ticker.add(() => {
         const before = adaptiveQuality.economy;
-        adaptiveQuality.sample(app.ticker.elapsedMS, host.dataset.loading !== "true" && !document.hidden);
+        adaptiveQuality.sample(app.ticker.elapsedMS, host.dataset.loading !== "true" && !document.hidden, 1000 / worldDetailProfile(economy).fps);
         if (before !== adaptiveQuality.economy) applyPreferences();
-        lightElapsed += app.ticker.deltaMS;
-        if (lightElapsed >= 100) { lightElapsed = 0; applyLighting(); }
         if (reducedMotion) return;
         const elapsed = Math.min(50, app.ticker.deltaMS);
         simulationTimeMs += elapsed;
@@ -1772,6 +1813,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         // and Pixi rendering. Include existing ground fades conservatively.
         const livingStarted = performance.now();
         updateConstructionWorkers();
+        updateCompletedLife();
         for (let index = groundFades.length - 1; index >= 0; index -= 1) {
           const fade = groundFades[index]!;
           fade.elapsed += elapsed;
@@ -2926,7 +2968,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             const anchor = district.cells.reduce((a, b) => b.y < a.y || b.y === a.y && b.x < a.x ? b : a);
             const view = drawDistrictDevelopment(plan, state, anchor, CELL_SIZE, developmentTexture, () => {
               if (performance.now() >= suppressSelectionUntil) onDistrictSelectRef.current?.(district.id);
-            });
+            }, districtDevelopmentSummary(district.name,[...developmentTasks.values()].filter(task=>task.districtId===district.id).map(task=>({id:task.id,status:latestTaskStatusPatches.get(task.id)?.status??task.status}))));
             const remaining = (developmentEmphasis.get(district.id)?.until ?? 0) - performance.now();
             if (district.status === "ACTIVE" && remaining > 0) {
               const emphasis = drawDevelopmentEmphasis(district.cells, CELL_SIZE);
@@ -2944,7 +2986,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           host!.dataset.developmentStates = JSON.stringify(activity.map(({ district, state }) => ({ id: district.id, state })));
         }
         // Lightweight actors share the existing simulation clock and atlas lease.
-        // Only streamed DETAIL tasks participate; completed city snapshots add no actors.
+        // Construction follows task state; cosmetic completed-site life is independent.
         const constructionBlocked = new Set([...roads.keys(), ...developmentOccupied]);
         for (const decoration of decorations.values()) {
           const size = PROP_CATALOG[decoration.kind]?.size;
@@ -2994,6 +3036,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           view.removeFromParent(); view.destroy(); constructionMaterials.delete(id);
         }
         updateConstructionWorkers();
+        updateCompletedLife();
         host!.dataset.constructionWorkers = String(constructionWorkers.size);
         host!.dataset.constructionMaterials = String(constructionMaterials.size);
         host!.dataset.developmentUpdateMs = (performance.now() - developmentStarted).toFixed(2);
@@ -3143,9 +3186,12 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           });
           host!.dataset.walkNetworkBuilds = String(Number(host!.dataset.walkNetworkBuilds ?? 0) + 1);
           const before = mobilityViews.size + animals.length;
-          const input = { roads, walkGraph, crosswalks, activityCells,
-            carLimit: Math.min(24, Math.max(3, Math.floor(roads.size / 120))),
-            walkerLimit: Math.min(32, Math.max(6, Math.floor(walkGraph.size / 70))) };
+          const parking=planCityParking([...tasks.values()],roads,[...surfaces.values()],blockedCells);
+          parkingCells=new Set(parking.flatMap(plan=>plan.route.map(key)));
+          host!.dataset.parkingLots=String(parking.length);
+          const input = { roads, walkGraph, crosswalks, activityCells, parking,
+            carLimit: Math.min(worldDetailProfile(economy).cars, Math.max(3, Math.floor(roads.size / 120))),
+            walkerLimit: Math.min(worldDetailProfile(economy).walkers, Math.max(6, Math.floor(walkGraph.size / 70))) };
           if (mobility) mobility.updateNetwork(input);
           else mobility = createCityMobility({ ...input, seed: sessionSeed });
           const posts = mobility.signals.filter(signal => signal.signalPosts.length >= 3).flatMap(signal => signal.signalPosts.map(post => ({
@@ -3159,6 +3205,13 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             .filter(origin => roads.has(key(origin)) || blockedCells.has(key(origin))).length);
           mobilityRoads = roads;
           mobilityWalkGraph = walkGraph;
+          const canonicalTasks=cityScene?[...cityScene.chunks.flatMap(chunk=>chunk.tasks),...cityScene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)]:[...tasks.values()];
+          completedLifeCandidates=[...new Map(canonicalTasks.map(task=>[task.id,task])).values()]
+            .filter(task=>(latestTaskStatusPatches.get(task.id)?.status??task.status)==='COMPLETED'&&task.stage===5&&incidentMode(task)==='NONE').map(task=>task.id);
+          completedLifeSites=cityLifeSites([...tasks.values()],walkGraph,new Set([...blockedCells,...roads.keys(),...parkingCells]));
+          completedLifeWindow=-1;
+          host!.dataset.cityLifeSites=String(completedLifeSites.length);
+          updateCompletedLife();
           animals = animals.filter(agent => {
             if (animalGraph.has(key(agent.current)) && animalGraph.has(key(agent.next))) {
               agent.graph = animalGraph;
@@ -3169,7 +3222,8 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           });
           const candidates = [...animalGraph.values()];
           const occupied = new Set(animals.map(agent => key(agent.current)));
-          const limit = Math.min(6, Math.floor(animalGraph.size / 1400));
+          const limit = Math.min(worldDetailProfile(economy).animals, Math.floor(animalGraph.size / 1400));
+          for (const animal of animals.splice(limit)) destroyAnimal(animal);
           for (let attempt = 0; animals.length < limit && attempt < Math.min(64, candidates.length); attempt++) {
             const picked = nextSeededRandom(spawnState); spawnState = picked.state;
             const current = candidates[Math.floor(picked.value * candidates.length)]!;
@@ -3574,7 +3628,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         }
       };
       function pruneGroundCache(active: Set<string>): void {
-        const effectiveLimit = Math.max(GROUND_CACHE_LIMIT, active.size);
+        const effectiveLimit = Math.max(worldDetailProfile(economy).groundCache, active.size);
         if (groundContainers.size <= effectiveLimit) return;
         const candidates = [...groundContainers.entries()]
           .filter(([cacheKey]) => !active.has(cacheKey))
@@ -4166,8 +4220,8 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         cameraTargetScale = nextCameraTargetScale(cameraTargetScale, event.deltaY);
         const rect = canvas.getBoundingClientRect();
         const mouse = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-        if (wheelNavigationRef.current.consume({ at: event.timeStamp, deltaY: event.deltaY }, event.deltaY > 0 && cameraTargetScale <= minimumScale + .001 && Boolean(onZoomOutToCountryRef.current))) {
-          onZoomOutToCountryRef.current?.({ x: mouse.x / Math.max(1, rect.width), y: mouse.y / Math.max(1, rect.height) });
+        if (wheelNavigationRef.current.consume({ at: event.timeStamp, deltaY: event.deltaY }, event.deltaY > 0 && cameraTargetScale <= minimumScale + .001 && Boolean(onZoomOutToPlanetRef.current))) {
+          onZoomOutToPlanetRef.current?.({ x: mouse.x / Math.max(1, rect.width), y: mouse.y / Math.max(1, rect.height) });
           return;
         }
         const local = { x: (mouse.x - world.position.x) / oldScale, y: (mouse.y - world.position.y) / oldScale };
@@ -4186,7 +4240,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       };
       const visibility = () => updateAnimation();
       const motionChanged = () => {
-        reducedMotion = motionPreference.matches;
+        reducedMotion = motionPreference.matches || readWorldPreferences().reduceMotion;
         if (reducedMotion) {
           for (const fade of groundFades.splice(0)) for (const container of fade.containers) {
             if (!container.destroyed) container.alpha = 1;
@@ -4197,6 +4251,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         updateAnimation();
         scheduleEntityReconcile(false);
       };
+      startupDisposers.push(subscribeWorldPreferences(motionChanged));
       motionPreference.addEventListener("change", motionChanged);
       startupDisposers.push(() => motionPreference.removeEventListener("change", motionChanged));
       const intersectionObserver = new IntersectionObserver(([entry]) => {

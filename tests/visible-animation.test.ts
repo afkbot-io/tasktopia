@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { setWorldPreferences } from "../src/client/world-preferences";
 import { startVisibleAnimation } from "../src/client/visible-animation";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -8,7 +9,7 @@ it("owns one loop, pauses live visibility/motion changes and resumes without bac
   const callbacks = new Map<number, FrameRequestCallback>();
   let next = 0;
   vi.stubGlobal("document", page);
-  vi.stubGlobal("window", { matchMedia: () => motion });
+  vi.stubGlobal("window", Object.assign(new EventTarget(), { matchMedia: () => motion }));
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callbacks.set(++next, callback); return next; });
   vi.stubGlobal("cancelAnimationFrame", (id: number) => callbacks.delete(id));
   const render = vi.fn();
@@ -30,6 +31,9 @@ it("owns one loop, pauses live visibility/motion changes and resumes without bac
   motion.matches = false; motion.dispatchEvent(new Event("change"));
   frame(70000);
   expect(render).toHaveBeenLastCalledWith(70000, 0);
+  setWorldPreferences({reduceMotion:true}); expect(callbacks.size).toBe(0);
+  setWorldPreferences({reduceMotion:false}); frame(80000);
+  expect(render).toHaveBeenLastCalledWith(80000, 0);
   stop();
   page.dispatchEvent(new Event("visibilitychange")); motion.dispatchEvent(new Event("change"));
   expect(callbacks.size).toBe(0);

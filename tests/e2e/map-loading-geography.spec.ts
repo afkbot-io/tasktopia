@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("100-task city opens repeatedly and country zoom preserves a panned anchor", async ({ page }, testInfo) => {
+test("100-task city opens repeatedly and planet zoom preserves a panned anchor", async ({ page }, testInfo) => {
   test.skip(process.env.E2E_MAP_LOADING_FIXTURE !== "true", "Requires the isolated megacity fixture");
   test.setTimeout(120_000);
   const errors: string[] = [];
@@ -10,23 +10,22 @@ test("100-task city opens repeatedly and country zoom preserves a panned anchor"
   await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
   const started = Date.now();
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const city = page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 15_000 });
   await expect(city).toHaveAttribute("data-loading", "false");
   const durations = [Date.now() - started];
   await page.screenshot({ path: testInfo.outputPath("city-100.png") });
   for (let i = 0; i < 2; i++) {
-    await page.getByRole("button", { name: "Страна", exact: true }).click();
-    const country = page.locator(".country-overview");
-    await expect(country).toHaveAttribute("data-country-ready", "true");
-    expect(await country.evaluate(host => getComputedStyle(host,"::before").filter))
-      .toBe(await country.locator(".country-overview-raster").evaluate(raster => getComputedStyle(raster).filter));
+    await page.getByRole("button", { name: "Планета", exact: true }).click();
+    const country = page.locator(".planet-atlas");
+    await expect(country).toHaveAttribute("data-planet-ready", "true");
     const box = (await country.boundingBox())!;
     await page.mouse.move(box.x + box.width * .6, box.y + box.height * .7);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width * .7, box.y + box.height * .7, { steps: 8 });
     await page.mouse.up();
-    const raster = country.locator(".country-overview-raster");
+    const raster = country.locator(".planet-country-terrain").first();
     const before = (await raster.boundingBox())!;
     const focus = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
     const anchor = { x: (focus.x - before.x) / before.width, y: (focus.y - before.y) / before.height };
@@ -37,7 +36,7 @@ test("100-task city opens repeatedly and country zoom preserves a panned anchor"
       const after = (await raster.boundingBox())!;
       return Math.abs(after.x + anchor.x * after.width - focus.x) + Math.abs(after.y + anchor.y * after.height - focus.y);
     }).toBeLessThan(3);
-    await page.screenshot({ path: testInfo.outputPath(`country-${i}.png`) });
+    await page.screenshot({ path: testInfo.outputPath(`planet-${i}.png`) });
     const start = Date.now();
     await page.getByRole("button", { name: "Город", exact: true }).click();
     await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 15_000 });
@@ -71,6 +70,7 @@ test("a silent worker cannot leave city loading forever", async ({ page }) => {
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const ready = page.locator('.world-canvas[data-city-scene-commit="atomic"]');
   const retry = page.getByRole("button", { name: /Повторить/ });
   await expect(ready.or(retry).first()).toBeVisible({ timeout: 55_000 });

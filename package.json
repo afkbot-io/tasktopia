@@ -67,7 +67,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:atlas": "npm run seed:world-validation && E2E_ATLAS_FIXTURE=true E2E_BASE_URL=http://127.0.0.1:5199 E2E_SEED_COMMAND=true playwright test tests/e2e/country-overview.spec.ts --project=chromium --workers=1",
+    "test:atlas": "playwright test tests/e2e/planet-navigation.spec.ts tests/e2e/planet-city-ui.spec.ts tests/e2e/atlas-pixel-zoom.spec.ts tests/e2e/atlas-transport.spec.ts tests/e2e/overview-trains.spec.ts --project=chromium --workers=1",
     "smoke:mcp": "tsx scripts/mcp-smoke.ts",
     "test:watch": "vitest",
     "seed": "tsx scripts/seed-demo.ts",

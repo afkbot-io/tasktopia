@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ArchiveRecordDto } from "../../shared/contracts";
+import { useDialogFocus } from "../use-dialog-focus";
 import { api } from "../api";
 import { Markdown } from "./Markdown";
 
@@ -13,10 +14,12 @@ export function ArchiveRecordModal({ recordId, onClose }: { recordId: string; on
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  useDialogFocus(dialogRef);
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
+    setLoading(true); setError(""); setRecord(null);
     void api<ArchiveRecordDto>(`/api/archive/records/${recordId}`, { signal: controller.signal })
       .then(setRecord)
       .catch((reason: unknown) => {
@@ -34,7 +37,7 @@ export function ArchiveRecordModal({ recordId, onClose }: { recordId: string; on
   }, [onClose]);
 
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-    <article className="task-modal archive-record-modal" role="dialog" aria-modal="true" aria-labelledby="archive-record-title">
+    <article ref={dialogRef} className="task-modal archive-record-modal" role="dialog" aria-modal="true" aria-labelledby="archive-record-title">
       <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
       {loading && <div className="modal-loading">Открываем Государственный архив…</div>}
       {error && <p className="task-delete-error" role="alert">{error}</p>}

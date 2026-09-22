@@ -101,7 +101,8 @@ test("a real port docks and dispatches the same scheduled ship",async({page},inf
     const moving=await host.getAttribute("data-city-ship-progress");
     await expect.poll(()=>host.getAttribute("data-city-ship-progress")).not.toBe(moving);
     await page.screenshot({path:info.outputPath("port-ship-departure.png")});
-    await page.getByRole("button",{name:"Развитие",exact:true}).click();
+    await page.getByLabel("Фильтры",{exact:true}).click();
+    await page.getByRole("button",{name:"Развитие города",exact:true}).click();
     const panel=page.getByRole("complementary",{name:"Развитие города"});
     await expect(panel.getByText("Морские рейсы",{exact:true})).toBeVisible();
     await expect(panel.locator(`[data-transport-route="${route.id}"]`)).toContainText(ports[1]!.city.name);
@@ -126,7 +127,8 @@ test("creates a coastal country from the landscape picker",async({page},info)=>{
   let countryId:string|undefined;
   try{
     expect((await page.request.post("/api/auth/login",{data:{email:user.email,password:"password123"}})).ok()).toBe(true);
-    await page.goto("/");await page.locator(".country-title-button").click();
+    await page.goto("/");
+    await page.locator(".country-title-button").click();
     await page.getByRole("button",{name:"＋ Новая страна",exact:true}).click();
     const dialog=page.getByRole("dialog",{name:"Новая страна"});
     await dialog.getByLabel("Название страны").fill("Морской край");
@@ -146,6 +148,7 @@ test("creates a coastal country from the landscape picker",async({page},info)=>{
     // Open CITY directly: users need not visit PLANET to establish a port's
     // private geographic source. No fixture coast or atlas request is injected.
     await page.reload();
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic");
     expect(await db.prepare("SELECT 1 AS present FROM personal_planet_geography_v1 WHERE user_id=? AND jsonb_extract_path(geography_json,'countries',?,'cities',?) IS NOT NULL")
       .get(user.id,countryId!,city.id)).toEqual({present:1});

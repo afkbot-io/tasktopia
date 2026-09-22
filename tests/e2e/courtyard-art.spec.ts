@@ -131,12 +131,7 @@ test("published developed families and completed courtyard furniture render thro
   const scenePending = page.waitForResponse(response => new URL(response.url()).pathname
     === `/api/countries/${fixture.countryId}/cities/${fixture.cityId}/scene`);
   await page.goto("/");
-  await expect.poll(async () => await page.locator(".country-overview").isVisible()
-    || await page.locator(".world-canvas").isVisible(), { timeout: 60_000 }).toBe(true);
-  if (await page.locator(".country-overview").isVisible()) {
-    await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true", { timeout: 60_000 });
-    await page.locator(".country-overview-city").first().click();
-  }
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const response = await scenePending;
   expect(response.status(), await response.text()).toBe(200);
   const scene = await response.json() as CitySceneDto;
@@ -322,8 +317,8 @@ test("published developed families and completed courtyard furniture render thro
   await captureMap(page, join(output, "city-native1x.png"));
   expect(mapReads.filter(path => path.endsWith("/scene"))).toHaveLength(1);
   expect(mapReads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true", { timeout: 60_000 });
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 60_000 });
   await captureMap(page, join(output, "country.png"));
   await page.getByRole("button", { name: "Планета", exact: true }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 60_000 });
@@ -333,11 +328,10 @@ test("published developed families and completed courtyard furniture render thro
   const originalCanvas = await canvas.elementHandle();
   const decorationCount = await page.locator(".world-canvas").getAttribute("data-static-decoration-particles");
   const lampCount = await page.locator(".world-canvas").getAttribute("data-illuminated-lamps");
-  // Explicit clock-controlled night, not an application dropdown or a paused
-  // simulation. Wait for the real lighting sampler to apply the new phase.
+  // Changing wall-clock time preserves the stable daytime lighting policy.
   await page.clock.setFixedTime(new Date("2026-09-07T18:00:00Z"));
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-light-phase", "NIGHT");
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-lamp-intensity", "1.000");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-light-phase", "DAY");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-lamp-intensity", "0.000");
   expect(Number(lampCount)).toBeGreaterThan(0);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-illuminated-lamps", lampCount!);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-static-decoration-particles", decorationCount!);
@@ -345,12 +339,12 @@ test("published developed families and completed courtyard furniture render thro
   await expect(page.getByLabel("Освещение мира")).toHaveCount(0);
   await captureMap(page, join(output, "city-night-clock-controlled.png"));
   expect(mapReads.filter(path => path.endsWith("/scene"))).toHaveLength(1);
-  expect(mapReads.filter(path => path.endsWith("/overview"))).toHaveLength(1);
+  expect(mapReads.filter(path => path.endsWith("/overview"))).toHaveLength(0);
   expect(mapReads.filter(path => path.endsWith("/planet-atlas"))).toHaveLength(1);
   const evidence = { schema: fixture.schema, assetRevision: ASSET_REVISION, sceneRevision: scene.sceneRevision,
     caseCount: frames.length, taskCount: tasks.size, serviceConnectors: fixture.connectors, frames, pixelChecks, parkFurniture, nativeFrames, slowDrag, multiContact,
     lightingDate: "2026-09-07T09:00:00Z",
-    night: { lightingDate: "2026-09-07T18:00:00Z", phase: "NIGHT", lampIntensity: 1,
+    night: { lightingDate: "2026-09-07T18:00:00Z", phase: "DAY", lampIntensity: 0,
       lamps: Number(lampCount), staticDecorationParticles: Number(decorationCount), canvasRetained: true },
     loadedBuildingArt: [...loadedBuildingArt], mapReads, errors, warnings, failed, writes };
   await writeFile(join(output, "evidence.json"), `${JSON.stringify(evidence, null, 2)}\n`);
@@ -383,16 +377,11 @@ test("recaptures settled overview and clock-controlled night without transition 
   await page.clock.setFixedTime(new Date("2026-09-07T09:00:00Z"));
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
   await page.goto("/");
-  await expect.poll(async () => await page.locator(".country-overview").isVisible()
-    || await page.locator(".world-canvas").isVisible(), { timeout: 60_000 }).toBe(true);
-  if (await page.locator(".country-overview").isVisible()) {
-    await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
-    await page.locator(".country-overview-city").first().click();
-  }
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await ready(page, fixture.taskCount);
   const canvas = await page.locator("canvas[aria-label='Интерактивная карта города']").elementHandle();
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await page.mouse.move(15, 20); await captureMap(page, join(output, "country.png"));
   await page.getByRole("button", { name: "Планета", exact: true }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
@@ -401,12 +390,12 @@ test("recaptures settled overview and clock-controlled night without transition 
   await ready(page, fixture.taskCount);
   expect(await canvas!.evaluate(node => node.isConnected)).toBe(true);
   await page.clock.setFixedTime(new Date("2026-09-07T18:00:00Z"));
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-light-phase", "NIGHT");
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-lamp-intensity", "1.000");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-light-phase", "DAY");
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-lamp-intensity", "0.000");
   await page.mouse.move(10, 60); await page.mouse.move(15, 20);
   await captureMap(page, join(output, "city-night-clock-controlled.png"));
   expect(reads.filter(path => path.endsWith("/scene"))).toHaveLength(1);
-  expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(1);
+  expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);
   expect(reads.filter(path => path.endsWith("/planet-atlas"))).toHaveLength(1);
   expect(reads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
   expect(errors).toEqual([]); expect(failures).toEqual([]);

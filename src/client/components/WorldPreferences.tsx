@@ -3,16 +3,16 @@ import { readWorldPreferences, serverWorldPreferences, setWorldPreferences, subs
 export function WorldPreferences() {
   const preferences = useSyncExternalStore(subscribeWorldPreferences, readWorldPreferences, serverWorldPreferences);
   return <details className="map-legend world-preferences">
-    <summary aria-label="Вид карты" title="Вид карты">☼</summary>
+    <summary aria-label="Вид карты" title="Вид карты">⚙</summary>
     <div className="map-legend-panel">
       <strong>Вид карты</strong>
-      <label>Освещение<select value={preferences.lighting} onChange={event => setWorldPreferences({ lighting: event.target.value as Preferences["lighting"] })}>
-        <option value="REAL_TIME">Реальное время</option><option value="DAY">Всегда день</option>
-      </select></label>
       <label>Детализация<select value={preferences.quality} onChange={event => setWorldPreferences({ quality: event.target.value as Preferences["quality"] })}>
-        <option value="AUTO">Автоматически</option><option value="NORMAL">Обычная</option><option value="ECONOMY">Экономная</option>
+        <option value="AUTO">Автоматически</option><option value="NORMAL">Полная</option><option value="ECONOMY">Экономная</option>
       </select></label>
-      <p>Экономный режим уменьшает число рабочих и анимацию облаков. Задачи и транспорт остаются на карте.</p>
+      <label className="preference-check"><input type="checkbox" checked={preferences.cityLife} onChange={event=>setWorldPreferences({cityLife:event.target.checked})} />Жизнь города</label>
+      <label className="preference-check"><input type="checkbox" checked={preferences.reduceMotion} onChange={event=>setWorldPreferences({reduceMotion:event.target.checked})} />Уменьшить движение</label>
+      <p>Экономная детализация уменьшает количество прохожих, машин и эффектов. Все здания, состояния задач и маршруты доступны.</p>
+      <p>«Жизнь города» управляет фоновыми сценами у готовых домов. Уменьшение движения также учитывает настройки устройства.</p>
     </div>
   </details>;
 }

@@ -232,8 +232,8 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   await page.screenshot({ path: `${directory}/native-district-edge.png` });
   await page.getByRole("button", { name: "Город", exact: true }).click();
   const retainedCamera = await camera(page);
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await page.screenshot({ path: `${directory}/country.png` });
   await page.getByRole("button", { name: "Планета", exact: true }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
@@ -241,7 +241,8 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   await page.getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
   expect(await camera(page)).toEqual(retainedCamera);
   expect(await retainedCanvas!.evaluate(node => node === document.querySelector("canvas[aria-label='Интерактивная карта города']"))).toBe(true);
-  for (const suffix of ["/scene", "/overview", "/planet-atlas"]) expect(reads.filter(path => path.endsWith(suffix))).toHaveLength(1);
+  expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);
+  for (const suffix of ["/scene", "/planet-atlas"]) expect(reads.filter(path => path.endsWith(suffix))).toHaveLength(1);
   expect(reads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]); expect(errors).toEqual([]);
   await sampleMemory("after-full-map-and-warm-return");
   if (memorySession) {

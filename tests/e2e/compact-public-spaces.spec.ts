@@ -122,8 +122,8 @@ test("real generated compact public spaces preserve stages, object selection and
   expect(mapReads.filter(path => path.endsWith("/scene"))).toHaveLength(1);
   expect(mapReads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
 
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await screenshot(page, "country");
   await page.getByRole("button", { name: "Планета", exact: true }).click();
@@ -136,17 +136,16 @@ test("real generated compact public spaces preserve stages, object selection and
   const fitsViewport = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await fitsViewport();
   // The level bar zooms out; zooming in selects an actual country/city card.
-  await page.getByRole("button", { name: /^Открыть страну .*, 1 городов,/ }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await fitsViewport();
-  await page.getByRole("button", { name: new RegExp(`^Открыть город ${PUBLIC_SPACES_CITY_NAME},`) }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await ready(page);
   await fitsViewport();
   await clickCanonicalPark(page, tasks.find(task => task.visualAssetKey === "urban-pocket")!);
   await screenshot(page, "city-mobile");
   expect(mapReads.filter(path => path.endsWith("/scene"))).toHaveLength(1);
-  expect(mapReads.filter(path => path.endsWith("/overview"))).toHaveLength(1);
+  expect(mapReads.filter(path => path.endsWith("/overview"))).toHaveLength(0);
   expect(mapReads.filter(path => path.endsWith("/planet-atlas"))).toHaveLength(1);
   expect(mapReads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
   await info.attach("public-space-preview", { body: JSON.stringify({ schema: "compact_public_spaces_20260905", sceneRevision: scene.sceneRevision,

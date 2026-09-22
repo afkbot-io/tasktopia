@@ -1,9 +1,11 @@
+import type { CityParkingPlan } from "./city-parking";
 import type { Cell, RoadCellDto } from "../shared/contracts";
 import { roadBandRole } from "../shared/road-profile";
 
 export const mobilityCellKey = (cell: Cell): string => `${cell.x},${cell.y}`;
 export const MOBILITY_DIRECTIONS = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }] as const;
 export type MobilityNetworkInput = {
+  parking?: readonly CityParkingPlan[];
   roads: ReadonlyMap<string, RoadCellDto>;
   walkGraph: ReadonlyMap<string, Cell>;
   crosswalks: ReadonlySet<string>;
@@ -25,12 +27,14 @@ export type MobilityNetwork = {
   zones: MobilityZone[];
   zoneByCell: Map<string, MobilityZone>;
   activityCells: ReadonlySet<string>;
+  parkingBays: ReadonlySet<string>;
 };
 
 export function mobilityNetworkSignature(input: MobilityNetworkInput): string {
   return JSON.stringify([
     [...input.roads].map(([key, cell]) => `${key}:${cell.roadClass}`).sort(),
     [...input.walkGraph.keys()].sort(), [...input.crosswalks].sort(), [...input.activityCells].sort(),
+    (input.parking??[]).map(p=>[p.id,p.route,p.bay]),
   ]);
 }
 
@@ -137,6 +141,17 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
         && (nextRole.kind === "JUNCTION" || nextRole.dx === dx && nextRole.dy === dy);
     }));
   }
+  const carCells=new Map<string,Cell>(orderedRoads);
+  const parkingBays=new Set<string>();
+  for(const plan of input.parking??[]) {
+    if(!carEdges.has(mobilityCellKey(plan.route[0]!))||!carEdges.has(mobilityCellKey(plan.route.at(-1)!)))continue;
+    parkingBays.add(mobilityCellKey(plan.bay));
+    for(let i=0;i<plan.route.length-1;i++) {
+      const cell=plan.route[i]!,next=plan.route[i+1]!,id=mobilityCellKey(cell);
+      carCells.set(id,cell);
+      carEdges.set(id,[...(carEdges.get(id)??[]),next]);
+    }
+  }
   // Trim true road tails; no car may be born with an inevitable graph dead end.
   const predecessors = new Map([...carEdges.keys()].map(key => [key, new Set<string>()]));
   for (const [key, next] of carEdges) for (const cell of next) predecessors.get(mobilityCellKey(cell))?.add(key);
@@ -157,8 +172,9 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
       if (!remaining.length) queue.push(previous);
     }
   }
-  const cars = new Map([...orderedRoads].filter(([key]) => carEdges.has(key)));
-  const walkers = buildWalkingSpine(input);
+  const cars = new Map([...carCells].filter(([key]) => carEdges.has(key)));
+  for(const bay of parkingBays)if(!cars.has(bay))parkingBays.delete(bay);
+  const walkers = buildWalkingSpine({...input,walkGraph:new Map([...input.walkGraph].filter(([id])=>!parkingBays.has(id)))});
   const walkerEdges = new Map([...walkers].map(([key, cell]) => [key, neighbors(cell).filter(next => walkers.has(mobilityCellKey(next)))]));
   // A one-cell-wide blind spur has no safe turnaround lane. Ambient walkers
   // use the connected walkable core; do not spawn them in inevitable dead ends.
@@ -183,6 +199,12 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
     const next = walkerEdges.get(key)!;
     const straight = next.length === 2 && next[0]!.x + next[1]!.x === cell.x * 2 && next[0]!.y + next[1]!.y === cell.y * 2;
     if (!straight) conflict.set(key, cell);
+  }
+  // The same reservations guard both curb crossings and the parking aisle.
+  // A bay is a safe destination outside the entrance/exit conflict resources.
+  for(const plan of input.parking??[])for(const cell of plan.route) {
+    const id=mobilityCellKey(cell);
+    if(cars.has(id)&&!parkingBays.has(id))conflict.set(id,cell);
   }
   const visited = new Set<string>(), zones: MobilityZone[] = [], zoneByCell = new Map<string, MobilityZone>();
   for (const [seedKey, seed] of conflict) {
@@ -219,5 +241,5 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
     zones.push(zone);
     for (const cell of cells) zoneByCell.set(mobilityCellKey(cell), zone);
   }
-  return { signature: mobilityNetworkSignature(input), roads: orderedRoads, cars, walkers, carEdges, walkerEdges, zones, zoneByCell, activityCells: new Set(input.activityCells) };
+  return { signature: mobilityNetworkSignature(input), roads: orderedRoads, cars, walkers, carEdges, walkerEdges, zones, zoneByCell, activityCells: new Set(input.activityCells), parkingBays };
 }

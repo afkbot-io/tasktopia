@@ -1,40 +1,41 @@
 import { AtlasShips } from "./AtlasShips";
 import { ScheduledAtlasTrains } from "./ScheduledAtlasTrains";
 import { useAtlasQuality } from "../use-atlas-quality";
-import { miniatureBuildingArt } from "../../shared/city-miniature";
+import { readWorldPreferences, subscribeWorldPreferences } from "../world-preferences";
+import { PlanetCloud } from "./PlanetCloud";
+import { PlanetCityMiniature } from "./PlanetCityMiniature";
+import { planetCityTargets, planetCityAtPoint, layoutPlanetCityLabels, type PlanetCityTarget } from "../planet-city-targets";
 import { atlasShipPath } from "../../shared/atlas-ship-path";
 import { buildPlanetSurfaceTransport } from "../../shared/planet-surface-transport";
 import { affineProject } from "../../shared/planet-atlas";
 import { pixelPlanetRows } from "../map-visual-consistency";
 import { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PlanetAtlasDto } from "../../shared/planet-atlas-contract";
-import { gameAssetUrl, getBuilding, ATLAS_CLOUD_SPRITES } from "../../shared/catalog";
-import { overviewBuildingArt } from "../../shared/overview-building-art";
+import { gameAssetUrl } from "../../shared/catalog";
 import { atlasTerrainConnectionMask, type AtlasTerrainKind } from "../../shared/atlas-scene";
 import { overviewTerrainPatches } from "../../shared/overview-terrain-presentation";
 import {
-  layoutPlanetCountryLabels,
   projectPlanetAtlas,
   projectProjectedPlanetMap,
   planetMapTransform,
   zoomPlanetCameraAtFocus,
   type PlanetMapCamera,
   type PlanetMapCell,
-  type PlanetMapCountry,
   type PlanetTerrainCell,
 } from "../../shared/planet-atlas";
-import { atlasHitTarget, atlasPointInsideEllipse, atlasTargetCoverage, atlasViewBoxPoint, continuousAtlasZoom, type AtlasWheelNavigation } from "../atlas-zoom-navigation";
+import { atlasPointInsideEllipse, atlasViewBoxPoint, continuousAtlasZoom, type AtlasWheelNavigation } from "../atlas-zoom-navigation";
 import { peekPlanetAtlas, watchPlanetAtlas } from "../planet-atlas-cache";
 import { smoothCameraScale } from "../world-camera";
 import { bindMapPointerGestures } from "../map-pointer-gesture";
 import { loadMapImage } from "../map-image";
 import { visiblePlanetCountries } from "../planet-visible-countries";
 import { ScheduledAtlasFlights } from "./ScheduledAtlasFlights";
-import { AtlasOverviewCard, planetOverviewCardModel } from "./AtlasOverviewCard";
+
 
 const MIN_MAP_ZOOM = .82;
 const MAX_MAP_ZOOM = 8.5;
-const COUNTRY_ENTRY_COVERAGE = .56;
+const CITY_ENTRY_ZOOM = 5.8;
+export type PlanetViewState = { camera: PlanetMapCamera; sector: number };
 // Fine material is immutable under camera motion. Only its outer macro-cell
 // transform changes; React never rebuilds these four sheet windows per frame.
 const AtlasTerrainMaterial = memo(function AtlasTerrainMaterial({ kind, column, row, mask }: {
@@ -64,54 +65,24 @@ const AtlasTerrainLayer = memo(function AtlasTerrainLayer({ cells, mask, color }
   </>;
 });
 
-function countryScreenBounds(country: PlanetMapCountry) {
-  return {
-    minX: Math.min(...country.cells.map((cell) => cell.x)),
-    minY: Math.min(...country.cells.map((cell) => cell.y)),
-    maxX: Math.max(...country.cells.map((cell) => cell.x + cell.width)),
-    maxY: Math.max(...country.cells.map((cell) => cell.y + cell.height)),
-  };
-}
-
 function pixelSquarePath(cell: PlanetMapCell): string {
   return `M${cell.x},${cell.y}H${cell.x + cell.width}V${cell.y + cell.height}H${cell.x}Z`;
 }
 
-function CountryLabel({ country, x, y, width, height, active, selecting, onSelect }: {
-  country: PlanetMapCountry;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  active: boolean;
-  selecting: boolean;
-  onSelect: () => void;
-}) {
-  return <AtlasOverviewCard compact
-    className="planet-country-label"
-    transform={`translate(${x} ${y})`}
-    data-country-id={country.id}
-    data-active={active ? "true" : "false"}
-    data-selecting={selecting ? "true" : "false"}
-    model={planetOverviewCardModel(country)}
-    width={width}
-    height={height}
-    ariaLabel={`Открыть страну ${country.name}, ${country.cityCount} городов, ${country.unfinishedBuildingCount} зданий в работе, прогресс ${country.progress}%`}
-    onSelect={onSelect}
-  />;
-}
-
-export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountryId, refreshToken, onCountrySelect, wheelNavigation }: {
+export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountryId, refreshToken, onCitySelect, onCityIntent, initialView, onViewChange, wheelNavigation }: {
   userId: string;
   activeCountryId: string;
   initialFocusCountryId?: string;
   refreshToken: number;
-  onCountrySelect: (countryId: string, focus?: { x: number; y: number }) => Promise<void> | void;
+  onCitySelect: (countryId: string, cityId: string, focus?: { x: number; y: number }) => Promise<void> | void;
+  onCityIntent?: (countryId: string, cityId: string, revision: number) => void;
+  initialView?: PlanetViewState;
+  onViewChange?: (view: PlanetViewState) => void;
   wheelNavigation: AtlasWheelNavigation;
 }) {
   const [atlas, setAtlas] = useState<PlanetAtlasDto | null>(() => peekPlanetAtlas(userId, refreshToken) ?? null);
-  const [selectedSector, setSelectedSector] = useState<number | null>(null);
-  const [camera, setCamera] = useState<PlanetMapCamera>({ panX: 0, panY: 0, zoom: 1 });
+  const [selectedSector, setSelectedSector] = useState<number | null>(initialView?.sector ?? null);
+  const [camera, setCamera] = useState<PlanetMapCamera>(initialView?.camera ?? { panX: 0, panY: 0, zoom: 1 });
   const cameraRef = useRef<PlanetMapCamera>(camera);
   const targetCameraRef = useRef<PlanetMapCamera>(camera);
   const cameraFrameRef = useRef(0);
@@ -120,26 +91,36 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const [readyRevision, setReadyRevision] = useState<string | null>(null);
   const [assetError, setAssetError] = useState("");
   const [assetAttempt, setAssetAttempt] = useState(0);
-  const [selectingCountryId, setSelectingCountryId] = useState<string | null>(null);
+  const [selectingCityId, setSelectingCityId] = useState<string | null>(null);
+  const intentTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cancelCityIntent = useCallback(() => { clearTimeout(intentTimer.current); }, []);
+  const scheduleCityIntent = useCallback((countryId:string,cityId:string,revision:number) => {
+    clearTimeout(intentTimer.current);
+    intentTimer.current=setTimeout(()=>onCityIntent?.(countryId,cityId,revision),350);
+  },[onCityIntent]);
+  useEffect(()=>cancelCityIntent,[cancelCityIntent]);
   const suppressClick = useRef(false);
-  const selectionPending = useRef(false);
+  const selectionSequence = useRef(0);
   const atlasView = useRef<SVGSVGElement>(null);
-  const initialFocusApplied = useRef(false);
 
   useEffect(() => {
     const view = atlasView.current;
     if (!view) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const reconcile = () => {
-      if (document.hidden || motion.matches) view.pauseAnimations();
+      const paused = document.hidden || motion.matches || readWorldPreferences().reduceMotion;
+      if (view.parentElement) view.parentElement.dataset.paused = String(paused);
+      if (paused) view.pauseAnimations();
       else view.unpauseAnimations();
     };
     reconcile();
     document.addEventListener("visibilitychange", reconcile);
     motion.addEventListener("change", reconcile);
+    const unsubscribe = subscribeWorldPreferences(reconcile);
     return () => {
       document.removeEventListener("visibilitychange", reconcile);
       motion.removeEventListener("change", reconcile);
+      unsubscribe();
     };
   }, [atlas?.revision]);
 
@@ -215,8 +196,9 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     return {rails:surfaceTransport?.rails.map(route=>({...route,points:route.points.map(point=>affineProject(point,projectedAtlas!,camera)),path:path(route.points)}))??[],ships:surfaceTransport?.ships.map(route=>({...route,path:atlasShipPath(route.points.map(point => affineProject(point, projectedAtlas!, camera)))}))??[]};
   },[surfaceTransport,projectedAtlas,camera]);
   const visibleCountries = useMemo(() => map ? visiblePlanetCountries(map.countries, map.surface, map) : [], [map]);
-  const labels = useMemo(() => map ? layoutPlanetCountryLabels(visibleCountries, map.width, map.height) : [], [map, visibleCountries]);
-  const countriesById = useMemo(() => new Map(map?.countries.map((country) => [country.id, country]) ?? []), [map]);
+  const cityTargets = useMemo(() => projectedAtlas ? planetCityTargets(visibleCountries, projectedAtlas, camera) : [], [visibleCountries, projectedAtlas, camera]);
+  const labels = useMemo(() => map && camera.zoom >= 1.7 ? layoutPlanetCityLabels(cityTargets, map.width, map.height) : [], [map, cityTargets, camera.zoom]);
+  useEffect(() => { onViewChange?.({camera,sector}); }, [camera,sector,onViewChange]);
   const terrainByCoordinate = useMemo(() => {
     const lookup = new Map<string, PlanetTerrainCell>();
     for (const cell of projectedAtlas?.coastCells ?? []) lookup.set(`${cell.q}:${cell.r}`, cell);
@@ -252,33 +234,22 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     return () => { controller.abort(); };
   }, [atlasRevision, assetAttempt]);
 
-  useEffect(() => {
-    initialFocusApplied.current = false;
-  }, [initialFocusCountryId]);
+  const selectCity = useCallback(async (city: PlanetCityTarget, focus?: { x: number; y: number }) => {
+    const selection=++selectionSequence.current;
+    setSelectingCityId(city.id);
+    try { await onCitySelect(city.countryId, city.id, focus); if(selection===selectionSequence.current)setError(""); }
+    catch (reason) { if(selection===selectionSequence.current)setError(reason instanceof Error ? reason.message : "Не удалось открыть город"); }
+    finally { if(selection===selectionSequence.current)setSelectingCityId(null); }
+  }, [onCitySelect]);
 
-  useEffect(() => {
-    if (!projectedAtlas || !initialFocusCountryId || initialFocusApplied.current) return;
-    const country = projectedAtlas.countries.find((candidate) => candidate.id === initialFocusCountryId);
-    if (!country) return;
-    initialFocusApplied.current = true;
-    const nextCamera = {
-      zoom: 1,
-      panX: 0,
-      panY: 0,
-    };
-    cameraRef.current = nextCamera;
-    targetCameraRef.current = nextCamera;
-    setCamera(nextCamera);
-  }, [initialFocusCountryId, projectedAtlas]);
-
-  const selectCountry = useCallback(async (countryId: string, focus?: { x: number; y: number }) => {
-    if (selectionPending.current) return;
-    selectionPending.current = true;
-    setSelectingCountryId(countryId);
-    try { await onCountrySelect(countryId, focus); setError(""); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось открыть страну"); }
-    finally { selectionPending.current = false; setSelectingCountryId(null); }
-  }, [onCountrySelect]);
+  const focusOrSelectCity = (city: PlanetCityTarget) => {
+    if (suppressClick.current) { suppressClick.current=false; return; }
+    if (camera.zoom >= 1.7) { void selectCity(city); return; }
+    if (!projectedAtlas || !map) return;
+    const next=zoomPlanetCameraAtFocus(projectedAtlas,camera,3,city.center);
+    targetCameraRef.current=next;
+    scheduleCameraMotion();
+  };
 
   useEffect(() => {
     const view = atlasView.current;
@@ -294,16 +265,16 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       const nextCamera = projectedAtlas ? zoomPlanetCameraAtFocus(projectedAtlas, baseCamera, nextZoom, screenFocus) : { ...baseCamera, zoom: nextZoom };
       const nextMap = projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, nextCamera) : map;
       const point = screenFocus;
-      const country = atlasPointInsideEllipse(point, nextMap.surface)
-        ? atlasHitTarget(point, nextMap.countries, candidate => candidate.cells.map(cell => ({ minX: cell.x, minY: cell.y, maxX: cell.x + cell.width, maxY: cell.y + cell.height }))) : undefined;
-      const coverage = country ? atlasTargetCoverage(countryScreenBounds(country), { minX: 0, minY: 0, maxX: nextMap.width, maxY: nextMap.height }) : 0;
+      const city = projectedAtlas && atlasPointInsideEllipse(point, nextMap.surface)
+        ? planetCityAtPoint(point,planetCityTargets(nextMap.countries,projectedAtlas,nextCamera)) : undefined;
+      if(city && nextZoom>=2){ const country=nextMap.countries.find(c=>c.id===city.countryId);if(country)scheduleCityIntent(city.countryId,city.id,country.worldVersion); } else cancelCityIntent();
       targetCameraRef.current = nextCamera;
       scheduleCameraMotion();
-      if (wheelNavigation.consume({ at: event.timeStamp, deltaY: event.deltaY }, direction === "IN" && coverage >= COUNTRY_ENTRY_COVERAGE && Boolean(country)) && country) void selectCountry(country.id, focus);
+      if (wheelNavigation.consume({ at: event.timeStamp, deltaY: event.deltaY }, direction === "IN" && nextZoom >= CITY_ENTRY_ZOOM && Boolean(city)) && city) void selectCity(city, focus);
     };
     view.addEventListener("wheel", handleWheel, { passive: false });
     return () => view.removeEventListener("wheel", handleWheel);
-  }, [map, projectedAtlas, scheduleCameraMotion, selectCountry, wheelNavigation]);
+  }, [map, projectedAtlas, scheduleCameraMotion, selectCity, scheduleCityIntent, cancelCityIntent, wheelNavigation]);
 
   useEffect(() => {
     const view = atlasView.current;
@@ -326,7 +297,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     }, {
       onNavigationStart: () => { suppressClick.current = true; },
       onEnd: (moved) => { suppressClick.current = moved; },
-      shouldStart: (event) => !(event.target instanceof Element && event.target.closest(".planet-country-label, button, a, input, select, textarea")),
+      shouldStart: (event) => !(event.target instanceof Element && event.target.closest(".planet-city-label, button, a, input, select, textarea")),
     });
   }, [projectedAtlas, updateCameraImmediately]);
 
@@ -349,7 +320,15 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
         updateCameraImmediately(() => ({ panX:0,panY:0,zoom:1 }));
       }}>{sectors.map(value => <option key={value} value={value}>Область {value + 1}</option>)}</select>
     </label>}
-    <svg ref={atlasView} viewBox={`0 0 ${map.width} ${map.height}`} role="group" aria-label={`Планета: ${atlas?.countries.length ?? map.countries.length} стран`} preserveAspectRatio="xMidYMid meet" tabIndex={0} onKeyDown={(event) => {
+    <svg ref={atlasView} viewBox={`0 0 ${map.width} ${map.height}`} role="group" aria-label={`Планета: ${atlas?.countries.reduce((sum,c)=>sum+c.cities.length,0) ?? 0} городов`} preserveAspectRatio="xMidYMid meet" tabIndex={0} onClick={event => {
+      // Pointer capture retargets a tap to the SVG. Resolve it in the same city
+      // hit geometry as wheel navigation; dragging must never open a city.
+      if (event.target !== event.currentTarget || suppressClick.current) return;
+      const bounds=event.currentTarget.getBoundingClientRect();
+      const point=atlasViewBoxPoint({x:event.clientX,y:event.clientY},{minX:bounds.left,minY:bounds.top,maxX:bounds.right,maxY:bounds.bottom},map);
+      const city=planetCityAtPoint(point,cityTargets);
+      if(city) focusOrSelectCity(city);
+    }} onKeyDown={(event) => {
       const movement = event.shiftKey ? .22 : .09;
       if (event.key === "ArrowLeft") updateCameraImmediately((value) => ({ ...value, panX: Math.max(-1.25, value.panX - movement) }));
       else if (event.key === "ArrowRight") updateCameraImmediately((value) => ({ ...value, panX: Math.min(1.25, value.panX + movement) }));
@@ -360,27 +339,32 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     }}>
       <defs>
         <clipPath id={clipId}>{pixelPlanetRows(map.surface).map(row => <rect key={row.y} {...row} />)}</clipPath>
+        <radialGradient id="planet-atmosphere"><stop offset="88%" stopColor="#92cab5" stopOpacity="0" /><stop offset="97%" stopColor="#92cab5" stopOpacity=".12" /><stop offset="100%" stopColor="#517c7a" stopOpacity=".24" /></radialGradient>
         <pattern id="planet-ocean-pixels" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform={`translate(${map.surface.minX} ${map.surface.minY}) scale(${camera.zoom})`}><image href={gameAssetUrl("atlas/terrain-v4/planet/ocean.png")} width="8" height="8" className="atlas-pixel" /></pattern>
       </defs>
       <rect className="planet-space" width={map.width} height={map.height} />
       <g className="planet-stars" aria-hidden="true">{map.stars.map((star) => <rect key={star.id} data-star-group={star.group} x={Math.round(map.width * star.xPercent / 100 / 2) * 2} y={Math.round(map.height * star.yPercent / 100 / 2) * 2} width={2} height={star.group === "constellation" ? 4 : 2} opacity={star.opacity} style={{ "--star-delay": `${star.delaySeconds}s` } as CSSProperties} />)}</g>
       <g clipPath={`url(#${clipId})`}>
         <rect className="planet-map-ocean" x={map.surface.minX} y={map.surface.minY} width={map.surface.maxX - map.surface.minX} height={map.surface.maxY - map.surface.minY} fill="url(#planet-ocean-pixels)" />
+        <g className="planet-water-shimmer" aria-hidden="true" pointerEvents="none">{Array.from({length:36},(_,index)=>{
+          const x=map.surface.minX+((index*137+29)%997)/997*(map.surface.maxX-map.surface.minX);
+          const y=map.surface.minY+((index*211+71)%991)/991*(map.surface.maxY-map.surface.minY);
+          return <path key={index} d={`M${x} ${y}h${3+index%4}m2 0h2`} stroke="#c3dfbc" strokeWidth="1" style={{animationDelay:`-${index*.73}s`}} />;
+        })}</g>
         <g className="planet-coast" aria-hidden="true" transform={terrainTransform}>{terrainGeometry && <AtlasTerrainLayer cells={terrainGeometry.coast} mask={terrainMask} />}</g>
-        <g className="planet-countries">{map.countries.map((country) => <g key={country.id} className="planet-country" data-country-id={country.id} data-active={country.id === activeCountryId ? "true" : "false"} data-selecting={country.id === selectingCountryId ? "true" : "false"} role="button" tabIndex={0} aria-label={`Открыть страну ${country.name}`} onClick={() => {
-          if (suppressClick.current) { suppressClick.current = false; return; }
-          void selectCountry(country.id);
-        }} onKeyDown={(event) => {
-          if (event.key !== "Enter" && event.key !== " ") return;
-          event.preventDefault(); void selectCountry(country.id);
-        }}><g transform={terrainTransform}>{terrainGeometry && <AtlasTerrainLayer cells={terrainGeometry.countries.get(country.id)!} mask={terrainMask} color={country.color} />}</g>
-          <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon => {
-            const art = icon.family ? miniatureBuildingArt(icon.family, camera.zoom,10,icon.stage) : overviewBuildingArt(icon.id, camera.zoom);
-            return <image key={icon.id} data-district-id={icon.id} data-city-id={icon.cityId} data-building-family={art.key}
-              href={art.url} x={icon.center.x - art.width / 2} y={icon.center.y - art.height / 2}
-              width={art.width} height={art.height} className="atlas-pixel" />;
-          })}</g>
-          <g className="planet-airport-markers" aria-hidden="true">{country.airports.filter(airport=>country.cities[airport.cityIndex]?.miniature === undefined).map(airport=><image key={airport.id} data-airport-task-id={airport.id} href={getBuilding("compact-airport-v1").stages[4]} x={airport.center.x-6*camera.zoom} y={airport.center.y-4.5*camera.zoom} width={12*camera.zoom} height={9*camera.zoom} className="atlas-pixel" />)}</g>
+        <g className="planet-countries">{map.countries.map(country => <g key={country.id} className="planet-country" data-country-id={country.id}>
+          <g transform={terrainTransform}>{terrainGeometry && <AtlasTerrainLayer cells={terrainGeometry.countries.get(country.id)!} mask={terrainMask} color={country.color} />}</g>
+          <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon => <PlanetCityMiniature key={icon.id} id={icon.id} family={icon.family} stage={icon.stage} x={icon.center.x} y={icon.center.y} zoom={camera.zoom} />)}</g>
+        </g>)}</g>
+        <g className="planet-city-targets">{cityTargets.map(city => <g key={city.id} role="button" tabIndex={city.center.x>=0&&city.center.x<=map.width&&city.center.y>=0&&city.center.y<=map.height?0:-1}
+          aria-hidden={city.center.x<0||city.center.x>map.width||city.center.y<0||city.center.y>map.height}
+          data-city-id={city.id} data-country-id={city.countryId} data-selecting={selectingCityId===city.id} aria-label={`Открыть город ${city.name}`}
+          onPointerEnter={() => { const country=map.countries.find(c=>c.id===city.countryId); if(country) scheduleCityIntent(city.countryId,city.id,country.worldVersion); }}
+          onFocus={() => { const country=map.countries.find(c=>c.id===city.countryId); if(country) scheduleCityIntent(city.countryId,city.id,country.worldVersion); }}
+          onPointerLeave={cancelCityIntent} onBlur={cancelCityIntent}
+          onClick={() => focusOrSelectCity(city)} onKeyDown={event => { if(event.key==='Enter' || event.key===' ') {event.preventDefault();event.stopPropagation();void selectCity(city);} }}>
+          <circle cx={city.center.x} cy={city.center.y} r={Math.max(12,Math.min(45,city.radius))} fill="transparent" />
+          {camera.zoom<1.7 && <path d={`M${city.center.x-2} ${city.center.y-2}h4v4h-4z`} fill="#ebd396" pointerEvents="none" />}
         </g>)}</g>
         <g className="planet-railways" aria-hidden="true">{transportPaths.rails.map(route=><g key={route.id}>
           <path d={route.path} fill="none" stroke="#293c39" strokeWidth="2" />
@@ -390,19 +374,24 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
         <ScheduledAtlasTrains routes={transportPaths.rails} scale={camera.zoom} />
         <AtlasShips routes={transportPaths.ships} scale={camera.zoom} />
         <ScheduledAtlasFlights routes={activeRoutes} />
-        <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><image href={ATLAS_CLOUD_SPRITES[index % ATLAS_CLOUD_SPRITES.length]} x="-32" y="-16" width="64" height="32" className="atlas-pixel" /></g>)}</g>
+        <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><PlanetCloud variant={index} /></g>)}</g>
       </g>
+      <ellipse className="planet-atmosphere" cx={(map.surface.minX+map.surface.maxX)/2} cy={(map.surface.minY+map.surface.maxY)/2} rx={(map.surface.maxX-map.surface.minX)/2} ry={(map.surface.maxY-map.surface.minY)/2} fill="url(#planet-atmosphere)" pointerEvents="none" aria-hidden="true" />
       <g className="planet-fog-pixels" aria-hidden="true">{map.edgeFog.map((fog) => <rect key={fog.id} x={fog.point.x - fog.size / 2} y={fog.point.y - fog.size / 2} width={fog.size} height={fog.size} opacity={fog.opacity} />)}</g>
-      <g className="planet-country-labels">{labels.map((label) => {
-        const country = countriesById.get(label.countryId);
-        if (!country) return null;
-        return <CountryLabel key={country.id} country={country} {...label} active={country.id === activeCountryId} selecting={country.id === selectingCountryId} onSelect={() => { void selectCountry(country.id); }} />;
-      })}</g>
+      <g className="planet-city-labels">{labels.map(label => <g key={label.id}>
+        <path d={`M${label.x+label.width/2} ${label.y+label.height}L${label.center.x} ${label.center.y}`} stroke="#cdbd83" strokeWidth="1" opacity=".6" pointerEvents="none" />
+        <g className="planet-city-label" data-city-id={label.id} data-country-id={label.countryId} data-selecting={selectingCityId===label.id}
+          role="button" tabIndex={0} aria-label={`Открыть город ${label.name}`} onClick={()=>void selectCity(label)}
+          onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();void selectCity(label);}}}>
+          <rect x={label.x} y={label.y} width={label.width} height={label.height} rx="2" fill="#183731" stroke="#b8a572" />
+          <text x={label.x+label.width/2} y={label.y+17} textAnchor="middle" fill="#f1e5bd" fontSize="11" fontWeight="700">{label.name.length>22?`${label.name.slice(0,21)}…`:label.name}</text>
+        </g>
+      </g>)}</g>
     </svg>
     {(readyRevision !== atlasRevision || assetError) && <div className="planet-texture-loading atlas-state" role={assetError ? "alert" : "status"}>
       <span>{assetError || "Готовим ландшафт планеты…"}</span>
       {assetError && <button type="button" onClick={() => setAssetAttempt(value => value + 1)}>Повторить</button>}
     </div>}
-    {error && <div className="planet-refresh-warning" role="status">Показана сохранённая планета</div>}
+    {error && <div className="planet-refresh-warning" role="alert">{error}</div>}
   </div>;
 }

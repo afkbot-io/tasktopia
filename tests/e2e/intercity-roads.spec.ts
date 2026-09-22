@@ -257,11 +257,11 @@ test("canonical dry roads continue beyond city chunks and render on the country 
   page.on("request", request => { const path = new URL(request.url()).pathname;
     if (request.method() === "GET" && /\/scene$|\/overview$|\/planet-atlas$|\/world\/viewport|\/chunks\//.test(path)) reads.push(path); });
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
-  const overviewLoaded = page.waitForResponse(response => new URL(response.url()).pathname.endsWith("/overview"));
+
   await page.goto("/");
-  const overview = await (await overviewLoaded).json() as CountryOverviewDto;
-  const country = page.locator(".country-overview");
-  await expect(country).toHaveAttribute("data-country-ready", "true");
+  const overview = await (await page.request.get(`/api/countries/${fixture.countryId}/overview`)).json() as CountryOverviewDto;
+  const country = page.locator(".planet-atlas");
+  await expect(country).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await sampleMemory("country-before-city");
   expect(overview.countryId).toBe(fixture.countryId);
@@ -269,12 +269,6 @@ test("canonical dry roads continue beyond city chunks and render on the country 
   expect(overview.groundRoads.routes.every(route => fixture.routes.some(canonical => canonical.id === route.id))).toBe(true);
   for (const route of fixture.routes) expect(overview.groundRoads.routes.some(item => item.id === route.id)
     || overview.groundRoads.unavailable.some(item => item.routeId === route.id && Boolean(item.reason))).toBe(true);
-  await expect(country).toHaveAttribute("data-country-ground-roads", String(overview.groundRoads.routes.length));
-  await expect(country).toHaveAttribute("data-country-ground-road-unavailable", String(overview.groundRoads.unavailable.length));
-  await expect(country).toHaveAttribute("data-country-ground-road-rejected", "0");
-  await expect(country).toHaveAttribute("data-country-ground-road-asphalt-pixels", "3");
-  await expect(country).toHaveAttribute("data-country-ground-road-pavement-pixels", "5");
-  await expect(country).toHaveAttribute("data-country-ground-road-atlas-urls", "2");
   const countryMetrics = await country.evaluate(node => ({ ...((node as HTMLElement).dataset) }));
   await page.screenshot({ path: `${directory}/country.png` });
 
@@ -296,14 +290,15 @@ test("canonical dry roads continue beyond city chunks and render on the country 
         && road.minY <= resident.maxY && road.maxY >= resident.minY)));
     scenes.set(city.id, scene);
   }
-  await page.getByRole("button", { name: /^Открыть город Город Альфа,/ }).click(); await ready(page);
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
   await page.screenshot({ path: `${directory}/city.png` });
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(country).toHaveAttribute("data-country-ready", "true");
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(country).toHaveAttribute("data-planet-ready", "true");
   const exit = [...fixture.exits].sort((a, b) => b.roadCells - a.roadCells)[0]!;
   expect(exit.roadCells).toBeGreaterThanOrEqual(24);
   const selectedCity = fixture.cities.find(city => city.id === exit.cityId)!;
-  await page.getByRole("button", { name: new RegExp(`^Открыть город ${selectedCity.name},`) }).click(); await ready(page);
+  await page.locator(`.planet-city-targets [data-city-id="${selectedCity.id}"]`).focus();
+  await page.keyboard.press("Enter"); await ready(page);
   const scene = scenes.get(exit.cityId)!;
   const canvas = await page.locator("canvas[aria-label='Интерактивная карта города']").elementHandle();
   const selectedReads = [...reads];
@@ -366,7 +361,7 @@ test("canonical dry roads continue beyond city chunks and render on the country 
   const nativeTerrainMaterial = await paddingTerrainPixels(page, scene, fixture);
   await page.mouse.move(10, 20); await page.screenshot({ path: `${directory}/native-terrain.png` });
   await page.locator("canvas[aria-label='Интерактивная карта города']").hover();
-  // Leave a small margin above the explicit CITY→COUNTRY wheel threshold.
+  // Leave a small margin above the explicit CITY→PLANET wheel threshold.
   // The initial 0.8 frame is still verified; do not bypass normal navigation.
   const returnScale = .81;
   await page.mouse.wheel(0, Math.log(1 / returnScale) / .0015);
@@ -441,7 +436,8 @@ test("canonical dry roads continue beyond city chunks and render on the country 
   expect(await canvas!.evaluate(node => node === document.querySelector("canvas[aria-label='Интерактивная карта города']"))).toBe(true);
   expect(reads.filter(path => path.endsWith("/scene"))).toEqual(selectedReads.filter(path => path.endsWith("/scene")));
   expect(new Set(reads.filter(path => path.endsWith("/scene"))).size).toBe(reads.filter(path => path.endsWith("/scene")).length);
-  for (const suffix of ["/overview", "/planet-atlas"]) expect(reads.filter(path => path.endsWith(suffix))).toHaveLength(1);
+  expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);
+  expect(reads.filter(path => path.endsWith("/planet-atlas"))).toHaveLength(1);
   expect(reads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
   expect(errors).toEqual([]);
   await samplePadding("complete");

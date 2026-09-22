@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { armWarmCityTiming } from "./helpers/warm-city-timing";
 
 for (const activationDelay of [0, 1_100]) test(`warm timing measures ${activationDelay} ms activation independently of driver waits`, async ({ page }) => {
-  await page.setContent(`<button class="country-overview-city">Город</button>
+  await page.setContent(`<nav class="map-level-nav"><button>Город</button></nav>
     <div class="world-canvas" data-map-active="false" data-city-scene-commit="atomic" data-ground-bake-queue="0"></div>`);
   await armWarmCityTiming(page);
   await page.evaluate(delay => {

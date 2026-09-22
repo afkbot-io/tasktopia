@@ -33,6 +33,7 @@ async function openDemoCity(page: Page) {
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-requests", "1", { timeout: 90_000 });
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
@@ -91,8 +92,8 @@ test("renders the normalized city frame before input and crosses one level at th
   // One input crosses one boundary. Twelve separate round trips on a loaded
   // runner can span multiple gestures (>220 ms gaps), reaching PLANET.
   await page.mouse.wheel(0, 4_000);
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
-  await expect(page.locator(".planet-atlas")).toHaveCount(0);
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+  await expect(host).toHaveAttribute("data-animation-active", "false");
 });
 
 test("keeps the loader visible until the delayed whole-city scene commits", async ({ page }) => {
@@ -109,6 +110,7 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await expect.poll(() => sceneStarted).toBe(true);
   await expect(page.getByText("Готовим карту…", { exact: true })).toBeVisible();
   expect(sceneResolved).toBe(false);
@@ -130,6 +132,7 @@ test("offers a renderer restart when the city-scene request fails", async ({ pag
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Не удалось запустить карту", { timeout: 30_000 });
   fail = false;
@@ -147,7 +150,7 @@ test("reduced motion still produces one complete static city frame", async ({ pa
   await expect.poll(async () => Number(await host.getAttribute("data-world-objects") ?? 0)).toBeGreaterThan(0);
 });
 
-test("ten country-city cycles keep one renderer and a stable asset residency", async ({ page }) => {
+test("ten planet-city cycles keep one renderer and a stable asset residency", async ({ page }) => {
   test.setTimeout(240_000);
   let { host } = await openDemoCity(page);
   const residentAssets: number[] = [];
@@ -155,16 +158,11 @@ test("ten country-city cycles keep one renderer and a stable asset residency", a
     await expect(page.locator(".map-region canvas")).toHaveCount(1);
     await expect(host).toHaveAttribute("data-ambient-assets", "ready", { timeout: 30_000 });
     residentAssets.push(Number(await host.getAttribute("data-leased-assets") ?? 0));
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Страна" }).click();
-    await expect(page.locator(".country-overview")).toBeVisible({ timeout: 30_000 });
-    const country = page.locator(".country-overview");
-    await expect(country).toHaveAttribute("data-country-ready", "true", { timeout: 30_000 });
-    await expect(country.locator(".country-overview-raster")).toHaveCount(1);
-    await expect(country.locator(".country-railway-overlay")).toHaveCount(1);
-    const cities = Number(await country.getAttribute("data-country-overview-cities"));
-    await expect(country.locator(".country-city-glyph")).toHaveCount(cities);
-    await expect(country.locator("canvas")).toHaveCount(cities + 2);
-    await page.locator(".country-overview-city").first().click();
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Планета" }).click();
+    await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+    await expect(host).toHaveAttribute("data-animation-active", "false");
+    await expect(page.locator(".planet-atlas canvas")).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
   }

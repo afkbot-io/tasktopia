@@ -53,4 +53,8 @@ export type CitySceneDto = {
   /** Whole canonical roads incident to this city or intersecting its resident
    * chunk envelope, including road width. No remote city entities. */
   intercityRoads: readonly IntercityRoadRoute[];
+  /** Complete persisted street geometry of layouts touching resident chunks.
+   * Allows exterior rasterization without clipped half-width neighbour roads.
+   * Optional for compatibility with already cached schema-v4 responses. */
+  roadContext?: import("./semantic-road").SemanticRoadNetwork;
 };

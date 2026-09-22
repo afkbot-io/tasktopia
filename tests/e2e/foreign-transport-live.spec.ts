@@ -37,9 +37,9 @@ test("foreign airport changes refresh an open map without reloading the page",as
     page.on("request",request=>{
       if(request.isNavigationRequest()&&request.frame()===page.mainFrame())navigations++;
       if(request.url().includes(`/countries/${bootstrap.country.id}/cities/`)&&request.url().includes("/scene"))scenes++;
-      if(request.url().includes(`/countries/${bootstrap.country.id}/overview`))overviews++;
+      if(request.url().endsWith("/planet-atlas"))overviews++;
     });
-    await page.goto("/");await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic");
+    await page.goto("/");await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic");
     const host=page.locator(".world-canvas");
     const ground=await host.getAttribute("data-ground-rebuilds");
     const transportRefreshes=Number(await host.getAttribute("data-transport-only-refreshes") ?? 0);
@@ -48,8 +48,8 @@ test("foreign airport changes refresh an open map without reloading the page",as
     await expect.poll(()=>scenes).toBeGreaterThan(sceneCount);
     await expect.poll(async()=>Number(await host.getAttribute("data-transport-only-refreshes") ?? 0)).toBeGreaterThan(transportRefreshes);
     expect(await host.getAttribute("data-ground-rebuilds")).toBe(ground);
-    await page.getByRole("button",{name:"Страна",exact:true}).click();
-    await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready","true");
+    await page.getByRole("button",{name:"Планета",exact:true}).click();
+    await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready","true");
     const overviewCount=overviews;
     await call("task.delete",{taskId:airport.id,confirmTitle:airport.title});
     await expect.poll(()=>overviews).toBeGreaterThan(overviewCount);

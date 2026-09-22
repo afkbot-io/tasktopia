@@ -4,6 +4,7 @@ import { PwaUpdateNotice } from "./components/PwaUpdateNotice";
 import { App } from "./App";
 import { registerTasktopiaServiceWorker } from "./pwa";
 import "./styles.css";
+import "./game-ui.css";
 
 document.documentElement.dataset.appVersion = __TASKTOPIA_VERSION__;
 registerTasktopiaServiceWorker();

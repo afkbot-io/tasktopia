@@ -1,0 +1,102 @@
+{
+  "mobileEnvironment": "Chromium,390x844 DPR2,4x CPU throttle,20Mbps RTT80,3 fresh contexts; emulation rather than physical phone",
+  "qualityEnvironment": "Chromium1440x900 DPR2,same40-taskRiversidecamera,4alternating5secwindows,CDPTaskDuration includes browsermainthread only",
+  "mobile": [
+    {
+      "repetition": 0,
+      "entryMs": 1750.6402079999998,
+      "metrics": {
+        "fps": "60",
+        "ratio": "2",
+        "quality": "NORMAL",
+        "objects": "270"
+      }
+    },
+    {
+      "repetition": 1,
+      "entryMs": 1673.8935000000001,
+      "metrics": {
+        "fps": "60",
+        "ratio": "2",
+        "quality": "NORMAL",
+        "objects": "270"
+      }
+    },
+    {
+      "repetition": 2,
+      "entryMs": 2078.5087919999996,
+      "metrics": {
+        "fps": "60",
+        "ratio": "2",
+        "quality": "NORMAL",
+        "objects": "270"
+      }
+    }
+  ],
+  "quality": [
+    {
+      "profile": "NORMAL",
+      "windowSeconds": 5,
+      "taskMs": 5009.42,
+      "scriptMs": 149.40900000000002,
+      "heapMB": 53.42616653442383,
+      "world": {
+        "frameLimit": "60",
+        "worldPixelRatio": "2",
+        "cars": "17",
+        "walkers": "29",
+        "constructionWorkers": "8",
+        "worldObjects": "487",
+        "groundRebuilds": "9"
+      }
+    },
+    {
+      "profile": "ECONOMY",
+      "windowSeconds": 5,
+      "taskMs": 2143.723999999999,
+      "scriptMs": 93.33400000000003,
+      "heapMB": 48.183753967285156,
+      "world": {
+        "frameLimit": "30",
+        "worldPixelRatio": "1",
+        "cars": "8",
+        "walkers": "12",
+        "constructionWorkers": "2",
+        "worldObjects": "451",
+        "groundRebuilds": "9"
+      }
+    },
+    {
+      "profile": "NORMAL",
+      "windowSeconds": 5,
+      "taskMs": 5038.316,
+      "scriptMs": 89.44600000000014,
+      "heapMB": 70.68043518066406,
+      "world": {
+        "frameLimit": "60",
+        "worldPixelRatio": "2",
+        "cars": "17",
+        "walkers": "29",
+        "constructionWorkers": "8",
+        "worldObjects": "487",
+        "groundRebuilds": "9"
+      }
+    },
+    {
+      "profile": "ECONOMY",
+      "windowSeconds": 5,
+      "taskMs": 2109.4280000000012,
+      "scriptMs": 89.04899999999994,
+      "heapMB": 46.600406646728516,
+      "world": {
+        "frameLimit": "30",
+        "worldPixelRatio": "1",
+        "cars": "8",
+        "walkers": "12",
+        "constructionWorkers": "2",
+        "worldObjects": "451",
+        "groundRebuilds": "9"
+      }
+    }
+  ]
+}

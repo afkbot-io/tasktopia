@@ -1,10 +1,10 @@
 import type { CSSProperties } from "react";
 import type { AtlasTransition } from "../atlas-navigation-transition";
 
-const LEVEL_LABEL = { PLANET: "планету", COUNTRY: "страну", CITY: "город" } as const;
-const PHASE_LABEL = { PRELOAD: "Загружаем данные", PREPARE: "Готовим сцену", FIRST_FRAME: "Проверяем первый кадр", SWAP: "Открываем", EVICT: "Освобождаем ресурсы" } as const;
+const LEVEL_LABEL = { PLANET: "планету", CITY: "город" } as const;
 
-export function MapLevelTransition({ transition }: { transition: AtlasTransition }) {
+
+export function MapLevelTransition({ transition, onCancel }: { transition: AtlasTransition; onCancel?:()=>void }) {
   return <div
     className="map-level-transition"
     data-from={transition.from}
@@ -19,6 +19,6 @@ export function MapLevelTransition({ transition }: { transition: AtlasTransition
   >
     <div className="map-level-transition-pixels" aria-hidden="true" />
     <div className="map-level-transition-focus" aria-hidden="true"><i /><i /><i /></div>
-    <span>{PHASE_LABEL[transition.phase]}: {LEVEL_LABEL[transition.to]}…</span>
+    <div className="map-transition-message"><span>Открываем {LEVEL_LABEL[transition.to]}…</span>{onCancel && transition.to === "CITY" && <button type="button" onClick={onCancel}>Вернуться на планету</button>}</div>
   </div>;
 }

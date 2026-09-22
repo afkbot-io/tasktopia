@@ -1320,6 +1320,16 @@ export class AppService {
       minX: minChunkX * CHUNK_SIZE, minY: minChunkY * CHUNK_SIZE,
       maxX: (maxChunkX + 1) * CHUNK_SIZE - 1, maxY: (maxChunkY + 1) * CHUNK_SIZE - 1,
     });
+    // A nearby city's street can straddle the last resident column. Include
+    // its complete saved geometry so the client preserves width and endpoints
+    // instead of drawing the one-column slice as a dead-end road. No planning
+    // or world writes on this read; layout access is scoped to this country.
+    const streetLayouts = await this.layoutsInBounds(countryId, {
+      minX: minChunkX * CHUNK_SIZE - 2, minY: minChunkY * CHUNK_SIZE - 2,
+      maxX: (maxChunkX + 1) * CHUNK_SIZE + 1, maxY: (maxChunkY + 1) * CHUNK_SIZE + 1,
+    });
+    const roadContext = { schemaVersion: 1 as const, nodes: [],
+      segments: streetLayouts.flatMap(streetLayout => streetLayout.roadNetwork.segments) };
     const sceneIdentity = {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       cityId,
@@ -1328,6 +1338,7 @@ export class AppService {
       airportConnections,
       railway,
       intercityRoads,
+      roadContext,
       chunks: sceneChunks.map((chunk) => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash, version: chunk.publishedVersion })),
     };
     const scene: CitySceneDto = {
@@ -1342,6 +1353,7 @@ export class AppService {
       airportConnections,
       railway,
       intercityRoads,
+      roadContext,
     };
     onTransactionCommit(()=>{
       this.citySceneCache.set(cacheKey, scene);

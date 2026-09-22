@@ -1,6 +1,6 @@
 import { cx } from "./ui";
 
-export type MapLevel = "PLANET" | "COUNTRY" | "CITY";
+export type MapLevel = "PLANET" | "CITY";
 
 export function MapLevelNav({ level, hasCity, showDistricts = false, onDistrictsChange, onChange }: {
   level: MapLevel;
@@ -10,9 +10,9 @@ export function MapLevelNav({ level, hasCity, showDistricts = false, onDistricts
   onChange: (level: MapLevel) => void;
 }) {
   return <nav className="map-level-nav" aria-label="Уровень карты">
-    {(["PLANET", "COUNTRY", "CITY"] as const).map((candidate) => {
+    {(["PLANET", "CITY"] as const).map((candidate) => {
       const disabled = candidate === "CITY" && !hasCity;
-      const label = candidate === "PLANET" ? "Планета" : candidate === "COUNTRY" ? "Страна" : "Город";
+      const label = candidate === "PLANET" ? "Планета" : "Город";
       return <button
         key={candidate}
         type="button"

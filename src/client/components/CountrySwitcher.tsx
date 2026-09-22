@@ -1,6 +1,7 @@
+import { selectCountrySession } from "../country-selection";
 import { useEffect, useRef, useState } from "react";
 import type { BootstrapDto, CountryRole } from "../../shared/contracts";
-import { api, ApiError } from "../api";
+import { ApiError } from "../api";
 import { cx } from "./ui";
 
 const roleLabel: Record<CountryRole, string> = {
@@ -9,11 +10,11 @@ const roleLabel: Record<CountryRole, string> = {
   VIEWER: "Наблюдатель",
 };
 
-export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onPlan, onManage, onCreate }: {
+export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onCities, onManage, onCreate }: {
   bootstrap: BootstrapDto;
   onClose: () => void;
   onBootstrap: (bootstrap: BootstrapDto) => void;
-  onPlan: () => void;
+  onCities: () => void;
   onManage: () => void;
   onCreate: () => void;
 }) {
@@ -44,7 +45,7 @@ export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onPlan, onMan
     setPendingId(countryId);
     setError("");
     try {
-      onBootstrap(await api<BootstrapDto>(`/api/countries/${countryId}/select`, { method: "POST" }));
+      onBootstrap(await selectCountrySession(countryId));
     } catch (reason) {
       setError(reason instanceof ApiError ? reason.message : "Не удалось открыть страну");
       setPendingId("");
@@ -70,7 +71,7 @@ export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onPlan, onMan
       </button>)}
     </div>
     <div className="country-switcher-actions">
-      <button type="button" className="country-plan-action" onClick={onPlan}>План страны</button>
+      <button type="button" className="country-plan-action" onClick={onCities}>Города</button>
       <button type="button" onClick={onManage}>Редактировать страну</button>
       <button type="button" className="country-create-action" onClick={onCreate}>＋ Новая страна</button>
     </div>

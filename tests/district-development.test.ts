@@ -51,3 +51,12 @@ describe("temporary district development", () => {
     expect(geometry.plan("d", "BUILDING")).toBe(plan);
   });
 });
+
+it('показывает реальные количества задач в сводке района без повторов', async()=>{
+  const {districtDevelopmentSummary}=await import('../src/client/district-development');
+  expect(districtDevelopmentSummary('Центральный',[
+    {id:'a',status:'COMPLETED'},{id:'a',status:'COMPLETED'},
+    {id:'b',status:'IN_PROGRESS'},{id:'c',status:'TESTING'},{id:'d',status:'PLANNING'},
+  ])).toEqual({title:'Центральный',line:'1 / 4 готово · 1 в работе',detail:'1 на проверке · 1 в планах'});
+  expect(districtDevelopmentSummary('Новый',[]).line).toBe('Задач пока нет');
+});
