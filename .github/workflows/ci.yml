@@ -72,7 +72,11 @@ jobs:
           SESSION_COOKIE_SECURE: "false"
           APP_ORIGIN: http://127.0.0.1:3000
       - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:e2e
+      # Emit each failure immediately: the compact reporter buffers details
+      # until the end, losing diagnostics if the overall job times out. A
+      # failing run stops after three failures; a passing run still runs the
+      # entire browser matrix and all following gates.
+      - run: npm run test:e2e -- --reporter=line --max-failures=3
         env:
           CI: "true"
           SEED_PRINT_TOKEN: "false"
