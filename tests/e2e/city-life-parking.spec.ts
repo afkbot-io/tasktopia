@@ -33,8 +33,9 @@ test('событие у завершённого дома прибывает, д
  await page.route('**/api/**',async route=>{const response=await route.fetch();await route.fulfill({response,headers:{...response.headers(),'cache-control':'no-store','x-tasktopia-server-time':String(epoch)}});});
  const writes:string[]=[],errors:string[]=[];page.on('request',r=>{if(r.method()!=='GET'&&new URL(r.url()).pathname.startsWith('/api/'))writes.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
  await page.goto(`/task/${task.taskNumber}?countryId=${bootstrap.country.id}&taskId=${task.id}`);
- await expect(page.locator('.world-canvas')).toHaveAttribute('data-loading','false',{timeout:45000});
+ await expect(page.locator('#task-title')).toBeVisible();
  await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ await expect(page.locator('.world-canvas')).toHaveAttribute('data-loading','false',{timeout:45000});
  const world=page.locator('.world-canvas');await expect(world).toHaveAttribute('data-city-life-event',plan!.kind,{timeout:15000});
  await expect(world).toHaveAttribute('data-city-life-phase','ARRIVING');
  await page.clock.fastForward(10000);await expect(world).toHaveAttribute('data-city-life-phase','ACTIVITY');
@@ -71,7 +72,8 @@ test('машина заезжает на существующий мощёный
  await page.route('**/api/countries/*/cities/*/scene',r=>r.fulfill({json:scene}));
  const writes:string[]=[];page.on('request',r=>{if(r.method()!=='GET'&&new URL(r.url()).pathname.startsWith('/api/'))writes.push(r.url());});
  await page.goto(`/task/${target!.taskNumber}?countryId=${bootstrap.country.id}&taskId=${target!.id}`);
- const host=page.locator('.world-canvas');await expect(host).toHaveAttribute('data-loading','false',{timeout:45000});await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ await expect(page.locator('#task-title')).toBeVisible();await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ const host=page.locator('.world-canvas');await expect(host).toHaveAttribute('data-loading','false',{timeout:45000});
  await expect.poll(async()=>Number(await host.getAttribute('data-parking-lots'))).toBeGreaterThan(0);
  const state=()=>host.evaluate(el=>({steps:Number(el.dataset.mobilityFixedSteps),parked:el.dataset.parkedCarIds?.split(',').filter(Boolean)??[],road:el.dataset.roadCarIds?.split(',')??[],alive:el.dataset.agentIds?.split(',')??[]}));
  const arrivalStarted=(await state()).steps;

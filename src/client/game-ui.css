@@ -63,18 +63,18 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .task-inspector .progress-track { border-radius:0;background:#bfbea1;height:6px; }
 .task-inspector .progress-track i { background:#779466; }
 .game-tabs { display:flex;flex:0 0 auto;gap:0;background:#e3dcc0;border-bottom:1px solid #b8b491;padding:0 12px; }
-.game-tabs button { position:relative;flex:1;min-height:46px;padding:10px 6px;border:0;border-bottom:3px solid transparent;background:none;color:#68735f;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap; }
+.game-tabs button { position:relative;flex:1;min-height:46px;padding:10px 6px;border:0;border-bottom:3px solid transparent;background:none;color:#465a43;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap; }
 .game-tabs button[aria-selected="true"] { border-bottom-color:#637c4e;color:#2f5039;background:#f1e8ce; }
 .game-tabs button span { padding:1px 4px;margin-left:4px;background:#c5cdb0;border-radius:2px;font-size:9px; }
 .task-tab-content { min-height:0;overflow:auto;padding:18px 20px 28px;overscroll-behavior:contain; }
 .task-tab-content[hidden] { display:none; }
 .task-inspector .task-grid { border:1px solid #c1bd9c;border-radius:2px;background:#cbc6a7;grid-template-columns:repeat(2,minmax(0,1fr)); }
 .task-inspector .task-grid div { background:#e5ddc0;padding:10px; }
-.task-inspector .task-grid span { color:#6f7562; }
+.task-inspector .task-grid span { color:#536249; }
 .task-inspector .task-grid strong { font-size:12px;color:#354c3d; }
 .task-tab-content :is(h3,h4) { color:#38523d; }
 .task-tab-content :is(p,li,dd,.markdown) { color:#425442; }
-.task-tab-content :is(small,dt,.muted,.task-defect-hint) { color:#6a735e; }
+.task-tab-content :is(small,dt,.muted,.task-defect-hint) { color:#526248; }
 .task-tab-content a { color:#366959; }
 .task-tab-content section { margin-top:20px; }
 .task-tab-content section:first-child { margin-top:0; }
@@ -86,7 +86,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .task-tab-content .task-defects article.fixed { background:#dce6cc;border-color:#a7b391; }
 .task-tab-content .task-defects article :is(p,dd,header span) { color:#625745; }
 .task-tab-content .comments article { border-color:#c6c0a1; }
-.task-tab-content .task-history article span { color:#6c7864; }
+.task-tab-content .task-history article span { color:#526248; }
 .task-tab-content .markdown :is(pre,code) { background:#dedcc2;color:#344c3d;border-color:#b3b297; }
 .task-tab-content .markdown blockquote { border-color:#81916c;color:#5c6e55; }
 .task-tab-content .markdown th { background:#dedcc2; }
@@ -222,3 +222,33 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .directory-search {width:100%;min-height:38px;margin-bottom:10px;padding:8px 10px;background:#faf1d9;color:#304e3b;border:1px solid #a6ab87;border-radius:2px;}
 .directory-search::placeholder {color:#5f6c58;}
 .directory-district-name {margin:8px 0;color:#3e573e;font-weight:700;}
+
+/* Incoming links open a self-contained card before any world rendering. */
+.task-entry {height:100dvh;background:var(--game-frame);}
+.task-entry-backdrop {justify-items:center;background:radial-gradient(ellipse at top,#35513d,#142e26);}
+.task-entry-backdrop .task-inspector {width:min(760px,100%);}
+.task-load-state {display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px 24px;text-align:center;color:var(--game-ink);}
+.task-load-state p {max-width:44ch;margin:0;color:var(--game-muted);}
+.task-load-state button {padding:10px 16px;border:1px solid #a8ad88;border-radius:2px;background:#e6dfc3;color:#304d38;cursor:pointer;}
+.task-refresh-error {margin:0;padding:12px 54px 12px 20px;background:#f0dbb9;color:#7f3e2f;}
+.task-inspector > :is(.task-header,.task-actions,.task-status-row) {flex-shrink:0;}
+.task-inspector .task-header h2 {overflow-wrap:anywhere;}
+.task-inspector .task-grid strong {overflow-wrap:anywhere;}
+.task-inspector .task-actions {flex-wrap:wrap;}
+@media(max-width:600px) {
+ .task-inspector .modal-close {width:44px;height:44px;right:8px;top:8px;}
+ .task-inspector .task-actions {padding:0 16px 12px;gap:8px;}
+ .task-inspector .task-action {min-height:44px;}
+}
+@media(max-height:500px) and (orientation:landscape) {
+ .task-modal.task-inspector {overflow-y:auto;}
+ .task-inspector .task-tab-content {overflow:visible;flex-shrink:0;}
+}
+
+.task-inspector .task-header > .min-w-0 {flex:1;min-width:0;}
+.task-inspector .task-header .eyebrow {overflow-wrap:anywhere;}
+.task-inspector .game-tabs button span {color:#3f553c;}
+.task-tab-content :is(.task-section-title > span,h3 > span) {color:#52602e;}
+.task-tab-content :is(.comment-meta time,.task-document-preview > header code) {color:#526248;}
+.task-tab-content:focus-visible {outline:2px solid #718452;outline-offset:-3px;}
+@media(max-width:600px) {.task-inspector .task-header .eyebrow {font-size:9px;}}

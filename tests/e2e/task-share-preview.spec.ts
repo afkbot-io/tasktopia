@@ -39,7 +39,7 @@ test("publishes a reviewable preview and revokes it from the task",async({page,b
       await expect(crawlerPage.locator('meta[property="og:image"]')).toHaveAttribute("content",`${url}/image.png`);
       expect((await crawler.request.get(`${url}/image.png`)).status()).toBe(200);
     } finally {await crawler.close();}
-    await preview.getByRole("link",{name:"Открыть Tasktopia",exact:true}).click();
+    await preview.getByRole("link",{name:"Открыть задачу",exact:true}).click();
     await expect(preview.getByRole("heading",{name:"Войти в Tasktopia",exact:true})).toBeVisible();
     await expect(preview.locator("#task-title")).toHaveCount(0);
     await preview.goto(url);
@@ -154,7 +154,7 @@ test("refreshes a changed draft without silently publishing it",async({page})=>{
   await page.getByRole("button",{name:"Создать ссылку на превью",exact:true}).click();
   const field=page.getByRole("textbox",{name:"Ссылка с превью",exact:true});
   await expect(field).toBeVisible();
-  const html=await (await page.request.get(await field.inputValue())).text();
+  const html=await (await page.request.get(await field.inputValue(),{headers:{cookie:""}})).text();
   expect(html).toContain(`property="og:description" content="${b.country.name} · ${b.initialCity.name}"`);
   await page.getByRole("button",{name:"Отозвать",exact:true}).click();
 });

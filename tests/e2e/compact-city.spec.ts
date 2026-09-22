@@ -163,7 +163,7 @@ test("renders every compact city ground chunk, opens its task, and survives coun
   expect(failures.filter((value) => !value.includes("401 /api/bootstrap"))).toEqual([]);
 });
 
-test("opens a deep-linked task card while city terrain is still pending", async ({ page }) => {
+test("opens a deep-linked task card before requesting city terrain", async ({ page }) => {
   let releaseScene!: () => void;
   const sceneGate = new Promise<void>(resolve => { releaseScene = resolve; });
   let sceneStarted = false;
@@ -179,8 +179,10 @@ test("opens a deep-linked task card while city terrain is still pending", async 
     await page.getByLabel("Email").fill("demo@tasktopia.local");
     await page.getByLabel("Пароль").fill("tasktopia-demo");
     await page.getByRole("button", { name: "Открыть страну" }).click();
-    await expect.poll(() => sceneStarted).toBe(true);
     await expect(page.locator("#task-title")).toBeVisible({ timeout: 5_000 });
+    expect(sceneStarted).toBe(false);
+    await page.getByRole("button", {name:"Закрыть",exact:true}).click();
+    await expect.poll(() => sceneStarted).toBe(true);
     expect(sceneReleased).toBe(false);
   } finally { releaseScene(); }
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 45_000 });

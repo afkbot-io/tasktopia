@@ -41,12 +41,14 @@ const dateTime = (value: string) => new Date(value).toLocaleString("ru-RU", { da
 const fileSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} МБ` : bytes >= 1024 ? `${Math.round(bytes / 1024)} КБ` : `${bytes} Б`;
 
 type TaskModalProps = {
+  standalone?: boolean;
   countryId: string;
   taskId: string;
   revision: number;
   canEdit: boolean;
   onTransferred: (task: TaskDto) => void;
   onClose: () => void;
+  onAuthenticationRequired?: () => void;
   onShowDependencies?: (taskId: string) => void;
 };
 
@@ -64,7 +66,7 @@ function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
 
   return <section className="task-documents">
     <div className="task-section-title">
-      <div><h3>Материалы для реализации</h3><p>Markdown-документы обновляются AI-агентами через MCP.</p></div>
+      <div><h3>Материалы для реализации</h3><p>Планы, решения и результаты работы.</p></div>
       <span>{filledCount}/{documents.length || 4}</span>
     </div>
     <div className="task-document-shelf" role="tablist" aria-label="Документы задачи">
@@ -89,17 +91,20 @@ function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
     {selected ? <article className="task-document-preview" role="tabpanel">
       <header><div><strong>{selected.title}</strong><code>{selected.fileName}</code></div><small>{selected.actor} · {dateTime(selected.updatedAt)}</small></header>
       <Markdown text={selected.content} />
-    </article> : <p className="task-documents-empty">AI-агент ещё не заполнил материалы задачи.</p>}
+    </article> : <p className="task-documents-empty">Материалы пока не добавлены.</p>}
   </section>;
 }
 
-export function TaskModal({ countryId, taskId, revision, onClose, onShowDependencies }: TaskModalProps) {
+export function TaskModal({ standalone = false, countryId, taskId, revision, onClose, onAuthenticationRequired, onShowDependencies }: TaskModalProps) {
   const [task, setTask] = useState<TaskDto | null>(() => peekTaskDetail(countryId, taskId) ?? null);
   const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const [tab,setTab] = useState<"overview"|"materials"|"discussion"|"history">("overview");
+  const [visited, setVisited] = useState(() => new Set(["overview"]));
+  const changeTab = (next: typeof tab) => { setTab(next); setVisited(current => new Set([...current, next])); };
   useDialogFocus(dialogRef);
 
   useEffect(() => {
@@ -111,13 +116,14 @@ export function TaskModal({ countryId, taskId, revision, onClose, onShowDependen
         if (cancelled) return;
         // A deleted/inaccessible task must not retain its detail body or write
         // actions. Keep the loaded card only for recoverable service failures.
-        if (reason instanceof ApiError && (reason.status === 404 || reason.status === 403)) setTask(null);
+        if (reason instanceof ApiError && [401, 403, 404].includes(reason.status)) setTask(null);
+        if (reason instanceof ApiError && reason.status === 401) void Promise.resolve(onAuthenticationRequired?.()).catch(() => undefined);
         setError(reason instanceof Error ? reason.message : "Не удалось открыть задачу");
       });
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => { cancelled = true; window.removeEventListener("keydown", onKey); };
-  }, [countryId, taskId, revision, onClose]);
+  }, [countryId, taskId, revision, retry, onClose, onAuthenticationRequired]);
 
   useEffect(() => {
     if (!task) return;
@@ -136,52 +142,59 @@ export function TaskModal({ countryId, taskId, revision, onClose, onShowDependen
     } catch { window.prompt("Ссылка на задачу:", url); }
   };
 
-  return <div className="modal-backdrop task-inspector-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
+  return <div className={`modal-backdrop task-inspector-backdrop${standalone ? " task-entry-backdrop" : ""}`} role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
     <section ref={dialogRef} className="task-modal task-inspector" role="dialog" aria-modal="true" aria-labelledby={task ? "task-title" : undefined} aria-label={task ? undefined : error ? "Задача недоступна" : "Загрузка задачи"}>
-      <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
-      {task && error && <p role="alert">{error}</p>}
-      {!task ? <div className="modal-loading" role={error ? "alert" : "status"}>{error || "Загружаем задачу…"}</div> : <>
+      <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть" title={standalone ? "Закрыть и открыть город" : "Закрыть"}>×</button>
+      {task && error && <p className="task-refresh-error" role="alert">{error} <button onClick={() => setRetry(value => value + 1)}>Повторить</button></p>}
+      {!task ? <div className="task-load-state" role={error ? "alert" : "status"}><strong>{error || "Загружаем задачу…"}</strong>{error && <button className="primary-button" onClick={() => setRetry(value => value + 1)}>Повторить</button>}</div> : <>
         <header className="task-header">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
           <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
         </header>
         <div className="task-actions" role="group" aria-label="Ссылки задачи">
+          {standalone && <button className="task-action" onClick={onClose}>В город →</button>}
           <button className="task-action" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "Ссылка"}</button>
           <TaskSharePreview key={`${countryId}:${task.id}`} countryId={countryId} task={task} />
         </div>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
         {task.defects?.some(defect=>defect.status!=="FIXED")&&<button className="task-defect-alert" onClick={()=>{setTab("overview");requestAnimationFrame(()=>dialogRef.current?.querySelector(".task-defects")?.scrollIntoView({block:"start"}));}}>Нужен ремонт · {task.defects.filter(defect=>defect.status!=="FIXED").length} деф.</button>}
-        <GameTabs id="task-sections" value={tab} onChange={setTab} tabs={[
+        <GameTabs id="task-sections" value={tab} onChange={changeTab} tabs={[
           {id:"overview",label:"Задача"}, {id:"materials",label:"Материалы",count:task.documents?.filter(d=>d.content.trim()).length},
           {id:"discussion",label:"Обсуждение",count:task.comments?.length}, {id:"history",label:"История"},
         ]} />
-        <div id="task-sections-overview-panel" role="tabpanel" aria-labelledby="task-sections-overview-tab" hidden={tab!=="overview"} className="task-tab-content">
+        <div id="task-sections-overview-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-overview-tab" hidden={tab!=="overview"} className="task-tab-content">
         <div className="task-grid">
           <div><span>Приоритет</span><strong>{priorityLabel[task.priority]}</strong></div><div><span>Срок</span><strong>{task.dueAt ? new Date(task.dueAt).toLocaleDateString("ru-RU") : "Не задан"}</strong></div>
-          <div><span>Создатель</span><strong>{task.creator?.name ?? "Система страны"}</strong></div><div><span>Ответственный</span><strong>{task.assignee?.name ?? "Не назначен"}</strong></div>
+          <div><span>Создатель</span><strong>{task.creator?.name ?? "Tasktopia"}</strong></div><div><span>Ответственный</span><strong>{task.assignee?.name ?? "Не назначен"}</strong></div>
           <div><span>Создана</span><strong>{dateTime(task.createdAt)}</strong></div><div><span>Обновлена</span><strong>{dateTime(task.updatedAt)}</strong></div>
         </div>
-        <section className="task-description"><h3>Описание</h3>{task.description ? <Markdown text={task.description} /> : <p>Описание пока не передано через MCP.</p>}</section>
+        <section className="task-description"><h3>Описание</h3>{task.description ? <Markdown text={task.description} /> : <p>Описание пока не добавлено.</p>}</section>
         {task.acceptanceCriteria && <section className="task-description"><h3>Критерии приёмки</h3><Markdown text={task.acceptanceCriteria} /></section>}
         {task.dependencies?.length ? <section className="task-description"><h3>Зависит от задач</h3><p>{task.dependencies.map(d => `#${d.taskNumber} · ${d.title}`).join("; ")}</p>{onShowDependencies && <button onClick={() => onShowDependencies(task.id)}>Показать зависимости на карте</button>}</section> : null}
         <section className="task-checklist">
           <div className="task-section-title"><div><h3>Чек-лист</h3><p>Шаги реализации и их фактический прогресс.</p></div><span>{task.checklist?.filter((item) => item.done).length ?? 0}/{task.checklist?.length ?? 0}</span></div>
-          {task.checklist?.length ? <ol>{task.checklist.map((item) => <li key={item.id} className={item.done ? "done" : ""}><i aria-hidden="true">{item.done ? "✓" : ""}</i><span>{item.title}</span></li>)}</ol> : <p className="muted">AI-агент пока не сформировал чек-лист.</p>}
+          {task.checklist?.length ? <ol>{task.checklist.map((item) => <li key={item.id} className={item.done ? "done" : ""}><i aria-hidden="true">{item.done ? "✓" : ""}</i><span>{item.title}</span></li>)}</ol> : <p className="muted">Шаги пока не добавлены.</p>}
         </section>
         <section className="task-defects"><h3>Связанные дефекты <span>{task.defects?.filter((defect) => defect.status !== "FIXED").length ?? 0} активно</span></h3><p className="task-defect-hint">Исправление дефекта идёт отдельным циклом: прогресс задачи на тестировании не откатывается.</p>
           {task.defects?.length ? task.defects.map((defect) => <article key={defect.id} className={defect.status.toLowerCase()}><header><strong>{defect.title}</strong><span>{defectStatusLabel[defect.status]}</span></header>{defect.description && <Markdown text={defect.description} />}<dl><div><dt>Шаги</dt><dd>{defect.reproductionSteps}</dd></div><div><dt>Фактически</dt><dd>{defect.actualResult}</dd></div><div><dt>Ожидалось</dt><dd>{defect.expectedResult}</dd></div></dl></article>) : <p className="muted">Связанных дефектов нет.</p>}
         </section>
         </div>
-        <div id="task-sections-materials-panel" role="tabpanel" aria-labelledby="task-sections-materials-tab" hidden={tab!=="materials"} className="task-tab-content">
+        <div id="task-sections-materials-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-materials-tab" hidden={tab!=="materials"} className="task-tab-content">
+        {visited.has("materials") && <>
         <DocumentShelf documents={task.documents ?? []} />
         {task.mergeRequests.length > 0 && <section className="task-links"><h3>Связанные MR <span>{task.mergeRequests.length}</span></h3><ul>{task.mergeRequests.map((link) => <li key={link.url}><a href={link.url} target="_blank" rel="noreferrer noopener">{link.title}</a><small>{link.actor} · {new Date(link.addedAt).toLocaleDateString("ru-RU")}</small></li>)}</ul></section>}
-        {task.attachments?.length ? <section className="task-attachments"><h3>Файлы-доказательства <span>{task.attachments.length}</span></h3><ul>{task.attachments.map((attachment) => <li key={attachment.id}><a href={`/api/attachments/${attachment.id}`}>{attachment.fileName}</a><small>{fileSize(attachment.sizeBytes)} · {attachment.actor} · {new Date(attachment.createdAt).toLocaleDateString("ru-RU")}</small></li>)}</ul></section> : null}
+        {task.attachments?.length ? <section className="task-attachments"><h3>Файлы <span>{task.attachments.length}</span></h3><ul>{task.attachments.map((attachment) => <li key={attachment.id}><a href={`/api/attachments/${attachment.id}`}>{attachment.fileName}</a><small>{fileSize(attachment.sizeBytes)} · {attachment.actor} · {new Date(attachment.createdAt).toLocaleDateString("ru-RU")}</small></li>)}</ul></section> : null}
+        </>}
         </div>
-        <div id="task-sections-discussion-panel" role="tabpanel" aria-labelledby="task-sections-discussion-tab" hidden={tab!=="discussion"} className="task-tab-content">
+        <div id="task-sections-discussion-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-discussion-tab" hidden={tab!=="discussion"} className="task-tab-content">
+        {visited.has("discussion") && <>
         <section className="comments"><h3>Ход работы</h3>{task.comments?.length ? task.comments.map((comment) => <article key={comment.id}><header className="comment-meta"><strong>{comment.actor}</strong><time>{new Date(comment.createdAt).toLocaleString("ru-RU")}</time></header><Markdown text={comment.body} /></article>) : <p className="muted">Комментариев пока нет.</p>}</section>
+        </>}
         </div>
-        <div id="task-sections-history-panel" role="tabpanel" aria-labelledby="task-sections-history-tab" hidden={tab!=="history"} className="task-tab-content">
+        <div id="task-sections-history-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-history-tab" hidden={tab!=="history"} className="task-tab-content">
+        {visited.has("history") && <>
         <section className="task-history"><h3>Хроника {task.visualKind === "PARK" ? "парка" : "здания"}</h3>{task.events?.length ? task.events.map((event) => <article key={event.id}><i /><div><strong>{(task.visualKind === "PARK" ? parkEventLabel : buildingEventLabel)[event.type]}</strong><span>{event.actor} · {new Date(event.createdAt).toLocaleString("ru-RU")}</span></div></article>) : <p className="muted">Хроника начнёт заполняться при следующем изменении.</p>}</section>
+        </>}
         </div>
       </>}
     </section>

@@ -1,0 +1,62 @@
+[
+  {
+    "width": 320,
+    "name": "Задача",
+    "violations": []
+  },
+  {
+    "width": 320,
+    "name": "Материалы",
+    "violations": []
+  },
+  {
+    "width": 320,
+    "name": "Обсуждение",
+    "violations": []
+  },
+  {
+    "width": 320,
+    "name": "История",
+    "violations": []
+  },
+  {
+    "width": 768,
+    "name": "Задача",
+    "violations": []
+  },
+  {
+    "width": 768,
+    "name": "Материалы",
+    "violations": []
+  },
+  {
+    "width": 768,
+    "name": "Обсуждение",
+    "violations": []
+  },
+  {
+    "width": 768,
+    "name": "История",
+    "violations": []
+  },
+  {
+    "width": 1440,
+    "name": "Задача",
+    "violations": []
+  },
+  {
+    "width": 1440,
+    "name": "Материалы",
+    "violations": []
+  },
+  {
+    "width": 1440,
+    "name": "Обсуждение",
+    "violations": []
+  },
+  {
+    "width": 1440,
+    "name": "История",
+    "violations": []
+  }
+]
