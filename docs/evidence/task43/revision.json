@@ -1,7 +1,7 @@
 {
   "base": "330b48708449be3adc6ddd476eca7a75c7426dae",
   "branch": "codex/planet-city-ui",
-  "changedSourceSha256": "963e50c024d63ab6b7933b8bed7dc7f0f70efafc562936784282e25965666ba6",
+  "changedSourceSha256": "5f58fcad03de8590a38ea5d9a71cba6ce78beb5402de6d88ed8215a6b01c6585",
   "changedSourceFiles": [
     "src/client/App.tsx",
     "src/client/adaptive-world-quality.ts",

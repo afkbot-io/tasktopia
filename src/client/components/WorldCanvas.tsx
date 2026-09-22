@@ -1200,7 +1200,9 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
     const initialFocus = initialFocusRef.current;
 
     void (async () => {
-      await app.init({ resizeTo: host, backgroundColor: 0x101d20, antialias: false, autoDensity: true, resolution: Math.min(devicePixelRatio, worldDetailProfile(readWorldPreferences().quality === "ECONOMY").pixelRatio), preference: "webgl" });
+      // Texture baking has its own bounded queue. Do not also render the
+      // incomplete CITY stage underneath the first-frame loading cover.
+      await app.init({ resizeTo: host, backgroundColor: 0x101d20, antialias: false, autoDensity: true, autoStart: !focusCityId, resolution: Math.min(devicePixelRatio, worldDetailProfile(readWorldPreferences().quality === "ECONOMY").pixelRatio), preference: "webgl" });
       if (!activeRef.current) app.stop();
       if (disposed) { app.destroy({ removeView: true }, { children: true }); return; }
       const canvas = app.canvas;
@@ -1345,7 +1347,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             if(disposed||generation!==portShipGeneration)return;
             portShip=new Sprite(Texture.from(url));portShip.texture.source.scaleMode="nearest";
             portShip.anchor.set(.5);portShip.width=CELL_SIZE*4;portShip.height=CELL_SIZE*4/3;
-            portShipLayer.addChild(portShip);animatePortShip();if(reducedMotion)app.render();
+            portShipLayer.addChild(portShip);animatePortShip();if(reducedMotion&&paintedFrame)app.render();
           }).catch(()=>{if(!disposed&&generation===portShipGeneration)host.dataset.cityShipAssets="unavailable";});
         }
         portGroundCells.clear();
@@ -1445,7 +1447,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           }
           host.dataset.cityTrain = "running";
           host.dataset.cityTrainWagons = "3";
-          if (reducedMotion) app.render();
+          if (reducedMotion && paintedFrame) app.render();
         }).catch(() => { if (!disposed && generation === trainLoadGeneration) host.dataset.cityTrain = "error"; });
       };
       const lampGlow = new Graphics();
@@ -1758,7 +1760,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       let economy = readWorldPreferences().quality === "ECONOMY";
       const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
       let reducedMotion = motionPreference.matches || readWorldPreferences().reduceMotion;
-      host.dataset.animationActive = String(!reducedMotion);
+      host.dataset.animationActive = String(!reducedMotion && (!focusCityId || paintedFrame));
       host.dataset.vehicleAnimationFrames = "4";
       const applyLighting = () => {
           const light = readWorldLighting();
@@ -1797,7 +1799,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         }
         applyLighting();
         updateCompletedLife();
-        if (reducedMotion) app.render();
+        if (reducedMotion && paintedFrame) app.render();
       };
       app.ticker.maxFPS = worldDetailProfile(economy).fps;
       host.dataset.frameLimit=String(worldDetailProfile(economy).fps);
@@ -2190,7 +2192,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         }).finally(() => {
           record.terrainPending = false;
           reportPaddingRoads();
-          if (valid() && reducedMotion) app.render();
+          if (valid() && reducedMotion && paintedFrame) app.render();
         });
         trackPaddingWork(id, work);
       };
@@ -2245,7 +2247,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           if (!valid()) return;
           record.treeComplete = true; record.treeFailed = true; host.dataset.loadError = "true";
           setMapLoadError("Не удалось загрузить деревья за границей города. Повторите загрузку карты.");
-        }).finally(() => { record.treePending = false; reportPaddingRoads(); if (valid() && reducedMotion) app.render(); });
+        }).finally(() => { record.treePending = false; reportPaddingRoads(); if (valid() && reducedMotion && paintedFrame) app.render(); });
         trackPaddingWork(id, work);
       };
       const ensurePaddingRoads = (id: string, record: PaddingGround, x: number, y: number) => {
@@ -2276,7 +2278,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         }).finally(() => {
           record.roadPending = false;
           reportPaddingRoads();
-          if (valid() && reducedMotion) app.render();
+          if (valid() && reducedMotion && paintedFrame) app.render();
         });
         trackPaddingWork(id, work);
       };
@@ -2684,7 +2686,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             setFirstFrameReady(true);
             paintedFrame = true;
           }
-          if (reducedMotion) app.render();
+          if (reducedMotion && paintedFrame) app.render();
         }).finally(() => pendingSeedGrounds.delete(cacheKey));
         pendingSeedGrounds.set(cacheKey, promise);
         return promise;
@@ -2977,7 +2979,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
               view.addChildAt(emphasis, 0);
               const timer = window.setTimeout(() => {
                 if (!emphasis.destroyed) emphasis.visible = false;
-                if (!disposed && reducedMotion) app.render();
+                if (!disposed && reducedMotion && paintedFrame) app.render();
               }, remaining);
               view.once("destroyed", () => window.clearTimeout(timer));
             }
@@ -3255,7 +3257,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         sortWorldObjects();
         if (rebuildMovement) host!.dataset.movementRebuilds = String(Number(host!.dataset.movementRebuilds ?? 0) + 1);
         host!.dataset.entityRebuilds = String(Number(host!.dataset.entityRebuilds ?? 0) + 1);
-        if (reducedMotion) {
+        if (reducedMotion && paintedFrame) {
           app.render();
           host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
         }
@@ -3620,7 +3622,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         host!.dataset.groundRebuilds = String(Number(host!.dataset.groundRebuilds ?? 0) + (rebuildGround ? 1 : 0));
         host!.dataset.residentChunks = String(chunks.size);
         host!.dataset.mapLod = lod.toLowerCase();
-        if (reducedMotion && !deferStaticRender) {
+        if (reducedMotion && !deferStaticRender && paintedFrame) {
           app.render();
           host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
         }
@@ -3771,7 +3773,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
                 // Entity payloads from the previous LOD remain cached but are
                 // not a valid source for the new renderer while its assets load.
                 if (!cityScene) scheduleEntityReconcile(rebuildMovement);
-                if (reducedMotion) {
+                if (reducedMotion && paintedFrame) {
                   app.render();
                   host!.dataset.staticRenders = String(Number(host!.dataset.staticRenders ?? 0) + 1);
                 }
@@ -3848,11 +3850,14 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
                 setMapLoadError("Не удалось загрузить материал ландшафта. Повторите загрузку карты.");
                 break;
               }
-              if (reducedMotion) app.render();
-              setFirstFrameReady(true);
+              // Present the coherent stage exactly once before removing its
+              // cover, including when animation is disabled by preferences.
+              app.render();
               paintedFrame = true;
               host!.dataset.citySceneCommit = "atomic";
               host!.dataset.cityFirstFrameRendered = "true";
+              setFirstFrameReady(true);
+              updateAnimation();
               preloadAmbientAssets();
             }
             let removedEntities = false;
@@ -4235,7 +4240,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       host.dataset.inputReady = "true";
       let intersectsViewport = true;
       const updateAnimation = () => {
-        const active = activeRef.current && !reducedMotion && !document.hidden && intersectsViewport;
+        const active = activeRef.current && (!focusCityId || paintedFrame) && !reducedMotion && !document.hidden && intersectsViewport;
         host.dataset.mapActive = String(activeRef.current);
         host.dataset.animationActive = String(active);
         if (active) app.start(); else app.stop();

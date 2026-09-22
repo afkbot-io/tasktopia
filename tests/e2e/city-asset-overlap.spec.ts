@@ -48,8 +48,11 @@ test("city starts building images while terrain is pending, but waits before pub
     await expect.poll(() => terrainRequested).toBe(true);
     await expect.poll(() => buildingRequested, { timeout: 5000 }).toBe(true);
     await expect(page.locator(".world-canvas")).not.toHaveAttribute("data-city-scene-commit", "atomic");
+    await expect(page.getByText("Готовим карту…", { exact: true })).toBeVisible();
+    await expect(page.locator(".world-canvas")).toHaveAttribute("data-animation-active", "false");
   } finally { release(); }
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-animation-active", "true");
 });
 
 test("city reuses the authored prop atlas instead of fetching individual park and construction props", async ({ page }, info) => {
