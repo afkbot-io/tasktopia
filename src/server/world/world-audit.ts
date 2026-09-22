@@ -1,3 +1,5 @@
+import { countryRailwayReservations } from "./city-railway-store";
+import { countryPortReservations } from "./port-reservations";
 import { BUILDING_CATALOG } from "../../shared/catalog";
 import { TASK_STAGE, type Cell, type RoadCellDto, type TaskStatus } from "../../shared/contracts";
 import { BLOCK_WORLD_GENERATOR_VERSION, type BlockSlotKind, type BlockWorldBounds, type CompiledBlockLayoutV1 } from "../../shared/block-world";
@@ -240,7 +242,7 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
       const validated = planIntercityRoads({ countryId, seed: Number(country.seed), validateOnly: true, allowBridges:true,
         terrainProfile,
         cities: layouts.filter(layout => layout.blocks.length > 0).map(layout => ({ id: layout.cityId, nodes: layout.roadNetwork.nodes, blocks: layout.blocks })),
-        protectedSites: await permanentSiteBounds(db, countryId, true), previous: snapshot.plan });
+        protectedSites: [...await permanentSiteBounds(db, countryId, true), ...await countryRailwayReservations(db,countryId,undefined,"ROAD"), ...await countryPortReservations(db,countryId)], previous: snapshot.plan });
       if (JSON.stringify(validated.components) !== JSON.stringify(snapshot.plan.components)) throw new Error("Stored road components differ from actual connectivity");
     } catch (error) { violations.push({ code: "COUNTRY_ROADS_INVALID", message: `${countryId}: ${String(error)}` }); }
   }

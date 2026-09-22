@@ -88,17 +88,20 @@ export async function freezeCityRailway(db:Db,layout:CompiledBlockLayoutV1,roads
   return readCityRailway(db,layout);
 }
 
-export function cityRailwayReservations(line:CityRailway|undefined):Rect[]{
+export function cityRailwayReservations(line:CityRailway|undefined, purpose:"PARCEL"|"ROAD"="PARCEL"):Rect[]{
   if(!line)return [];
   const track=line.axis==="horizontal"
     ? {minX:line.from.x,maxX:line.to.x,minY:line.from.y-2,maxY:line.from.y+3}
     : {minX:line.from.x-2,maxX:line.from.x+3,minY:line.from.y,maxY:line.to.y};
+  // Pedestrian approaches may meet streets. Their parcel clearance is not a
+  // hard road obstacle; the railway track remains protected for every caller.
+  if(purpose==="ROAD")return [track];
   return [track,...line.access.map(p=>({minX:p.x-1,maxX:p.x+1,minY:p.y-1,maxY:p.y+1}))];
 }
 
-export async function countryRailwayReservations(db:Db,countryId:string,excludeLayoutId?:string):Promise<Rect[]>{
+export async function countryRailwayReservations(db:Db,countryId:string,excludeLayoutId?:string,purpose:"PARCEL"|"ROAD"="PARCEL"):Promise<Rect[]>{
   const rows=await db.prepare(`SELECT r.geometry_json FROM city_railway_corridors_v1 r
     JOIN city_layouts_v1 l ON l.id=r.layout_id WHERE l.country_id=? AND l.status='ACTIVE' AND (?::text IS NULL OR l.id<>?)`)
     .all<{geometry_json:CityRailway}>(countryId,excludeLayoutId??null,excludeLayoutId??null);
-  return rows.flatMap(row=>cityRailwayReservations(row.geometry_json));
+  return rows.flatMap(row=>cityRailwayReservations(row.geometry_json,purpose));
 }

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { decodeOrthogonalRoadRuns } from "../src/shared/semantic-road";
 import { randomUUID } from "node:crypto";
 import { createTestDb, transaction, type Db } from "../src/server/db";
 import { registerUser } from "../src/server/auth";
@@ -59,6 +60,21 @@ describe("canonical country road snapshots", () => {
     expect(next.plan.routes.every(route => route.fromCityId !== b && route.toCityId !== b)).toBe(true);
     const retained = first.plan.routes.filter(route => route.fromCityId !== b && route.toCityId !== b);
     expect(next.plan.routes).toEqual(expect.arrayContaining(retained));
+    expect(next.plan.components).toHaveLength(1);
+  });
+  it("keeps accepted roads when station approaches are added, including on later topology growth", async () => {
+    const a = await city(0); await city(96);
+    const first = await synchronizeCountryRoads(db, countryId, dryPlanner);
+    const road = first.plan.routes[0]!;
+    const point = decodeOrthogonalRoadRuns(road.geometry)[8]!;
+    const layout = await db.prepare("SELECT id FROM city_layouts_v1 WHERE city_id=? AND status='ACTIVE'").get<{id:string}>(a);
+    await db.prepare("INSERT INTO city_railway_corridors_v1(layout_id,geometry_json) VALUES(?,?::jsonb)").run(layout!.id, JSON.stringify({
+      stationId: "historic-station", axis: "horizontal", from: {x:-240,y:-128}, to:{x:320,y:-128},
+      platform:{x:point.x,y:-128}, access:[{x:point.x,y:point.y+3}],stage:5,running:false,
+    }));
+    await city(192);
+    const next = await synchronizeCountryRoads(db,countryId,dryPlanner);
+    expect(next.plan.routes).toEqual(expect.arrayContaining(first.plan.routes));
     expect(next.plan.components).toHaveLength(1);
   });
   it("isolates countries and never serves a route from a missing country", async () => {
