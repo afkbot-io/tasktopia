@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test, type Page } from "@playwright/test";
 
 test("initial realtime connection preserves the scene but reconnect refreshes transport", async ({ page }) => {
@@ -33,7 +34,7 @@ async function openDemoCity(page: Page) {
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-requests", "1", { timeout: 90_000 });
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
@@ -110,7 +111,7 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect.poll(() => sceneStarted).toBe(true);
   await expect(page.getByText("Готовим карту…", { exact: true })).toBeVisible();
   expect(sceneResolved).toBe(false);
@@ -132,7 +133,7 @@ test("offers a renderer restart when the city-scene request fails", async ({ pag
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Не удалось запустить карту", { timeout: 30_000 });
   fail = false;
@@ -158,11 +159,11 @@ test("ten planet-city cycles keep one renderer and a stable asset residency", as
     await expect(page.locator(".map-region canvas")).toHaveCount(1);
     await expect(host).toHaveAttribute("data-ambient-assets", "ready", { timeout: 30_000 });
     residentAssets.push(Number(await host.getAttribute("data-leased-assets") ?? 0));
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Планета" }).click();
+    await openMapPlanet(page);
     await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
     await expect(host).toHaveAttribute("data-animation-active", "false");
     await expect(page.locator(".planet-atlas canvas")).toHaveCount(0);
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
   }

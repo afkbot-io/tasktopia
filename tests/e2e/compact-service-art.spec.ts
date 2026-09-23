@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -88,7 +89,7 @@ test("real auto-assigned clinic and fire station render at native proportions an
   expect(bootstrap.country.name).toBe("Compact service art QA");
   expect(bootstrap.initialCity?.name).toBe("Compact service art");
   expect(bootstrap.stats).toMatchObject({ cities: 1, districts: 1, tasks: 16, activeDistricts: 1 });
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await ready(page);
   const sceneResponse = await page.request.get(`/api/countries/${bootstrap.country.id}/cities/${bootstrap.initialCity!.id}/scene`, {
     headers: { accept: `application/vnd.tasktopia.city-scene+json; version=${CITY_SCENE_SCHEMA_VERSION}` },

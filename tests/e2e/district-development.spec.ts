@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 import { AppService } from "../../src/server/app-service";
 import { createDb } from "../../src/server/db";
@@ -27,7 +28,7 @@ test("active district is visible in city mode and empty plans never reserve land
   let empty: Awaited<ReturnType<typeof service.createDistrict>> | undefined;
   try {
     await page.goto("/");
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     await expect(host).toHaveAttribute("data-district-boundary-visible", "false");
@@ -40,25 +41,25 @@ test("active district is visible in city mode and empty plans never reserve land
     // Reduced motion must work in a populated active district, not only an empty plan.
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.reload();
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     await expect(host).toHaveAttribute("data-construction-workers", "0");
     await expect.poll(async () => Number(await host.getAttribute("data-development-fences"))).toBeGreaterThan(0);
     await page.screenshot({ path: info.outputPath("active-district-static.png") });
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.reload();
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect.poll(async () => Number(await host.getAttribute("data-construction-workers"))).toBeGreaterThan(0);
     const bakes = await host.getAttribute("data-ground-rebuilds");
     await page.getByRole("button", { name: "Районы", exact: true }).click();
-    await page.getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     expect(await host.getAttribute("data-ground-rebuilds")).toBe(bakes);
     empty = await service.createDistrict(bootstrap.country.id, { cityId: bootstrap.initialCity.id,
       name: `Будущий район ${crypto.randomUUID().slice(0, 8)}`, activate: false, idempotencyKey: crypto.randomUUID() });
     expect(empty.cells).toEqual([]);
     expect(empty.lots).toEqual([]);
     await page.reload();
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     const notice = page.getByRole("navigation", { name: "Районы без участков" });
     await expect(notice).toContainText(empty.name);
     await notice.getByRole("button", { name: new RegExp(empty.name) }).click();
@@ -74,7 +75,7 @@ test("active district is visible in city mode and empty plans never reserve land
     await expect(host).toHaveAttribute("data-construction-materials", "0");
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.reload();
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect(notice).toContainText(empty.name);
     expect(errors).toEqual([]);
   } finally {
@@ -100,7 +101,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1440, height: 110
     expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).ok()).toBe(true);
     await page.goto("/");
     const response = page.waitForResponse(response => new URL(response.url()).pathname.endsWith("/scene"));
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     const scene = await (await response).json() as CitySceneDto;
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");

@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
@@ -12,7 +13,7 @@ test("records cold and repeated map opening on the fixed 100-task city", async (
   await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
   const start = Date.now();
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const city = page.locator(".world-canvas");
   await expect(city).toBeVisible();
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 45_000 });

@@ -28,10 +28,10 @@ test("a long digest title fits a phone and opens the task at its transferred loc
     const moved = await service.transferTask(country, { taskId: task.id, targetDistrictId: to.id, idempotencyKey: crypto.randomUUID() });
     await page.reload();
     const summary = page.locator(".world-digest");
-    await summary.getByRole("button", { name: /С прошлого посещения/ }).click();
+    await summary.getByLabel("Уведомления", { exact: true }).click();
     const card = summary.getByRole("button", { name: new RegExp(`№${task.taskNumber} ·`) });
     await expect(card).toContainText(title);
-    const panel = summary.getByRole("region", { name: "С прошлого посещения" });
+    const panel = summary.getByRole("region", { name: "Уведомления" });
     expect(await panel.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     const bounds = (await card.boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(0);
@@ -65,35 +65,35 @@ test("baselines first visit, shows later changes and acknowledges only an opened
     await page.goto("/");
     expect((await (await initial).json()).baseline).toBe(true);
     await expect.poll(() => page.evaluate(({u,c}) => localStorage.getItem(`tasktopia:digest:v1:${u}:${c}`),{u:bootstrap.user.id,c:bootstrap.country.id})).not.toBeNull();
-    await expect(page.locator(".world-digest")).toHaveCount(0);
+    await expect(page.locator(".world-digest .notification-count")).toHaveCount(0);
     await other.goto("/");
     const task = (await db.prepare("SELECT t.id,t.title,t.task_number FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=? ORDER BY t.task_number LIMIT 1").get<{id:string;title:string;task_number:number}>(bootstrap.country.id))!;
     const event = await db.prepare("INSERT INTO events(country_id,type,world_version,payload_json,created_at) VALUES (?,'task.defect_created',1,?::jsonb,CURRENT_TIMESTAMP) RETURNING id").get<{id:number}>(bootstrap.country.id,JSON.stringify({taskId:task.id}));
     ids.push(Number(event!.id));
     await page.reload();
     const summary = page.locator(".world-digest");
-    await expect(summary).toContainText("С прошлого посещения · 1");
+    await expect(summary.locator(".notification-count")).toHaveText("1");
     await other.reload();
-    await expect(other.locator(".world-digest")).toContainText("С прошлого посещения · 1");
+    await expect(other.locator(".world-digest .notification-count")).toHaveText("1");
     // Merely receiving the summary must not mark it read.
     await page.reload();
-    await expect(summary).toContainText("С прошлого посещения · 1");
-    await summary.getByRole("button",{name:"С прошлого посещения · 1",exact:true}).click();
-    await expect(summary.getByRole("region",{name:"С прошлого посещения"})).toBeVisible();
+    await expect(summary.locator(".notification-count")).toHaveText("1");
+    await summary.getByLabel("Уведомления",{exact:true}).click();
+    await expect(summary.getByRole("region",{name:"Уведомления"})).toBeVisible();
     await expect(summary).toContainText(task.title);
     await page.screenshot({path:info.outputPath("world-digest.png")});
     await expect.poll(() => page.evaluate(({u,c}) => Number(localStorage.getItem(`tasktopia:digest:v1:${u}:${c}`)),{u:bootstrap.user.id,c:bootstrap.country.id})).toBeGreaterThanOrEqual(ids[0]!);
-    await expect(other.locator(".world-digest")).toHaveCount(0);
+    await expect(other.locator(".world-digest .notification-count")).toHaveCount(0);
     // Background validation must not dismiss a panel being read.
     const revalidated = page.waitForResponse(r => r.url().includes("/api/world-digest") && r.status()===200);
     await page.clock.fastForward(61_000);
     await revalidated;
-    await expect(summary.getByRole("region",{name:"С прошлого посещения"})).toBeVisible();
+    await expect(summary.getByRole("region",{name:"Уведомления"})).toBeVisible();
     await expect(summary).toContainText(task.title);
     await summary.getByRole("button",{name:new RegExp(`№${task.task_number} ·`)}).click();
     await expect(page.locator(".task-modal")).toBeVisible();
     await page.reload();
-    await expect(page.locator(".world-digest")).toHaveCount(0);
+    await expect(page.locator(".world-digest .notification-count")).toHaveCount(0);
   } finally {
     for (const id of ids) await db.prepare("DELETE FROM events WHERE id=? AND country_id=?").run(id,bootstrap.country.id);
     await other.close();
@@ -120,11 +120,11 @@ test("mobile digest scrolls, retries a failed request and hides data after acces
     await page.route("**/api/world-digest?**",route=>route.fulfill({status:503,json:{error:"UNAVAILABLE",message:"Temporary"}}));
     await page.reload();
     const summary = page.locator(".world-digest");
-    await summary.getByRole("button",{name:"С прошлого посещения",exact:true}).click();
+    await summary.getByLabel("Уведомления",{exact:true}).click();
     await page.unroute("**/api/world-digest?**");
     await summary.getByRole("button",{name:"Повторить загрузку сводки"}).click();
     await expect(summary.locator("li")).toHaveCount(20);
-    const panel = summary.getByRole("region",{name:"С прошлого посещения"});
+    const panel = summary.getByRole("region",{name:"Уведомления"});
     const bounds = await panel.boundingBox();
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(390);
@@ -136,7 +136,7 @@ test("mobile digest scrolls, retries a failed request and hides data after acces
     await page.route("**/api/world-digest?**",route=>route.fulfill({status:403,json:{error:"FORBIDDEN",message:"Нет доступа к стране"}}));
     await page.evaluate(()=>window.dispatchEvent(new Event("online")));
     await expect(summary.locator("li")).toHaveCount(0);
-    await summary.getByRole("button",{name:"С прошлого посещения",exact:true}).click();
+    await summary.getByLabel("Уведомления",{exact:true}).click();
     await expect(summary.getByRole("button",{name:"Повторить загрузку сводки"})).toBeVisible();
   } finally {
     for(const id of ids) await db.prepare("DELETE FROM events WHERE id=? AND country_id=?").run(id,bootstrap.country.id);

@@ -1,3 +1,4 @@
+import { openMapPlanet } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 
 test.use({ deviceScaleFactor: 2 });
@@ -5,7 +6,7 @@ test("planet camera retains terrain cells while zooming and keeps pixel material
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).ok()).toBe(true);
   await page.goto("/");
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   const planet = page.locator(".planet-atlas"), land = page.locator(".planet-country-terrain").first();
   await expect(planet).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);

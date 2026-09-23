@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
@@ -92,14 +93,14 @@ test("infill tasks, block plaques and district boundaries survive a map round tr
     await expect(page.locator(".task-modal")).toHaveCount(0);
     await page.mouse.move(10, 20); await page.screenshot({ path: `${directory}/park-${i}-stage-${task.stage}.png` });
   }
-  await page.getByRole("button", { name: "Город", exact: true }).click();
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapCity(page);
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/country.png` });
   await setMoscowPhase(page, "NIGHT");
   await page.screenshot({ path: `${directory}/country-night.png` });
   await setMoscowPhase(page, "DAY");
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/planet.png` });
   await setMoscowPhase(page, "NIGHT");
@@ -108,7 +109,7 @@ test("infill tasks, block plaques and district boundaries survive a map round tr
   await setMoscowPhase(page, "DAY");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
+  await openMapCity(page); await ready(page);
   await pointAt(page, examples[2]!); await page.screenshot({ path: `${directory}/mobile.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);

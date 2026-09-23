@@ -45,3 +45,38 @@ test("display-only map images decode a CDN response without CORS headers", async
     await close(app); await close(cdn);
   }
 });
+
+test("planet terrain compositor uses origin sheets even with a display-only CDN", async ({ page }) => {
+  const png = await readFile("public/game-assets/v5/atlas/terrain-v4/planet/grass.png");
+  let cdnReads = 0, originReads = 0;
+  const cdn = createServer((_request, response) => { cdnReads++; response.writeHead(200, { "content-type": "image/png" }); response.end(png); });
+  const cdnOrigin = await listen(cdn);
+  const bundle = await build({ entryPoints: ["src/client/planet-terrain-raster.ts"], bundle: true, write: false, format: "esm",
+    define: { "import.meta.env.VITE_STATIC_ORIGIN": JSON.stringify(cdnOrigin), "import.meta.env.MODE": '"production"' } });
+  const app = createServer((request, response) => {
+    if (request.url === '/raster.js') { response.writeHead(200, { 'content-type': 'application/javascript' }); response.end(bundle.outputFiles[0]!.text); return; }
+    if (request.url?.startsWith('/game-assets/')) { originReads++; response.writeHead(200, { 'content-type': 'image/png' }); response.end(png); return; }
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end(`<p role="status">loading</p><script type="module">
+      import {rasterizePlanetTerrain} from '/raster.js';
+      const cell={id:'a',q:0,r:0,terrain:'grass',x:0,y:0,width:8,height:8,size:8,center:{x:4,y:4}};
+      rasterizePlanetTerrain(new Map([['land',[cell]]]),()=>15,new AbortController().signal)
+        .then(result=>{const tile=result.get('land')[0];const img=new Image();img.src=tile.href;document.body.append(img);document.querySelector('[role=status]').textContent=tile.href.startsWith('data:image/png')?'ready':'error';})
+        .catch(()=>document.querySelector('[role=status]').textContent='error');
+    </script>`);
+  });
+  try {
+    await page.goto(await listen(app));
+    await expect(page.getByRole('status')).toHaveText('ready');
+    await expect(page.locator('img')).toBeVisible();
+    expect(await page.locator('img').evaluate(image => {
+      const img = image as HTMLImageElement;
+      const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      const context = canvas.getContext('2d')!; context.drawImage(img, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      return { width: canvas.width, height: canvas.height, opaque: Array.from(pixels).filter((_,i) => i % 4 === 3).every(alpha => alpha === 255),
+        colors: new Set(Array.from({length:pixels.length/4},(_,i) => `${pixels[i*4]}:${pixels[i*4+1]}:${pixels[i*4+2]}`)).size };
+    })).toMatchObject({ width:16, height:16, opaque:true });
+    expect(originReads).toBe(1);expect(cdnReads).toBe(0);
+  } finally { await page.goto('about:blank'); await close(app); await close(cdn); }
+});

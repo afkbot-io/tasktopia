@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 
 test("100-task city opens repeatedly and planet zoom preserves a panned anchor", async ({ page }, testInfo) => {
@@ -10,14 +11,14 @@ test("100-task city opens repeatedly and planet zoom preserves a panned anchor",
   await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
   const started = Date.now();
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const city = page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 15_000 });
   await expect(city).toHaveAttribute("data-loading", "false");
   const durations = [Date.now() - started];
   await page.screenshot({ path: testInfo.outputPath("city-100.png") });
   for (let i = 0; i < 2; i++) {
-    await page.getByRole("button", { name: "Планета", exact: true }).click();
+    await openMapPlanet(page);
     const country = page.locator(".planet-atlas");
     await expect(country).toHaveAttribute("data-planet-ready", "true");
     const box = (await country.boundingBox())!;
@@ -38,12 +39,12 @@ test("100-task city opens repeatedly and planet zoom preserves a panned anchor",
     }).toBeLessThan(3);
     await page.screenshot({ path: testInfo.outputPath(`planet-${i}.png`) });
     const start = Date.now();
-    await page.getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 15_000 });
     await expect(city).toHaveAttribute("data-loading", "false");
     durations.push(Date.now() - start);
   }
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   const planet = page.locator(".planet-atlas");
   await expect(planet).toHaveAttribute("data-planet-ready", "true");
   const ocean = planet.locator(".planet-map-ocean");
@@ -70,7 +71,7 @@ test("a silent worker cannot leave city loading forever", async ({ page }) => {
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const ready = page.locator('.world-canvas[data-city-scene-commit="atomic"]');
   const retry = page.getByRole("button", { name: /Повторить/ });
   await expect(ready.or(retry).first()).toBeVisible({ timeout: 55_000 });

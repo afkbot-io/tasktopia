@@ -29,7 +29,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .map-legend-panel dt { color:#755c28; }
 .world-preferences label { color:var(--game-ink); }
 .world-preferences select { color:var(--game-ink);background:#fff6df;border-color:#b3ad90;border-radius:2px;min-height:36px; }
-.map-level-nav { padding:4px;background:#17352eea;border:1px solid var(--game-brass);border-radius:4px;box-shadow:0 3px 0 #071e19,0 0 0 3px #1d372d80;gap:4px; }
+.map-level-nav { display:flex;width:max-content;max-width:calc(100% - 20px);padding:4px;background:#17352eea;border:1px solid var(--game-brass);border-radius:4px;box-shadow:0 3px 0 #071e19,0 0 0 3px #1d372d80;gap:4px; }
 .map-level-button { min-width:85px;border-radius:2px;color:#bcc9b3; }
 .map-level-button-active { background:#4c5132;color:#f1dc99;border-color:#b8a169; }
 .planet-city-targets [role="button"],.planet-city-label { cursor:pointer; }
@@ -256,3 +256,18 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .directory-district-summary {padding:10px;border-left:3px solid #799165;background:#dce3c6;color:#354c3d;font-size:12px;line-height:1.6;}
 .directory-district-summary p {margin:0;}
 @media(max-width:600px) {.city-directory .plan-head button {width:44px;height:44px;flex-shrink:0;} .directory-back {min-height:44px;}}
+
+/* Header notifications share the controls and paper panels, never cover the map
+   before the player asks to read them. */
+.map-toolbar .world-digest { position:relative;left:auto;bottom:auto;max-width:none;z-index:auto; }
+.map-toolbar .world-digest > summary { position:relative; }
+.notification-count { position:absolute;right:-3px;top:-4px;min-width:14px;padding:0 3px;border:1px solid #d2bd82;border-radius:2px;background:#d8bf78;color:#263e2d;font-size:9px;line-height:14px;text-align:center; }
+.world-digest .game-popover-panel { width:350px;max-height:min(500px,65dvh);overflow:auto;padding:12px;background:var(--game-paper);border:2px solid var(--game-brass); }
+.world-digest .game-popover-panel button { background:#f7efd8;color:var(--game-ink);border-color:#b9b493; }
+.world-digest :is(p,small,li span) { color:#4a5f45; }
+.map-toolbar .profile-presence { width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border:1px solid #657052;border-radius:3px;background:#213e32;color:#e3d5a6;font-size:12px;font-weight:700;box-shadow:inset 0 1px #95a47630,0 2px #051d18; }
+.map-toolbar .profile-presence-dot { right:3px;bottom:3px;width:4px;height:4px;border:0;border-radius:0;box-shadow:none; }
+@media(max-width:600px) {
+ .map-toolbar .world-digest > summary { min-width:44px;min-height:44px; }
+ .world-digest .game-popover-panel { position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:12px;max-width:calc(100vw - 24px); }
+}

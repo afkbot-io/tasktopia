@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 import { createDb } from "../../src/server/db";
 import { createCountry, registerUser } from "../../src/server/auth";
@@ -152,7 +153,7 @@ test("creates a coastal country from the landscape picker",async({page},info)=>{
     // Open CITY directly: users need not visit PLANET to establish a port's
     // private geographic source. No fixture coast or atlas request is injected.
     await page.reload();
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic");
     expect(await db.prepare("SELECT 1 AS present FROM personal_planet_geography_v1 WHERE user_id=? AND jsonb_extract_path(geography_json,'countries',?,'cities',?) IS NOT NULL")
       .get(user.id,countryId!,city.id)).toEqual({present:1});

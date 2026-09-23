@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { createHash } from "node:crypto";
 import { mkdir, open, readFile, writeFile } from "node:fs/promises";
 import { cpus, platform, release } from "node:os";
@@ -271,7 +272,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect(page.locator(".country-title-button")).toBeVisible();
   const bootstrapResponse = await page.request.get("/api/bootstrap");
   expect(bootstrapResponse.status()).toBe(200);
@@ -424,7 +425,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   expect(new Set(districtViews.map(view => view.districtId)).size).toBe(2);
 
   phase = "country-transition";
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 45_000 });
   await expect(host).toHaveAttribute("data-map-active", "false");
   await expect(host).toHaveAttribute("data-animation-active", "false");
@@ -432,7 +433,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   phase = "capture-country";
   await capture(page, testInfo, "country", directory);
   phase = "planet-transition";
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 45_000 });
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   phase = "capture-planet";
@@ -442,7 +443,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   phase = "return-to-city";
   // The city button restores the retained scene after a planet round trip.
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 45_000 });
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await ready(page);
   expect(await originalCanvas!.evaluate(node => node === document.querySelector("canvas[aria-label='Интерактивная карта города']"))).toBe(true);
   await expect(host).toHaveAttribute("data-mobility-network-builds", String(initial.mobilityNetworkBuilds));

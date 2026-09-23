@@ -1,3 +1,4 @@
+import { openMapPlanet } from "./map-navigation";
 import { expect,test } from "@playwright/test";
 import { Client,StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { createDb } from "../../src/server/db";
@@ -15,7 +16,7 @@ test("live progress keeps the planet scene and camera",async({page})=>{
   const client=new Client({name:"country-activity-qa",version:"1.0.0"});
   await client.connect(new StreamableHTTPClientTransport(new URL("/mcp",process.env.E2E_BASE_URL),{requestInit:{headers:{Authorization:`Bearer ${token.token}`}}}));
   try {
-    await page.goto("/");await page.getByRole("button",{name:"Планета",exact:true}).click();
+    await page.goto("/");await openMapPlanet(page);
     const country=page.locator(".planet-atlas");await expect(country).toHaveAttribute("data-planet-ready","true");
     await page.locator(".planet-city-targets [data-city-id]").first().click();
     await expect(country).toHaveAttribute("data-globe-zoom","3.00");

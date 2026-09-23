@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test, type Page } from '@playwright/test';
 async function login(page:Page){await page.goto('/');await page.getByLabel('Email').fill('demo@tasktopia.local');await page.getByLabel('Пароль').fill('tasktopia-demo');await page.getByRole('button',{name:'Открыть страну',exact:true}).click();}
 
@@ -14,10 +15,12 @@ test('ошибка данных города оставляет планету �
 test('таймаут декодера города освобождает обещание Pixi и разрешает повтор',async({page})=>{
  test.setTimeout(75000);
  await page.addInitScript(()=>{const decode=HTMLImageElement.prototype.decode;HTMLImageElement.prototype.decode=function(){if(this.src.includes('/city/deep_water.png'))return new Promise(()=>undefined);return decode.call(this);};Object.assign(window,{restoreImageDecode:()=>{HTMLImageElement.prototype.decode=decode;}});});
- await login(page);await page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Город',exact:true}).click();
+ await login(page);await openMapCity(page);
  await expect(page.getByRole('alert')).toContainText('Не удалось запустить карту',{timeout:25000});
  await page.evaluate(()=>(window as unknown as {restoreImageDecode():void}).restoreImageDecode());
- await page.getByRole('alert').getByRole('button',{name:'Повторить',exact:true}).click();await expect(page.locator('.world-canvas')).toHaveAttribute('data-city-scene-commit','atomic',{timeout:45000});
+ // Direct entry returns to PLANET on renderer failure; retry the same city.
+ await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready','true');
+ await openMapCity(page);await expect(page.locator('.world-canvas')).toHaveAttribute('data-city-scene-commit','atomic',{timeout:45000});
 });
 
 test('таймаут графики планеты освобождает загрузку и повторно декодирует изображения',async({page})=>{

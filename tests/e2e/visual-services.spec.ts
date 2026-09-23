@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import { AppService } from "../../src/server/app-service";
@@ -29,7 +30,7 @@ test("incident response appears and cleans up through real task updates", async 
     expect(response.status(), await response.text()).toBe(200);
   };
   await page.goto("/");
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
   try {

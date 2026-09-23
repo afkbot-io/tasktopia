@@ -375,8 +375,13 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto, sector = 0): Projected
   });
 
   const clouds = Array.from({ length: Math.max(25, Math.min(48, Math.ceil((20 + countries.length * 3) * 1.25))) }, (_, index) => {
-    const cloudSeed = hashText(`cloud:${index}`, atlas.planetSeed);
-    return { id: `planet-cloud-${index}`, x: random01(cloudSeed) * pixelWidth, y: (.05 + random01(cloudSeed ^ 0xa531) * .88) * pixelHeight, scale: .48 + random01(cloudSeed ^ 0x13f7) * .62, durationSeconds: 18 + cloudSeed % 17, delaySeconds: -(cloudSeed % 43) };
+    // Separate hashed channels avoid the diagonal bands produced by xorshift
+    // of two seeds that differ only by a constant XOR.
+    const sample = (channel: string) => random01(hashText(`cloud:${index}:${channel}`, atlas.planetSeed));
+    return { id: `planet-cloud-${index}`, x: (.04 + sample("longitude") * .92) * pixelWidth,
+      y: (.04 + sample("latitude") * .92) * pixelHeight, scale: .3 + sample("size") * .68,
+      durationSeconds: 32 + sample("speed") * 38, delaySeconds: -sample("phase") * 70 };
+
   });
   const stars: PlanetStar[] = Array.from({ length: 180 }, (_, index) => {
     const starSeed = hashText(`star:${index}`, atlas.planetSeed);
@@ -496,23 +501,23 @@ function rectanglesOverlap(left: PlanetCountryLabelLayout, right: PlanetCountryL
   return left.x < right.x + right.width && left.x + left.width > right.x && left.y < right.y + right.height && left.y + left.height > right.y;
 }
 
-export function layoutPlanetCountryLabels(countries: PlanetMapCountry[], width: number, height: number): PlanetCountryLabelLayout[] {
-  const labelWidth = 84;
-  const labelHeight = 20;
+export function layoutPlanetCountryLabels(countries: PlanetMapCountry[], width: number, height: number, scale = 1, origin = { x: 0, y: 0 }): PlanetCountryLabelLayout[] {
+  const labelHeight = 20 * scale;
   const margin = 12;
   const placed: PlanetCountryLabelLayout[] = [];
-  const offsets = [
-    { x: -labelWidth / 2, y: -42 }, { x: 18, y: -38 }, { x: -labelWidth - 18, y: -38 },
-    { x: -labelWidth / 2, y: 24 }, { x: 26, y: 14 }, { x: -labelWidth - 26, y: 14 },
-  ];
   for (const country of [...countries].sort((left, right) => right.progress - left.progress || left.id.localeCompare(right.id))) {
+    const labelWidth = Math.min(160, Math.max(84, country.name.length * 5.5 + 20)) * scale;
+    const offsets = [
+      { x: -labelWidth / 2, y: -42 }, { x: 18, y: -38 }, { x: -labelWidth - 18, y: -38 },
+      { x: -labelWidth / 2, y: 24 }, { x: 26, y: 14 }, { x: -labelWidth - 26, y: 14 },
+    ];
     let selected: PlanetCountryLabelLayout | undefined;
     for (const offset of offsets) {
-      const candidate = { countryId: country.id, x: Math.max(margin, Math.min(width - labelWidth - margin, country.center.x + offset.x)), y: Math.max(margin, Math.min(height - labelHeight - margin, country.center.y + offset.y)), width: labelWidth, height: labelHeight };
+      const candidate = { countryId: country.id, x: Math.max(origin.x + margin, Math.min(origin.x + width - labelWidth - margin, country.center.x + offset.x)), y: Math.max(origin.y + margin, Math.min(origin.y + height - labelHeight - margin, country.center.y + offset.y)), width: labelWidth, height: labelHeight };
       if (!placed.some((other) => rectanglesOverlap(candidate, other))) { selected = candidate; break; }
     }
     if (!selected) {
-      for (let y = margin; y <= height - labelHeight - margin && !selected; y += labelHeight + 6) for (let x = margin; x <= width - labelWidth - margin; x += labelWidth + 6) {
+      for (let y = origin.y + margin; y <= origin.y + height - labelHeight - margin && !selected; y += labelHeight + 6) for (let x = origin.x + margin; x <= origin.x + width - labelWidth - margin; x += labelWidth + 6) {
         const candidate = { countryId: country.id, x, y, width: labelWidth, height: labelHeight };
         if (!placed.some((other) => rectanglesOverlap(candidate, other))) { selected = candidate; break; }
       }

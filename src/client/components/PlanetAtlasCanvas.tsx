@@ -1,8 +1,10 @@
+import { rasterizePlanetTerrain, type PlanetTerrainRaster } from "../planet-terrain-raster";
 import { AtlasShips } from "./AtlasShips";
 import { ScheduledAtlasTrains } from "./ScheduledAtlasTrains";
 import { useAtlasQuality } from "../use-atlas-quality";
 import { readWorldPreferences, subscribeWorldPreferences } from "../world-preferences";
 import { PlanetCloud } from "./PlanetCloud";
+import { planetLabelDetail, planetMiniatureScales } from "../planet-presentation";
 import { PlanetCityMiniature } from "./PlanetCityMiniature";
 import { planetCityTargets, planetCityAtPoint, layoutPlanetCityLabels, type PlanetCityTarget } from "../planet-city-targets";
 import { atlasShipPath } from "../../shared/atlas-ship-path";
@@ -12,14 +14,15 @@ import { pixelPlanetRows } from "../map-visual-consistency";
 import { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PlanetAtlasDto } from "../../shared/planet-atlas-contract";
 import { gameAssetUrl } from "../../shared/catalog";
-import { atlasTerrainConnectionMask, type AtlasTerrainKind } from "../../shared/atlas-scene";
-import { overviewTerrainPatches } from "../../shared/overview-terrain-presentation";
+import { atlasTerrainConnectionMask } from "../../shared/atlas-scene";
 import {
   projectPlanetAtlas,
+  layoutPlanetCountryLabels,
   projectProjectedPlanetMap,
   planetMapTransform,
   zoomPlanetCameraAtFocus,
   type PlanetMapCamera,
+  type ProjectedPlanetCountry,
   type PlanetMapCell,
   type PlanetTerrainCell,
 } from "../../shared/planet-atlas";
@@ -36,33 +39,29 @@ const MIN_MAP_ZOOM = .82;
 const MAX_MAP_ZOOM = 8.5;
 const CITY_ENTRY_ZOOM = 5.8;
 export type PlanetViewState = { camera: PlanetMapCamera; sector: number };
-// Fine material is immutable under camera motion. Only its outer macro-cell
-// transform changes; React never rebuilds these four sheet windows per frame.
-const AtlasTerrainMaterial = memo(function AtlasTerrainMaterial({ kind, column, row, mask }: {
-  kind: AtlasTerrainKind; column: number; row: number; mask: number;
-}) {
-  return overviewTerrainPatches(kind, "planet", column, row, mask).map(({ x, y, size, tile }) =>
-    <svg key={`${x}:${y}`} x={x} y={y} width={size} height={size}
-      viewBox={`${tile.sourceX} ${tile.sourceY} ${tile.tileSize} ${tile.tileSize}`} preserveAspectRatio="none">
-      <image href={gameAssetUrl(tile.url)} width={tile.sheetWidth} height={tile.sheetHeight} className="atlas-pixel" />
-    </svg>);
-});
-function AtlasTerrainImage({ cell, mask }: { cell: PlanetMapCell; mask: number }) {
-  return <svg x={cell.x} y={cell.y} width={cell.width} height={cell.height} viewBox="0 0 1 1" preserveAspectRatio="none" className="atlas-pixel planet-terrain-sprite" aria-hidden="true">
-    <AtlasTerrainMaterial kind={cell.terrain} column={cell.q} row={cell.r} mask={mask} />
-  </svg>;
-}
-
-// The material and cell rectangles belong to the atlas revision, not its camera.
-// Only the parent's matrix changes during gestures; images retain nearest pixels.
-const AtlasTerrainLayer = memo(function AtlasTerrainLayer({ cells, mask, color }: {
-  cells: PlanetMapCell[]; mask: (cell: PlanetMapCell) => number; color?: string;
+// Native textures are composed once per atlas revision. Camera motion changes
+// only the parent's matrix, with no nested spritesheet viewports to repaint.
+const AtlasTerrainLayer = memo(function AtlasTerrainLayer({ cells, rasters, color }: {
+  cells: PlanetMapCell[]; rasters: PlanetTerrainRaster[]; color?: string;
 }) {
   return <>
-    <g className={color ? "planet-country-terrain" : undefined}>{cells.map(cell =>
-      <AtlasTerrainImage key={cell.id} cell={cell} mask={mask(cell)} />)}</g>
+    <g className={color ? "planet-country-terrain" : undefined}>{rasters.map(raster =>
+      <svg key={raster.id} className="atlas-pixel planet-terrain-sprite" data-terrain-raster="true"
+        x={raster.x} y={raster.y} width={raster.width} height={raster.height} viewBox={`0 0 ${raster.width} ${raster.height}`}>
+        <image href={raster.href} width={raster.width} height={raster.height} className="atlas-pixel" />
+      </svg>)}</g>
     {color && <path d={cells.map(pixelSquarePath).join(" ")} fill={color} className="planet-country-tint" />}
   </>;
+});
+
+// Geographic symbol geometry is immutable. Zoom moves one group rather than
+// rebuilding every wall/roof path on every animation frame.
+const PlanetMiniatures = memo(function PlanetMiniatures({ country, scales }: {
+  country: ProjectedPlanetCountry; scales: Map<string, number>;
+}) {
+  return <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon =>
+    <PlanetCityMiniature key={icon.id} id={icon.id} family={icon.family} stage={icon.stage}
+      x={icon.point.x} y={icon.point.y} zoom={scales.get(icon.id) ?? 0} />)}</g>;
 });
 
 function pixelSquarePath(cell: PlanetMapCell): string {
@@ -90,6 +89,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const [error, setError] = useState("");
   const [readyRevision, setReadyRevision] = useState<string | null>(null);
   const [assetError, setAssetError] = useState("");
+  const [terrainRasters, setTerrainRasters] = useState<{ revision: string; layers: Map<string, PlanetTerrainRaster[]> } | null>(null);
   const [assetAttempt, setAssetAttempt] = useState(0);
   const [selectingCityId, setSelectingCityId] = useState<string | null>(null);
   const intentTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -102,6 +102,24 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const suppressClick = useRef(false);
   const selectionSequence = useRef(0);
   const atlasView = useRef<SVGSVGElement>(null);
+  const [labelScale, setLabelScale] = useState(1);
+  const [visibleViewport, setVisibleViewport] = useState({ minX: 0, minY: 0, width: 1000, height: 700 });
+  useEffect(() => {
+    const view = atlasView.current;
+    if (!view) return;
+    const resize = () => {
+      const bounds = view.getBoundingClientRect();
+      const fit = Math.min(bounds.width / 1000, bounds.height / 700);
+      if (fit > 0) {
+        setLabelScale(Math.max(1, 1 / fit));
+        const width = bounds.width / fit, height = bounds.height / fit;
+        setVisibleViewport({ minX: (1000 - width) / 2, minY: (700 - height) / 2, width, height });
+      }
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(view); resize();
+    return () => observer.disconnect();
+  }, [atlas?.revision]);
 
   useEffect(() => {
     const view = atlasView.current;
@@ -176,6 +194,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const preferredSector = atlas?.geography?.countries[initialFocusCountryId ?? activeCountryId]?.sector ?? 0;
   const sector = selectedSector !== null && sectors.includes(selectedSector) ? selectedSector : sectors.includes(preferredSector) ? preferredSector : sectors[0] ?? 0;
   const projectedAtlas = useMemo(() => atlas ? projectPlanetAtlas(atlas, sector) : null, [atlas, sector]);
+  const miniatureScales = useMemo(() => projectedAtlas ? planetMiniatureScales(projectedAtlas) : new Map<string, number>(), [projectedAtlas]);
   const terrainGeometry = useMemo(() => {
     if (!projectedAtlas) return null;
     const unit = projectedAtlas.hexRadius * 2;
@@ -195,9 +214,11 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     }).join(" ");
     return {rails:surfaceTransport?.rails.map(route=>({...route,points:route.points.map(point=>affineProject(point,projectedAtlas!,camera)),path:path(route.points)}))??[],ships:surfaceTransport?.ships.map(route=>({...route,path:atlasShipPath(route.points.map(point => affineProject(point, projectedAtlas!, camera)))}))??[]};
   },[surfaceTransport,projectedAtlas,camera]);
-  const visibleCountries = useMemo(() => map ? visiblePlanetCountries(map.countries, map.surface, map) : [], [map]);
+  const visibleCountries = useMemo(() => map ? visiblePlanetCountries(map.countries, map.surface, visibleViewport) : [], [map, visibleViewport]);
   const cityTargets = useMemo(() => projectedAtlas ? planetCityTargets(visibleCountries, projectedAtlas, camera) : [], [visibleCountries, projectedAtlas, camera]);
-  const labels = useMemo(() => map && camera.zoom >= 1.7 ? layoutPlanetCityLabels(cityTargets, map.width, map.height) : [], [map, cityTargets, camera.zoom]);
+  const labelDetail = planetLabelDetail(camera.zoom);
+  const labels = useMemo(() => map && labelDetail === "CITIES" ? layoutPlanetCityLabels(cityTargets, visibleViewport.width, visibleViewport.height, labelScale, { x: visibleViewport.minX, y: visibleViewport.minY }) : [], [map, cityTargets, labelDetail, labelScale, visibleViewport]);
+  const countryLabels = useMemo(() => map && labelDetail === "COUNTRIES" ? layoutPlanetCountryLabels(visibleCountries, visibleViewport.width, visibleViewport.height, labelScale, { x: visibleViewport.minX, y: visibleViewport.minY }) : [], [map, visibleCountries, labelDetail, labelScale, visibleViewport]);
   useEffect(() => { onViewChange?.({camera,sector}); }, [camera,sector,onViewChange]);
   const terrainByCoordinate = useMemo(() => {
     const lookup = new Map<string, PlanetTerrainCell>();
@@ -219,20 +240,26 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     if (!view || !atlasRevision) return;
     const controller = new AbortController();
     setAssetError("");
-    const urls = [...new Set([...view.querySelectorAll("image")]
-      .filter(node => !node.closest(".planet-clouds, .planet-ships, .atlas-aircraft-flight, .planet-trains"))
-      .map(node => node.getAttribute("href")).filter((url): url is string => Boolean(url)))];
-    void Promise.all(urls.map(url => loadMapImage(url, controller.signal, { crossOrigin: null })))
-      .then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!controller.signal.aborted) setReadyRevision(atlasRevision);
-    }))).catch(error => {
+    if (!terrainGeometry) return () => controller.abort();
+    const layers = new Map(terrainGeometry.countries);
+    layers.set("coast", terrainGeometry.coast);
+    void Promise.all([
+      rasterizePlanetTerrain(layers, terrainMask, controller.signal),
+      loadMapImage(gameAssetUrl("atlas/terrain-v4/planet/ocean.png"), controller.signal, { crossOrigin: null }),
+    ]).then(([rasters]) => {
+      if (controller.signal.aborted) return;
+      setTerrainRasters({ revision: atlasRevision, layers: rasters });
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!controller.signal.aborted) setReadyRevision(atlasRevision);
+      }));
+    }).catch(error => {
       if (!controller.signal.aborted) {
         setAssetError(error instanceof Error ? error.message : "Не удалось загрузить графику карты");
         controller.abort();
       }
     });
     return () => { controller.abort(); };
-  }, [atlasRevision, assetAttempt]);
+  }, [atlasRevision, assetAttempt, terrainGeometry, terrainMask]);
 
   const selectCity = useCallback(async (city: PlanetCityTarget, focus?: { x: number; y: number }) => {
     const selection=++selectionSequence.current;
@@ -244,7 +271,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
 
   const focusOrSelectCity = (city: PlanetCityTarget) => {
     if (suppressClick.current) { suppressClick.current=false; return; }
-    if (camera.zoom >= 1.7) { void selectCity(city); return; }
+    if (labelDetail === "CITIES") { void selectCity(city); return; }
     if (!projectedAtlas || !map) return;
     const next=zoomPlanetCameraAtFocus(projectedAtlas,camera,3,city.center);
     targetCameraRef.current=next;
@@ -313,7 +340,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     return true;
   }).slice(0,5);
 
-  return <div className="planet-atlas" data-planet-ready={readyRevision === atlasRevision && !assetError} data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={visibleCountries.length} data-planet-routes={map.routes.length} data-planet-railways={transportPaths.rails.length} data-planet-ships={transportPaths.ships.length} data-globe-zoom={camera.zoom.toFixed(2)} data-planet-renderer="square-pixel-map" data-planet-material-subdivisions="2">
+  return <div className="planet-atlas" data-planet-ready={readyRevision === atlasRevision && !assetError} data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={visibleCountries.length} data-planet-routes={map.routes.length} data-planet-railways={transportPaths.rails.length} data-planet-ships={transportPaths.ships.length} data-globe-zoom={camera.zoom.toFixed(2)} data-label-detail={labelDetail} data-planet-renderer="square-pixel-map" data-planet-material-subdivisions="2">
     {sectors.length > 1 && <label className="planet-sector-select">Область планеты
       <select aria-label="Область планеты" value={sector} onChange={event => {
         setSelectedSector(Number(event.target.value));
@@ -338,7 +365,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       event.preventDefault();
     }}>
       <defs>
-        <clipPath id={clipId}>{pixelPlanetRows(map.surface).map(row => <rect key={row.y} {...row} />)}</clipPath>
+        <clipPath id={clipId}>{pixelPlanetRows(map.surface).filter(row => row.y + row.height >= visibleViewport.minY && row.y <= visibleViewport.minY + visibleViewport.height).map(row => <rect key={row.y} {...row} />)}</clipPath>
         <radialGradient id="planet-atmosphere"><stop offset="88%" stopColor="#92cab5" stopOpacity="0" /><stop offset="97%" stopColor="#92cab5" stopOpacity=".12" /><stop offset="100%" stopColor="#517c7a" stopOpacity=".24" /></radialGradient>
         <pattern id="planet-ocean-pixels" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform={`translate(${map.surface.minX} ${map.surface.minY}) scale(${camera.zoom})`}><image href={gameAssetUrl("atlas/terrain-v4/planet/ocean.png")} width="8" height="8" className="atlas-pixel" /></pattern>
       </defs>
@@ -351,20 +378,21 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           const y=map.surface.minY+((index*211+71)%991)/991*(map.surface.maxY-map.surface.minY);
           return <path key={index} d={`M${x} ${y}h${3+index%4}m2 0h2`} stroke="#c3dfbc" strokeWidth="1" style={{animationDelay:`-${index*.73}s`}} />;
         })}</g>
-        <g className="planet-coast" aria-hidden="true" transform={terrainTransform}>{terrainGeometry && <AtlasTerrainLayer cells={terrainGeometry.coast} mask={terrainMask} />}</g>
-        <g className="planet-countries">{map.countries.map(country => <g key={country.id} className="planet-country" data-country-id={country.id}>
-          <g transform={terrainTransform}>{terrainGeometry && <AtlasTerrainLayer cells={terrainGeometry.countries.get(country.id)!} mask={terrainMask} color={country.color} />}</g>
-          <g className="planet-district-houses" aria-hidden="true">{country.districtIcons.map(icon => <PlanetCityMiniature key={icon.id} id={icon.id} family={icon.family} stage={icon.stage} x={icon.center.x} y={icon.center.y} zoom={camera.zoom} />)}</g>
+        <g className="planet-coast" aria-hidden="true" transform={terrainTransform}>{terrainGeometry && terrainRasters && terrainRasters.revision === atlasRevision && <AtlasTerrainLayer cells={terrainGeometry.coast} rasters={terrainRasters.layers.get("coast")!} />}</g>
+        <g className="planet-countries">{projectedAtlas?.countries.map(country => <g key={country.id} className="planet-country" data-country-id={country.id}
+          style={{ display: visibleCountries.some(visible => visible.id === country.id) ? undefined : "none" }} transform={terrainTransform}>
+          {terrainGeometry && terrainRasters && terrainRasters.revision === atlasRevision && <AtlasTerrainLayer cells={terrainGeometry.countries.get(country.id)!} rasters={terrainRasters.layers.get(country.id)!} color={country.color} />}
+          <PlanetMiniatures country={country} scales={miniatureScales} />
         </g>)}</g>
-        <g className="planet-city-targets">{cityTargets.map(city => <g key={city.id} role="button" tabIndex={city.center.x>=0&&city.center.x<=map.width&&city.center.y>=0&&city.center.y<=map.height?0:-1}
-          aria-hidden={city.center.x<0||city.center.x>map.width||city.center.y<0||city.center.y>map.height}
+        <g className="planet-city-targets">{cityTargets.map(city => <g key={city.id} role="button" tabIndex={city.center.x>=visibleViewport.minX&&city.center.x<=visibleViewport.minX+visibleViewport.width&&city.center.y>=visibleViewport.minY&&city.center.y<=visibleViewport.minY+visibleViewport.height?0:-1}
+          aria-hidden={city.center.x<visibleViewport.minX||city.center.x>visibleViewport.minX+visibleViewport.width||city.center.y<visibleViewport.minY||city.center.y>visibleViewport.minY+visibleViewport.height}
           data-city-id={city.id} data-country-id={city.countryId} data-selecting={selectingCityId===city.id} aria-label={`Открыть город ${city.name}`}
           onPointerEnter={() => { const country=map.countries.find(c=>c.id===city.countryId); if(country) scheduleCityIntent(city.countryId,city.id,country.worldVersion); }}
           onFocus={() => { const country=map.countries.find(c=>c.id===city.countryId); if(country) scheduleCityIntent(city.countryId,city.id,country.worldVersion); }}
           onPointerLeave={cancelCityIntent} onBlur={cancelCityIntent}
           onClick={() => focusOrSelectCity(city)} onKeyDown={event => { if(event.key==='Enter' || event.key===' ') {event.preventDefault();event.stopPropagation();void selectCity(city);} }}>
           <circle cx={city.center.x} cy={city.center.y} r={Math.max(12,Math.min(45,city.radius))} fill="transparent" />
-          {camera.zoom<1.7 && <path d={`M${city.center.x-2} ${city.center.y-2}h4v4h-4z`} fill="#ebd396" pointerEvents="none" />}
+          {labelDetail === "COUNTRIES" && <path d={`M${city.center.x-2} ${city.center.y-2}h4v4h-4z`} fill="#ebd396" pointerEvents="none" />}
         </g>)}</g>
         <g className="planet-railways" aria-hidden="true">{transportPaths.rails.map(route=><g key={route.id}>
           <path d={route.path} fill="none" stroke="#293c39" strokeWidth="2" />
@@ -374,17 +402,25 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
         <ScheduledAtlasTrains routes={transportPaths.rails} scale={camera.zoom} />
         <AtlasShips routes={transportPaths.ships} scale={camera.zoom} />
         <ScheduledAtlasFlights routes={activeRoutes} />
-        <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${index % 2 === 0 ? 62 : -54}px`, "--cloud-drift-y": `${index % 3 === 0 ? -8 : 7}px` } as CSSProperties}><PlanetCloud variant={index} /></g>)}</g>
+        <g className="planet-clouds" aria-hidden="true">{map.clouds.map((cloud, index) => <g key={cloud.id} transform={`translate(${cloud.x} ${cloud.y}) scale(${cloud.scale})`} style={{ "--cloud-duration": `${cloud.durationSeconds}s`, "--cloud-delay": `${cloud.delaySeconds}s`, "--cloud-drift-x": `${Math.sin(cloud.delaySeconds) * 20}px`, "--cloud-drift-y": `${Math.cos(cloud.durationSeconds) * 9}px` } as CSSProperties}><PlanetCloud variant={index} /></g>)}</g>
       </g>
       <ellipse className="planet-atmosphere" cx={(map.surface.minX+map.surface.maxX)/2} cy={(map.surface.minY+map.surface.maxY)/2} rx={(map.surface.maxX-map.surface.minX)/2} ry={(map.surface.maxY-map.surface.minY)/2} fill="url(#planet-atmosphere)" pointerEvents="none" aria-hidden="true" />
-      <g className="planet-fog-pixels" aria-hidden="true">{map.edgeFog.map((fog) => <rect key={fog.id} x={fog.point.x - fog.size / 2} y={fog.point.y - fog.size / 2} width={fog.size} height={fog.size} opacity={fog.opacity} />)}</g>
+      <g className="planet-fog-pixels" aria-hidden="true">{map.edgeFog.filter(fog => fog.point.x + fog.size >= visibleViewport.minX && fog.point.x - fog.size <= visibleViewport.minX + visibleViewport.width && fog.point.y + fog.size >= visibleViewport.minY && fog.point.y - fog.size <= visibleViewport.minY + visibleViewport.height).map((fog) => <rect key={fog.id} x={fog.point.x - fog.size / 2} y={fog.point.y - fog.size / 2} width={fog.size} height={fog.size} opacity={fog.opacity} />)}</g>
+      <g className="planet-country-labels" pointerEvents="none">{countryLabels.map(label => {
+        const country = visibleCountries.find(country => country.id === label.countryId)!;
+        return <g key={label.countryId} className="planet-country-label" data-country-id={label.countryId} aria-label={country.name}>
+          <title>{country.name}</title>
+          <rect x={label.x} y={label.y} width={label.width} height={label.height} rx="2" fill="#183731" stroke="#b8a572" />
+          <text x={label.x+label.width/2} y={label.y+13*labelScale} textAnchor="middle" fill="#f1e5bd" fontSize={9*labelScale} fontWeight="700">{country.name.length > 25 ? `${country.name.slice(0,24)}…` : country.name}</text>
+        </g>;
+      })}</g>
       <g className="planet-city-labels">{labels.map(label => <g key={label.id}>
         <path d={`M${label.x+label.width/2} ${label.y+label.height}L${label.center.x} ${label.center.y}`} stroke="#cdbd83" strokeWidth="1" opacity=".6" pointerEvents="none" />
         <g className="planet-city-label" data-city-id={label.id} data-country-id={label.countryId} data-selecting={selectingCityId===label.id}
           role="button" tabIndex={0} aria-label={`Открыть город ${label.name}`} onClick={()=>void selectCity(label)}
           onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();void selectCity(label);}}}>
           <rect x={label.x} y={label.y} width={label.width} height={label.height} rx="2" fill="#183731" stroke="#b8a572" />
-          <text x={label.x+label.width/2} y={label.y+17} textAnchor="middle" fill="#f1e5bd" fontSize="11" fontWeight="700">{label.name.length>22?`${label.name.slice(0,21)}…`:label.name}</text>
+          <text x={label.x+label.width/2} y={label.y+17*labelScale} textAnchor="middle" fill="#f1e5bd" fontSize={11*labelScale} fontWeight="700">{label.name.length>22?`${label.name.slice(0,21)}…`:label.name}</text>
         </g>
       </g>)}</g>
     </svg>

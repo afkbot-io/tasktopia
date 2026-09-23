@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 import { armWarmCityTiming } from "./helpers/warm-city-timing";
 
@@ -11,7 +12,7 @@ for (const activationDelay of [0, 1_100]) test(`warm timing measures ${activatio
     });
   }, activationDelay);
   await page.waitForTimeout(1_100);
-  await page.getByRole("button", { name: "Город" }).click();
+  await openMapCity(page);
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-qa-warm-return-ms", /\d/);
   const measured = Number(await host.getAttribute("data-qa-warm-return-ms"));

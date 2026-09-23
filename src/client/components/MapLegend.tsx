@@ -1,6 +1,8 @@
+import { useToolbarDisclosure } from "../use-toolbar-disclosure";
 /** Explain task identity separately from workflow and incident markers. */
 export function MapLegend() {
-  return <details className="map-legend">
+  const root = useToolbarDisclosure();
+  return <details ref={root} className="map-legend">
     <summary aria-label="Обозначения карты" title="Обозначения карты">?</summary>
     <div className="map-legend-panel">
       <strong>Обозначения карты</strong>

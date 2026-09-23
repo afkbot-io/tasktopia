@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -131,7 +132,7 @@ test("published developed families and completed courtyard furniture render thro
   const scenePending = page.waitForResponse(response => new URL(response.url()).pathname
     === `/api/countries/${fixture.countryId}/cities/${fixture.cityId}/scene`);
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const response = await scenePending;
   expect(response.status(), await response.text()).toBe(200);
   const scene = await response.json() as CitySceneDto;
@@ -151,7 +152,7 @@ test("published developed families and completed courtyard furniture render thro
   expect(Number(await page.locator(".world-canvas").getAttribute("data-district-boundary-cells"))).toBeGreaterThan(0);
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await captureMap(page, join(output, "districts.png"));
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-district-boundary-visible", "false");
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await canvas.hover(); await page.mouse.wheel(0, -1600);
@@ -317,13 +318,13 @@ test("published developed families and completed courtyard furniture render thro
   await captureMap(page, join(output, "city-native1x.png"));
   expect(mapReads.filter(path => path.endsWith("/scene"))).toHaveLength(1);
   expect(mapReads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 60_000 });
   await captureMap(page, join(output, "country.png"));
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 60_000 });
   await captureMap(page, join(output, "planet.png"));
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await ready(page, tasks.size);
   const originalCanvas = await canvas.elementHandle();
   const decorationCount = await page.locator(".world-canvas").getAttribute("data-static-decoration-particles");
@@ -377,16 +378,16 @@ test("recaptures settled overview and clock-controlled night without transition 
   await page.clock.setFixedTime(new Date("2026-09-07T09:00:00Z"));
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await ready(page, fixture.taskCount);
   const canvas = await page.locator("canvas[aria-label='Интерактивная карта города']").elementHandle();
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await page.mouse.move(15, 20); await captureMap(page, join(output, "country.png"));
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await page.mouse.move(15, 20); await captureMap(page, join(output, "planet.png"));
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await ready(page, fixture.taskCount);
   expect(await canvas!.evaluate(node => node.isConnected)).toBe(true);
   await page.clock.setFixedTime(new Date("2026-09-07T18:00:00Z"));

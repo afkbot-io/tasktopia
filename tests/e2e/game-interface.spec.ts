@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from '@playwright/test';
 
 test('карточка и компактное меню сохраняют функции, а настройки реально ограничивают рендер',async({page},info)=>{
@@ -7,7 +8,7 @@ test('карточка и компактное меню сохраняют фу�
   await page.getByRole('button',{name:'Открыть страну',exact:true}).click();
   await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready','true',{timeout:45000});
   await expect(page.getByRole('button',{name:'План',exact:true})).toHaveCount(0);
-  await page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Город',exact:true}).click();
+  await openMapCity(page);
   const world=page.locator('.world-canvas');await expect(world).toHaveAttribute('data-loading','false',{timeout:45_000});
   await page.locator('.world-preferences:visible > summary').click();
   await page.locator('.world-preferences:visible').getByLabel('Детализация').selectOption('ECONOMY');

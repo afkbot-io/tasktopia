@@ -533,7 +533,18 @@ export function App() {
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "CITY" ? activeCity : null;
   return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
-    <header className="app-header map-toolbar" aria-label="Управление миром">
+    <header className="app-header map-toolbar" aria-label="Управление миром" onClickCapture={event => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const trigger = target.closest('button, summary');
+      if (!trigger || trigger.closest('.game-popover-panel, .map-legend-panel, .country-switcher, .task-search-results')) return;
+      for (const panel of event.currentTarget.querySelectorAll<HTMLDetailsElement>('details[open]')) {
+        if (!panel.contains(trigger)) panel.open = false;
+      }
+      if (!trigger.closest('.country-title-button')) setCountryMenuOpen(false);
+      if (!trigger.closest('.header-city')) setDirectoryOpen(false);
+      setDevelopmentOpen(false);
+    }}>
       <div className="map-toolbar-location">
         <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
         <div className="relative min-w-0">
@@ -573,6 +584,7 @@ export function App() {
           </GamePopover>
           <WorldPreferences />
           <MapLegend />
+          <WorldDigest key={`${bootstrap.user.id}:${countryId}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} onTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString()); }} />
           <ProfilePresence initial={bootstrap.user.name.slice(0, 1).toUpperCase()} online={online} onOpen={() => openSettings("account")} />
         </nav>
       </div>
@@ -622,7 +634,6 @@ export function App() {
         cityReadyResolverRef.current?.();cityReadyResolverRef.current=null;
       }} />}
       {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
-      <WorldDigest key={`${bootstrap.user.id}:${countryId}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} onTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString()); }} />
       {effectiveMapMode === "CITY" && dependencyTask?.scope === dependencyScope && <MapDependencies key={`${dependencyScope}:${dependencyTask.id}`} countryId={bootstrap.country.id} taskId={dependencyTask.id} scope={dependencyScope} revision={attentionRevision} onChange={setDependencyData} onClose={() => { setDependencyTask(undefined); setDependencyData({ scope: "" }); }} />}
       {effectiveMapMode === "CITY" && activeCity && developmentOpen && <Suspense fallback={<div className="city-development-panel" role="status">Загрузка…</div>}><CityDevelopmentPanel key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} /></Suspense>}
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {

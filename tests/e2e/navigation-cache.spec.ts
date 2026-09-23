@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test, type Page } from "@playwright/test";
 import type { BootstrapDto, RealtimeEvent } from "../../src/shared/contracts";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
@@ -14,7 +15,7 @@ async function login(page: Page): Promise<{ initialMap: "PLANET"; loginToFirstFr
   await page.getByRole("button", { name: "Открыть страну" }).click();
   const loginToFirstFrameMs = await finishTiming(page);
   const initialMap = "PLANET" as const;
-  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+  await openMapCity(page);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 60_000 });
   return { initialMap, loginToFirstFrameMs };
 }

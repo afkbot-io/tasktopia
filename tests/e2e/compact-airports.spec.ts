@@ -1,3 +1,4 @@
+import { openMapPlanet } from "./map-navigation";
 import { mkdir, readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
@@ -26,7 +27,7 @@ test("completed task airports launch compact flights and retain their identity i
   await mkdir("screenshots/compact-rc-airports", { recursive: true });
   await page.screenshot({ path: "screenshots/compact-rc-airports/city.png" });
   expect(assets.some(url => url.endsWith(airportUrl))).toBe(true);
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   const flights = page.locator(".planet-routes .atlas-aircraft-flight");
   await expect(flights).toHaveCount(1);

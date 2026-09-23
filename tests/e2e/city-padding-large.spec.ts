@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir, writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
@@ -214,7 +215,7 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   }, { before: noBoundaries.toString("base64"), after: withBoundaries.toString("base64"), colors: [...new Set(scene.chunks.flatMap(chunk => chunk.districts.map(district => district.color)))] });
   expect(boundaryPixels).toBeGreaterThan(500);
   await page.screenshot({ path: `${directory}/districts-20.png` });
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const gallery = tasks.filter(task => task.stage >= 3);
   // This SQL scale fixture intentionally remains predominantly PLANNING;
   // assigned art families are not the same as completed visible buildings.
@@ -230,15 +231,15 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   await expect(host(page)).toHaveAttribute("data-district-boundary-visible", "true");
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: `${directory}/native-district-edge.png` });
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const retainedCamera = await camera(page);
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await page.screenshot({ path: `${directory}/country.png` });
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await page.screenshot({ path: `${directory}/planet.png` });
-  await page.getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
+  await openMapCity(page); await ready(page);
   expect(await camera(page)).toEqual(retainedCamera);
   expect(await retainedCanvas!.evaluate(node => node === document.querySelector("canvas[aria-label='Интерактивная карта города']"))).toBe(true);
   expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);

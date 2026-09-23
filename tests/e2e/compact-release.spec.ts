@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
@@ -55,7 +56,7 @@ test("480real tasks across20sprints keep compact art, one resident scene and acc
   await page.screenshot({ path: `${directory}/city.png`, fullPage: true });
   await page.getByRole("button", { name: "Районы", exact: true }).click();
   await page.screenshot({ path: `${directory}/districts.png`, fullPage: true });
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const examples = tasks.filter(t => t.taskNumber <= 240 && (t.taskNumber - 1) % 24 >= 3 && (t.taskNumber - 1) % 24 < 6).sort((a, b) => a.taskNumber - b.taskNumber);
   expect(examples).toHaveLength(30); expect(new Set(examples.map(t => t.buildingType)).size).toBe(10);
   await page.locator("canvas[aria-label='Интерактивная карта города']").hover(); await page.mouse.wheel(0, -600);
@@ -75,15 +76,15 @@ test("480real tasks across20sprints keep compact art, one resident scene and acc
     await center(page, task!);
     await page.screenshot({ path: `${directory}/service-${role.toLowerCase()}.png`, fullPage: true });
   }
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/country.png`, fullPage: true });
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/planet.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
+  await openMapCity(page); await ready(page);
   await center(page, examples[2]!); await page.screenshot({ path: `${directory}/city-mobile.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);

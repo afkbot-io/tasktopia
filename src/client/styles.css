@@ -325,11 +325,9 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .country-world-fog rect { fill: #eff5eb; shape-rendering: crispEdges; }
 .planet-ocean, .planet-coast, .planet-routes { pointer-events: none; }
 .planet-terrain-sprite { shape-rendering: crispEdges; }
-.planet-country { cursor: grab; outline: none; pointer-events: bounding-box; }
+.planet-country { pointer-events: none; }
 .planet-country-hit { fill: transparent; stroke: none; pointer-events: all; }
 .planet-country-tint { opacity: .18; shape-rendering: crispEdges; pointer-events: none; }
-.planet-country:hover .planet-country-terrain, .planet-country:focus .planet-country-terrain { filter: brightness(1.12) saturate(1.05); }
-.planet-country[data-active="true"] .planet-country-terrain { filter: brightness(1.1) saturate(1.08); }
 .planet-country[data-selecting="true"] { opacity: .68; }
 .atlas-overview-card { cursor: pointer; outline: none; }
 .atlas-overview-card-hit { fill: #0a1b1ef2; stroke: #c3b06c; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }

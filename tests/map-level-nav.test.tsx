@@ -1,35 +1,26 @@
 import { Children, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { MapLevelNav, type MapLevel } from "../src/client/components/MapLevelNav";
-
-const levels: MapLevel[] = ["PLANET", "CITY"];
-const labels = ["Планета", "Город"];
+import { MapLevelNav } from "../src/client/components/MapLevelNav";
 
 describe("direct map level navigation", () => {
-  it.each(levels)("offers every retained destination from %s", (level) => {
-    const html = renderToStaticMarkup(<MapLevelNav level={level} hasCity onChange={() => undefined} />);
+  it.each([true, false])("hides city controls on planet, city available=%s", hasCity => {
+    expect(renderToStaticMarkup(<MapLevelNav level="PLANET" hasCity={hasCity} onChange={() => undefined} />)).toBe("");
+  });
+  it("offers planet, city and districts only inside the city", () => {
+    const html = renderToStaticMarkup(<MapLevelNav level="CITY" hasCity onDistrictsChange={() => undefined} onChange={() => undefined} />);
     expect(html).not.toContain("disabled");
     expect(html).not.toContain("Страна");
-    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
-    expect(html).toContain(`aria-current="page">${labels[levels.indexOf(level)]}</button>`);
+    expect(html.match(/<button/g)).toHaveLength(3);
+    expect(html).toContain('aria-current="page">Город</button>');
   });
-
-  it.each(["PLANET"] as const)("only disables the absent city from %s", (level) => {
-    const html = renderToStaticMarkup(<MapLevelNav level={level} hasCity={false} onChange={() => undefined} />);
-    expect(html.match(/disabled=""/g)).toHaveLength(1);
-    expect(html).toContain('disabled="">Город</button>');
-  });
-
-  it.each(levels)("does not restart the active %s level", (level) => {
+  it("does not restart the active city", () => {
     const onChange = vi.fn();
-    const nav = MapLevelNav({ level, hasCity: true, onChange });
+    const nav = MapLevelNav({ level: "CITY", hasCity: true, onChange })!;
     const buttons = Children.toArray(nav.props.children) as ReactElement<{ onClick: () => void }>[];
-    buttons[levels.indexOf(level)]!.props.onClick();
+    buttons[1]!.props.onClick();
     expect(onChange).not.toHaveBeenCalled();
-    for (const destination of levels.filter(candidate => candidate !== level)) {
-      buttons[levels.indexOf(destination)]!.props.onClick();
-      expect(onChange).toHaveBeenLastCalledWith(destination);
-    }
+    buttons[0]!.props.onClick();
+    expect(onChange).toHaveBeenLastCalledWith("PLANET");
   });
 });

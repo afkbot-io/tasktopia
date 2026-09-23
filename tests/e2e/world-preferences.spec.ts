@@ -1,9 +1,10 @@
+import { openMapCity } from "./map-navigation";
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 const world=(page:Page)=>page.locator('.world-canvas');
 const preferences=(page:Page)=>page.locator('.world-preferences:visible');
 async function login(page:Page){await page.request.post('/api/auth/login',{data:{email:'demo@tasktopia.local',password:'tasktopia-demo'}});await page.goto('/');await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready','true',{timeout:45000});}
-async function city(page:Page){await page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Город',exact:true}).click();await expect(world(page)).toHaveAttribute('data-loading','false',{timeout:45000});}
+async function city(page:Page){await openMapCity(page);await expect(world(page)).toHaveAttribute('data-loading','false',{timeout:45000});}
 
 test('детализация и уменьшение движения сохраняют сцену и не возвращают старое ночное освещение',async({page},info)=>{
  await page.addInitScript(()=>localStorage.setItem('tasktopia:world-preferences:v1',JSON.stringify({quality:'NORMAL',lighting:'NIGHT'})));
