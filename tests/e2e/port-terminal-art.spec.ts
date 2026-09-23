@@ -25,7 +25,6 @@ for (const stage of [1, 2, 3, 4, 5]) test(`port terminal stage ${stage} retains 
     await route.fulfill({ response, json: scene });
   });
   await page.goto("/");
-    await openMapCity(page);
   await openMapCity(page);
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");

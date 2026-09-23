@@ -101,9 +101,11 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
   test.setTimeout(120_000);
   let sceneStarted = false;
   let sceneResolved = false;
+  let releaseScene!: () => void;
+  const sceneGate = new Promise<void>(resolve => { releaseScene = resolve; });
   await page.route("**/api/countries/*/cities/*/scene", async (route) => {
     sceneStarted = true;
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await sceneGate;
     sceneResolved = true;
     await route.continue();
   });
@@ -113,13 +115,14 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   await expect.poll(() => sceneStarted).toBe(true);
-  await expect(page.getByText("Готовим карту…", { exact: true })).toBeVisible();
+  await expect(page.locator(".map-level-transition")).toContainText("Открываем город…");
   expect(sceneResolved).toBe(false);
+  releaseScene();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
-  await expect(page.getByText("Готовим карту…", { exact: true })).toBeHidden();
+  await expect(page.locator(".map-level-transition")).toHaveCount(0);
 });
 
-test("offers a renderer restart when the city-scene request fails", async ({ page }) => {
+test("returns to the planet and allows city re-entry when the scene request fails", async ({ page }) => {
   test.setTimeout(120_000);
   let fail = true;
   await page.route("**/api/countries/*/cities/*/scene", async (route) => {
@@ -135,9 +138,10 @@ test("offers a renderer restart when the city-scene request fails", async ({ pag
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   const alert = page.getByRole("alert");
-  await expect(alert).toContainText("Не удалось запустить карту", { timeout: 30_000 });
+  await expect(alert).toContainText("temporary", { timeout: 30_000 });
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   fail = false;
-  await alert.getByRole("button", { name: "Повторить" }).click();
+  await openMapCity(page);
   await expect(alert).toHaveCount(0);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
 });
