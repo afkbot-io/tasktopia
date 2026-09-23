@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
@@ -14,13 +15,13 @@ test("map navigation, labels and task controls follow the revised visual contrac
   page.on("response", response => { if (response.status() >= 400 && !response.url().includes("/push/")) errors.push(`${response.status()} ${new URL(response.url()).pathname}`); });
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).ok()).toBe(true);
   await page.goto("/");
-  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+  await openMapCity(page);
   const city = page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 60_000 });
   await expect(page.getByRole("button", { name: "Границы", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Районы", exact: true }).click();
   await expect(page.getByRole("button", { name: "Районы", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect(page.getByRole("button", { name: "Районы", exact: true })).toHaveAttribute("aria-pressed", "false");
   const initialX = await city.getAttribute("data-camera-world-x");
   const box = (await city.boundingBox())!;
@@ -38,13 +39,16 @@ test("map navigation, labels and task controls follow the revised visual contrac
   await expect(page.getByRole("button", { name: "Перенести в другой спринт" })).toHaveCount(0);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(page.locator(".task-modal")).toHaveCount(0);
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 60_000 });
   expect(await page.locator(".planet-atlas clipPath rect").count()).toBeGreaterThan(20);
   await expect(page.locator(".planet-atlas clipPath ellipse")).toHaveCount(0);
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await page.screenshot({ path: "screenshots/visual-consistency/planet.png" });
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("navigation", { name: "Уровень карты" })).toHaveCount(0);
+  await openMapCity(page);
+  await expect(city).toHaveAttribute("data-city-scene-commit", "atomic");
   await expect(page.getByRole("button", { name: "Районы", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await page.screenshot({ path: "screenshots/visual-consistency/mobile.png" });

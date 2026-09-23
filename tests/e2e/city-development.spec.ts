@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 test("city development opens lazily and links to existing service tasks", async ({ page }, info) => {
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL ?? ""), "Local isolated fixture only");
@@ -5,7 +6,7 @@ test("city development opens lazily and links to existing service tasks", async 
   await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } });
   let requests=0; page.on("request",r=>{if(r.url().includes("/api/city-development?"))requests++;});
   await page.goto("/");
-  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+  await openMapCity(page);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit","atomic");
   expect(requests).toBe(0);
   await page.locator(".game-popover > summary").filter({hasText:"Фильтры"}).click();
@@ -23,6 +24,7 @@ test("city development opens lazily and links to existing service tasks", async 
   await page.locator(".game-popover > summary").filter({hasText:"Фильтры"}).click();
   await page.getByRole("button",{name:"Развитие города",exact:true}).click();
   await expect(panel).toBeInViewport();
+  await expect(page.locator(".map-toolbar details[open]")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -40,7 +42,7 @@ test("separates city milestones from districts and identifies repeated services"
     services: [0, 1].map(i => ({ role: "EDUCATION", districtId: `district-${i}`, state: "READY" })), landmarks: [],
   } }));
   await page.goto("/");
-  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+  await openMapCity(page);
   await page.locator(".game-popover > summary").filter({hasText:"Фильтры"}).click();
   await page.getByRole("button", { name: "Развитие города", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Развитие города" });
@@ -60,7 +62,7 @@ test("transport cards explain paired routes and waiting infrastructure on mobile
     {kind:"RAIL",state:"CONNECTED",routes:[{id:"rail:one:two",destinationCityId:"two",destinationName:"Приморский город",travelMs:90000,dwellMs:12000}]},
   ]}}));
   await page.goto("/");
-  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+  await openMapCity(page);
   await page.locator(".game-popover > summary").filter({hasText:"Фильтры"}).click();
   await page.getByRole("button",{name:"Развитие города",exact:true}).click();
   const section=page.getByRole("region",{name:"Транспортные направления"});

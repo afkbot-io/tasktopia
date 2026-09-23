@@ -57,7 +57,7 @@ export default defineConfig({
         serviceWorkers: "block",
       },
     },
-    { name: "webkit-visual", testMatch: /(?:task-entry|atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|visual-consistency|visual-services|world-preferences|city-asset-overlap)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "webkit-visual", testMatch: /(?:task-entry|atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|planet-feedback|visual-consistency|visual-services|world-preferences|city-asset-overlap)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
     { name: "mobile-chromium", testMatch: /mobile-pwa\.spec\.ts/, use: { ...devices["Pixel 7"] } },
     { name: "mobile-webkit", testMatch: /(?:mobile-pwa|pwa-update)\.spec\.ts/, use: { ...devices["iPhone 13"] } },
   ],

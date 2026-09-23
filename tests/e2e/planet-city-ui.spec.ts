@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test } from '@playwright/test';
 
 test('планета открывает город напрямую и сохраняет камеру без фоновой сцены', async ({page},testInfo)=>{
@@ -29,10 +30,10 @@ test('планета открывает город напрямую и сохр�
   const n=requests.filter(p=>p.endsWith('/scene')).length;
   expect(n).toBe(1);
   await page.screenshot({path:'.builder/evidence/city-entry.png'});
-  await page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Планета',exact:true}).click();
+  await openMapPlanet(page);
   await expect(planet).toBeVisible();
   await expect(planet).toHaveAttribute('data-globe-zoom',camera!);
-  await page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Город',exact:true}).click();
+  await openMapCity(page);
   await expect(world).toBeVisible();
   expect(await original!.evaluate(node=>node===document.querySelector('.world-canvas-element'))).toBe(true);
   const box=(await world.boundingBox())!;

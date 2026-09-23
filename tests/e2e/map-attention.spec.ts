@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { expect, test } from "@playwright/test";
 import { createDb } from "../../src/server/db";
@@ -26,7 +27,7 @@ test("attention outlines assigned buildings without camera or terrain changes", 
     await service.assignTask(bootstrap.country.id, { taskId: task.id, assigneeUserId: bootstrap.user.id, idempotencyKey: crypto.randomUUID() });
     if (!alreadyLinked) await service.addTaskDependency(bootstrap.country.id, { taskId: dependent.id, dependsOnTaskId: task.id, idempotencyKey: crypto.randomUUID() });
     await page.goto("/");
-    await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+    await openMapCity(page);
     await page.locator(".game-popover > summary").filter({hasText:"Фильтры"}).click();
     await expect(page.getByRole("navigation", { name: "Подсветка построек" })).toBeVisible();
     await expect(page.locator(".app-header").getByRole("navigation", { name: "Подсветка построек" })).toBeVisible();
@@ -93,7 +94,7 @@ test("overdue attention advances with time and retry recovers metadata", async (
     let fail = true;
     await page.route("**/api/map-attention?*", route => fail ? route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Temporary QA failure" }) }) : route.continue());
     await page.goto("/");
-    await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+    await openMapCity(page);
     await page.locator(".game-popover > summary").filter({hasText:"Фильтры"}).click();
     await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic");
     const menu = page.getByRole("navigation", { name: "Подсветка построек" });

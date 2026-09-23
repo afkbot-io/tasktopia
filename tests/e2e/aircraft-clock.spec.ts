@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect,test } from "@playwright/test";
 import { transportSchedule,TRANSPORT_EPOCH } from "../../src/shared/transport-schedule";
 import type { PlanetAtlasDto } from "../../src/shared/planet-atlas-contract";
@@ -31,19 +32,19 @@ test("CITY and PLANET resume the same airport pair phase after a reload",async({
     }else await route.fulfill({response,headers});
   });
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const city=page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-airplane-route",schedule.id);
   const before=Number(await city.getAttribute("data-airplane-progress"));
   expect(before).toBeGreaterThan(.35);expect(before).toBeLessThan(.7);
-  await page.getByRole("button",{name:"Планета",exact:true}).click();
+  await openMapPlanet(page);
   const planetPlane=page.locator(`.planet-routes .atlas-aircraft-flight[data-route-id="${schedule.id}"]`);
   await expect(planetPlane).toBeVisible();
   await expect(planetPlane).toHaveCount(1);
   const planetProgress=Number(await planetPlane.getAttribute("data-progress"));
   expect(planetProgress).toBeGreaterThanOrEqual(before-.01);expect(planetProgress-before).toBeLessThan(.15);
   await page.reload();
-  await page.getByRole("button",{name:"Город",exact:true}).click();
+  await openMapCity(page);
   await expect(city).toHaveAttribute("data-airplane-route",schedule.id);
   expect(Number(await city.getAttribute("data-airplane-progress"))).toBeGreaterThanOrEqual(before-.01);
   expect(errors).toEqual([]);

@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 
 test("starts the whole-city request before slow sprite downloads", async ({ page }) => {
@@ -27,7 +28,7 @@ test("starts the whole-city request before slow sprite downloads", async ({ page
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   trackingCityLoad = true;
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect.poll(() => sceneStartedAt, { timeout: 15_000 }).toBeGreaterThan(0);
   await expect.poll(() => firstSpriteStartedAt, { timeout: 30_000 }).toBeGreaterThan(0);
   expect(sceneStartedAt).toBeLessThanOrEqual(firstSpriteStartedAt);
@@ -57,7 +58,7 @@ test("retries a failed building texture before the atomic scene commit", async (
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
   await expect.poll(() => buildingFailureSeen, { timeout: 30_000 }).toBe(true);
   await expect.poll(() => buildingRetrySeen, { timeout: 30_000 }).toBe(true);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });

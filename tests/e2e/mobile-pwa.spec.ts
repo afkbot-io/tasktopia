@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 type GestureInterval = { startedAt: number; endedAt: number };
@@ -37,7 +38,7 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
-  await page.getByRole("navigation", {name:"Уровень карты"}).getByRole("button",{name:"Город",exact:true}).click();
+  await openMapCity(page);
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 90_000 });
   await expect(page.getByText("Готовим карту…", { exact: true })).toBeHidden({ timeout: 90_000 });
 }
@@ -126,7 +127,7 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
   await expect(page.locator(".world-menu > summary")).toBeInViewport();
   if (process.env.MOBILE_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.MOBILE_SCREENSHOT_DIR}/${testInfo.project.name}-city.png` });
 
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   const planet = page.locator(".planet-atlas");
   await expect(planet).toBeVisible({ timeout: 45_000 });
   const planetScale = Number(await planet.getAttribute("data-globe-zoom"));

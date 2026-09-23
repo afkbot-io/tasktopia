@@ -1,12 +1,17 @@
 import type { Page } from "@playwright/test";
 
-/** Measure browser click -> ready painted city, excluding driver polling. */
+/** Measure browser activation -> ready painted city, excluding driver polling. */
 export async function armWarmCityTiming(page: Page): Promise<void> {
   await page.evaluate(() => {
     const host = document.querySelector<HTMLElement>(".world-canvas")!;
-    const button = Array.from(document.querySelectorAll<HTMLElement>(".map-level-nav button")).find(button => button.textContent === "Город")!;
     delete host.dataset.qaWarmReturnMs;
-    button.addEventListener("click", () => {
+    const activate = (event: Event) => {
+      if (!(event.target instanceof Element)) return;
+      if (event instanceof KeyboardEvent && event.key !== "Enter" && event.key !== " ") return;
+      const target = event.target.closest(".planet-city-targets [role=button], .planet-city-label, .map-level-nav button");
+      if (!target) return;
+      document.removeEventListener("click", activate, true);
+      document.removeEventListener("keydown", activate, true);
       const started = performance.now();
       const ready = () => host.dataset.mapActive === "true"
         && host.dataset.citySceneCommit === "atomic"
@@ -21,6 +26,8 @@ export async function armWarmCityTiming(page: Page): Promise<void> {
         });
       };
       requestAnimationFrame(sample);
-    }, { capture: true, once: true });
+    };
+    document.addEventListener("click", activate, true);
+    document.addEventListener("keydown", activate, true);
   });
 }

@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test, type Page } from "@playwright/test";
 
 async function login(page: Page) {
@@ -22,7 +23,7 @@ test("hotfix keeps city and planet usable and visually connected", async ({ page
   });
 
   await login(page);
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const city = page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
   await expect(city).toHaveAttribute("data-loading", "false", { timeout: 90_000 });

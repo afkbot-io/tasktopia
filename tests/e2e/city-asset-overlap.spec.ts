@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 
 test("resident images finishing on the planet do not rebuild the hidden city", async ({ page }) => {
@@ -9,11 +10,11 @@ test("resident images finishing on the planet do not rebuild the hidden city", a
   await page.route("**/micro-ambient/**", async route => { await gate; await route.continue(); });
   try {
     await page.goto("/");
-    await page.getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     const rebuilds = await host.getAttribute("data-entity-rebuilds");
-    await page.getByRole("button", { name: "Планета", exact: true }).click();
+    await openMapPlanet(page);
     await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
     release();
     await expect(host).toHaveAttribute("data-ambient-assets", "ready");
@@ -21,7 +22,7 @@ test("resident images finishing on the planet do not rebuild the hidden city", a
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     expect(await host.getAttribute("data-walk-network-builds")).toBeNull();
     expect(await host.getAttribute("data-entity-rebuilds")).toBe(rebuilds);
-    await page.getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect.poll(async () => Number(await host.getAttribute("data-walk-network-builds") ?? 0)).toBeGreaterThan(0);
   } finally { release(); }
 });
@@ -44,7 +45,7 @@ test("city starts building images while terrain is pending, but waits before pub
   });
   try {
     await page.goto("/");
-    await page.getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect.poll(() => terrainRequested).toBe(true);
     await expect.poll(() => buildingRequested, { timeout: 5000 }).toBe(true);
     await expect(page.locator(".world-canvas")).not.toHaveAttribute("data-city-scene-commit", "atomic");
@@ -64,7 +65,7 @@ test("city reuses the authored prop atlas instead of fetching individual park an
     if (/\/props\/[^/]+\.png/.test(request.url())) standalone.push(request.url());
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
   expect(standalone).toEqual([]);
   await page.screenshot({ path: info.outputPath("city-props.png") });
@@ -91,7 +92,7 @@ test("a delayed first connection preserves the initial scene through first-frame
   });
   try {
     await page.goto("/");
-    await page.getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
     expect(Number(await host.getAttribute("data-transport-only-refreshes") ?? 0)).toBe(0);
@@ -109,7 +110,7 @@ test("walking routes wait for resident sprites without holding the first city fr
   await page.route("**/micro-ambient/*.png", async route => { await residents; await route.continue(); });
   try {
     await page.goto("/");
-    await page.getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
     expect(Number(await host.getAttribute("data-walk-network-builds") ?? 0)).toBe(0);

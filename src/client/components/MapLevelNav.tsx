@@ -9,6 +9,7 @@ export function MapLevelNav({ level, hasCity, showDistricts = false, onDistricts
   onDistrictsChange?: (visible: boolean) => void;
   onChange: (level: MapLevel) => void;
 }) {
+  if (level === "PLANET") return null;
   return <nav className="map-level-nav" aria-label="Уровень карты">
     {(["PLANET", "CITY"] as const).map((candidate) => {
       const disabled = candidate === "CITY" && !hasCity;

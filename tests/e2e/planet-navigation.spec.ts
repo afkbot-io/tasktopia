@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from '@playwright/test';
 
 for (const dpr of [1, 2]) test.describe(`подписи городов DPR ${dpr}`, () => {
@@ -35,7 +36,7 @@ test('районы различают загрузку, пустой ответ 
     ? route.fulfill({ status: 503, json: { error: { code: 'UNAVAILABLE', message: 'Районы временно недоступны' } } })
     : route.fulfill({ json: [] }));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Уровень карты' }).getByRole('button', { name: 'Город', exact: true }).click();
+  await openMapCity(page);
   await expect(page.locator('.world-canvas')).toHaveAttribute('data-city-scene-commit', 'atomic');
   await page.locator('.header-city').click();
   const directory = page.getByRole('complementary', { name: 'Районы города' });

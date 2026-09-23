@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test, type Page } from "@playwright/test";
 
 const captureReleaseScreenshots = process.env.E2E_CAPTURE_SCREENSHOTS === "true";
@@ -63,7 +64,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page).toHaveTitle("Tasktopia — Тестовая страна");
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect(page.locator(".header-city strong")).toContainText("Riverside");
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible();
   const mapWarmup = { timeout: 90_000 };
@@ -90,7 +91,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await districtsToggle.click();
   await expect(districtsToggle).toHaveAttribute("aria-pressed", "true");
   await capture(page, "screenshots/release-city-districts.png");
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
 
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await page.locator(".country-title-button").click();
@@ -120,7 +121,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await canvas.hover();
   await page.mouse.wheel(0, 4000);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect(mapHost).toHaveAttribute("data-map-lod", "detail", mapWarmup);
   const residentChunks = Number(await mapHost.getAttribute("data-resident-chunks"));
   expect(residentChunks).toBeLessThanOrEqual(36);
@@ -204,7 +205,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Удалить страну" }).click();
     await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+    await openMapCity(page);
     await expect(canvas).toBeVisible();
   } finally {
     // Other real-world journeys reuse this seed and validate its identity.
@@ -250,7 +251,7 @@ test("registration creates the named country and first city", async ({ page }) =
   await page.getByLabel("Повторите пароль", { exact: true }).fill("safe-password-123");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
   await expect(page.locator(".country-title-button strong")).toBeVisible({ timeout: 90_000 });
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await expect(page.locator(".header-city strong")).toContainText("Первый релиз", { timeout: 90_000 });
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 90_000 });
   await capture(page, "screenshots/release-onboarding-city.png");

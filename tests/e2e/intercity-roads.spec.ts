@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../../src/shared/city-scene-contract";
@@ -290,9 +291,9 @@ test("canonical dry roads continue beyond city chunks and render on the country 
         && road.minY <= resident.maxY && road.maxY >= resident.minY)));
     scenes.set(city.id, scene);
   }
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
+  await openMapCity(page); await ready(page);
   await page.screenshot({ path: `${directory}/city.png` });
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(country).toHaveAttribute("data-planet-ready", "true");
   const exit = [...fixture.exits].sort((a, b) => b.roadCells - a.roadCells)[0]!;
   expect(exit.roadCells).toBeGreaterThanOrEqual(24);
@@ -424,12 +425,12 @@ test("canonical dry roads continue beyond city chunks and render on the country 
       previousCars = state.cars; previousWalkers = state.walkers; traffic.push(state);
     }
   }
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await page.screenshot({ path: `${directory}/planet.png` });
   const warmStarted = performance.now();
-  await page.getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
+  await openMapCity(page); await ready(page);
   const warmReturnMs = performance.now() - warmStarted;
   expect(warmReturnMs).toBeLessThan(1_000);
   expect(await camera(page)).toEqual(returnCamera);

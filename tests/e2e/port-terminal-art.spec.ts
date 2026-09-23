@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 
@@ -24,8 +25,7 @@ for (const stage of [1, 2, 3, 4, 5]) test(`port terminal stage ${stage} retains 
     await route.fulfill({ response, json: scene });
   });
   await page.goto("/");
-    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
-  await page.getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
   await page.getByLabel("Поиск здания по номеру или названию").fill(String(taskNumber));

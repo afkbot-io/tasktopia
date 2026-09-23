@@ -1,3 +1,4 @@
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
@@ -122,11 +123,11 @@ test("real generated compact public spaces preserve stages, object selection and
   expect(mapReads.filter(path => path.endsWith("/scene"))).toHaveLength(1);
   expect(mapReads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
 
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await screenshot(page, "country");
-  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await screenshot(page, "planet");
@@ -139,7 +140,7 @@ test("real generated compact public spaces preserve stages, object selection and
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await fitsViewport();
-  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await openMapCity(page);
   await ready(page);
   await fitsViewport();
   await clickCanonicalPark(page, tasks.find(task => task.visualAssetKey === "urban-pocket")!);

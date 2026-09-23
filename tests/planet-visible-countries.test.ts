@@ -14,3 +14,10 @@ describe("planet label aperture", () => {
       .some(country => country.id === "offscreen")).toBe(false);
   });
 });
+
+it('retains land in the extra vertical viewBox area of a tall screen', () => {
+  const country = { cells: [{ x: 490, y: -310, width: 20, height: 20 }] };
+  const surface = { minX: -500, minY: -1000, maxX: 1500, maxY: 1700 };
+  expect(visiblePlanetCountries([country], surface, { width: 1000, height: 2300, minX: 0, minY: -800 })).toEqual([country]);
+  expect(visiblePlanetCountries([country], surface, { width: 1000, height: 700 })).toEqual([]);
+});

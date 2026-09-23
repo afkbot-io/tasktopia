@@ -11,7 +11,7 @@ for (const activationDelay of [0, 1_100]) test(`warm timing measures ${activatio
     });
   }, activationDelay);
   await page.waitForTimeout(1_100);
-  await page.getByRole("button", { name: "Город" }).click();
+  await page.getByRole("button").click();
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-qa-warm-return-ms", /\d/);
   const measured = Number(await host.getAttribute("data-qa-warm-return-ms"));

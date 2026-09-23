@@ -1,3 +1,4 @@
+import { openMapCity } from "./map-navigation";
 import {expect,test,type Page} from '@playwright/test';
 import type {CitySceneDto} from '../../src/shared/city-scene-contract';
 const world=(page:Page)=>page.locator('.world-canvas');
@@ -9,7 +10,7 @@ test('каноническая дорога продолжается за рез
  const bootstrap=await (await page.request.get('/api/bootstrap')).json();
  const scene=await (await page.request.get(`/api/countries/${bootstrap.country.id}/cities/${bootstrap.initialCity.id}/scene`)).json() as CitySceneDto;
  expect(scene.intercityRoads.length).toBeGreaterThan(0);
- await page.goto('/');await page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Город',exact:true}).click();
+ await page.goto('/');await openMapCity(page);
  const host=world(page);await expect(host).toHaveAttribute('data-loading','false',{timeout:45000});
  const initial=await camera(page),endpoints=scene.intercityRoads.flatMap(r=>{let {x,y}=r.geometry.start;const points=[{x,y}];for(const run of r.geometry.runs){x+=(run.direction==='E'?1:run.direction==='W'?-1:0)*run.length;y+=(run.direction==='S'?1:run.direction==='N'?-1:0)*run.length;points.push({x,y});}return points;});
  const target=endpoints.filter(p=>Math.hypot(p.x-initial.x,p.y-initial.y)>80).sort((a,b)=>Math.hypot(a.x-initial.x,a.y-initial.y)-Math.hypot(b.x-initial.x,b.y-initial.y))[0]!;

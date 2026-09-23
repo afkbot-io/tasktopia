@@ -177,7 +177,8 @@ describe("planet atlas projection", () => {
     expect(dragged.edgeFog).not.toEqual(still.edgeFog);
     const delta = dragged.countries[0]!.center.x - still.countries[0]!.center.x;
     expect(dragged.surface.minX - still.surface.minX).toBeCloseTo(delta);
-    expect(dragged.clouds[0]!.x - still.clouds[0]!.x).toBeCloseTo(delta);
+    // Independent coordinates can land on opposite sides of the final pixel snap.
+    expect(Math.abs(dragged.clouds[0]!.x - still.clouds[0]!.x - delta)).toBeLessThanOrEqual(1);
     expect(dragged.countries.map((country) => country.center)).not.toEqual(still.countries.map((country) => country.center));
   });
 

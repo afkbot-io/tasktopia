@@ -1,3 +1,4 @@
+import { openMapPlanet } from "./map-navigation";
 import { expect,test } from "@playwright/test";
 import type { PlanetAtlasDto } from "../../src/shared/planet-atlas-contract";
 test("switches overview areas without rescaling or displaying the other area's countries",async({page},info)=>{
@@ -15,7 +16,7 @@ test("switches overview areas without rescaling or displaying the other area's c
   }};
   await page.route("**/api/planet-atlas",route=>route.fulfill({json:fixture}));
   await page.goto("/");
-  await page.getByRole("button",{name:"Планета",exact:true}).click();
+  await openMapPlanet(page);
   const map=page.locator(".planet-atlas"), selector=page.getByRole("combobox",{name:"Область планеты",exact:true});
   await expect(map).toHaveAttribute("data-planet-ready","true");
   await expect(page.locator(`.planet-country[data-country-id="${original.id}"]`)).toHaveCount(1);
