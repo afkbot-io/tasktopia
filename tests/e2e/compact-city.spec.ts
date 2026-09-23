@@ -60,6 +60,7 @@ test("renders every compact city ground chunk, opens its task, and survives coun
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const host = page.locator(".world-canvas");
   await expect(host).toBeVisible({ timeout: 45_000 });
   if (!await page.locator(".header-city strong").isVisible()) {
@@ -91,15 +92,15 @@ test("renders every compact city ground chunk, opens its task, and survives coun
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   const retainedCanvas = await canvas.elementHandle();
   const initialSceneRequests = sceneRequests.length;
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  const country = page.locator(".country-overview");
-  await expect(country).toHaveAttribute("data-country-ready", "true", { timeout: 45_000 });
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  const country = page.locator(".planet-atlas");
+  await expect(country).toHaveAttribute("data-planet-ready", "true", { timeout: 45_000 });
   await expect(host).toHaveAttribute("data-map-active", "false");
   await expect(host).toHaveAttribute("data-animation-active", "false");
   expect(await retainedCanvas!.evaluate(node => node.isConnected)).toBe(true);
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await armWarmCityTiming(page);
-  await country.locator(".country-overview-city").first().click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await ready(page);
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await expect(host).toHaveAttribute("data-qa-warm-return-ms", /\d/);
@@ -138,13 +139,13 @@ test("renders every compact city ground chunk, opens its task, and survives coun
     await expect.poll(async () => Number(await host.getAttribute("data-render-scale"))).toBeGreaterThan(1.5);
     await page.mouse.move(20, 25);
     await page.screenshot({ path: `${directory}/city-blocks.png`, fullPage: true });
-    await page.getByRole("button", { name: "Страна", exact: true }).click();
-    await expect(country).toHaveAttribute("data-country-ready", "true");
+    await page.getByRole("button", { name: "Планета", exact: true }).click();
+    await expect(country).toHaveAttribute("data-planet-ready", "true");
     await expect(page.locator(".map-level-transition")).toHaveCount(0);
     await page.screenshot({ path: `${directory}/country.png`, fullPage: true });
     await page.getByRole("button", { name: "Планета", exact: true }).click();
     await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
-    await expect(page.locator(".planet-district-houses image").first()).toBeVisible();
+    await expect(page.locator(".planet-district-houses [data-miniature-module]").first()).toBeVisible();
     const tile = page.locator(".planet-terrain-sprite").first();
     expect(await tile.evaluate(node => {
       const width = getComputedStyle(node).width;
@@ -162,7 +163,7 @@ test("renders every compact city ground chunk, opens its task, and survives coun
   expect(failures.filter((value) => !value.includes("401 /api/bootstrap"))).toEqual([]);
 });
 
-test("opens a deep-linked task card while city terrain is still pending", async ({ page }) => {
+test("opens a deep-linked task card before requesting city terrain", async ({ page }) => {
   let releaseScene!: () => void;
   const sceneGate = new Promise<void>(resolve => { releaseScene = resolve; });
   let sceneStarted = false;
@@ -178,8 +179,10 @@ test("opens a deep-linked task card while city terrain is still pending", async 
     await page.getByLabel("Email").fill("demo@tasktopia.local");
     await page.getByLabel("Пароль").fill("tasktopia-demo");
     await page.getByRole("button", { name: "Открыть страну" }).click();
-    await expect.poll(() => sceneStarted).toBe(true);
     await expect(page.locator("#task-title")).toBeVisible({ timeout: 5_000 });
+    expect(sceneStarted).toBe(false);
+    await page.getByRole("button", {name:"Закрыть",exact:true}).click();
+    await expect.poll(() => sceneStarted).toBe(true);
     expect(sceneReleased).toBe(false);
   } finally { releaseScene(); }
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 45_000 });

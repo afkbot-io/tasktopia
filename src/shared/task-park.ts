@@ -102,6 +102,19 @@ export function taskParkDecorLayout(
     // revealed only after paths and planting. This keeps small lots useful.
     search("bench-horizontal", 4, bounds.minX + width * 0.25, bounds.maxY - 1);
     if (footprint.length >= 40) search("bench-horizontal", 4, bounds.minX + width * 0.75, bounds.minY + 1);
+    // Distinct uses share the same collision-aware placement and stage plan.
+    // Furniture reserves its finished position before planting is generated.
+    if(assetKey==='urban-community'&&footprint.length>=60) {
+      search('courtyard-picnic-table',5,bounds.minX+width*.75,bounds.minY+height*.25);
+      search('courtyard-cycle-rack',4,bounds.minX+width*.2,bounds.maxY-1);
+    }
+    if(assetKey==='urban-amusement'&&footprint.length>=60) {
+      search('playground-small',5,bounds.minX+width*.75,bounds.minY+height*.75);
+    }
+    if(assetKey==='urban-promenade') {
+      search('bench-horizontal',4,bounds.minX+width*.7,bounds.maxY-1);
+      if(footprint.length>=60)search('courtyard-cycle-rack',5,bounds.minX+width*.3,bounds.minY+1);
+    }
     // Reserve lighting before trees. Spread fixtures around the perimeter,
     // scaling with the site rather than leaving every large park with two.
     const lampCount = footprint.length >= 160 ? 8 : footprint.length >= 60 ? 4 : footprint.length >= 24 ? 2 : 0;
@@ -122,12 +135,18 @@ export function taskParkDecorLayout(
       : ["tree-oak", "tree-maple", "tree-cherry", "tree-magnolia"][Math.floor(hash(seed, 0, 0, 37) * 4)]!;
     // Try every integer anchor. A two-cell stride can miss an entire narrow
     // garden bed once its lamp is reserved; crown masks already enforce space.
-    const vegetation = [...footprint]
-      .sort((a, b) => hash(seed, a.x, a.y, 31) - hash(seed, b.x, b.y, 31));
+    const vegetation = [...footprint].sort((a,b)=> {
+      if(assetKey==='urban-orchard') {
+        const alignment=(cell:Cell)=>Number((cell.x-bounds.minX)%3===1&&(cell.y-bounds.minY)%3===1);
+        return alignment(b)-alignment(a)||a.y-b.y||a.x-b.x;
+      }
+      return hash(seed,a.x,a.y,31)-hash(seed,b.x,b.y,31);
+    });
     const treeLimit = Math.min(16, Math.max(2, Math.floor(footprint.length / (assetKey === "urban-orchard" ? 12 : 25))));
     let planted = 0;
     for (const cell of vegetation) {
-      if (place(tree, cell, 3) && ++planted >= treeLimit) break;
+      const species=assetKey==='urban-botanical'?['tree-maple','tree-cherry','tree-magnolia'][planted%3]!:tree;
+      if (place(species, cell, 3) && ++planted >= treeLimit) break;
     }
     // Deliberate planted beds inside task parks, not the retired world scatter.
     const flower = assetKey === "urban-memorial" ? "flower-white" : "shrub-flowering";

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { districtDevelopmentState, planDistrictDevelopment, createDistrictDevelopmentGeometry } from "../src/client/district-development";
+import { Texture, TextureSource, Rectangle, type FederatedPointerEvent } from "pixi.js";
+import { drawDistrictDevelopment } from "../src/client/district-development-view";
 import type { CitySceneDto } from "../src/shared/city-scene-contract";
 
 describe("temporary district development", () => {
@@ -50,4 +52,38 @@ describe("temporary district development", () => {
     expect(plan.fences.some(p => p.kind === "fence-vertical" && (p.origin.x === 3 || p.origin.x === 4))).toBe(false);
     expect(geometry.plan("d", "BUILDING")).toBe(plan);
   });
+});
+
+it('показывает реальные количества задач в сводке района без повторов', async()=>{
+  const {districtDevelopmentSummary}=await import('../src/client/district-development');
+  expect(districtDevelopmentSummary('Центральный',[
+    {id:'a',status:'COMPLETED'},{id:'a',status:'COMPLETED'},
+    {id:'b',status:'IN_PROGRESS'},{id:'c',status:'TESTING'},{id:'d',status:'PLANNING'},
+  ])).toEqual({title:'Центральный',line:'1 / 4 готово · 1 в работе',detail:'1 на проверке · 1 в планах'});
+  expect(districtDevelopmentSummary('Новый',[]).line).toBe('Задач пока нет');
+});
+
+
+it("рисует указатель и его область нажатия внутри свободного участка без плавающей плашки", () => {
+  const cells = Array.from({ length: 100 }, (_, i) => ({ x: i % 10 - 5, y: Math.floor(i / 10) - 5 }));
+  const blocked = new Set(cells.filter(c => c.x === 0 || c.y === 0).map(c => `${c.x},${c.y}`));
+  const plan = planDistrictDevelopment(cells, blocked, "PLANNED");
+  expect(plan.marker).not.toBeNull();
+  const texture = new Texture({ source: new TextureSource({ width: 16, height: 16 }) });
+  let selections = 0;
+  const view = drawDistrictDevelopment(plan, "PLANNED", 8, () => texture, () => selections++);
+  const marker = view.getChildByLabel("district-development-marker")!;
+  expect(view.children).toHaveLength(1); // Only the authored sign.
+  expect(marker.hitArea).toEqual(new Rectangle(0, 0, 16, 16));
+  const bounds = view.getLocalBounds();
+  expect({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }).toEqual({
+    x: plan.marker!.origin.x * 8, y: plan.marker!.origin.y * 8, width: 16, height: 16,
+  });
+  marker.emit("pointertap", { stopPropagation() {} } as FederatedPointerEvent);
+  expect(selections).toBe(1);
+  view.destroy({ children: true });
+  const packed = drawDistrictDevelopment(planDistrictDevelopment(cells, new Set(cells.map(c => `${c.x},${c.y}`)), "PLANNED"), "PLANNED", 8, () => texture);
+  expect(packed.getChildByLabel("district-development-marker")).toBeNull();
+  expect(packed.getLocalBounds().width).toBe(0);
+  packed.destroy({ children: true });texture.destroy(true);
 });

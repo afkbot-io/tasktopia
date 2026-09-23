@@ -103,5 +103,6 @@ test("keeps authentication pending through bootstrap and offers retry after a co
 
   await expect(page.getByRole("alert")).toHaveText("Не удалось загрузить страну. Повторите запрос");
   await page.getByRole("button", { name: "Повторить загрузку" }).click();
+  await page.getByRole("navigation", {name:"Уровень карты"}).getByRole("button", {name:"Город",exact:true}).click();
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible();
 });

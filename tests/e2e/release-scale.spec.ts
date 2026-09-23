@@ -37,6 +37,7 @@ test("1000-task city: cold frame, bounded residency and 30 warm atlas round trip
     }, { once: true, capture: true });
   });
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
   await expect(host).toHaveAttribute("data-ground-bake-queue", "0", { timeout: 90_000 });
@@ -50,18 +51,16 @@ test("1000-task city: cold frame, bounded residency and 30 warm atlas round trip
 
   const cityCanvas = await page.locator("canvas[aria-label='Интерактивная карта города']").elementHandle();
   const roundTrip = async (capture = false) => {
-    await page.getByRole("button", { name: "Страна", exact: true }).click();
-    await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+    await page.getByRole("button", { name: "Планета", exact: true }).click();
+    await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
     await expect(host).toHaveAttribute("data-animation-active", "false");
     if (capture && output) await page.screenshot({ path: path.join(output, "country-1000.png") });
     await page.getByRole("button", { name: "Планета", exact: true }).click();
     await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
     if (capture && output) await page.screenshot({ path: path.join(output, "planet-1000.png") });
-    // Return through actual territory selectors. In overview modes the level
-    // buttons intentionally do not guess which child country/city to open.
-    await page.locator(".planet-country-label").click();
-    await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
-    await page.locator(".country-overview-city").click();
+    // Restore the last selected city through the level toolbar.
+    await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
     await expect(host).toHaveAttribute("data-map-active", "true");
     await expect(page.locator(".map-level-transition")).toHaveCount(0);
   };

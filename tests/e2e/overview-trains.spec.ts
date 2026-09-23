@@ -1,21 +1,10 @@
 import { expect,test } from "@playwright/test";
 import { transportAtlasFixture } from "../fixtures/atlas-transport";
 import { transportSchedule,TRANSPORT_EPOCH } from "../../src/shared/transport-schedule";
-import type { CountryOverviewDto } from "../../src/shared/country-overview-contract";
-test("COUNTRY and PLANET show the same scheduled consist and honour reduced motion",async({page},info)=>{
+test("PLANET preserves the server-scheduled consist and honour reduced motion",async({page},info)=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local visual fixture only");
   const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));
   await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
-  const bootstrap=await(await page.request.get("/api/bootstrap")).json();
-  const overview=await(await page.request.get(`/api/countries/${bootstrap.country.id}/overview`)).json() as CountryOverviewDto;
-  const original=overview.cities[0]!;
-  overview.geography={columns:16,rows:8,cellSize:4,topology:"SQUARE_4",terrainCodes:"0".repeat(128),territoryCodes:"1".repeat(128)};
-  overview.bounds={minX:0,minY:0,maxX:64,maxY:32};
-  overview.connections=[];overview.groundRoads={revision:1,routes:[],unavailable:[]};
-  overview.cities=[0,1].map(i=>({...structuredClone(original),id:`city-0-${i}`,name:`Вокзал ${i+1}`,atlasCenter:{x:16+i*32,y:16},
-    miniature:{cellSize:8,columns:8,rows:8,blocks:[],airports:[],stations:[{taskId:`station-0-${i}`,x:4,y:4}]}}));
-  overview.railConnections=undefined;
-  overview.revision+="-trains";
   const atlas=transportAtlasFixture(),schedule=transportSchedule("RAIL","station-0-0","station-0-1");
   let started=performance.now(),anchor=TRANSPORT_EPOCH-schedule.offsetMs+schedule.dwellMs+schedule.travelMs*.4;
   await page.clock.setFixedTime(new Date("2035-01-01"));
@@ -23,26 +12,12 @@ test("COUNTRY and PLANET show the same scheduled consist and honour reduced moti
     const response=await route.fetch();
     const headers={...response.headers(),"cache-control":"private, no-store","x-tasktopia-server-time":String(anchor+performance.now()-started)};
     if(route.request().url().endsWith("/planet-atlas"))await route.fulfill({response,headers,json:atlas});
-    else if(route.request().url().includes(`/countries/${bootstrap.country.id}/overview`))await route.fulfill({response,headers,json:overview});
     else await route.fulfill({response,headers});
   });
   await page.goto("/");
-  await page.getByRole("button",{name:"Страна",exact:true}).click();
-  const country=page.locator(`.country-atlas-train[data-route-id="${schedule.id}"]`);
-  await expect(country).toBeVisible();await expect(country.locator("img")).toHaveCount(4);
-  await expect(country).toHaveAttribute("data-phase","MOVING");
-  const before=Number(await country.getAttribute("data-progress"));expect(before).toBeGreaterThan(.35);expect(before).toBeLessThan(.6);
-  const car=country.locator("img").first(),pose=await car.getAttribute("style");
-  await expect.poll(()=>car.getAttribute("style")).not.toBe(pose);
-  await expect.poll(()=>car.evaluate(image=>(image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-  const countryZoom=await page.locator(".country-overview").getAttribute("data-country-zoom");
-  await page.mouse.move(720,450);await page.mouse.wheel(0,-400);
-  await expect.poll(()=>page.locator(".country-overview").getAttribute("data-country-zoom")).not.toBe(countryZoom);
-  await page.screenshot({path:info.outputPath("country-train.png")});
-  await page.getByRole("button",{name:"Планета",exact:true}).click();
   const planet=page.locator(`.atlas-train[data-route-id="${schedule.id}"]`);
   await expect(planet).toBeVisible();await expect(planet.locator("image")).toHaveCount(4);
-  const after=Number(await planet.getAttribute("data-progress"));expect(after).toBeGreaterThanOrEqual(before-.01);expect(after-before).toBeLessThan(.1);
+  const after=Number(await planet.getAttribute("data-progress"));expect(after).toBeGreaterThan(.35);expect(after).toBeLessThan(.6);
   const planetZoom=await page.locator(".planet-atlas").getAttribute("data-globe-zoom");
   const box=await planet.boundingBox();await page.mouse.move(box!.x+box!.width/2,box!.y+box!.height/2);await page.mouse.wheel(0,-250);
   await expect.poll(()=>page.locator(".planet-atlas").getAttribute("data-globe-zoom")).not.toBe(planetZoom);
@@ -51,42 +26,11 @@ test("COUNTRY and PLANET show the same scheduled consist and honour reduced moti
   await page.emulateMedia({reducedMotion:"no-preference"});await expect(planet).toBeVisible();
   expect(Number(await planet.getAttribute("data-progress"))).toBeGreaterThanOrEqual(after);
   anchor=TRANSPORT_EPOCH-schedule.offsetMs+schedule.dwellMs+schedule.travelMs+2000;started=performance.now();
-  await page.reload();await page.getByRole("button",{name:"Страна",exact:true}).click();
-  await expect(country).toHaveAttribute("data-phase","STOPPED");
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready","true");
-  const stopped=await country.locator("img").first().getAttribute("style");
+  await page.reload();
+  await expect(planet).toHaveAttribute("data-phase","STOPPED");
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready","true");
+  const stopped=await planet.locator("image").first().getAttribute("style");
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
-  expect(await country.locator("img").first().getAttribute("style")).toBe(stopped);
+  expect(await planet.locator("image").first().getAttribute("style")).toBe(stopped);
   expect(errors).toEqual([]);
-});
-
-test("foreign railway keeps the global trip phase while the destination is outside COUNTRY",async({page},info)=>{
- test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local fixture only");
- const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));
- await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
- const bootstrap=await(await page.request.get("/api/bootstrap")).json();
- const overview=await(await page.request.get(`/api/countries/${bootstrap.country.id}/overview`)).json() as CountryOverviewDto;
- const original=overview.cities[0]!,schedule=transportSchedule("RAIL","a","z");
- overview.geography={columns:16,rows:8,cellSize:4,topology:"SQUARE_4",terrainCodes:"0".repeat(128),territoryCodes:"1".repeat(128)};
- overview.cities=[{...original,atlasCenter:{x:12,y:16},miniature:{cellSize:8,columns:8,rows:8,blocks:[],airports:[],stations:[{taskId:"a",x:4,y:4}]}}];
- overview.connections=[];overview.groundRoads={revision:1,routes:[],unavailable:[]};
- overview.railConnections=[{id:schedule.id,fromStationId:"a",toStationId:"z",fromCityId:original.id,toCityId:"foreign",toCityName:"Другой город",points:[{x:12,y:16},{x:62,y:16}],progressRange:[0,.4]}];
- overview.revision+="foreign-rail";
- let started=performance.now(),anchor=TRANSPORT_EPOCH-schedule.offsetMs+schedule.dwellMs+schedule.travelMs*.2;
- await page.route("**/api/**",async route=>{
-  if(route.request().url().includes("/events")){await route.continue();return;}
-  const response=await route.fetch(),headers={...response.headers(),"cache-control":"private, no-store","x-tasktopia-server-time":String(anchor+performance.now()-started)};
-  if(route.request().url().includes(`/countries/${bootstrap.country.id}/overview`))await route.fulfill({response,headers,json:overview});
-  else await route.fulfill({response,headers});
- });
- await page.goto("/");await page.getByRole("button",{name:"Страна",exact:true}).click();
- const train=page.locator(`.country-atlas-train[data-route-id="${schedule.id}"]`);
- await expect(train).toBeVisible();await expect(train.locator("img")).toHaveCount(4);
- expect(Number(await train.getAttribute("data-progress"))).toBeGreaterThan(.2);
- await page.screenshot({path:info.outputPath("foreign-rail.png")});
- anchor=TRANSPORT_EPOCH-schedule.offsetMs+schedule.dwellMs+schedule.travelMs+1000;started=performance.now();
- await page.reload();await page.getByRole("button",{name:"Страна",exact:true}).click();
- await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready","true");
- await expect(train).toHaveAttribute("data-phase","STOPPED");await expect(train).toBeHidden();
- expect(errors).toEqual([]);
 });

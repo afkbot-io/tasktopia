@@ -7,5 +7,6 @@ it("retains local render data for transport-only revisions but detects changed t
   expect(sameCitySceneContent(before,next)).toBe(true);
   expect(sameCitySceneContent(before,{...next,chunks:[{...before.chunks[0]!,contentHash:"new"}]})).toBe(false);
   expect(sameCitySceneContent(before,{...next,completedDistrictSnapshots:[]})).toBe(false);
+  expect(sameCitySceneContent(before,{...next,roadContext:{schemaVersion:1,nodes:[],segments:[]}})).toBe(false);
   expect(sameCitySceneContent(before,{...next,city:{...before.city,bounds:{...before.city.bounds,maxX:50}}})).toBe(false);
 });

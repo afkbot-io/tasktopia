@@ -12,15 +12,14 @@ export function WorldAmbientLighting() {
     };
     const preferencesChanged = () => {
       document.documentElement.dataset.worldQuality = readWorldPreferences().quality === "ECONOMY" ? "ECONOMY" : "NORMAL";
+      document.documentElement.dataset.worldMotion = readWorldPreferences().reduceMotion ? "REDUCED" : "SYSTEM";
       apply();
     };
     const unsubscribe = subscribeWorldPreferences(preferencesChanged);
     preferencesChanged();
-    const timer = window.setInterval(apply, 1000);
     document.addEventListener("visibilitychange", apply);
     return () => {
       unsubscribe();
-      window.clearInterval(timer);
       document.removeEventListener("visibilitychange", apply);
       document.documentElement.style.removeProperty("--world-light-filter");
     };

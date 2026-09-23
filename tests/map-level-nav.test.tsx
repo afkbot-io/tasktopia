@@ -3,18 +3,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { MapLevelNav, type MapLevel } from "../src/client/components/MapLevelNav";
 
-const levels: MapLevel[] = ["PLANET", "COUNTRY", "CITY"];
-const labels = ["Планета", "Страна", "Город"];
+const levels: MapLevel[] = ["PLANET", "CITY"];
+const labels = ["Планета", "Город"];
 
 describe("direct map level navigation", () => {
   it.each(levels)("offers every retained destination from %s", (level) => {
     const html = renderToStaticMarkup(<MapLevelNav level={level} hasCity onChange={() => undefined} />);
     expect(html).not.toContain("disabled");
+    expect(html).not.toContain("Страна");
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
     expect(html).toContain(`aria-current="page">${labels[levels.indexOf(level)]}</button>`);
   });
 
-  it.each(["PLANET", "COUNTRY"] as const)("only disables the absent city from %s", (level) => {
+  it.each(["PLANET"] as const)("only disables the absent city from %s", (level) => {
     const html = renderToStaticMarkup(<MapLevelNav level={level} hasCity={false} onChange={() => undefined} />);
     expect(html.match(/disabled=""/g)).toHaveLength(1);
     expect(html).toContain('disabled="">Город</button>');

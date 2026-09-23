@@ -13,8 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     # Asset regeneration, the full unit suite, and the ultra-wide streaming
     # browser gate intentionally run together and exceed 15 minutes on hosted
-    # runners. Keep a bounded ceiling without cancelling a healthy release.
-    timeout-minutes: 45
+    # runners. The complete matrix measured 44+ minutes, leaving no margin
+    # under the old 45-minute job ceiling. This only bounds the whole job;
+    # browser readiness, simulation and performance budgets stay in each test.
+    timeout-minutes: 60
     services:
       postgres:
         image: postgres:16-alpine
@@ -72,7 +74,11 @@ jobs:
           SESSION_COOKIE_SECURE: "false"
           APP_ORIGIN: http://127.0.0.1:3000
       - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:e2e
+      # Emit each failure immediately: the compact reporter buffers details
+      # until the end, losing diagnostics if the overall job times out. A
+      # failing run stops after three failures; a passing run still runs the
+      # entire browser matrix and all following gates.
+      - run: npm run test:e2e -- --reporter=line --max-failures=3
         env:
           CI: "true"
           SEED_PRINT_TOKEN: "false"

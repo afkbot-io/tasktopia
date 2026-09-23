@@ -105,3 +105,14 @@ it("preserves the bridge deck and higher road class regardless of raster input o
     expect(cell).toMatchObject({structure:"BRIDGE",roadClass:"COLLECTOR"});
   }
 });
+
+it('continues the full width of a neighbouring street cut by the scene edge', () => {
+  const street=route({x:64,y:-64},192);street.geometry.runs=[{direction:'S',length:192}];
+  const roadContext=intercityRoadRasterNetwork([street]);roadContext.segments.forEach(s=>{s.widthCells=5;});
+  const resident=payload(rasterizeBlockRoads(roadContext,{minX:0,minY:0,maxX:63,maxY:63}));
+  const padding=new CityRoadPadding({chunkSize:64,chunks:[resident],intercityRoads:[],roadContext},()=>true);
+  const chunk=padding.get(1,0);
+  expect(chunk?.roads.some(c=>c.x===66&&c.y===24)).toBe(true);
+  expect(chunk?.roads.find(c=>c.x===64&&c.y===24)?.mask).toBe(15);
+  expect(padding.get(1,-1)?.roads.some(c=>c.x===64&&c.y===-20)).toBe(true);
+});

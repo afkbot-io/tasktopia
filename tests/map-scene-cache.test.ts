@@ -4,6 +4,15 @@ import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../src/shared/city
 import type { RealtimeEvent } from "../src/shared/contracts";
 
 describe("bounded revision scene cache", () => {
+  it('bounds retained data by weight as well as count, without retaining an oversized scene',async()=>{
+    const cache=new RevisionCache<number>(3,{limit:10,weight:value=>value});
+    await cache.read('a',async()=>6);await cache.read('b',async()=>6);
+    expect(cache.peek('a')).toBeUndefined();expect(cache.peek('b')).toBe(6);
+    cache.promote('b','next');expect(cache.peek('next')).toBe(6);
+    expect(await cache.read('large',async()=>12)).toBe(12);
+    expect(cache.peek('large')).toBeUndefined();expect(cache.peek('next')).toBe(6);
+    cache.delete('next');await cache.read('c',async()=>8);expect(cache.peek('c')).toBe(8);
+  });
   it("shares in-flight reads and reuses a completed exact revision", async () => {
     const cache = new RevisionCache<number>(2);
     const load = vi.fn(async () => 42);

@@ -75,19 +75,19 @@ test("480real tasks across20sprints keep compact art, one resident scene and acc
     await center(page, task!);
     await page.screenshot({ path: `${directory}/service-${role.toLowerCase()}.png`, fullPage: true });
   }
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/country.png`, fullPage: true });
   await page.getByRole("button", { name: "Планета", exact: true }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await expect(page.locator(".map-level-transition")).toHaveCount(0); await page.screenshot({ path: `${directory}/planet.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("button", { name: /^Открыть страну .*, 1 городов,/ }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true");
-  await page.getByRole("button", { name: /^Открыть город Город двадцати спринтов,/ }).click(); await ready(page);
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click(); await ready(page);
   await center(page, examples[2]!); await page.screenshot({ path: `${directory}/city-mobile.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  for (const endpoint of ["/scene", "/overview", "/planet-atlas"]) expect(reads.filter(p => p.endsWith(endpoint))).toHaveLength(1);
+  expect(reads.filter(path => path.endsWith("/overview"))).toHaveLength(0);
+  for (const endpoint of ["/scene", "/planet-atlas"]) expect(reads.filter(p => p.endsWith(endpoint))).toHaveLength(1);
   expect(reads.filter(p => /\/world\/viewport|\/chunks\//.test(p))).toEqual([]); expect(errors).toEqual([]);
   await info.attach("compact-release-evidence", { body: JSON.stringify({ sceneRevision: scene.sceneRevision, firstReadyMs,
     sceneBytes: Buffer.byteLength(JSON.stringify(scene)), chunks: scene.chunks.length, tasks: tasks.length, districts: 20,
@@ -137,7 +137,7 @@ test("whole20sprint city fits one review capture without changing its geography"
   expect(scene.city.name).toBe("Город двадцати спринтов");
   const host = page.locator(".world-canvas");
   const minimum = Number(await host.getAttribute("data-minimum-render-scale"));
-  // Reaching the exact minimum intentionally opens COUNTRY; stop just above
+  // Reaching the exact minimum intentionally opens PLANET; stop just above
   // that public navigation threshold to review the complete CITY instead.
   const targetScale = minimum + .025;
   const currentScale = Number(await host.getAttribute("data-render-scale"));

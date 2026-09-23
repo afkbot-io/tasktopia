@@ -1,4 +1,4 @@
-export type AtlasMapLevel = "PLANET" | "COUNTRY" | "CITY";
+export type AtlasMapLevel = "PLANET" | "CITY";
 export type AtlasTransitionPhase = "PRELOAD" | "PREPARE" | "FIRST_FRAME" | "SWAP" | "EVICT";
 
 export type AtlasTransition = {

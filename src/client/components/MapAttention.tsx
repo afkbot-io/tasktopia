@@ -3,7 +3,7 @@ import { loadMapAttention } from "../map-attention-loader";
 import { matchesMapAttention, type MapAttentionMode, type MapAttentionTask } from "../../shared/map-attention";
 const MODES: [MapAttentionMode, string][] = [["MINE", "Мои объекты"], ["TESTING", "Приёмка"], ["DEFECTS", "Нужен ремонт"], ["OVERDUE", "Срыв сроков"]];
 export function MapAttention({ countryId, cityId, userId, revision, onChange }: {
-  countryId: string; cityId: string; userId: string; revision: number; onChange: (value: { scope: string; ids: string[] }) => void;
+  countryId: string; cityId: string; userId: string; revision: number; onChange: (value: { scope: string; ids: string[]; label?:string }) => void;
 }) {
   const [mode, setMode] = useState<MapAttentionMode | null>(null);
   const [tasks, setTasks] = useState<MapAttentionTask[] | null>(null);
@@ -52,11 +52,12 @@ export function MapAttention({ countryId, cityId, userId, revision, onChange }: 
     return () => clearTimeout(timer);
   }, [mode, tasks, now]);
   useLayoutEffect(() => {
-    onChange({ scope, ids: mode && tasks ? tasks.filter(task => matchesMapAttention(task, mode, now)).map(task => task.id) : [] });
+    onChange({ scope, label:MODES.find(([value])=>value===mode)?.[1], ids: mode && tasks ? tasks.filter(task => matchesMapAttention(task, mode, now)).map(task => task.id) : [] });
   }, [scope, mode, tasks, now, onChange]);
   const count = mode && tasks ? tasks.filter(task => matchesMapAttention(task, mode, now)).length : 0;
   return <nav className="map-attention" aria-label="Подсветка построек">
     {MODES.map(([value, label]) => <button key={value} aria-pressed={mode === value} onClick={() => { setNow(Date.now()); setMode(mode === value ? null : value); }}>{label}</button>)}
+    {mode && <button onClick={()=>setMode(null)}>Сбросить фильтр</button>}
     {mode && <span role="status">{error ? <button onClick={() => setRetry(n => n + 1)}>Повторить загрузку</button> : tasks ? `Найдено: ${count}` : "Загрузка…"}</span>}
   </nav>;
 }

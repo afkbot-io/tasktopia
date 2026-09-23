@@ -27,6 +27,19 @@ export function mobilityGrid() {
 }
 
 describe("deterministic joint city mobility", () => {
+  it("reduces active simulation population immediately without rebuilding roads", () => {
+    const input=mobilityGrid(), city=createCityMobility(input);
+    city.advance(2000);
+    const before=city.agents;
+    city.updateNetwork({...input,carLimit:4,walkerLimit:5});
+    expect(city.agents.filter(a=>a.kind==="CAR")).toHaveLength(4);
+    expect(city.agents.filter(a=>a.kind==="WALKER")).toHaveLength(5);
+    for(const actor of city.agents) expect(actor).toEqual(before.find(a=>a.id===actor.id));
+    expect(city.metrics.networkBuilds).toBe(1);
+    city.advance(2000);
+    expect(city.metrics.vehicleUnsafeTotal+city.metrics.pedestrianUnsafeTotal+city.metrics.vehiclePedestrianUnsafeTotal).toBe(0);
+  });
+
   it("spawns native cars and people only off conflict zones with no initial overlaps", () => {
     const input = mobilityGrid(), city = createCityMobility(input);
     expect(city.agents.filter(agent => agent.kind === "CAR")).toHaveLength(12);

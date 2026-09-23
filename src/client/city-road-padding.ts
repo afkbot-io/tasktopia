@@ -9,7 +9,7 @@ export type CityRoadPaddingChunk = {
   roads: RoadCellDto[]; surfaces: SurfaceCellDto[];
   roadContext: Map<string, RoadCellDto>; surfaceContext: Map<string, SurfaceCellDto>;
 };
-export type CityRoadPaddingScene = Pick<CitySceneDto, "chunkSize" | "chunks" | "intercityRoads">;
+export type CityRoadPaddingScene = Pick<CitySceneDto, "chunkSize" | "chunks" | "intercityRoads" | "roadContext">;
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 const inside = (bounds: Rect, cell: Cell) => cell.x >= bounds.minX && cell.x <= bounds.maxX && cell.y >= bounds.minY && cell.y <= bounds.maxY;
 const expand = (bounds: Rect, radius: number): Rect => ({ minX: bounds.minX - radius, minY: bounds.minY - radius, maxX: bounds.maxX + radius, maxY: bounds.maxY + radius });
@@ -34,7 +34,8 @@ export class CityRoadPadding {
   private readonly cache = new Map<string, CityRoadPaddingChunk | undefined>();
   constructor(private readonly scene: CityRoadPaddingScene, private readonly isSurfaceTerrain: (cell: Cell) => boolean) {
     this.residents = new Map(scene.chunks.map(chunk => [`${chunk.chunkX},${chunk.chunkY}`, chunk]));
-    this.network = intercityRoadRasterNetwork(scene.intercityRoads);
+    const intercity = intercityRoadRasterNetwork(scene.intercityRoads);
+    this.network = { ...intercity, segments: [...(scene.roadContext?.segments ?? []), ...intercity.segments] };
   }
   get(x: number, y: number): CityRoadPaddingChunk | undefined {
     const id = `${x},${y}`;

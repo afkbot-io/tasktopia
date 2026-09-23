@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import type { Db } from "./db";
-import { requireUser } from "./auth";
+import { getSessionUser, SESSION_COOKIE, requireUser } from "./auth";
 import { config } from "./config";
 import { taskShareExcerpt, taskSharePublicText, taskShareLocationText, type TaskShareDraft } from "../shared/task-share-preview";
 import { escapeShareHtml as escape, taskShareImage } from "./task-share-image";
@@ -79,6 +79,13 @@ export async function registerTaskShareRoutes(app: FastifyInstance, db: Db): Pro
     const description=row?[row.description,geography].filter(Boolean).join(" · "):"Откройте Tasktopia, чтобы просмотреть доступные вам задачи.";
     const url=`${config.APP_ORIGIN}/share/task/${token}`,image=`${url}/image.png`;
     const target=row?`${config.APP_ORIGIN}/task/${row.task_number}?countryId=${encodeURIComponent(row.country_id)}&taskId=${encodeURIComponent(row.task_id)}`:config.APP_ORIGIN;
-    return headers(reply).code(row?200:404).type("text/html; charset=utf-8").send(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)}</title><link rel="stylesheet" href="/share-preview.css"><meta property="og:type" content="website"><meta property="og:site_name" content="Tasktopia"><meta property="og:locale" content="ru_RU"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:url" content="${escape(url)}"><meta name="twitter:card" content="${row?"summary_large_image":"summary"}"><meta name="twitter:title" content="${escape(title)}"><meta name="twitter:description" content="${escape(description)}">${row?`<meta property="og:image" content="${escape(image)}"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${escape(title+" · "+geography)}"><meta name="twitter:image" content="${escape(image)}"><meta name="twitter:image:alt" content="${escape(title)}">`:""}</head><body><main>${row?`<img class="share-card" src="${escape(image)}" width="1200" height="630" alt="${escape(title)}">`:""}<h1>${escape(title)}</h1>${geography?`<p class="share-location">${escape(geography)}</p>`:""}<p>${escape(row?.description??description)}</p><a href="${escape(target)}">Открыть Tasktopia</a></main></body></html>`);
+    // Members already have access to the live card. Skip image generation and
+    // the guest landing page in browsers and installed PWAs. Cookieless link
+    // crawlers and non-members still receive only the approved public snapshot.
+    if (row) {
+      const user = await getSessionUser(db, request.cookies[SESSION_COOKIE]);
+      if (user && await source(user.id, row.country_id, row.task_id)) return headers(reply).redirect(target, 302);
+    }
+    return headers(reply).code(row?200:404).type("text/html; charset=utf-8").send(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)}</title><link rel="stylesheet" href="/share-preview.css"><meta property="og:type" content="website"><meta property="og:site_name" content="Tasktopia"><meta property="og:locale" content="ru_RU"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:url" content="${escape(url)}"><meta name="twitter:card" content="${row?"summary_large_image":"summary"}"><meta name="twitter:title" content="${escape(title)}"><meta name="twitter:description" content="${escape(description)}">${row?`<meta property="og:image" content="${escape(image)}"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${escape(title+" · "+geography)}"><meta name="twitter:image" content="${escape(image)}"><meta name="twitter:image:alt" content="${escape(title)}">`:""}</head><body><main>${row?`<img class="share-card" src="${escape(image)}" width="1200" height="630" alt="${escape(title)}">`:""}<h1>${escape(title)}</h1>${geography?`<p class="share-location">${escape(geography)}</p>`:""}<p>${escape(row?.description??description)}</p><a href="${escape(target)}">${row ? "Открыть задачу" : "Открыть Tasktopia"}</a></main></body></html>`);
   });
 }

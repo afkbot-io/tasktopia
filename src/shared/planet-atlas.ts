@@ -374,7 +374,7 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto, sector = 0): Projected
     };
   });
 
-  const clouds = Array.from({ length: Math.max(20, Math.min(38, 20 + countries.length * 3)) }, (_, index) => {
+  const clouds = Array.from({ length: Math.max(25, Math.min(48, Math.ceil((20 + countries.length * 3) * 1.25))) }, (_, index) => {
     const cloudSeed = hashText(`cloud:${index}`, atlas.planetSeed);
     return { id: `planet-cloud-${index}`, x: random01(cloudSeed) * pixelWidth, y: (.05 + random01(cloudSeed ^ 0xa531) * .88) * pixelHeight, scale: .48 + random01(cloudSeed ^ 0x13f7) * .62, durationSeconds: 18 + cloudSeed % 17, delaySeconds: -(cloudSeed % 43) };
   });

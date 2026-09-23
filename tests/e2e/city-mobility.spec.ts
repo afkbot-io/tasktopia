@@ -271,6 +271,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await expect(page.locator(".country-title-button")).toBeVisible();
   const bootstrapResponse = await page.request.get("/api/bootstrap");
   expect(bootstrapResponse.status()).toBe(200);
@@ -299,7 +300,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   const sampleScale = Math.max(1.05, Number(await host.getAttribute("data-minimum-render-scale")) + .025);
   const currentScale = Number(await host.getAttribute("data-render-scale"));
   if (currentScale > sampleScale) {
-    // The minimum is now the COUNTRY transition boundary. Stay in detail CITY
+    // The minimum is now the PLANET transition boundary. Stay in detail CITY
     // for mobility measurement; crossing it is a separate wheel-navigation test.
     await page.mouse.wheel(0, Math.log(currentScale / sampleScale) / .0015);
   }
@@ -423,8 +424,8 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   expect(new Set(districtViews.map(view => view.districtId)).size).toBe(2);
 
   phase = "country-transition";
-  await page.getByRole("button", { name: "Страна", exact: true }).click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true", { timeout: 45_000 });
+  await page.getByRole("button", { name: "Планета", exact: true }).click();
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 45_000 });
   await expect(host).toHaveAttribute("data-map-active", "false");
   await expect(host).toHaveAttribute("data-animation-active", "false");
   const pausedFixedSteps = await host.getAttribute("data-mobility-fixed-steps");
@@ -439,11 +440,9 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   await expect(host).toHaveAttribute("data-mobility-fixed-steps", pausedFixedSteps!);
   expect(await originalCanvas!.evaluate(node => node.isConnected)).toBe(true);
   phase = "return-to-city";
-  // Zooming inward goes through actual country/city map targets; the level
-  // toolbar intentionally disables direct PLANET -> CITY jumps.
-  await page.locator('.planet-country-label[data-active="true"]').click();
-  await expect(page.locator(".country-overview")).toHaveAttribute("data-country-ready", "true", { timeout: 45_000 });
-  await page.locator(`.country-overview-city[data-city-id="${city.id}"]`).click();
+  // The city button restores the retained scene after a planet round trip.
+  await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 45_000 });
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await ready(page);
   expect(await originalCanvas!.evaluate(node => node === document.querySelector("canvas[aria-label='Интерактивная карта города']"))).toBe(true);
   await expect(host).toHaveAttribute("data-mobility-network-builds", String(initial.mobilityNetworkBuilds));

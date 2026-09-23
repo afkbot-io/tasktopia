@@ -38,6 +38,9 @@ describe("intercity roads through actual city mutations", { timeout: 60_000 }, (
     }
     const scene = await service.getCityScene(countryId, a.id);
     expect(scene.intercityRoads).toEqual(accepted.plan.routes);
+    const sourceStreets=(await readActiveBlockLayout(db,a.id))!.roadNetwork.segments;
+    expect(scene.roadContext?.segments).toEqual(expect.arrayContaining(sourceStreets));
+    expect(JSON.parse(JSON.stringify(scene)).roadContext).toEqual(scene.roadContext);
     const overview = await service.getCountryOverview(userId, countryId);
     expect(overview.groundRoads.routes.map(route => route.id), JSON.stringify(overview.groundRoads.unavailable))
       .toEqual(accepted.plan.routes.map(route => route.id));

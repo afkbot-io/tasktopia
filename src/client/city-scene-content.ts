@@ -8,5 +8,5 @@ export function sameCitySceneContent(a: CitySceneDto, b: CitySceneDto): boolean 
   if (b.chunks.some(chunk=>{const old=chunks.get(`${chunk.chunkX}:${chunk.chunkY}`);return !old || old.contentHash!==chunk.contentHash || old.publishedVersion!==chunk.publishedVersion;})) return false;
   const snapshots = new Map(a.completedDistrictSnapshots.map(snapshot=>[snapshot.districtId,snapshot.revision]));
   return b.completedDistrictSnapshots.every(snapshot=>snapshots.get(snapshot.districtId)===snapshot.revision)
-    && JSON.stringify([a.city.bounds,a.railway,a.intercityRoads])===JSON.stringify([b.city.bounds,b.railway,b.intercityRoads]);
+    && JSON.stringify([a.city.bounds,a.railway,a.intercityRoads,a.roadContext])===JSON.stringify([b.city.bounds,b.railway,b.intercityRoads,b.roadContext]);
 }

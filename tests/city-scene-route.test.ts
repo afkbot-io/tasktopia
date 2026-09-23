@@ -56,6 +56,7 @@ describe("whole-city scene HTTP boundary", () => {
       completedDistrictSnapshots: [],
       airportConnections: [],
       intercityRoads: [],
+      roadContext: {schemaVersion:1,nodes:[],segments:expect.any(Array)},
     });
     expect(scene.chunks.length).toBeGreaterThan(0);
     expect(scene.chunks.every((chunk: { payloadVersion: number; lod: string }) => chunk.payloadVersion === 2 && chunk.lod === "DETAIL")).toBe(true);
@@ -102,5 +103,6 @@ describe("whole-city scene HTTP boundary", () => {
     });
     expect(rejected.statusCode).toBe(403);
     expect(rejected.json()).not.toHaveProperty("airportConnections");
+    expect(rejected.json()).not.toHaveProperty("roadContext");
   }, 30_000);
 });

@@ -31,11 +31,16 @@ test("server time preserves a platform stop across remount despite a wrong devic
     await route.fulfill({response,headers,json:scene});
   });
   await page.goto("/");
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const city=page.locator(".world-canvas");
+  await expect(city).toHaveAttribute("data-city-scene-commit","atomic");
   await expect(city).toHaveAttribute("data-city-train-phase","stopped");
   await expect(city).toHaveAttribute("data-city-train-wagons","3");
+  await expect(city).toHaveAttribute("data-city-train-lead",/.+/);
   const before=await city.getAttribute("data-city-train-lead");
   await page.reload();
+    await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
+  await expect(city).toHaveAttribute("data-city-scene-commit","atomic");
   await expect(city).toHaveAttribute("data-city-train-phase","stopped");
   await expect(city).toHaveAttribute("data-city-train-lead",before!);
 });

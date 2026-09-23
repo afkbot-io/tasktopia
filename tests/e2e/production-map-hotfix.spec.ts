@@ -7,7 +7,7 @@ async function login(page: Page) {
   await page.getByRole("button", { name: "Открыть страну" }).click();
 }
 
-test("hotfix keeps city, country and planet usable and visually connected", async ({ page }, testInfo) => {
+test("hotfix keeps city and planet usable and visually connected", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
   const failures: string[] = [];
   const mapRequests: string[] = [];
@@ -22,6 +22,7 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
   });
 
   await login(page);
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   const city = page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });
   await expect(city).toHaveAttribute("data-loading", "false", { timeout: 90_000 });
@@ -56,27 +57,6 @@ test("hotfix keeps city, country and planet usable and visually connected", asyn
   await page.locator(".modal-close").click();
 
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  const country = page.locator(".country-overview");
-  await page.mouse.wheel(0, 4_000);
-  await expect(country).toBeVisible({ timeout: 5_000 });
-  await expect(country.locator(".country-overview-city")).toHaveCount(1);
-  // This fixture has one city: there is no second airport for an intercity
-  // flight. The dedicated country-overview fixture covers an actual route.
-  await expect(country).toHaveAttribute("data-country-flights", "0");
-  await expect(country.locator(".country-atlas-aircraft")).toHaveCount(0);
-  await expect(country.locator(".country-side-fog")).toHaveCount(0);
-  await expect(country).toHaveAttribute("data-country-ready", "true");
-  expect(Number(await country.getAttribute("data-country-zoom"))).toBeGreaterThanOrEqual(.55);
-  expect(Number(await country.getAttribute("data-country-zoom"))).toBeLessThanOrEqual(1.1);
-  await page.screenshot({ path: testInfo.outputPath("country.png"), fullPage: true });
-
-  const countryBox = await country.boundingBox();
-  expect(countryBox).not.toBeNull();
-  await expect(page.locator(".map-level-transition")).toHaveCount(0);
-  await page.mouse.move(countryBox!.x + countryBox!.width / 2, countryBox!.y + countryBox!.height / 2);
-  // A deliberate new gesture crosses COUNTRY -> PLANET on its first boundary
-  // delta. Do not depend on driver latency to split or join wheel bursts.
-  await page.waitForTimeout(300);
   await page.mouse.wheel(0, 4_000);
   const planet = page.locator(".planet-atlas");
   await expect(planet).toBeVisible({ timeout: 5_000 });
