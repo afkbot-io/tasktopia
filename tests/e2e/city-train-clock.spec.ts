@@ -7,7 +7,7 @@ test("server time preserves a platform stop across remount despite a wrong devic
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL ?? ""),"Local scene fixture only");
   await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
   await page.clock.setFixedTime(new Date("2035-01-01T00:00:00Z"));
-  let anchor: number | null = null, anchoredAt = 0;
+  let anchor: number | null = null;
   await page.route("**/api/**",async route=>{
     const response = await route.fetch();
     const headers = {...response.headers()}; delete headers["x-tasktopia-server-time"];
@@ -25,10 +25,12 @@ test("server time preserves a platform stop across remount despite a wrong devic
     const schedule=transportSchedule("RAIL",stationId,"z-other-station");
     scene.railConnections=[{id:schedule.id,fromStationId:stationId,toStationId:"z-other-station",fromCityId:scene.city.id,toCityId:"other-city"}];
     if(anchor===null) {
-      anchor=TRANSPORT_EPOCH-schedule.offsetMs+1000; anchoredAt=performance.now();
+      anchor=TRANSPORT_EPOCH-schedule.offsetMs+1000;
     }
+    // Each mount samples the same server instant. Wall time spent loading
+    // a software-rendered scene must not exhaust the 12-second station stop.
     headers["cache-control"]="private, no-store";
-    headers["x-tasktopia-server-time"]=String(anchor+performance.now()-anchoredAt);
+    headers["x-tasktopia-server-time"]=String(anchor);
     await route.fulfill({response,headers,json:scene});
   });
   await page.goto("/");

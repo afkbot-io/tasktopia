@@ -24,6 +24,7 @@ test("city development opens lazily and links to existing service tasks", async 
   await page.locator(".game-popover > summary").filter({hasText:"Фильтры"}).click();
   await page.getByRole("button",{name:"Развитие города",exact:true}).click();
   await expect(panel).toBeInViewport();
+  await expect(page.locator(".map-toolbar details[open]")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
   expect(errors).toEqual([]);

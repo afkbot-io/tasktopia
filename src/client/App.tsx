@@ -570,7 +570,7 @@ export function App() {
           {effectiveMapMode === "CITY" && activeCity && <GamePopover label="Фильтры" icon="▤" activeLabel={attention.scope===`${bootstrap.user.id}:${countryId}:${activeCity.id}`?attention.label:undefined}>
             <strong>Показать на карте</strong>
             <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} />
-            <button className="city-development-toggle" onClick={() => setDevelopmentOpen(value => !value)} aria-expanded={developmentOpen}>Развитие города</button>
+            <button className="city-development-toggle" onClick={event => { const menu = event.currentTarget.closest("details"); if (menu) menu.open = false; setDevelopmentOpen(value => !value); }} aria-expanded={developmentOpen}>Развитие города</button>
           </GamePopover>}
           <GamePopover label="Меню" icon="≡" className="world-menu">
             <strong>{bootstrap.country.name}</strong>
