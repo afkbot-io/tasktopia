@@ -46,6 +46,9 @@ test("map navigation, labels and task controls follow the revised visual contrac
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   await page.screenshot({ path: "screenshots/visual-consistency/planet.png" });
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("navigation", { name: "Уровень карты" })).toHaveCount(0);
+  await openMapCity(page);
+  await expect(city).toHaveAttribute("data-city-scene-commit", "atomic");
   await expect(page.getByRole("button", { name: "Районы", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await page.screenshot({ path: "screenshots/visual-consistency/mobile.png" });
