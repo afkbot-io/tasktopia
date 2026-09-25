@@ -21,6 +21,8 @@ class SchemaFingerprintTests(unittest.TestCase):
           (b'CHECK (x BETWEEN (a AND b) AND c)',b'CHECK (x BETWEEN a AND b AND c)'),
           (b'AS $$ SELECT ((a AND b) AND c) $$',b'AS $$ SELECT (a AND b AND c) $$'),
           (b'CHECK ("AND" = 1)',b'CHECK ("AND" = 2)'),
+          (b'CHECK (a || b)',b'CHECK (a | | b)'),
+          (b'CHECK (x = 12)',b'CHECK (x = 1 2)'),
         ]
         for a,b in pairs:
             with self.subTest(a=a): self.assertNotEqual(canonical_schema(a),canonical_schema(b))

@@ -39,8 +39,6 @@ def canonical_schema(schema):
     current = root
     for match in tokens:
         token = match.group()
-        if token.isspace():
-            continue
         if token == "(":
             child = []
             current.append(child)
@@ -77,8 +75,13 @@ def canonical_schema(schema):
         if parts:
             flattened = []
             for part in parts:
-                child = conjunction(part[0]) if len(part) == 1 and isinstance(part[0], list) else None
-                flattened.extend(child or [part])
+                significant = [(i, node) for i, node in enumerate(part)
+                               if isinstance(node, list) or not node.isspace()]
+                if len(significant) == 1:
+                    index, node = significant[0]
+                    if isinstance(node, list) and conjunction(node):
+                        part = part[:index] + node + part[index + 1:]
+                flattened.append(part)
             nodes = []
             for part in flattened:
                 if nodes:
@@ -87,7 +90,7 @@ def canonical_schema(schema):
         return nodes
 
     def render(nodes):
-        return " ".join("(" + render(node) + ")" if isinstance(node, list) else node for node in nodes)
+        return "".join("(" + render(node) + ")" if isinstance(node, list) else node for node in nodes)
     return render(normalize(root)).encode()
 
 
