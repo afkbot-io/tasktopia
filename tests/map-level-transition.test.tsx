@@ -15,3 +15,13 @@ describe("map level transition", () => {
     expect(html).toContain('role="status"');
   });
 });
+
+it('keeps a phrase stable through one transition and avoids adjacent repeats',()=>{
+ let previous=-1;
+ for(let n=0;n<30;n++){
+  const transition=createAtlasTransition('PLANET','CITY',{x:.5,y:.5},n);
+  expect(transition.phraseIndex).not.toBe(previous);
+  previous=transition.phraseIndex!;
+  expect(renderToStaticMarkup(<MapLevelTransition transition={transition}/>)).toEqual(renderToStaticMarkup(<MapLevelTransition transition={transition}/>));
+ }
+});

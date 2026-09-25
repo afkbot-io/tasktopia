@@ -2261,6 +2261,17 @@ export class AppService {
                       const defaults: Record<TaskStatus, number> = { PLANNING: 0, STARTED: 0, IN_PROGRESS: 50, TESTING: 90, COMPLETED: 100 };
                       const progress = input.progress == null ? defaults[input.status] : Math.max(range[0], Math.min(range[1], Math.round(input.progress)));
                       const updatedAt = now();
+                      // The country lock in mutate serializes starts and assignments.
+                      // Reading/progress updates never take ownership away from another member.
+                      const autoAssign = !task.assignee && input.actorUserId &&
+                        task.status === "PLANNING" && input.status === "STARTED";
+                      if (autoAssign) {
+                        const member = await this.db.prepare("SELECT role FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, input.actorUserId) as Row | undefined;
+                        if (!member || member.role === "VIEWER") throw new DomainError("FORBIDDEN", "Начать работу может только участник с правом изменения задач");
+                        await this.db.prepare("UPDATE tasks_v3 SET assignee_user_id = ? WHERE id = ?").run(input.actorUserId, task.id);
+                        await this.recordTaskEvent(task.id, "ASSIGNEE_CHANGED", input.actor ?? "MCP", input.actorUserId,
+                          { fromUserId: null, toUserId: input.actorUserId, reason: "WORK_STARTED" }, updatedAt);
+                      }
                       await this.db.prepare("UPDATE tasks_v3 SET status = ?, progress = ?, updated_at = ? WHERE id = ?").run(input.status, progress, updatedAt, input.taskId);
                       if (input.comment?.trim()) await this.db.prepare("INSERT INTO task_comments_v3 (id, task_id, body, actor, created_at) VALUES (?, ?, ?, ?, ?)")
                                                                         .run(randomUUID(), input.taskId, input.comment.trim().slice(0, 8000), input.actor ?? "MCP client", updatedAt);
@@ -2275,6 +2286,7 @@ export class AppService {
                         eventPayload: {
                           taskId: input.taskId,
                           status: input.status,
+                          ...(autoAssign ? { assigneeUserId: data.assignee?.id } : {}),
                           progress,
                           stage: data.stage,
                           serviceRole: data.serviceRole,

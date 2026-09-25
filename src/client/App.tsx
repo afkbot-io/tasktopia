@@ -39,6 +39,7 @@ import { WorldAmbientLighting } from "./components/WorldAmbientLighting";
 const loadWorldRenderer = () => import("./components/WorldCanvas").then(module => ({ default: module.WorldCanvas }));
 const WorldCanvas = lazy(loadWorldRenderer);
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
+const CityDocuments = lazy(() => import("./components/CityDocuments").then(module => ({ default: module.CityDocuments })));
 const CityDevelopmentPanel = lazy(() => import("./components/CityDevelopmentPanel").then(module => ({ default: module.CityDevelopmentPanel })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
@@ -134,6 +135,8 @@ export function App() {
   const [attention, setAttention] = useState<{ scope: string; ids: string[]; label?:string }>({ scope: "", ids: [] });
   const [dependencyTask, setDependencyTask] = useState<{ scope: string; id: string }>();
   const [dependencyData, setDependencyData] = useState<{ scope: string; selection?: MapDependencySelection }>({ scope: "" });
+  const [documentsOpen, setDocumentsOpen] = useState(false);
+  const closeDocuments = useCallback(() => setDocumentsOpen(false), []);
   const [developmentOpen, setDevelopmentOpen] = useState(false);
   const closeDevelopment = useCallback(() => setDevelopmentOpen(false), []);
   const [attentionRevision, setAttentionRevision] = useState(0);
@@ -255,6 +258,7 @@ export function App() {
     setCountryMenuOpen(false);
     setDirectoryOpen(false);
     setDirectoryFocus(undefined);
+    setDocumentsOpen(false);
     setDevelopmentOpen(false);
   }, []);
 
@@ -576,6 +580,7 @@ export function App() {
             <strong>{bootstrap.country.name}</strong>
             <button onClick={() => {setDirectoryOpen(false);setCountryMenuOpen(true);}}>Выбрать мир</button>
             <button onClick={() => { setCountryMenuOpen(false);setDirectoryFocus(undefined);setDirectorySection("cities");setDirectoryOpen(true); }}>Города</button>
+            <button onClick={event => { const menu=event.currentTarget.closest("details"); if(menu) {menu.open=false; menu.querySelector("summary")?.focus();} setDirectoryOpen(false);setDevelopmentOpen(false);setDocumentsOpen(true); }}>Документы</button>
             <button onClick={openArchive}>Архив проекта</button>
             <button onClick={() => openSettings("mcp")}>Подключить MCP</button>
             <button onClick={() => openSettings("account")}>Аккаунт и настройки</button>
@@ -639,6 +644,7 @@ export function App() {
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
         setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true);
       }} />}
+      {documentsOpen && <Suspense fallback={<div role="status" className="app-loading">Открываем документы…</div>}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={setSelectedTask} /></Suspense>}
       {directoryOpen && <CityDirectory key={`${countryId}:${directoryFocus?.districtId ?? "general"}`} initialFocus={directoryFocus} bootstrap={bootstrap} refreshToken={revision} initialSection={directorySection} onClose={() => setDirectoryOpen(false)} onCityFocus={(city) => {
         setDirectoryOpen(false);
         void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {

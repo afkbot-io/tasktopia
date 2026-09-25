@@ -271,3 +271,79 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
  .map-toolbar .world-digest > summary { min-width:44px;min-height:44px; }
  .world-digest .game-popover-panel { position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:12px;max-width:calc(100vw - 24px); }
 }
+
+/* Shared controls also cover entry forms: no container-specific palette needed. */
+.game-button {border-radius:3px;border-color:#7f9166;background:#31533e;color:#f3e7bf;box-shadow:0 2px #163422;}
+.game-button:hover {background:#42634c;border-color:#b7a374;}
+.game-button[data-game-variant="primary"] {background:#b5a25e;color:#263c2c;border-color:#8d814c;}
+.game-button[data-game-variant="quiet"] {background:transparent;color:#cbd5b8;box-shadow:none;}
+.game-button[data-game-variant="danger"] {background:#eed8bf;color:#843f32;border-color:#b68264;}
+.game-field {color:#42553e;}
+.game-field input {border-radius:3px;background:#faf2dc;color:var(--game-ink);border-color:#b6b193;}
+.game-field small {color:#5b684e;}
+.auth-screen {background:var(--game-frame-dark);}
+.auth-screen > section:last-child {background:var(--game-frame-dark);border-color:var(--game-brass);}
+.auth-screen > section:last-child > div {border-radius:4px;border:2px solid var(--game-brass);background:var(--game-paper);color:var(--game-ink);box-shadow:0 0 0 3px #183932,6px 8px #061c1840;}
+.auth-screen h2,.auth-screen .eyebrow {color:#405d43;}
+.auth-screen .auth-visual .eyebrow {color:#c7c99f;}
+.auth-screen > section:last-child p {color:#59664f;}
+.auth-screen dl > div {border-radius:2px;background:#e0dbc0;border-color:#b8b392;}
+.auth-screen dd {color:#3e5842;}
+.auth-screen dt {color:#725a29;}
+.auth-screen .game-button[data-game-variant="quiet"] {color:#406447;}
+.game-document {background:var(--game-paper);color:var(--game-ink);border:2px solid var(--game-brass);border-radius:4px;box-shadow:0 0 0 3px var(--game-frame),6px 8px #10261e50;}
+.documents-backdrop {z-index:55;display:grid;place-items:center;padding:20px;}
+.city-documents {display:flex;flex-direction:column;width:min(760px,100%);max-height:calc(100dvh - 40px);overflow:hidden;}
+.city-documents > header {display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--game-frame);color:#f1e4bd;gap:12px;}
+.city-documents h2 {margin:2px 0 0;font-size:22px;}
+.city-documents header small {font-size:10px;letter-spacing:.1em;}
+.city-documents button {cursor:pointer;min-height:44px;border:1px solid #ada986;background:#f3ebd1;color:#334c39;border-radius:2px;padding:8px 12px;}
+.city-documents button:disabled {opacity:.5;cursor:default;}
+.city-documents header button {background:#31533e;color:#f3e7bf;min-width:44px;}
+.document-tabs {display:flex;gap:4px;padding:8px;border-bottom:1px solid #b8b392;}
+.document-tabs button {flex:1;min-width:0;}
+.document-tabs button[aria-pressed="true"] {background:#d0dbb9;border-color:#778c60;}
+.document-filters {display:flex;gap:12px;padding:12px 20px;border-bottom:1px solid #c3bea0;flex-wrap:wrap;}
+.document-filters label {color:#42553e;flex:1;min-width:130px;display:grid;gap:4px;font-size:12px;}
+.document-filters select {min-width:0;width:100%;min-height:44px;background:#faf2dc;color:#334c39;border:1px solid #b6b193;border-radius:2px;padding:6px;}
+.document-body {overflow:auto;overscroll-behavior:contain;padding:12px 20px 20px;min-height:0;}
+.document-body h3 {font-size:14px;margin:16px 0 6px;}
+.document-goal {margin:0;border-bottom:1px solid #c3bea0;padding-bottom:12px;}
+.document-goal small {display:block;margin-top:4px;}
+.document-total {color:#58654f;font-size:12px;}
+.document-tasks {list-style:none;padding:0;margin:0;}
+.document-tasks li {border-bottom:1px solid #c7c2a5;}
+.document-tasks button {display:flex;gap:12px;width:100%;text-align:left;background:transparent;border:0;padding:10px 4px;}
+.document-tasks button:hover {background:#dce2c7;}
+.document-tasks span {min-width:0;overflow-wrap:anywhere;}
+.document-tasks strong {font-size:14px;}
+.document-tasks small,.document-tasks em {display:block;font-size:12px;font-style:normal;margin-top:4px;color:#53644c;}
+.document-tasks em {color:#805b30;}
+.document-counts {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.document-counts > div {padding:12px;border:1px solid #c0bc9e;background:#e1ddc2;}
+.document-counts dt {font-size:12px;}
+.document-counts dd {margin:4px 0 0;font-weight:bold;font-size:24px;}
+.document-pagination {display:flex;justify-content:space-between;margin-top:16px;}
+.world-digest .game-popover-panel {width:360px;max-height:calc(100dvh - 90px);overflow:auto;}
+.world-digest ul {max-height:45dvh;overflow:auto;overscroll-behavior:contain;}
+.world-digest time {font-size:10px;color:#68725b;display:block;}
+.map-level-transition {background:radial-gradient(ellipse at var(--map-transition-x) var(--map-transition-y),#678c7555,#122e27ed);}
+.map-level-transition-pixels {background-image:linear-gradient(135deg,transparent 30%,#aec5a14d 32%,#aec5a14d 55%,transparent 57%);background-size:160px 96px;animation:document-cloud-pass 2s steps(16,end) infinite;}
+.map-level-transition-focus i {border-color:#b7c69a;}
+.map-transition-phrase {font-size:12px;text-transform:none;letter-spacing:0;max-width:280px;text-align:center;line-height:1.5;animation:document-phrase-appear .3s .5s both;}
+@keyframes document-cloud-pass {from{transform:translate(0,-16px);}to{transform:translate(80px,32px);}}
+@keyframes document-phrase-appear {from{opacity:0;}to{opacity:1;}}
+:root[data-world-quality="ECONOMY"] .map-level-transition-pixels,:root[data-world-motion="REDUCED"] .map-level-transition-pixels,:root[data-world-motion="REDUCED"] .map-level-transition-focus i {animation:none;}
+@media(prefers-reduced-motion:reduce) {.map-level-transition-pixels,.map-level-transition-focus i,.map-transition-phrase {animation:none;}}
+@media(max-width:600px) {
+ .documents-backdrop {padding:8px;}
+ .city-documents {max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));width:100%;}
+ .city-documents > header {padding:12px;}
+ .document-filters,.document-body {padding:12px;}
+ .document-tabs button {font-size:12px;padding:8px 4px;}
+ .auth-screen > .auth-visual {min-height:0;padding:16px 20px;}
+ .auth-screen .auth-visual > div:nth-child(2) {margin-top:24px;}
+ .auth-screen .auth-visual h1 {font-size:32px;}
+ .auth-screen .auth-world {display:none;}
+ .auth-screen .auth-visual p {margin-top:12px;}
+}

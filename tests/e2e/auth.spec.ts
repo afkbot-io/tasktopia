@@ -20,15 +20,11 @@ test("uses the game asset pack without exposing implementation notes", async ({ 
   }
 });
 
-test("keeps the mobile game scene below the hero copy", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-
-  const copy = await page.getByText(/Tasktopia превращает ваши дела/).boundingBox();
-  const scene = await page.locator(".auth-world").boundingBox();
-  expect(copy).not.toBeNull();
-  expect(scene).not.toBeNull();
-  expect(scene!.y).toBeGreaterThanOrEqual(copy!.y + copy!.height - 4);
+test("keeps the mobile login form ahead of decorative content", async ({ page }) => {
+  await page.setViewportSize({width:390,height:844}); await page.goto("/");
+  await expect(page.getByLabel("Email")).toBeInViewport();
+  await expect(page.locator(".auth-world")).toBeHidden();
+  expect(await page.locator(".auth-screen").evaluate(n=>n.scrollWidth<=n.clientWidth)).toBe(true);
 });
 
 test("shows a clear duplicate-registration error and keeps the form usable", async ({ page }) => {
