@@ -277,9 +277,8 @@ function terrainSprite(cell: ChunkDto["terrain"][number], terrainAtCell: (column
   const p = position(cell);
   const result = new Sprite(texture);
   result.position.set(p.x, p.y);
-  // Let the coherent seed ground soften the dense grass stamp. Water and all
-  // semantic road/building surfaces keep their original authored opacity.
-  if(kind==='grass'||kind==='meadow')result.alpha=.74;
+  // Ground must cover its substrate equally inside the city and in exterior
+  // padding; translucency exposes the rectangular city-only fallback below.
   return result;
 }
 
@@ -307,9 +306,7 @@ function addTerrainPlacements(group: Container, placements: TerrainPlacement[]):
   for (const cell of placements) {
     const mask = atlasTerrainConnectionMask(cell.kind, cell.x, cell.y, (column, row) => kinds.get(key({ x: column, y: row })));
     const tile = atlasTerrainTile(cell.kind, "city", cell.x, cell.y, mask);
-    const view=atlasSprite(tile,cell);
-    if(cell.kind==='grass'||cell.kind==='meadow')view.alpha=.74;
-    group.addChild(view);
+    group.addChild(atlasSprite(tile, cell));
   }
 }
 
@@ -728,7 +725,7 @@ function drawWorldFeature(
       const rubble = sprite(PROP_SPRITES[key]!, x, y); rubble.anchor.set(0.5, 1); content.addChild(rubble);
     }
     if (feature.siteMarker) {
-      const presentation = siteMarkerPresentation(feature.siteMarker);
+      const presentation = siteMarkerPresentation();
       const text = new Text({ text: presentation.badge, resolution: 2, style: { fontFamily: "monospace", fontSize: 6, fontWeight: "bold", fill: presentation.color } });
       text.position.set(Math.round((width - text.width) / 2), Math.max(0, height - 8));
       const panel = new Graphics().rect(text.x - 2, text.y - 1, Math.ceil(text.width) + 4, 8).fill(0x30464c);
@@ -3163,7 +3160,6 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         );
         host!.dataset.taskBuildingViews = String(taskBuildingViews.size);
         host!.dataset.siteMarkers = String([...features.values()].filter(feature => feature.siteMarker).length);
-        host!.dataset.movedSites = String([...features.values()].filter(feature => feature.siteMarker?.kind === "RELOCATED").length);
         host!.dataset.incidents = String(incidentViews.size);
         host!.dataset.incidentEngines = String([...incidentViews.values()].filter((view) => view.fullResponse).length);
         host!.dataset.hotfixIncidents = String([...incidentViews.values()].filter((view) => view.mode === "HOTFIX_ACTIVE").length);

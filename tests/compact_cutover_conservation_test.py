@@ -34,11 +34,20 @@ class ConservationTests(unittest.TestCase):
             def sql(query, output_name, max_bytes):
                 seen.append(query)
                 (root / output_name).write_text(json.dumps({"id": "existing", "origin_x": 12}) + "\n")
-            db = SimpleNamespace(runner=runner, json=lambda query: ["tasks_v3", "city_layouts_v1"], sql=sql)
+            db = SimpleNamespace(runner=runner, json=lambda query: ["tasks_v3", "city_layouts_v1", "city_railway_corridors_v1"], sql=sql)
             result = capture_business(db, preserve_world=True)
-            self.assertEqual(set(result), {"tasks_v3", "city_layouts_v1"})
-            self.assertEqual(len(seen), 2)
+            self.assertEqual(set(result), {"tasks_v3", "city_layouts_v1", "city_railway_corridors_v1"})
+            self.assertEqual(len(seen), 3)
             self.assertEqual(set(capture_business(db)), {"tasks_v3"})
+
+    def test_archived_marker_keeps_history_when_derived_layout_is_replaced(self):
+        row = {"id": "site", "kind": "RELOCATED", "layout_id": "old", "block_id": "old-block",
+               "snapshot_json": {"title": "Original"}, "block_snapshot_json": {"origin_x": 10},
+               "geometry_json": {"origin": {"x": 10, "y": 20}}}
+        detached = dict(row, layout_id=None, block_id=None)
+        self.assertEqual(project_row("site_markers_v1", row), project_row("site_markers_v1", detached))
+        for field in ("snapshot_json", "block_snapshot_json", "geometry_json", "id", "kind"):
+            self.assertNotEqual(project_row("site_markers_v1", row), project_row("site_markers_v1", dict(detached, **{field: None})))
 
     def test_old_events_and_business_rows_must_remain(self):
         before = {"tasks_v3": ["a"], "events": ["b", "b"]}

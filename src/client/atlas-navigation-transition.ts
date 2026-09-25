@@ -9,11 +9,8 @@ export type AtlasTransition = {
   startedAt: number;
   durationMs: number;
   phase: AtlasTransitionPhase;
-  phraseIndex?: number;
   destinationName?: string;
 };
-
-let previousPhrase = -1;
 
 export function createAtlasTransition(
   from: AtlasMapLevel,
@@ -22,10 +19,7 @@ export function createAtlasTransition(
   startedAt: number,
   durationMs = 720,
 ): AtlasTransition {
-  const phraseIndex = (previousPhrase + 1 + Math.floor(Math.random() * 4)) % 5;
-  previousPhrase = phraseIndex;
   return {
-    phraseIndex,
     id: `${from.toLowerCase()}-${to.toLowerCase()}-${Math.round(startedAt)}`,
     from,
     to,

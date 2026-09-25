@@ -20,7 +20,11 @@ for (const dpr of [1, 2]) test.describe(`подписи городов DPR ${dpr
     await svg.focus();
     // Keyboard movement is deterministic and shares the actual camera reducer.
     for (let i = 0; i < 8; i++) await page.keyboard.press('Shift+ArrowRight');
+    // A compact city can remain at the horizontal clamp edge; move it outside
+    // both viewport axes rather than assuming the old scattered footprint.
+    for (let i = 0; i < 8; i++) await page.keyboard.press('Shift+ArrowDown');
     await expect(labels).toHaveCount(0);
+    for (let i = 0; i < 6; i++) await page.keyboard.press('Shift+ArrowUp');
     for (let i = 0; i < 6; i++) await page.keyboard.press('Shift+ArrowLeft');
     // The camera clamps at the boundary; restore around the original city.
     for (let i = 0; i < 6 && await labels.count() === 0; i++) await page.keyboard.press('ArrowRight');

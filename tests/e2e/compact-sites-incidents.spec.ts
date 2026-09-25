@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import type { BootstrapDto, TaskDto, WorldFeatureDto } from "../../src/shared/contracts";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../../src/shared/city-scene-contract";
+import { openMapCity } from "./map-navigation";
 import { taskLink } from "../../src/client/task-navigation";
 
 test.skip(process.env.E2E_PERMANENT_SITE_FIXTURE !== "true", "Explicit isolated local mutable compact fixture only");
@@ -13,6 +14,7 @@ async function login(page: Page) {
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
+  await openMapCity(page);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 60_000 });
   return (await (await page.request.get("/api/bootstrap")).json()) as BootstrapDto;
 }
@@ -53,7 +55,7 @@ async function screenshot(page: Page, name: string) {
   await page.screenshot({ path: `${screenshots}/${name}.png`, fullPage: true });
 }
 
-test("API transfer leaves clickable MOVE without a task-modal transfer control; deletion retains both occupied historical sites", async ({ page }, info) => {
+test("transfer releases its old parcel without an editing control; deletion retains only the final ruin", async ({ page }, info) => {
   test.setTimeout(120_000);
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   const bootstrap = await login(page);
@@ -64,7 +66,7 @@ test("API transfer leaves clickable MOVE without a task-modal transfer control; 
   await page.goto(taskLink(bootstrap.country.id, original));
   await expect(page.locator("#task-title")).toContainText(original.title);
   await expect(page.getByRole("button", { name: "Перенести в другой спринт" })).toHaveCount(0);
-  const targetDistrictId = initial.chunks.flatMap(chunk => chunk.districts).find(d => d.id !== original.districtId)!.id;
+  const targetDistrictId = initial.chunks.flatMap(chunk => chunk.districts).find(d => d.id !== original.districtId && d.status !== "COMPLETED" && d.status !== "ABANDONED")!.id;
   const response = await page.request.post(`/api/tasks/${original.id}/transfer`, {
     data: { targetDistrictId, idempotencyKey: randomUUID() },
   });
@@ -74,16 +76,13 @@ test("API transfer leaves clickable MOVE without a task-modal transfer control; 
   expect(moved.districtId).not.toBe(original.districtId);
   await expect(page.locator(".task-transfer-panel")).toHaveCount(0);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-moved-sites", String(previousMarkers.filter(feature => feature.siteMarker?.kind === "RELOCATED").length + 1));
-  const marker = (await scene(page, bootstrap)).chunks.flatMap(chunk => chunk.worldFeatures)
-    .find(feature => feature.siteMarker?.kind === "RELOCATED" && feature.siteMarker.snapshot.taskNumber === original.taskNumber)!;
-  expect(marker.origin).toEqual(original.origin);
-  await clickSite(page, marker);
-  await expect(page.locator(".site-history-modal")).toContainText(original.title);
-  await screenshot(page, "move-history");
-  const resolveResponse = page.waitForResponse(response => response.url().includes(`/api/tasks/resolve?id=${original.id}`));
-  await page.getByRole("button", { name: "Открыть текущую задачу" }).click();
-  expect((await (await resolveResponse).json()).origin).toEqual(moved.origin);
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic");
+  const afterTransfer = await scene(page, bootstrap);
+  expect(afterTransfer.chunks.flatMap(chunk => chunk.worldFeatures)
+    .filter(feature => feature.siteMarker?.kind === "RELOCATED")).toEqual([]);
+  const resolved = await page.request.get(`/api/tasks/resolve?id=${original.id}`);
+  expect((await resolved.json()).origin).toEqual(moved.origin);
+  await page.goto(taskLink(bootstrap.country.id, moved));
   await expect(page.locator("#task-title")).toContainText(original.title);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
 
@@ -91,7 +90,7 @@ test("API transfer leaves clickable MOVE without a task-modal transfer control; 
   // canvas click, never an injected React/Pixi callback or screenshot mockup.
   const deletion = await page.request.delete(`/api/tasks/${moved.id}`, { data: { confirmTitle: moved.title, idempotencyKey: `site-delete-${moved.id}` } });
   expect(deletion.status(), await deletion.text()).toBe(200);
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-site-markers", String(previousMarkers.length + 2));
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-site-markers", String(previousMarkers.length + 1));
   const after = await scene(page, bootstrap);
   const ruined = after.chunks.flatMap(chunk => chunk.worldFeatures).find(feature => feature.siteMarker?.kind === "RUINED" && feature.siteMarker.snapshot.taskNumber === moved.taskNumber)!;
   expect(ruined.origin).toEqual(moved.origin);
@@ -102,11 +101,12 @@ test("API transfer leaves clickable MOVE without a task-modal transfer control; 
   await screenshot(page, "ruin-history");
   await page.keyboard.press("Escape");
   await page.reload();
-  await expect(page.locator(".world-canvas")).toHaveAttribute("data-site-markers", String(previousMarkers.length + 2), { timeout: 60_000 });
-  await clickSite(page, marker);
+  await openMapCity(page);
+  await expect(page.locator(".world-canvas")).toHaveAttribute("data-site-markers", String(previousMarkers.length + 1), { timeout: 60_000 });
+  await clickSite(page, ruined);
   await expect(page.getByRole("button", { name: "Открыть текущую задачу" })).toHaveCount(0);
   expect(errors).toEqual([]);
-  await info.attach("permanent-sites", { body: JSON.stringify({ original: original.origin, moved: moved.origin, taskId: moved.id, markerId: marker.id, ruinId: ruined.id, errors }), contentType: "application/json" });
+  await info.attach("permanent-sites", { body: JSON.stringify({ original: original.origin, moved: moved.origin, taskId: moved.id, ruinId: ruined.id, errors }), contentType: "application/json" });
 });
 
 test("HOTFIX verification is quiet; active compact construction has bounded effects that clean up", async ({ page }) => {
@@ -142,10 +142,11 @@ test("HOTFIX verification is quiet; active compact construction has bounded effe
   expect(errors).toEqual([]);
 });
 
-test("retained MOVE and ruined sites remain selectable after a new login", async ({ page }) => {
+test("ruins remain selectable after a new login without relocation markers", async ({ page }) => {
   const bootstrap = await login(page);
   const sites = (await scene(page, bootstrap)).chunks.flatMap(chunk => chunk.worldFeatures);
-  for (const kind of ["RELOCATED", "RUINED"] as const) {
+  expect(sites.some(feature => feature.siteMarker?.kind === "RELOCATED")).toBe(false);
+  for (const kind of ["RUINED"] as const) {
     const feature = sites.find(candidate => candidate.siteMarker?.kind === kind)!;
     expect(feature).toBeDefined();
     await clickSite(page, feature);

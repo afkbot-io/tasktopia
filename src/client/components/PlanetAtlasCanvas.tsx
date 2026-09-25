@@ -4,7 +4,7 @@ import { ScheduledAtlasTrains } from "./ScheduledAtlasTrains";
 import { useAtlasQuality } from "../use-atlas-quality";
 import { readWorldPreferences, subscribeWorldPreferences } from "../world-preferences";
 import { PlanetCloud } from "./PlanetCloud";
-import { planetLabelDetail, planetMiniatureScales } from "../planet-presentation";
+import { compactPlanetCities, planetLabelDetail, planetMiniatureScales } from "../planet-presentation";
 import { PlanetCityMiniature } from "./PlanetCityMiniature";
 import { planetCityTargets, planetCityAtPoint, layoutPlanetCityLabels, type PlanetCityTarget } from "../planet-city-targets";
 import { atlasShipPath } from "../../shared/atlas-ship-path";
@@ -193,7 +193,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const sectors = useMemo(() => [...new Set(Object.values(atlas?.geography?.countries ?? {}).map(country => country.sector ?? 0))].sort((a,b)=>a-b), [atlas]);
   const preferredSector = atlas?.geography?.countries[initialFocusCountryId ?? activeCountryId]?.sector ?? 0;
   const sector = selectedSector !== null && sectors.includes(selectedSector) ? selectedSector : sectors.includes(preferredSector) ? preferredSector : sectors[0] ?? 0;
-  const projectedAtlas = useMemo(() => atlas ? projectPlanetAtlas(atlas, sector) : null, [atlas, sector]);
+  const projectedAtlas = useMemo(() => atlas ? compactPlanetCities(projectPlanetAtlas(atlas, sector)) : null, [atlas, sector]);
   const miniatureScales = useMemo(() => projectedAtlas ? planetMiniatureScales(projectedAtlas) : new Map<string, number>(), [projectedAtlas]);
   const terrainGeometry = useMemo(() => {
     if (!projectedAtlas) return null;
@@ -206,7 +206,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   }, [projectedAtlas]);
   const terrainCamera = projectedAtlas ? planetMapTransform(projectedAtlas, camera) : null;
   const terrainTransform = terrainCamera ? `translate(${terrainCamera.x} ${terrainCamera.y}) scale(${terrainCamera.scale})` : undefined;
-  const map = useMemo(() => projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, camera) : null, [projectedAtlas, camera]);
+  const map = useMemo(() => projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, camera, { terrain: false }) : null, [projectedAtlas, camera]);
   const surfaceTransport = useMemo(() => projectedAtlas ? buildPlanetSurfaceTransport(projectedAtlas) : null, [projectedAtlas]);
   const transportPaths = useMemo(() => {
     const path = (points: Array<{x:number;y:number}>) => points.map((point,index) => {
@@ -214,7 +214,18 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     }).join(" ");
     return {rails:surfaceTransport?.rails.map(route=>({...route,points:route.points.map(point=>affineProject(point,projectedAtlas!,camera)),path:path(route.points)}))??[],ships:surfaceTransport?.ships.map(route=>({...route,path:atlasShipPath(route.points.map(point => affineProject(point, projectedAtlas!, camera)))}))??[]};
   },[surfaceTransport,projectedAtlas,camera]);
-  const visibleCountries = useMemo(() => map ? visiblePlanetCountries(map.countries, map.surface, visibleViewport) : [], [map, visibleViewport]);
+  const visibilityGeometry = useMemo(() => terrainGeometry ? [...terrainGeometry.countries].map(([id, cells]) => ({ id, cells })) : [], [terrainGeometry]);
+  const visibleCountries = useMemo(() => {
+    if (!map || !projectedAtlas || !terrainCamera) return [];
+    // Test the cached native cells against an inverse camera viewport. This
+    // keeps exact coastal visibility without projecting terrain on each frame.
+    const { x, y, scale } = terrainCamera;
+    const visible = new Set(visiblePlanetCountries(visibilityGeometry,
+      { minX: 0, minY: 0, maxX: projectedAtlas.width, maxY: projectedAtlas.height },
+      { minX: (visibleViewport.minX - x) / scale, minY: (visibleViewport.minY - y) / scale,
+        width: visibleViewport.width / scale, height: visibleViewport.height / scale }).map(country => country.id));
+    return map.countries.filter(country => visible.has(country.id));
+  }, [map, projectedAtlas, terrainCamera, visibilityGeometry, visibleViewport]);
   const cityTargets = useMemo(() => projectedAtlas ? planetCityTargets(visibleCountries, projectedAtlas, camera) : [], [visibleCountries, projectedAtlas, camera]);
   const labelDetail = planetLabelDetail(camera.zoom);
   const labels = useMemo(() => map && labelDetail === "CITIES" ? layoutPlanetCityLabels(cityTargets, visibleViewport.width, visibleViewport.height, labelScale, { x: visibleViewport.minX, y: visibleViewport.minY }) : [], [map, cityTargets, labelDetail, labelScale, visibleViewport]);
@@ -290,7 +301,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       const focus = { x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / Math.max(1, bounds.width))), y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / Math.max(1, bounds.height))) };
       const screenFocus = atlasViewBoxPoint({ x: event.clientX, y: event.clientY }, { minX: bounds.left, minY: bounds.top, maxX: bounds.right, maxY: bounds.bottom }, map);
       const nextCamera = projectedAtlas ? zoomPlanetCameraAtFocus(projectedAtlas, baseCamera, nextZoom, screenFocus) : { ...baseCamera, zoom: nextZoom };
-      const nextMap = projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, nextCamera) : map;
+      const nextMap = projectedAtlas ? projectProjectedPlanetMap(projectedAtlas, nextCamera, { terrain: false }) : map;
       const point = screenFocus;
       const city = projectedAtlas && atlasPointInsideEllipse(point, nextMap.surface)
         ? planetCityAtPoint(point,planetCityTargets(nextMap.countries,projectedAtlas,nextCamera)) : undefined;
@@ -309,7 +320,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     return bindMapPointerGestures(view, (gesture) => {
       updateCameraImmediately((current) => {
         const rect = view.getBoundingClientRect();
-        const currentMap = projectProjectedPlanetMap(projectedAtlas, current);
+        const currentMap = projectProjectedPlanetMap(projectedAtlas, current, { terrain: false });
         const focus = atlasViewBoxPoint(gesture.center, { minX: rect.left, minY: rect.top, maxX: rect.right, maxY: rect.bottom }, currentMap);
         const zoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, current.zoom * gesture.scale));
         const zoomed = gesture.scale === 1
@@ -372,7 +383,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       <rect className="planet-space" width={map.width} height={map.height} />
       <g className="planet-stars" aria-hidden="true">{map.stars.map((star) => <rect key={star.id} data-star-group={star.group} x={Math.round(map.width * star.xPercent / 100 / 2) * 2} y={Math.round(map.height * star.yPercent / 100 / 2) * 2} width={2} height={star.group === "constellation" ? 4 : 2} opacity={star.opacity} style={{ "--star-delay": `${star.delaySeconds}s` } as CSSProperties} />)}</g>
       <g clipPath={`url(#${clipId})`}>
-        <rect className="planet-map-ocean" x={map.surface.minX} y={map.surface.minY} width={map.surface.maxX - map.surface.minX} height={map.surface.maxY - map.surface.minY} fill="url(#planet-ocean-pixels)" />
+        <rect className="planet-map-ocean" x={visibleViewport.minX} y={visibleViewport.minY} width={visibleViewport.width} height={visibleViewport.height} fill="url(#planet-ocean-pixels)" />
         <g className="planet-water-shimmer" aria-hidden="true" pointerEvents="none">{Array.from({length:36},(_,index)=>{
           const x=map.surface.minX+((index*137+29)%997)/997*(map.surface.maxX-map.surface.minX);
           const y=map.surface.minY+((index*211+71)%991)/991*(map.surface.maxY-map.surface.minY);

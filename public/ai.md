@@ -535,23 +535,11 @@ example `backend-lead`, `qa`, or `ai-agent:codex`. `forUserEmail` identifies the
 registered customer/result owner for whom the work is performed. The MCP key
 owner remains the task creator; creator, assignee, and result owner may differ.
 
-`buildingHint` is an optional exact building key. Read
-`tasktopia://catalog/buildings` first and use only a compatible catalog key;
-omit the field when no exact building was requested. Keys beginning with
-`landmark-` create a task-linked city landmark: it follows the task through all
-five construction stages, and only one landmark task is allowed per city. The
-country-level State Archive is separate and is not selected with `buildingHint`.
-
-To create a task-backed park, set `visualKind` to `PARK` and optionally choose
-`parkVariant`: `urban-formal`, `urban-community`, `urban-central`,
-`urban-botanical`, `urban-amusement`, `urban-park`, `urban-lake`, `urban-parking`,
-`urban-pocket`, `urban-large`, `urban-fountain`, `urban-monument`, `urban-memorial`,
-`urban-orchard`, or `urban-promenade`. Pocket/fountain/monument variants fit compact
-parcels; `urban-large` requires a large park parcel. These objects keep the task's
-number, five stages and transfer/deletion history. Do not infer appearance from
-words in ordinary engineering tasks; request a public-space type only when the
-user asks for it. For ordinary tasks omit both fields and let the server consume
-the next planned slot. A full sprint creates additional blocks, not a new sprint.
+Участок и внешний вид выбираются сервером автоматически: сначала свободное
+место существующего квартала района, затем подходящий дом или общественное
+пространство. `buildingHint`, `visualKind` и `parkVariant` больше не принимаются.
+Оценка описывает объём работы, а не размер здания. Новый квартал появляется
+только при отсутствии подходящего места в существующих кварталах района.
 
 Required scope: `tasks:write`.
 
@@ -560,8 +548,8 @@ Required scope: `tasks:write`.
 Moves an existing task to a different sprint in the same city and explicitly
 requested country. Required scope: `tasks:write`; current country membership
 must permit writes. It preserves UUID, number, status, history and service role.
-The former site remains permanently reserved with a MOVE marker linking directly
-to the task's current location. Never delete/recreate a task to move it.
+Прежний участок освобождается и может быть занят новой задачей. Запись о переносе
+остаётся в истории задачи. Не удаляйте и не создавайте задачу заново для переноса.
 
 ```json
 {
@@ -575,9 +563,8 @@ to the task's current location. Never delete/recreate a task to move it.
 
 All fields except `comment` are required. `comment` is limited to 4000 characters;
 unknown fields are rejected. A completed/abandoned destination or another city
-is not allowed. Placement, history and marker commit atomically; failure leaves
-the source unchanged. Retrying the identical request with the same key creates
-no extra marker. The response is the current task plus its canonical browser URL.
+is not allowed. Размещение и история меняются атомарно; при ошибке исходная задача остаётся
+на месте. Повтор с тем же ключом не выполняет перенос повторно. The response is the current task plus its canonical browser URL.
 Task URLs returned by get/create/transfer/link operations include both `countryId`
 and `taskId`: `/task/<number>?countryId=<country-id>&taskId=<task-id>`. Preserve
 these parameters: task numbers are country-local, while UUID survives relocation.

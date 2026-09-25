@@ -2,16 +2,12 @@ import type { WorldFeatureDto } from "../shared/contracts";
 
 export type SiteMarker = NonNullable<WorldFeatureDto["siteMarker"]>;
 
-export function siteMarkerPresentation(marker: SiteMarker) {
-  const moved = marker.kind === "RELOCATED";
+export function siteMarkerPresentation() {
   return {
-    badge: moved ? "MOVE" : "RUIN",
-    heading: moved ? "Задача перенесена" : "Задача удалена",
-    color: moved ? 0x73b2b5 : 0xb89a72,
-    taskId: moved ? marker.targetTaskId : null,
-    description: moved
-      ? "Задача продолжает строиться в другом спринте. Это её прежнее место."
-      : "От постройки остались руины и краткая история. Удалённую задачу открыть нельзя.",
+    badge: "РУИНЫ",
+    heading: "Задача удалена",
+    color: 0xb89a72,
+    description: "От постройки остались руины и краткая история. Удалённую задачу открыть нельзя.",
   };
 }
 

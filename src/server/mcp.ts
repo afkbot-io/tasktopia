@@ -1,7 +1,6 @@
 import type { IncomingHttpHeaders } from "node:http";
 import { createMcpHandler, McpServer, ResourceTemplate, type AuthInfo, type McpHttpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { TASK_PARK_VARIANTS } from "../shared/task-park-catalog";
 import { BUILDING_CATALOG } from "../shared/catalog";
 import type { AppService } from "./app-service";
 import { DomainError } from "./app-service";
@@ -76,7 +75,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "A task workItemType classifies delivery as TASK, BUG, RELEASE or HOTFIX. task defects are linked observations with reproduction, actual and expected results.",
       "Task implementation materials are Markdown documents. Use task.document_upsert for the four standard files and any extra .md files; use task.checklist_replace and task.checklist_item_update to keep execution progress current.",
       "Every task has a human-facing number and canonical country/UUID url; share the url when reporting to people. Attach merge request links with task.link_add and binary evidence with task.attachment_add.",
-      "Use task.transfer to move an existing task between sprints of the same city. Identity and history survive; every former site remains permanently reserved with a link to the task. Deleting a task leaves permanent ruins, never a reusable parcel.",
+      "Use task.transfer to move an existing task between sprints of the same city. Identity and history survive; the former parcel becomes available for another task. The destination parcel determines the artwork. Deleting a task leaves permanent ruins, never a reusable parcel.",
       "Use task.dependency_add to express task order (must be in the same city); task.activity returns the full audit trail of events, comments, defects, attachments and dependencies.",
       "Linked defects use OPEN -> IN_PROGRESS -> VERIFYING -> FIXED. Keep the parent task in TESTING while an ordinary linked defect is repaired; completion is blocked until every linked defect is FIXED.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
@@ -259,7 +258,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("task.create", {
-    description: "Создать задачу в районе; сервер детерминированно выберет здание и при необходимости расширит район.",
+    description: "Создать задачу: сервер занимает свободный участок района и подбирает оформление под его размер. Размеры и семейство здания не задаются. Оценка относится к работе, а не к размеру постройки.",
     inputSchema: z.object({
       countryId: countryIdSchema,
       cityId: z.string().uuid(), districtId: z.string().uuid().optional(),
@@ -269,13 +268,11 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       designSystem: z.string().max(16000).optional(), implementationPlan: z.string().max(16000).optional(),
       estimate: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6)]),
       priority: z.enum(["LOW", "NORMAL", "HIGH", "CRITICAL"]).optional(), dueAt: z.string().datetime().optional(),
-      buildingHint: z.string().max(100).optional(), assigneeEmail: z.string().email().optional(),
-      visualKind: z.enum(["BUILDING", "PARK"]).optional().describe("PARK создаёт привязанный к задаче парк с теми же пятью стадиями"),
-      parkVariant: z.enum(TASK_PARK_VARIANTS).optional().describe("Вид общественного пространства: urban-pocket — малый сквер, urban-large — большой парк, urban-fountain/monument — площадь с фонтаном/памятником; каждый занимает слот задачи и проходит пять стадий"),
+      assigneeEmail: z.string().email().optional(),
       assigneeRole: z.string().max(80).optional().describe("Роль ответственного, например backend-lead, ai-agent:hermes, qa"),
       forUserEmail: z.string().email().optional().describe("Заказчик/владелец задачи — для кого делается работа"),
       idempotencyKey: z.string().min(4).max(160),
-    }),
+    }).strict(),
     annotations: { idempotentHint: true },
   }, async (input) => {
     try {
@@ -284,8 +281,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
                                                 cityId: input.cityId, districtId: input.districtId, title: input.title, description: input.description,
                                                 workItemType: input.workItemType, acceptanceCriteria: input.acceptanceCriteria, systemAnalysis: input.systemAnalysis,
                                                 architecture: input.architecture, designSystem: input.designSystem, implementationPlan: input.implementationPlan,
-                                                estimate: input.estimate, priority: input.priority, dueAt: input.dueAt, buildingHint: input.buildingHint,
-                                                visualKind: input.visualKind, parkVariant: input.parkVariant,
+                                                estimate: input.estimate, priority: input.priority, dueAt: input.dueAt,
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.countryId, input.assigneeEmail), assigneeRole: input.assigneeRole,
                                                 forUserId: await resolveMember(input.countryId, input.forUserEmail), idempotencyKey: input.idempotencyKey,
                                               });

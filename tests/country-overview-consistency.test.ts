@@ -73,8 +73,9 @@ it("restarts the whole city snapshot when a committed event invalidates its chun
     const task=await writer.createTask(user.countryId,{cityId:city.id,districtId:district.id,title:"Concurrent task",estimate:1,idempotencyKey:"stale-task"});
     let reached=()=>{};
     const gate=new Promise<void>(resolve=>{reached=resolve;}),resume=new Promise<void>(resolve=>{release=resolve;});
-    const original=reader.getViewportPayloads.bind(reader);let reads=0;
-    vi.spyOn(reader,"getViewportPayloads").mockImplementation(async(...args)=>{
+    const spatialReader = reader as unknown as { loadViewportSpatialSnapshot: (...args: unknown[]) => Promise<unknown> };
+    const original=spatialReader.loadViewportSpatialSnapshot.bind(reader);let reads=0;
+    vi.spyOn(spatialReader,"loadViewportSpatialSnapshot").mockImplementation(async(...args)=>{
       if(++reads===1){reached();await resume;}
       return original(...args);
     });

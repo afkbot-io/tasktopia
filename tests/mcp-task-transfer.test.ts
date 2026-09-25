@@ -70,6 +70,20 @@ describe("MCP explicit-country permanent sprint transfer", { timeout: 30_000 }, 
     expect(await service.listWorldFeatures(countryId)).toEqual([]);
   });
 
+  it("allocates parcels automatically and rejects removed geometry parameters", async () => {
+    const client = await connect();
+    const create = (await client.listTools()).tools.find(tool => tool.name === "task.create")!;
+    for (const key of ["buildingHint", "visualKind", "parkVariant"]) {
+      expect(create.inputSchema.properties).not.toHaveProperty(key);
+      const result = await client.callTool({ name: "task.create", arguments: {
+        countryId, cityId: task.cityId, districtId: targetDistrictId, title: "Invalid geometry", estimate: 1,
+        idempotencyKey: `removed-${key}`, [key]: "BUILDING",
+      } });
+      expect(result.isError).toBe(true);
+    }
+    expect((await service.listTasks(countryId)).map(item => item.id)).toEqual([task.id]);
+  });
+
   it("checks token scope, live membership and target ownership without exposing or changing another project", async () => {
     for (const caller of [{ ...identity, scopes: ["tasks:read"] as McpIdentity["scopes"] }, viewerIdentity]) {
       const result = await (await connect(caller)).callTool({ name: "task.transfer", arguments: request() });
@@ -116,9 +130,7 @@ describe("MCP explicit-country permanent sprint transfer", { timeout: 30_000 }, 
       expect(httpRetry.statusCode).toBe(200);
       expect(httpRetry.json()).toMatchObject({ id: task.id, districtId: targetDistrictId, origin: moved.origin });
     } finally { await setActiveCountry(db, identity.userId, activeCountryId); await app.close(); }
-    expect(await service.listWorldFeatures(countryId)).toEqual([expect.objectContaining({
-      origin: task.origin, siteMarker: expect.objectContaining({ kind: "RELOCATED", targetTaskId: task.id, permanent: true }),
-    })]);
+    expect(await service.listWorldFeatures(countryId)).toEqual([]);
     expect((await service.listEvents(countryId, 0)).filter(event => event.type === "task.transferred")).toHaveLength(1);
     expect(await db.prepare("SELECT active_country_id FROM users WHERE id=?").get(identity.userId)).toEqual({ active_country_id: activeCountryId });
   });

@@ -1,12 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { WorldFeatureDto } from "../../shared/contracts";
 import { siteMarkerPresentation } from "../site-marker-presentation";
-import { Button } from "./ui";
 
-export function SiteHistoryModal({ feature, onClose, onTaskOpen }: {
+export function SiteHistoryModal({ feature, onClose }: {
   feature: WorldFeatureDto;
   onClose: () => void;
-  onTaskOpen: (taskId: string) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -17,7 +15,7 @@ export function SiteHistoryModal({ feature, onClose, onTaskOpen }: {
   }, []);
   const marker = feature.siteMarker;
   if (!marker) return null;
-  const presentation = siteMarkerPresentation(marker);
+  const presentation = siteMarkerPresentation();
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section ref={dialogRef} className="task-modal site-history-modal" role="dialog" aria-modal="true" aria-labelledby="site-history-title" onKeyDown={(event) => {
       if (event.key === "Escape") { event.stopPropagation(); onClose(); }
@@ -37,8 +35,7 @@ export function SiteHistoryModal({ feature, onClose, onTaskOpen }: {
         <div><dt>Запись создана</dt><dd>{new Date(marker.snapshot.recordedAt).toLocaleString("ru-RU")}</dd></div>
       </dl>
       <p>Этот участок сохранён в истории города навсегда. Новые постройки здесь не размещаются.</p>
-      {presentation.taskId ? <Button onClick={() => onTaskOpen(presentation.taskId!)}>Открыть текущую задачу</Button>
-        : marker.kind === "RELOCATED" ? <p>Текущая задача больше недоступна. Сохранена только история участка.</p> : null}
+
     </section>
   </div>;
 }

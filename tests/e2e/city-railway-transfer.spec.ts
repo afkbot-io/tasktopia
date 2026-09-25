@@ -59,7 +59,8 @@ test("moving a station updates its approach on the open map while retaining the 
     expect(after.railway!.platform).toEqual(before.railway!.platform);
     expect(after.railway!.access).not.toEqual(before.railway!.access);
     expect(moved.accessPath).toContainEqual(after.railway!.access[0]);
-    await expect(host).toHaveAttribute("data-moved-sites", "1");
+    expect(after.chunks.flatMap(chunk => chunk.worldFeatures)
+      .filter(feature => feature.siteMarker?.kind === "RELOCATED")).toEqual([]);
     await expect.poll(async () => JSON.parse((await host.getAttribute("data-city-railway-geometry")) ?? "null")).toEqual({
       from: after.railway!.from, to: after.railway!.to, platform: after.railway!.platform, accessLength: after.railway!.access.length,
     });

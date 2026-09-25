@@ -1,10 +1,9 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 import type { AtlasTransition } from "../atlas-navigation-transition";
 
-const PHRASES = ["Сверяем городской план", "Ищем вашу стройплощадку", "Диспетчер готовит карту кварталов", "Проверяем адреса городских объектов", "Прокладываем путь через облака"];
 const LEVEL_LABEL = { PLANET: "планету", CITY: "город" } as const;
 
-
+/** A small status panel: no full-screen animated texture competing with WebGL. */
 export function MapLevelTransition({ transition, onCancel }: { transition: AtlasTransition; onCancel?:()=>void }) {
   const [waiting, setWaiting] = useState(false);
   useEffect(() => {
@@ -12,21 +11,20 @@ export function MapLevelTransition({ transition, onCancel }: { transition: Atlas
     const timer = setTimeout(() => setWaiting(true), 6000);
     return () => clearTimeout(timer);
   }, [transition.id]);
-  const phrase = waiting ? "Карта ещё готовится. Можно вернуться и открыть город позже." : PHRASES[transition.phraseIndex ?? 0];
-  return <div
-    className="map-level-transition"
-    data-from={transition.from}
-    data-to={transition.to}
-    role="status"
-    aria-live="polite"
-    style={{
-      "--map-transition-x": `${transition.focus.x * 100}%`,
-      "--map-transition-y": `${transition.focus.y * 100}%`,
-      "--map-transition-duration": `${transition.durationMs}ms`,
-    } as CSSProperties}
-  >
-    <div className="map-level-transition-pixels" aria-hidden="true" />
-    <div className="map-level-transition-focus" aria-hidden="true"><i /><i /><i /></div>
-    <div className="map-transition-message"><span>Открываем {transition.destinationName ? `«${transition.destinationName}»` : LEVEL_LABEL[transition.to]}…</span><small className="map-transition-phrase" aria-hidden="true">{phrase}</small>{onCancel && transition.to === "CITY" && <button type="button" onClick={onCancel}>Вернуться на планету</button>}</div>
+  const phase = transition.to === 'PLANET' ? 'Возвращаемся к карте мира'
+    : transition.phase === 'PRELOAD' ? 'Получаем план города'
+    : 'Готовим улицы и здания';
+  return <div className="map-level-transition" data-from={transition.from} data-to={transition.to}
+    data-phase={transition.phase}
+    >
+    <div className="map-transition-message">
+      <div className="map-transition-city" aria-hidden="true"><i /><i /><i /></div>
+      <div role="status" aria-live="polite">
+        <strong>Открываем {transition.destinationName ? `«${transition.destinationName}»` : LEVEL_LABEL[transition.to]}…</strong>
+        <p className="map-transition-phrase">{phase}</p>
+      </div>
+      {waiting && <p className="map-transition-wait">Первое открытие может занять больше времени.</p>}
+      {onCancel && transition.to === 'CITY' && <button type="button" onClick={onCancel}>Вернуться на планету</button>}
+    </div>
   </div>;
 }

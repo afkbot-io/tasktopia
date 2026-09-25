@@ -450,11 +450,13 @@ function projectPlanetCityPoint(point: PlanetPoint, city: PlanetCountryDto["citi
   return { x: center.x + (nominal.x - origin.x) * camera.zoom, y: center.y + (nominal.y - origin.y) * camera.zoom };
 }
 
-export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: PlanetMapCamera): ProjectedPlanetMap {
+export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: PlanetMapCamera, options: { terrain?: boolean } = {}): ProjectedPlanetMap {
   // Every surface layer shares one camera, including the silhouette and clouds.
   const atmosphereCamera = camera;
   const countries = base.countries.map((country): PlanetMapCountry => {
-    const cells = country.cells.map((cell) => projectCell(cell, base, camera));
+    // Raster consumers already own immutable terrain geometry. Their camera
+    // frame needs annotations only, not thousands of new cell objects.
+    const cells = options.terrain === false ? [] : country.cells.map((cell) => projectCell(cell, base, camera));
     const citiesById = new Map(country.cities.map(city => [city.id, city]));
     const airports = country.airports.map((airport): PlanetMapAirport => ({ id: airport.id, countryId: airport.countryId, cityIndex: airport.cityIndex, cellId: airport.cellId, center: projectPlanetCityPoint(airport.point, country.cities[airport.cityIndex]!, country, base, camera) }));
     return { ...country, cells, airports, districtIcons:country.districtIcons.map(icon=>({id:icon.id,cityId:icon.cityId,family:icon.family,stage:icon.stage,center:projectPlanetCityPoint(icon.point,citiesById.get(icon.cityId)!,country,base,camera)})), center: affineProject(country.center, base, camera) };
@@ -474,7 +476,7 @@ export function projectProjectedPlanetMap(base: ProjectedPlanetAtlas, camera: Pl
   const fogScale = fit * camera.zoom;
   const surfaceStart = affineProject({ x: 0, y: 0 }, base, atmosphereCamera);
   const surfaceEnd = affineProject({ x: base.width, y: base.height }, base, atmosphereCamera);
-  return { width: MAP_WIDTH, height: MAP_HEIGHT, surface: { minX: surfaceStart.x, minY: surfaceStart.y, maxX: surfaceEnd.x, maxY: surfaceEnd.y }, countries, coastCells: base.coastCells.map((cell) => projectCell(cell, base, camera)), routes, clouds, stars: base.stars, edgeFog: base.edgeFog.map((fog) => ({ ...fog, point: affineProject(fog.point, base, atmosphereCamera), size: Math.max(4, Math.round(fog.size * fogScale)) })) };
+  return { width: MAP_WIDTH, height: MAP_HEIGHT, surface: { minX: surfaceStart.x, minY: surfaceStart.y, maxX: surfaceEnd.x, maxY: surfaceEnd.y }, countries, coastCells: options.terrain === false ? [] : base.coastCells.map((cell) => projectCell(cell, base, camera)), routes, clouds, stars: base.stars, edgeFog: base.edgeFog.map((fog) => ({ ...fog, point: affineProject(fog.point, base, atmosphereCamera), size: Math.max(4, Math.round(fog.size * fogScale)) })) };
 }
 
 /** Keep the same world point under the cursor while changing planet zoom. */

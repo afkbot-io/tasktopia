@@ -144,7 +144,7 @@ describe("dense mixed rectangular parcels", () => {
     expect(large.placements).toHaveLength(60);
   });
 
-  it("places due shops in the next compatible forward block without inventing tasks", () => {
+  it("places due shops in the oldest compatible parcel without inventing tasks", () => {
     const input = spec(1);
     let layout = compileBlockLayout(input);
     const shops = () => layout.blocks.flatMap(block => blockSlots(block)
@@ -169,21 +169,24 @@ describe("dense mixed rectangular parcels", () => {
     // keeping the building count below the competing education threshold.
     append("WATER");
     expect(layout.blocks).toHaveLength(2);
-    // No compatible forward parcel exists until the next residential block.
+    // The older residential block still has a compatible vacant parcel.
     expect(shops()).toHaveLength(0);
     append("BUILDING");
-    expect(layout.blocks).toHaveLength(3);
-    expect(layout.placements.find(placement => placement.taskId === "task-3")).toMatchObject({ serviceRole: "SHOP" });
-    expect(shops()).toHaveLength(1);
+    expect(layout.blocks).toHaveLength(2);
+    expect(layout.placements.find(placement => placement.taskId === "task-3")!.blockId)
+      .toBe(layout.placements.find(placement => placement.taskId === "task-1")!.blockId);
+    expect(shops()).toHaveLength(0);
     append("PARKING");
     append("WATER");
-    expect(layout.blocks).toHaveLength(5);
-    expect(layout.placements.filter(placement => placement.serviceRole === "SHOP")).toHaveLength(1);
+    expect(layout.blocks).toHaveLength(4);
     append("BUILDING");
-    expect(layout.blocks).toHaveLength(6);
+    expect(layout.blocks).toHaveLength(4);
     expect(layout.placements).toHaveLength(6);
-    expect(layout.placements.find(placement => placement.taskId === "task-6")).toMatchObject({ serviceRole: "SHOP" });
-    expect(shops()).toHaveLength(2);
+    // Service demand does not force expansion while old ordinary parcels fit.
+    // When they fill, the next residential block supplies the due shop.
+    for (let count = 0; count < 40 && shops().length === 0; count++) append("BUILDING");
+    expect(shops().length).toBeGreaterThan(0);
+    expect(layout.placements.some(placement => placement.serviceRole === "SHOP")).toBe(true);
   });
 
   it("replays interleaved task numbers globally without moving stable railway or shop roles between tasks", () => {

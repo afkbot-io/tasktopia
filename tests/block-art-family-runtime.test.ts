@@ -84,7 +84,7 @@ describe("authored service family live storage projection",()=>{
     } finally { await db.close(); }
   }, 30_000);
 
-  it("persists explicitly requested FIRE art geometry across stage updates, fresh readers, transfer and permanent ruins",async()=>{
+  it("keeps imported art until transfer and selects destination-sized art without an old-site reservation",async()=>{
     const db=await createTestDb();
     try {
       const service=new AppService(db),{countryId}=(await registerUser(db,{email:"fire-family@example.test",name:"Fire family",password:"password123"})).user;
@@ -107,14 +107,14 @@ describe("authored service family live storage projection",()=>{
       expect((await readActiveBlockLayout(db,city.id))!.blocks.find(b=>b.id===block.id)!.parameters.sitePlan).toEqual(persistedPlan);
       const target=await service.createDistrict(countryId,{cityId:city.id,name:"Next sprint",idempotencyKey:"target-sprint"});
       const moved=await service.transferTask(countryId,{taskId:fire!.id,targetDistrictId:target.id,idempotencyKey:"move-fire"});
-      expect(moved).toMatchObject({buildingType:fire!.buildingType,stage:2});
+      expect(moved).toMatchObject({id:fire.id,taskNumber:fire.taskNumber,stage:2});
       expect(moved.serviceRole).toBeUndefined();
-      expect(moved.footprint).toHaveLength(24);
-      const marker=(await service.listWorldFeatures(countryId))[0]!;
-      expect(marker).toMatchObject({footprint:fire!.footprint,siteMarker:{snapshot:{buildingFamily:fire!.buildingType}}});
-      await synchronizeCityBlocks(db,countryId,city.id,true);
-      expect((await new AppService(db).getTask(countryId,fire!.id)).buildingType).toBe(fire!.buildingType);
-      expect((await service.listWorldFeatures(countryId))[0]).toEqual(marker);
+      const shape=getBuilding(moved.buildingType).footprint;
+      expect(moved.footprint).toHaveLength(shape.width*shape.height);
+      expect(await service.listWorldFeatures(countryId)).toEqual([]);
+      await synchronizeCityBlocks(db,countryId,city.id);
+      expect((await new AppService(db).getTask(countryId,fire.id)).buildingType).toBe(moved.buildingType);
+      expect(await service.listWorldFeatures(countryId)).toEqual([]);
     } finally {await db.close();}
   },30_000);
 });
