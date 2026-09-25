@@ -99,7 +99,8 @@ def main():
             database.pg(["pg_restore", "--exit-on-error", "-U", "tasktopia", "-d", "tasktopia"], input_name="seed.dump", seconds=900)
             report["seedArchiveSha256"] = digest.hexdigest()
         else:
-            fixture_sql("CREATE TABLE sample(id bigserial PRIMARY KEY, body text NOT NULL); "
+            fixture_sql("CREATE TABLE sample(id bigserial PRIMARY KEY, body text NOT NULL, "
+                        "CONSTRAINT sample_bounds CHECK ((id BETWEEN 0 AND 1000000) AND trunc(id) = id)); "
                         "INSERT INTO sample(body) VALUES (E'строка\\nвторая'), ('quotation '' and tab'), ('same'), ('same'); "
                         "CREATE SEQUENCE unused_seq; CREATE VIEW sample_view AS SELECT id,body FROM sample; "
                         "CREATE TABLE world_generation_jobs_v1(status text); INSERT INTO world_generation_jobs_v1 VALUES ('PENDING');")

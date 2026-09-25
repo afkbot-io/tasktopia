@@ -21,6 +21,76 @@ import uuid
 from compact_cutover_state import CutoverError, canonical, require
 
 
+def canonical_schema(schema):
+    """Fingerprint deparsed SQL, allowing only associative AND grouping.
+
+    PostgreSQL expands BETWEEN into a nested BoolExpr; reading that dump back
+    flattens its AND. Bounds, operators, casts, OR/NOT precedence, quoted text
+    and function bodies must still compare exactly. This is not executable SQL.
+    """
+    text = b"\n".join(line for line in schema.splitlines()
+                      if not line.startswith((b"\\restrict ", b"\\unrestrict "))).decode()
+    tokens = re.finditer(
+        r"(?P<dollar>\$(?:[A-Za-z_][A-Za-z_0-9]*)?\$).*?(?P=dollar)"
+        r"|[eE]'(?:''|\\.|[^'\\])*'|'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\""
+        r"|--[^\n]*(?:\n|$)|/\*.*?\*/|\s+|[A-Za-z_][A-Za-z_0-9$]*|.",
+        text, re.DOTALL)
+    root, stack = [], []
+    current = root
+    for match in tokens:
+        token = match.group()
+        if token.isspace():
+            continue
+        if token == "(":
+            child = []
+            current.append(child)
+            stack.append(current)
+            current = child
+        elif token == ")":
+            require(bool(stack), "Unbalanced schema expression")
+            current = stack.pop()
+        else:
+            current.append(token)
+    require(not stack, "Unbalanced schema expression")
+
+    def conjunction(nodes):
+        parts, part, case_depth = [], [], 0
+        for node in nodes:
+            word = node.upper() if isinstance(node, str) else None
+            if word == "CASE":
+                case_depth += 1
+            elif word == "END":
+                case_depth -= 1
+            if not case_depth and word in ("OR", "BETWEEN", ",", ";"):
+                return None
+            if not case_depth and word == "AND":
+                parts.append(part)
+                part = []
+            else:
+                part.append(node)
+        parts.append(part)
+        return parts if len(parts) > 1 and all(parts) else None
+
+    def normalize(nodes):
+        nodes = [normalize(node) if isinstance(node, list) else node for node in nodes]
+        parts = conjunction(nodes)
+        if parts:
+            flattened = []
+            for part in parts:
+                child = conjunction(part[0]) if len(part) == 1 and isinstance(part[0], list) else None
+                flattened.extend(child or [part])
+            nodes = []
+            for part in flattened:
+                if nodes:
+                    nodes.append("AND")
+                nodes.extend(part)
+        return nodes
+
+    def render(nodes):
+        return " ".join("(" + render(node) + ")" if isinstance(node, list) else node for node in nodes)
+    return render(normalize(root)).encode()
+
+
 def local_name(name):
     require(isinstance(name, str) and re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,127}", name),
             "Expected one private artifact name")
@@ -283,9 +353,7 @@ class DatabaseBackup:
             require(re.fullmatch(r"[a-z_][a-z_0-9]*", sequence), "Unexpected sequence identifier")
             result["sequences"][sequence] = self.json("SELECT jsonb_build_object('last_value',last_value::text,'is_called',is_called) FROM public.\"" + sequence + '"')
         schema = self.pg(["pg_dump", "-U", "tasktopia", "-d", "tasktopia", "--schema-only", "--create"], max_bytes=16 * 1024 ** 2)
-        # PG 16.14 emits fresh psql \restrict keys; they are not database state.
-        schema = b"\n".join(line for line in schema.splitlines() if not line.startswith((b"\\restrict ", b"\\unrestrict ")))
-        result["schemaSha256"] = hashlib.sha256(schema).hexdigest()
+        result["schemaSha256"] = hashlib.sha256(canonical_schema(schema)).hexdigest()
         self.assert_quiescent()
         return result
 
