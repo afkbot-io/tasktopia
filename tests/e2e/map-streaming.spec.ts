@@ -115,7 +115,7 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   await expect.poll(() => sceneStarted).toBe(true);
-  await expect(page.locator(".map-level-transition")).toContainText("Открываем город…");
+  await expect(page.locator(".map-level-transition")).toContainText("Открываем «Riverside»…");
   expect(sceneResolved).toBe(false);
   releaseScene();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 90_000 });

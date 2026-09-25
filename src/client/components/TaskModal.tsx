@@ -11,10 +11,10 @@ import { ApiError } from "../api";
 import { Markdown } from "./Markdown";
 
 const statusLabel: Record<TaskDto["status"], string> = {
-  PLANNING: "Планирование", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
+  PLANNING: "В плане", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Приёмка", COMPLETED: "Завершено",
 };
 const priorityLabel: Record<TaskDto["priority"], string> = { LOW: "Низкий", NORMAL: "Обычный", HIGH: "Высокий", CRITICAL: "Критический" };
-const workItemLabel: Record<TaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
+const workItemLabel: Record<TaskDto["workItemType"], string> = { TASK: "Строительство", BUG: "Ремонт", RELEASE: "Открытие", HOTFIX: "Срочный ремонт" };
 const serviceLabel: Record<NonNullable<TaskDto["serviceRole"]>, string> = {
   SHOP: "Магазин", EDUCATION: "Школа / детский сад", MEDICAL: "Медицинский центр",
   FIRE: "Пожарная часть", POLICE: "Полиция", RAILWAY: "Железнодорожная станция", AIRPORT: "Аэропорт",
@@ -45,8 +45,6 @@ type TaskModalProps = {
   countryId: string;
   taskId: string;
   revision: number;
-  canEdit: boolean;
-  onTransferred: (task: TaskDto) => void;
   onClose: () => void;
   onAuthenticationRequired?: () => void;
   onShowDependencies?: (taskId: string) => void;
@@ -149,7 +147,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
       {!task ? <div className="task-load-state" role={error ? "alert" : "status"}><strong>{error || "Загружаем задачу…"}</strong>{error && <button className="primary-button" onClick={() => setRetry(value => value + 1)}>Повторить</button>}</div> : <>
         <header className="task-header">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
-          <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · {task.estimate} SP</p><h2 id="task-title">{task.title}</h2></div>
+          <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · <span title="Объём работ в условных единицах сложности (SP)">Объём: {task.estimate} SP</span></p><h2 id="task-title">{task.title}</h2></div>
         </header>
         <div className="task-actions" role="group" aria-label="Ссылки задачи">
           {standalone && <button className="task-action" onClick={onClose}>В город →</button>}

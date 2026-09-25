@@ -1,158 +1,158 @@
-import { selectCountrySession } from "../country-selection";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import type { BootstrapDto, CountryMemberDto, CountryRole } from "../../shared/contracts";
-import { api, ApiError } from "../api";
-import { Button, Field } from "./ui";
+import { useEffect, useRef, useState } from "react";
+import type {
+  BootstrapDto,
+  CountryMemberDto,
+  CountryRole,
+} from "../../shared/contracts";
+import { api } from "../api";
+import { useDialogFocus } from "../use-dialog-focus";
+import { Button } from "./ui";
 
-const roleLabel: Record<CountryRole, string> = { OWNER: "Глава страны", MEMBER: "Министр", VIEWER: "Наблюдатель" };
+const roleLabel: Record<CountryRole, string> = {
+  OWNER: "Глава страны",
+  MEMBER: "Министр",
+  VIEWER: "Наблюдатель",
+};
 
-export function CountryPanel({ bootstrap, mode, onClose, onBootstrap }: {
+/** Рабочие данные меняет агент через MCP. Паспорт доступен всем участникам. */
+export function CountryPanel({
+  bootstrap,
+  onClose,
+}: {
   bootstrap: BootstrapDto;
-  mode: "manage" | "create";
   onClose: () => void;
-  onBootstrap: (bootstrap: BootstrapDto) => void;
 }) {
-  const [members, setMembers] = useState<CountryMemberDto[]>([]);
-  const [countryName, setCountryName] = useState("");
-  const [landscape, setLandscape] = useState<"CLASSIC"|"COASTAL">("CLASSIC");
-  const [renameValue, setRenameValue] = useState(bootstrap.country.name);
-  const [description, setDescription] = useState(bootstrap.country.description);
-  const [goal, setGoal] = useState(bootstrap.country.goal);
-  const [productContext, setProductContext] = useState(bootstrap.country.productContext);
-  const [successCriteria, setSuccessCriteria] = useState(bootstrap.country.successCriteria);
-  const [constraints, setConstraints] = useState(bootstrap.country.constraints);
-  const [email, setEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<Extract<CountryRole, "MEMBER" | "VIEWER">>("MEMBER");
+  const [members, setMembers] = useState<CountryMemberDto[] | null>(null);
   const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
-  const [regenerationNotice, setRegenerationNotice] = useState("");
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const [retry, setRetry] = useState(0);
   const panelRef = useRef<HTMLElement>(null);
-  const loadMembers = useCallback(() => api<CountryMemberDto[]>(`/api/countries/${bootstrap.country.id}/members`).then(setMembers), [bootstrap.country.id]);
-
+  useDialogFocus(panelRef);
   useEffect(() => {
-    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setRenameValue(bootstrap.country.name);
-    setDescription(bootstrap.country.description); setGoal(bootstrap.country.goal); setProductContext(bootstrap.country.productContext);
-    setSuccessCriteria(bootstrap.country.successCriteria); setConstraints(bootstrap.country.constraints);
-    if (mode === "manage") void loadMembers().catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось открыть правительство"));
-    closeRef.current?.focus();
+    const controller = new AbortController();
+    setMembers(null);
+    setError("");
+    void api<CountryMemberDto[]>(
+      `/api/countries/${bootstrap.country.id}/members`,
+      { signal: controller.signal },
+    )
+      .then((value) => {
+        if (!controller.signal.aborted) setMembers(value);
+      })
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted)
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "Не удалось открыть правительство",
+          );
+      });
+    return () => controller.abort();
+  }, [bootstrap.country.id, retry]);
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { onClose(); return; }
-      if (event.key !== "Tab" || !panelRef.current) return;
-      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled), select:not(:disabled), [href], [tabindex]:not([tabindex='-1'])")];
-      if (focusable.length === 0) return;
-      const first = focusable[0]!;
-      const last = focusable.at(-1)!;
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => { window.removeEventListener("keydown", onKey); previouslyFocused?.focus({ preventScroll: true }); };
-  }, [bootstrap.country.name, bootstrap.country.description, bootstrap.country.goal, bootstrap.country.productContext,
-    bootstrap.country.successCriteria, bootstrap.country.constraints, loadMembers, mode, onClose]);
-
-  const safely = async (action: () => Promise<void>) => {
-    setError(""); setPending(true);
-    try { await action(); }
-    catch (reason) { setError(reason instanceof ApiError ? reason.message : "Операция не выполнена"); }
-    finally { setPending(false); }
-  };
-  const reloadBootstrap = async () => onBootstrap(await api<BootstrapDto>("/api/bootstrap"));
-  const create = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    const country = await api<{ id: string }>("/api/countries", { method: "POST", json: { name: countryName, landscape } });
-    const next = await selectCountrySession(country.id);
-    onBootstrap(next); onClose();
-  }); };
-  const rename = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    await api(`/api/countries/${bootstrap.country.id}`, {
-      method: "PATCH", json: { name: renameValue, description, goal, productContext, successCriteria, constraints, idempotencyKey: crypto.randomUUID() },
-    });
-    await reloadBootstrap();
-  }); };
-  const invite = (event: FormEvent) => { event.preventDefault(); void safely(async () => {
-    await api(`/api/countries/${bootstrap.country.id}/members`, { method: "POST", json: { email, role: inviteRole } });
-    setEmail(""); await loadMembers();
-  }); };
-  const removeMember = (userId: string) => void safely(async () => {
-    await api(`/api/countries/${bootstrap.country.id}/members/${userId}`, { method: "DELETE" }); await loadMembers();
-  });
-  const deleteCountry = () => void safely(async () => {
-    if (!window.confirm(`Удалить страну «${bootstrap.country.name}» со всеми городами? Это действие нельзя отменить.`)) return;
-    const result = await api<{ activeCountryId: string }>(`/api/countries/${bootstrap.country.id}`, { method: "DELETE" });
-    onBootstrap(await selectCountrySession(result.activeCountryId));
-    onClose();
-  });
-  const regenerateCountry = () => void safely(async () => {
-    const confirmation = window.prompt(`Страна будет полностью перестроена, но города, районы, задачи, статусы и история сохранятся. Введите точное название:\n${bootstrap.country.name}`);
-    if (confirmation == null) return;
-    setRegenerationNotice("");
-    const result = await api<{ cities: number; districts: number; tasks: number }>(`/api/countries/${bootstrap.country.id}/regenerate`, {
-      method: "POST", json: { confirmName: confirmation, idempotencyKey: crypto.randomUUID() },
-    });
-    await reloadBootstrap();
-    setRegenerationNotice(`Мир пересобран: ${result.cities} городов, ${result.districts} районов, ${result.tasks} зданий.`);
-  });
-
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-    <section ref={panelRef} className="country-government-dialog" role="dialog" aria-modal="true" aria-labelledby="country-dialog-title">
-      <header className="country-government-head">
-        <div><p className="eyebrow">{mode === "create" ? "СОЗДАНИЕ СТРАНЫ" : "УПРАВЛЕНИЕ СТРАНОЙ"}</p><h2 id="country-dialog-title">{mode === "create" ? "Новая страна" : bootstrap.country.name}</h2><p>{mode === "create" ? "Дайте стране имя. После создания она откроется автоматически." : "Название, правительство и доступы выбранной страны."}</p></div>
-        <Button ref={closeRef} variant="secondary" className="h-11 w-11 px-0 text-xl" onClick={onClose} aria-label="Закрыть">×</Button>
-      </header>
-      <div className="country-government-body">
-        {error && <div role="alert" className="mb-4 rounded-xl border border-[#9b4d4d] bg-[#4a2025] px-4 py-3 text-sm text-[#ffd7d7]">{error}</div>}
-        {mode === "create" ? <form className="country-create-form" onSubmit={create}>
-          <span className="country-large-seal" aria-hidden="true">＋</span>
-          <Field label="Название страны" value={countryName} onChange={(event) => setCountryName(event.target.value)} maxLength={100} minLength={2} required autoFocus placeholder="Например, Атутаелия" />
-          <label className="country-textarea-field">Ландшафт
-            <select value={landscape} disabled={pending} onChange={event=>setLandscape(event.target.value==="COASTAL"?"COASTAL":"CLASSIC")}>
-              <option value="CLASSIC">Реки и озёра</option>
-              <option value="COASTAL">Морское побережье</option>
-            </select>
-          </label>
-          <p>{landscape==="COASTAL"?"Прибрежная страна с лесами и выходом к морю. Порт появится в подходящем месте по мере развития города.":"Зелёные равнины, леса, реки и озёра."}</p>
-          <Button type="submit" disabled={pending || countryName.trim().length < 2}>{pending ? "Создаём…" : "Создать страну"}</Button>
-        </form> : <div className="country-government-grid">
-          <div className="grid content-start gap-5">
-            {bootstrap.countryRole === "OWNER" && <section className="country-government-card">
-              <h3>Паспорт страны</h3><p>Устойчивый контекст проекта, который AI прочитает перед работой.</p>
-              <form className="mt-4 grid gap-3" onSubmit={rename}>
-                <Field label="Название" value={renameValue} onChange={(event) => setRenameValue(event.target.value)} minLength={2} maxLength={100} required />
-                <label className="country-textarea-field">Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={8000} placeholder="Что создаёт этот проект и для кого" /></label>
-                <label className="country-textarea-field">Цель<textarea value={goal} onChange={(event) => setGoal(event.target.value)} maxLength={4000} placeholder="Какого результата должна достичь страна" /></label>
-                <label className="country-textarea-field">Продуктовый контекст<textarea value={productContext} onChange={(event) => setProductContext(event.target.value)} maxLength={8000} placeholder="Пользователи, рынок, текущее состояние" /></label>
-                <label className="country-textarea-field">Критерии успеха<textarea value={successCriteria} onChange={(event) => setSuccessCriteria(event.target.value)} maxLength={8000} placeholder="Проверяемые метрики и результаты" /></label>
-                <label className="country-textarea-field">Ограничения<textarea value={constraints} onChange={(event) => setConstraints(event.target.value)} maxLength={8000} placeholder="Технологии, сроки, совместимость, запреты" /></label>
-                <Button type="submit" disabled={pending}>Сохранить паспорт</Button>
-              </form>
-            </section>}
-            <section className="country-government-card country-facts">
-              <h3>Сведения</h3><dl><div><dt>Ваша роль</dt><dd>{roleLabel[bootstrap.countryRole]}</dd></div><div><dt>Участников правительства</dt><dd>{members.length}</dd></div><div><dt>Городов</dt><dd>{bootstrap.stats.cities}</dd></div></dl>
-            </section>
-            {bootstrap.countryRole === "OWNER" && <section className="country-government-card country-regeneration-card">
-              <h3>Перегенерация мира</h3>
-              <p>Создаёт новый рельеф, дороги, районы, здания и окружение. Названия, ID, статусы, ответственные, комментарии и хроника задач сохраняются.</p>
-              <Button variant="secondary" className="mt-4" onClick={regenerateCountry} disabled={pending}>{pending ? "Перестраиваем мир…" : "Перегенерировать мир"}</Button>
-              {regenerationNotice && <p className="country-regeneration-success" role="status">{regenerationNotice}</p>}
-            </section>}
-            {bootstrap.countryRole === "OWNER" && bootstrap.countries.length > 1 && <Button variant="danger" onClick={deleteCountry} disabled={pending}>Удалить страну</Button>}
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const country = bootstrap.country;
+  const facts = [
+    ["Описание", country.description],
+    ["Цель развития", country.goal],
+    ["О стране", country.productContext],
+    ["Условия успеха", country.successCriteria],
+    ["Ограничения", country.constraints],
+  ];
+  return (
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onClose();
+      }}
+    >
+      <section
+        ref={panelRef}
+        className="country-government-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="country-dialog-title"
+      >
+        <header className="country-government-head">
+          <div>
+            <p className="eyebrow">ПАСПОРТ СТРАНЫ</p>
+            <h2 id="country-dialog-title">{country.name}</h2>
+            <p>Цель развития и правительство.</p>
           </div>
-          <section className="country-government-card overflow-hidden p-0">
-            <div className="government-title"><div><h3>Правительство</h3><p>Люди, которые могут управлять выбранной страной.</p></div><span>{members.length}</span></div>
-            {bootstrap.countryRole === "OWNER" && <form className="government-invite" onSubmit={invite}>
-              <Field label="Email участника" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.ru" required />
-              <label>Полномочия<select aria-label="Полномочия" value={inviteRole} onChange={(event) => setInviteRole(event.target.value as typeof inviteRole)}><option value="MEMBER">Министр</option><option value="VIEWER">Наблюдатель</option></select></label>
-              <Button type="submit" disabled={pending || !email.includes("@")}>Назначить</Button>
-            </form>}
-            <div className="government-list">{members.map((member) => <article key={member.userId}>
-              <span>{member.name.slice(0, 1).toUpperCase()}</span><div><strong>{member.name}</strong><small>{member.email} · {roleLabel[member.role]}</small></div>
-              {bootstrap.countryRole === "OWNER" && member.role !== "OWNER" && <Button variant="danger" onClick={() => removeMember(member.userId)} disabled={pending}>Исключить</Button>}
-            </article>)}</div>
-            {bootstrap.countryRole !== "OWNER" && <p className="government-readonly">Состав правительства изменяет глава страны.</p>}
+          <Button
+            variant="secondary"
+            className="h-11 w-11 px-0 text-xl"
+            onClick={onClose}
+            aria-label="Закрыть"
+          >
+            ×
+          </Button>
+        </header>
+        <div className="country-government-body country-government-grid">
+          <section className="country-government-card country-facts">
+            <h3>Паспорт страны</h3>
+            <dl>
+              {facts
+                .filter(([, value]) => value?.trim())
+                .map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd className="country-passport-text">{value}</dd>
+                  </div>
+                ))}
+              <div>
+                <dt>Ваша роль</dt>
+                <dd>{roleLabel[bootstrap.countryRole]}</dd>
+              </div>
+              <div>
+                <dt>Городов</dt>
+                <dd>{bootstrap.stats.cities}</dd>
+              </div>
+            </dl>
           </section>
-        </div>}
-      </div>
-    </section>
-  </div>;
+          <section className="country-government-card overflow-hidden p-0">
+            <div className="government-title">
+              <h3>Правительство</h3>
+              {members && <span>{members.length}</span>}
+            </div>
+            {error ? (
+              <p role="alert" className="government-readonly">
+                {error}{" "}
+                <Button
+                  variant="secondary"
+                  onClick={() => setRetry((value) => value + 1)}
+                >
+                  Повторить
+                </Button>
+              </p>
+            ) : !members ? (
+              <p role="status" className="government-readonly">
+                Загружаем состав…
+              </p>
+            ) : (
+              <div className="government-list">
+                {members.map((member) => (
+                  <article key={member.userId}>
+                    <span aria-hidden="true">
+                      {member.name.slice(0, 1).toUpperCase()}
+                    </span>
+                    <div>
+                      <strong>{member.name}</strong>
+                      <small>
+                        {member.email} · {roleLabel[member.role]}
+                      </small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </section>
+    </div>
+  );
 }

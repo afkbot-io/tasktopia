@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { getBuilding, PROP_CATALOG } from "../../shared/catalog";
 import { microAmbientSprite } from "../../shared/micro-ambient";
 import { api } from "../api";
@@ -21,6 +21,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
+  const submitting = useRef(false);
   const [pending, setPending] = useState(false);
   const [countryLoadFailed, setCountryLoadFailed] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
@@ -43,11 +44,13 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
     const data = new FormData(event.currentTarget);
     if (mode === "register" && data.get("password") !== data.get("passwordConfirmation")) {
       setError("Пароли не совпадают");
       return;
     }
+    submitting.current = true;
     setPending(true);
     setError("");
     try {
@@ -67,11 +70,14 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Не удалось войти");
     } finally {
+      submitting.current = false;
       setPending(false);
     }
   }
 
   async function retryCountryLoad() {
+    if (submitting.current) return;
+    submitting.current = true;
     setPending(true);
     setError("");
     try {
@@ -81,6 +87,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
       setCountryLoadFailed(true);
       setError(cause instanceof Error ? cause.message : "Не удалось загрузить страну");
     } finally {
+      submitting.current = false;
       setPending(false);
     }
   }
@@ -88,7 +95,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const visibleError = error || initialError;
   const canRetryCountry = countryLoadFailed || Boolean(initialError);
 
-  return <main className="grid h-full overflow-y-auto bg-[#091518] lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
+  return <main className="auth-screen grid h-full overflow-y-auto bg-[#091518] lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
     <section className="auth-visual relative min-h-[500px] overflow-hidden px-6 py-7 sm:px-10 lg:min-h-0 lg:px-14 lg:py-10" aria-label="Описание Tasktopia">
       <div className="brand-mark relative z-[2]"><span>▦</span> TASKTOPIA</div>
       <div className="relative z-[2] mt-16 max-w-3xl lg:mt-[14vh]">
@@ -138,7 +145,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
           <Button variant="primary" type="submit" className="mt-1 w-full" disabled={pending}>{pending ? "Подождите…" : mode === "login" ? "Открыть страну" : "Создать аккаунт"}</Button>
         </form>
         {canRetryCountry && <Button className="mt-2 w-full" disabled={pending} onClick={() => void retryCountryLoad()}>Повторить загрузку</Button>}
-        {(registrationEnabled || mode === "register") && <Button variant="quiet" className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
+        {(registrationEnabled || mode === "register") && <Button variant="quiet" disabled={pending} className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
           {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
         </Button>}
       </div>

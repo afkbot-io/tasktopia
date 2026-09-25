@@ -180,39 +180,13 @@ test("login, map and MCP token management", async ({ page, context }) => {
   const countrySwitcher = page.getByRole("dialog", { name: "Выбор страны" });
   await expect(countrySwitcher).toBeVisible();
   await expect(countrySwitcher.getByText("Глава страны", { exact: false }).first()).toBeVisible();
-  await countrySwitcher.getByRole("button", { name: "Редактировать страну" }).click();
+  await countrySwitcher.getByRole("button", { name: "Паспорт страны" }).click();
   await expect(page.getByRole("dialog", { name: "Тестовая страна" })).toBeVisible();
   await capture(page, "screenshots/release-country-government.png");
-  const originalCountry = (await (await page.request.get("/api/bootstrap")).json()).country;
-  try {
-    await page.getByLabel("Название").fill("Тестовая страна 2");
-    await page.getByRole("button", { name: "Сохранить паспорт" }).click();
-    await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
-    await page.getByRole("button", { name: "Закрыть" }).click();
-
-    await page.locator(".country-title-button").click();
-    await countrySwitcher.getByRole("button", { name: /Новая страна/ }).click();
-    await page.getByLabel("Название страны").fill("Временная страна");
-    await page.getByRole("button", { name: "Создать страну" }).click();
-    await expect(page.locator(".country-title-button")).toContainText("Временная страна");
-    await page.locator(".country-title-button").click();
-    await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "Города" }).click();
-    await expect(page.getByRole("complementary", { name: "Города" }).getByText("Нет городов", { exact: true })).toBeVisible();
-    await page.locator(".map-region").click({ position: { x: 20, y: 20 } });
-    await expect(page.getByRole("complementary", { name: "Города" })).toBeHidden();
-    await page.locator(".country-title-button").click();
-    await countrySwitcher.getByRole("button", { name: "Редактировать страну" }).click();
-    page.once("dialog", (dialog) => dialog.accept());
-    await page.getByRole("button", { name: "Удалить страну" }).click();
-    await expect(page.locator(".country-title-button")).toContainText("Тестовая страна 2");
-    await openMapCity(page);
-    await expect(canvas).toBeVisible();
-  } finally {
-    // Other real-world journeys reuse this seed and validate its identity.
-    expect((await page.request.patch(`/api/countries/${originalCountry.id}`, { data: {
-      name: originalCountry.name, idempotencyKey: crypto.randomUUID(),
-    } })).ok()).toBe(true);
-  }
+  const passport = page.getByRole("dialog", { name: "Тестовая страна" });
+  await expect(passport.getByRole("button", { name: /Сохранить|Удалить|Назначить|Перегенерировать/ })).toHaveCount(0);
+  await expect(passport.locator("input, textarea, select")).toHaveCount(0);
+  await page.getByRole("button", { name: "Закрыть" }).click();
 
   await page.locator(".country-title-button").click();
   await expect(countrySwitcher).toBeVisible();

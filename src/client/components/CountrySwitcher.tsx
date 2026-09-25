@@ -10,13 +10,12 @@ const roleLabel: Record<CountryRole, string> = {
   VIEWER: "Наблюдатель",
 };
 
-export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onCities, onManage, onCreate }: {
+export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onCities, onManage }: {
   bootstrap: BootstrapDto;
   onClose: () => void;
   onBootstrap: (bootstrap: BootstrapDto) => void;
   onCities: () => void;
   onManage: () => void;
-  onCreate: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [pendingId, setPendingId] = useState("");
@@ -72,8 +71,7 @@ export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onCities, onM
     </div>
     <div className="country-switcher-actions">
       <button type="button" className="country-plan-action" onClick={onCities}>Города</button>
-      <button type="button" onClick={onManage}>Редактировать страну</button>
-      <button type="button" className="country-create-action" onClick={onCreate}>＋ Новая страна</button>
+      <button type="button" onClick={onManage}>Паспорт страны</button>
     </div>
   </div>;
 }

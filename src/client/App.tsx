@@ -39,6 +39,7 @@ import { WorldAmbientLighting } from "./components/WorldAmbientLighting";
 const loadWorldRenderer = () => import("./components/WorldCanvas").then(module => ({ default: module.WorldCanvas }));
 const WorldCanvas = lazy(loadWorldRenderer);
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
+const CityDocuments = lazy(() => import("./components/CityDocuments").then(module => ({ default: module.CityDocuments })));
 const CityDevelopmentPanel = lazy(() => import("./components/CityDevelopmentPanel").then(module => ({ default: module.CityDevelopmentPanel })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
@@ -109,7 +110,7 @@ export function App() {
   const [directoryFocus, setDirectoryFocus] = useState<{ cityId: string; districtId: string }>();
   const [directorySection, setDirectorySection] = useState<"cities" | "archive">("cities");
   const [countryMenuOpen, setCountryMenuOpen] = useState(false);
-  const [countryDialog, setCountryDialog] = useState<"manage" | "create" | null>(null);
+  const [countryDialog, setCountryDialog] = useState<"manage" | null>(null);
   const [showDistricts, setShowDistricts] = useState(false);
   const [mapMode, setMapMode] = useState<MapLevel>("PLANET");
   const [mapTransition, setMapTransition] = useState<AtlasTransition | null>(null);
@@ -134,6 +135,8 @@ export function App() {
   const [attention, setAttention] = useState<{ scope: string; ids: string[]; label?:string }>({ scope: "", ids: [] });
   const [dependencyTask, setDependencyTask] = useState<{ scope: string; id: string }>();
   const [dependencyData, setDependencyData] = useState<{ scope: string; selection?: MapDependencySelection }>({ scope: "" });
+  const [documentsOpen, setDocumentsOpen] = useState(false);
+  const closeDocuments = useCallback(() => setDocumentsOpen(false), []);
   const [developmentOpen, setDevelopmentOpen] = useState(false);
   const closeDevelopment = useCallback(() => setDevelopmentOpen(false), []);
   const [attentionRevision, setAttentionRevision] = useState(0);
@@ -174,12 +177,13 @@ export function App() {
     to: MapLevel,
     focus: { x: number; y: number },
     commit: (signal: AbortSignal) => Promise<void> | void,
+    destinationName?: string,
   ) => {
     mapTransitionAbortRef.current?.abort();
     const controller = new AbortController();
     mapTransitionAbortRef.current = controller;
     if (mapTransitionTimerRef.current) clearTimeout(mapTransitionTimerRef.current);
-    const transition = createAtlasTransition(mapMode, to, focus, performance.now());
+    const transition = { ...createAtlasTransition(mapMode, to, focus, performance.now()), destinationName };
     setMapTransitionError("");
     setMapTransition(transition);
     try {
@@ -255,6 +259,7 @@ export function App() {
     setCountryMenuOpen(false);
     setDirectoryOpen(false);
     setDirectoryFocus(undefined);
+    setDocumentsOpen(false);
     setDevelopmentOpen(false);
   }, []);
 
@@ -305,9 +310,6 @@ export function App() {
       throw error;
     }
   }), []);
-  const refreshWorld = useCallback(async () => {
-    applyBootstrap(await api<BootstrapDto>("/api/bootstrap"));
-  }, [applyBootstrap]);
 
   const openBuilding = useCallback((target: BuildingNavigationTarget, session = bootstrap) => {
     const focus = () => {
@@ -383,7 +385,7 @@ export function App() {
     void loadCityScene(countryId, cityId, revision).catch(() => undefined).finally(()=>{cityPrefetchPendingRef.current=false;});
   }, []);
 
-  const openPlanetCity = useCallback(async (selectedCountryId: string, cityId: string, focus = {x:.5,y:.5}) => {
+  const openPlanetCity = useCallback(async (selectedCountryId: string, cityId: string, focus = {x:.5,y:.5}, cityName?: string) => {
     if (!bootstrap) return;
     const authenticationEpoch=authenticationEpochRef.current;
     await transitionMap("CITY", focus, async signal => {
@@ -408,7 +410,7 @@ export function App() {
       setMapMode("CITY");
       await Promise.race([ready,new Promise<void>(resolve=>window.setTimeout(resolve,12_000))]);
       if(!signal.aborted) cityReadyResolverRef.current=null;
-    });
+    }, cityName);
   }, [bootstrap,applyBootstrap,transitionMap]);
   useEffect(() => () => {
     mapTransitionAbortRef.current?.abort();
@@ -526,14 +528,13 @@ export function App() {
   if (taskEntry) return <main className="task-entry" aria-label="Карточка задачи">
     {selectedTask ? <Suspense fallback={<TaskModalFallback standalone onClose={closeTask} />}>
       <TaskModal onAuthenticationRequired={load} standalone key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision}
-        canEdit={bootstrap.countryRole !== "VIEWER"} onTransferred={task => setFocusTask({ origin: task.origin, token: Date.now() })}
         onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} />
     </Suspense> : <TaskModalFallback standalone onClose={closeTask} error={mapTransitionError} onRetry={() => { void openCanonicalTask(taskEntry, true); }} />}
   </main>;
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "CITY" ? activeCity : null;
   return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
-    <header className="app-header map-toolbar" aria-label="Управление миром" onClickCapture={event => {
+    <header className="app-header map-toolbar" aria-label="Навигация по миру" onClickCapture={event => {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const trigger = target.closest('button, summary');
@@ -552,7 +553,7 @@ export function App() {
           <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">МИР</span>
           <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7] md:max-w-[240px]">{bootstrap.country.name}</strong>
         </button>
-        {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={next => { if (renderedAuthenticationEpoch === authenticationEpochRef.current) applyBootstrap(next); }} onCities={() => { setCountryMenuOpen(false); setDirectoryFocus(undefined); setDirectorySection("cities"); setDirectoryOpen(true); }} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} onCreate={() => { setCountryMenuOpen(false); setCountryDialog("create"); }} />}
+        {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={next => { if (renderedAuthenticationEpoch === authenticationEpochRef.current) applyBootstrap(next); }} onCities={() => { setCountryMenuOpen(false); setDirectoryFocus(undefined); setDirectorySection("cities"); setDirectoryOpen(true); }} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} />}
         </div>
         {headerCity && <button className="header-city" aria-label={`Районы города ${headerCity.name}`} onClick={() => { setDirectoryFocus({cityId:headerCity.id,districtId:""});setDirectorySection("cities");setDirectoryOpen(value=>!value); }}>
           <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">ГОРОД</span>
@@ -576,11 +577,12 @@ export function App() {
             <strong>{bootstrap.country.name}</strong>
             <button onClick={() => {setDirectoryOpen(false);setCountryMenuOpen(true);}}>Выбрать мир</button>
             <button onClick={() => { setCountryMenuOpen(false);setDirectoryFocus(undefined);setDirectorySection("cities");setDirectoryOpen(true); }}>Города</button>
+            <button onClick={event => { const menu=event.currentTarget.closest("details"); if(menu) {menu.open=false; menu.querySelector("summary")?.focus();} setDirectoryOpen(false);setDevelopmentOpen(false);setDocumentsOpen(true); }}>Документы</button>
             <button onClick={openArchive}>Архив проекта</button>
             <button onClick={() => openSettings("mcp")}>Подключить MCP</button>
             <button onClick={() => openSettings("account")}>Аккаунт и настройки</button>
             <div className="mobile-menu-tools"><WorldPreferences /><MapLegend /></div>
-            <button onClick={() => {setCountryMenuOpen(false);setCountryDialog("manage");}}>Управление миром</button>
+            <button onClick={() => {setCountryMenuOpen(false);setCountryDialog("manage");}}>Паспорт страны</button>
           </GamePopover>
           <WorldPreferences />
           <MapLegend />
@@ -639,6 +641,7 @@ export function App() {
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
         setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true);
       }} />}
+      {documentsOpen && <Suspense fallback={<div role="status" className="app-loading">Открываем документы…</div>}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={setSelectedTask} /></Suspense>}
       {directoryOpen && <CityDirectory key={`${countryId}:${directoryFocus?.districtId ?? "general"}`} initialFocus={directoryFocus} bootstrap={bootstrap} refreshToken={revision} initialSection={directorySection} onClose={() => setDirectoryOpen(false)} onCityFocus={(city) => {
         setDirectoryOpen(false);
         void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
@@ -651,16 +654,16 @@ export function App() {
           setMapMode("CITY");
           await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
           cityReadyResolverRef.current = null;
-        });
-      }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} onMutation={refreshWorld} />}
+        }, city.name);
+      }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} />}
     </section>
 
-    {selectedTask && <Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} canEdit={bootstrap.countryRole !== "VIEWER"} onTransferred={task => setFocusTask({ origin: task.origin, token: Date.now() })} onClose={closeTask} /></Suspense>}
+    {selectedTask && <Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense>}
     {selectedSite?.countryId === bootstrap.country.id && <SiteHistoryModal feature={selectedSite.feature} onClose={closeSite} onTaskOpen={taskId => {
       closeSite(); void openCanonicalTask(new URLSearchParams({ id: taskId }).toString());
     }} />}
     {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
-    {countryDialog && <CountryPanel bootstrap={bootstrap} mode={countryDialog} onClose={() => setCountryDialog(null)} onBootstrap={next => { if (renderedAuthenticationEpoch === authenticationEpochRef.current) applyBootstrap(next); }} />}
+    {countryDialog && <CountryPanel bootstrap={bootstrap} onClose={() => setCountryDialog(null)} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
     {!pushOfferDismissed && <PushNotificationCard compact onDismiss={() => {
       localStorage.setItem("tasktopia:push-offer-dismissed", "1");

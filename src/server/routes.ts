@@ -1,3 +1,5 @@
+import { readCityReport } from "./city-report-read";
+import { readCityNews, readNewsCards } from "./city-news-read";
 import { readWorldDigest } from "./world-digest-read";
 import { registerTaskShareRoutes } from "./task-share-routes";
 import { readMapAttention } from "./map-attention-read";
@@ -275,6 +277,25 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const query = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid() }).strict(), request.query);
     reply.header("Cache-Control", "private, no-store");
     return service.getCityDevelopment(user.id, query.countryId, query.cityId);
+  });
+
+  app.get("/api/city-report", async (request, reply) => {
+    const user = await requireUser(db, request, reply); if (!user) return reply;
+    const q = parse(z.object({countryId:z.string().uuid(),cityId:z.string().uuid().optional(),districtId:z.string().uuid().optional(),attention:z.enum(["true","false"]).optional(),offset:z.coerce.number().int().min(0).max(1000000).default(0),days:z.coerce.number().int().min(1).max(90).default(7)}).strict(),request.query);
+    reply.header("Cache-Control","private, no-store");
+    return await readCityReport(db,user.id,q.countryId,q.cityId??null,q.districtId??null,q.attention==="true",q.offset,q.days) ?? reply.code(403).send({message:"Нет доступа к стране"});
+  });
+  app.get("/api/city-news", async (request,reply) => {
+    const user=await requireUser(db,request,reply);if(!user)return reply;
+    const q=parse(z.object({countryId:z.string().uuid(),history:z.enum(["true","false"]).optional(),before:z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional()}).strict(),request.query);
+    reply.header("Cache-Control","private, no-store");
+    return await readCityNews(db,user.id,q.countryId,q.history==="true",q.before??null) ?? reply.code(403).send({message:"Нет доступа к стране"});
+  });
+  app.post("/api/city-news/read",async(request,reply)=>{
+    const user=await requireUser(db,request,reply);if(!user)return reply;
+    const q=parse(z.object({countryId:z.string().uuid(),eventIds:z.array(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)).max(20)}).strict(),request.body);
+    if(!await countryRole(db,user.id,q.countryId))return reply.code(403).send({message:"Нет доступа к стране"});
+    await readNewsCards(db,user.id,q.countryId,q.eventIds);return {ok:true};
   });
 
   app.get("/api/world-digest", async (request, reply) => {

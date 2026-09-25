@@ -122,7 +122,7 @@ test("a real port docks and dispatches the same scheduled ship",async({page},inf
   }
 });
 
-test("creates a coastal country from the landscape picker",async({page},info)=>{
+test("renders a coastal country provisioned outside the display interface",async({page},info)=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local fixture only");
   const url=process.env.E2E_DATABASE_URL??"postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
   expect(["localhost","127.0.0.1"]).toContain(new URL(url).hostname);
@@ -132,21 +132,16 @@ test("creates a coastal country from the landscape picker",async({page},info)=>{
   let countryId:string|undefined;
   try{
     expect((await page.request.post("/api/auth/login",{data:{email:user.email,password:"password123"}})).ok()).toBe(true);
+    const created = await page.request.post("/api/countries", { data: { name: "Морской край", landscape: "COASTAL" } });
+    expect(created.ok()).toBe(true);
+    countryId = (await created.json()).id;
     await page.goto("/");
     await page.locator(".country-title-button").click();
-    await page.getByRole("button",{name:"＋ Новая страна",exact:true}).click();
-    const dialog=page.getByRole("dialog",{name:"Новая страна"});
-    await dialog.getByLabel("Название страны").fill("Морской край");
-    await expect(dialog.getByLabel("Ландшафт")).toHaveValue("CLASSIC");
-    await dialog.getByLabel("Ландшафт").selectOption("COASTAL");
-    await page.screenshot({path:info.outputPath("coastal-country-form.png")});
-    await page.setViewportSize({width:390,height:844});
-    await expect(dialog.getByLabel("Ландшафт")).toBeVisible();
-    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-    await page.screenshot({path:info.outputPath("coastal-country-form-mobile.png")});
-    await dialog.getByRole("button",{name:"Создать страну",exact:true}).click();
-    await expect(dialog).toBeHidden();await expect(page.locator(".country-title-button")).toContainText("Морской край");
-    const bootstrap=await(await page.request.get("/api/bootstrap")).json();countryId=bootstrap.country.id;
+    const switcher=page.getByRole("dialog",{name:"Выбор страны"});
+    await expect(switcher.getByRole("button",{name:/Новая страна/})).toHaveCount(0);
+    await switcher.getByRole("button",{name:/Морской край/}).click();
+    await expect(page.locator(".country-title-button")).toContainText("Морской край");
+    const bootstrap=await(await page.request.get("/api/bootstrap")).json();
     expect(bootstrap.worldManifest.terrainProfile).toEqual({version:1,kind:"EAST_COAST",coastX:128});
     const service=new AppService(db);
     const city=await service.createCity(countryId!,{name:"Первый приморский город",idempotencyKey:"picker-city"});
