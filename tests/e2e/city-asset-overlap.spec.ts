@@ -13,9 +13,11 @@ test("resident images finishing on the planet do not rebuild the hidden city", a
     await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
-    const rebuilds = await host.getAttribute("data-entity-rebuilds");
     await openMapPlanet(page);
     await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+    await expect(host).toHaveAttribute("data-map-active", "false");
+    // Measure the hidden interval; first-frame activation may reconcile before navigation.
+    const rebuilds = await host.getAttribute("data-entity-rebuilds");
     release();
     await expect(host).toHaveAttribute("data-ambient-assets", "ready");
     // Allow pending animation-frame reconciliation to run, if incorrectly scheduled.
