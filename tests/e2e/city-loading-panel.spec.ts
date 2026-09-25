@@ -1,0 +1,33 @@
+import { expect, test } from '@playwright/test';
+
+test('переход показывает настоящий этап и не рисует полноэкранную анимацию', async ({ page }, testInfo) => {
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/api/countries/*/cities/*/scene', async route => { await gate; await route.continue(); });
+  await page.request.post('/api/auth/login', { data: { email: 'demo@tasktopia.local', password: 'tasktopia-demo' } });
+  await page.goto('/');
+  await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready', 'true');
+  const started = Date.now();
+  await page.locator('.planet-city-targets [data-city-id]').first().focus();
+  await page.keyboard.press('Enter');
+  const panel = page.locator('.map-level-transition');
+  await expect(panel).toHaveAttribute('data-phase', 'PRELOAD');
+  await expect(panel).toContainText('Получаем план города');
+  expect(await panel.evaluate(node => ({ background: getComputedStyle(node).backgroundImage, animation: getComputedStyle(node).animationName }))).toEqual({ background: 'none', animation: 'none' });
+  await page.screenshot({ path: testInfo.outputPath('city-loader.png') });
+  const released = Date.now();
+  release();
+  await expect(panel).toContainText('Готовим улицы и здания');
+  const host = page.locator('.world-canvas');
+  await expect(host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 45000 });
+  await expect(panel).toHaveCount(0);
+  const cold = Date.now() - released;
+  await page.getByRole('button', { name: 'Планета', exact: true }).click();
+  await expect(page.locator('.map-level-transition')).toHaveCount(0);
+  const warmStarted = Date.now();
+  await page.locator('.planet-city-targets [data-city-id]').first().focus();
+  await page.keyboard.press('Enter');
+  await expect(host).toHaveAttribute('data-map-active', 'true');
+  await expect(page.locator('.map-level-transition')).toHaveCount(0);
+  console.log('CITY_LOADING_MS', JSON.stringify({ coldAfterRelease: cold, warm: Date.now() - warmStarted, total: Date.now() - started }));
+});

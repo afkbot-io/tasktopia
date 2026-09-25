@@ -114,7 +114,6 @@ export function App() {
   const [showDistricts, setShowDistricts] = useState(false);
   const [mapMode, setMapMode] = useState<MapLevel>("PLANET");
   const [mapTransition, setMapTransition] = useState<AtlasTransition | null>(null);
-  const mapTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapTransitionAbortRef = useRef<AbortController | null>(null);
   const [focusCity, setFocusCity] = useState<CityFocus | null>(null);
   const [preparedCityScene, setPreparedCityScene] = useState<CitySceneDto | null>(null);
@@ -182,13 +181,11 @@ export function App() {
     mapTransitionAbortRef.current?.abort();
     const controller = new AbortController();
     mapTransitionAbortRef.current = controller;
-    if (mapTransitionTimerRef.current) clearTimeout(mapTransitionTimerRef.current);
     const transition = { ...createAtlasTransition(mapMode, to, focus, performance.now()), destinationName };
     setMapTransitionError("");
     setMapTransition(transition);
     try {
       if (controller.signal.aborted) return;
-      setMapTransition((current) => current?.id === transition.id ? withAtlasTransitionPhase(current, "PREPARE") : current);
       await commit(controller.signal);
       if (controller.signal.aborted) return;
       setMapTransition((current) => current?.id === transition.id ? withAtlasTransitionPhase(current, "FIRST_FRAME") : current);
@@ -199,14 +196,10 @@ export function App() {
       if (!controller.signal.aborted) setMapTransitionError(error instanceof Error ? error.message : "Не удалось открыть карту");
     } finally {
       if (!controller.signal.aborted) {
-        mapTransitionTimerRef.current = setTimeout(() => {
-          setMapTransition((current) => current?.id === transition.id ? withAtlasTransitionPhase(current, "EVICT") : current);
-          mapTransitionTimerRef.current = setTimeout(() => {
-            setMapTransition((current) => current?.id === transition.id ? null : current);
-            if (mapTransitionAbortRef.current === controller) mapTransitionAbortRef.current = null;
-            mapTransitionTimerRef.current = null;
-          }, 120);
-        }, 0);
+        // The renderer has already presented its first frame. Do not keep a
+        // finished city covered for a decorative exit animation.
+        setMapTransition(current => current?.id === transition.id ? null : current);
+        if (mapTransitionAbortRef.current === controller) mapTransitionAbortRef.current = null;
       }
     }
   }, [mapMode]);
@@ -402,6 +395,7 @@ export function App() {
       const scene=await loadCityScene(selectedCountryId,cityId,session.country.worldVersion);
       if(signal.aborted) return;
       performance.mark('tasktopia:city-data-ready');
+      setMapTransition(current => current && !signal.aborted ? withAtlasTransitionPhase(current, 'PREPARE') : current);
       const ready = new Promise<void>(resolve => {cityReadyResolverRef.current=resolve;});
       setPreparedCityScene(scene);
       setFocusCity(scene.city);
@@ -414,7 +408,6 @@ export function App() {
   }, [bootstrap,applyBootstrap,transitionMap]);
   useEffect(() => () => {
     mapTransitionAbortRef.current?.abort();
-    if (mapTransitionTimerRef.current) clearTimeout(mapTransitionTimerRef.current);
   }, []);
   useEffect(() => {
     document.title = bootstrap ? `Tasktopia — ${bootstrap.country.name}` : "Tasktopia — цифровая страна";
