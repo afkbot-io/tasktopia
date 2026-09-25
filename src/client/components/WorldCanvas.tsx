@@ -725,7 +725,7 @@ function drawWorldFeature(
       const rubble = sprite(PROP_SPRITES[key]!, x, y); rubble.anchor.set(0.5, 1); content.addChild(rubble);
     }
     if (feature.siteMarker) {
-      const presentation = siteMarkerPresentation(feature.siteMarker);
+      const presentation = siteMarkerPresentation();
       const text = new Text({ text: presentation.badge, resolution: 2, style: { fontFamily: "monospace", fontSize: 6, fontWeight: "bold", fill: presentation.color } });
       text.position.set(Math.round((width - text.width) / 2), Math.max(0, height - 8));
       const panel = new Graphics().rect(text.x - 2, text.y - 1, Math.ceil(text.width) + 4, 8).fill(0x30464c);
@@ -3160,7 +3160,6 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         );
         host!.dataset.taskBuildingViews = String(taskBuildingViews.size);
         host!.dataset.siteMarkers = String([...features.values()].filter(feature => feature.siteMarker).length);
-        host!.dataset.movedSites = String([...features.values()].filter(feature => feature.siteMarker?.kind === "RELOCATED").length);
         host!.dataset.incidents = String(incidentViews.size);
         host!.dataset.incidentEngines = String([...incidentViews.values()].filter((view) => view.fullResponse).length);
         host!.dataset.hotfixIncidents = String([...incidentViews.values()].filter((view) => view.mode === "HOTFIX_ACTIVE").length);

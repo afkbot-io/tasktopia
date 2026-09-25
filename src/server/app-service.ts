@@ -944,8 +944,10 @@ export class AppService {
       const country=await this.countryRow(countryId);
       if(input.confirmName.trim()!==String(country.name)) throw new DomainError("CONFIRMATION_MISMATCH","Для перегенерации укажите точное название страны");
       const cities=await this.listCities(countryId);
-      const before=await this.db.prepare("SELECT t.id,t.task_number,t.status FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=? ORDER BY t.id").all(countryId);
+      const before=await this.db.prepare("SELECT to_jsonb(t)-ARRAY['building_type','visual_kind','visual_asset_key','visual_auto','requested_building_family','platform_type']::text[] AS business FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=? ORDER BY t.id").all(countryId);
       const counts=await this.db.prepare("SELECT COUNT(*) AS count FROM districts_v3 d JOIN cities_v3 c ON c.id=d.city_id WHERE c.country_id=?").get<{count:string}>(countryId);
+      await this.db.prepare(`UPDATE tasks_v3 SET visual_auto=true,requested_building_family=NULL
+        WHERE city_id IN (SELECT id FROM cities_v3 WHERE country_id=?) AND service_role IS NULL`).run(countryId);
       const rebuilt:CityDto[]=[];
       // Explicit regeneration replaces disposable routes and layouts in one
       // transaction; a failed rebuild restores both automatically.
@@ -967,7 +969,7 @@ export class AppService {
         }
         if(!completed) throw new DomainError("PLACEMENT_UNAVAILABLE",`Не удалось безопасно пересобрать город «${city.name}»: нужна площадка для всех кварталов`);
       }
-      const after=await this.db.prepare("SELECT t.id,t.task_number,t.status FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=? ORDER BY t.id").all(countryId);
+      const after=await this.db.prepare("SELECT to_jsonb(t)-ARRAY['building_type','visual_kind','visual_asset_key','visual_auto','requested_building_family','platform_type']::text[] AS business FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=? ORDER BY t.id").all(countryId);
       if(JSON.stringify(before)!==JSON.stringify(after)) throw new DomainError("REGENERATION_FAILED","Изменились задачи при пересборке геометрии");
       await synchronizeCountryRoads(this.db, countryId);
       await this.db.prepare("DELETE FROM world_chunk_payloads_v1 WHERE country_id=?").run(countryId);
@@ -1286,7 +1288,25 @@ export class AppService {
     const maxChunkY = Math.floor(sceneBounds.maxY / CHUNK_SIZE);
     const chunkCount = (maxChunkX - minChunkX + 1) * (maxChunkY - minChunkY + 1);
     if (chunkCount > 256) throw new DomainError("INVALID_INPUT", "Город превышает лимит единой сцены");
-    const chunks = await this.getViewportPayloads(countryId, minChunkX, minChunkY, maxChunkX, maxChunkY, "DETAIL");
+    // A country chunk can intersect several cities. Scope the source snapshot
+    // before generating surfaces, props and roads; filtering task sprites later
+    // leaves another city's streets and historical sites in this scene.
+    const viewportBounds = { minX: minChunkX * CHUNK_SIZE, minY: minChunkY * CHUNK_SIZE,
+      maxX: (maxChunkX + 1) * CHUNK_SIZE - 1, maxY: (maxChunkY + 1) * CHUNK_SIZE - 1 };
+    const roadContext = { schemaVersion: 1 as const, nodes: [], segments: layout.roadNetwork.segments };
+    const scopedSnapshot = await this.loadViewportSpatialSnapshot(countryId, viewportBounds, "DETAIL", {
+      city,
+      roads: rasterizeBlockRoads({ schemaVersion: 1, nodes: [], segments: [
+        ...roadContext.segments,
+        ...intercityRoadRasterNetwork(citySceneIntercityRoads(groundRoadSnapshot?.plan.routes ?? [], cityId, viewportBounds)).segments,
+      ] }, expandRect(viewportBounds, 4)),
+    });
+    // Scene payloads never enter the country-wide chunk cache.
+    const chunks: ChunkPayloadDto[] = [];
+    for (let y = minChunkY; y <= maxChunkY; y++) for (let x = minChunkX; x <= maxChunkX; x++) {
+      chunks.push(await this.buildChunkPayload(countryId, x, y, "DETAIL", country,
+        `${countryId}:${cityId}:${x}:${y}:DETAIL`, Number(country.world_version), false, scopedSnapshot));
+    }
     const completedDistrictIds = new Set(chunks.flatMap((chunk) => chunk.districts
       .filter((district) => district.status === "COMPLETED")
       .map((district) => district.id)));
@@ -1320,16 +1340,6 @@ export class AppService {
       minX: minChunkX * CHUNK_SIZE, minY: minChunkY * CHUNK_SIZE,
       maxX: (maxChunkX + 1) * CHUNK_SIZE - 1, maxY: (maxChunkY + 1) * CHUNK_SIZE - 1,
     });
-    // A nearby city's street can straddle the last resident column. Include
-    // its complete saved geometry so the client preserves width and endpoints
-    // instead of drawing the one-column slice as a dead-end road. No planning
-    // or world writes on this read; layout access is scoped to this country.
-    const streetLayouts = await this.layoutsInBounds(countryId, {
-      minX: minChunkX * CHUNK_SIZE - 2, minY: minChunkY * CHUNK_SIZE - 2,
-      maxX: (maxChunkX + 1) * CHUNK_SIZE + 1, maxY: (maxChunkY + 1) * CHUNK_SIZE + 1,
-    });
-    const roadContext = { schemaVersion: 1 as const, nodes: [],
-      segments: streetLayouts.flatMap(streetLayout => streetLayout.roadNetwork.segments) };
     const sceneIdentity = {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       cityId,
@@ -1478,9 +1488,9 @@ export class AppService {
     return districts.flatMap(district=>{const cells=district.cells.filter(cell=>contains(bounds,cell));return cells.length?[{...district,cells}]:[];});
   }
 
-  private async tasksInBounds(countryId: string, bounds: Rect, includeAccess = false): Promise<TaskDto[]> {
+  private async tasksInBounds(countryId: string, bounds: Rect, includeAccess = false, cityId?: string): Promise<TaskDto[]> {
     const rows=await this.db.prepare(`SELECT t.* FROM tasks_v3 t JOIN task_placements_v1 p ON p.task_id=t.id JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' JOIN city_blocks_v1 b ON b.id=p.block_id
-      WHERE l.country_id=? AND b.origin_x-2<=? AND b.origin_x+b.width+2>=? AND b.origin_y-2<=? AND b.origin_y+b.height+2>=? ORDER BY t.task_number`).all<Row>(countryId,bounds.maxX,bounds.minX,bounds.maxY,bounds.minY);
+      WHERE l.country_id=? AND b.origin_x-2<=? AND b.origin_x+b.width+2>=? AND b.origin_y-2<=? AND b.origin_y+b.height+2>=? ${cityId ? "AND l.city_id=?" : ""} ORDER BY t.task_number`).all<Row>(countryId,bounds.maxX,bounds.minX,bounds.maxY,bounds.minY,...(cityId ? [cityId] : []));
     return (await this.projectTasks(rows)).filter(task=>task.footprint.some(cell=>contains(bounds,cell))||includeAccess&&task.accessPath.some(cell=>contains(bounds,cell)));
   }
 
@@ -2212,24 +2222,27 @@ export class AppService {
       const placement = await this.db.prepare(`SELECT p.* FROM task_placements_v1 p
         JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE p.task_id=?`).get<Row>(task.id);
       if (!placement) throw new DomainError("NOT_FOUND","Площадка задачи не найдена");
-      const timestamp = now(), markerId = randomUUID();
-      // Release only the live placement, never its land. The country mutation
-      // transaction commits both the permanent marker and the new placement.
+      const timestamp = now();
+      // Both placement changes and the audit event commit under the country
+      // lock. A relocation is history, not a permanent reservation of land.
       await this.db.prepare("DELETE FROM task_placements_v1 WHERE task_id=?").run(task.id);
-      await this.db.prepare(`INSERT INTO site_markers_v1
-        (id,layout_id,block_id,slot_key,kind,target_task_id,snapshot_json,asset_variant,created_at,updated_at)
-        VALUES(?,?,?,?,'RELOCATED',?,?::jsonb,'compact-relocated',?,?)`)
-        .run(markerId,placement.layout_id,placement.block_id,placement.slot_key,task.id,
-          JSON.stringify({taskNumber:task.taskNumber,title:task.title,buildingFamily:task.buildingType,lastStage:task.stage}),timestamp,timestamp);
-      await this.db.prepare(`UPDATE tasks_v3 SET district_id=?,visual_auto=false,
-        requested_building_family=CASE WHEN visual_kind='BUILDING' THEN building_type ELSE NULL END,updated_at=? WHERE id=?`)
+      await this.db.prepare(`UPDATE city_blocks_v1 SET parameters_json=parameters_json
+        || jsonb_build_object(
+          'slotFamilies',COALESCE(parameters_json->'slotFamilies','{}'::jsonb)-?,
+          'slotRoles',COALESCE(parameters_json->'slotRoles','{}'::jsonb)-?,
+          'slotRoleTriggers',COALESCE(parameters_json->'slotRoleTriggers','{}'::jsonb)-?,
+          'slotPortPlans',COALESCE(parameters_json->'slotPortPlans','{}'::jsonb)-?) WHERE id=?`)
+        .run(placement.slot_key,placement.slot_key,placement.slot_key,placement.slot_key,placement.block_id);
+
+      await this.db.prepare(`UPDATE tasks_v3 SET district_id=?,visual_auto=true,
+        requested_building_family=NULL,updated_at=? WHERE id=?`)
         .run(target.id,timestamp,task.id);
       const layout = await this.synchronizeBlocks(countryId,task.cityId);
       await this.recordTaskEvent(task.id,"FIELDS_UPDATED",input.actor ?? "MCP",input.actorUserId,
-        {changedFields:["districtId"],fromDistrictId:task.districtId,toDistrictId:target.id,markerId,comment:input.comment?.trim() || null},timestamp);
+        {changedFields:["districtId"],fromDistrictId:task.districtId,toDistrictId:target.id,oldOrigin:task.origin,newOrigin:(await this.getTask(countryId,task.id)).origin,comment:input.comment?.trim() || null},timestamp);
       const data = await this.getTask(countryId,task.id);
       return {data,eventType:"task.transferred",eventPayload:{taskId:task.id,cityId:task.cityId,
-        fromDistrictId:task.districtId,toDistrictId:target.id,markerId,serviceRole:data.serviceRole,
+        fromDistrictId:task.districtId,toDistrictId:target.id,serviceRole:data.serviceRole,
         oldBounds:boundsOf(task.footprint),newBounds:boundsOf(data.footprint),
         affectedBounds:unionRect(layout.bounds,expandRect(boundsOf([...task.footprint,...task.accessPath]),1))}};
     });
@@ -2474,14 +2487,15 @@ export class AppService {
     countryId: string,
     viewportBounds: Rect,
     lod: ChunkLod,
+    scope?: { city: CityDto; roads: RoadCellDto[] },
   ): Promise<ViewportSpatialSnapshot> {
     const surfaceScope = lod === "DETAIL" ? expandRect(viewportBounds, 4) : viewportBounds;
     const [roadRows, districts, cities, tasks, features] = await Promise.all([
-      this.roadsInBounds(countryId, surfaceScope),
-      this.districtsInBounds(countryId, surfaceScope),
-      lod === "DETAIL" ? this.citiesInBounds(countryId, expandRect(viewportBounds, 96)) : Promise.resolve([]),
-      this.tasksInBounds(countryId, surfaceScope, lod === "DETAIL"),
-      this.featuresInBounds(countryId, surfaceScope),
+      scope ? Promise.resolve(scope.roads) : this.roadsInBounds(countryId, surfaceScope),
+      scope ? this.listDistricts(countryId, scope.city.id, surfaceScope) : this.districtsInBounds(countryId, surfaceScope),
+      scope ? Promise.resolve([scope.city]) : lod === "DETAIL" ? this.citiesInBounds(countryId, expandRect(viewportBounds, 96)) : Promise.resolve([]),
+      this.tasksInBounds(countryId, surfaceScope, lod === "DETAIL", scope?.city.id),
+      readPermanentSiteFeatures(this.db, countryId, surfaceScope, scope?.city.id),
     ]);
     const defectSummaryByTask = new Map<string, ChunkDefectSummary>();
     if (lod === "DETAIL" && tasks.length > 0) {

@@ -49,35 +49,34 @@ describe("permanent task sites and atomic sprint transfer", { timeout: 30_000 },
     expect(await db.prepare("SELECT id FROM site_markers_v1 WHERE id=?").get(first.id)).toBeUndefined();
   });
 
-  it("moves the same task twice while every former site points directly to the current task and never becomes vacant", async () => {
+  it("moves the same task twice, keeps audit history and releases every former parcel", async () => {
     let task = await create();
     task = await service.addTaskComment(countryId, { taskId: task.id, body: "History stays on the same task", idempotencyKey: "comment" });
     const original = structuredClone(task);
     const moved = await service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[1]!, idempotencyKey: "move-once" });
     expect(moved).toMatchObject({ id: task.id, taskNumber: task.taskNumber, cityId, districtId: districts[1],
-      status: task.status, progress: task.progress, stage: task.stage, buildingType: task.buildingType, visualKind: task.visualKind });
+      status: task.status, progress: task.progress, stage: task.stage });
     expect(moved.origin).not.toEqual(task.origin);
     expect(moved.comments).toEqual(task.comments);
     expect(await service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[1]!, idempotencyKey: "move-once" })).toEqual(moved);
     const twice = await service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[2]!, idempotencyKey: "move-twice" });
     expect(await service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[1]!, idempotencyKey: "move-once" })).toEqual(twice);
-    const markers = await service.listWorldFeatures(countryId);
-    expect(markers).toHaveLength(2);
-    expect(markers.map(marker => marker.siteMarker?.targetTaskId)).toEqual([task.id, task.id]);
-    for (const marker of markers) expect(marker.siteMarker).toMatchObject({ kind: "RELOCATED", permanent: true,
-      snapshot: { title: task.title, taskNumber: task.taskNumber } });
-    expect(markers.map(marker => marker.origin)).toEqual(expect.arrayContaining([original.origin, moved.origin]));
+    expect(await service.listWorldFeatures(countryId)).toEqual([]);
     expect((await service.listTasks(countryId)).map(task => task.id)).toEqual([task.id]);
     const layout = (await readActiveBlockLayout(db, cityId))!;
-    expect(layout.placements).toHaveLength(1); expect(layout.siteMarkers).toHaveLength(2);
+    expect(layout.placements).toHaveLength(1); expect(layout.siteMarkers).toHaveLength(0);
+    const replacement = await create(districts[0], "reuse-first-parcel");
+    expect(replacement.origin).toEqual(original.origin);
+    const history = await db.prepare("SELECT details_json FROM task_events_v7 WHERE task_id=? AND event_type='FIELDS_UPDATED'").all(task.id);
+    expect(history).toHaveLength(2);
     await service.deleteTask(countryId, { taskId: twice.id, confirmTitle: twice.title, idempotencyKey: "delete-moved" });
     const historical = await new AppService(db).listWorldFeatures(countryId);
     await expect(service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[1]!, idempotencyKey: "move-once" }))
       .rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(await service.listWorldFeatures(countryId)).toEqual(historical);
-    expect(historical).toHaveLength(3);
+    expect(historical).toHaveLength(1);
     expect(historical.every(marker => marker.siteMarker?.targetTaskId === null)).toBe(true);
-    expect(historical.filter(marker => marker.siteMarker?.kind === "RELOCATED")).toHaveLength(2);
+    expect(historical.filter(marker => marker.siteMarker?.kind === "RELOCATED")).toHaveLength(0);
     expect(historical.filter(marker => marker.siteMarker?.kind === "RUINED")).toHaveLength(1);
     const unknown = historical[0]!.siteMarker!.snapshot;
     expect(Object.keys(unknown).sort()).toEqual(["buildingFamily", "lastStage", "recordedAt", "taskNumber", "title"]);
@@ -104,7 +103,7 @@ describe("permanent task sites and atomic sprint transfer", { timeout: 30_000 },
     expect(await service.listEvents(countryId)).toEqual(events);
   });
 
-  it("preserves the airport role on the same task without activating its permanent former site", async () => {
+  it("preserves the airport role on the same task without reserving its former site", async () => {
     await create(districts[0], "a"); await create(districts[1], "b"); await create(districts[2], "c");
     const airport = await create(districts[2], "airport");
     expect(airport.serviceRole).toBe("AIRPORT");
@@ -114,8 +113,7 @@ describe("permanent task sites and atomic sprint transfer", { timeout: 30_000 },
     expect(moved.serviceRole).toBe("AIRPORT");
     const layout = (await readActiveBlockLayout(db, cityId))!;
     expect(layout.placements.filter(placement => placement.serviceRole === "AIRPORT")).toHaveLength(1);
-    expect(layout.siteMarkers).toHaveLength(1);
-    expect(layout.siteMarkers[0]).toMatchObject({ kind: "RELOCATED", targetTaskId: airport.id });
+    expect(layout.siteMarkers).toHaveLength(0);
     const rebuilt = await synchronizeCityBlocks(db, countryId, cityId, true);
     expect(rebuilt.placements.filter(placement => placement.serviceRole === "AIRPORT").map(placement => placement.taskId)).toEqual([airport.id]);
   });

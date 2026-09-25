@@ -58,7 +58,7 @@ describe("authorized atomic sprint transfer HTTP contract", { timeout: 30_000 },
     expect(await service.listWorldFeatures(countryId)).toEqual([]);
   });
 
-  it("returns the same canonical task, emits one invalidation and makes old-site navigation resolve the new location",async()=>{
+  it("returns the same canonical task, emits one invalidation and keeps the canonical URL while releasing the old site",async()=>{
     const payload={targetDistrictId,idempotencyKey:"transfer-once",comment:"Move to the next sprint"};
     const response=await app.inject({method:"POST",url:`/api/tasks/${task.id}/transfer`,headers:{cookie},payload});
     expect(response.statusCode).toBe(200);
@@ -66,11 +66,11 @@ describe("authorized atomic sprint transfer HTTP contract", { timeout: 30_000 },
     expect(moved.origin).not.toEqual(task.origin);
     const retry=await app.inject({method:"POST",url:`/api/tasks/${task.id}/transfer`,headers:{cookie},payload});
     expect(retry.json()).toEqual(moved);
-    const feature=(await service.listWorldFeatures(countryId))[0]!;
-    const resolved=await app.inject({method:"GET",url:`/api/tasks/resolve?id=${feature.siteMarker!.targetTaskId}`,headers:{cookie}});
+    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    const resolved=await app.inject({method:"GET",url:`/api/tasks/resolve?id=${task.id}`,headers:{cookie}});
     expect(resolved.json()).toMatchObject({id:task.id,countryId,districtId:targetDistrictId,origin:moved.origin});
     const events=(await service.listEvents(countryId,0)).filter(event=>event.type==="task.transferred");
     expect(events).toHaveLength(1);
-    expect(events[0]!.payload).toMatchObject({taskId:task.id,fromDistrictId:task.districtId,toDistrictId:targetDistrictId,markerId:feature.id});
+    expect(events[0]!.payload).toMatchObject({taskId:task.id,fromDistrictId:task.districtId,toDistrictId:targetDistrictId});
   });
 });

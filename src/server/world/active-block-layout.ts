@@ -33,7 +33,7 @@ export async function readActiveBlockLayouts(db: Db, cityIds: readonly string[])
     (SELECT COALESCE(jsonb_agg(d ORDER BY sequence),'[]') FROM district_layouts_v1 d WHERE d.layout_id=l.id) AS districts,
     (SELECT COALESCE(jsonb_agg(b ORDER BY sequence,id),'[]') FROM city_blocks_v1 b WHERE b.layout_id=l.id) AS blocks,
     (SELECT COALESCE(jsonb_agg(p ORDER BY task_id),'[]') FROM task_placements_v1 p WHERE p.layout_id=l.id) AS placements,
-    (SELECT COALESCE(jsonb_agg(m ORDER BY id),'[]') FROM site_markers_v1 m WHERE m.layout_id=l.id) AS markers,
+    (SELECT COALESCE(jsonb_agg(m ORDER BY id),'[]') FROM site_markers_v1 m WHERE m.layout_id=l.id AND m.kind='RUINED') AS markers,
     (SELECT to_jsonb(r) FROM road_networks_v1 r WHERE r.layout_id=l.id) AS road
     FROM city_layouts_v1 l WHERE city_id=ANY(?::text[]) AND status='ACTIVE' ORDER BY city_id`).all<Row>(cityIds);
   return rows.map(activeBlockLayoutFromRow);

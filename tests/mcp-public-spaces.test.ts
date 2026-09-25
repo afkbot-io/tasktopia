@@ -7,7 +7,7 @@ import { registerUser } from "../src/server/auth";
 import { TASK_PARK_VARIANTS } from "../src/shared/task-park-catalog";
 import type { TaskDto } from "../src/shared/contracts";
 
-it("publishes and validates public-space variants through a real explicit-country MCP client", async () => {
+it("automatically selects artwork and validates the strict MCP creation contract", async () => {
   const db = await createTestDb();
   const service = new AppService(db);
   const { user } = await registerUser(db, { email: "park-mcp@example.test", name: "Parks", password: "password123" });
@@ -21,15 +21,16 @@ it("publishes and validates public-space variants through a real explicit-countr
     await server.connect(peer); await client.connect(transport);
     const tool = (await client.listTools()).tools.find(t => t.name === "task.create")!;
     expect(tool.inputSchema.required).toContain("countryId");
-    expect((tool.inputSchema.properties!.parkVariant as { enum: string[] }).enum).toEqual(TASK_PARK_VARIANTS);
-    const args = { countryId: user.countryId, cityId: city.id, districtId: district.id, title: "Monument", estimate: 1, parkVariant: "urban-monument", idempotencyKey: "park-once" };
+    expect(tool.inputSchema.properties).not.toHaveProperty("parkVariant");
+    const args = { countryId: user.countryId, cityId: city.id, districtId: district.id, title: "Monument", estimate: 1, idempotencyKey: "park-once" };
     const created = await client.callTool({ name: "task.create", arguments: args });
     expect(created.isError).not.toBe(true);
     const task = (created.structuredContent as { result: TaskDto }).result;
-    expect(task).toMatchObject({ visualKind: "PARK", visualAssetKey: "urban-monument", stage: 1 });
+    expect(task).toMatchObject({ stage: 1 });
+    expect(task.footprint.length).toBeGreaterThan(0);
     expect((await client.callTool({ name: "task.create", arguments: args })).structuredContent).toEqual(created.structuredContent);
     expect((await client.callTool({ name: "task.get", arguments: { countryId: user.countryId, taskId: task.id } })).structuredContent).toMatchObject({ result: {
-      id: task.id, taskNumber: task.taskNumber, visualKind: "PARK", visualAssetKey: "urban-monument", footprint: task.footprint,
+      id: task.id, taskNumber: task.taskNumber, visualKind: task.visualKind, visualAssetKey: task.visualAssetKey, footprint: task.footprint,
     } });
     for (const invalid of [{ ...args, parkVariant: "toString", idempotencyKey: "bad-variant" }, { ...args, visualKind: "BUILDING", idempotencyKey: "bad-kind" }, { ...args, countryId: undefined, idempotencyKey: "bad-scope" }]) {
       expect((await client.callTool({ name: "task.create", arguments: invalid })).isError).toBe(true);

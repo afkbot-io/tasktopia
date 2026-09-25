@@ -355,15 +355,7 @@ input:focus { border-color: #6eafca; box-shadow: 0 0 0 3px #4da6d820; }
 .map-level-button:disabled.map-level-button-active { opacity: 1; }
 
 .map-level-transition { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; overflow: hidden; background: #06151bf2; color: #f5e7ad; font: 900 11px/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; pointer-events: all; animation: map-transition-fade-in 180ms ease-out both; }
-.map-level-transition-pixels { position: absolute; inset: -16px; background-image: linear-gradient(90deg, #78a7a026 50%, transparent 50%), linear-gradient(#d9c66c22 50%, transparent 50%); background-size: 16px 16px; transform-origin: var(--map-transition-x) var(--map-transition-y); animation: map-transition-pixels 720ms steps(12, end) infinite; image-rendering: pixelated; }
-.map-level-transition-focus { position: absolute; left: var(--map-transition-x); top: var(--map-transition-y); width: 64px; height: 64px; transform: translate(-50%, -50%); }
-.map-level-transition-focus i { position: absolute; inset: 0; border: 3px solid #f0cf56; animation: map-transition-ring 720ms steps(8, end) infinite; }
-.map-level-transition-focus i:nth-child(2) { inset: 12px; border-color: #80b7b2; animation-delay: 40ms; }
-.map-level-transition-focus i:nth-child(3) { inset: 24px; border-color: #eef0dc; animation-delay: 80ms; }
-.map-level-transition span { position: relative; padding: 8px 11px; border: 1px solid #7a713f; background: #0a1d20e8; box-shadow: 4px 4px 0 #02090b99; }
 @keyframes map-transition-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes map-transition-pixels { 0% { scale: .65; opacity: .25; } 50% { scale: 1.15; opacity: .72; } 100% { scale: 1.65; opacity: .25; } }
-@keyframes map-transition-ring { 0% { scale: 1.65; opacity: 0; } 42% { scale: 1; opacity: 1; } 100% { scale: .45; opacity: 0; } }
 
 @media (max-width: 560px) {
   .map-level-nav { bottom: 10px; grid-template-columns: repeat(3, minmax(74px, 1fr)); width: calc(100% - 20px); }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 import type { AtlasTransition } from "../atlas-navigation-transition";
 
 const LEVEL_LABEL = { PLANET: "планету", CITY: "город" } as const;
@@ -16,7 +16,7 @@ export function MapLevelTransition({ transition, onCancel }: { transition: Atlas
     : 'Готовим улицы и здания';
   return <div className="map-level-transition" data-from={transition.from} data-to={transition.to}
     data-phase={transition.phase}
-    style={{ '--map-transition-x': `${transition.focus.x * 100}%`, '--map-transition-y': `${transition.focus.y * 100}%` } as CSSProperties}>
+    >
     <div className="map-transition-message">
       <div className="map-transition-city" aria-hidden="true"><i /><i /><i /></div>
       <div role="status" aria-live="polite">

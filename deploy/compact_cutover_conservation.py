@@ -8,9 +8,11 @@ from compact_cutover_state import canonical, require
 
 SPATIAL_TABLES = {"roads_v3", "world_features_v6", "world_chunk_entities_v11", "world_chunk_district_cells_v1",
                   "world_chunk_payloads_v1", "country_overview_snapshots_v1", "city_layouts_v1", "district_layouts_v1",
-                  "city_blocks_v1", "road_networks_v1", "task_placements_v1", "country_road_snapshots_v1"}
+                  "city_blocks_v1", "road_networks_v1", "task_placements_v1", "country_road_snapshots_v1", "city_railway_corridors_v1"}
 EXCLUDE = {
     "countries": ["world_version"],
+    # Archived relocations outlive the disposable layout through their immutable snapshot.
+    "site_markers_v1": ["layout_id", "block_id"],
     "cities_v3": ["center_x", "center_y", "bounds_json"],
     "districts_v3": ["cells_json", "lots_json", "spatial_bounds_json"],
     "tasks_v3": ["origin_x", "origin_y", "footprint_json", "entrance_x", "entrance_y", "access_json", "access_kind",

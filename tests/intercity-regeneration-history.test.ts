@@ -95,10 +95,10 @@ describe("release regeneration with roads and permanent task history", { timeout
     expect((await auditWorld(db,service,countryId)).violations.some(v=>v.code==="COUNTRY_ROADS_INVALID")).toBe(true);
   });
 
-  it("keeps MOVE/RUIN geometry and task content through replay and serves one new canonical road model", async () => {
+  it("keeps ruin geometry and relocation history through replay and serves one new canonical road model", async () => {
     const before = await durableTasks();
     const markers = await service.listWorldFeatures(countryId);
-    expect(markers.map(marker => marker.siteMarker?.kind).sort()).toEqual(["RELOCATED", "RUINED"]);
+    expect(markers.map(marker => marker.siteMarker?.kind).sort()).toEqual(["RUINED"]);
     const country = await service.getCountry(countryId);
     const command = { confirmName: country.name, idempotencyKey: "release-rebuild" };
     const result = await service.regenerateCountry(countryId, command);

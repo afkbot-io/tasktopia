@@ -60,7 +60,7 @@ describe("whole-city scene HTTP boundary", () => {
     });
     expect(scene.chunks.length).toBeGreaterThan(0);
     expect(scene.chunks.every((chunk: { payloadVersion: number; lod: string }) => chunk.payloadVersion === 2 && chunk.lod === "DETAIL")).toBe(true);
-    expect(batch).toHaveBeenCalledTimes(1);
+    expect(batch).not.toHaveBeenCalled(); // Country chunks are not city-scoped.
     const bounds = bootstrap.initialCity.bounds;
     const expectedChunks = (Math.floor(bounds.maxX / 64) - Math.floor(bounds.minX / 64) + 1)
       * (Math.floor(bounds.maxY / 64) - Math.floor(bounds.minY / 64) + 1);

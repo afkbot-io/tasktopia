@@ -352,11 +352,6 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   // task simply because one district happened to be enumerated first.
   const homeUsage = new Map<string, Map<string, number>>();
   const cityHomeUsage = new Map<string, number>();
-  const latestBlock = new Map<string, number>();
-  const occupiedBlocks = new Set([...activePlacements.values()].map(p => p.blockId));
-  for (const context of contexts) {
-    latestBlock.set(context.district.id, Math.max(-1, ...context.districtBlocks.filter(b => occupiedBlocks.has(b.id)).map(b => b.sequence)));
-  }
   const recordHome = (placement: TaskPlacementV1) => {
     if (placement.serviceRole || kinds.get(placement.taskId) !== "BUILDING") return;
     let counts = homeUsage.get(placement.blockId);
@@ -403,8 +398,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         }
       }
       const eligible = ({ block, slot }: { block: CityBlockV1; slot: BlockSlot }) =>
-        (block.sequence >= (latestBlock.get(district.id) ?? -1)
-          || Boolean((block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key])) && !occupied.has(`${block.id}:${slot.key}`) && (task.autoVisualKind || slot.kind === kind)
+        !occupied.has(`${block.id}:${slot.key}`) && (task.autoVisualKind || slot.kind === kind)
         && parkSizeFitsSlot(task.parkSize, slot, true)
         && (!wantsPort || Boolean(portPlan({ block, slot })))
         && (!requestedFamily || familyFitsSlot(requestedFamily,slot))
@@ -413,7 +407,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         && (value.block.parameters.slotRoles as Record<string,BlockServiceRole> | undefined)?.[value.slot.key]) ?? available.find(eligible);
       const pocketSite = () => {
         if (task.parkSize !== "POCKET") return undefined;
-        const vacant = available.find(({ block, slot }) => block.sequence >= (latestBlock.get(district.id) ?? -1) && slot.kind === "BUILDING"
+        const vacant = available.find(({ block, slot }) => slot.kind === "BUILDING"
           && !occupied.has(`${block.id}:${slot.key}`)
           && !(block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key]
           && !(block.parameters.slotFamilies as Record<string, string> | undefined)?.[slot.key]
@@ -490,7 +484,6 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       if (serviceRole && requestedServiceRole && requestedServiceRole !== serviceRole) {
         throw new BlockReservationConflictError(`Роль выбранного семейства ${requestedServiceRole} не совпадает с ролью участка ${serviceRole}. Уберите явное указание семейства или выберите подходящее.`);
       }
-      latestBlock.set(district.id, Math.max(latestBlock.get(district.id) ?? -1, selected.block.sequence));
       occupied.add(`${selected.block.id}:${selected.slot.key}`);
       const width = selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1;
       const height = selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1;

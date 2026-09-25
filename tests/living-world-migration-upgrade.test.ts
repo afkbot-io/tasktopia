@@ -29,10 +29,11 @@ it("upgrades the populated pre-world schema without moving tasks or rewriting hi
       await db.prepare("INSERT INTO task_defects_v18(id,task_id,title,status,created_at,updated_at) VALUES (?,?,'Original defect','VERIFYING',?,?)").run(randomUUID(),task,timestamp,timestamp);
       const tables = ["users","countries","country_members","cities_v3","districts_v3","tasks_v3","task_comments_v3","task_events_v7","task_defects_v18","events"];
       const snapshot = async () => Promise.all(tables.map(table => db.prepare(
-        `SELECT to_jsonb(t) - 'terrain_profile_json' AS row FROM "${table}" t ORDER BY (to_jsonb(t) - 'terrain_profile_json')::text`).all()));
+        `SELECT to_jsonb(t) - 'terrain_profile_json' - 'world_version' AS row FROM "${table}" t ORDER BY (to_jsonb(t) - 'terrain_profile_json' - 'world_version')::text`).all()));
       const before = await snapshot();
       for (const file of files.filter(name => name >= "0030_")) await db.exec(await readFile(join(directory, file), "utf8"));
       expect(await snapshot()).toEqual(before);
+      expect(await db.prepare("SELECT world_version::int AS world_version FROM countries WHERE id=?").get(user.countryId)).toEqual({ world_version: 2 });
       expect(await db.prepare("SELECT terrain_profile_json FROM countries WHERE id=?").get(user.countryId)).toEqual({ terrain_profile_json: null });
       for (const table of ["personal_planet_geography_v1","city_railway_corridors_v1","task_share_previews"])
         expect(await db.prepare(`SELECT count(*)::int AS count FROM "${table}"`).get()).toEqual({ count: 0 });

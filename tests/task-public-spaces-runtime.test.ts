@@ -67,7 +67,7 @@ describe("public-space task persistence", () => {
     } finally { await db.close(); }
   }, 30_000);
 
-  it("keeps compact fountain identity/stages on refresh and transfer, and reserves its deleted location permanently", async () => {
+  it("keeps task identity/stages while selecting new artwork after transfer and reserving the deleted location", async () => {
     const db = await createTestDb();
     try {
       const service = new AppService(db);
@@ -90,10 +90,13 @@ describe("public-space task persistence", () => {
       expect((await new AppService(db).getTask(countryId, fountain.id)).visualAssetKey).toBe("urban-fountain");
       const target = await service.createDistrict(countryId, { cityId: city.id, name: "Next sprint", idempotencyKey: "next" });
       const moved = await service.transferTask(countryId, { taskId: fountain.id, targetDistrictId: target.id, idempotencyKey: "move" });
-      expect(moved).toMatchObject({ visualKind: "PARK", visualAssetKey: "urban-fountain", stage: 5 });
+      expect(moved).toMatchObject({ id: fountain.id, taskNumber: fountain.taskNumber, stage: 5 });
+      expect(moved.origin).not.toEqual(fountain.origin);
+      expect(await service.listWorldFeatures(countryId)).toEqual([]);
       await service.deleteTask(countryId, { taskId: fountain.id, confirmTitle: fountain.title, idempotencyKey: "delete" });
       const sites = await service.listWorldFeatures(countryId);
-      expect(sites.filter(s => s.siteMarker)).toHaveLength(2);
+      expect(sites.filter(s => s.siteMarker)).toHaveLength(1);
+      expect(sites[0]!.origin).toEqual(moved.origin);
       expect((await service.getTask(countryId, house.id)).footprint).toEqual(house.footprint);
       expect(await service.listTasks(countryId)).toHaveLength(1);
     } finally { await db.close(); }

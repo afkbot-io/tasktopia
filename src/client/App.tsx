@@ -652,9 +652,7 @@ export function App() {
     </section>
 
     {selectedTask && <Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense>}
-    {selectedSite?.countryId === bootstrap.country.id && <SiteHistoryModal feature={selectedSite.feature} onClose={closeSite} onTaskOpen={taskId => {
-      closeSite(); void openCanonicalTask(new URLSearchParams({ id: taskId }).toString());
-    }} />}
+    {selectedSite?.countryId === bootstrap.country.id && <SiteHistoryModal feature={selectedSite.feature} onClose={closeSite} />}
     {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} onClose={() => setCountryDialog(null)} />}
     {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}

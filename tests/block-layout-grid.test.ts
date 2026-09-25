@@ -21,13 +21,21 @@ describe("incremental rectangular block world", () => {
     const sequence = tasks.map(t => byTask.get(t.id)!);
     expect(sequence).toEqual([...sequence].sort((a,b) => a-b));
   });
-  it("continues forward after a task needs a dedicated public-space block", () => {
+  it("returns to compatible older parcels after a dedicated public-space block", () => {
     const tasks = [task(1),task(2,"WATER"),task(3),task(4)];
     const layout = compileBlockLayout(input(tasks));
     const blocks = new Map(layout.blocks.map(b => [b.id,b.sequence]));
     const byTask = new Map(layout.placements.map(p => [p.taskId,blocks.get(p.blockId)!]));
-    expect(byTask.get("task-3")).toBeGreaterThanOrEqual(byTask.get("task-2")!);
+    expect(byTask.get("task-3")).toBe(byTask.get("task-1"));
+    expect(byTask.get("task-3")).toBeLessThan(byTask.get("task-2")!);
     expect(byTask.get("task-4")).toBe(byTask.get("task-3"));
+    const initial = compileBlockLayout(input(tasks.slice(0, 2)));
+    const incremental = compileBlockLayout({ ...input(tasks), previous: initial, revision: 2 });
+    const placement = (id: string) => incremental.placements.find(value => value.taskId === id)!;
+    expect(placement("task-3").blockId).toBe(placement("task-1").blockId);
+    expect(placement("task-4").blockId).toBe(placement("task-1").blockId);
+    expect(incremental.blocks).toHaveLength(initial.blocks.length);
+    expect(incremental.placements).toEqual(expect.arrayContaining(initial.placements));
   });
   it("fills compatible slots before adding a block and preserves every old position", () => {
     const first = compileBlockLayout(input([task(1), task(2)]));

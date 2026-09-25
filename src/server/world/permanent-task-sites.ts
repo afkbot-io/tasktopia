@@ -29,15 +29,15 @@ export async function freezePermanentSiteGeometry(db: Db, countryId: string): Pr
 }
 
 export async function permanentSiteBounds(db: Db, countryId: string, orphanedOnly = false): Promise<Rect[]> {
-  const rows = await db.prepare(`SELECT * FROM site_markers_v1 WHERE country_id=? ${orphanedOnly ? "AND layout_id IS NULL" : ""}`).all<Row>(countryId);
+  const rows = await db.prepare(`SELECT * FROM site_markers_v1 WHERE country_id=? AND kind='RUINED' ${orphanedOnly ? "AND layout_id IS NULL" : ""}`).all<Row>(countryId);
   return rows.map(row => geometry(row).siteBounds);
 }
 
-export async function readPermanentSiteFeatures(db: Db, countryId: string, bounds?: Rect): Promise<WorldFeatureDto[]> {
-  const rows = await db.prepare(`SELECT * FROM site_markers_v1 WHERE country_id=? ${bounds ? `AND
+export async function readPermanentSiteFeatures(db: Db, countryId: string, bounds?: Rect, cityId?: string): Promise<WorldFeatureDto[]> {
+  const rows = await db.prepare(`SELECT * FROM site_markers_v1 WHERE country_id=? AND kind='RUINED' ${bounds ? `AND
     (block_snapshot_json->>'origin_x')::int<=? AND (block_snapshot_json->>'origin_x')::int+(block_snapshot_json->>'width')::int>=?
-    AND (block_snapshot_json->>'origin_y')::int<=? AND (block_snapshot_json->>'origin_y')::int+(block_snapshot_json->>'height')::int>=?` : ""} ORDER BY id`)
-    .all<Row>(countryId, ...(bounds ? [bounds.maxX,bounds.minX,bounds.maxY,bounds.minY] : []));
+    AND (block_snapshot_json->>'origin_y')::int<=? AND (block_snapshot_json->>'origin_y')::int+(block_snapshot_json->>'height')::int>=?` : ""} ${cityId ? "AND city_id=?" : ""} ORDER BY id`)
+    .all<Row>(countryId, ...(bounds ? [bounds.maxX,bounds.minX,bounds.maxY,bounds.minY] : []), ...(cityId ? [cityId] : []));
   return rows.flatMap(row => {
     const site = geometry(row);
     if (bounds && !site.footprint.some(c => c.x >= bounds.minX && c.x <= bounds.maxX && c.y >= bounds.minY && c.y <= bounds.maxY)) return [];
