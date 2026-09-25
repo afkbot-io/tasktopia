@@ -103,3 +103,25 @@ test("keeps authentication pending through bootstrap and offers retry after a co
   await openMapCity(page);
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible();
 });
+
+test("double submission sends one request and keeps the mode stable", async ({ page }) => {
+  let count = 0;
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/api/auth/login", async route => {
+    count++;
+    await gate;
+    await route.fulfill({ status: 401, json: { message: "Проверьте данные для входа" } });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("demo@tasktopia.local");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
+  try {
+    await page.locator("form").evaluate((form: HTMLFormElement) => { form.requestSubmit(); form.requestSubmit(); });
+    await expect.poll(() => count).toBe(1);
+    await expect(page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" })).toBeDisabled();
+  } finally { release(); }
+  await expect(page.getByText("Проверьте данные для входа")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Открыть страну" })).toBeEnabled();
+  expect(count).toBe(1);
+});

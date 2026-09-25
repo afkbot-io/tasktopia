@@ -8,15 +8,15 @@ const districtStatus: Record<PlanDistrictDto["status"], string> = {
 };
 
 const taskStatus: Record<PlanTaskDto["status"], string> = {
-  PLANNING: "Планирование", STARTED: "В работе", IN_PROGRESS: "В работе", TESTING: "Тестирование", COMPLETED: "Завершено",
+  PLANNING: "В плане", STARTED: "В работе", IN_PROGRESS: "В работе", TESTING: "Приёмка", COMPLETED: "Завершено",
 };
-const taskType: Record<PlanTaskDto["workItemType"], string> = { TASK: "Задача", BUG: "Баг", RELEASE: "Релиз", HOTFIX: "Хотфикс" };
+const taskType: Record<PlanTaskDto["workItemType"], string> = { TASK: "Строительство", BUG: "Ремонт", RELEASE: "Открытие", HOTFIX: "Срочный ремонт" };
 const kindLabel: Record<ArchiveRecordDto["kind"], string> = {
   PROJECT: "Проект", REPOSITORY: "Репозиторий", ARCHITECTURE: "Архитектура",
   CONVENTION: "Правило", ENVIRONMENT: "Окружение", TEMPLATE: "Шаблон",
 };
 
-export function CityDirectory({ bootstrap, refreshToken, initialSection, initialFocus, onClose, onCityFocus, onTaskSelect, onArchiveRecordSelect, onMutation }: {
+export function CityDirectory({ bootstrap, refreshToken, initialSection, initialFocus, onClose, onCityFocus, onTaskSelect, onArchiveRecordSelect }: {
   bootstrap: BootstrapDto;
   refreshToken: number;
   initialSection: "cities" | "archive";
@@ -25,7 +25,6 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
   onCityFocus: (city: PlanCityDto) => void;
   onTaskSelect: (taskId: string) => void;
   onArchiveRecordSelect: (recordId: string) => void;
-  onMutation: () => Promise<void>;
 }) {
   const [cityId, setCityId] = useState(initialFocus?.cityId ?? bootstrap.initialCity?.id ?? "");
   const [districtId, setDistrictId] = useState(initialFocus?.districtId ?? "");
@@ -41,7 +40,6 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
-  const [deletingId, setDeletingId] = useState("");
   const drawerRef = useRef<HTMLElement>(null);
 
   useEffect(() => setArchiveSelected(initialSection === "archive"), [initialSection]);
@@ -140,21 +138,6 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
   const visibleCities = cities.filter(city=>city.name.toLocaleLowerCase().includes(cityQuery.trim().toLocaleLowerCase()));
   const selectedDistrict = districts.find(district => district.id === districtId);
   const districtSummary = districtDevelopmentSummary(selectedDistrict?.name ?? "", tasks);
-  const canEdit = bootstrap.countryRole !== "VIEWER";
-  const removeEntity = async (path: string, id: string, label: string, field: "confirmName" | "confirmTitle") => {
-    const confirmation = window.prompt(`Удаление нельзя отменить. Введите точное название:\n${label}`);
-    if (confirmation == null) return;
-    setError(""); setDeletingId(id);
-    try {
-      await api(path, { method: "DELETE", json: { [field]: confirmation, idempotencyKey: crypto.randomUUID() } });
-      if (id === cityId) { setCityId(""); setDistrictId(""); }
-      if (id === districtId) setDistrictId("");
-      setReload((value) => value + 1);
-      await onMutation();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Не удалось удалить объект");
-    } finally { setDeletingId(""); }
-  };
 
   return <aside ref={drawerRef} className="city-directory" aria-label={archiveSelected ? "Архив проекта" : initialFocus ? "Районы города" : "Города"}>
     <header className="plan-head"><div><p className="eyebrow">{bootstrap.country.name}</p><strong>{archiveSelected ? "Архив проекта" : initialFocus ? cities.find(city=>city.id===cityId)?.name ?? "Районы города" : "Города"}</strong></div><button onClick={onClose} aria-label="Закрыть список">×</button></header>
@@ -168,7 +151,7 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
         {!citiesLoading && cities.length>0 && visibleCities.length===0 && <p className="plan-placeholder">Подходящих городов нет</p>}
         {visibleCities.map((city) => <div key={city.id} className="plan-row"><button className={city.id === cityId ? "selected" : ""} onClick={() => chooseCity(city.id)}>
           <i>▦</i><span><strong>{city.name}</strong>{city.description && <small>{city.description.slice(0, 64)}</small>}{city.taskCount > 0 && <small>{city.taskCount} зданий</small>}</span>
-        </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить город «${city.name}»`} aria-label={`Удалить город «${city.name}»`} onClick={() => void removeEntity(`/api/cities/${city.id}`, city.id, city.name, "confirmName")}>{deletingId === city.id ? "…" : "×"}</button>}</div>)}
+        </button></div>)}
       </section>}
       {archiveSelected ? <section className="plan-tasks plan-archive-records"><h3>Записи архива <span>{archiveRecords.length}</span></h3>
         <p className="plan-section-note">Короткий устойчивый контекст проекта. Текущая работа остаётся в задачах.</p>
@@ -176,7 +159,7 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
         {!archiveLoading && archiveRecords.length === 0 && !error && <p className="plan-placeholder">Архив пока пуст</p>}
         {archiveRecords.map((record) => <div key={record.id} className="plan-row"><button onClick={() => onArchiveRecordSelect(record.id)}>
           <i className={`reference-kind-dot kind-${record.kind.toLowerCase()}`} /><span><strong>{record.title}</strong><small>{kindLabel[record.kind]}{record.body ? ` · ${record.body.slice(0, 72)}` : ""}</small></span>
-        </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить запись «${record.title}»`} aria-label={`Удалить запись «${record.title}»`} onClick={() => void removeEntity(`/api/archive/records/${record.id}`, record.id, record.title, "confirmTitle")}>{deletingId === record.id ? "…" : "×"}</button>}</div>)}
+        </button></div>)}
       </section> : initialFocus ? <>
       {!districtId && <section><h3>Районы <span>{districts.length}</span></h3>
         {!cityId && <p className="plan-placeholder">Выберите город</p>}
@@ -184,7 +167,7 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
         {cityId && !districtsLoading && districts.length === 0 && !error && <p className="plan-placeholder">В городе пока нет районов</p>}
         {districts.map((district) => <div key={district.id} className="plan-row"><button className={district.id === districtId ? "selected" : ""} onClick={() => setDistrictId(district.id)}>
           <i className={`district-dot district-${district.status.toLowerCase()}`} /><span><strong>{district.name}</strong><small>{districtStatus[district.status]} · {district.taskCount} задач{district.deadline ? ` · до ${new Date(district.deadline).toLocaleDateString("ru-RU")}` : ""}</small></span>
-        </button>{canEdit && <button className="plan-delete" disabled={Boolean(deletingId)} title={`Удалить район «${district.name}»`} aria-label={`Удалить район «${district.name}»`} onClick={() => void removeEntity(`/api/districts/${district.id}`, district.id, district.name, "confirmName")}>{deletingId === district.id ? "…" : "×"}</button>}</div>)}
+        </button></div>)}
       </section>}
       {districtId && <section className="plan-tasks"><button className="directory-back" onClick={()=>setDistrictId("")}>← Все районы</button><p className="directory-district-name">{districtSummary.title}</p>
         {!tasksLoading && !error && tasks.length > 0 && <div className="directory-district-summary" role="group" aria-label="Сводка района"><p>{districtSummary.line}</p><p>{districtSummary.detail}</p></div>}
@@ -193,7 +176,7 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
         {tasksLoading && !error && <p className="plan-placeholder">Загружаем задачи…</p>}
         {!tasksLoading && tasks.length === 0 && !error && <p className="plan-placeholder">В районе пока нет задач</p>}
         {tasks.map((task) => <div key={task.id} className="plan-row"><button onClick={() => onTaskSelect(task.id)}>
-          <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>#{task.taskNumber} · {task.title}</strong><small>{taskType[task.workItemType]} · {taskStatus[task.status]} · {task.progress}% · {task.estimate} SP{task.activeDefectCount > 0 ? ` · ${task.activeDefectCount} деф.` : ""}</small></span>
+          <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>#{task.taskNumber} · {task.title}</strong><small>{taskType[task.workItemType]} · {taskStatus[task.status]} · {task.progress}% · <span title="Объём работ в условных единицах сложности (SP)">Объём: {task.estimate} SP</span>{task.activeDefectCount > 0 ? ` · ${task.activeDefectCount} деф.` : ""}</small></span>
         </button></div>)}
       </section>}
       </> : null}

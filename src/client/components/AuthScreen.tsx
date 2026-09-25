@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { getBuilding, PROP_CATALOG } from "../../shared/catalog";
 import { microAmbientSprite } from "../../shared/micro-ambient";
 import { api } from "../api";
@@ -21,6 +21,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
+  const submitting = useRef(false);
   const [pending, setPending] = useState(false);
   const [countryLoadFailed, setCountryLoadFailed] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
@@ -43,11 +44,13 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
     const data = new FormData(event.currentTarget);
     if (mode === "register" && data.get("password") !== data.get("passwordConfirmation")) {
       setError("Пароли не совпадают");
       return;
     }
+    submitting.current = true;
     setPending(true);
     setError("");
     try {
@@ -67,11 +70,14 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Не удалось войти");
     } finally {
+      submitting.current = false;
       setPending(false);
     }
   }
 
   async function retryCountryLoad() {
+    if (submitting.current) return;
+    submitting.current = true;
     setPending(true);
     setError("");
     try {
@@ -81,6 +87,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
       setCountryLoadFailed(true);
       setError(cause instanceof Error ? cause.message : "Не удалось загрузить страну");
     } finally {
+      submitting.current = false;
       setPending(false);
     }
   }

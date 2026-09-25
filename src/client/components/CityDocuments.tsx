@@ -28,6 +28,7 @@ export function CityDocuments({
   onTask: (id: string) => void;
 }) {
   const ref = useRef<HTMLElement>(null);
+  const body = useRef<HTMLDivElement>(null);
   useDialogFocus(ref);
   const districtScope = useRef("");
   const [tab, setTab] = useState<"plan" | "summary" | "attention">("plan");
@@ -125,7 +126,13 @@ export function CityDocuments({
     if (district) q.set("districtId", district);
     void api<CityReport>(`/api/city-report?${q}`, { signal: c.signal })
       .then((d) => {
-        if (!c.signal.aborted) setData(d);
+        if (c.signal.aborted) return;
+        // A live queue can shrink while the reader is on its last page.
+        if (offset > 0 && offset >= d.total) {
+          setOffset(Math.floor(Math.max(0, d.total - 1) / 50) * 50);
+          return;
+        }
+        setData(d);
       })
       .catch(() => {
         if (!c.signal.aborted) setError(true);
@@ -142,6 +149,9 @@ export function CityDocuments({
     revision,
     retry,
   ]);
+  useEffect(() => {
+    body.current?.scrollTo({ top: 0 });
+  }, [offset, tab, city, district]);
   const selected = districts.find((d) => d.id === district);
   return (
     <div
@@ -239,7 +249,7 @@ export function CityDocuments({
             </label>
           )}
         </div>
-        <div className="document-body">
+        <div ref={body} className="document-body">
           {selected && (selected.goal || selected.deadline) && (
             <p className="document-goal">
               {selected.goal}
@@ -288,8 +298,8 @@ export function CityDocuments({
                 ))}
               </dl>
               <p>
-                Считаем задачи. Приёмка входит в работы, которые ещё не
-                завершены.
+                Каждый объект — одна задача. Приёмка входит в работы, которые
+                ещё не завершены.
               </p>
               <button
                 onClick={() => {

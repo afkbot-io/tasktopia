@@ -25,3 +25,10 @@ it('keeps a phrase stable through one transition and avoids adjacent repeats',()
   expect(renderToStaticMarkup(<MapLevelTransition transition={transition}/>)).toEqual(renderToStaticMarkup(<MapLevelTransition transition={transition}/>));
  }
 });
+
+it('shows the actual destination without rendering its name as markup', () => {
+ const transition={...createAtlasTransition('PLANET','CITY',{x:.5,y:.5},1),destinationName:'<script>Город</script>'};
+ const html=renderToStaticMarkup(<MapLevelTransition transition={transition}/>);
+ expect(html).toContain('&lt;script&gt;Город&lt;/script&gt;');
+ expect(html).not.toContain('<script>');
+});

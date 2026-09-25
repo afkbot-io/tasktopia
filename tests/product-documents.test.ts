@@ -101,6 +101,34 @@ it("reads scoped documents, atomically assigns starts, and preserves unseen news
         `INSERT INTO events(country_id,type,world_version,payload_json,created_at) SELECT ?,'task.defect_created',1,jsonb_build_object('taskId','news-fixture-'||n),CURRENT_TIMESTAMP FROM generate_series(1,26) n`,
       )
       .run(c);
+    await db
+      .prepare(
+        "UPDATE tasks_v3 SET status='COMPLETED' WHERE id='news-fixture-76'",
+      )
+      .run();
+    await db
+      .prepare(
+        `INSERT INTO events(country_id,type,world_version,payload_json,created_at) SELECT ?,'task.status_changed',1,jsonb_build_object('taskId','news-fixture-76','status','COMPLETED'),CURRENT_TIMESTAMP FROM generate_series(1,2)`,
+      )
+      .run(c);
+    const completedReport = await readCityReport(
+      db,
+      u,
+      c,
+      null,
+      null,
+      false,
+      0,
+      7,
+    );
+    expect(completedReport?.counts.completedPeriod).toBe(1);
+    expect(completedReport?.counts.completed).toBe(1);
+    // Remove only the additional completion events so the news fixture stays 27 cards.
+    await db
+      .prepare(
+        "DELETE FROM events WHERE country_id=? AND payload_json->>'taskId'='news-fixture-76'",
+      )
+      .run(c);
     const first = await readCityReport(db, u, c, null, null, false, 0, 7);
     expect(first?.total).toBe(77);
     expect(first?.items).toHaveLength(50);
@@ -135,6 +163,16 @@ it("reads scoped documents, atomically assigns starts, and preserves unseen news
       ).statusCode,
     ).toBe(403);
     expect(await readCityNews(db, "foreign", c, true, null)).toBeUndefined();
+    await db
+      .prepare(
+        `INSERT INTO task_defects_v18(id,task_id,title,description,reproduction_steps,actual_result,expected_result,status,created_at,updated_at) VALUES (?,'news-fixture-76','Repair after opening','','Open','Broken','Works','OPEN',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`,
+      )
+      .run(crypto.randomUUID());
+    const attention = await readCityReport(db, u, c, null, null, true, 0, 7);
+    expect(
+      attention?.items.find((item) => item.id === "news-fixture-76")?.defects,
+    ).toBe(1);
+    expect(attention?.counts.completed).toBe(1);
   } finally {
     await app.close();
     await db.close();
@@ -158,7 +196,12 @@ it("keeps acceptance in work and groups attention reasons without duplicating a 
     dependencies: 1,
   };
   expect(taskAttention(task)).toHaveLength(5);
-  expect(taskAttention({ ...task, status: "COMPLETED" })).toEqual([]);
+  expect(taskAttention({ ...task, status: "COMPLETED" })).toEqual([
+    "Нужен ремонт · 2",
+  ]);
+  expect(taskAttention({ ...task, status: "COMPLETED", defects: 0 })).toEqual(
+    [],
+  );
 });
 
 it("MCP start assigns the authenticated actor and another actor cannot steal ownership", async () => {

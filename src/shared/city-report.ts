@@ -27,7 +27,8 @@ export type CityReport = {
 };
 export function taskAttention(task: ReportTask, now = Date.now()): string[] {
   const reasons: string[] = [];
-  if (task.status === "COMPLETED") return reasons;
+  if (task.status === "COMPLETED")
+    return task.defects ? [`Нужен ремонт · ${task.defects}`] : reasons;
   if (task.dueAt && Date.parse(task.dueAt) < now) reasons.push("Срок прошёл");
   if (!task.assignee && task.status !== "PLANNING")
     reasons.push("Нет исполнителя");

@@ -347,3 +347,16 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
  .auth-screen .auth-world {display:none;}
  .auth-screen .auth-visual p {margin-top:12px;}
 }
+
+.country-facts dd.country-passport-text { white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
+.country-facts dl > div:has(.country-passport-text) { display: grid; gap: 6px; }
+.country-government-body .country-facts dt { color: #4e6049; }
+.country-government-body .country-facts dd { color: #294333; }
+.world-digest li button strong, .world-digest li button > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; overflow-wrap: anywhere; }
+.map-transition-message { max-width: min(90vw, 540px); overflow-wrap: anywhere; }
+.document-filters label { grid-template-columns: minmax(0, 1fr); }
+.document-filters select { appearance: none; max-width: 100%; padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23334c39' stroke-width='2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-size: 12px 8px; background-position: right 9px center; }
+/* WebKit includes the native option text in the grid label's scrollable area. */
+.document-filters label { overflow: hidden; }
+.document-filters select { overflow: hidden; text-overflow: ellipsis; }
+.document-filters select:focus-visible { outline-offset: -3px; }

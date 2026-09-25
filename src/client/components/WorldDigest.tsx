@@ -64,13 +64,17 @@ export function WorldDigest({
       (entries) => {
         if (document.hidden) return;
         for (const entry of entries)
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.8) {
             const id = Number((entry.target as HTMLElement).dataset.event);
             pending.add(id);
             observer.unobserve(entry.target);
           }
         if (pending.size && !timer)
           timer = setTimeout(() => {
+            if (document.hidden || !root.current?.open) {
+              timer = undefined;
+              return;
+            }
             const ids = [...pending];
             pending.clear();
             timer = undefined;
@@ -117,7 +121,7 @@ export function WorldDigest({
       observer.disconnect();
       if (timer) clearTimeout(timer);
     };
-  }, [open, data, countryId]);
+  }, [open, data, countryId, root]);
   return (
     <details
       ref={root}
@@ -164,6 +168,7 @@ export function WorldDigest({
                 setHistory(false);
                 setBefore(null);
                 setData(undefined);
+                setRefresh((n) => n + 1);
               }}
             >
               Новые
@@ -174,6 +179,7 @@ export function WorldDigest({
                 setHistory(true);
                 setBefore(null);
                 setData(undefined);
+                setRefresh((n) => n + 1);
               }}
             >
               История

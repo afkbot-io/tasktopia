@@ -73,7 +73,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   activeCountryId: string;
   initialFocusCountryId?: string;
   refreshToken: number;
-  onCitySelect: (countryId: string, cityId: string, focus?: { x: number; y: number }) => Promise<void> | void;
+  onCitySelect: (countryId: string, cityId: string, focus?: { x: number; y: number }, cityName?: string) => Promise<void> | void;
   onCityIntent?: (countryId: string, cityId: string, revision: number) => void;
   initialView?: PlanetViewState;
   onViewChange?: (view: PlanetViewState) => void;
@@ -264,7 +264,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const selectCity = useCallback(async (city: PlanetCityTarget, focus?: { x: number; y: number }) => {
     const selection=++selectionSequence.current;
     setSelectingCityId(city.id);
-    try { await onCitySelect(city.countryId, city.id, focus); if(selection===selectionSequence.current)setError(""); }
+    try { await onCitySelect(city.countryId, city.id, focus, city.name); if(selection===selectionSequence.current)setError(""); }
     catch (reason) { if(selection===selectionSequence.current)setError(reason instanceof Error ? reason.message : "Не удалось открыть город"); }
     finally { if(selection===selectionSequence.current)setSelectingCityId(null); }
   }, [onCitySelect]);

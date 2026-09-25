@@ -49,6 +49,8 @@ test("server news keeps unseen cards, shares read state and retains history on m
     expect(d.unreadCount).toBeGreaterThan(0);
     await bell.getByRole("button", { name: "История", exact: true }).click();
     await expect(bell.locator("li")).toHaveCount(20);
+    await bell.getByRole("button", { name: "История", exact: true }).click();
+    await expect(bell.locator("li")).toHaveCount(20);
     await bell.getByRole("button", { name: "Более ранние" }).click();
     await expect(bell.locator("li").first()).toBeVisible();
     const panel = bell.getByRole("region", { name: "Уведомления" });

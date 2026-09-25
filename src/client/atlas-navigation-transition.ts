@@ -10,6 +10,7 @@ export type AtlasTransition = {
   durationMs: number;
   phase: AtlasTransitionPhase;
   phraseIndex?: number;
+  destinationName?: string;
 };
 
 let previousPhrase = -1;
