@@ -277,9 +277,8 @@ function terrainSprite(cell: ChunkDto["terrain"][number], terrainAtCell: (column
   const p = position(cell);
   const result = new Sprite(texture);
   result.position.set(p.x, p.y);
-  // Let the coherent seed ground soften the dense grass stamp. Water and all
-  // semantic road/building surfaces keep their original authored opacity.
-  if(kind==='grass'||kind==='meadow')result.alpha=.74;
+  // Ground must cover its substrate equally inside the city and in exterior
+  // padding; translucency exposes the rectangular city-only fallback below.
   return result;
 }
 
@@ -307,9 +306,7 @@ function addTerrainPlacements(group: Container, placements: TerrainPlacement[]):
   for (const cell of placements) {
     const mask = atlasTerrainConnectionMask(cell.kind, cell.x, cell.y, (column, row) => kinds.get(key({ x: column, y: row })));
     const tile = atlasTerrainTile(cell.kind, "city", cell.x, cell.y, mask);
-    const view=atlasSprite(tile,cell);
-    if(cell.kind==='grass'||cell.kind==='meadow')view.alpha=.74;
-    group.addChild(view);
+    group.addChild(atlasSprite(tile, cell));
   }
 }
 
