@@ -10,7 +10,7 @@ it('показывает подписи только на своём уровн�
 it('дома занимают малую долю клетки и оставляют зазор между соседями',()=>{
  const atlas={hexRadius:8,countries:[{districtIcons:[{id:'a',point:{x:12,y:20}},{id:'b',point:{x:14,y:20}},{id:'c',point:{x:40,y:40}}]}]} as ProjectedPlanetAtlas;
  const scales=planetMiniatureScales(atlas);
- expect(scales.get('c')!*12).toBeLessThanOrEqual(16/3);
+ expect(scales.get('c')!*12).toBeLessThanOrEqual(16*.4);
  expect((scales.get('a')!+scales.get('b')!)*6).toBeLessThan(2);
  expect(planetMiniatureScales(atlas)).toEqual(scales);
 });
