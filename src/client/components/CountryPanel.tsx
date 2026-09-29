@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { CountryInvitations } from "./CountryInvitations";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   BootstrapDto,
   CountryMemberDto,
@@ -6,7 +7,7 @@ import type {
 } from "../../shared/contracts";
 import { api } from "../api";
 import { useDialogFocus } from "../use-dialog-focus";
-import { Button } from "./ui";
+import { Button, Field } from "./ui";
 
 const roleLabel: Record<CountryRole, string> = {
   OWNER: "Глава страны",
@@ -14,8 +15,12 @@ const roleLabel: Record<CountryRole, string> = {
   VIEWER: "Наблюдатель",
 };
 
-/** Рабочие данные меняет агент через MCP. Паспорт доступен всем участникам. */
-export function CountryPanel({
+/** Рабочие данные — через MCP; доступ к стране управляется её главой. */
+export function CountryPanel(props: { bootstrap: BootstrapDto; onClose: () => void }) {
+  return <CountryGovernment key={props.bootstrap.country.id} {...props} />;
+}
+
+function CountryGovernment({
   bootstrap,
   onClose,
 }: {
@@ -24,6 +29,15 @@ export function CountryPanel({
 }) {
   const [members, setMembers] = useState<CountryMemberDto[] | null>(null);
   const [error, setError] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [email, setEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"MEMBER" | "VIEWER">("MEMBER");
+  const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState("");
+  const isOwner = bootstrap.countryRole === "OWNER";
   const [retry, setRetry] = useState(0);
   const panelRef = useRef<HTMLElement>(null);
   useDialogFocus(panelRef);
@@ -55,6 +69,39 @@ export function CountryPanel({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  const mutate = async (work: () => Promise<void>) => {
+    if (busyRef.current || !isOwner) return;
+    busyRef.current = true;
+    setBusy(true);
+    setActionError("");
+    setNotice("");
+    try { await work(); }
+    catch (reason) { setActionError(reason instanceof Error ? reason.message : "Не удалось изменить доступ. Попробуйте ещё раз."); }
+    finally { busyRef.current = false; setBusy(false); }
+  };
+  const invite = (event: FormEvent) => {
+    event.preventDefault();
+    void mutate(async () => {
+      const member = await api<CountryMemberDto>(`/api/countries/${bootstrap.country.id}/members`, {
+        method: "POST", json: { email: email.trim(), role: inviteRole },
+      });
+      setMembers(current => current ? [...current.filter(item => item.userId !== member.userId), member] : [member]);
+      setEmail("");
+      setInviting(false);
+      setNotice(`Доступ открыт: ${member.name}. Страна появится в его списке стран.`);
+    });
+  };
+  const changeRole = (member: CountryMemberDto, role: "MEMBER" | "VIEWER") => void mutate(async () => {
+    const updated = await api<CountryMemberDto>(`/api/countries/${bootstrap.country.id}/members/${member.userId}`, { method: "PATCH", json: { role } });
+    setMembers(current => current?.map(item => item.userId === member.userId ? updated : item) ?? null);
+    setNotice(`Полномочия обновлены: ${member.name} — ${roleLabel[role]}.`);
+  });
+  const remove = (member: CountryMemberDto) => void mutate(async () => {
+    await api(`/api/countries/${bootstrap.country.id}/members/${member.userId}`, { method: "DELETE" });
+    setMembers(current => current?.filter(item => item.userId !== member.userId) ?? null);
+    setPendingRemoval(null);
+    setNotice(`Доступ закрыт: ${member.name}. Задачи и история сохранены.`);
+  });
   const country = bootstrap.country;
   const facts = [
     ["Описание", country.description],
@@ -119,6 +166,18 @@ export function CountryPanel({
               <h3>Правительство</h3>
               {members && <span>{members.length}</span>}
             </div>
+            {isOwner && members && <div className="government-access">
+              {!inviting ? <Button disabled={busy} onClick={() => { setInviting(true); setPendingRemoval(null); setActionError(""); setNotice(""); }}>Пригласить участника</Button> : <form onSubmit={invite} className="government-access-form">
+                <p id="government-invite-help">Укажите email зарегистрированного пользователя. Доступ откроется сразу; письмо не отправляется.</p>
+                <Field label="Email участника" type="email" autoComplete="email" maxLength={254} required value={email} disabled={busy} aria-describedby="government-invite-help" onChange={event => setEmail(event.target.value)} />
+                <label>Полномочия<select aria-label="Полномочия" value={inviteRole} disabled={busy} onChange={event => setInviteRole(event.target.value as "MEMBER" | "VIEWER")}><option value="MEMBER">Министр</option><option value="VIEWER">Наблюдатель</option></select></label>
+                <p>Министр управляет работой через MCP. Наблюдатель может только просматривать.</p>
+                <div className="government-access-actions"><Button type="submit" variant="primary" disabled={busy}>{busy ? "Открываем доступ…" : "Открыть доступ"}</Button><Button disabled={busy} aria-label="Отмена приглашения" onClick={() => { setInviting(false); setActionError(""); }}>Отмена</Button></div>
+              </form>}
+            </div>}
+            {isOwner && members && <CountryInvitations countryId={bootstrap.country.id} />}
+            {actionError && <p className="government-readonly" role="alert">{actionError}</p>}
+            {notice && <p className="government-readonly" role="status">{notice}</p>}
             {error ? (
               <p role="alert" className="government-readonly">
                 {error}{" "}
@@ -146,6 +205,13 @@ export function CountryPanel({
                         {member.email} · {roleLabel[member.role]}
                       </small>
                     </div>
+                    {isOwner && member.role !== "OWNER" && <div className="government-member-actions">
+                      <label>Полномочия участника<select aria-label={`Полномочия: ${member.name}`} value={member.role} disabled={busy} onChange={event => changeRole(member, event.target.value as "MEMBER" | "VIEWER")}><option value="MEMBER">Министр</option><option value="VIEWER">Наблюдатель</option></select></label>
+                      {pendingRemoval === member.userId ? <>
+                        <p>Закрыть доступ для {member.name}? Задачи и история останутся.</p>
+                        <div className="government-access-actions"><Button variant="danger" disabled={busy} aria-label="Подтвердить отзыв доступа" onClick={() => remove(member)}>{busy ? "Закрываем…" : "Подтвердить"}</Button><Button disabled={busy} onClick={() => setPendingRemoval(null)}>Отмена</Button></div>
+                      </> : <Button variant="quiet" disabled={busy} onClick={() => { setPendingRemoval(member.userId); setInviting(false); setActionError(""); setNotice(""); }}>Закрыть доступ</Button>}
+                    </div>}
                   </article>
                 ))}
               </div>

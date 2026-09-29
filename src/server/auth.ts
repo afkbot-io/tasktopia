@@ -31,13 +31,13 @@ export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
   const derived = (await scrypt(password, salt, 64)) as Buffer;
   return `${salt.toString("base64url")}:${derived.toString("base64url")}`;
 }
 
-async function verifyPassword(password: string, stored: string): Promise<boolean> {
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [saltValue, hashValue] = stored.split(":");
   if (!saltValue || !hashValue) return false;
   const expected = Buffer.from(hashValue, "base64url");
@@ -135,14 +135,18 @@ export async function inviteCountryMember(db: Db, countryId: string, inviterUser
 }
 
 export async function removeCountryMember(db: Db, countryId: string, userId: string): Promise<boolean> {
-  const result = await db.prepare("DELETE FROM country_members WHERE country_id = ? AND user_id = ? AND role IN ('MEMBER', 'VIEWER')").run(countryId, userId);
-  if (Number(result.changes) > 0) {
-    await db.prepare(`UPDATE users SET active_country_id = (
-      SELECT cm.country_id FROM country_members cm WHERE cm.user_id = users.id
-      ORDER BY CASE cm.role WHEN 'OWNER' THEN 0 ELSE 1 END, cm.created_at LIMIT 1
-    ) WHERE id = ? AND active_country_id = ?`).run(userId, countryId);
-  }
-  return Number(result.changes) > 0;
+  return transaction(db, async () => {
+    await db.prepare("SELECT id FROM countries WHERE id = ? FOR UPDATE").get(countryId);
+    const result = await db.prepare("DELETE FROM country_members WHERE country_id = ? AND user_id = ? AND role IN ('MEMBER', 'VIEWER')").run(countryId, userId);
+    if (Number(result.changes) > 0) {
+      await db.prepare("UPDATE country_invitations SET revoked_at = now() WHERE country_id = ? AND email = (SELECT email FROM users WHERE id = ?) AND consumed_at IS NULL AND revoked_at IS NULL").run(countryId,userId);
+      await db.prepare(`UPDATE users SET active_country_id = (
+        SELECT cm.country_id FROM country_members cm WHERE cm.user_id = users.id
+        ORDER BY CASE cm.role WHEN 'OWNER' THEN 0 ELSE 1 END, cm.created_at LIMIT 1
+      ) WHERE id = ? AND active_country_id = ?`).run(userId, countryId);
+    }
+    return Number(result.changes) > 0;
+  });
 }
 
 export async function updateAccountName(db: Db, userId: string, name: string): Promise<void> {
@@ -183,13 +187,15 @@ export async function registerUser(db: Db, input: RegistrationInput): Promise<{ 
 }
 
 export async function loginUser(db: Db, emailInput: string, password: string): Promise<{ user: AuthUser; session: string }> {
-  const email = emailInput.trim().toLowerCase();
-  const row = await db.prepare("SELECT id, email, name, password_hash, active_country_id FROM users WHERE email = ?").get(email);
-  if (!row || !await verifyPassword(password, String(row.password_hash))) throw new Error("Неверный email или пароль");
-  const active = await activeCountry(db, String(row.id), row.active_country_id ? String(row.active_country_id) : null);
-  if (!active) throw new Error("У аккаунта нет доступной страны");
-  const session = await transaction(db, () => createSession(db, String(row.id)));
-  return { user: { id: String(row.id), email: String(row.email), name: String(row.name), countryId: active.id, countryRole: active.role }, session };
+  return transaction(db, async () => {
+    const email = emailInput.trim().toLowerCase();
+    const row = await db.prepare("SELECT id, email, name, password_hash, active_country_id FROM users WHERE email = ? FOR UPDATE").get(email);
+    if (!row || !await verifyPassword(password, String(row.password_hash))) throw new Error("Неверный email или пароль");
+    const active = await activeCountry(db, String(row.id), row.active_country_id ? String(row.active_country_id) : null);
+    if (!active) throw new Error("У аккаунта нет доступной страны");
+    const session = await createSession(db, String(row.id));
+    return { user: { id: String(row.id), email: String(row.email), name: String(row.name), countryId: active.id, countryRole: active.role }, session };
+  });
 }
 
 export async function getSessionUser(db: Db, token: string | undefined): Promise<AuthUser | null> {
@@ -274,4 +280,18 @@ export async function authenticateMcpToken(db: Db, header: string | string[] | u
     return null;
   }
   return { userId, tokenId: String(row.id), scopes: storedScopes };
+}
+
+/** The row lock serializes password changes against recovery and code rotation. */
+export async function changeAccountPassword(db: Db, userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+  const passwordHash = await hashPassword(newPassword);
+  return transaction(db, async () => {
+    const user = await db.prepare("SELECT password_hash FROM users WHERE id = ? FOR UPDATE").get(userId);
+    if (!user || !await verifyPassword(currentPassword, String(user.password_hash))) return false;
+    await db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(passwordHash, userId);
+    await db.prepare("DELETE FROM account_recovery_codes WHERE user_id = ?").run(userId);
+    await db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+    await db.prepare("UPDATE mcp_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL").run(now(), userId);
+    return true;
+  });
 }

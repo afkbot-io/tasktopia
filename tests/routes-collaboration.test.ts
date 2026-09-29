@@ -40,6 +40,19 @@ describe("country collaboration HTTP boundary", () => {
     const invited = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: ownerCookie }, payload: { email: "route-member@example.com" } });
     expect(invited.statusCode).toBe(200);
     expect(invited.json().role).toBe("MEMBER");
+    const memberId = invited.json().userId as string;
+    const duplicate = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: ownerCookie }, payload: { email: "ROUTE-MEMBER@example.com", role: "VIEWER" } });
+    expect(duplicate.statusCode).toBe(409);
+    const forbiddenInvite = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: memberCookie }, payload: { email: "route-owner@example.com" } });
+    expect(forbiddenInvite.statusCode).toBe(403);
+    const forbiddenRemoval = await app.inject({ method: "DELETE", url: `/api/countries/${countryId}/members/${memberId}`, headers: { cookie: memberCookie } });
+    expect(forbiddenRemoval.statusCode).toBe(403);
+    const ownerId = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie: ownerCookie } })).json().user.id;
+    const selfRemoval = await app.inject({ method: "DELETE", url: `/api/countries/${countryId}/members/${ownerId}`, headers: { cookie: ownerCookie } });
+    expect(selfRemoval.statusCode).toBe(404);
+    const escalation = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: ownerCookie }, payload: { email: "route-member@example.com", role: "OWNER" } });
+    expect(escalation.statusCode).toBe(400);
+
 
     const selected = await app.inject({ method: "POST", url: `/api/countries/${countryId}/select`, headers: { cookie: memberCookie } });
     expect(selected.statusCode).toBe(200);
@@ -57,6 +70,27 @@ describe("country collaboration HTTP boundary", () => {
     const renamed = await app.inject({ method: "PATCH", url: "/api/account", headers: { cookie: memberCookie }, payload: { name: "Updated Member Name" } });
     expect(renamed.statusCode).toBe(200);
     expect(renamed.json().user.name).toBe("Updated Member Name");
+  }, 60_000);
+
+  it("changes roles without allowing ownership escalation and binds invitations to the country owner", async () => {
+    const owner = await register("roles-owner@example.com", "Owner");
+    const member = await register("roles-member@example.com", "Member");
+    const countryId = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie: owner } })).json().country.id;
+    const invited = (await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: owner }, payload: { email: "roles-member@example.com" } })).json();
+    const url = `/api/countries/${countryId}/members/${invited.userId}`;
+    expect((await app.inject({ method: "PATCH", url, headers: { cookie: member }, payload: { role: "VIEWER" } })).statusCode).toBe(403);
+    expect((await app.inject({ method: "PATCH", url, headers: { cookie: owner }, payload: { role: "OWNER" } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "PATCH", url, headers: { cookie: owner }, payload: { role: "VIEWER" } })).json().role).toBe("VIEWER");
+    const inviteUrl = `/api/countries/${countryId}/invitations`;
+    expect((await app.inject({ method: "POST", url: inviteUrl, headers: { cookie: member }, payload: { email: "future@example.test" } })).statusCode).toBe(403);
+    const link = await app.inject({ method: "POST", url: inviteUrl, headers: { cookie: owner }, payload: { email: "future@example.test" } });
+    expect(link.statusCode).toBe(200);
+    expect(link.headers["cache-control"]).toBe("no-store");
+    const list = await app.inject({ method: "GET", url: inviteUrl, headers: { cookie: owner } });
+    expect(list.body).not.toContain(link.json().token);
+    expect((await app.inject({ method: "DELETE", url: `${inviteUrl}/${link.json().id}`, headers: { cookie: member } })).statusCode).toBe(403);
+    expect((await app.inject({ method: "DELETE", url: `${inviteUrl}/${link.json().id}`, headers: { cookie: owner } })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: inviteUrl, headers: { cookie: owner } })).json()).toEqual([]);
   }, 60_000);
 
   it("lets only the owner rename a country", async () => {

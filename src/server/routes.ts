@@ -1,3 +1,5 @@
+import { issueRecoveryCodes, recoverAccount } from "./account-recovery";
+import { createCountryInvitation, acceptCountryInvitation } from "./country-invitations";
 import { readCityReport } from "./city-report-read";
 import { readCityNews, readNewsCards } from "./city-news-read";
 import { readWorldDigest } from "./world-digest-read";
@@ -10,6 +12,7 @@ import { DomainError } from "./app-service";
 import { transaction, type Db } from "./db";
 import {
   countryRole,
+  changeAccountPassword,
   createCountry,
   createMcpToken,
   EmailAlreadyRegisteredError,
@@ -226,6 +229,33 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
       path: "/", httpOnly: true, sameSite: "strict", secure: config.secureCookie, maxAge: 30 * 24 * 60 * 60,
     });
     return { user: result.user };
+  });
+
+  app.post("/api/account/recovery-codes", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const body = parse(z.object({ password: z.string().min(1).max(128) }).strict(), request.body);
+    const codes = await issueRecoveryCodes(db, user.id, body.password);
+    if (!codes) throw new DomainError("INVALID_INPUT", "Текущий пароль неверен");
+    return reply.header("Cache-Control", "no-store").send({ codes });
+  });
+  app.post("/api/auth/recover", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const body = parse(z.object({ email: z.string().trim().email().max(254), code: z.string().trim().min(1).max(64), password: z.string().min(8).max(128), passwordConfirmation: z.string().min(8).max(128) }).strict().refine(value => value.password === value.passwordConfirmation, { message: "Пароли не совпадают" }), request.body);
+    const userId = await recoverAccount(db, body.email, body.code, body.password);
+    if (!userId) throw new DomainError("INVALID_INPUT", "Email или резервный код неверен. Код мог быть использован или заменён.");
+    await hooks.onUserSessionRevoked?.(userId);
+    reply.clearCookie(SESSION_COOKIE, { path: "/" });
+    return reply.header("Cache-Control", "no-store").send({ ok: true });
+  });
+
+  app.post("/api/account/password", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const body = parse(z.object({ currentPassword: z.string().min(1).max(128), password: z.string().min(8).max(128), passwordConfirmation: z.string().min(8).max(128) }).strict().refine(value => value.password === value.passwordConfirmation, { message: "Пароли не совпадают" }), request.body);
+    if (!await changeAccountPassword(db, user.id, body.currentPassword, body.password)) throw new DomainError("INVALID_INPUT", "Текущий пароль неверен");
+    await hooks.onUserSessionRevoked?.(user.id);
+    reply.clearCookie(SESSION_COOKIE, { path: "/" });
+    return reply.header("Cache-Control", "no-store").send({ ok: true });
   });
 
   app.post("/api/auth/logout", async (request, reply) => {
@@ -535,6 +565,50 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const member = await inviteCountryMember(db, countryId, user.id, body.email, body.role);
     if (!member) throw new DomainError("NOT_FOUND", "Пользователь с таким email ещё не зарегистрирован");
     return member;
+  });
+
+  app.post("/api/countries/:countryId/invitations", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
+    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Приглашения создаёт только глава страны");
+    const body = parse(invitationSchema, request.body);
+    return reply.header("Cache-Control", "no-store").send(await createCountryInvitation(db, countryId, user.id, body.email, body.role));
+  });
+  app.get("/api/countries/:countryId/invitations", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const countryId = parse(z.string().uuid(), (request.params as { countryId: string }).countryId);
+    if (await countryRole(db, user.id, countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Приглашения доступны только главе страны");
+    return reply.header("Cache-Control", "no-store").send(await db.prepare("SELECT id,email,role,expires_at AS \"expiresAt\" FROM country_invitations WHERE country_id = ? AND revoked_at IS NULL AND consumed_at IS NULL AND expires_at > now() ORDER BY created_at DESC").all(countryId));
+  });
+  app.delete("/api/countries/:countryId/invitations/:invitationId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const params = parse(z.object({ countryId: z.string().uuid(), invitationId: z.string().uuid() }), request.params);
+    if (await countryRole(db, user.id, params.countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Приглашения отзывает только глава страны");
+    await db.prepare("UPDATE country_invitations SET revoked_at = now() WHERE id = ? AND country_id = ? AND consumed_at IS NULL").run(params.invitationId, params.countryId);
+    return { ok: true };
+  });
+  app.post("/api/invitations/accept", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const body = parse(z.object({ token: z.string().min(40).max(64) }).strict(), request.body);
+    const countryId = await acceptCountryInvitation(db, body.token, user.id, user.email);
+    if (!countryId) throw new DomainError("INVALID_INPUT", "Приглашение истекло, отозвано или предназначено для другого email");
+    return { countryId };
+  });
+
+  app.patch("/api/countries/:countryId/members/:userId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const params = parse(z.object({ countryId: z.string().uuid(), userId: z.string().uuid() }), request.params);
+    if (await countryRole(db, user.id, params.countryId) !== "OWNER") throw new DomainError("FORBIDDEN", "Полномочия меняет только глава страны");
+    const body = parse(z.object({ role: z.enum(["MEMBER", "VIEWER"]) }).strict(), request.body);
+    const changed = await db.prepare("UPDATE country_members SET role = ? WHERE country_id = ? AND user_id = ? AND role IN ('MEMBER','VIEWER')").run(body.role, params.countryId, params.userId);
+    if (!changed.changes) throw new DomainError("NOT_FOUND", "Участник не найден или является главой страны");
+    await hooks.onCountryAccessRevoked?.(params.countryId, params.userId);
+    return (await listCountryMembers(db, params.countryId)).find(member => member.userId === params.userId);
   });
 
   app.delete("/api/countries/:countryId/members/:userId", async (request, reply) => {
@@ -875,9 +949,16 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     if (!user) return reply;
     const body = parse(tokenSchema, request.body ?? {});
     try {
-      return await createMcpToken(db, user.countryId, body.name ?? "Персональный MCP", user.id, {
-                                scopes: body.scopes, expiresInDays: body.expiresInDays,
-                              });
+      return await transaction(db, async () => {
+        // Password reset holds this lock while revoking sessions and tokens.
+        await db.prepare("SELECT id FROM users WHERE id = ? FOR UPDATE").get(user.id);
+        if (!await getSessionUser(db, request.cookies[SESSION_COOKIE])) {
+          throw new DomainError("FORBIDDEN", "Сессия завершена. Войдите заново");
+        }
+        return createMcpToken(db, user.countryId, body.name ?? "Персональный MCP", user.id, {
+          scopes: body.scopes, expiresInDays: body.expiresInDays,
+        });
+      });
     } catch (error) {
       if (error instanceof Error && error.message.includes("scopes")) throw new DomainError("FORBIDDEN", error.message);
       throw error;

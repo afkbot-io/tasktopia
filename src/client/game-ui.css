@@ -366,3 +366,27 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .document-filters label { overflow: hidden; }
 .document-filters select { overflow: hidden; text-overflow: ellipsis; }
 .document-filters select:focus-visible { outline-offset: -3px; }
+
+/* Country access is account administration, separate from work mutations. */
+.government-access { padding: 14px; border-bottom: 1px solid #b4b193; }
+.government-access-form { display: grid; gap: 12px; }
+.government-access-form label { display: grid; gap: 6px; }
+.government-access-form select { min-height: 44px; padding: 8px; width: 100%; }
+.government-access-form p,.government-member-actions p { margin: 0; font-size: 12px; line-height: 1.5; }
+.government-access-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.government-list article > .government-member-actions { grid-column: 2 / -1; justify-items: start; }
+.government-list article small { white-space: normal; overflow-wrap: anywhere; }
+.country-government-body :is(.government-access-form,.government-member-actions) p { color: #4e6049; }
+.country-government-grid { align-items: start; align-content: start; }
+.country-government-body [data-game-variant="quiet"] { color: #354b3c; }
+.government-member-actions label { display: grid; gap: 6px; width: 100%; }
+.government-member-actions select { min-height: 44px; padding: 6px; }
+.government-access > p { color: #4e6049; font-size: 12px; line-height: 1.5; }
+.settings-body pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.account-entry { width:min(560px,calc(100% - 24px)); margin:auto; padding:24px; border:2px solid #b5a25e; border-radius:3px; overflow-wrap:anywhere; color:#354b3c; }
+.account-entry h1 { font-size:24px; margin-bottom:16px; }
+.account-entry > button { margin-top:16px; margin-right:8px; }
+
+.auth-screen > section.account-entry:last-child { background:#f0e7ca; color:#354b3c; }
+.auth-screen > section.account-entry:last-child :is(p,small) { color:#4e5f47; }

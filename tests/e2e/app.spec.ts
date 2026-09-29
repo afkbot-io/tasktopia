@@ -175,7 +175,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page.getByLabel("Имя и фамилия")).toBeVisible();
   await page.getByRole("button", { name: "MCP-интеграция" }).click();
   await expect(page.getByRole("heading", { name: "Подключите MCP-клиент" })).toBeVisible();
-  await page.getByRole("button", { name: "Закрыть" }).click();
+  await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await page.locator(".country-title-button").click();
   const countrySwitcher = page.getByRole("dialog", { name: "Выбор страны" });
   await expect(countrySwitcher).toBeVisible();
@@ -185,8 +185,8 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await capture(page, "screenshots/release-country-government.png");
   const passport = page.getByRole("dialog", { name: "Тестовая страна" });
   await expect(passport.getByRole("button", { name: /Сохранить|Удалить|Назначить|Перегенерировать/ })).toHaveCount(0);
-  await expect(passport.locator("input, textarea, select")).toHaveCount(0);
-  await page.getByRole("button", { name: "Закрыть" }).click();
+  await expect(passport.locator(".country-facts input, .country-facts textarea, .country-facts select")).toHaveCount(0);
+  await page.getByRole("button", { name: "Закрыть", exact: true }).click();
 
   await page.locator(".country-title-button").click();
   await expect(countrySwitcher).toBeVisible();
