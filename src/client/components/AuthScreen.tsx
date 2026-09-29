@@ -1,3 +1,4 @@
+import { RecoveryScreen } from "./RecoveryScreen";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { getBuilding, PROP_CATALOG } from "../../shared/catalog";
 import { microAmbientSprite } from "../../shared/micro-ambient";
@@ -19,6 +20,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   onAuthenticated: () => Promise<void>;
   initialError?: string;
 }) {
+  const [recovering, setRecovering] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const submitting = useRef(false);
@@ -95,6 +97,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const visibleError = error || initialError;
   const canRetryCountry = countryLoadFailed || Boolean(initialError);
 
+  if (recovering) return <RecoveryScreen onBack={() => setRecovering(false)} />;
   return <main className="auth-screen grid h-full overflow-y-auto bg-[#091518] lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
     <section className="auth-visual relative min-h-[500px] overflow-hidden px-6 py-7 sm:px-10 lg:min-h-0 lg:px-14 lg:py-10" aria-label="Описание Tasktopia">
       <div className="brand-mark relative z-[2]"><span>▦</span> TASKTOPIA</div>
@@ -144,6 +147,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
           {visibleError && <div className="grid gap-1 rounded-xl border border-[#9b4d4d] bg-[#4a2025] px-3 py-2.5 text-sm text-[#ffd7d7]"><strong className="text-[10px] tracking-wider">НЕ УДАЛОСЬ ПРОДОЛЖИТЬ</strong><span role="alert">{visibleError}</span></div>}
           <Button variant="primary" type="submit" className="mt-1 w-full" disabled={pending}>{pending ? "Подождите…" : mode === "login" ? "Открыть страну" : "Создать аккаунт"}</Button>
         </form>
+        {mode === "login" && <Button variant="quiet" disabled={pending} onClick={() => setRecovering(true)}>Забыли пароль?</Button>}
         {canRetryCountry && <Button className="mt-2 w-full" disabled={pending} onClick={() => void retryCountryLoad()}>Повторить загрузку</Button>}
         {(registrationEnabled || mode === "register") && <Button variant="quiet" disabled={pending} className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
           {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}

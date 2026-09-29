@@ -72,6 +72,27 @@ describe("country collaboration HTTP boundary", () => {
     expect(renamed.json().user.name).toBe("Updated Member Name");
   }, 60_000);
 
+  it("changes roles without allowing ownership escalation and binds invitations to the country owner", async () => {
+    const owner = await register("roles-owner@example.com", "Owner");
+    const member = await register("roles-member@example.com", "Member");
+    const countryId = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie: owner } })).json().country.id;
+    const invited = (await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: owner }, payload: { email: "roles-member@example.com" } })).json();
+    const url = `/api/countries/${countryId}/members/${invited.userId}`;
+    expect((await app.inject({ method: "PATCH", url, headers: { cookie: member }, payload: { role: "VIEWER" } })).statusCode).toBe(403);
+    expect((await app.inject({ method: "PATCH", url, headers: { cookie: owner }, payload: { role: "OWNER" } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "PATCH", url, headers: { cookie: owner }, payload: { role: "VIEWER" } })).json().role).toBe("VIEWER");
+    const inviteUrl = `/api/countries/${countryId}/invitations`;
+    expect((await app.inject({ method: "POST", url: inviteUrl, headers: { cookie: member }, payload: { email: "future@example.test" } })).statusCode).toBe(403);
+    const link = await app.inject({ method: "POST", url: inviteUrl, headers: { cookie: owner }, payload: { email: "future@example.test" } });
+    expect(link.statusCode).toBe(200);
+    expect(link.headers["cache-control"]).toBe("no-store");
+    const list = await app.inject({ method: "GET", url: inviteUrl, headers: { cookie: owner } });
+    expect(list.body).not.toContain(link.json().token);
+    expect((await app.inject({ method: "DELETE", url: `${inviteUrl}/${link.json().id}`, headers: { cookie: member } })).statusCode).toBe(403);
+    expect((await app.inject({ method: "DELETE", url: `${inviteUrl}/${link.json().id}`, headers: { cookie: owner } })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: inviteUrl, headers: { cookie: owner } })).json()).toEqual([]);
+  }, 60_000);
+
   it("lets only the owner rename a country", async () => {
     const ownerCookie = await register("rename-owner@example.com", "Rename Owner");
     const memberCookie = await register("rename-member@example.com", "Rename Member");

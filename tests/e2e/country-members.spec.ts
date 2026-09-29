@@ -25,11 +25,14 @@ test("owner invites a registered viewer, handles errors and revokes access with 
   await dialog.getByRole("button", { name: "Открыть доступ", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText("ещё не зарегистрирован");
   await dialog.getByLabel("Email участника").fill(email);
-  await dialog.getByLabel("Полномочия").selectOption("VIEWER");
+  await dialog.getByLabel("Полномочия", { exact: true }).selectOption("VIEWER");
   await dialog.getByRole("button", { name: "Открыть доступ", exact: true }).click();
   const member = dialog.locator("article").filter({ hasText: email });
   await expect(member).toContainText("Наблюдатель");
   expect((await guest.get(`/api/countries/${bootstrap.country.id}/members`)).status()).toBe(200);
+  await member.getByLabel("Полномочия: Новый министр", { exact: true }).selectOption("MEMBER");
+  await expect(dialog.getByRole("status")).toContainText("Полномочия обновлены");
+  await expect(member.getByLabel("Полномочия: Новый министр", { exact: true })).toHaveValue("MEMBER");
   await dialog.getByRole("button", { name: "Пригласить участника", exact: true }).click();
   await dialog.getByLabel("Email участника").fill(email);
   await dialog.getByRole("button", { name: "Открыть доступ", exact: true }).click();

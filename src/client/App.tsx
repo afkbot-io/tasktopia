@@ -1,3 +1,4 @@
+import { InvitationEntry } from "./components/InvitationEntry";
 import { countrySelectionPending, invalidateCountrySelections, selectCountrySession } from "./country-selection";
 import { useDialogFocus } from "./use-dialog-focus";
 import { WorldDigest } from "./components/WorldDigest";
@@ -89,6 +90,14 @@ function playCompletionChime(): void {
 }
 
 export function App() {
+  const [invitationToken, setInvitationToken] = useState(() => {
+    const token = new URLSearchParams(location.hash.slice(1)).get("invite");
+    if (token && /^[A-Za-z0-9_-]{43}$/.test(token)) {
+      sessionStorage.setItem("tasktopia-invitation", token);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    return sessionStorage.getItem("tasktopia-invitation");
+  });
   const [wheelNavigation] = useState(createAtlasWheelNavigation);
   const [bootstrap, setBootstrap] = useState<BootstrapDto | null>(null);
   const [retainedCityKey,setRetainedCityKey]=useState<string|null>(null);
@@ -516,6 +525,7 @@ export function App() {
     return <AuthScreen initialError={sessionState === "RECOVERABLE_ERROR" ? authError : ""} onAuthenticated={load} />;
   }
 
+  if (invitationToken) return <InvitationEntry token={invitationToken} email={bootstrap.user.email} onDone={async () => { sessionStorage.removeItem("tasktopia-invitation"); setInvitationToken(null); await load(); }} />;
   const activeCity = focusCity ?? bootstrap.initialCity;
   const dependencyScope = `${bootstrap.user.id}:${countryId}:${activeCity?.id}`;
   if (taskEntry) return <main className="task-entry" aria-label="Карточка задачи">

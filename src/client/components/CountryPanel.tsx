@@ -1,3 +1,4 @@
+import { CountryInvitations } from "./CountryInvitations";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   BootstrapDto,
@@ -90,6 +91,11 @@ function CountryGovernment({
       setNotice(`Доступ открыт: ${member.name}. Страна появится в его списке стран.`);
     });
   };
+  const changeRole = (member: CountryMemberDto, role: "MEMBER" | "VIEWER") => void mutate(async () => {
+    const updated = await api<CountryMemberDto>(`/api/countries/${bootstrap.country.id}/members/${member.userId}`, { method: "PATCH", json: { role } });
+    setMembers(current => current?.map(item => item.userId === member.userId ? updated : item) ?? null);
+    setNotice(`Полномочия обновлены: ${member.name} — ${roleLabel[role]}.`);
+  });
   const remove = (member: CountryMemberDto) => void mutate(async () => {
     await api(`/api/countries/${bootstrap.country.id}/members/${member.userId}`, { method: "DELETE" });
     setMembers(current => current?.filter(item => item.userId !== member.userId) ?? null);
@@ -164,11 +170,12 @@ function CountryGovernment({
               {!inviting ? <Button disabled={busy} onClick={() => { setInviting(true); setPendingRemoval(null); setActionError(""); setNotice(""); }}>Пригласить участника</Button> : <form onSubmit={invite} className="government-access-form">
                 <p id="government-invite-help">Укажите email зарегистрированного пользователя. Доступ откроется сразу; письмо не отправляется.</p>
                 <Field label="Email участника" type="email" autoComplete="email" maxLength={254} required value={email} disabled={busy} aria-describedby="government-invite-help" onChange={event => setEmail(event.target.value)} />
-                <label>Полномочия<select value={inviteRole} disabled={busy} onChange={event => setInviteRole(event.target.value as "MEMBER" | "VIEWER")}><option value="MEMBER">Министр</option><option value="VIEWER">Наблюдатель</option></select></label>
+                <label>Полномочия<select aria-label="Полномочия" value={inviteRole} disabled={busy} onChange={event => setInviteRole(event.target.value as "MEMBER" | "VIEWER")}><option value="MEMBER">Министр</option><option value="VIEWER">Наблюдатель</option></select></label>
                 <p>Министр управляет работой через MCP. Наблюдатель может только просматривать.</p>
                 <div className="government-access-actions"><Button type="submit" variant="primary" disabled={busy}>{busy ? "Открываем доступ…" : "Открыть доступ"}</Button><Button disabled={busy} aria-label="Отмена приглашения" onClick={() => { setInviting(false); setActionError(""); }}>Отмена</Button></div>
               </form>}
             </div>}
+            {isOwner && members && <CountryInvitations countryId={bootstrap.country.id} />}
             {actionError && <p className="government-readonly" role="alert">{actionError}</p>}
             {notice && <p className="government-readonly" role="status">{notice}</p>}
             {error ? (
@@ -199,6 +206,7 @@ function CountryGovernment({
                       </small>
                     </div>
                     {isOwner && member.role !== "OWNER" && <div className="government-member-actions">
+                      <label>Полномочия участника<select aria-label={`Полномочия: ${member.name}`} value={member.role} disabled={busy} onChange={event => changeRole(member, event.target.value as "MEMBER" | "VIEWER")}><option value="MEMBER">Министр</option><option value="VIEWER">Наблюдатель</option></select></label>
                       {pendingRemoval === member.userId ? <>
                         <p>Закрыть доступ для {member.name}? Задачи и история останутся.</p>
                         <div className="government-access-actions"><Button variant="danger" disabled={busy} aria-label="Подтвердить отзыв доступа" onClick={() => remove(member)}>{busy ? "Закрываем…" : "Подтвердить"}</Button><Button disabled={busy} onClick={() => setPendingRemoval(null)}>Отмена</Button></div>
