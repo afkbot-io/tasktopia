@@ -40,6 +40,19 @@ describe("country collaboration HTTP boundary", () => {
     const invited = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: ownerCookie }, payload: { email: "route-member@example.com" } });
     expect(invited.statusCode).toBe(200);
     expect(invited.json().role).toBe("MEMBER");
+    const memberId = invited.json().userId as string;
+    const duplicate = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: ownerCookie }, payload: { email: "ROUTE-MEMBER@example.com", role: "VIEWER" } });
+    expect(duplicate.statusCode).toBe(409);
+    const forbiddenInvite = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: memberCookie }, payload: { email: "route-owner@example.com" } });
+    expect(forbiddenInvite.statusCode).toBe(403);
+    const forbiddenRemoval = await app.inject({ method: "DELETE", url: `/api/countries/${countryId}/members/${memberId}`, headers: { cookie: memberCookie } });
+    expect(forbiddenRemoval.statusCode).toBe(403);
+    const ownerId = (await app.inject({ method: "GET", url: "/api/bootstrap", headers: { cookie: ownerCookie } })).json().user.id;
+    const selfRemoval = await app.inject({ method: "DELETE", url: `/api/countries/${countryId}/members/${ownerId}`, headers: { cookie: ownerCookie } });
+    expect(selfRemoval.statusCode).toBe(404);
+    const escalation = await app.inject({ method: "POST", url: `/api/countries/${countryId}/members`, headers: { cookie: ownerCookie }, payload: { email: "route-member@example.com", role: "OWNER" } });
+    expect(escalation.statusCode).toBe(400);
+
 
     const selected = await app.inject({ method: "POST", url: `/api/countries/${countryId}/select`, headers: { cookie: memberCookie } });
     expect(selected.statusCode).toBe(200);

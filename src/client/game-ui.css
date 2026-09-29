@@ -366,3 +366,15 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .document-filters label { overflow: hidden; }
 .document-filters select { overflow: hidden; text-overflow: ellipsis; }
 .document-filters select:focus-visible { outline-offset: -3px; }
+
+/* Country access is account administration, separate from work mutations. */
+.government-access { padding: 14px; border-bottom: 1px solid #b4b193; }
+.government-access-form { display: grid; gap: 12px; }
+.government-access-form label { display: grid; gap: 6px; }
+.government-access-form select { min-height: 44px; padding: 8px; width: 100%; }
+.government-access-form p,.government-member-actions p { margin: 0; font-size: 12px; line-height: 1.5; }
+.government-access-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.government-list article > .government-member-actions { grid-column: 2 / -1; justify-items: start; }
+.government-list article small { white-space: normal; overflow-wrap: anywhere; }
+.country-government-body :is(.government-access-form,.government-member-actions) p { color: #4e6049; }
+.country-government-grid { align-items: start; align-content: start; }

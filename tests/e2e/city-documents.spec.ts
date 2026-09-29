@@ -113,6 +113,7 @@ test("world inspection has no work mutation controls or requests", async ({ page
   const passport = page.locator(".country-government-dialog");
   await expect(passport.getByRole("heading", { name: "Правительство" })).toBeVisible();
   await expect(passport.locator("input, textarea, select")).toHaveCount(0);
+  await expect(passport.getByRole("button", { name: "Пригласить участника" })).toBeVisible();
   await expect(passport.getByRole("button", { name: /Сохранить|Удалить|Назначить|Исключить|Перегенерировать/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
   await page.locator(".country-title-button").click();
