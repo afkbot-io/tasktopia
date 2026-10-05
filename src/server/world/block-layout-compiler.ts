@@ -371,14 +371,17 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   // The durable task number, not district grouping, defines construction order.
   // Replaying an interleaved city must not move its railway/airport to another
   // task simply because one district happened to be enumerated first.
-  const familyUsage = new Map<string, Map<string, number>>();
-  const cityFamilyUsage = new Map<string, number>();
+  const homeUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>() };
+  const serviceUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>() };
   const recordFamily = (placement: TaskPlacementV1) => {
     if (kinds.get(placement.taskId) !== "BUILDING") return;
-    let counts = familyUsage.get(placement.blockId);
-    if (!counts) { counts = new Map(); familyUsage.set(placement.blockId, counts); }
+    // A mandatory service can use a generic home-shaped sprite. It must not
+    // consume that family's residential diversity allowance.
+    const usage = placement.serviceRole ? serviceUsage : homeUsage;
+    let counts = usage.blocks.get(placement.blockId);
+    if (!counts) { counts = new Map(); usage.blocks.set(placement.blockId, counts); }
     counts.set(placement.buildingFamily, (counts.get(placement.buildingFamily) ?? 0) + 1);
-    cityFamilyUsage.set(placement.buildingFamily, (cityFamilyUsage.get(placement.buildingFamily) ?? 0) + 1);
+    usage.city.set(placement.buildingFamily, (usage.city.get(placement.buildingFamily) ?? 0) + 1);
   };
   for (const placement of activePlacements.values()) recordFamily(placement);
   pending.sort((a, b) => a.task.taskNumber - b.task.taskNumber || a.task.id.localeCompare(b.task.id));
@@ -519,7 +522,9 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         ? cityLandmarkCandidates(width, height).filter(family => !landmarkOwners.has(family) && familyAccessFits(selected.block, selected.slot, family)) : [];
       const accepts = (family: string) => familyAccessFits(selected.block, selected.slot, family);
       const familyEntropy = Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16);
-      const usage = new Map([...cityFamilyUsage].map(([family, count]) => [family, count + (familyUsage.get(selected.block.id)?.get(family) ?? 0) * 100]));
+      const assignedUsage = serviceRole ? serviceUsage : homeUsage;
+      const usage = new Map([...assignedUsage.city].map(([family, count]) => [family,
+        count + (assignedUsage.blocks.get(selected.block.id)?.get(family) ?? 0) * 100]));
       const authoredFamily = requestedFamily ?? (!task.serviceRoleAssigned && serviceRole ? serviceFamilyForSlot(serviceRole,selected.slot, accepts, familyEntropy, usage) : undefined)
         ?? (landmarkCandidates.length ? landmarkCandidates[landmarkEntropy % landmarkCandidates.length] : undefined)
         ?? (!serviceRole && selected.slot.kind === "BUILDING" ? compactHomeFamily(
