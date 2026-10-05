@@ -1,4 +1,6 @@
-/** Shared 8px kit for the compact 5–6-cell city family. */
+import { validBuildingEntrance, type BuildingEntrance } from "./building-access";
+
+/** Shared 8px kit for the compact city families. */
 export const CONSTRUCTION_TILE_KEYS = [
   "compact-construction-foundation-a",
   "compact-construction-foundation-b",
@@ -75,11 +77,16 @@ function gateBounds(width: number, entranceOffset: number) {
 }
 
 /** Reserve the whole sprite canvas, so a crane jib cannot overhang the fence or hut. */
-function constructionDetails(width: number, depth: number, entranceOffset: number, seed: number): ConstructionDetailPlacement[] {
-  const gate = gateBounds(width, entranceOffset);
+function constructionDetails(width: number, depth: number, entrance: BuildingEntrance, seed: number): ConstructionDetailPlacement[] {
+  const horizontal = entrance.side === "N" || entrance.side === "S";
+  const gate = gateBounds(horizontal ? width : depth, entrance.offset);
   const occupied = new Set<string>();
-  for (let x = gate.start; x <= gate.end; x += 1) {
-    for (let y = -Math.min(2, depth); y < 0; y += 1) occupied.add(`${x},${y}`);
+  for (let along = gate.start; along <= gate.end; along += 1) {
+    for (let inward = 0; inward < Math.min(2, horizontal ? depth : width); inward++) {
+      const x = horizontal ? along : entrance.side === "W" ? inward : width - 1 - inward;
+      const y = horizontal ? (entrance.side === "N" ? -depth + inward : -1 - inward) : along - depth;
+      occupied.add(`${x},${y}`);
+    }
   }
   const details: ConstructionDetailPlacement[] = [];
   for (const [index, spec] of CONSTRUCTION_DETAIL_SPECS.entries()) {
@@ -115,20 +122,29 @@ function constructionDetails(width: number, depth: number, entranceOffset: numbe
   );
 }
 
-function fenceTiles(width: number, depth: number, entranceOffset: number) {
+function fenceTiles(width: number, depth: number, entrance: BuildingEntrance) {
   const rear: ConstructionTile[] = [];
   const front: ConstructionTile[] = [];
   const top = -depth - 1;
-  const gate = gateBounds(width, entranceOffset);
-  for (let x = 0; x < width; x += 1) {
-    rear.push({ key: "compact-construction-fence", x, y: top });
-    if (x < gate.start || x > gate.end) front.push({ key: "compact-construction-fence", x, y: 0 });
+  const horizontal = entrance.side === "N" || entrance.side === "S";
+  const gate = gateBounds(horizontal ? width : depth, entrance.offset);
+  const gateTiles: ConstructionTile[] = [];
+  for (let along = gate.start; along <= gate.end; along++) {
+    gateTiles.push({ key: "compact-construction-gate",
+      x: horizontal ? along : entrance.side === "W" ? -1 : width,
+      y: horizontal ? (entrance.side === "N" ? top : 0) : along - depth,
+      ...((horizontal ? along === gate.start : false) ? {} : { quarterTurns: horizontal ? 2 as const : along === gate.start ? 1 as const : 3 as const }),
+    });
   }
-  front.push({ key: "compact-construction-gate", x: gate.start, y: 0 });
-  if (gate.end !== gate.start) front.push({ key: "compact-construction-gate", x: gate.end, y: 0, quarterTurns: 2 });
+  const isGate = (x: number, y: number) => gateTiles.some(t => t.x === x && t.y === y);
+  for (let x = 0; x < width; x += 1) {
+    if (!isGate(x, top)) rear.push({ key: "compact-construction-fence", x, y: top });
+    if (!isGate(x, 0)) front.push({ key: "compact-construction-fence", x, y: 0 });
+  }
+  (entrance.side === "S" ? front : rear).push(...gateTiles);
   for (let y = top + 1; y < 0; y += 1) {
-    rear.push({ key: "compact-construction-fence", x: -1, y, quarterTurns: 1 });
-    rear.push({ key: "compact-construction-fence", x: width, y, quarterTurns: 1 });
+    if (!isGate(-1, y)) rear.push({ key: "compact-construction-fence", x: -1, y, quarterTurns: 1 });
+    if (!isGate(width, y)) rear.push({ key: "compact-construction-fence", x: width, y, quarterTurns: 1 });
   }
   for (const [x, y, quarterTurns] of [[-1, top, 0], [width, top, 1], [-1, 0, 3], [width, 0, 2]] as const) {
     (y === 0 ? front : rear).push({ key: "compact-construction-fence-corner", x, y, quarterTurns });
@@ -140,12 +156,14 @@ function fenceTiles(width: number, depth: number, entranceOffset: number) {
 /** Local cell coordinates use the building's south-west corner as (0, 0). */
 export function constructionStageLayout(
   footprint: { width: number; height: number },
-  entranceOffset: number,
+  entranceInput: number | BuildingEntrance,
   stage: number,
   seed = 0,
 ): ConstructionStageLayout {
   const width = Math.max(1, Math.round(footprint.width));
   const depth = constructionPadDepth(footprint);
+  const entrance: BuildingEntrance = typeof entranceInput === "number" ? { side: "S", offset: entranceInput } : entranceInput;
+  if (!validBuildingEntrance({ width, height: depth }, entrance)) throw new Error("Invalid construction entrance");
   const site: ConstructionTile[] = [];
   if (stage === 2) {
     const foundation = CONSTRUCTION_TILE_KEYS.slice(0, 3);
@@ -153,11 +171,11 @@ export function constructionStageLayout(
       for (let x = 0; x < width; x += 1) site.push({ key: foundation[variant(x, y, seed) % 3]!, x, y });
     }
   }
-  const fence = stage >= 1 && stage <= 4 ? fenceTiles(width, depth, entranceOffset) : { rear: [], front: [] };
+  const fence = stage >= 1 && stage <= 4 ? fenceTiles(width, depth, entrance) : { rear: [], front: [] };
   return {
     padDepth: depth,
     site,
-    details: stage === 2 ? constructionDetails(width, depth, entranceOffset, seed) : [],
+    details: stage === 2 ? constructionDetails(width, depth, entrance, seed) : [],
     rearFence: fence.rear,
     frontFence: fence.front,
   };

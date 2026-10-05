@@ -22,6 +22,16 @@ it("produces distinct deterministic profiles independent of input order", () => 
   }
   expect(signatures.size).toBe(5);
 });
+it("fills new urban blocks with varied three-, four- and five-floor homes", () => {
+  const result = compileBlockLayout({ ...input, districts: [{ ...input.districts[0]!, archetype: "NEW_BUILD",
+    tasks: Array.from({ length: 90 }, (_, i) => ({ ...tasks[0]!, id: `new-build-${i}`, taskNumber: i + 1 })),
+  }] });
+  const homes = result.placements.map(placement => BUILDING_CATALOG.find(entry => entry.key === placement.buildingFamily)!)
+    .filter(entry => entry.category === "HOUSE" && !entry.serviceRole);
+  for (const floors of [3, 4, 5]) {
+    expect(new Set(homes.filter(entry => entry.floorCount === floors).map(entry => entry.key)).size).toBeGreaterThanOrEqual(2);
+  }
+});
 it("preserves old site plans and assigned families when a district changes profile and grows", () => {
   const before = compileBlockLayout(input);
   // A legacy block has no profile; its durable sites must still win.

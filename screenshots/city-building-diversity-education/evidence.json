@@ -1,0 +1,174 @@
+{
+  "sceneRevision": "55ac2f8a862d2af429341b940a30b04ffefd57bfe636bcfb2b4ff24601678553",
+  "examples": [
+    {
+      "id": "ff715b34-023f-475e-bac2-01fb5b4ce244",
+      "family": "compact-brick-school-v1",
+      "stage": 1,
+      "file": "compact-brick-school-v1-stage-1.png"
+    },
+    {
+      "id": "28ac91a4-e327-4226-8ceb-9e6c1920cd86",
+      "family": "compact-brick-school-v1",
+      "stage": 2,
+      "file": "compact-brick-school-v1-stage-2.png"
+    },
+    {
+      "id": "cb5ffcc9-26aa-4dba-84d4-f836a49dd750",
+      "family": "compact-brick-school-v1",
+      "stage": 3,
+      "file": "compact-brick-school-v1-stage-3.png"
+    },
+    {
+      "id": "f4eea9f0-ccca-4043-93c7-015baade2bdc",
+      "family": "compact-brick-school-v1",
+      "stage": 4,
+      "file": "compact-brick-school-v1-stage-4.png"
+    },
+    {
+      "id": "3949e236-6de2-48d9-84b5-d0b02f7c73dc",
+      "family": "compact-brick-school-v1",
+      "stage": 5,
+      "file": "compact-brick-school-v1-stage-5.png"
+    },
+    {
+      "id": "a5a15320-d247-425d-98fa-e647f1f615f1",
+      "family": "compact-color-kindergarten-v1",
+      "stage": 1,
+      "file": "compact-color-kindergarten-v1-stage-1.png"
+    },
+    {
+      "id": "3d818265-ff04-4e93-a47a-364a522fffa6",
+      "family": "compact-color-kindergarten-v1",
+      "stage": 2,
+      "file": "compact-color-kindergarten-v1-stage-2.png"
+    },
+    {
+      "id": "e58a4b08-0200-48b4-94d2-beddf327611c",
+      "family": "compact-color-kindergarten-v1",
+      "stage": 3,
+      "file": "compact-color-kindergarten-v1-stage-3.png"
+    },
+    {
+      "id": "c15709da-ab48-4e5e-addf-2c02d9390b17",
+      "family": "compact-color-kindergarten-v1",
+      "stage": 4,
+      "file": "compact-color-kindergarten-v1-stage-4.png"
+    },
+    {
+      "id": "9c98227d-1a6e-4eca-aff1-1047707cf01e",
+      "family": "compact-color-kindergarten-v1",
+      "stage": 5,
+      "file": "compact-color-kindergarten-v1-stage-5.png"
+    },
+    {
+      "id": "3f6740d8-da00-4919-9449-8fa67b04eb6c",
+      "family": "compact-court-kindergarten-v1",
+      "stage": 1,
+      "file": "compact-court-kindergarten-v1-stage-1.png"
+    },
+    {
+      "id": "969fc999-760c-44ec-9924-504e85cc0501",
+      "family": "compact-court-kindergarten-v1",
+      "stage": 2,
+      "file": "compact-court-kindergarten-v1-stage-2.png"
+    },
+    {
+      "id": "ec4b5897-5d65-4ec3-8196-48b64a0ee9e9",
+      "family": "compact-court-kindergarten-v1",
+      "stage": 3,
+      "file": "compact-court-kindergarten-v1-stage-3.png"
+    },
+    {
+      "id": "368659ea-613b-4deb-a5e5-5d1c4025e680",
+      "family": "compact-court-kindergarten-v1",
+      "stage": 4,
+      "file": "compact-court-kindergarten-v1-stage-4.png"
+    },
+    {
+      "id": "395e2f62-17d8-4eb6-ab16-48414f810815",
+      "family": "compact-court-kindergarten-v1",
+      "stage": 5,
+      "file": "compact-court-kindergarten-v1-stage-5.png"
+    },
+    {
+      "id": "fcd22b51-7d68-4f78-8af2-71caf5273d72",
+      "family": "compact-modern-school-v1",
+      "stage": 1,
+      "file": "compact-modern-school-v1-stage-1.png"
+    },
+    {
+      "id": "c0648ec3-0632-452d-a440-553b99802966",
+      "family": "compact-modern-school-v1",
+      "stage": 2,
+      "file": "compact-modern-school-v1-stage-2.png"
+    },
+    {
+      "id": "8df28d5f-f2c5-4fd6-83b3-ffe1f7785bc0",
+      "family": "compact-modern-school-v1",
+      "stage": 3,
+      "file": "compact-modern-school-v1-stage-3.png"
+    },
+    {
+      "id": "89d2e885-06d0-4658-9f51-25573a7e89ab",
+      "family": "compact-modern-school-v1",
+      "stage": 4,
+      "file": "compact-modern-school-v1-stage-4.png"
+    },
+    {
+      "id": "8cbd4a29-d1ca-491b-9e14-abb945f6c4a7",
+      "family": "compact-modern-school-v1",
+      "stage": 5,
+      "file": "compact-modern-school-v1-stage-5.png"
+    },
+    {
+      "id": "6f878729-8430-4279-83da-ad2bcd365dae",
+      "family": "compact-rose-kindergarten-v1",
+      "stage": 1,
+      "file": "compact-rose-kindergarten-v1-stage-1.png"
+    },
+    {
+      "id": "97752bce-9bfd-4e79-8a02-406c6d4cbc39",
+      "family": "compact-rose-kindergarten-v1",
+      "stage": 2,
+      "file": "compact-rose-kindergarten-v1-stage-2.png"
+    },
+    {
+      "id": "cfc33966-3f51-4aa5-b80e-e543942884ac",
+      "family": "compact-rose-kindergarten-v1",
+      "stage": 3,
+      "file": "compact-rose-kindergarten-v1-stage-3.png"
+    },
+    {
+      "id": "625c8b63-33ff-4f50-be6d-310cd8a1ccb4",
+      "family": "compact-rose-kindergarten-v1",
+      "stage": 4,
+      "file": "compact-rose-kindergarten-v1-stage-4.png"
+    },
+    {
+      "id": "4f4ac3a4-b1a0-4600-a59d-0e433300078c",
+      "family": "compact-rose-kindergarten-v1",
+      "stage": 5,
+      "file": "compact-rose-kindergarten-v1-stage-5.png"
+    }
+  ],
+  "loaded": [
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-rose-kindergarten-v1/stage-3.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-brick-school-v1/stage-3.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-brick-school-v1/stage-5.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-modern-school-v1/stage-3.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-rose-kindergarten-v1/stage-4.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-brick-school-v1/stage-4.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-modern-school-v1/stage-5.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-modern-school-v1/stage-4.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-rose-kindergarten-v1/stage-5.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-color-kindergarten-v1/stage-4.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-court-kindergarten-v1/stage-4.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-color-kindergarten-v1/stage-5.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-court-kindergarten-v1/stage-3.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-color-kindergarten-v1/stage-3.png",
+    "/game-assets/v5/revisions/d2edeecb968f542d/buildings/civic/compact-court-kindergarten-v1/stage-5.png"
+  ],
+  "errors": [],
+  "writes": []
+}

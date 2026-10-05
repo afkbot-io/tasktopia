@@ -10,6 +10,7 @@ export type MobilityNetworkInput = {
   walkGraph: ReadonlyMap<string, Cell>;
   crosswalks: ReadonlySet<string>;
   activityCells: ReadonlySet<string>;
+  buildingEntrances?: ReadonlySet<string>;
 };
 export type MobilityZone = {
   id: string;
@@ -27,6 +28,7 @@ export type MobilityNetwork = {
   zones: MobilityZone[];
   zoneByCell: Map<string, MobilityZone>;
   activityCells: ReadonlySet<string>;
+  buildingEntrances: ReadonlySet<string>;
   parkingBays: ReadonlySet<string>;
 };
 
@@ -35,6 +37,7 @@ export function mobilityNetworkSignature(input: MobilityNetworkInput): string {
     [...input.roads].map(([key, cell]) => `${key}:${cell.roadClass}`).sort(),
     [...input.walkGraph.keys()].sort(), [...input.crosswalks].sort(), [...input.activityCells].sort(),
     (input.parking??[]).map(p=>[p.id,p.route,p.bay]),
+    [...input.buildingEntrances ?? []].sort(),
   ]);
 }
 
@@ -95,7 +98,7 @@ export function buildWalkingSpine(input: MobilityNetworkInput): Map<string, Cell
       coreDegrees.set(nextKey, degree); if (degree < 2) tails.push(nextKey);
     }
   }
-  const protectedCells = new Set([...input.crosswalks, ...input.activityCells]);
+  const protectedCells = new Set([...input.crosswalks, ...input.activityCells, ...input.buildingEntrances ?? []]);
   for (const [cellKey, cell] of cells) if (MOBILITY_DIRECTIONS.some(d => input.roads.has(`${cell.x + d.x},${cell.y + d.y}`))) protectedCells.add(cellKey);
   let changed = true;
   while (changed) {
@@ -176,11 +179,15 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
   for(const bay of parkingBays)if(!cars.has(bay))parkingBays.delete(bay);
   const walkers = buildWalkingSpine({...input,walkGraph:new Map([...input.walkGraph].filter(([id])=>!parkingBays.has(id)))});
   const walkerEdges = new Map([...walkers].map(([key, cell]) => [key, neighbors(cell).filter(next => walkers.has(mobilityCellKey(next)))]));
+  const buildingEntrances = new Set([...input.buildingEntrances ?? []].filter(id => walkers.has(id) && !input.roads.has(id) && !input.crosswalks.has(id)));
   // A one-cell-wide blind spur has no safe turnaround lane. Ambient walkers
   // use the connected walkable core; do not spawn them in inevitable dead ends.
   const walkTails = [...walkerEdges].filter(([, next]) => next.length < 2).map(([key]) => key);
   for (let index = 0; index < walkTails.length; index++) {
     const tail = walkTails[index]!;
+    // A real building is a destination with an indoor turnaround, not an
+    // unusable blind alley. Preserve its approach all the way to the core.
+    if (buildingEntrances.has(tail)) continue;
     if (!walkerEdges.has(tail)) continue;
     for (const cell of walkerEdges.get(tail)!) {
       const neighbor = mobilityCellKey(cell), remaining = (walkerEdges.get(neighbor) ?? []).filter(cell => mobilityCellKey(cell) !== tail);
@@ -198,7 +205,7 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
   for (const [key, cell] of walkers) {
     const next = walkerEdges.get(key)!;
     const straight = next.length === 2 && next[0]!.x + next[1]!.x === cell.x * 2 && next[0]!.y + next[1]!.y === cell.y * 2;
-    if (!straight) conflict.set(key, cell);
+    if (!straight && !(next.length === 1 && buildingEntrances.has(key))) conflict.set(key, cell);
   }
   // The same reservations guard both curb crossings and the parking aisle.
   // A bay is a safe destination outside the entrance/exit conflict resources.
@@ -241,5 +248,5 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
     zones.push(zone);
     for (const cell of cells) zoneByCell.set(mobilityCellKey(cell), zone);
   }
-  return { signature: mobilityNetworkSignature(input), roads: orderedRoads, cars, walkers, carEdges, walkerEdges, zones, zoneByCell, activityCells: new Set(input.activityCells), parkingBays };
+  return { signature: mobilityNetworkSignature(input), roads: orderedRoads, cars, walkers, carEdges, walkerEdges, zones, zoneByCell, activityCells: new Set(input.activityCells), buildingEntrances, parkingBays };
 }

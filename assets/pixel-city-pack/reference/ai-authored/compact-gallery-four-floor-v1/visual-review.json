@@ -1,0 +1,43 @@
+{
+  "key": "compact-gallery-four-floor-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр3/4/5 при1x и nearest8x, общий растр прошёл. Восточный подход проверить в игре.",
+  "projection": {
+    "camera": "Высокая осевая фронтально-верхняя камера, крыша26px глубже фасада20px.",
+    "roofDepthPx": 26,
+    "facadeHeightPx": 20,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      0,
+      0
+    ],
+    "doorFrameSizePx": [
+      0,
+      0
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "eff507522f878b394891b1ce1e3fbca7c25f782bc08459a4e25ba73b0dd629ec",
+      "runtimeSha256": "201e8157f75a07656bb92dd2405591dddfbfe41be8c49855e0cf32d6fe3042a9",
+      "notes": "Четыре горизонтальные галереи, лестничный блок слева и надстройка на крыше. Восточная дверь скрыта; отсутствует ложный южный вход."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "ead24be25790edcc861a406351b8197ace13da8d2732df2da289eb1235130497",
+      "runtimeSha256": "5d034306151b9d509786a190c4a884c364f27656ca6da8c537bd92146550216e",
+      "notes": "Крыша слева, справа незавершённые непрозрачные комнаты без мебели, растения и готовая надстройка сняты."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "7adbc18cd6b72fc91b230025d0aa5576e5cf1943946d42facc52a07574aec148",
+      "runtimeSha256": "e0a1fcbeb810ffc833d5f7b142b7e23376ac10fa6318d3e8cd15e8ee8ea180ce",
+      "notes": "Кровли нет, полный непрозрачный внутренний объём и частичные перегородки с материалами; нижнее основание совпадает."
+    }
+  }
+}

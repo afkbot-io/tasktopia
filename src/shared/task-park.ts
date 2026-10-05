@@ -19,6 +19,45 @@ const CENTERPIECE: Readonly<Record<string, string>> = {
   "urban-memorial": "compact-park-monument",
 };
 
+// Targets are fractions of the owned parcel. Placement may omit an item when
+// its complete visible shape does not fit; small sites never shrink the art.
+type ParkItem = readonly [kind: string, x: number, y: number, minimumArea?: number];
+const PARK_FURNITURE: Readonly<Record<string, readonly ParkItem[]>> = {
+  "urban-pocket": [
+    ["bench-horizontal", .25, .75], ["courtyard-picnic-table", .25, .25, 36],
+    ["courtyard-cycle-rack", .75, .75, 24], ["courtyard-square-planter", .75, .25],
+    ["trash-bin", .25, .85], ["shrub-flowering", .75, .4],
+  ],
+  "urban-promenade": [
+    ["bench-vertical", .7, .25], ["park-bench-double", .25, .3, 60],
+    ["flower-bed-horizontal", .65, .2, 24], ["flower-bed-vertical", .75, .75, 60],
+    ["courtyard-cycle-rack", .2, .8, 36], ["city-sign-horizontal", .7, .85, 24],
+    ["recycling-bin", .25, .75],
+  ],
+  "urban-amusement": [
+    ["playground-slide", .7, .25], ["playground-swing", .7, .65, 80],
+    ["playground-climbing", .7, .85, 160], ["bench-vertical", .2, .6, 36],
+    ["courtyard-picnic-table", .7, .45, 60], ["trash-bin", .2, .85],
+    ["recycling-bin", .8, .85, 60],
+  ],
+  "urban-botanical": [
+    ["flower-bed-horizontal", .25, .25], ["flower-bed-vertical", .7, .65, 36],
+    ["planter-round", .25, .75], ["flower-yellow", .65, .25],
+    ["flower-pink", .75, .75], ["bench-horizontal", .25, .65, 36],
+    ["city-sign-horizontal", .65, .85, 60], ["recycling-bin", .75, .85, 60],
+  ],
+  "urban-fountain": [
+    ["park-bench-double", .25, .25, 60], ["bench-horizontal", .25, .75],
+    ["planter-round", .75, .25], ["courtyard-square-planter", .75, .75, 36],
+    ["trash-bin", .2, .75], ["flower-bed-horizontal", .65, .75, 60],
+  ],
+  "urban-memorial": [
+    ["flower-white", .25, .25], ["flower-white", .75, .25, 36],
+    ["bench-vertical", .25, .75], ["bench-vertical", .75, .75, 60],
+    ["planter-round", .25, .45, 60], ["trash-bin", .75, .85, 60],
+  ],
+};
+
 function key(cell: Cell): string { return `${cell.x},${cell.y}`; }
 
 function hash(seed: number, x: number, y: number, salt: number): number {
@@ -61,13 +100,20 @@ export function taskParkDecorLayout(
   };
   const place = (kind: string, origin: Cell, from: number): boolean => {
     if (result.length >= 36) return false;
-    if (kind === "park-lamp" && result.some(prop => prop.kind === kind
+    if (/lamp/.test(kind) && result.some(prop => /lamp/.test(prop.kind)
       && Math.abs(prop.origin.x - origin.x) + Math.abs(prop.origin.y - origin.y) < 3)) return false;
     const [propWidth, propHeight] = dimensions(kind);
     const cells = Array.from({ length: propWidth * propHeight }, (_, index) => ({
       x: origin.x + index % propWidth, y: origin.y + Math.floor(index / propWidth),
     }));
-    const visibleCells = kind.startsWith("tree-") ? compactTreeCover(origin) : cells;
+    const metadata = PROP_CATALOG[kind.startsWith("compact-park-") ? `${kind}-stage-5` : kind]!;
+    const left = Math.floor(origin.x + propWidth / 2 - metadata.anchor.x / 8);
+    const top = Math.floor(origin.y + propHeight - metadata.anchor.y / 8);
+    const drawnWidth = Math.ceil(metadata.size.width / 8), drawnHeight = Math.ceil(metadata.size.height / 8);
+    const visibleCells = kind.startsWith("tree-") ? compactTreeCover(origin)
+      : [...cells, ...Array.from({ length: drawnWidth * drawnHeight }, (_, index) => ({
+        x: left + index % drawnWidth, y: top + Math.floor(index / drawnWidth),
+      }))];
     if (visibleCells.some(cell => !allowed.has(key(cell)) || occupied.has(key(cell))
       || assetKey !== "urban-lake" && paths.has(key(cell)))) return false;
     visibleCells.forEach((cell) => occupied.add(key(cell)));
@@ -91,29 +137,27 @@ export function taskParkDecorLayout(
         || a.y - b.y || a.x - b.x);
       return candidates.some(origin => place(kind, origin, from));
     };
-    const centerpiece = CENTERPIECE[assetKey];
+    const centerpiece = assetKey === "urban-amusement" && footprint.length < 80 ? undefined : CENTERPIECE[assetKey];
     if (centerpiece) search(centerpiece, centerpiece.startsWith("compact-park-") ? 3 : 5,
-      bounds.minX + width / 2, bounds.minY + height / 2);
+      bounds.minX + width / 2, bounds.minY + height * (assetKey === "urban-memorial" ? .25 : .5));
     if (assetKey === "urban-large") {
       search("gazebo", 5, bounds.minX + width * 0.75, bounds.minY + height * 0.25);
       search("playground-small", 5, bounds.minX + width * 0.25, bounds.minY + height * 0.75);
     }
     // Furniture gets a permanent reserved location before vegetation, but is
     // revealed only after paths and planting. This keeps small lots useful.
-    search("bench-horizontal", 4, bounds.minX + width * 0.25, bounds.maxY - 1);
-    if (footprint.length >= 40) search("bench-horizontal", 4, bounds.minX + width * 0.75, bounds.minY + 1);
-    // Distinct uses share the same collision-aware placement and stage plan.
-    // Furniture reserves its finished position before planting is generated.
-    if(assetKey==='urban-community'&&footprint.length>=60) {
-      search('courtyard-picnic-table',5,bounds.minX+width*.75,bounds.minY+height*.25);
-      search('courtyard-cycle-rack',4,bounds.minX+width*.2,bounds.maxY-1);
+    const recipe = PARK_FURNITURE[assetKey];
+    if (recipe) for (const [kind, x, y, minimum = 0] of recipe) {
+      if (footprint.length >= minimum) search(kind, kind.startsWith("courtyard-") || /playground/.test(kind) ? 5
+        : /flower|shrub/.test(kind) ? 3 : 4, bounds.minX + width * x, bounds.minY + height * y);
     }
-    if(assetKey==='urban-amusement'&&footprint.length>=60) {
-      search('playground-small',5,bounds.minX+width*.75,bounds.minY+height*.75);
-    }
-    if(assetKey==='urban-promenade') {
-      search('bench-horizontal',4,bounds.minX+width*.7,bounds.maxY-1);
-      if(footprint.length>=60)search('courtyard-cycle-rack',5,bounds.minX+width*.3,bounds.minY+1);
+    if (!recipe) {
+      search("bench-horizontal", 4, bounds.minX + width * 0.25, bounds.maxY - 1);
+      if (footprint.length >= 40) search("bench-horizontal", 4, bounds.minX + width * 0.75, bounds.minY + 1);
+      if (assetKey === "urban-community" && footprint.length >= 60) {
+        search("courtyard-picnic-table", 5, bounds.minX + width * .75, bounds.minY + height * .25);
+        search("courtyard-cycle-rack", 4, bounds.minX + width * .2, bounds.maxY - 1);
+      }
     }
     // Reserve lighting before trees. Spread fixtures around the perimeter,
     // scaling with the site rather than leaving every large park with two.
@@ -121,16 +165,18 @@ export function taskParkDecorLayout(
     const lampTargets = [[0.15, 0.15], [0.85, 0.85], [0.85, 0.15], [0.15, 0.85],
       [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]] as const;
     for (const [x, y] of lampTargets.slice(0, lampCount)) {
-      search("park-lamp", 4, bounds.minX + width * x, bounds.minY + height * y);
+      search(assetKey === "urban-memorial" || assetKey === "urban-botanical" ? "streetlamp-vintage" : "park-lamp",
+        4, bounds.minX + width * x, bounds.minY + height * y);
     }
     // Reserve the finished furniture before any tree crown. It is absent on
     // construction stages, but cannot displace planting when stage5 arrives.
-    if (footprint.length >= 36) search("courtyard-picnic-table", 5,
-      bounds.minX + width * 0.25, bounds.minY + height * 0.25);
-    if (footprint.length >= 24) search("courtyard-cycle-rack", 5,
-      bounds.minX + width * 0.75, bounds.minY + height * 0.75);
-    // One small lime accent, never a repeated bed or general world scatter.
-    search("courtyard-square-planter", 5, bounds.minX + width * 0.75, bounds.minY + height * 0.25);
+    if (!recipe) {
+      if (footprint.length >= 36) search("courtyard-picnic-table", 5,
+        bounds.minX + width * 0.25, bounds.minY + height * 0.25);
+      if (footprint.length >= 24) search("courtyard-cycle-rack", 5,
+        bounds.minX + width * 0.75, bounds.minY + height * 0.75);
+      search("courtyard-square-planter", 5, bounds.minX + width * 0.75, bounds.minY + height * 0.25);
+    }
     const tree = assetKey === "urban-orchard" ? "tree-apple" : assetKey === "urban-memorial" ? "tree-cypress"
       : ["tree-oak", "tree-maple", "tree-cherry", "tree-magnolia"][Math.floor(hash(seed, 0, 0, 37) * 4)]!;
     // Try every integer anchor. A two-cell stride can miss an entire narrow
@@ -151,7 +197,7 @@ export function taskParkDecorLayout(
     // Deliberate planted beds inside task parks, not the retired world scatter.
     const flower = assetKey === "urban-memorial" ? "flower-white" : "shrub-flowering";
     search(flower, 3, bounds.minX + 1, bounds.minY + 1);
-    if (footprint.length >= 36) search(flower, 5, bounds.maxX - 2, bounds.maxY - 2);
+    if (footprint.length >= 36) search(flower, 3, bounds.maxX - 2, bounds.maxY - 2);
   }
   return result.filter(prop => stage >= prop.from).map(prop => ({
     origin: prop.origin, width: prop.width, height: prop.height,

@@ -1,0 +1,43 @@
+{
+  "key": "compact-flower-shop-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая фронтально-верхняя камера; три низких павильона с центральной стеклянной крышей.",
+    "roofDepthPx": 13,
+    "facadeHeightPx": 8,
+    "floorStepPx": 6,
+    "doorLeafSizePx": [
+      3,
+      4
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "a989adbacd0cd7b7e49247a4b21fad7e7e8d03fb8397401bc50462803fdbf76e",
+      "runtimeSha256": "34dfed7ddc9a85e29f95118e5c1a88ee3649d62956ec3000e7c6239d65f528df",
+      "notes": "Все помещения открыты, крыши нет. Низкие незавершённые перегородки, материалы и непрозрачный пол."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "654424df385d3f0c01b1f3bdccc4c91170a066eb4647def520bca69b9b54b011",
+      "runtimeSha256": "c048f428b9a7e952ce95280c4b6795e876db9c0acc9ccc44afdd2440984ae580",
+      "notes": "Около половины кровли: слева целая, справа половина; центр открыт. Цветов и остекления нет, навес снят."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "d5c3d8d804eb870c5d8247b3f2d4a530d1fc6beac0d2d7cc8ccd3f8672ee006e",
+      "runtimeSha256": "d1652ebba14c910059d5ae6e14728b104e8c31f93ab459587bf038d2f824715c",
+      "notes": "Три павильона, цветы за витринами и стеклянной крышей, вход S/0 слева. Низкий силуэт с верхним прозрачным отступом."
+    }
+  }
+}

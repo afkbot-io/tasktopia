@@ -1,0 +1,43 @@
+{
+  "key": "compact-tower-fire-station-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая осевая камера; башня слева и низкий гараж справа.",
+    "roofDepthPx": 16,
+    "facadeHeightPx": 9,
+    "floorStepPx": 6,
+    "doorLeafSizePx": [
+      3,
+      4
+    ],
+    "doorFrameSizePx": [
+      5,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "0689bfb92fad67538cc5b41283098293169356ca4e1c665f51adff124842f788",
+      "runtimeSha256": "620311e7b95517be8a11071193e20cb123012082b226104ff1ddb660450d9101",
+      "notes": "Кровли нет, неполная кладка и открытые помещения с материалами. Вход и два гаражных проёма сохранены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "2dc91c67a895e6d823c65fe33e5c0a6a9bf4003977047c44ec87a2b032916b52",
+      "runtimeSha256": "ad5fd9b45bc24d45f5a79d8669921374ac333b5c92f5539f60f829e3873ecdc5",
+      "notes": "Около половины кровли, открытый правый отсек. Гаражные ворота сняты, тёмные непрозрачные помещения."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "eff959219578c67cf68867fc443dfb1943aecac6dd3a8eeea9ecf0cebe7b9f67",
+      "runtimeSha256": "71d0d9776ca1a72efffd7ffb17a137929832b6da9c3aacdb29cbdd7861fcc972",
+      "notes": "Кирпичная башня с входом S/0, два гаражных проёма справа. Основная кровля глубже фасада."
+    }
+  }
+}

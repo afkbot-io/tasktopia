@@ -80,7 +80,7 @@ def retire_legacy(active_keys: set[str]) -> str | None:
 
 def composition_previews(manifest: dict, entry: dict) -> list[Image.Image]:
     width, depth = entry["footprintCells"]
-    entrance = entry["entrances"][0]["offset"]
+    entrance = json.dumps(entry["entrances"][0])
     command = [str(ROOT / "node_modules" / ".bin" / "tsx"), "-e", (
         "import {constructionStageLayout,CONSTRUCTION_DETAIL_SPEC_BY_KEY} from './src/shared/construction-stage.ts';"
         f"console.log(JSON.stringify({{layouts:[1,2].map(stage=>constructionStageLayout({{width:{width},height:{depth}}},{entrance},stage,1)),specs:CONSTRUCTION_DETAIL_SPEC_BY_KEY}}));"

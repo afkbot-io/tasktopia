@@ -1,0 +1,43 @@
+{
+  "key": "compact-brick-police-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая осевая камера; кирпичный корпус с лестничным объёмом слева.",
+    "roofDepthPx": 19,
+    "facadeHeightPx": 13,
+    "floorStepPx": 6,
+    "doorLeafSizePx": [
+      4,
+      4
+    ],
+    "doorFrameSizePx": [
+      6,
+      6
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "7e47b7fec1a22b709100c2f546a0b18d4b4a1c63067056b0c577392f57ea567a",
+      "runtimeSha256": "0adfc4d3022889ed104012cac1c767e6bc6db2288b624ace649454fd54b5c19a",
+      "notes": "Крыша полностью снята; открытые полы, перегородки и материалы, верхняя кладка частично собрана. Основание и вход сохранены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "231503f36c218dc9386d636d6f6b2da2d50ca27c03b92c9145da468be88c4c35",
+      "runtimeSha256": "51d5af793bb4bd7b70106ec0f7eebda844666030aa906d19151db07410a9613f",
+      "notes": "Слева сохранена примерно половина крыши, справа открытые непрозрачные комнаты; щит и антенна сняты."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "dc0f8b8b05fd6a6fbf2fff9c72d97c9de91291b73dc376434d3b7c6bd6222ce9",
+      "runtimeSha256": "664a7a990a74f244d529a6e8a612a30c6c99a0085e16e3f24bde9134a9dad58d",
+      "notes": "Два этажа, широкая тёмная крыша, щит и смещённый вправо вход S/4."
+    }
+  }
+}

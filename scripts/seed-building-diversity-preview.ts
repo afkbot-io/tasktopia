@@ -22,7 +22,8 @@ try {
   await db.prepare("UPDATE countries SET seed = ? WHERE id = ?").run(424242, user.countryId);
   const service = new AppService(db);
   const city = await service.createCity(user.countryId, { name: "Новые дома — все стадии", idempotencyKey: "art-city" });
-  const families = ["compact-blue-bay-v1", "compact-copper-court-v1"];
+  const parks = Boolean(process.env.PARK_ART_VARIANTS);
+  const families = (process.env.PARK_ART_VARIANTS ?? process.env.BUILDING_ART_FAMILIES ?? "compact-blue-bay-v1,compact-copper-court-v1").split(",");
   const statuses: TaskStatus[] = ["STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"];
   const tasks = [];
   for (const family of families) {
@@ -31,7 +32,8 @@ try {
     await service.activateDistrict(user.countryId, district.id, `activate-${family}`);
     for (let stage = 1; stage <= 5; stage++) {
       const create = () => service.createTask(user.countryId, { cityId: city.id, districtId: district.id,
-        title: `${family} — стадия ${stage}`, estimate: 1, visualKind: "BUILDING", buildingHint: family,
+        title: `${family} — стадия ${stage}`, estimate: 1,
+        ...(parks ? { visualKind: "PARK" as const, parkVariant: family } : { visualKind: "BUILDING" as const, buildingHint: family }),
         idempotencyKey: `${family}-${stage}` });
       let task;
       for (let attempt = 0; attempt < 8; attempt++) {
@@ -48,8 +50,8 @@ try {
       assert.ok(task, "Could not reach a compatible unreserved art parcel");
       for (let step = 0; step < stage - 1; step++) task = await service.updateTaskStatus(user.countryId, {
         taskId: task.id, status: statuses[step]!, idempotencyKey: `${family}-${stage}-${step}` });
-      assert.equal(task.buildingType, family); assert.equal(task.stage, stage);
-      tasks.push({ id: task.id, stage, family });
+      assert.equal(parks ? task.visualAssetKey : task.buildingType, family); assert.equal(task.stage, stage);
+      tasks.push({ id: task.id, stage, family, footprint: task.footprint });
     }
   }
   const audit = await auditWorld(db, service, user.countryId);

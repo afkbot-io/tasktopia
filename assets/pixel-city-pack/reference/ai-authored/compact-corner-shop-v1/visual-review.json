@@ -1,0 +1,43 @@
+{
+  "key": "compact-corner-shop-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая осевая камера; Г-образная крыша и внутренний непрозрачный двор.",
+    "roofDepthPx": 20,
+    "facadeHeightPx": 10,
+    "floorStepPx": 6,
+    "doorLeafSizePx": [
+      0,
+      0
+    ],
+    "doorFrameSizePx": [
+      0,
+      0
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "334ffe80853756fb29ccad279506ef45a0155d29c6b63e6f21094e67b1ff4102",
+      "runtimeSha256": "121dd97cb6431d0b7617df27f7aef1ba6c95bc0c7cd32de41d2b40876a75e21b",
+      "notes": "Полностью открытые комнаты и материалы; двор остаётся непрозрачным. Навес снят, вход по-прежнему восточный."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "63664540b0926c7e8edb2155cea1b4be7742dd354ca9e27e9fd12e4789a62aac",
+      "runtimeSha256": "d7ed983c33e2f0891bfeabffdafb617914d886156ff29b599f6cf1430b138ab6",
+      "notes": "Оставлена крыша левого крыла, переднее крыло открыто. Вентиляция снята, окна тёмные."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "b43c9d33473cbe3a2c8a2c3afc6adf82432a8b3abd914e7a0b8b157cd9d24681",
+      "runtimeSha256": "1aae1bfedb40dee2dad638f4747d806ed0639402c1261772566cf4ccefd1689a",
+      "notes": "Г-образная сливовая кровля, внутренний двор, две передние витрины. Вход E/2 скрыт справа."
+    }
+  }
+}

@@ -58,6 +58,12 @@ export function buildCityWalkNetwork(input: CityWalkInput) {
   const animalGraph = new Map(input.terrain.filter(cell => !blocked.has(key(cell)) && !input.roads.has(key(cell))
     && !surfaceKeys.has(key(cell)) && ["MEADOW", "FOREST"].includes(cell.terrain)).map(cell => [key(cell), { x: cell.x, y: cell.y }]));
   const activityCells = new Set<string>();
+  const buildingEntrances = new Set<string>();
+  for (const task of input.tasks) {
+    const approach = task.accessPath[0];
+    if (task.stage === 5 && task.visualKind === "BUILDING" && approach && walkGraph.has(key(approach))
+      && !input.roads.has(key(approach)) && !crosswalks.has(key(approach))) buildingEntrances.add(key(approach));
+  }
   const addActivity = (cell: Cell) => {
     if (walkGraph.has(key(cell)) && !input.roads.has(key(cell)) && !crosswalks.has(key(cell))) activityCells.add(key(cell));
   };
@@ -67,5 +73,5 @@ export function buildCityWalkNetwork(input: CityWalkInput) {
     if (!["bench-horizontal", "bench-vertical", "picnic-table", "playground-small", "trash-bin"].includes(decoration.kind)) continue;
     for (const [x, y] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) addActivity({ x: decoration.origin.x + x!, y: decoration.origin.y + y! });
   }
-  return { walkGraph, activityCells, crosswalks, animalGraph, blockedCells: blocked };
+  return { walkGraph, activityCells, buildingEntrances, crosswalks, animalGraph, blockedCells: blocked };
 }

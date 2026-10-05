@@ -94,6 +94,49 @@ describe("immutable v2 parcels and independently authored building families",()=
     expect(oldFire.buildingFamily).not.toBe(FIRE);
   });
 
+  it("varies newly assigned services across districts and preserves them on replay", () => {
+    const request: BlockLayoutCompilerInput = { ...input(0), districts: Array.from({ length: 6 }, (_, sequence) => ({
+      id: `school-district-${sequence}`, archetype: "MIXED_URBAN", sequence, tasks: [],
+    })) };
+    const planned = compileBlockLayout(request);
+    planned.blocks = planned.districtLayouts.flatMap((district, districtIndex) => Array.from({ length: 3 }, (_, sequence) => ({ ...baseBlock,
+      id: `service-plan-${districtIndex}-${sequence}`, districtLayoutId: district.id, sequence, templateVersion: 3,
+      origin: { x: districtIndex * 32, y: sequence * 32 }, parameters: { entrancePolicyVersion: 1, sitePlan: { version: 1,
+        parcels: Array.from({ length: 9 }, (_, i) => ({ x: 3 + Math.floor(i / 3) * 9, y: 3 + i % 3 * 7,
+          width: 6, height: 4, clearance: 1, kind: "BUILDING", family: "compact-wide-v1" })),
+      } },
+    })));
+    request.districts.forEach((district, sequence) => {
+      district.tasks = input(25).districts[0]!.tasks.map((task, i) => ({ ...task,
+        id: `${district.id}-${i}`, taskNumber: sequence * 25 + i + 1,
+      }));
+    });
+    const result = compileBlockLayout({ ...request, previous: planned });
+    const services = result.placements.filter(placement => placement.serviceRole);
+    for (const role of ["EDUCATION", "FIRE", "POLICE", "SHOP"]) {
+      expect(new Set(services.filter(placement => placement.serviceRole === role)
+        .map(placement => placement.buildingFamily)).size, role).toBeGreaterThan(1);
+    }
+    const schools = result.placements.filter(placement => placement.serviceRole === "EDUCATION");
+    expect(schools).toHaveLength(6);
+    expect(new Set(schools.map(placement => placement.buildingFamily)).size).toBeGreaterThan(1);
+    const institutionCounts = ["SCHOOL", "KINDERGARTEN"].map(kind => schools.filter(placement =>
+      BUILDING_CATALOG.find(entry => entry.key === placement.buildingFamily)?.educationKind === kind).length);
+    expect(Math.min(...institutionCounts)).toBeGreaterThan(0);
+    expect(Math.abs(institutionCounts[0]! - institutionCounts[1]!)).toBeLessThanOrEqual(1);
+    const reordered = { ...request, districts: [...request.districts].reverse().map(district => ({ ...district, tasks: [...district.tasks].reverse() })) };
+    BUILDING_CATALOG.reverse();
+    expect(compileBlockLayout({ ...reordered, previous: planned })).toEqual(result);
+    const replay = compileBlockLayout({ ...reordered, revision: 2, previous: JSON.parse(JSON.stringify(result)) });
+    for (const service of services) expect(replay.placements.find(placement => placement.taskId === service.taskId)).toEqual(service);
+    for (const family of ["compact-brick-school-v1", "compact-color-kindergarten-v1"]) {
+      const explicit = structuredClone(request);
+      explicit.districts[0]!.tasks[8]!.requestedFamily = family;
+      const assigned = compileBlockLayout({ ...explicit, previous: planned }).placements.find(placement => placement.taskId === explicit.districts[0]!.tasks[8]!.id)!;
+      expect(assigned).toMatchObject({ buildingFamily: family, serviceRole: "EDUCATION" });
+    }
+  });
+
   it("keeps FIRE on the next task with the generic fitting family when every wide parcel is permanently occupied",()=>{
     registerFire();
     // Recorded V3 parcels define the scenario, not today's seeded shape pool:

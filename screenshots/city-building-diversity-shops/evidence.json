@@ -1,0 +1,141 @@
+{
+  "sceneRevision": "bb6f4f8ecb83a122f01ca82ae20c14cab3c248d91032748d85dfb1155532840d",
+  "examples": [
+    {
+      "id": "bad25b28-5b52-43d4-a317-f95bd0a7db72",
+      "family": "compact-bakery-shop-v1",
+      "stage": 1,
+      "file": "compact-bakery-shop-v1-stage-1.png"
+    },
+    {
+      "id": "67be99bb-52cb-4424-973b-1c9bc03ee654",
+      "family": "compact-bakery-shop-v1",
+      "stage": 2,
+      "file": "compact-bakery-shop-v1-stage-2.png"
+    },
+    {
+      "id": "d7b02277-9850-47e9-a1a0-f39bff046ab1",
+      "family": "compact-bakery-shop-v1",
+      "stage": 3,
+      "file": "compact-bakery-shop-v1-stage-3.png"
+    },
+    {
+      "id": "57129a75-ef3a-49ca-8523-cdc1207e370a",
+      "family": "compact-bakery-shop-v1",
+      "stage": 4,
+      "file": "compact-bakery-shop-v1-stage-4.png"
+    },
+    {
+      "id": "e38f8b69-9d5a-42ba-bc09-e561143398df",
+      "family": "compact-bakery-shop-v1",
+      "stage": 5,
+      "file": "compact-bakery-shop-v1-stage-5.png"
+    },
+    {
+      "id": "88b504ad-301d-4b8d-95c8-4f0fe41c9e59",
+      "family": "compact-corner-shop-v1",
+      "stage": 1,
+      "file": "compact-corner-shop-v1-stage-1.png"
+    },
+    {
+      "id": "5e72e92a-0a3a-4da0-8bdf-f619149c6b4e",
+      "family": "compact-corner-shop-v1",
+      "stage": 2,
+      "file": "compact-corner-shop-v1-stage-2.png"
+    },
+    {
+      "id": "5fb243f4-0222-41a6-9c7b-7c4ccd54f55d",
+      "family": "compact-corner-shop-v1",
+      "stage": 3,
+      "file": "compact-corner-shop-v1-stage-3.png"
+    },
+    {
+      "id": "e38da685-52e3-4c15-b1aa-af72bce6efa8",
+      "family": "compact-corner-shop-v1",
+      "stage": 4,
+      "file": "compact-corner-shop-v1-stage-4.png"
+    },
+    {
+      "id": "52f961da-555f-4eb1-a3a9-e3f122dc93c2",
+      "family": "compact-corner-shop-v1",
+      "stage": 5,
+      "file": "compact-corner-shop-v1-stage-5.png"
+    },
+    {
+      "id": "b79f6809-1090-4b29-b221-21f0238bd4db",
+      "family": "compact-flower-shop-v1",
+      "stage": 1,
+      "file": "compact-flower-shop-v1-stage-1.png"
+    },
+    {
+      "id": "dd4b301c-6884-48fb-966e-c22dc59f43d1",
+      "family": "compact-flower-shop-v1",
+      "stage": 2,
+      "file": "compact-flower-shop-v1-stage-2.png"
+    },
+    {
+      "id": "56307267-1ffb-4305-96da-4b62e380ed9f",
+      "family": "compact-flower-shop-v1",
+      "stage": 3,
+      "file": "compact-flower-shop-v1-stage-3.png"
+    },
+    {
+      "id": "76b39a6a-6a2e-4787-9f76-43bc50fdf7ea",
+      "family": "compact-flower-shop-v1",
+      "stage": 4,
+      "file": "compact-flower-shop-v1-stage-4.png"
+    },
+    {
+      "id": "ff97485b-b470-4feb-b8c3-dee4a966a343",
+      "family": "compact-flower-shop-v1",
+      "stage": 5,
+      "file": "compact-flower-shop-v1-stage-5.png"
+    },
+    {
+      "id": "ddfd4f0c-7c87-43af-bf52-5ab54bf5f6dd",
+      "family": "compact-supermarket-v1",
+      "stage": 1,
+      "file": "compact-supermarket-v1-stage-1.png"
+    },
+    {
+      "id": "42eb0965-0704-43b0-bccf-564c4228ee76",
+      "family": "compact-supermarket-v1",
+      "stage": 2,
+      "file": "compact-supermarket-v1-stage-2.png"
+    },
+    {
+      "id": "c362fed4-0e00-4145-a25d-aa66d44eae9f",
+      "family": "compact-supermarket-v1",
+      "stage": 3,
+      "file": "compact-supermarket-v1-stage-3.png"
+    },
+    {
+      "id": "c4dd7d9d-b80d-46e2-a8db-cb3dcbe9a78d",
+      "family": "compact-supermarket-v1",
+      "stage": 4,
+      "file": "compact-supermarket-v1-stage-4.png"
+    },
+    {
+      "id": "bc583644-1953-4c20-bda7-a694420b7404",
+      "family": "compact-supermarket-v1",
+      "stage": 5,
+      "file": "compact-supermarket-v1-stage-5.png"
+    }
+  ],
+  "loaded": [
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-corner-shop-v1/stage-5.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-bakery-shop-v1/stage-3.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-bakery-shop-v1/stage-4.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-corner-shop-v1/stage-3.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-corner-shop-v1/stage-4.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-supermarket-v1/stage-4.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-flower-shop-v1/stage-5.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-bakery-shop-v1/stage-5.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-supermarket-v1/stage-3.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-supermarket-v1/stage-5.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-flower-shop-v1/stage-3.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/commercial/compact-flower-shop-v1/stage-4.png"
+  ],
+  "errors": [],
+  "writes": []
+}

@@ -3,12 +3,32 @@ import { greenAreaPathCells } from "../src/shared/green-area";
 import { taskParkDecorLayout } from "../src/shared/task-park";
 import { TASK_PARK_VARIANTS, isTaskParkVariant, selectTaskParkVariant, taskParkSize } from "../src/shared/task-park-catalog";
 import { compactTreeCover } from "../src/shared/compact-tree-placement";
+import { PROP_CATALOG } from "../src/shared/catalog";
 
 const rectangle = (w: number, h: number) => Array.from({ length: w * h }, (_, i) => ({ x: i % w - 12, y: Math.floor(i / w) + 7 }));
 const key = (c: { x: number; y: number }) => `${c.x},${c.y}`;
 const identity = (kind: string) => kind.replace(/-stage-[345]$/, "");
 
 describe("task-owned public spaces", () => {
+  it("gives six park uses distinct small and large compositions with a useful furniture palette", () => {
+    const themes = ["urban-pocket", "urban-promenade", "urban-amusement", "urban-botanical", "urban-fountain", "urban-memorial"];
+    const palette = new Set<string>();
+    for (const [width, height] of [[6, 3], [17, 17]]) {
+      const signatures = new Set<string>();
+      for (const theme of themes) {
+        const props = taskParkDecorLayout(rectangle(width!, height!), 5, theme, 23);
+        signatures.add(props.map(p => p.kind).sort().join(","));
+        for (const prop of props) if (!prop.kind.startsWith("tree-") && !prop.kind.startsWith("compact-park-")) palette.add(prop.kind);
+        if (width === 17 && theme === "urban-amusement") {
+          expect(props.some(p => p.kind === "playground-swing")).toBe(true);
+          expect(props.some(p => p.kind === "playground-slide")).toBe(true);
+        }
+        if (theme === "urban-memorial") expect(props.some(p => /playground|picnic/.test(p.kind))).toBe(false);
+      }
+      expect(signatures.size).toBe(6);
+    }
+    expect(palette.size).toBeGreaterThanOrEqual(18);
+  });
   it("scales lighting with park size while keeping paths and early construction clear", () => {
     for (const [w,h,minimum] of [[6,6,2],[17,17,6]]) {
       const cells = rectangle(w!,h!);
@@ -20,16 +40,20 @@ describe("task-owned public spaces", () => {
       expect(taskParkDecorLayout(cells,4,"urban-pocket",23).filter(p=>p.kind==="park-lamp")).toEqual(lights);
     }
   });
-  it("reserves projected crowns as well as trunks around paths and furniture", () => {
+  it("reserves the visible crowns, lamps and furniture around paths and parcel edges", () => {
     for (const variant of TASK_PARK_VARIANTS) for (const [w, h] of [[6, 3], [6, 6], [17, 17]]) {
       const footprint = rectangle(w!, h!);
       const allowed = new Set(footprint.map(key));
       const paths = new Set(greenAreaPathCells(footprint, variant).map(key));
       const occupied = new Set<string>();
       for (const prop of taskParkDecorLayout(footprint, 5, variant, 81)) {
+        const art = PROP_CATALOG[prop.kind]!;
+        const left = Math.floor(prop.origin.x + prop.width / 2 - art.anchor.x / 8);
+        const top = Math.floor(prop.origin.y + prop.height - art.anchor.y / 8);
+        const drawnWidth = Math.ceil(art.size.width / 8), drawnHeight = Math.ceil(art.size.height / 8);
         const cover = prop.kind.startsWith("tree-") ? compactTreeCover(prop.origin)
-          : Array.from({ length: prop.width * prop.height }, (_, i) => ({
-            x: prop.origin.x + i % prop.width, y: prop.origin.y + Math.floor(i / prop.width),
+          : Array.from({ length: drawnWidth * drawnHeight }, (_, i) => ({
+            x: left + i % drawnWidth, y: top + Math.floor(i / drawnWidth),
           }));
         for (const cell of cover.map(key)) {
           expect(allowed.has(cell), `${variant}: crown outside parcel`).toBe(true);

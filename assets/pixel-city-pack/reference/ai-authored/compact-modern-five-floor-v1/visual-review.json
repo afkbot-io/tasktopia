@@ -1,0 +1,43 @@
+{
+  "key": "compact-modern-five-floor-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Каждая стадия осмотрена отдельно в масштабе 1× и 8×. Растровые проверки пройдены. Игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Осевая фронтально-верхняя, крыша глубже фасада, без уходящей боковой грани.",
+    "roofDepthPx": 30,
+    "facadeHeightPx": 25,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      4
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "20f5e49c0451747f0cde6e7580ceea0c64dec4e87e4710e69942feededda4ca1",
+      "runtimeSha256": "b3114889907706267ba5678d7fe4e3d1cab483cb6c18a8bddac5575c5f1997b8",
+      "notes": "Пять этажей, лестничное остекление слева, чередующиеся лоджии справа; вход справа и три световых фонаря на широкой крыше."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "3ac487b30629041874ebbcdefeff883164426363d96079b1df55103070aa5d43",
+      "runtimeSha256": "5fd9cdad3f58c3b1a1d65157f25a5ec883843f2a794346e3880f729aa745a51a",
+      "notes": "Половина крыши слева, открытые комнаты и стройматериалы справа; фонари сняты, окна незавершённые."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "84b969811215ba3ac2e9f3b5e5735cb90a754c6b6e31a7696314a8c7cd4f7454",
+      "runtimeSha256": "96b7a3b35e465cde8e1eea1a0c5ef992184e734220dfbb5d3d2add0ee02c2483",
+      "notes": "Крыша отсутствует, комнаты непрозрачны; частичные стены и открытая верхняя лестничная секция. Основание сохранено."
+    }
+  }
+}

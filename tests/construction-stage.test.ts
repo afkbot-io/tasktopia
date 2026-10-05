@@ -7,6 +7,25 @@ import {
 } from "../src/shared/construction-stage";
 
 describe("compact construction stages", () => {
+  it.each([
+    ["N", [[1, -7], [2, -7]], [1, -6, 3, -4]],
+    ["E", [[6, -5], [6, -4]], [4, -5, 6, -3]],
+    ["W", [[-1, -5], [-1, -4]], [0, -5, 2, -3]],
+  ] as const)("keeps the %s construction gate and its inner approach clear", (side, gates, clear) => {
+    for (const stage of [1, 2, 3, 4]) {
+      const layout = constructionStageLayout({ width: 6, height: 6 }, { side, offset: 2 }, stage, 7);
+      const fence = [...layout.rearFence, ...layout.frontFence];
+      expect(fence.filter(t => t.key === "compact-construction-gate").map(t => [t.x, t.y])).toEqual(gates);
+      expect(fence.filter(t => t.key === "compact-construction-fence" && t.y === 0)).toHaveLength(6);
+      for (const detail of layout.details) {
+        const spec = CONSTRUCTION_DETAIL_SPEC_BY_KEY[detail.key];
+        const left = detail.x + (spec.footprint.width - spec.canvas.width / 8) / 2;
+        const bottom = detail.y + spec.footprint.height;
+        expect(left < clear[2] && left + spec.canvas.width / 8 > clear[0]
+          && bottom > clear[1] && bottom - spec.canvas.height / 8 < clear[3]).toBe(false);
+      }
+    }
+  });
   it.each([[12, 6], [6, 12]])("keeps the complete %s×%s long-building site, access and kit in every stage", (width, height) => {
     const entrance = Math.floor(width / 2);
     for (let seed = 0; seed < 40; seed++) {

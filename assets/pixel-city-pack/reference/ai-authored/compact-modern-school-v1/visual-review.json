@@ -1,0 +1,43 @@
+{
+  "key": "compact-modern-school-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр каждой стадии 1× и 8×; игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Высокая осевая камера, широкая крыша над низким двухэтажным корпусом.",
+    "roofDepthPx": 15,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      0,
+      0
+    ],
+    "doorFrameSizePx": [
+      0,
+      0
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "b9b1e6615aba52c7daf725512fb1e23ce1824a25fb24e2a7fd02bf194aaef253",
+      "runtimeSha256": "6e72d949fd0da2e969b64653b13ff60f30fd6683f1cae8a647da490a7bb13dc4",
+      "notes": "Современный корпус с двумя световыми фонарями и террасой; северный вход скрыт, спереди две строки окон."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "41a3d09db8095302a20ecf0f5f07011eed6ec6df24deaf8a0e82283f6f7aa09f",
+      "runtimeSha256": "d8fee910f25862e2a8758c104a90199146fb18212cf51a0ea2b334a0074ab1cc",
+      "notes": "Левая половина крыши сохранена, справа непрозрачные помещения; фонари и отделка террасы сняты."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "77c51f0df30b9f7a45c66d700578d83854522dd335bb9652e53be4ef297a0436",
+      "runtimeSha256": "c97a8d459b5e18c1f301cc2f2695a98bee540eb27e434630a94dd6dd16571804",
+      "notes": "Крыши нет, низкие частичные стены и материалы внутри открытых комнат; основание и северный навес сохранены."
+    }
+  }
+}

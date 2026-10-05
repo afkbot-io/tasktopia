@@ -1,0 +1,43 @@
+{
+  "key": "compact-rose-kindergarten-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр каждой стадии 1× и 8×; игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Высокая фронтальная камера, крупная плоская крыша и два низких этажа.",
+    "roofDepthPx": 22,
+    "facadeHeightPx": 10,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "acb32f8f39a5086273484fcdb6d4e3f0280a85a4635fdc08bba07bdca75c9ad0",
+      "runtimeSha256": "23d7bdaeaddcf7e6d22b4e02f2ac5458bf045d234df00b73dc931734288e342e",
+      "notes": "Розовый двухэтажный корпус с центральной лоджией и поднятым объёмом на крыше, смещённая дверь."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "22ce963d4946e78251f37abdfdf30738d3f54b49a09468dd7c05e312d2785c0d",
+      "runtimeSha256": "f7691798f9575225412c31f4de7f615de1a5c401328a6103d19e12d04d7aa23f",
+      "notes": "Левая половина крыши, справа открытые комнаты и материалы; надстройка снята, окна тёмные."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "c12afa2b07d095b4248fa56707b850a9cc250de43a1ef23c0148e2bef3e2d729",
+      "runtimeSha256": "63411571bc37ff435a6ade4f1013121ea4f965b6cb20db63956d224d04ed9d2e",
+      "notes": "Крыша отсутствует, верхняя кладка и проёмы незавершённые; комнаты непрозрачны, основание и вход сохранены."
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "key": "compact-corner-five-floor-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Каждая стадия осмотрена отдельно в масштабе 1× и 8×. Растровые проверки пройдены. Игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Высокая осевая камера, широкая крыша глубже всего фасада.",
+    "roofDepthPx": 43,
+    "facadeHeightPx": 28,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      5,
+      4
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "02afb04f9fdc98cf8e829880a2289dd2e41aa5a43b9fe2af83fccbc65a36c3bb",
+      "runtimeSha256": "602cc8f64373c6b1b723055dee86b7098477dd7c56072c79b2e280bd2b972e97",
+      "notes": "Пять горизонтальных этажей, лоджии по краям, L-образная крыша и непрозрачный внутренний двор; дверь смещена влево."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "813f5bf649308fe501b9dcc144d9e9aeab1ae33bdeb870ce6776834c74830ebf",
+      "runtimeSha256": "ba53c1d890b3a71aa416cb36395230313c2b43091fc28bcdf1e19320a82c99d3",
+      "notes": "Левая половина крыши сохранена, справа открытые комнаты и материалы; оборудование снято."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "a775788b31edb805721cc930d749689d2f199a41e56dce4ea2be8ef4fd5939d8",
+      "runtimeSha256": "0a6b50eae3480e6a4f20e763577c17f96bfb82a43bf00478c51e9f08155d4553",
+      "notes": "Крыша полностью снята, комнаты непрозрачны; верхняя кладка частично разобрана, материалы внутри участка."
+    }
+  }
+}

@@ -87,6 +87,7 @@ import { WORLD_LAYER_ORDER, type WorldLayerName } from "../world-layer-order";
 import { readWorldLighting } from "../world-light-clock";
 import {
   buildingBadgePresentation,
+  buildingBadgePosition,
   buildingInteractiveBounds,
   buildingPlatformPresentation,
   taskPlatformCellPresentation,
@@ -575,8 +576,8 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
   const group = new Container();
   group.eventMode = "static";
   group.cursor = "pointer";
-  const entranceOffset = entry.entrances[0]?.offset ?? Math.floor(entry.footprint.width / 2);
-  const construction = constructionStageLayout(entry.footprint, entranceOffset, task.stage, task.taskNumber);
+  const entrance = entry.entrances[0] ?? { side: "S" as const, offset: Math.floor(entry.footprint.width / 2) };
+  const construction = constructionStageLayout(entry.footprint, entrance, task.stage, task.taskNumber);
   const building = task.stage <= 2 ? null : sprite(entry.stages[task.stage - 1]!, 0, 0);
   building?.anchor.set(0.5, 1);
   const x = task.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2;
@@ -594,8 +595,7 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
   group.addChild(drawConstructionTiles(construction.frontFence, entry.footprint.width));
   {
     const badge = buildingBadgePresentation(task.taskNumber, task.stage);
-    const badgeX = entry.spriteSize.width / 2 - badge.width / 2;
-    const badgeY = -badge.height / 2;
+    const { x: badgeX, y: badgeY } = buildingBadgePosition(entry, badge);
     group.addChild(new Graphics()
       .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
       .fill(0x0b171a)
@@ -903,8 +903,8 @@ function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTask
         } else {
           if (task.stage < 5) for (const key of CONSTRUCTION_TILE_KEYS) urls.add(TILE_SPRITES[key]!);
           if (task.stage <= 2) {
-          const entranceOffset = entry.entrances[0]?.offset ?? Math.floor(entry.footprint.width / 2);
-          const construction = constructionStageLayout(entry.footprint, entranceOffset, task.stage, task.taskNumber);
+          const entrance = entry.entrances[0] ?? { side: "S" as const, offset: Math.floor(entry.footprint.width / 2) };
+          const construction = constructionStageLayout(entry.footprint, entrance, task.stage, task.taskNumber);
           for (const detail of construction.details) urls.add(PROP_SPRITES[detail.key]!);
           }
           if (task.stage > 2) urls.add(entry.stages[task.stage - 1]!);
@@ -1620,7 +1620,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             if (texture) entry.view.texture = texture;
             entry.visualKey = url;
           }
-          entry.view.visible = visible;
+          entry.view.visible = visible && agent.activity !== "INSIDE";
           placePixelAgent(entry.view, agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE);
           entry.view.rotation = 0;
           if(entry.marker&&agent.kind==='CAR') {
@@ -1641,7 +1641,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
               entry.activity = agent.activity;
             }
             entry.marker.position.copyFrom(entry.view.position);
-            entry.marker.visible = visible && agent.activity !== "NONE";
+            entry.marker.visible = visible && agent.activity === "REST";
           }
         }
         const wantedSignals = new Set<string>();
@@ -3176,7 +3176,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         host!.dataset.airportFlightRoutes = String(cityFlightRoutes.length);
         const agentsVisible = currentLod === "DETAIL" && ambientAssetsReady;
         if (agentsVisible) {
-          const { walkGraph, animalGraph, crosswalks, activityCells, blockedCells } = buildCityWalkNetwork({
+          const { walkGraph, animalGraph, crosswalks, activityCells, buildingEntrances, blockedCells } = buildCityWalkNetwork({
             roads, terrain: [...terrain.values()], surfaces: [...surfaces.values()],
             tasks: [...tasks.values()], features: [...features.values()], decorations: [...decorations.values()],
           });
@@ -3185,7 +3185,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           const parking=planCityParking([...tasks.values()],roads,[...surfaces.values()],blockedCells);
           parkingCells=new Set(parking.flatMap(plan=>plan.route.map(key)));
           host!.dataset.parkingLots=String(parking.length);
-          const input = { roads, walkGraph, crosswalks, activityCells, parking,
+          const input = { roads, walkGraph, crosswalks, activityCells, buildingEntrances, parking,
             carLimit: Math.min(worldDetailProfile(economy).cars, Math.max(3, Math.floor(roads.size / 120))),
             walkerLimit: Math.min(worldDetailProfile(economy).walkers, Math.max(6, Math.floor(walkGraph.size / 70))) };
           if (mobility) mobility.updateNetwork(input);

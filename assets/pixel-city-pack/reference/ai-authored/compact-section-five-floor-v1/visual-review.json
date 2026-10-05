@@ -1,0 +1,43 @@
+{
+  "key": "compact-section-five-floor-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Каждая стадия осмотрена отдельно1xи8x. Растровый отчёт чистый; игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Высокая осевая камера, широкая крыша глубже всего фасада.",
+    "roofDepthPx": 29,
+    "facadeHeightPx": 23,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      8,
+      4
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "591e11143dc70ae38928707a3a37d234dd4fde3bf35a07c94c14e0b60895dfc7",
+      "runtimeSha256": "5d13249566538d7fade3254267eb8b5be369a82844a24bc0e07bcc3e02acba69",
+      "notes": "Широкий секционный дом: пять этажей, лестничная вертикаль посередине, лоджии по краям и две надстройки; вход справа."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "3483f1e162f09835deec0b13dbc65e562c1233b66983ac0c8c194b9f7f885a9a",
+      "runtimeSha256": "f4bd7325993dff88a48a5d7e114f505f31ec61de7cbae0eb705485c20883f9c7",
+      "notes": "Кровля только слева, справа непрозрачные помещения; надстройки сняты, лестничная секция открыта, фасад незавершённый."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "4c95c19945c4872d2e1b63eb74b3be9a9d5e574288e52bc08f9d58e8d55c1f3b",
+      "runtimeSha256": "6594a0074b6977659ee8caf30ba8e5578aeaa42120dff29ed2d768f145773aa0",
+      "notes": "Открытые комнаты по всей глубине, частичные стены и материалы; верхние фасадные проёмы слева не завершены, нижнее основание совпадает."
+    }
+  }
+}

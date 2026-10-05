@@ -16,9 +16,14 @@ describe("compact building authoring contract", () => {
     expect(new Set(keys).size).toBe(keys.length);
     for (const entry of catalog.buildings) {
       expect(entry.reviewed).toBe(true);
-      const approvedSizes = Object.values(COMPACT_BUILDING_SHAPES).map(shape => [shape.width * 8, shape.height * 8]);
-      expect(approvedSizes, entry.key).toContainEqual(entry.spriteSize);
-      expect(entry.footprintCells).toEqual(entry.spriteSize.map(size => size / 8));
+      const approvedLots = Object.values(COMPACT_BUILDING_SHAPES).map(shape => [shape.width, shape.height]);
+      expect(approvedLots, entry.key).toContainEqual(entry.footprintCells);
+      expect(entry.spriteSize[0]).toBe(entry.footprintCells[0]! * 8);
+      // A taller facade may project one cell above the unchanged physical lot.
+      expect(entry.spriteSize[1]! % 8).toBe(0);
+      expect(entry.spriteSize[1]).toBeGreaterThanOrEqual(entry.footprintCells[1]! * 8);
+      expect(entry.spriteSize[1]).toBeLessThanOrEqual(entry.footprintCells[1]! * 8 + 8);
+      expect(entry.anchorPx).toEqual([entry.spriteSize[0]! / 2, entry.spriteSize[1]]);
     }
     expect(Object.keys(manifest.buildings)).toEqual(keys);
     const family = (key: string) => catalog.buildings.find(entry => entry.key === key)!;

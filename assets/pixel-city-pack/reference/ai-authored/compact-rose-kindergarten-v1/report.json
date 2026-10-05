@@ -1,0 +1,171 @@
+{
+  "key": "compact-rose-kindergarten-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    162,
+    62,
+    1373,
+    897
+  ],
+  "uniformScale": 0.03832335329341317,
+  "targetSize": [
+    46,
+    32
+  ],
+  "offset": [
+    1,
+    0
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "acb32f8f39a5086273484fcdb6d4e3f0280a85a4635fdc08bba07bdca75c9ad0",
+      "runtimeSha256": "23d7bdaeaddcf7e6d22b4e02f2ac5458bf045d234df00b73dc931734288e342e",
+      "sourceBounds": [
+        162,
+        62,
+        1373,
+        897
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 30,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "22ce963d4946e78251f37abdfdf30738d3f54b49a09468dd7c05e312d2785c0d",
+      "runtimeSha256": "f7691798f9575225412c31f4de7f615de1a5c401328a6103d19e12d04d7aa23f",
+      "sourceBounds": [
+        162,
+        62,
+        1374,
+        897
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "c12afa2b07d095b4248fa56707b850a9cc250de43a1ef23c0148e2bef3e2d729",
+      "runtimeSha256": "63411571bc37ff435a6ade4f1013121ea4f965b6cb20db63956d224d04ed9d2e",
+      "sourceBounds": [
+        166,
+        66,
+        1370,
+        897
+      ],
+      "occupiedBoundsPx": [
+        1,
+        0,
+        47,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        32
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-rose-kindergarten-v1",
+    "reviewedAt": "2026-10-05",
+    "reviewScope": "\u041e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u0439 \u043e\u0441\u043c\u043e\u0442\u0440 \u043a\u0430\u0436\u0434\u043e\u0439 \u0441\u0442\u0430\u0434\u0438\u0438 1\u00d7 \u0438 8\u00d7; \u0438\u0433\u0440\u043e\u0432\u0430\u044f \u0441\u0446\u0435\u043d\u0430 \u0435\u0449\u0451 \u043d\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u0430.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0430\u044f \u0444\u0440\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043a\u0430\u043c\u0435\u0440\u0430, \u043a\u0440\u0443\u043f\u043d\u0430\u044f \u043f\u043b\u043e\u0441\u043a\u0430\u044f \u043a\u0440\u044b\u0448\u0430 \u0438 \u0434\u0432\u0430 \u043d\u0438\u0437\u043a\u0438\u0445 \u044d\u0442\u0430\u0436\u0430.",
+      "roofDepthPx": 22,
+      "facadeHeightPx": 10,
+      "floorStepPx": 5,
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        7,
+        5
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "acb32f8f39a5086273484fcdb6d4e3f0280a85a4635fdc08bba07bdca75c9ad0",
+        "runtimeSha256": "23d7bdaeaddcf7e6d22b4e02f2ac5458bf045d234df00b73dc931734288e342e",
+        "notes": "\u0420\u043e\u0437\u043e\u0432\u044b\u0439 \u0434\u0432\u0443\u0445\u044d\u0442\u0430\u0436\u043d\u044b\u0439 \u043a\u043e\u0440\u043f\u0443\u0441 \u0441 \u0446\u0435\u043d\u0442\u0440\u0430\u043b\u044c\u043d\u043e\u0439 \u043b\u043e\u0434\u0436\u0438\u0435\u0439 \u0438 \u043f\u043e\u0434\u043d\u044f\u0442\u044b\u043c \u043e\u0431\u044a\u0451\u043c\u043e\u043c \u043d\u0430 \u043a\u0440\u044b\u0448\u0435, \u0441\u043c\u0435\u0449\u0451\u043d\u043d\u0430\u044f \u0434\u0432\u0435\u0440\u044c."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "22ce963d4946e78251f37abdfdf30738d3f54b49a09468dd7c05e312d2785c0d",
+        "runtimeSha256": "f7691798f9575225412c31f4de7f615de1a5c401328a6103d19e12d04d7aa23f",
+        "notes": "\u041b\u0435\u0432\u0430\u044f \u043f\u043e\u043b\u043e\u0432\u0438\u043d\u0430 \u043a\u0440\u044b\u0448\u0438, \u0441\u043f\u0440\u0430\u0432\u0430 \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043a\u043e\u043c\u043d\u0430\u0442\u044b \u0438 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b; \u043d\u0430\u0434\u0441\u0442\u0440\u043e\u0439\u043a\u0430 \u0441\u043d\u044f\u0442\u0430, \u043e\u043a\u043d\u0430 \u0442\u0451\u043c\u043d\u044b\u0435."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "c12afa2b07d095b4248fa56707b850a9cc250de43a1ef23c0148e2bef3e2d729",
+        "runtimeSha256": "63411571bc37ff435a6ade4f1013121ea4f965b6cb20db63956d224d04ed9d2e",
+        "notes": "\u041a\u0440\u044b\u0448\u0430 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442, \u0432\u0435\u0440\u0445\u043d\u044f\u044f \u043a\u043b\u0430\u0434\u043a\u0430 \u0438 \u043f\u0440\u043e\u0451\u043c\u044b \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435; \u043a\u043e\u043c\u043d\u0430\u0442\u044b \u043d\u0435\u043f\u0440\u043e\u0437\u0440\u0430\u0447\u043d\u044b, \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0438 \u0432\u0445\u043e\u0434 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b."
+      }
+    }
+  }
+}

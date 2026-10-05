@@ -1,6 +1,7 @@
 import { preferredProfileHomes, type BuildingProfile } from "./building-profiles";
 import { BUILDING_CATALOG } from "./catalog";
 import { BLOCK_SERVICE_ROLES, type BlockServiceRole } from "./block-world";
+import { validBuildingEntrance } from "./building-access";
 
 /** Approved geometry vocabulary, not the authored asset pool. Existing entries are immutable. */
 export const COMPACT_BUILDING_SHAPES = Object.freeze({
@@ -21,11 +22,11 @@ export const STRUCTURAL_BUILDING_FAMILIES_V2: readonly CompactBuildingFamily[] =
   "compact-apartment-v1", "compact-row-v1", "compact-wide-v1",
 ]);
 
-/** An asset is an alias only when its physical envelope and entrance match. */
+/** Geometry aliases share a physical envelope; access belongs to the authored family. */
 export function compactBuildingShapeFamily(family: string): CompactBuildingFamily | undefined {
   const entry = BUILDING_CATALOG.find(entry => entry.key === family);
   if (!entry?.tags.includes("compact-building") || entry.entrances.length !== 1
-    || entry.entrances[0]!.side !== "S" || entry.entrances[0]!.offset !== Math.floor(entry.footprint.width / 2)
+    || !validBuildingEntrance(entry.footprint, entry.entrances[0]!)
     || entry.anchor.x !== entry.spriteSize.width / 2 || entry.anchor.y !== entry.spriteSize.height
     || entry.spriteSize.width !== entry.footprint.width * 8) return undefined;
   return STRUCTURAL_BUILDING_FAMILIES.find(key => {
@@ -39,15 +40,31 @@ export function compactFamilyMatchesFootprint(family: string, width: number, hei
   return Boolean(key && COMPACT_BUILDING_SHAPES[key].width === width && COMPACT_BUILDING_SHAPES[key].height === height);
 }
 
-export function compactServiceFamily(role: BlockServiceRole, width: number, height: number): string | undefined {
-  return BUILDING_CATALOG.filter(entry => entry.serviceRole === role && compactFamilyMatchesFootprint(entry.key,width,height))
-    .map(entry => entry.key).sort()[0];
+export function compactServiceFamily(role: BlockServiceRole, width: number, height: number, accepts?: (family: string) => boolean,
+  entropy = 0, usage?: ReadonlyMap<string, number>): string | undefined {
+  let candidates = BUILDING_CATALOG.filter(entry => entry.serviceRole === role
+    && compactFamilyMatchesFootprint(entry.key,width,height) && (!accepts || accepts(entry.key)));
+  if (!candidates.length) return undefined;
+  if (role === "EDUCATION") {
+    // Preserve one education policy while making both institution types visible.
+    // Explicitly requested families bypass this automatic choice in the compiler.
+    const kinds = new Map<string, number>();
+    for (const entry of candidates) {
+      const kind = entry.educationKind ?? "SCHOOL";
+      kinds.set(kind, (kinds.get(kind) ?? 0) + (usage?.get(entry.key) ?? 0));
+    }
+    const minimum = Math.min(...kinds.values());
+    candidates = candidates.filter(entry => kinds.get(entry.educationKind ?? "SCHOOL") === minimum);
+  }
+  const minimum = Math.min(...candidates.map(entry => usage?.get(entry.key) ?? 0));
+  const leastUsed = candidates.filter(entry => (usage?.get(entry.key) ?? 0) === minimum).map(entry => entry.key).sort();
+  return leastUsed[entropy % leastUsed.length];
 }
 
 /** Only used for a newly occupied slot. Persist the result in slotFamilies. */
-export function compactHomeFamily(width: number, height: number, entropy: number, usage?: ReadonlyMap<string, number>, profile?: BuildingProfile): string | undefined {
+export function compactHomeFamily(width: number, height: number, entropy: number, usage?: ReadonlyMap<string, number>, profile?: BuildingProfile, accepts?: (family: string) => boolean): string | undefined {
   const candidates = BUILDING_CATALOG.filter(entry => entry.category === "HOUSE" && !entry.serviceRole
-    && compactFamilyMatchesFootprint(entry.key, width, height)).map(entry => entry.key).sort();
+    && compactFamilyMatchesFootprint(entry.key, width, height) && (!accepts || accepts(entry.key))).map(entry => entry.key).sort();
   if (!candidates.length) return undefined;
   const pool = preferredProfileHomes(candidates, profile);
   const minimum = Math.min(...pool.map(key => usage?.get(key) ?? 0));

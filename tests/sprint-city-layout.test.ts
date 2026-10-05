@@ -12,6 +12,7 @@ function preserveOldPlan(previous: CompiledBlockLayoutV1, next: CompiledBlockLay
   const placements = new Map(next.placements.map(placement => [placement.taskId, placement]));
   const blocks = new Map(next.blocks.map(block => [block.id, block]));
   const segments = new Map(next.roadNetwork.segments.map(segment => [segment.id, segment]));
+  const occupied = new Set([...previous.placements, ...previous.siteMarkers].map(site => `${site.blockId}:${site.slotKey}`));
   for (const placement of previous.placements) assert.deepEqual(placements.get(placement.taskId), placement);
   for (const block of previous.blocks) {
     const current = blocks.get(block.id)!;
@@ -23,10 +24,20 @@ function preserveOldPlan(previous: CompiledBlockLayoutV1, next: CompiledBlockLay
     // existing authored family or physical slot can be repacked.
     const slots = new Map(blockSlots(current).map(slot => [slot.key, slot]));
     for (const slot of blockSlots(block)) {
-      const { serviceRole: _oldRole, buildingFamily: _oldFamily, ...geometry } = slot;
-      const { serviceRole: _newRole, buildingFamily: _newFamily, ...currentGeometry } = slots.get(slot.key)!;
+      const { serviceRole: _oldRole, buildingFamily: _oldFamily, entrance, accessPath, ...geometry } = slot;
+      const { serviceRole: _newRole, buildingFamily: _newFamily, entrance: currentEntrance,
+        accessPath: currentAccessPath, ...currentGeometry } = slots.get(slot.key)!;
       void _oldRole; void _newRole; void _oldFamily; void _newFamily;
       assert.deepEqual(currentGeometry, geometry);
+      // A vacant directional parcel receives its family-specific approach on
+      // first occupation. Its physical parcel never changes. Every previously
+      // occupied/historical site and every legacy plan retain exact access.
+      const newlyAssigned = !occupied.has(`${block.id}:${slot.key}`)
+        && next.placements.some(site => site.blockId === block.id && site.slotKey === slot.key);
+      if (block.parameters.entrancePolicyVersion !== 1 || !newlyAssigned) {
+        assert.deepEqual(currentEntrance, entrance);
+        assert.deepEqual(currentAccessPath, accessPath);
+      }
     }
   }
   for (const segment of previous.roadNetwork.segments) assert.deepEqual(segments.get(segment.id), segment);

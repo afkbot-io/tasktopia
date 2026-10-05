@@ -7,7 +7,7 @@ export type CityMobilityInput = MobilityNetworkInput & { seed: number; carLimit:
 export type CityMobilityAgent = {
   id: string; kind: "CAR" | "WALKER"; variant: string; current: Cell; next: Cell; progress: number;
   position: Cell; direction: MicroDirection; speed: number; steps: number;
-  activity: "NONE" | "REST" | "PARKED"; waitMs: number;
+  activity: "NONE" | "REST" | "PARKED" | "INSIDE"; waitMs: number;
   yieldReason: "NONE" | "RESERVATION" | "OCCUPIED_EXIT" | "BODY";
 };
 export type CityMobilitySignal = Pick<MobilityZone, "id" | "bounds" | "signalPosts"> & {
@@ -182,11 +182,13 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (!safeDestination(cell) || same(cell, agent.current)) return false;
       if (agent.kind === "CAR") return true;
       const neighbors = edges(agent.kind).get(key(cell)) ?? [];
+      if (network.buildingEntrances.has(key(cell))) return neighbors.length > 0;
       // Stop/rest on a straight path, never a corner where a future turn would
       // need to move the resting person sideways or block both walking lanes.
       return neighbors.length === 2 && neighbors[0]!.x + neighbors[1]!.x === cell.x * 2 && neighbors[0]!.y + neighbors[1]!.y === cell.y * 2;
     });
-    let preferred = agent.kind === "WALKER" && agent.steps % 3 === 0 ? destinations.filter(cell => network.activityCells.has(key(cell))) : [];
+    let preferred = agent.kind === "WALKER" && agent.steps % 3 === 0 ? destinations.filter(cell => network.buildingEntrances.has(key(cell))) : [];
+    if (!preferred.length && agent.kind === "WALKER" && agent.steps % 3 === 0) preferred = destinations.filter(cell => network.activityCells.has(key(cell)));
     if(agent.kind==='CAR'&&agent.steps%3===0&&!network.parkingBays.has(key(agent.current))) {
       preferred=destinations.filter(cell=>network.parkingBays.has(key(cell)));
     }
@@ -270,7 +272,13 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
     clock += STEP_MS; metrics.fixedSteps++;
     for (const actor of actors) {
       actor.yieldReason = "NONE";
-      if (actor.restMs > 0) { actor.restMs = Math.max(0, actor.restMs - STEP_MS); if (!actor.restMs) actor.activity = "NONE"; }
+      if (actor.restMs > 0) {
+        actor.restMs = Math.max(0, actor.restMs - STEP_MS);
+        if (!actor.restMs) {
+          if (actor.activity === "INSIDE") actor.previous = undefined;
+          actor.activity = "NONE";
+        }
+      }
       if (actor.route.length < 2 && !actor.restMs) plan(actor);
     }
     // Release only after the entire body has passed the last conflict tile.
@@ -372,8 +380,10 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         if(actor.kind==='CAR'&&network.parkingBays.has(key(next.current))) {
           next.activity='PARKED';next.restMs=7000+Math.abs(next.rng%9000);
         }
-        if (actor.kind === "WALKER" && !network.roads.has(key(next.current)) && !next.zoneId && network.activityCells.has(key(next.current))) {
-          next.activity = "REST"; next.restMs = 650 + Math.abs(next.rng % 700);
+        if (actor.kind === "WALKER" && !network.roads.has(key(next.current)) && !next.zoneId
+          && (network.activityCells.has(key(next.current)) || network.buildingEntrances.has(key(next.current)))) {
+          next.activity = network.buildingEntrances.has(key(next.current)) ? "INSIDE" : "REST";
+          next.restMs = 650 + Math.abs(next.rng % 700);
         }
       }
       return next;

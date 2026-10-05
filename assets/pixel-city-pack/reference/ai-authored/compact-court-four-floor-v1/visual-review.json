@@ -1,0 +1,43 @@
+{
+  "key": "compact-court-four-floor-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Все3стадии отдельно1xи8x. Растровыеинвариантыпройдены. Проверкаигровойсценыещёпредстоит.",
+  "projection": {
+    "camera": "Осевая высокая камера, крыша глубже фасада.",
+    "roofDepthPx": 36,
+    "facadeHeightPx": 26,
+    "floorStepPx": 6,
+    "doorLeafSizePx": [
+      1,
+      4
+    ],
+    "doorFrameSizePx": [
+      3,
+      8
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "e0d4d7165d4772ac8ad1d69ab061fe740df14a198288a21b166eb0cb46251d1e",
+      "runtimeSha256": "ba68d24df7c08eca958f2e87a4f576378f60649add09d37eacf51e135c664242",
+      "notes": "Четыреэтажа, двор справасверху в непрозрачном корпусе, западный навес/видимый край створки. Передней двери нет."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "972b97c91e5e82e81760221ebae1becc1f14a0922958c85fe56c724c91eeacbc",
+      "runtimeSha256": "c6ea0ab83f7788ebaac34601827ccfc6fbfb9e7d1a4eb251147e3cc0c06392b9",
+      "notes": "Крыша слева, справа незавершённые помещения и двор; куст и вент сняты, остекление тёмное."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "a826186c0093a143d6870192b40f219f8afc19f4dc0335e06aeabbd32e2b003a",
+      "runtimeSha256": "a5473590d1fbc326a1d458969cad8bbd2e0617746ca1c4ccc4638ba84e37c05e",
+      "notes": "Крыши нет; открытые помещения с частичными перегородками, материалами и непрозрачными полами. Единое основание."
+    }
+  }
+}

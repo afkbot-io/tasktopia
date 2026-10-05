@@ -2,7 +2,16 @@
  * reinterpret existing parcel geometry or stored facade identities. */
 export const BUILDING_PROFILES = {
   PRIVATE: { label: "Садовый малоэтажный", shapes: ["compact-row-v1", "compact-wide-v1", "compact-apartment-v1"], homes: ["compact-bungalow-v1", "compact-garden-house-v1", "compact-paired-townhouse-v1", "compact-terrace-v1", "compact-row-v1"] },
-  NEW_BUILD: { label: "Современная застройка", shapes: ["compact-apartment-v1", "compact-long-slate-wing-v1", "compact-u-courtyard-v1", "compact-wide-v1"], homes: ["compact-four-floor-house-v1", "compact-stepped-apartment-v1", "compact-glass-stair-v1", "compact-long-slate-wing-v1", "compact-roofgarden-v1"] },
+  NEW_BUILD: {
+    label: "Современная застройка",
+    shapes: ["compact-apartment-v1", "compact-long-gallery-v1", "compact-corner-court-v1", "compact-long-slate-wing-v1", "compact-u-courtyard-v1", "compact-wide-v1"],
+    homes: [
+      "compact-stepped-apartment-v1", "compact-courtyard-apartment-v1", "compact-gabled-apartment-v1", "compact-rust-loft-v1",
+      "compact-four-floor-house-v1", "compact-panel-four-floor-v1", "compact-gallery-four-floor-v1", "compact-court-four-floor-v1",
+      "compact-olive-five-floor-v1", "compact-section-five-floor-v1", "compact-corner-five-floor-v1", "compact-modern-five-floor-v1",
+      "compact-glass-stair-v1", "compact-long-slate-wing-v1", "compact-roofgarden-v1",
+    ],
+  },
   MIXED_URBAN: { label: "Смешанный городской", shapes: [], homes: [] },
   COMMERCIAL: { label: "Торговые улицы", shapes: ["compact-long-gallery-v1", "compact-wide-v1", "compact-corner-court-v1", "compact-apartment-v1"], homes: ["compact-olive-cafe-v1", "compact-plum-workshop-v1", "compact-workshop-home-v1", "compact-rust-loft-v1", "compact-long-gallery-v1"] },
   CIVIC: { label: "Общественный центр", shapes: ["compact-u-courtyard-v1", "compact-corner-court-v1", "compact-apartment-v1", "compact-wide-v1"], homes: ["compact-ivory-library-v1", "compact-rose-clinic-annex-v1", "compact-sand-balcony-v1", "compact-u-courtyard-v1", "compact-corner-court-v1"] },

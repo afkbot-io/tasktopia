@@ -1,0 +1,43 @@
+{
+  "key": "compact-olive-five-floor-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Каждая исправленная стадия осмотрена при1x и nearest8x. Растровые проверки пройдены. После исправления пропорций игровую сцену необходимо проверить заново.",
+  "projection": {
+    "camera": "Осевая фронтально-верхняя, крыша глубже фасада, без уходящей боковой грани.",
+    "roofDepthPx": 30,
+    "facadeHeightPx": 25,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "b1be55af06560222f1220285457a2111b853d23f5833e4d151a87de2a77f1110",
+      "runtimeSha256": "ab847b673b9070d3b4f1cd14eeff4a68cf91ad7d4554cf4c5a5c7bbf8c3a7f36",
+      "notes": "Пять5px этажей. Холст48x56, занято48x55, крыша30px. ДверьSoffset1; створка4x3/рама7x5, основаниеy55."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "be2212dd5da07bb9402f6a13cece25af0ea17cceca054a63839cd65860c651d9",
+      "runtimeSha256": "8764c87227d9a87c26e52cb2939310197f6cb7708bdd7061c8807eb4d39bb749",
+      "notes": "Левая половина кровли, справа открытые непрозрачные комнаты. Снято оборудование, окна тёмные."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "4d0f4a17852b6ff4b06941806f17ebab48bd1cdf210869e73efe386803179fed",
+      "runtimeSha256": "8f5581e174fc4160e80c6f22ac28fa508205b5bb24957e8b202e226e8286d5a7",
+      "notes": "Кровли нет; комнаты, материалы, неполная кладка двух верхних фасадных рядов. Единое основание."
+    }
+  }
+}

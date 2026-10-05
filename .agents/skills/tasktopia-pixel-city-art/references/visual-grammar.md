@@ -55,7 +55,7 @@ use the compact runtime construction kit; stages 3–5 are independent authored
 PNGs sharing one source frame and anchor. Ambient decorations use finished
 variants instead.
 
-Treat the outside construction fence as a separate site overlay. Reserve one map cell around every side of the building footprint for stages 1–4, align a two-cell gate with the south entrance, and remove the overlay at stage 5. Never enlarge or shift the structure sprite to contain this clearance.
+Treat the outside construction fence as a separate site overlay. Reserve one map cell around every side of the building footprint for stages 1–4, align a two-cell gate with the family's declared entrance side and offset (N/E/S/W), and remove the overlay at stage 5. Never enlarge or shift the structure sprite to contain this clearance. A hidden entrance remains functional without a false door on the front facade. Physical shape, floor count and canvas height are separate; preserve the accepted bottom anchor and each family's immutable geometry.
 
 | Stage | Required reading | Coverage guidance |
 | --- | --- | --- |

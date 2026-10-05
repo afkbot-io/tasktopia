@@ -1,0 +1,43 @@
+{
+  "key": "compact-brick-school-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр каждой стадии 1× и 8×; игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Высокая осевая камера; два крыла разной глубины, широкие крыши.",
+    "roofDepthPx": 18,
+    "facadeHeightPx": 11,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      4,
+      4
+    ],
+    "doorFrameSizePx": [
+      7,
+      6
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "5fc21d9adea0379339f5830d503306b5ab31b26f9a78c30a8a6fade8fb35bf33",
+      "runtimeSha256": "6743cd14e1838a382e7e3e04609817ef213074e7fddb144fe459efec6d5634bb",
+      "notes": "Кирпичная школа с поднятым левым крылом, часами и смещённым входом; две строки окон."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "ee2eb1ab301a1ed9a9ca86abfd4919072b936a1dcff499c8fd73604523c729ae",
+      "runtimeSha256": "7a5f5463f720c38380a45dd647a533b5d96f0f90c2057f061152a1d0b34e70d7",
+      "notes": "Крыша только над левым крылом, справа открытые непрозрачные комнаты и материалы; часы сняты."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "6746b81c93818f8b65ded844230f0f1c06cde653f33ddaf357e4554e5e001422",
+      "runtimeSha256": "1223da5f1bcd88d658e99000f036efca48241d11fdd0daff031f42396ff2d15d",
+      "notes": "Оба крыла без крыши, низкие перегородки и материалы, незавершённые верхние стены; полная глубина участка сохранена."
+    }
+  }
+}

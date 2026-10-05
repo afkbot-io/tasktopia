@@ -43,6 +43,8 @@ export type BuildingCatalogEntry = {
   maxPerCity?: number;
   maxPerDistrict?: number;
   serviceRole?: string;
+  floorCount?: number;
+  educationKind?: "SCHOOL" | "KINDERGARTEN";
   description: string;
 };
 
@@ -63,6 +65,8 @@ type RawBuilding = {
   maxPerCity: number | null;
   maxPerDistrict: number | null;
   serviceRole: string | null;
+  floorCount?: number;
+  educationKind?: "SCHOOL" | "KINDERGARTEN";
 };
 
 export const REGISTERED_BUILDING_RULES = new Set<BuildingRuleId>(["STANDARD", "UNIQUE_SERVICE", "REQUIRES_COLLECTOR"]);
@@ -86,6 +90,8 @@ export const BUILDING_CATALOG: BuildingCatalogEntry[] = Object.entries(manifest.
     maxPerCity: building.maxPerCity ?? undefined,
     maxPerDistrict: building.maxPerDistrict ?? undefined,
     serviceRole: building.serviceRole ?? undefined,
+    floorCount: building.floorCount,
+    educationKind: building.educationKind,
     description: `${building.label}: объект категории ${building.category.toLowerCase()} на платформе ${building.platform.toLowerCase()}.`,
   }))
   .sort((a, b) => a.key.localeCompare(b.key));

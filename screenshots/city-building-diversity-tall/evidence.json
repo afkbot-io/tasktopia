@@ -1,0 +1,108 @@
+{
+  "sceneRevision": "ec176836ec1e63ef6406ab9dc9d2c76a5983e9e64c3d72fb3e47a121f1c35f17",
+  "examples": [
+    {
+      "id": "279e7bfb-2c7c-4f68-a62d-8deb37a8ff9e",
+      "family": "compact-corner-five-floor-v1",
+      "stage": 1,
+      "file": "compact-corner-five-floor-v1-stage-1.png"
+    },
+    {
+      "id": "c88fd94c-7ded-4794-b726-23f4b4a256cb",
+      "family": "compact-corner-five-floor-v1",
+      "stage": 2,
+      "file": "compact-corner-five-floor-v1-stage-2.png"
+    },
+    {
+      "id": "f342f3df-b71d-4946-b56d-db4716917609",
+      "family": "compact-corner-five-floor-v1",
+      "stage": 3,
+      "file": "compact-corner-five-floor-v1-stage-3.png"
+    },
+    {
+      "id": "c3517776-8edf-47d2-a062-d318738c549f",
+      "family": "compact-corner-five-floor-v1",
+      "stage": 4,
+      "file": "compact-corner-five-floor-v1-stage-4.png"
+    },
+    {
+      "id": "bbc82f02-1267-4794-b316-0b354bac45b3",
+      "family": "compact-corner-five-floor-v1",
+      "stage": 5,
+      "file": "compact-corner-five-floor-v1-stage-5.png"
+    },
+    {
+      "id": "94bc851a-1456-45b3-9ed8-6186c972c3e4",
+      "family": "compact-modern-five-floor-v1",
+      "stage": 1,
+      "file": "compact-modern-five-floor-v1-stage-1.png"
+    },
+    {
+      "id": "f220acc5-f799-4d0f-b26d-9ed840836f2a",
+      "family": "compact-modern-five-floor-v1",
+      "stage": 2,
+      "file": "compact-modern-five-floor-v1-stage-2.png"
+    },
+    {
+      "id": "d977e84d-584a-42ab-a4ff-4714387d652a",
+      "family": "compact-modern-five-floor-v1",
+      "stage": 3,
+      "file": "compact-modern-five-floor-v1-stage-3.png"
+    },
+    {
+      "id": "335d3135-015c-415a-bf81-50c99d1eca2b",
+      "family": "compact-modern-five-floor-v1",
+      "stage": 4,
+      "file": "compact-modern-five-floor-v1-stage-4.png"
+    },
+    {
+      "id": "d902d8a5-e1cb-49d3-8387-8100bc8f5ffc",
+      "family": "compact-modern-five-floor-v1",
+      "stage": 5,
+      "file": "compact-modern-five-floor-v1-stage-5.png"
+    },
+    {
+      "id": "0fba73e3-5415-4765-a347-9715ac7c0c96",
+      "family": "compact-section-five-floor-v1",
+      "stage": 1,
+      "file": "compact-section-five-floor-v1-stage-1.png"
+    },
+    {
+      "id": "fc13b4ec-cb0b-4366-915a-7868aac68657",
+      "family": "compact-section-five-floor-v1",
+      "stage": 2,
+      "file": "compact-section-five-floor-v1-stage-2.png"
+    },
+    {
+      "id": "f5e00b5f-25d4-4671-9400-e2c76fc6f2ff",
+      "family": "compact-section-five-floor-v1",
+      "stage": 3,
+      "file": "compact-section-five-floor-v1-stage-3.png"
+    },
+    {
+      "id": "9945d9c3-d109-4b95-9fe1-4e92c38c7eaf",
+      "family": "compact-section-five-floor-v1",
+      "stage": 4,
+      "file": "compact-section-five-floor-v1-stage-4.png"
+    },
+    {
+      "id": "cbf67534-c624-4c69-a224-5744076786bd",
+      "family": "compact-section-five-floor-v1",
+      "stage": 5,
+      "file": "compact-section-five-floor-v1-stage-5.png"
+    }
+  ],
+  "loaded": [
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-modern-five-floor-v1/stage-4.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-corner-five-floor-v1/stage-4.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-modern-five-floor-v1/stage-3.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-section-five-floor-v1/stage-4.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-section-five-floor-v1/stage-3.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-section-five-floor-v1/stage-5.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-modern-five-floor-v1/stage-5.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-corner-five-floor-v1/stage-3.png",
+    "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-corner-five-floor-v1/stage-5.png"
+  ],
+  "errors": [],
+  "writes": []
+}
