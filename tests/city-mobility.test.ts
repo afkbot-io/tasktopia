@@ -27,6 +27,28 @@ export function mobilityGrid() {
 }
 
 describe("deterministic joint city mobility", () => {
+  it.each([[1, 0], [-1, 0], [0, 1], [0, -1]])("visits and leaves a building approach along (%i,%i)", (dx, dy) => {
+    const local = Array.from({ length: 13 }, (_, i) => ({ x: i, y: 0 }));
+    for (let i = 0; i <= 6; i++) local.push({ x: 12 + i, y: 0 }, { x: 12 + i, y: 6 }, { x: 12, y: i }, { x: 18, y: i });
+    const cells = local.map(c => ({ x: c.x * dx - c.y * dy, y: c.x * dy + c.y * dx }));
+    const walkGraph = new Map(cells.map(c => [key(c), c]));
+    const city = createCityMobility({ roads: new Map(), walkGraph, crosswalks: new Set(),
+      activityCells: new Set(["0,0"]), buildingEntrances: new Set(["0,0"]), seed: 73, carLimit: 0, walkerLimit: 1 });
+    expect(city.agents).toHaveLength(1);
+    let enteredAtStep: number | undefined, left = false;
+    for (let i = 0; i < 1600 && !left; i++) {
+      city.advance(50);
+      const walker = city.agents[0]!;
+      if (walker.activity === "INSIDE") {
+        expect(walker.current).toEqual({ x: 0, y: 0 });
+        enteredAtStep ??= walker.steps;
+      }
+      if (enteredAtStep !== undefined && walker.activity === "NONE" && walker.steps > enteredAtStep) left = true;
+    }
+    expect(enteredAtStep).toBeDefined();
+    expect(left).toBe(true);
+    expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
+  });
   it("reduces active simulation population immediately without rebuilding roads", () => {
     const input=mobilityGrid(), city=createCityMobility(input);
     city.advance(2000);

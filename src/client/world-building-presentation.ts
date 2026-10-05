@@ -48,6 +48,24 @@ export function buildingBadgePresentation(taskNumber: number, stage: number): Bu
   };
 }
 
+export function buildingBadgePosition(entry: BuildingCatalogEntry, badge: BuildingBadgePresentation): Cell {
+  const entrance = entry.entrances[0];
+  const halfWidth = entry.spriteSize.width / 2;
+  const doorLeft = entrance ? entrance.offset * 8 - entry.footprint.width * 4 - 2 : 0;
+  const doorRight = doorLeft + 12;
+  const left = entrance?.side === "E" || (entrance?.side === "S" && halfWidth - badge.width <= doorRight);
+  const x = (left ? -1 : 1) * (halfWidth - badge.width / 2);
+  let y = -badge.height / 2;
+  if (entrance?.side === "S") {
+    // Protect the door's cell plus its frame. Very long numbers move to the
+    // roof when neither facade corner leaves enough room for the entrance.
+    if (x + badge.width / 2 >= doorLeft && x - badge.width / 2 <= doorRight) {
+      y = entry.stageOpaqueBounds[4]!.top - entry.anchor.y + badge.height / 2;
+    }
+  }
+  return { x, y };
+}
+
 export type BuildingPlatformPresentation =
   | { family: "surface"; key: RoadAtlasSurface }
   | { family: "terrain"; key: "GRASS" | "MEADOW" | "DIRT"; variant: 0 | 1 | 2 };

@@ -68,7 +68,28 @@ export function greenAreaPathCells(footprint: Cell[], assetKey = "urban-park"): 
     ].some((neighbor) => !occupied.has(cellKey(neighbor)));
     // Compact6×3..6×6 lots need room for a2×2 centerpiece. Perimeter+cross
     // paths consume it. Keep a south walk and a gated spine instead.
-    if (compact) return cell.y === maxY || cell.x === minX + Math.floor(width / 2);
+    if (compact) {
+      // A side walk leaves a wide, usable bed for play equipment or flowers.
+      const spine = assetKey === "urban-amusement" || assetKey === "urban-promenade" ? minX + 1
+        : assetKey === "urban-botanical" ? maxX - 1 : minX + Math.floor(width / 2);
+      return cell.y === maxY || cell.x === spine;
+    }
+    if (width >= 9 && height >= 7) {
+      if (assetKey === "urban-promenade") return boundary || centerYs.has(cell.y)
+        || cell.y === centerY + 1 || cell.x === centerX && cell.y > centerY;
+      if (assetKey === "urban-amusement") return boundary || cell.x === minX + Math.floor(width / 3);
+      if (assetKey === "urban-botanical") return boundary
+        || (cell.x >= minX + 2 && cell.x <= maxX - 2 && cell.y >= minY + 2 && cell.y <= maxY - 2
+          && (cell.x === minX + 2 || cell.x === maxX - 2 || cell.y === minY + 2 || cell.y === maxY - 2))
+        || cell.x === centerX && cell.y >= maxY - 2;
+      if (assetKey === "urban-memorial") return boundary || cell.x === centerX && cell.y >= centerY;
+      if (assetKey === "urban-fountain") {
+        const dx = cell.x - centerX, dy = cell.y - centerY;
+        // Walk around the centre; an axial cross would occupy the fountain.
+        const ring = dx >= -2 && dx <= 2 && dy >= -2 && dy <= 2 && (Math.abs(dx) === 2 || Math.abs(dy) === 2);
+        return boundary || ring || dx === 0 && Math.abs(dy) >= 2 || dy === 0 && Math.abs(dx) >= 2;
+      }
+    }
     const axial = hasInteriorPaths && (centerXs.has(cell.x) || centerYs.has(cell.y));
     const innerRing = insetLoop && width >= 8 && height >= 7
       && (cell.x === minX + 2 || cell.x === maxX - 2 || cell.y === minY + 2 || cell.y === maxY - 2);

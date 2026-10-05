@@ -1,0 +1,141 @@
+{
+  "sceneRevision": "678915a3f8224b7c98761e37b65cb70554f5341e7f07327b8bba795c869e6409",
+  "examples": [
+    {
+      "id": "8aa53a45-3dbc-4a6d-8339-d1a1c47bdf9a",
+      "family": "compact-brick-police-v1",
+      "stage": 1,
+      "file": "compact-brick-police-v1-stage-1.png"
+    },
+    {
+      "id": "10c8477d-c739-48de-b587-67f3c2964b9f",
+      "family": "compact-brick-police-v1",
+      "stage": 2,
+      "file": "compact-brick-police-v1-stage-2.png"
+    },
+    {
+      "id": "a6da0c2f-a551-4d02-a324-17579a36507f",
+      "family": "compact-brick-police-v1",
+      "stage": 3,
+      "file": "compact-brick-police-v1-stage-3.png"
+    },
+    {
+      "id": "760e04f4-0f2a-4fce-8fe0-92592131e422",
+      "family": "compact-brick-police-v1",
+      "stage": 4,
+      "file": "compact-brick-police-v1-stage-4.png"
+    },
+    {
+      "id": "693f14bb-c9b0-4a81-9eb0-7f553203b4ec",
+      "family": "compact-brick-police-v1",
+      "stage": 5,
+      "file": "compact-brick-police-v1-stage-5.png"
+    },
+    {
+      "id": "b9a00185-6a9b-4645-9c19-ff0cc8483d01",
+      "family": "compact-hall-fire-station-v1",
+      "stage": 1,
+      "file": "compact-hall-fire-station-v1-stage-1.png"
+    },
+    {
+      "id": "bbde163d-ff0e-448d-987c-e6c40845edbe",
+      "family": "compact-hall-fire-station-v1",
+      "stage": 2,
+      "file": "compact-hall-fire-station-v1-stage-2.png"
+    },
+    {
+      "id": "c0e7b2d6-46ba-4c2a-b7e7-a53b80bd9712",
+      "family": "compact-hall-fire-station-v1",
+      "stage": 3,
+      "file": "compact-hall-fire-station-v1-stage-3.png"
+    },
+    {
+      "id": "651edda9-d24d-4ae1-96ed-a0f998997d00",
+      "family": "compact-hall-fire-station-v1",
+      "stage": 4,
+      "file": "compact-hall-fire-station-v1-stage-4.png"
+    },
+    {
+      "id": "27a40a4a-138f-4e72-a43f-f9f0aa975948",
+      "family": "compact-hall-fire-station-v1",
+      "stage": 5,
+      "file": "compact-hall-fire-station-v1-stage-5.png"
+    },
+    {
+      "id": "7d64a52c-df19-4c2a-b173-a061c5373730",
+      "family": "compact-modern-police-v1",
+      "stage": 1,
+      "file": "compact-modern-police-v1-stage-1.png"
+    },
+    {
+      "id": "c890e8df-259e-4d14-ab7e-ccad875472ba",
+      "family": "compact-modern-police-v1",
+      "stage": 2,
+      "file": "compact-modern-police-v1-stage-2.png"
+    },
+    {
+      "id": "606ebfd9-bf1d-4eb2-8f3d-1ffbab924eaf",
+      "family": "compact-modern-police-v1",
+      "stage": 3,
+      "file": "compact-modern-police-v1-stage-3.png"
+    },
+    {
+      "id": "bdf41ef1-ddba-4ab9-b95f-250211a0a1f5",
+      "family": "compact-modern-police-v1",
+      "stage": 4,
+      "file": "compact-modern-police-v1-stage-4.png"
+    },
+    {
+      "id": "eb76a99e-4f47-497c-9b53-6a032d8451de",
+      "family": "compact-modern-police-v1",
+      "stage": 5,
+      "file": "compact-modern-police-v1-stage-5.png"
+    },
+    {
+      "id": "4e119e97-3bbd-4404-88cc-e2a6337044ff",
+      "family": "compact-tower-fire-station-v1",
+      "stage": 1,
+      "file": "compact-tower-fire-station-v1-stage-1.png"
+    },
+    {
+      "id": "1b28b6a5-7917-4913-9b8e-64049c378db2",
+      "family": "compact-tower-fire-station-v1",
+      "stage": 2,
+      "file": "compact-tower-fire-station-v1-stage-2.png"
+    },
+    {
+      "id": "b59cac42-7918-4d88-8388-59630e23dae6",
+      "family": "compact-tower-fire-station-v1",
+      "stage": 3,
+      "file": "compact-tower-fire-station-v1-stage-3.png"
+    },
+    {
+      "id": "c35175b0-266e-41b9-b43f-65a2697f8075",
+      "family": "compact-tower-fire-station-v1",
+      "stage": 4,
+      "file": "compact-tower-fire-station-v1-stage-4.png"
+    },
+    {
+      "id": "c7b76e30-a5f4-4c21-9d0f-e9a1121d0aa0",
+      "family": "compact-tower-fire-station-v1",
+      "stage": 5,
+      "file": "compact-tower-fire-station-v1-stage-5.png"
+    }
+  ],
+  "loaded": [
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-hall-fire-station-v1/stage-3.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-brick-police-v1/stage-3.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-brick-police-v1/stage-5.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-modern-police-v1/stage-3.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-hall-fire-station-v1/stage-4.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-modern-police-v1/stage-5.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-brick-police-v1/stage-4.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-modern-police-v1/stage-4.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-tower-fire-station-v1/stage-4.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-hall-fire-station-v1/stage-5.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-tower-fire-station-v1/stage-5.png",
+    "/game-assets/v5/revisions/5172021324b5678b/buildings/civic/compact-tower-fire-station-v1/stage-3.png"
+  ],
+  "errors": [],
+  "writes": []
+}

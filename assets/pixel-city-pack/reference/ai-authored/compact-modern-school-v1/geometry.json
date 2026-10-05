@@ -1,0 +1,89 @@
+{
+  "visualProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
+  "cellSizePx": 8,
+  "entrances": [
+    {
+      "side": "N",
+      "offset": 5
+    }
+  ],
+  "floorHeightPxRange": [
+    4,
+    6
+  ],
+  "windowSizePxRange": [
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      2
+    ]
+  ],
+  "doorLeafSizePx": [
+    0,
+    0
+  ],
+  "doorFrameSizePx": [
+    0,
+    0
+  ],
+  "foundationMaskDriftPxMax": 1,
+  "stageCentreDriftPxMax": 1,
+  "stageBaselineDriftPxMax": 1,
+  "paletteColorsMax": 32,
+  "constructionClearanceCells": 1,
+  "sourceBackground": "magenta-chroma-family",
+  "stages": {
+    "0": "Reserved lot outline composed by runtime; no building image.",
+    "1": "Separate fence and south gate around the physical footprint.",
+    "2": "Same footprint with compact foundation, crane, cabin and materials.",
+    "3": "Approximately50%assembled with unchanged physical footprint, open opaque rooms, aligned partitions and rough masonry; no roof.",
+    "4": "Same shell and entrance, dark unfinished windows, approximately half the roof installed, no finished rooftop equipment.",
+    "5": "Современная школа с плоской крышей, террасой и скрытым северным входом"
+  },
+  "overrides": "New explicitly authorized variable compact families supersede the single 6x6 footprint. Keep the accepted high-45-degree frontal-top camera, all edges axis aligned. No heavy black outline, realistic brick texture, stretching, or image-height-based construction percentage.",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "key": "compact-modern-school-v1",
+  "spriteSize": [
+    48,
+    32
+  ],
+  "footprintCells": [
+    6,
+    4
+  ],
+  "anchorPx": [
+    24,
+    32
+  ],
+  "roofDepthPxRange": [
+    15,
+    18
+  ],
+  "facadeHeightPxRange": [
+    8,
+    10
+  ],
+  "foundationMaskRowsPx": [
+    30,
+    31
+  ],
+  "finishedOccupiedWidthPxRange": [
+    46,
+    48
+  ],
+  "finishedOccupiedHeightPxRange": [
+    24,
+    28
+  ],
+  "stage3OccupiedHeightPxRange": [
+    23,
+    28
+  ],
+  "floorCount": 2,
+  "authoringStatus": "ACCEPTED",
+  "sourceBackgroundRationale": "Явный magenta chroma фон. Низкий корпус занимает около 25 px по высоте внутри холста 48×32; задний навес закрывает дверь.",
+  "openingMeasurementNotes": "Северный вход offset=5 скрыт задней стеной и навесом. Фронтальная дверь отсутствует; размеры полотна и рамы 0×0 обозначают невидимость. Низкий корпус с явным верхним прозрачным отступом."
+}

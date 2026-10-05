@@ -1,6 +1,8 @@
 import { BUILDING_PROFILES, buildingProfile } from "./building-profiles";
+import { getBuilding } from "./catalog";
+import { buildingEntranceCell, ENTRANCE_NORMAL } from "./building-access";
 import { BLOCK_SERVICE_ROLES, type BlockServiceRole, type BlockSlotKind, type BlockWorldBounds, type CityBlockV1 } from "./block-world";
-import { COMPACT_BUILDING_SHAPES, STRUCTURAL_BUILDING_FAMILIES, STRUCTURAL_BUILDING_FAMILIES_V2, compactFamilyMatchesFootprint, type CompactBuildingFamily } from "./compact-building-families";
+import { COMPACT_BUILDING_SHAPES, STRUCTURAL_BUILDING_FAMILIES, STRUCTURAL_BUILDING_FAMILIES_V2, compactBuildingShapeFamily, compactFamilyMatchesFootprint, type CompactBuildingFamily } from "./compact-building-families";
 import { buildingShapeFitsBlock, packBuildingParcels, readBlockSitePlan, type BlockSitePlan, type PackingCorner, type ParcelShape } from "./block-parcel-plan";
 export { COMPACT_BUILDING_SHAPES, type CompactBuildingFamily } from "./compact-building-families";
 
@@ -59,7 +61,14 @@ function connectSidewalks(slots: BlockSlot[], block: CityBlockV1): BlockSlot[] {
     for (let x = slot.siteBounds.minX; x <= slot.siteBounds.maxX; x++) blocked[(y - block.origin.y) * stride + x - block.origin.x] = i + 1;
   }
   for (const [i, slot] of slots.entries()) {
-    const start = (slot.entrance.y + 1 - block.origin.y) * stride + slot.entrance.x - block.origin.x;
+    const side = slot.buildingFamily ? getBuilding(slot.buildingFamily).entrances[0]!.side : "S";
+    const normal = ENTRANCE_NORMAL[side];
+    const startX = slot.entrance.x + normal.x - block.origin.x;
+    const startY = slot.entrance.y + normal.y - block.origin.y;
+    if (startX < 2 || startY < 2 || startX > block.width - 2 || startY > block.height - 2) {
+      throw new Error(`Invalid planned entrance ${block.id}/${slot.key}`);
+    }
+    const start = startY * stride + startX;
     if (blocked[start] && blocked[start] !== i + 1) throw new Error(`Blocked planned entrance ${block.id}/${slot.key}`);
     const previous = new Int32Array(size).fill(-2); previous[start] = -1;
     const queue = new Uint16Array(size); queue[0] = start;
@@ -92,7 +101,7 @@ export function blockSlots(block: CityBlockV1): BlockSlot[] {
 }
 
 /** Only for a newly created block, before task/role/variant assignment. */
-export function createBlockSitePlan(block: CityBlockV1): BlockSitePlan {
+export function createBlockSitePlan(block: CityBlockV1, firstAuthoredFamily?: string): BlockSitePlan {
   if (block.parameters.sitePlan !== undefined || block.parameters.slotFamilies || block.parameters.slotKinds || block.parameters.slotRoles) {
     throw new Error(`Cannot replan a reserved block ${block.id}`);
   }
@@ -106,13 +115,18 @@ export function createBlockSitePlan(block: CityBlockV1): BlockSitePlan {
       corner: (block.parameters.packingCorner ?? "NW") as PackingCorner, shapes: profileShapes,
       firstFamily: block.parameters.firstFamily as string | undefined })
     : [{ x: 3, y: 3, width: block.width - 7, height: block.height - 7, clearance: 1, kind: template.kind }] };
-  const slots = materializeSlots({ ...block, templateVersion: BLOCK_TEMPLATE_VERSION, parameters: { ...block.parameters, sitePlan: initial } }, true);
+  // Protect the actual first entrance before public-space infill consumes the
+  // remaining cells. Reserving only the structural shape's south-centre path
+  // can seal a requested edge or rear entrance in a narrow new quarter.
+  const slots = materializeSlots({ ...block, templateVersion: BLOCK_TEMPLATE_VERSION, parameters: { ...block.parameters, sitePlan: initial,
+    ...(firstAuthoredFamily ? { slotFamilies: { "slot-0": firstAuthoredFamily } } : {}),
+  } }, true);
   const plan: BlockSitePlan = { version: 1, parcels: slots.map(slot => ({
     x: slot.siteBounds.minX - block.origin.x, y: slot.siteBounds.minY - block.origin.y,
     width: slot.footprintBounds.maxX - slot.footprintBounds.minX + 1,
     height: slot.footprintBounds.maxY - slot.footprintBounds.minY + 1,
     clearance: slot.origin.x - slot.siteBounds.minX as 0 | 1,
-    kind: slot.kind, ...(slot.buildingFamily ? { family: slot.buildingFamily } : {}),
+    kind: slot.kind, ...(slot.buildingFamily ? { family: compactBuildingShapeFamily(slot.buildingFamily)! } : {}),
   })) };
   // Walk neighbouring parcels, mixing small public spaces into the street
   // instead of allocating every house first and all parks as a trailing row.
@@ -158,7 +172,6 @@ function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[]
     }
     const sequence = slots.length;
     const origin = { x: block.origin.x + siteX + clearance, y: block.origin.y + siteY + clearance };
-    const entrance = { x: origin.x + Math.floor(width / 2), y: origin.y + height - 1 };
     const key = `slot-${sequence}`;
     const override = kinds?.[key];
     if (override !== undefined) {
@@ -171,8 +184,15 @@ function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[]
     const authoredFamily = aliases?.[key];
     if (authoredFamily) {
       if (kind !== "BUILDING" || !compactFamilyMatchesFootprint(authoredFamily,width,height)) throw new Error(`Invalid authored family footprint ${block.id}/${key}`);
+      const opening = getBuilding(authoredFamily).entrances[0]!;
+      if (block.templateVersion < 3 && (opening.side !== "S" || opening.offset !== Math.floor(width / 2))) {
+        throw new Error(`Invalid authored family entrance in legacy slot ${block.id}/${key}`);
+      }
       usedAliases.add(key);
     }
+    const family = kind === "BUILDING" ? authoredFamily ?? buildingFamily : undefined;
+    const entrance = buildingEntranceCell(origin, { width, height }, family
+      ? getBuilding(family).entrances[0]! : { side: "S", offset: Math.floor(width / 2) });
     slots.push({ key, sequence, kind, ...(kind === "BUILDING" && buildingFamily ? { buildingFamily: authoredFamily ?? buildingFamily } : {}), ...(serviceRole ? { serviceRole } : {}),
       siteBounds: { minX: origin.x - clearance, minY: origin.y - clearance, maxX: origin.x + width - 1 + clearance, maxY: origin.y + height - 1 + clearance },
       footprintBounds: { minX: origin.x, minY: origin.y, maxX: origin.x + width - 1, maxY: origin.y + height - 1 },

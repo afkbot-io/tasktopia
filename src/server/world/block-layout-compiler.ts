@@ -1,4 +1,5 @@
 import type { PortSitePlan } from "../../shared/port-site";
+import { getBuilding } from "../../shared/catalog";
 import { nextInfrastructure, PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
 import { buildingProfile } from "../../shared/building-profiles";
 import { createHash } from "node:crypto";
@@ -118,8 +119,28 @@ function reserveNextInfrastructure(district: BlockLayoutDistrictInput, ownBlocks
 
 const familyFitsSlot = (family:string,slot:BlockSlot) => slot.kind === "BUILDING" && compactFamilyMatchesFootprint(family,
   slot.footprintBounds.maxX-slot.footprintBounds.minX+1,slot.footprintBounds.maxY-slot.footprintBounds.minY+1);
-const serviceFamilyForSlot = (role:BlockServiceRole,slot:BlockSlot) => compactServiceFamily(role,
-  slot.footprintBounds.maxX-slot.footprintBounds.minX+1,slot.footprintBounds.maxY-slot.footprintBounds.minY+1);
+const serviceFamilyForSlot = (role:BlockServiceRole,slot:BlockSlot, accepts?: (family: string) => boolean,
+  entropy = 0, usage?: ReadonlyMap<string, number>) => compactServiceFamily(role,
+  slot.footprintBounds.maxX-slot.footprintBounds.minX+1,slot.footprintBounds.maxY-slot.footprintBounds.minY+1, accepts, entropy, usage);
+
+/** Try access before committing an alias. Never mutate the stored parcel plan. */
+function familyAccessFits(block: CityBlockV1, slot: BlockSlot, family: string): boolean {
+  if (!familyFitsSlot(family, slot)) return false;
+  const entrance = getBuilding(family).entrances[0]!;
+  const current = slot.buildingFamily ? getBuilding(slot.buildingFamily).entrances[0] : undefined;
+  if (current?.side === entrance.side && current.offset === entrance.offset) return true;
+  // Existing V2 and V3 parcels retain their access geometry even when vacant.
+  // Only newly planned blocks opt into family-specific entrance assignment.
+  if (block.templateVersion < 3 || block.parameters.entrancePolicyVersion !== 1) return false;
+  try {
+    blockSlots({ ...block, parameters: { ...block.parameters,
+      slotFamilies: { ...block.parameters.slotFamilies as Record<string, string>, [slot.key]: family } } });
+    return true;
+  } catch (error) {
+    if (error instanceof Error && /planned entrance/.test(error.message)) return false;
+    throw error;
+  }
+}
 const parkSizeFitsSlot = (size: BlockLayoutTaskInput["parkSize"], slot: BlockSlot, newPlacement = false) => !size || slot.kind === "PARK"
   && slot.footprintBounds.maxX - slot.footprintBounds.minX + 1 >= (size === "BLOCK" ? 17 : 6)
   && slot.footprintBounds.maxY - slot.footprintBounds.minY + 1 >= (size === "BLOCK" ? 17 : 3)
@@ -350,16 +371,16 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   // The durable task number, not district grouping, defines construction order.
   // Replaying an interleaved city must not move its railway/airport to another
   // task simply because one district happened to be enumerated first.
-  const homeUsage = new Map<string, Map<string, number>>();
-  const cityHomeUsage = new Map<string, number>();
-  const recordHome = (placement: TaskPlacementV1) => {
-    if (placement.serviceRole || kinds.get(placement.taskId) !== "BUILDING") return;
-    let counts = homeUsage.get(placement.blockId);
-    if (!counts) { counts = new Map(); homeUsage.set(placement.blockId, counts); }
+  const familyUsage = new Map<string, Map<string, number>>();
+  const cityFamilyUsage = new Map<string, number>();
+  const recordFamily = (placement: TaskPlacementV1) => {
+    if (kinds.get(placement.taskId) !== "BUILDING") return;
+    let counts = familyUsage.get(placement.blockId);
+    if (!counts) { counts = new Map(); familyUsage.set(placement.blockId, counts); }
     counts.set(placement.buildingFamily, (counts.get(placement.buildingFamily) ?? 0) + 1);
-    cityHomeUsage.set(placement.buildingFamily, (cityHomeUsage.get(placement.buildingFamily) ?? 0) + 1);
+    cityFamilyUsage.set(placement.buildingFamily, (cityFamilyUsage.get(placement.buildingFamily) ?? 0) + 1);
   };
-  for (const placement of activePlacements.values()) recordHome(placement);
+  for (const placement of activePlacements.values()) recordFamily(placement);
   pending.sort((a, b) => a.task.taskNumber - b.task.taskNumber || a.task.id.localeCompare(b.task.id));
   const remainingByDistrict = new Map<string,number>();
   for (const {context} of pending) remainingByDistrict.set(context.district.id,
@@ -401,7 +422,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         !occupied.has(`${block.id}:${slot.key}`) && (task.autoVisualKind || slot.kind === kind)
         && parkSizeFitsSlot(task.parkSize, slot, true)
         && (!wantsPort || Boolean(portPlan({ block, slot })))
-        && (!requestedFamily || familyFitsSlot(requestedFamily,slot))
+        && (!requestedFamily || familyAccessFits(block, slot, requestedFamily))
         && (!task.serviceRoleAssigned || !(block.parameters.slotRoles as Record<string, BlockServiceRole> | undefined)?.[slot.key]);
       const preferred = () => available.find(value => eligible(value)
         && (value.block.parameters.slotRoles as Record<string,BlockServiceRole> | undefined)?.[value.slot.key]) ?? available.find(eligible);
@@ -431,10 +452,14 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
           templateKey: template.key, templateVersion: BLOCK_TEMPLATE_VERSION, variant: "south", seed: input.seed + sequence,
           origin: site.origin,
           width: template.widthModules * MODULE, height: template.heightModules * MODULE,
-          parameters: { buildingProfile: buildingProfile(district.archetype) ?? "MIXED_URBAN", buildingProfileVersion: 1, packingCorner: ["NW", "NE", "SW", "SE"][((input.seed + sequence + district.sequence) % 4 + 4) % 4], infill: true,
+          parameters: { entrancePolicyVersion: 1, buildingProfile: buildingProfile(district.archetype) ?? "MIXED_URBAN", buildingProfileVersion: 1, packingCorner: ["NW", "NE", "SW", "SE"][((input.seed + sequence + district.sequence) % 4 + 4) % 4], infill: true,
             ...(site.separator ? { districtSeparator: site.separator } : {}),
             ...(requestedFamily ? { firstFamily: compactBuildingShapeFamily(requestedFamily)! } : task.parkSize === "POCKET" ? { firstFamily: "compact-apartment-v1" } : {}) }, summary: {} };
-        block.parameters.sitePlan = createBlockSitePlan(block);
+        // A port's coastal allocator chooses its terminal independently; its
+        // existing south-centre access does not need a provisional art alias.
+        const firstAuthoredFamily = wantsPort ? undefined : requestedFamily;
+        block.parameters.sitePlan = createBlockSitePlan(block, firstAuthoredFamily);
+        if (firstAuthoredFamily) block.parameters.slotFamilies = { "slot-0": firstAuthoredFamily };
         districtBlocks.push(block); reservedBlocks.push(block);
         const slots = blockSlots(block);
         context.slotCounts.set(block.id, slots.length);
@@ -442,6 +467,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         selected = (preferred() ?? pocketSite())!;
       }
       if (wantsPort && !selected) throw new PortPlacementError();
+      if (!selected) throw new BlockPlacementError("No accessible parcel fits the requested building entrance");
       const placePort = (selected: {block:CityBlockV1;slot:BlockSlot},plan:PortSitePlan) => {
         // Atlas coordinates belong to the viewer. Store the immutable local
         // terminal/approach/pier only; resolve the ocean destination per view.
@@ -490,24 +516,32 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       const landmarkEntropy = Number.parseInt(checksum(`${identity}:${selected.block.id}:landmark`).slice(0, 8), 16);
       const landmarkCandidates = !requestedFamily && !serviceRole && selected.slot.kind === "BUILDING"
         && !landmarkBlocks.has(selected.block.id) && landmarkEntropy % 3 !== 0
-        ? cityLandmarkCandidates(width, height).filter(family => !landmarkOwners.has(family)) : [];
-      const authoredFamily = requestedFamily ?? (!task.serviceRoleAssigned && serviceRole ? serviceFamilyForSlot(serviceRole,selected.slot) : undefined)
+        ? cityLandmarkCandidates(width, height).filter(family => !landmarkOwners.has(family) && familyAccessFits(selected.block, selected.slot, family)) : [];
+      const accepts = (family: string) => familyAccessFits(selected.block, selected.slot, family);
+      const familyEntropy = Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16);
+      const usage = new Map([...cityFamilyUsage].map(([family, count]) => [family, count + (familyUsage.get(selected.block.id)?.get(family) ?? 0) * 100]));
+      const authoredFamily = requestedFamily ?? (!task.serviceRoleAssigned && serviceRole ? serviceFamilyForSlot(serviceRole,selected.slot, accepts, familyEntropy, usage) : undefined)
         ?? (landmarkCandidates.length ? landmarkCandidates[landmarkEntropy % landmarkCandidates.length] : undefined)
         ?? (!serviceRole && selected.slot.kind === "BUILDING" ? compactHomeFamily(
           selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1,
           selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1,
-          Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16), new Map([...cityHomeUsage].map(([family, count]) => [family, count + (homeUsage.get(selected.block.id)?.get(family) ?? 0) * 100])), selected.block.parameters.buildingProfileVersion === 1 ? buildingProfile(selected.block.parameters.buildingProfile) : undefined) : undefined)
+          familyEntropy, usage, selected.block.parameters.buildingProfileVersion === 1 ? buildingProfile(selected.block.parameters.buildingProfile) : undefined, accepts) : undefined)
         ?? selected.slot.buildingFamily ?? task.buildingFamily;
       if (selected.slot.kind === "BUILDING") {
+        const oldEntrance = selected.slot.buildingFamily ? getBuilding(selected.slot.buildingFamily).entrances[0] : undefined;
+        const newEntrance = getBuilding(authoredFamily).entrances[0]!;
         selected.block.parameters = {...selected.block.parameters,
           slotFamilies:{...selected.block.parameters.slotFamilies as Record<string,string>,[selected.slot.key]:authoredFamily}};
         selected.slot.buildingFamily = authoredFamily;
+        if (oldEntrance?.side !== newEntrance.side || oldEntrance.offset !== newEntrance.offset) {
+          Object.assign(selected.slot, blockSlots(selected.block).find(slot => slot.key === selected.slot.key)!);
+        }
       }
       const placement = { taskId: task.id, blockId: selected.block.id, slotKey: selected.slot.key,
         buildingFamily: authoredFamily, facadeVariant: task.facadeVariant,
         constructionStage: task.constructionStage, ...(serviceRole ? { serviceRole } : {}) };
       placements.push(placement); activePlacements.set(task.id, placement); kinds.set(task.id, selected.slot.kind);
-      recordHome(placement);
+      recordFamily(placement);
       reserveLandmark(authoredFamily, task.id, selected.block.id);
       reserveNextInfrastructure(district, districtBlocks, reservedBlocks, available, occupied, activePlacements.values(), kinds, durableTriggers);
   }

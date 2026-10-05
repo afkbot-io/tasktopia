@@ -1,0 +1,171 @@
+{
+  "key": "compact-court-kindergarten-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    100,
+    168,
+    1436,
+    860
+  ],
+  "uniformScale": 0.03592814371257485,
+  "targetSize": [
+    48,
+    25
+  ],
+  "offset": [
+    0,
+    7
+  ],
+  "paletteMethod": "MAXCOVERAGE",
+  "stages": {
+    "5": {
+      "sourceSha256": "4da8146938a32b9cd0c86e1b0c51e57d1352ed8733a932325696e8fcc13c9546",
+      "runtimeSha256": "79eae93dd228090a851bb8fbafc0d75669dc0aaa66d82796028e6672f71f592e",
+      "sourceBounds": [
+        100,
+        168,
+        1436,
+        860
+      ],
+      "occupiedBoundsPx": [
+        0,
+        7,
+        48,
+        32
+      ],
+      "occupiedSizePx": [
+        48,
+        25
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "3fa8895194ea29994b019a541c59ad0c0effb242126aabf95cfbbc63c50d8b14",
+      "runtimeSha256": "c1872c86a221d99c7ed783904af9c3c37bbc9c40a2ca75678b34d651861cfb65",
+      "sourceBounds": [
+        100,
+        168,
+        1436,
+        859
+      ],
+      "occupiedBoundsPx": [
+        0,
+        7,
+        48,
+        32
+      ],
+      "occupiedSizePx": [
+        48,
+        25
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "4439997553f11b64b9481d66e04038ec2233f861c70536631d8b111db32742ba",
+      "runtimeSha256": "938d1156110a1821596eea57794670084cc4b00db2711cda9c8ebf0e9ea5cf20",
+      "sourceBounds": [
+        99,
+        167,
+        1437,
+        859
+      ],
+      "occupiedBoundsPx": [
+        0,
+        7,
+        48,
+        32
+      ],
+      "occupiedSizePx": [
+        48,
+        25
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-court-kindergarten-v1",
+    "reviewedAt": "2026-10-05",
+    "reviewScope": "\u041e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u0439 \u043e\u0441\u043c\u043e\u0442\u0440 \u043a\u0430\u0436\u0434\u043e\u0439 \u0441\u0442\u0430\u0434\u0438\u0438 1\u00d7 \u0438 8\u00d7; \u0438\u0433\u0440\u043e\u0432\u0430\u044f \u0441\u0446\u0435\u043d\u0430 \u0435\u0449\u0451 \u043d\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u0430.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0430\u044f \u043e\u0441\u0435\u0432\u0430\u044f \u043a\u0430\u043c\u0435\u0440\u0430, \u0448\u0438\u0440\u043e\u043a\u0438\u0439 \u043a\u043e\u0440\u043f\u0443\u0441 \u0441 \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u043c \u0434\u0432\u043e\u0440\u043e\u043c \u043d\u0430\u0434 \u043d\u0438\u0437\u043a\u0438\u043c \u0444\u0430\u0441\u0430\u0434\u043e\u043c.",
+      "roofDepthPx": 20,
+      "facadeHeightPx": 5,
+      "floorStepPx": 5,
+      "doorLeafSizePx": [
+        3,
+        3
+      ],
+      "doorFrameSizePx": [
+        5,
+        4
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "4da8146938a32b9cd0c86e1b0c51e57d1352ed8733a932325696e8fcc13c9546",
+        "runtimeSha256": "79eae93dd228090a851bb8fbafc0d75669dc0aaa66d82796028e6672f71f592e",
+        "notes": "\u0414\u0435\u0442\u0441\u043a\u0438\u0439 \u0441\u0430\u0434 \u0441 \u043e\u0433\u0440\u0430\u0436\u0434\u0451\u043d\u043d\u044b\u043c \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u043c \u0434\u0432\u043e\u0440\u043e\u043c, \u043f\u0435\u0441\u043e\u0447\u043d\u0438\u0446\u0435\u0439 \u0438 \u0446\u0432\u0435\u0442\u043d\u044b\u043c\u0438 \u043a\u0443\u0431\u0438\u043a\u0430\u043c\u0438; \u0432\u0445\u043e\u0434 \u0441\u043b\u0435\u0432\u0430."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "3fa8895194ea29994b019a541c59ad0c0effb242126aabf95cfbbc63c50d8b14",
+        "runtimeSha256": "c1872c86a221d99c7ed783904af9c3c37bbc9c40a2ca75678b34d651861cfb65",
+        "notes": "\u041a\u0440\u044b\u0448\u0430 \u0441\u043b\u0435\u0432\u0430, \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043a\u043e\u043c\u043d\u0430\u0442\u044b \u0432\u043e\u043a\u0440\u0443\u0433 \u0434\u0432\u043e\u0440\u0430 \u0441\u043f\u0440\u0430\u0432\u0430, \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u0438 \u0442\u0451\u043c\u043d\u044b\u0435 \u043f\u0440\u043e\u0451\u043c\u044b; \u0438\u0433\u0440\u043e\u0432\u044b\u0435 \u043f\u0440\u0435\u0434\u043c\u0435\u0442\u044b \u0438 \u0432\u0435\u043d\u0442\u0438\u043b\u044f\u0446\u0438\u044f \u0441\u043d\u044f\u0442\u044b."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "4439997553f11b64b9481d66e04038ec2233f861c70536631d8b111db32742ba",
+        "runtimeSha256": "938d1156110a1821596eea57794670084cc4b00db2711cda9c8ebf0e9ea5cf20",
+        "notes": "\u041a\u0440\u044b\u0448\u0430 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442, \u0447\u0430\u0441\u0442\u0438\u0447\u043d\u044b\u0435 \u043f\u0435\u0440\u0435\u0433\u043e\u0440\u043e\u0434\u043a\u0438 \u0438 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b; \u0432\u0441\u0435 \u043f\u043e\u043b\u044b \u0438 \u0437\u0430\u0434\u043d\u0438\u0435 \u043f\u0440\u043e\u0451\u043c\u044b \u043d\u0435\u043f\u0440\u043e\u0437\u0440\u0430\u0447\u043d\u044b. \u041e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0441\u043e\u0432\u043f\u0430\u0434\u0430\u0435\u0442."
+      }
+    }
+  }
+}

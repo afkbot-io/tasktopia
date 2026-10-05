@@ -1,0 +1,43 @@
+{
+  "key": "compact-color-kindergarten-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр каждой стадии 1× и 8×; игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Высокая фронтальная камера, три глубокие цветные кровли над одним низким этажом.",
+    "roofDepthPx": 19,
+    "facadeHeightPx": 7,
+    "floorStepPx": 7,
+    "doorLeafSizePx": [
+      3,
+      4
+    ],
+    "doorFrameSizePx": [
+      5,
+      6
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "1a7b5f07a61c7e344072418e012ed59ff163a4685757e992b01d93c3408d939a",
+      "runtimeSha256": "e6b014a241a73903e6f8868600480be36454b231a82cd40f930a97490024f393",
+      "notes": "Одноэтажный детский сад из трёх цветных павильонов, большие групповые окна; дверь у правого края."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "4ef279c9c1e734e3fae02a9fdb80c6f4e728b7d628114219d3e94403b4e450a9",
+      "runtimeSha256": "034e48b62cc17205d41e7dcd3ae6c1e2608c738053b94f1328781e3cbd7c66e8",
+      "notes": "Около половины кровли слева сохранено, справа непрозрачные открытые комнаты. Основание и вход совпадают."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "1a92bfd4d2bd2438528e698c9f1dd66d13bf725ec8254bac9db2c12c23047379",
+      "runtimeSha256": "4b5b193e5dd5f9d19f085a93363319562c30d5e57e184e0a5e3ede602f1293be",
+      "notes": "Кровля и фронтоны сняты, незавершённые проёмы и низкие стены; материалы внутри непрозрачных комнат."
+    }
+  }
+}

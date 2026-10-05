@@ -1,0 +1,43 @@
+{
+  "key": "compact-bakery-shop-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая фронтально-верхняя камера; две параллельные полосы кровли.",
+    "roofDepthPx": 19,
+    "facadeHeightPx": 8,
+    "floorStepPx": 6,
+    "doorLeafSizePx": [
+      4,
+      4
+    ],
+    "doorFrameSizePx": [
+      7,
+      5
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "20e8fd876e04be8d14ae966aa5e790e125e3893f081913eb04db82a85bb10a5f",
+      "runtimeSha256": "484c7deedb786b915a4e7b404a3a123c19e977cc12099770a1c3731267e7e04b",
+      "notes": "Крыша снята полностью, открытые непрозрачные комнаты с материалами, верхняя кладка частичная."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "ba782d8014127c8b50fda1090268145850536cf8824707ddc42ea433975c47d1",
+      "runtimeSha256": "2faa3e25e47bd15352873ebc78aeeee7f265ea8e6989911b6b840fd6ce7308ab",
+      "notes": "Кровля только слева, справа открытые комнаты. Труба и навес сняты, окна тёмные."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "7cb21603795b99d16bc01107f43d9eb6a910149a4c2b21f2e5d81d0a86691098",
+      "runtimeSha256": "d5fa083ce1a8f473f13b25316a3689a0b0e5780e8738cc6e46510c29467c5805",
+      "notes": "Пекарня с двойной терракотовой кровлей, витриной справа и входом S/1 под навесом."
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "key": "compact-court-kindergarten-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр каждой стадии 1× и 8×; игровая сцена ещё не проверена.",
+  "projection": {
+    "camera": "Высокая осевая камера, широкий корпус с внутренним двором над низким фасадом.",
+    "roofDepthPx": 20,
+    "facadeHeightPx": 5,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      3,
+      3
+    ],
+    "doorFrameSizePx": [
+      5,
+      4
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "4da8146938a32b9cd0c86e1b0c51e57d1352ed8733a932325696e8fcc13c9546",
+      "runtimeSha256": "79eae93dd228090a851bb8fbafc0d75669dc0aaa66d82796028e6672f71f592e",
+      "notes": "Детский сад с ограждённым внутренним двором, песочницей и цветными кубиками; вход слева."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "3fa8895194ea29994b019a541c59ad0c0effb242126aabf95cfbbc63c50d8b14",
+      "runtimeSha256": "c1872c86a221d99c7ed783904af9c3c37bbc9c40a2ca75678b34d651861cfb65",
+      "notes": "Крыша слева, открытые комнаты вокруг двора справа, материалы и тёмные проёмы; игровые предметы и вентиляция сняты."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "4439997553f11b64b9481d66e04038ec2233f861c70536631d8b111db32742ba",
+      "runtimeSha256": "938d1156110a1821596eea57794670084cc4b00db2711cda9c8ebf0e9ea5cf20",
+      "notes": "Крыша отсутствует, частичные перегородки и материалы; все полы и задние проёмы непрозрачны. Основание совпадает."
+    }
+  }
+}

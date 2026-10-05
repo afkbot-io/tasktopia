@@ -1,0 +1,75 @@
+{
+  "sceneRevision": "92f3cccef0d72da0745bf225f2e84c5bfa2aa08362e52cb88d9f8f66927a43c3",
+  "examples": [
+    {
+      "id": "17881e6f-9068-47ff-8ad4-687914407259",
+      "family": "compact-olive-five-floor-v1",
+      "stage": 1,
+      "file": "compact-olive-five-floor-v1-stage-1.png"
+    },
+    {
+      "id": "7d2bf888-abb3-47cc-9ebb-3a8ba0197941",
+      "family": "compact-olive-five-floor-v1",
+      "stage": 2,
+      "file": "compact-olive-five-floor-v1-stage-2.png"
+    },
+    {
+      "id": "278812d7-b6a4-4950-9152-a562a4be8480",
+      "family": "compact-olive-five-floor-v1",
+      "stage": 3,
+      "file": "compact-olive-five-floor-v1-stage-3.png"
+    },
+    {
+      "id": "9edb3b23-7c34-4505-a2ab-a38e511b16ba",
+      "family": "compact-olive-five-floor-v1",
+      "stage": 4,
+      "file": "compact-olive-five-floor-v1-stage-4.png"
+    },
+    {
+      "id": "83b56ccd-6df5-4681-9000-84e347055b3f",
+      "family": "compact-olive-five-floor-v1",
+      "stage": 5,
+      "file": "compact-olive-five-floor-v1-stage-5.png"
+    },
+    {
+      "id": "3a3fc715-937e-465a-9a75-646d25dd7ea9",
+      "family": "compact-panel-four-floor-v1",
+      "stage": 1,
+      "file": "compact-panel-four-floor-v1-stage-1.png"
+    },
+    {
+      "id": "17a6f5bf-b179-473b-88c4-8bcb6d5f9f0c",
+      "family": "compact-panel-four-floor-v1",
+      "stage": 2,
+      "file": "compact-panel-four-floor-v1-stage-2.png"
+    },
+    {
+      "id": "fa0e36ae-93e3-463d-b2ac-afdf48ddbfcf",
+      "family": "compact-panel-four-floor-v1",
+      "stage": 3,
+      "file": "compact-panel-four-floor-v1-stage-3.png"
+    },
+    {
+      "id": "d8021731-8847-4171-8f21-d9b44c99a7be",
+      "family": "compact-panel-four-floor-v1",
+      "stage": 4,
+      "file": "compact-panel-four-floor-v1-stage-4.png"
+    },
+    {
+      "id": "214a5969-a139-479f-a133-b72282a072bd",
+      "family": "compact-panel-four-floor-v1",
+      "stage": 5,
+      "file": "compact-panel-four-floor-v1-stage-5.png"
+    }
+  ],
+  "loaded": [
+    "/game-assets/v5/revisions/69bc691dc920e152/buildings/house/compact-olive-five-floor-v1/stage-4.png",
+    "/game-assets/v5/revisions/69bc691dc920e152/buildings/house/compact-panel-four-floor-v1/stage-3.png",
+    "/game-assets/v5/revisions/69bc691dc920e152/buildings/house/compact-panel-four-floor-v1/stage-4.png",
+    "/game-assets/v5/revisions/69bc691dc920e152/buildings/house/compact-olive-five-floor-v1/stage-3.png",
+    "/game-assets/v5/revisions/69bc691dc920e152/buildings/house/compact-olive-five-floor-v1/stage-5.png",
+    "/game-assets/v5/revisions/69bc691dc920e152/buildings/house/compact-panel-four-floor-v1/stage-5.png"
+  ],
+  "errors": [],
+  "writes": []
+}

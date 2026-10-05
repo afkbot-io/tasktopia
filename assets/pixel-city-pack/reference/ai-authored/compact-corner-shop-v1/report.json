@@ -1,0 +1,171 @@
+{
+  "key": "compact-corner-shop-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    236,
+    132,
+    1353,
+    819
+  ],
+  "uniformScale": 0.04297224709042077,
+  "targetSize": [
+    48,
+    30
+  ],
+  "offset": [
+    0,
+    2
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "b43c9d33473cbe3a2c8a2c3afc6adf82432a8b3abd914e7a0b8b157cd9d24681",
+      "runtimeSha256": "1aae1bfedb40dee2dad638f4747d806ed0639402c1261772566cf4ccefd1689a",
+      "sourceBounds": [
+        236,
+        132,
+        1353,
+        819
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        32
+      ],
+      "occupiedSizePx": [
+        48,
+        30
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "63664540b0926c7e8edb2155cea1b4be7742dd354ca9e27e9fd12e4789a62aac",
+      "runtimeSha256": "d7ed983c33e2f0891bfeabffdafb617914d886156ff29b599f6cf1430b138ab6",
+      "sourceBounds": [
+        235,
+        132,
+        1353,
+        819
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        32
+      ],
+      "occupiedSizePx": [
+        48,
+        30
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "334ffe80853756fb29ccad279506ef45a0155d29c6b63e6f21094e67b1ff4102",
+      "runtimeSha256": "121dd97cb6431d0b7617df27f7aef1ba6c95bc0c7cd32de41d2b40876a75e21b",
+      "sourceBounds": [
+        235,
+        131,
+        1312,
+        819
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        46,
+        32
+      ],
+      "occupiedSizePx": [
+        46,
+        30
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 1.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-corner-shop-v1",
+    "reviewedAt": "2026-10-05",
+    "reviewScope": "\u041e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u0439 \u043e\u0441\u043c\u043e\u0442\u0440 \u0441\u0442\u0430\u0434\u0438\u0439 3, 4, 5 \u0432 \u043c\u0430\u0441\u0448\u0442\u0430\u0431\u0435 1\u00d7 \u0438 8\u00d7; \u0438\u0433\u0440\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0432\u043f\u0435\u0440\u0435\u0434\u0438.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0430\u044f \u043e\u0441\u0435\u0432\u0430\u044f \u043a\u0430\u043c\u0435\u0440\u0430; \u0413-\u043e\u0431\u0440\u0430\u0437\u043d\u0430\u044f \u043a\u0440\u044b\u0448\u0430 \u0438 \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 \u043d\u0435\u043f\u0440\u043e\u0437\u0440\u0430\u0447\u043d\u044b\u0439 \u0434\u0432\u043e\u0440.",
+      "roofDepthPx": 20,
+      "facadeHeightPx": 10,
+      "floorStepPx": 6,
+      "doorLeafSizePx": [
+        0,
+        0
+      ],
+      "doorFrameSizePx": [
+        0,
+        0
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "334ffe80853756fb29ccad279506ef45a0155d29c6b63e6f21094e67b1ff4102",
+        "runtimeSha256": "121dd97cb6431d0b7617df27f7aef1ba6c95bc0c7cd32de41d2b40876a75e21b",
+        "notes": "\u041f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043a\u043e\u043c\u043d\u0430\u0442\u044b \u0438 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b; \u0434\u0432\u043e\u0440 \u043e\u0441\u0442\u0430\u0451\u0442\u0441\u044f \u043d\u0435\u043f\u0440\u043e\u0437\u0440\u0430\u0447\u043d\u044b\u043c. \u041d\u0430\u0432\u0435\u0441 \u0441\u043d\u044f\u0442, \u0432\u0445\u043e\u0434 \u043f\u043e-\u043f\u0440\u0435\u0436\u043d\u0435\u043c\u0443 \u0432\u043e\u0441\u0442\u043e\u0447\u043d\u044b\u0439."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "63664540b0926c7e8edb2155cea1b4be7742dd354ca9e27e9fd12e4789a62aac",
+        "runtimeSha256": "d7ed983c33e2f0891bfeabffdafb617914d886156ff29b599f6cf1430b138ab6",
+        "notes": "\u041e\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u0430 \u043a\u0440\u044b\u0448\u0430 \u043b\u0435\u0432\u043e\u0433\u043e \u043a\u0440\u044b\u043b\u0430, \u043f\u0435\u0440\u0435\u0434\u043d\u0435\u0435 \u043a\u0440\u044b\u043b\u043e \u043e\u0442\u043a\u0440\u044b\u0442\u043e. \u0412\u0435\u043d\u0442\u0438\u043b\u044f\u0446\u0438\u044f \u0441\u043d\u044f\u0442\u0430, \u043e\u043a\u043d\u0430 \u0442\u0451\u043c\u043d\u044b\u0435."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "b43c9d33473cbe3a2c8a2c3afc6adf82432a8b3abd914e7a0b8b157cd9d24681",
+        "runtimeSha256": "1aae1bfedb40dee2dad638f4747d806ed0639402c1261772566cf4ccefd1689a",
+        "notes": "\u0413-\u043e\u0431\u0440\u0430\u0437\u043d\u0430\u044f \u0441\u043b\u0438\u0432\u043e\u0432\u0430\u044f \u043a\u0440\u043e\u0432\u043b\u044f, \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 \u0434\u0432\u043e\u0440, \u0434\u0432\u0435 \u043f\u0435\u0440\u0435\u0434\u043d\u0438\u0435 \u0432\u0438\u0442\u0440\u0438\u043d\u044b. \u0412\u0445\u043e\u0434 E/2 \u0441\u043a\u0440\u044b\u0442 \u0441\u043f\u0440\u0430\u0432\u0430."
+      }
+    }
+  }
+}

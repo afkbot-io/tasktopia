@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildingBadgePresentation,
+  buildingBadgePosition,
   buildingInteractiveBounds,
   buildingPlatformPresentation,
   taskPlatformCellPresentation,
@@ -14,6 +15,19 @@ import { rectangleFootprint } from "../src/server/world/grid";
 const entry = getBuilding("compact-apartment-v1");
 
 describe("compact building presentation", () => {
+  it("keeps task badges clear of edge doors and side entrances", () => {
+    const badge = buildingBadgePresentation(27, 5);
+    const rightDoor = buildingBadgePosition(getBuilding("compact-hall-fire-station-v1"), badge);
+    expect(rightDoor.x + badge.width / 2).toBeLessThan(16);
+    const leftDoor = buildingBadgePosition(getBuilding("compact-tower-fire-station-v1"), badge);
+    expect(leftDoor.x - badge.width / 2).toBeGreaterThan(-16);
+    const east = buildingBadgePosition({ ...entry, entrances: [{ side: "E", offset: 5 }] }, badge);
+    expect(east.x + badge.width / 2).toBeLessThan(16);
+    const large = buildingBadgePresentation(123456, 5);
+    const central = buildingBadgePosition(entry, large);
+    // A long number cannot fit beside a central doorway: place it above the facade.
+    expect(central.y + large.height / 2).toBeLessThan(-8);
+  });
   it("uses the task number as a compact house badge", () => {
     expect(buildingBadgePresentation(7, 1)).toEqual({
       label: "7", width: 8, height: 8, fontSize: 6, borderColor: 0x9b72d2,

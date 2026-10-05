@@ -1,0 +1,43 @@
+{
+  "key": "compact-panel-four-floor-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Каждая исправленная стадия осмотрена при1x и nearest8x. Растровые проверки пройдены. После исправления пропорций игровую сцену необходимо проверить заново.",
+  "projection": {
+    "camera": "Осевая фронтально-верхняя, крыша глубже фасада, без уходящей боковой грани.",
+    "roofDepthPx": 28,
+    "facadeHeightPx": 20,
+    "floorStepPx": 5,
+    "doorLeafSizePx": [
+      0,
+      0
+    ],
+    "doorFrameSizePx": [
+      0,
+      0
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "5": {
+      "accepted": true,
+      "sourceSha256": "536ccc32b6fe66077d32d2c1a7455b4a7c44669e40805345a30aa5ecb7792e65",
+      "runtimeSha256": "8ac88e852537de3983dc4c8e05f44a71cc172b329adb49e63534ec0e6a0b1f4b",
+      "notes": "Четыре5px этажа и крыша28px, северная дверь скрыта, южной двери нет."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "f1beaabcdf1cbaa97199607ecf568f626452332a0530127a97057dbfd5de23fd",
+      "runtimeSha256": "6e81fc31108bc2db917348957c04d5f959b8d956b92a917a9117bc69537a352e",
+      "notes": "Левая половина крыши, справа непрозрачные комнаты. Венты и готовое остекление убраны."
+    },
+    "3": {
+      "accepted": true,
+      "sourceSha256": "82427279bd6d4b4c56107c4b4c9809e8b3322220fcbc126bece7c793d22fb32f",
+      "runtimeSha256": "c2b436cf8199957b5fd34176a086f98105317904ea4b79c015e19ddcea7d3fde",
+      "notes": "Открытые комнаты на всю глубину, незавершённые стены с разрывами и материалы. Основание сохранено."
+    }
+  }
+}

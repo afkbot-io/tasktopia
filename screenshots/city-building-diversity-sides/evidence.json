@@ -1,0 +1,75 @@
+{
+  "sceneRevision": "c6cda2c8714161d0b7be26683f4bf55235ed8f5e270bbec97774c0e8b1678984",
+  "examples": [
+    {
+      "id": "c3244de9-e11f-4f36-b660-ae9ade504e40",
+      "family": "compact-court-four-floor-v1",
+      "stage": 1,
+      "file": "compact-court-four-floor-v1-stage-1.png"
+    },
+    {
+      "id": "e4a6dcfd-bdd5-48ed-87bf-4a6ea0309d56",
+      "family": "compact-court-four-floor-v1",
+      "stage": 2,
+      "file": "compact-court-four-floor-v1-stage-2.png"
+    },
+    {
+      "id": "35339cfd-34f4-4c46-bba5-0ca00e0df783",
+      "family": "compact-court-four-floor-v1",
+      "stage": 3,
+      "file": "compact-court-four-floor-v1-stage-3.png"
+    },
+    {
+      "id": "cc1aa1b4-3053-4cb1-b1d6-3f0cd9ff864c",
+      "family": "compact-court-four-floor-v1",
+      "stage": 4,
+      "file": "compact-court-four-floor-v1-stage-4.png"
+    },
+    {
+      "id": "49759f36-414e-4094-8e31-6317fb5ada45",
+      "family": "compact-court-four-floor-v1",
+      "stage": 5,
+      "file": "compact-court-four-floor-v1-stage-5.png"
+    },
+    {
+      "id": "07897ad1-5b79-4cf2-9a98-9c90db2f57bd",
+      "family": "compact-gallery-four-floor-v1",
+      "stage": 1,
+      "file": "compact-gallery-four-floor-v1-stage-1.png"
+    },
+    {
+      "id": "9c25d24c-4f3b-4819-a9b0-fc5e687e7c4e",
+      "family": "compact-gallery-four-floor-v1",
+      "stage": 2,
+      "file": "compact-gallery-four-floor-v1-stage-2.png"
+    },
+    {
+      "id": "dbecc4f2-ad69-4fa5-be38-4bda6843a30f",
+      "family": "compact-gallery-four-floor-v1",
+      "stage": 3,
+      "file": "compact-gallery-four-floor-v1-stage-3.png"
+    },
+    {
+      "id": "8e224297-9904-4767-b02f-3ef5e6535cc4",
+      "family": "compact-gallery-four-floor-v1",
+      "stage": 4,
+      "file": "compact-gallery-four-floor-v1-stage-4.png"
+    },
+    {
+      "id": "2e313429-867d-4f40-8fea-e659d4bb1269",
+      "family": "compact-gallery-four-floor-v1",
+      "stage": 5,
+      "file": "compact-gallery-four-floor-v1-stage-5.png"
+    }
+  ],
+  "loaded": [
+    "/game-assets/v5/revisions/de1f7ed41b2a3eaa/buildings/house/compact-court-four-floor-v1/stage-3.png",
+    "/game-assets/v5/revisions/de1f7ed41b2a3eaa/buildings/house/compact-court-four-floor-v1/stage-4.png",
+    "/game-assets/v5/revisions/de1f7ed41b2a3eaa/buildings/house/compact-gallery-four-floor-v1/stage-3.png",
+    "/game-assets/v5/revisions/de1f7ed41b2a3eaa/buildings/house/compact-gallery-four-floor-v1/stage-4.png",
+    "/game-assets/v5/revisions/de1f7ed41b2a3eaa/buildings/house/compact-gallery-four-floor-v1/stage-5.png",
+    "/game-assets/v5/revisions/de1f7ed41b2a3eaa/buildings/house/compact-court-four-floor-v1/stage-5.png"
+  ],
+  "errors": [],
+  "writes": []
+}

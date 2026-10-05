@@ -6,7 +6,7 @@ family is `compact-apartment-v1`: a `48×48` sprite on a `6×6` physical lot of
 There is no fallback to the old 18-cell-wide buildings.
 
 The seven approved structural geometry families below are independently
-AI-authored, not scaled copies. The36 registered art families may share a
+AI-authored, not scaled copies. The 77 registered art families may share a
 compatible physical envelope, but retain individual source and opening contracts.
 Read each family's immutable `geometry.json` and hash-pinned
 `visual-review.json` before generating or publishing:
@@ -21,7 +21,7 @@ Read each family's immutable `geometry.json` and hash-pinned
 | `compact-u-courtyard-v1` | 96×64 | 12×8 | 48,64 | 2 / 11px | 53px | 3×3 / 5×5 |
 | `compact-long-slate-wing-v1` | 48×96 | 6×12 | 24,96 | 2 / 11px | 85px | 3×3 / 5×5 |
 
-All use 8px cells and a south entrance: offset3 for apartment, row, wide and
+The seven structural families above use 8px cells and a south entrance: offset3 for apartment, row, wide and
 vertical slate wing; offset6 for the long gallery and U court; offset4 for the
 corner court. The row's occupied48×22 image
 has an explicitly reviewed2px top clearance; the wide's occupied46×32 image
@@ -32,6 +32,34 @@ per-family dimensions above are immutable, not a license to accept drift.
 New row/wide colors are dusty beige, olive parallel bands, broad slate planes
 and small dark teal openings, with a light warm roof rim and no black baseline.
 The first apartment retains its previously approved muted terracotta identity.
+
+## Разнообразие и доступ — 2026-10-05
+
+Художественный вариант объявляет один основной вход `{side, offset}` на N/E/S/W.
+Смещение целое, от нуля: вдоль N/S отсчитывается с запада, вдоль E/W — с севера.
+Клетка подхода расположена снаружи стены по нормали стороны. Скрытая северная
+или восточная дверь не рисуется на переднем фасаде. Записи `geometry.json`
+фиксируют видимость и размеры двери отдельно от физического входа.
+
+Форма участка определяет совместимость, но не этажность художественного варианта.
+`floorCount` хранит фактическое число этажей; `educationKind` различает школу и
+детский сад внутри прежней роли EDUCATION. Квоты служб не изменяются.
+
+Новые блоки сохраняют `parameters.entrancePolicyVersion: 1`; доступ проверяется
+до назначения семейства. Для явно запрошенной семьи первый подход резервируется
+до заполнения остаточных участков. Сохранённые V2/V3 без этой отметки удерживают
+свои входы и планы. Пополнение каталога не перепланирует существующие кварталы.
+
+Пятиэтажные варианты используют холсты 48×56, 96×56 и 64×72 при прежних
+участках 6×6, 12×6 и 8×8. Основание и нижний центральный anchor неподвижны.
+Большая высота не увеличивает участок: крыша участвует в видимости и выборе
+мышью. Номер задачи размещается с учётом двери, включая длинные номера.
+Строительная калитка и свободный коридор соответствуют выбранной стороне.
+Гаражные ворота пожарной — часть рисунка; отдельного маршрута техники через них нет.
+
+Все 20 новых семей имеют независимые источники 5→4→3, нормализацию в рамке
+стадии 5 и проверенные хеши источников/результата. Полный перечень и доказательства:
+[QA-CITY-BUILDING-DIVERSITY-2026-10-05.md](../QA-CITY-BUILDING-DIVERSITY-2026-10-05.md).
 
 The long gallery is a separately approved two-floor residential family
 (`HOUSE`, `RARE`, `STANDARD`, estimates3/6, explicit `STONE` platform), not a

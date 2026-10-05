@@ -1,0 +1,171 @@
+{
+  "key": "compact-court-four-floor-v1",
+  "contract": "geometry.json",
+  "normalization": "Draft stage5 uses uniform nearest-neighbour scale, hard alpha and a bounded palette. Future stages4/3 must use this same finished-source frame; no axis stretching, per-stage recentering or architectural repair.",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceBackground": "magenta-chroma-family",
+  "commonSourceFrame": [
+    91,
+    156,
+    1116,
+    1149
+  ],
+  "uniformScale": 0.0624390243902439,
+  "targetSize": [
+    64,
+    62
+  ],
+  "offset": [
+    0,
+    2
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "e0d4d7165d4772ac8ad1d69ab061fe740df14a198288a21b166eb0cb46251d1e",
+      "runtimeSha256": "ba68d24df7c08eca958f2e87a4f576378f60649add09d37eacf51e135c664242",
+      "sourceBounds": [
+        91,
+        156,
+        1116,
+        1149
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        62
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "972b97c91e5e82e81760221ebae1becc1f14a0922958c85fe56c724c91eeacbc",
+      "runtimeSha256": "c6ea0ab83f7788ebaac34601827ccfc6fbfb9e7d1a4eb251147e3cc0c06392b9",
+      "sourceBounds": [
+        90,
+        153,
+        1117,
+        1149
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        62
+      ],
+      "paletteColors": 30,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "a826186c0093a143d6870192b40f219f8afc19f4dc0335e06aeabbd32e2b003a",
+      "runtimeSha256": "a5473590d1fbc326a1d458969cad8bbd2e0617746ca1c4ccc4638ba84e37c05e",
+      "sourceBounds": [
+        90,
+        153,
+        1117,
+        1149
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        64,
+        64
+      ],
+      "occupiedSizePx": [
+        64,
+        62
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-court-four-floor-v1",
+    "reviewedAt": "2026-10-05",
+    "reviewScope": "\u0412\u0441\u04353\u0441\u0442\u0430\u0434\u0438\u0438 \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e1x\u04388x. \u0420\u0430\u0441\u0442\u0440\u043e\u0432\u044b\u0435\u0438\u043d\u0432\u0430\u0440\u0438\u0430\u043d\u0442\u044b\u043f\u0440\u043e\u0439\u0434\u0435\u043d\u044b. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430\u0438\u0433\u0440\u043e\u0432\u043e\u0439\u0441\u0446\u0435\u043d\u044b\u0435\u0449\u0451\u043f\u0440\u0435\u0434\u0441\u0442\u043e\u0438\u0442.",
+    "projection": {
+      "camera": "\u041e\u0441\u0435\u0432\u0430\u044f \u0432\u044b\u0441\u043e\u043a\u0430\u044f \u043a\u0430\u043c\u0435\u0440\u0430, \u043a\u0440\u044b\u0448\u0430 \u0433\u043b\u0443\u0431\u0436\u0435 \u0444\u0430\u0441\u0430\u0434\u0430.",
+      "roofDepthPx": 36,
+      "facadeHeightPx": 26,
+      "floorStepPx": 6,
+      "doorLeafSizePx": [
+        1,
+        4
+      ],
+      "doorFrameSizePx": [
+        3,
+        8
+      ],
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "5": {
+        "accepted": true,
+        "sourceSha256": "e0d4d7165d4772ac8ad1d69ab061fe740df14a198288a21b166eb0cb46251d1e",
+        "runtimeSha256": "ba68d24df7c08eca958f2e87a4f576378f60649add09d37eacf51e135c664242",
+        "notes": "\u0427\u0435\u0442\u044b\u0440\u0435\u044d\u0442\u0430\u0436\u0430, \u0434\u0432\u043e\u0440 \u0441\u043f\u0440\u0430\u0432\u0430\u0441\u0432\u0435\u0440\u0445\u0443 \u0432 \u043d\u0435\u043f\u0440\u043e\u0437\u0440\u0430\u0447\u043d\u043e\u043c \u043a\u043e\u0440\u043f\u0443\u0441\u0435, \u0437\u0430\u043f\u0430\u0434\u043d\u044b\u0439 \u043d\u0430\u0432\u0435\u0441/\u0432\u0438\u0434\u0438\u043c\u044b\u0439 \u043a\u0440\u0430\u0439 \u0441\u0442\u0432\u043e\u0440\u043a\u0438. \u041f\u0435\u0440\u0435\u0434\u043d\u0435\u0439 \u0434\u0432\u0435\u0440\u0438 \u043d\u0435\u0442."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "972b97c91e5e82e81760221ebae1becc1f14a0922958c85fe56c724c91eeacbc",
+        "runtimeSha256": "c6ea0ab83f7788ebaac34601827ccfc6fbfb9e7d1a4eb251147e3cc0c06392b9",
+        "notes": "\u041a\u0440\u044b\u0448\u0430 \u0441\u043b\u0435\u0432\u0430, \u0441\u043f\u0440\u0430\u0432\u0430 \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043f\u043e\u043c\u0435\u0449\u0435\u043d\u0438\u044f \u0438 \u0434\u0432\u043e\u0440; \u043a\u0443\u0441\u0442 \u0438 \u0432\u0435\u043d\u0442 \u0441\u043d\u044f\u0442\u044b, \u043e\u0441\u0442\u0435\u043a\u043b\u0435\u043d\u0438\u0435 \u0442\u0451\u043c\u043d\u043e\u0435."
+      },
+      "3": {
+        "accepted": true,
+        "sourceSha256": "a826186c0093a143d6870192b40f219f8afc19f4dc0335e06aeabbd32e2b003a",
+        "runtimeSha256": "a5473590d1fbc326a1d458969cad8bbd2e0617746ca1c4ccc4638ba84e37c05e",
+        "notes": "\u041a\u0440\u044b\u0448\u0438 \u043d\u0435\u0442; \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043f\u043e\u043c\u0435\u0449\u0435\u043d\u0438\u044f \u0441 \u0447\u0430\u0441\u0442\u0438\u0447\u043d\u044b\u043c\u0438 \u043f\u0435\u0440\u0435\u0433\u043e\u0440\u043e\u0434\u043a\u0430\u043c\u0438, \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430\u043c\u0438 \u0438 \u043d\u0435\u043f\u0440\u043e\u0437\u0440\u0430\u0447\u043d\u044b\u043c\u0438 \u043f\u043e\u043b\u0430\u043c\u0438. \u0415\u0434\u0438\u043d\u043e\u0435 \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435."
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "key": "compact-hall-fire-station-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая осевая камера; широкий одноэтажный гаражный корпус.",
+    "roofDepthPx": 23,
+    "facadeHeightPx": 7,
+    "floorStepPx": 7,
+    "doorLeafSizePx": [
+      2,
+      4
+    ],
+    "doorFrameSizePx": [
+      3,
+      4
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "89f09b9e7d46a59af6ff92ed4ac12d952edd545f1b0c0d033c96fdce97fe1e1d",
+      "runtimeSha256": "4f288cb8d316031308a04310e93630bb0b5f71ec42819339c19aa6faa06f8894",
+      "notes": "Крыши нет, открытые комнаты с частичными внутренними перегородками и материалами. Вход и основание сохранены."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "25edfd1f2830d88d48a1d657be473521cea9873db48ff6d9fefc1bee22600fc8",
+      "runtimeSha256": "65ffef733c1e4dccb2375e58b5a08eac084ee243506da49ddf52b51b1fb341e1",
+      "notes": "Половина кровли справа, слева открытые непрозрачные комнаты. Световые фонари и ворота сняты."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "76592d49fd5834176c44b1bc497ee45c4b9b3480192a1c201fa0e0155db8483d",
+      "runtimeSha256": "fa62281abc091eaab234fd240569b881f14d8ec6f358f54ec7ea0fdc3be3ab31",
+      "notes": "Три красных воротных проёма, три световых фонаря и служебный вход S/5 справа."
+    }
+  }
+}

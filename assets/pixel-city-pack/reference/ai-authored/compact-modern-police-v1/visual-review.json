@@ -1,0 +1,43 @@
+{
+  "key": "compact-modern-police-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая осевая камера; одноэтажный корпус с радиорубкой.",
+    "roofDepthPx": 23,
+    "facadeHeightPx": 8,
+    "floorStepPx": 8,
+    "doorLeafSizePx": [
+      0,
+      0
+    ],
+    "doorFrameSizePx": [
+      0,
+      0
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "c65eda6d5c9d989b68d9e56f1c549e24d8f64681dce49aebf1e7cb1388b763df",
+      "runtimeSha256": "84d03e72d53cf8a65b3e3606c9eda8e76796b5055b0e4397411f93b28c9598bf",
+      "notes": "Открытые комнаты и частичная кладка. Передняя стена без двери; северный вход сохранён."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "d51e59df807f4d3955b7848dfae8c27d82ea05d090a71b8f6e956fdbe0f25a9e",
+      "runtimeSha256": "861a2b9a1e63d6592d1340545cea5566f45d13c7bbc79ddd817c34294bf487a9",
+      "notes": "Слева открытые комнаты, справа половина крыши. Антенна и щит сняты."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "124d3bae95beff4d52d5179b8650f781be960b7ac1f51222f29bfc5db62660cf",
+      "runtimeSha256": "da962a098556b1d732648432e4352e999a453d3971ee5a802cbc89c1f5152e2f",
+      "notes": "Ступенчатая крыша, радиорубка и щит. Вход N/1 скрыт, передней двери нет."
+    }
+  }
+}

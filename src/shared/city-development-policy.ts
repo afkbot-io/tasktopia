@@ -2,7 +2,7 @@ import type { BlockServiceRole } from "./block-world";
 export const PORT_MIN_CITY_BLOCKS = 6;
 export type InfrastructureCounts = { districtId: string; buildings: number; districtBlocks: number; cityBlocks: number; cityDistricts: number };
 export type InfrastructureMilestone = { id: string; role: BlockServiceRole; count: number; required: number; unit: "BUILDINGS" | "DISTRICT_BLOCKS" | "CITY_BLOCKS" | "CITY_DISTRICTS"; eligible: boolean };
-export const INFRASTRUCTURE_LABELS: Record<BlockServiceRole, string> = { EDUCATION: "Школа", MEDICAL: "Медицинский центр", FIRE: "Пожарная часть", POLICE: "Полиция", RAILWAY: "Вокзал", AIRPORT: "Аэропорт", CIVIC: "Администрация", SHOP: "Магазин", PORT: "Морской порт" };
+export const INFRASTRUCTURE_LABELS: Record<BlockServiceRole, string> = { EDUCATION: "Школа / детский сад", MEDICAL: "Медицинский центр", FIRE: "Пожарная часть", POLICE: "Полиция", RAILWAY: "Вокзал", AIRPORT: "Аэропорт", CIVIC: "Администрация", SHOP: "Магазин", PORT: "Морской порт" };
 /** Same priority and trigger IDs as the allocator. Counts exclude empty blocks
  * and public-space tasks; meeting a threshold still needs an available parcel. */
 export function infrastructureMilestones(input: InfrastructureCounts): InfrastructureMilestone[] {

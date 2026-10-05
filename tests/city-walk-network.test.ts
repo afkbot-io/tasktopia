@@ -52,11 +52,15 @@ describe("city pedestrian ground contract", () => {
     expect(construction.walkGraph.has("2,2")).toBe(false);
     expect(construction.walkGraph.has("1,3")).toBe(false);
     expect(construction.activityCells.has("5,6")).toBe(false);
+    expect(construction.buildingEntrances.size).toBe(0);
     input.tasks[0]!.stage = 5;
     const finished = buildCityWalkNetwork(input);
     expect(finished.walkGraph.has("2,2")).toBe(false);
     expect(finished.walkGraph.has("1,3")).toBe(true);
     expect(finished.activityCells.has("5,6")).toBe(true);
+    expect([...finished.buildingEntrances]).toEqual(["5,5"]);
+    input.roads = new Map([["5,5", { x: 5, y: 5 }]]);
+    expect(buildCityWalkNetwork(input).buildingEntrances.size).toBe(0);
   });
 
   it("never bridges a water or unpainted road gap between two paths", () => {

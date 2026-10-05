@@ -1,0 +1,43 @@
+{
+  "key": "compact-supermarket-v1",
+  "reviewedAt": "2026-10-05",
+  "reviewScope": "Отдельный осмотр стадий 3, 4, 5 в масштабе 1× и 8×; игровая проверка впереди.",
+  "projection": {
+    "camera": "Высокая осевая камера; два корпуса со световым фонарём.",
+    "roofDepthPx": 23,
+    "facadeHeightPx": 6,
+    "floorStepPx": 6,
+    "doorLeafSizePx": [
+      5,
+      3
+    ],
+    "doorFrameSizePx": [
+      7,
+      4
+    ],
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "c0a3689ffc8e17e236f0518de5f3943200b6f33d1e533cf557742ab704f49262",
+      "runtimeSha256": "8f01db30c672e4ac7c198956a088ad16a438f183582ab6471facb5985a40f735",
+      "notes": "Оба корпуса без кровли, внутренние перегородки частично собраны, материалы внутри непрозрачных помещений."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "008f848b3b4a52755701e7f6312aae2227de3c66050f5453d5216472b319c8c7",
+      "runtimeSha256": "4e0d6bccc3c7d24ce7182c19fc99465480bb25d6489c78d3271eece3e90aed15",
+      "notes": "Кровля справа и узкая полоса слева сохранены, остальное открыто; световой фонарь и навес сняты."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "339bee2b9548a742159f86e4a88e1789443d2c5e276869fe2e56dccf296a5a53",
+      "runtimeSha256": "2b1fcedbb3defd3aeb362ddace48d724bd027f7d3cf60fbab93685946be4494c",
+      "notes": "Низкий супермаркет: серый и зелёный объёмы, витрины и вход S/4 под оранжевым навесом."
+    }
+  }
+}
