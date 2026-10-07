@@ -1,0 +1,911 @@
+[
+  {
+    "group": "city-art-audit-education",
+    "sceneRevision": "55ac2f8a862d2af429341b940a30b04ffefd57bfe636bcfb2b4ff24601678553",
+    "examples": [
+      {
+        "id": "ff715b34-023f-475e-bac2-01fb5b4ce244",
+        "family": "compact-brick-school-v1",
+        "stage": 1,
+        "file": "compact-brick-school-v1-stage-1.png"
+      },
+      {
+        "id": "28ac91a4-e327-4226-8ceb-9e6c1920cd86",
+        "family": "compact-brick-school-v1",
+        "stage": 2,
+        "file": "compact-brick-school-v1-stage-2.png"
+      },
+      {
+        "id": "cb5ffcc9-26aa-4dba-84d4-f836a49dd750",
+        "family": "compact-brick-school-v1",
+        "stage": 3,
+        "file": "compact-brick-school-v1-stage-3.png"
+      },
+      {
+        "id": "f4eea9f0-ccca-4043-93c7-015baade2bdc",
+        "family": "compact-brick-school-v1",
+        "stage": 4,
+        "file": "compact-brick-school-v1-stage-4.png"
+      },
+      {
+        "id": "3949e236-6de2-48d9-84b5-d0b02f7c73dc",
+        "family": "compact-brick-school-v1",
+        "stage": 5,
+        "file": "compact-brick-school-v1-stage-5.png"
+      },
+      {
+        "id": "a5a15320-d247-425d-98fa-e647f1f615f1",
+        "family": "compact-color-kindergarten-v1",
+        "stage": 1,
+        "file": "compact-color-kindergarten-v1-stage-1.png"
+      },
+      {
+        "id": "3d818265-ff04-4e93-a47a-364a522fffa6",
+        "family": "compact-color-kindergarten-v1",
+        "stage": 2,
+        "file": "compact-color-kindergarten-v1-stage-2.png"
+      },
+      {
+        "id": "e58a4b08-0200-48b4-94d2-beddf327611c",
+        "family": "compact-color-kindergarten-v1",
+        "stage": 3,
+        "file": "compact-color-kindergarten-v1-stage-3.png"
+      },
+      {
+        "id": "c15709da-ab48-4e5e-addf-2c02d9390b17",
+        "family": "compact-color-kindergarten-v1",
+        "stage": 4,
+        "file": "compact-color-kindergarten-v1-stage-4.png"
+      },
+      {
+        "id": "9c98227d-1a6e-4eca-aff1-1047707cf01e",
+        "family": "compact-color-kindergarten-v1",
+        "stage": 5,
+        "file": "compact-color-kindergarten-v1-stage-5.png"
+      },
+      {
+        "id": "3f6740d8-da00-4919-9449-8fa67b04eb6c",
+        "family": "compact-court-kindergarten-v1",
+        "stage": 1,
+        "file": "compact-court-kindergarten-v1-stage-1.png"
+      },
+      {
+        "id": "969fc999-760c-44ec-9924-504e85cc0501",
+        "family": "compact-court-kindergarten-v1",
+        "stage": 2,
+        "file": "compact-court-kindergarten-v1-stage-2.png"
+      },
+      {
+        "id": "ec4b5897-5d65-4ec3-8196-48b64a0ee9e9",
+        "family": "compact-court-kindergarten-v1",
+        "stage": 3,
+        "file": "compact-court-kindergarten-v1-stage-3.png"
+      },
+      {
+        "id": "368659ea-613b-4deb-a5e5-5d1c4025e680",
+        "family": "compact-court-kindergarten-v1",
+        "stage": 4,
+        "file": "compact-court-kindergarten-v1-stage-4.png"
+      },
+      {
+        "id": "395e2f62-17d8-4eb6-ab16-48414f810815",
+        "family": "compact-court-kindergarten-v1",
+        "stage": 5,
+        "file": "compact-court-kindergarten-v1-stage-5.png"
+      },
+      {
+        "id": "fcd22b51-7d68-4f78-8af2-71caf5273d72",
+        "family": "compact-modern-school-v1",
+        "stage": 1,
+        "file": "compact-modern-school-v1-stage-1.png"
+      },
+      {
+        "id": "c0648ec3-0632-452d-a440-553b99802966",
+        "family": "compact-modern-school-v1",
+        "stage": 2,
+        "file": "compact-modern-school-v1-stage-2.png"
+      },
+      {
+        "id": "8df28d5f-f2c5-4fd6-83b3-ffe1f7785bc0",
+        "family": "compact-modern-school-v1",
+        "stage": 3,
+        "file": "compact-modern-school-v1-stage-3.png"
+      },
+      {
+        "id": "89d2e885-06d0-4658-9f51-25573a7e89ab",
+        "family": "compact-modern-school-v1",
+        "stage": 4,
+        "file": "compact-modern-school-v1-stage-4.png"
+      },
+      {
+        "id": "8cbd4a29-d1ca-491b-9e14-abb945f6c4a7",
+        "family": "compact-modern-school-v1",
+        "stage": 5,
+        "file": "compact-modern-school-v1-stage-5.png"
+      },
+      {
+        "id": "6f878729-8430-4279-83da-ad2bcd365dae",
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 1,
+        "file": "compact-rose-kindergarten-v1-stage-1.png"
+      },
+      {
+        "id": "97752bce-9bfd-4e79-8a02-406c6d4cbc39",
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 2,
+        "file": "compact-rose-kindergarten-v1-stage-2.png"
+      },
+      {
+        "id": "cfc33966-3f51-4aa5-b80e-e543942884ac",
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 3,
+        "file": "compact-rose-kindergarten-v1-stage-3.png"
+      },
+      {
+        "id": "625c8b63-33ff-4f50-be6d-310cd8a1ccb4",
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 4,
+        "file": "compact-rose-kindergarten-v1-stage-4.png"
+      },
+      {
+        "id": "4f4ac3a4-b1a0-4600-a59d-0e433300078c",
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 5,
+        "file": "compact-rose-kindergarten-v1-stage-5.png"
+      }
+    ],
+    "loaded": [
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-rose-kindergarten-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-brick-school-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-modern-school-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-brick-school-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-rose-kindergarten-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-brick-school-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-modern-school-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-modern-school-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-rose-kindergarten-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-color-kindergarten-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-court-kindergarten-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-color-kindergarten-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-court-kindergarten-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-color-kindergarten-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-court-kindergarten-v1/stage-3.png"
+    ],
+    "errors": [],
+    "writes": []
+  },
+  {
+    "group": "city-art-audit-north-tall",
+    "sceneRevision": "92f3cccef0d72da0745bf225f2e84c5bfa2aa08362e52cb88d9f8f66927a43c3",
+    "examples": [
+      {
+        "id": "17881e6f-9068-47ff-8ad4-687914407259",
+        "family": "compact-olive-five-floor-v1",
+        "stage": 1,
+        "file": "compact-olive-five-floor-v1-stage-1.png"
+      },
+      {
+        "id": "7d2bf888-abb3-47cc-9ebb-3a8ba0197941",
+        "family": "compact-olive-five-floor-v1",
+        "stage": 2,
+        "file": "compact-olive-five-floor-v1-stage-2.png"
+      },
+      {
+        "id": "278812d7-b6a4-4950-9152-a562a4be8480",
+        "family": "compact-olive-five-floor-v1",
+        "stage": 3,
+        "file": "compact-olive-five-floor-v1-stage-3.png"
+      },
+      {
+        "id": "9edb3b23-7c34-4505-a2ab-a38e511b16ba",
+        "family": "compact-olive-five-floor-v1",
+        "stage": 4,
+        "file": "compact-olive-five-floor-v1-stage-4.png"
+      },
+      {
+        "id": "83b56ccd-6df5-4681-9000-84e347055b3f",
+        "family": "compact-olive-five-floor-v1",
+        "stage": 5,
+        "file": "compact-olive-five-floor-v1-stage-5.png"
+      },
+      {
+        "id": "3a3fc715-937e-465a-9a75-646d25dd7ea9",
+        "family": "compact-panel-four-floor-v1",
+        "stage": 1,
+        "file": "compact-panel-four-floor-v1-stage-1.png"
+      },
+      {
+        "id": "17a6f5bf-b179-473b-88c4-8bcb6d5f9f0c",
+        "family": "compact-panel-four-floor-v1",
+        "stage": 2,
+        "file": "compact-panel-four-floor-v1-stage-2.png"
+      },
+      {
+        "id": "fa0e36ae-93e3-463d-b2ac-afdf48ddbfcf",
+        "family": "compact-panel-four-floor-v1",
+        "stage": 3,
+        "file": "compact-panel-four-floor-v1-stage-3.png"
+      },
+      {
+        "id": "d8021731-8847-4171-8f21-d9b44c99a7be",
+        "family": "compact-panel-four-floor-v1",
+        "stage": 4,
+        "file": "compact-panel-four-floor-v1-stage-4.png"
+      },
+      {
+        "id": "214a5969-a139-479f-a133-b72282a072bd",
+        "family": "compact-panel-four-floor-v1",
+        "stage": 5,
+        "file": "compact-panel-four-floor-v1-stage-5.png"
+      }
+    ],
+    "loaded": [
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-olive-five-floor-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-olive-five-floor-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-panel-four-floor-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-panel-four-floor-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-olive-five-floor-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-panel-four-floor-v1/stage-5.png"
+    ],
+    "errors": [],
+    "writes": []
+  },
+  {
+    "group": "city-art-audit-parks",
+    "sceneRevision": "34f71aa350842c364d0471850b26cbd0f9bd994dbdc9f9fbac61dccbeafb672c",
+    "examples": [
+      {
+        "id": "5f59f8c3-5bf0-4326-b0e3-642f2f207449",
+        "family": "urban-amusement",
+        "stage": 1,
+        "file": "urban-amusement-stage-1.png"
+      },
+      {
+        "id": "b8da27b5-7435-4c8e-8767-9de4dcbeb96d",
+        "family": "urban-amusement",
+        "stage": 2,
+        "file": "urban-amusement-stage-2.png"
+      },
+      {
+        "id": "297f2ae0-af79-4860-ae76-a3e0b4cd3ff1",
+        "family": "urban-amusement",
+        "stage": 3,
+        "file": "urban-amusement-stage-3.png"
+      },
+      {
+        "id": "92431676-352c-4236-97c9-b4b02914abdf",
+        "family": "urban-amusement",
+        "stage": 4,
+        "file": "urban-amusement-stage-4.png"
+      },
+      {
+        "id": "41989b98-f090-4ab1-b4a8-17423b96d1d7",
+        "family": "urban-amusement",
+        "stage": 5,
+        "file": "urban-amusement-stage-5.png"
+      },
+      {
+        "id": "05b5b1e3-f813-4b8f-b404-960333a79c39",
+        "family": "urban-botanical",
+        "stage": 1,
+        "file": "urban-botanical-stage-1.png"
+      },
+      {
+        "id": "75fb7906-6f2a-4a74-b695-a6f8dd79ebd1",
+        "family": "urban-botanical",
+        "stage": 2,
+        "file": "urban-botanical-stage-2.png"
+      },
+      {
+        "id": "e3bdfeef-26ea-42c2-b50d-df907b08b295",
+        "family": "urban-botanical",
+        "stage": 3,
+        "file": "urban-botanical-stage-3.png"
+      },
+      {
+        "id": "df76886c-33d0-4bb9-a1e2-2a361bebbd80",
+        "family": "urban-botanical",
+        "stage": 4,
+        "file": "urban-botanical-stage-4.png"
+      },
+      {
+        "id": "28fe766f-e17a-4753-81d5-9a974d72b15d",
+        "family": "urban-botanical",
+        "stage": 5,
+        "file": "urban-botanical-stage-5.png"
+      },
+      {
+        "id": "b92f243d-f388-47a6-8a60-f9320e7aaac7",
+        "family": "urban-fountain",
+        "stage": 1,
+        "file": "urban-fountain-stage-1.png"
+      },
+      {
+        "id": "8e72f2bd-c50e-44ae-b766-2362767b928b",
+        "family": "urban-fountain",
+        "stage": 2,
+        "file": "urban-fountain-stage-2.png"
+      },
+      {
+        "id": "e82ea0bb-50a7-4865-a115-39e6403b9cc7",
+        "family": "urban-fountain",
+        "stage": 3,
+        "file": "urban-fountain-stage-3.png"
+      },
+      {
+        "id": "ddea9875-a7d1-4c67-97b7-32707da580dd",
+        "family": "urban-fountain",
+        "stage": 4,
+        "file": "urban-fountain-stage-4.png"
+      },
+      {
+        "id": "7c51f840-7dad-4c0c-a565-ac9e63125283",
+        "family": "urban-fountain",
+        "stage": 5,
+        "file": "urban-fountain-stage-5.png"
+      },
+      {
+        "id": "80150450-678e-4c2c-a0e2-88e68b63ab95",
+        "family": "urban-memorial",
+        "stage": 1,
+        "file": "urban-memorial-stage-1.png"
+      },
+      {
+        "id": "64164030-fcde-4567-9b7d-8e24c5787705",
+        "family": "urban-memorial",
+        "stage": 2,
+        "file": "urban-memorial-stage-2.png"
+      },
+      {
+        "id": "ccbfb27b-65a3-45e9-a38d-88704062d9c2",
+        "family": "urban-memorial",
+        "stage": 3,
+        "file": "urban-memorial-stage-3.png"
+      },
+      {
+        "id": "1f2f144f-ba4e-4464-b4cc-bb8d41bc229d",
+        "family": "urban-memorial",
+        "stage": 4,
+        "file": "urban-memorial-stage-4.png"
+      },
+      {
+        "id": "691923a3-75f3-4a31-b09a-57ea81310410",
+        "family": "urban-memorial",
+        "stage": 5,
+        "file": "urban-memorial-stage-5.png"
+      },
+      {
+        "id": "41abcfc0-c60c-4764-a399-104e774551da",
+        "family": "urban-pocket",
+        "stage": 1,
+        "file": "urban-pocket-stage-1.png"
+      },
+      {
+        "id": "9600dc0d-8767-4eb6-a9b3-9377b5e0254f",
+        "family": "urban-pocket",
+        "stage": 2,
+        "file": "urban-pocket-stage-2.png"
+      },
+      {
+        "id": "c1a7ed94-f507-44ad-a5a6-dea1ea95058c",
+        "family": "urban-pocket",
+        "stage": 3,
+        "file": "urban-pocket-stage-3.png"
+      },
+      {
+        "id": "db8397a0-806a-4ddc-8aee-394a8a095649",
+        "family": "urban-pocket",
+        "stage": 4,
+        "file": "urban-pocket-stage-4.png"
+      },
+      {
+        "id": "3e1736a4-5cae-44f7-a0cc-9fbef4898cad",
+        "family": "urban-pocket",
+        "stage": 5,
+        "file": "urban-pocket-stage-5.png"
+      },
+      {
+        "id": "4084fd48-43e6-427f-957e-4b1777816461",
+        "family": "urban-promenade",
+        "stage": 1,
+        "file": "urban-promenade-stage-1.png"
+      },
+      {
+        "id": "ecf65fe4-1c37-4a8d-8587-46f4cef7326f",
+        "family": "urban-promenade",
+        "stage": 2,
+        "file": "urban-promenade-stage-2.png"
+      },
+      {
+        "id": "31e85604-ed59-4bb0-8ab9-60cd4c919712",
+        "family": "urban-promenade",
+        "stage": 3,
+        "file": "urban-promenade-stage-3.png"
+      },
+      {
+        "id": "9f833dff-c58c-421c-84f5-82bff3fd9a38",
+        "family": "urban-promenade",
+        "stage": 4,
+        "file": "urban-promenade-stage-4.png"
+      },
+      {
+        "id": "bbaba902-3ea1-4938-9961-843f0dfeb68f",
+        "family": "urban-promenade",
+        "stage": 5,
+        "file": "urban-promenade-stage-5.png"
+      }
+    ],
+    "loaded": [],
+    "errors": [],
+    "writes": []
+  },
+  {
+    "group": "city-art-audit-services",
+    "sceneRevision": "678915a3f8224b7c98761e37b65cb70554f5341e7f07327b8bba795c869e6409",
+    "examples": [
+      {
+        "id": "8aa53a45-3dbc-4a6d-8339-d1a1c47bdf9a",
+        "family": "compact-brick-police-v1",
+        "stage": 1,
+        "file": "compact-brick-police-v1-stage-1.png"
+      },
+      {
+        "id": "10c8477d-c739-48de-b587-67f3c2964b9f",
+        "family": "compact-brick-police-v1",
+        "stage": 2,
+        "file": "compact-brick-police-v1-stage-2.png"
+      },
+      {
+        "id": "a6da0c2f-a551-4d02-a324-17579a36507f",
+        "family": "compact-brick-police-v1",
+        "stage": 3,
+        "file": "compact-brick-police-v1-stage-3.png"
+      },
+      {
+        "id": "760e04f4-0f2a-4fce-8fe0-92592131e422",
+        "family": "compact-brick-police-v1",
+        "stage": 4,
+        "file": "compact-brick-police-v1-stage-4.png"
+      },
+      {
+        "id": "693f14bb-c9b0-4a81-9eb0-7f553203b4ec",
+        "family": "compact-brick-police-v1",
+        "stage": 5,
+        "file": "compact-brick-police-v1-stage-5.png"
+      },
+      {
+        "id": "b9a00185-6a9b-4645-9c19-ff0cc8483d01",
+        "family": "compact-hall-fire-station-v1",
+        "stage": 1,
+        "file": "compact-hall-fire-station-v1-stage-1.png"
+      },
+      {
+        "id": "bbde163d-ff0e-448d-987c-e6c40845edbe",
+        "family": "compact-hall-fire-station-v1",
+        "stage": 2,
+        "file": "compact-hall-fire-station-v1-stage-2.png"
+      },
+      {
+        "id": "c0e7b2d6-46ba-4c2a-b7e7-a53b80bd9712",
+        "family": "compact-hall-fire-station-v1",
+        "stage": 3,
+        "file": "compact-hall-fire-station-v1-stage-3.png"
+      },
+      {
+        "id": "651edda9-d24d-4ae1-96ed-a0f998997d00",
+        "family": "compact-hall-fire-station-v1",
+        "stage": 4,
+        "file": "compact-hall-fire-station-v1-stage-4.png"
+      },
+      {
+        "id": "27a40a4a-138f-4e72-a43f-f9f0aa975948",
+        "family": "compact-hall-fire-station-v1",
+        "stage": 5,
+        "file": "compact-hall-fire-station-v1-stage-5.png"
+      },
+      {
+        "id": "7d64a52c-df19-4c2a-b173-a061c5373730",
+        "family": "compact-modern-police-v1",
+        "stage": 1,
+        "file": "compact-modern-police-v1-stage-1.png"
+      },
+      {
+        "id": "c890e8df-259e-4d14-ab7e-ccad875472ba",
+        "family": "compact-modern-police-v1",
+        "stage": 2,
+        "file": "compact-modern-police-v1-stage-2.png"
+      },
+      {
+        "id": "606ebfd9-bf1d-4eb2-8f3d-1ffbab924eaf",
+        "family": "compact-modern-police-v1",
+        "stage": 3,
+        "file": "compact-modern-police-v1-stage-3.png"
+      },
+      {
+        "id": "bdf41ef1-ddba-4ab9-b95f-250211a0a1f5",
+        "family": "compact-modern-police-v1",
+        "stage": 4,
+        "file": "compact-modern-police-v1-stage-4.png"
+      },
+      {
+        "id": "eb76a99e-4f47-497c-9b53-6a032d8451de",
+        "family": "compact-modern-police-v1",
+        "stage": 5,
+        "file": "compact-modern-police-v1-stage-5.png"
+      },
+      {
+        "id": "4e119e97-3bbd-4404-88cc-e2a6337044ff",
+        "family": "compact-tower-fire-station-v1",
+        "stage": 1,
+        "file": "compact-tower-fire-station-v1-stage-1.png"
+      },
+      {
+        "id": "1b28b6a5-7917-4913-9b8e-64049c378db2",
+        "family": "compact-tower-fire-station-v1",
+        "stage": 2,
+        "file": "compact-tower-fire-station-v1-stage-2.png"
+      },
+      {
+        "id": "b59cac42-7918-4d88-8388-59630e23dae6",
+        "family": "compact-tower-fire-station-v1",
+        "stage": 3,
+        "file": "compact-tower-fire-station-v1-stage-3.png"
+      },
+      {
+        "id": "c35175b0-266e-41b9-b43f-65a2697f8075",
+        "family": "compact-tower-fire-station-v1",
+        "stage": 4,
+        "file": "compact-tower-fire-station-v1-stage-4.png"
+      },
+      {
+        "id": "c7b76e30-a5f4-4c21-9d0f-e9a1121d0aa0",
+        "family": "compact-tower-fire-station-v1",
+        "stage": 5,
+        "file": "compact-tower-fire-station-v1-stage-5.png"
+      }
+    ],
+    "loaded": [
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-brick-police-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-brick-police-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-hall-fire-station-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-modern-police-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-hall-fire-station-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-modern-police-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-modern-police-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-brick-police-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-hall-fire-station-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-tower-fire-station-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-tower-fire-station-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/civic/compact-tower-fire-station-v1/stage-3.png"
+    ],
+    "errors": [],
+    "writes": []
+  },
+  {
+    "group": "city-art-audit-shops",
+    "sceneRevision": "bb6f4f8ecb83a122f01ca82ae20c14cab3c248d91032748d85dfb1155532840d",
+    "examples": [
+      {
+        "id": "bad25b28-5b52-43d4-a317-f95bd0a7db72",
+        "family": "compact-bakery-shop-v1",
+        "stage": 1,
+        "file": "compact-bakery-shop-v1-stage-1.png"
+      },
+      {
+        "id": "67be99bb-52cb-4424-973b-1c9bc03ee654",
+        "family": "compact-bakery-shop-v1",
+        "stage": 2,
+        "file": "compact-bakery-shop-v1-stage-2.png"
+      },
+      {
+        "id": "d7b02277-9850-47e9-a1a0-f39bff046ab1",
+        "family": "compact-bakery-shop-v1",
+        "stage": 3,
+        "file": "compact-bakery-shop-v1-stage-3.png"
+      },
+      {
+        "id": "57129a75-ef3a-49ca-8523-cdc1207e370a",
+        "family": "compact-bakery-shop-v1",
+        "stage": 4,
+        "file": "compact-bakery-shop-v1-stage-4.png"
+      },
+      {
+        "id": "e38f8b69-9d5a-42ba-bc09-e561143398df",
+        "family": "compact-bakery-shop-v1",
+        "stage": 5,
+        "file": "compact-bakery-shop-v1-stage-5.png"
+      },
+      {
+        "id": "88b504ad-301d-4b8d-95c8-4f0fe41c9e59",
+        "family": "compact-corner-shop-v1",
+        "stage": 1,
+        "file": "compact-corner-shop-v1-stage-1.png"
+      },
+      {
+        "id": "5e72e92a-0a3a-4da0-8bdf-f619149c6b4e",
+        "family": "compact-corner-shop-v1",
+        "stage": 2,
+        "file": "compact-corner-shop-v1-stage-2.png"
+      },
+      {
+        "id": "5fb243f4-0222-41a6-9c7b-7c4ccd54f55d",
+        "family": "compact-corner-shop-v1",
+        "stage": 3,
+        "file": "compact-corner-shop-v1-stage-3.png"
+      },
+      {
+        "id": "e38da685-52e3-4c15-b1aa-af72bce6efa8",
+        "family": "compact-corner-shop-v1",
+        "stage": 4,
+        "file": "compact-corner-shop-v1-stage-4.png"
+      },
+      {
+        "id": "52f961da-555f-4eb1-a3a9-e3f122dc93c2",
+        "family": "compact-corner-shop-v1",
+        "stage": 5,
+        "file": "compact-corner-shop-v1-stage-5.png"
+      },
+      {
+        "id": "b79f6809-1090-4b29-b221-21f0238bd4db",
+        "family": "compact-flower-shop-v1",
+        "stage": 1,
+        "file": "compact-flower-shop-v1-stage-1.png"
+      },
+      {
+        "id": "dd4b301c-6884-48fb-966e-c22dc59f43d1",
+        "family": "compact-flower-shop-v1",
+        "stage": 2,
+        "file": "compact-flower-shop-v1-stage-2.png"
+      },
+      {
+        "id": "56307267-1ffb-4305-96da-4b62e380ed9f",
+        "family": "compact-flower-shop-v1",
+        "stage": 3,
+        "file": "compact-flower-shop-v1-stage-3.png"
+      },
+      {
+        "id": "76b39a6a-6a2e-4787-9f76-43bc50fdf7ea",
+        "family": "compact-flower-shop-v1",
+        "stage": 4,
+        "file": "compact-flower-shop-v1-stage-4.png"
+      },
+      {
+        "id": "ff97485b-b470-4feb-b8c3-dee4a966a343",
+        "family": "compact-flower-shop-v1",
+        "stage": 5,
+        "file": "compact-flower-shop-v1-stage-5.png"
+      },
+      {
+        "id": "ddfd4f0c-7c87-43af-bf52-5ab54bf5f6dd",
+        "family": "compact-supermarket-v1",
+        "stage": 1,
+        "file": "compact-supermarket-v1-stage-1.png"
+      },
+      {
+        "id": "42eb0965-0704-43b0-bccf-564c4228ee76",
+        "family": "compact-supermarket-v1",
+        "stage": 2,
+        "file": "compact-supermarket-v1-stage-2.png"
+      },
+      {
+        "id": "c362fed4-0e00-4145-a25d-aa66d44eae9f",
+        "family": "compact-supermarket-v1",
+        "stage": 3,
+        "file": "compact-supermarket-v1-stage-3.png"
+      },
+      {
+        "id": "c4dd7d9d-b80d-46e2-a8db-cb3dcbe9a78d",
+        "family": "compact-supermarket-v1",
+        "stage": 4,
+        "file": "compact-supermarket-v1-stage-4.png"
+      },
+      {
+        "id": "bc583644-1953-4c20-bda7-a694420b7404",
+        "family": "compact-supermarket-v1",
+        "stage": 5,
+        "file": "compact-supermarket-v1-stage-5.png"
+      }
+    ],
+    "loaded": [
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-corner-shop-v1/stage-5.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-bakery-shop-v1/stage-3.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-corner-shop-v1/stage-3.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-bakery-shop-v1/stage-4.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-supermarket-v1/stage-4.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-corner-shop-v1/stage-4.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-flower-shop-v1/stage-5.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-supermarket-v1/stage-3.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-supermarket-v1/stage-5.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-bakery-shop-v1/stage-5.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-flower-shop-v1/stage-4.png",
+      "/game-assets/v5/revisions/20e31e7350e69fa1/buildings/commercial/compact-flower-shop-v1/stage-3.png"
+    ],
+    "errors": [],
+    "writes": []
+  },
+  {
+    "group": "city-art-audit-sides",
+    "sceneRevision": "c6cda2c8714161d0b7be26683f4bf55235ed8f5e270bbec97774c0e8b1678984",
+    "examples": [
+      {
+        "id": "c3244de9-e11f-4f36-b660-ae9ade504e40",
+        "family": "compact-court-four-floor-v1",
+        "stage": 1,
+        "file": "compact-court-four-floor-v1-stage-1.png"
+      },
+      {
+        "id": "e4a6dcfd-bdd5-48ed-87bf-4a6ea0309d56",
+        "family": "compact-court-four-floor-v1",
+        "stage": 2,
+        "file": "compact-court-four-floor-v1-stage-2.png"
+      },
+      {
+        "id": "35339cfd-34f4-4c46-bba5-0ca00e0df783",
+        "family": "compact-court-four-floor-v1",
+        "stage": 3,
+        "file": "compact-court-four-floor-v1-stage-3.png"
+      },
+      {
+        "id": "cc1aa1b4-3053-4cb1-b1d6-3f0cd9ff864c",
+        "family": "compact-court-four-floor-v1",
+        "stage": 4,
+        "file": "compact-court-four-floor-v1-stage-4.png"
+      },
+      {
+        "id": "49759f36-414e-4094-8e31-6317fb5ada45",
+        "family": "compact-court-four-floor-v1",
+        "stage": 5,
+        "file": "compact-court-four-floor-v1-stage-5.png"
+      },
+      {
+        "id": "07897ad1-5b79-4cf2-9a98-9c90db2f57bd",
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 1,
+        "file": "compact-gallery-four-floor-v1-stage-1.png"
+      },
+      {
+        "id": "9c25d24c-4f3b-4819-a9b0-fc5e687e7c4e",
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 2,
+        "file": "compact-gallery-four-floor-v1-stage-2.png"
+      },
+      {
+        "id": "dbecc4f2-ad69-4fa5-be38-4bda6843a30f",
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 3,
+        "file": "compact-gallery-four-floor-v1-stage-3.png"
+      },
+      {
+        "id": "8e224297-9904-4767-b02f-3ef5e6535cc4",
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 4,
+        "file": "compact-gallery-four-floor-v1-stage-4.png"
+      },
+      {
+        "id": "2e313429-867d-4f40-8fea-e659d4bb1269",
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 5,
+        "file": "compact-gallery-four-floor-v1-stage-5.png"
+      }
+    ],
+    "loaded": [
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-court-four-floor-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-court-four-floor-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-gallery-four-floor-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-gallery-four-floor-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-gallery-four-floor-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-court-four-floor-v1/stage-5.png"
+    ],
+    "errors": [],
+    "writes": []
+  },
+  {
+    "group": "city-art-audit-tall",
+    "sceneRevision": "ec176836ec1e63ef6406ab9dc9d2c76a5983e9e64c3d72fb3e47a121f1c35f17",
+    "examples": [
+      {
+        "id": "279e7bfb-2c7c-4f68-a62d-8deb37a8ff9e",
+        "family": "compact-corner-five-floor-v1",
+        "stage": 1,
+        "file": "compact-corner-five-floor-v1-stage-1.png"
+      },
+      {
+        "id": "c88fd94c-7ded-4794-b726-23f4b4a256cb",
+        "family": "compact-corner-five-floor-v1",
+        "stage": 2,
+        "file": "compact-corner-five-floor-v1-stage-2.png"
+      },
+      {
+        "id": "f342f3df-b71d-4946-b56d-db4716917609",
+        "family": "compact-corner-five-floor-v1",
+        "stage": 3,
+        "file": "compact-corner-five-floor-v1-stage-3.png"
+      },
+      {
+        "id": "c3517776-8edf-47d2-a062-d318738c549f",
+        "family": "compact-corner-five-floor-v1",
+        "stage": 4,
+        "file": "compact-corner-five-floor-v1-stage-4.png"
+      },
+      {
+        "id": "bbc82f02-1267-4794-b316-0b354bac45b3",
+        "family": "compact-corner-five-floor-v1",
+        "stage": 5,
+        "file": "compact-corner-five-floor-v1-stage-5.png"
+      },
+      {
+        "id": "94bc851a-1456-45b3-9ed8-6186c972c3e4",
+        "family": "compact-modern-five-floor-v1",
+        "stage": 1,
+        "file": "compact-modern-five-floor-v1-stage-1.png"
+      },
+      {
+        "id": "f220acc5-f799-4d0f-b26d-9ed840836f2a",
+        "family": "compact-modern-five-floor-v1",
+        "stage": 2,
+        "file": "compact-modern-five-floor-v1-stage-2.png"
+      },
+      {
+        "id": "d977e84d-584a-42ab-a4ff-4714387d652a",
+        "family": "compact-modern-five-floor-v1",
+        "stage": 3,
+        "file": "compact-modern-five-floor-v1-stage-3.png"
+      },
+      {
+        "id": "335d3135-015c-415a-bf81-50c99d1eca2b",
+        "family": "compact-modern-five-floor-v1",
+        "stage": 4,
+        "file": "compact-modern-five-floor-v1-stage-4.png"
+      },
+      {
+        "id": "d902d8a5-e1cb-49d3-8387-8100bc8f5ffc",
+        "family": "compact-modern-five-floor-v1",
+        "stage": 5,
+        "file": "compact-modern-five-floor-v1-stage-5.png"
+      },
+      {
+        "id": "0fba73e3-5415-4765-a347-9715ac7c0c96",
+        "family": "compact-section-five-floor-v1",
+        "stage": 1,
+        "file": "compact-section-five-floor-v1-stage-1.png"
+      },
+      {
+        "id": "fc13b4ec-cb0b-4366-915a-7868aac68657",
+        "family": "compact-section-five-floor-v1",
+        "stage": 2,
+        "file": "compact-section-five-floor-v1-stage-2.png"
+      },
+      {
+        "id": "f5e00b5f-25d4-4671-9400-e2c76fc6f2ff",
+        "family": "compact-section-five-floor-v1",
+        "stage": 3,
+        "file": "compact-section-five-floor-v1-stage-3.png"
+      },
+      {
+        "id": "9945d9c3-d109-4b95-9fe1-4e92c38c7eaf",
+        "family": "compact-section-five-floor-v1",
+        "stage": 4,
+        "file": "compact-section-five-floor-v1-stage-4.png"
+      },
+      {
+        "id": "cbf67534-c624-4c69-a224-5744076786bd",
+        "family": "compact-section-five-floor-v1",
+        "stage": 5,
+        "file": "compact-section-five-floor-v1-stage-5.png"
+      }
+    ],
+    "loaded": [
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-section-five-floor-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-corner-five-floor-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-modern-five-floor-v1/stage-4.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-modern-five-floor-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-section-five-floor-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-section-five-floor-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-modern-five-floor-v1/stage-5.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-corner-five-floor-v1/stage-3.png",
+      "/game-assets/v5/revisions/4209719401d75016/buildings/house/compact-corner-five-floor-v1/stage-5.png"
+    ],
+    "errors": [],
+    "writes": []
+  }
+]

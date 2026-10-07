@@ -1,7 +1,8 @@
 import type { Cell } from "../shared/contracts";
 import { MICRO_CAR_VARIANTS, MICRO_PERSON_VARIANTS, microAmbientSprite, type MicroDirection } from "../shared/micro-ambient";
 import { nextSeededRandom } from "./agent-routing";
-import { buildMobilityNetwork, mobilityCellKey as key, mobilityNetworkSignature, searchMobilityRoutes, type MobilityNetwork, type MobilityNetworkInput, type MobilityZone } from "./city-mobility-network";
+import { buildMobilityNetwork, mobilityCellKey as key, mobilityNetworkSignature, type MobilityNetwork, type MobilityNetworkInput, type MobilityZone } from "./city-mobility-network";
+import { createMobilityRouteSearch } from "./mobility-route-search";
 
 export type CityMobilityInput = MobilityNetworkInput & { seed: number; carLimit: number; walkerLimit: number };
 export type CityMobilityAgent = {
@@ -30,6 +31,8 @@ export type CityMobility = {
 
 type Agent = CityMobilityAgent & {
   route: Cell[]; previous?: Cell; restMs: number; rng: number; requestedAt?: number; zoneId?: string;
+  // At most one uncommitted doorway pose; never a chain of prior actors.
+  pendingExit?: Agent;
   // Immutable lane endpoints of the currently traversed edge. A future route
   // repair must never change the geometry under an already moving body.
   segmentStart: Cell; segmentEnd: Cell;
@@ -72,6 +75,9 @@ const bodyCenter = (agent: CityMobilityAgent): Cell => ({ x: agent.position.x + 
 const safetyGap = (a: CityMobilityAgent, b: CityMobilityAgent) => a.kind === "WALKER" && b.kind === "WALKER" ? 0 : .025;
 
 function overlap(a: CityMobilityAgent, b: CityMobilityAgent, gap = 0): boolean {
+  // INSIDE positions are doorway references for the next trip, not bodies
+  // occupying outdoor lanes. The renderer hides these people completely.
+  if (a.activity === "INSIDE" || b.activity === "INSIDE") return false;
   const ae = body(a).half, be = body(b).half, ac = bodyCenter(a), bc = bodyCenter(b);
   return Math.abs(ac.x - bc.x) + EPSILON < ae.x + be.x + gap
     && Math.abs(ac.y - bc.y) + EPSILON < ae.y + be.y + gap;
@@ -167,6 +173,8 @@ export function mobilityExitAvailable(exit: Cell, incoming: Pick<CityMobilityAge
 /** No renderer state, RAF clocks or random globals enter this deterministic controller. */
 export function createCityMobility(input: CityMobilityInput): CityMobility {
   let network: MobilityNetwork = buildMobilityNetwork(input);
+  let carRoutes = createMobilityRouteSearch(network.cars, network.carEdges);
+  let walkerRoutes = createMobilityRouteSearch(network.walkers, network.walkerEdges);
   let actors: Agent[] = [], rng = input.seed || 1, idCounter = 0, remainder = 0, clock = 0;
   const limits = { CAR: Math.max(0, Math.min(48, Math.floor(input.carLimit))), WALKER: Math.max(0, Math.min(64, Math.floor(input.walkerLimit))) };
   const reservations = new Map<string, Reservation>();
@@ -177,7 +185,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
   const edges = (kind: Agent["kind"]) => kind === "CAR" ? network.carEdges : network.walkerEdges;
   const safeDestination = (cell: Cell) => !network.zoneByCell.has(key(cell));
   const plan = (agent: Agent): void => {
-    const search = searchMobilityRoutes(graph(agent.kind), edges(agent.kind), agent.current, agent.previous);
+    const search = (agent.kind === "CAR" ? carRoutes : walkerRoutes)(agent.current, agent.previous);
     const destinations = search.cells.filter(cell => {
       if (!safeDestination(cell) || same(cell, agent.current)) return false;
       if (agent.kind === "CAR") return true;
@@ -250,13 +258,14 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
 
   const recordMetrics = () => {
     metrics.vehicleUnsafePairs = metrics.pedestrianUnsafePairs = metrics.vehiclePedestrianUnsafePairs = 0;
-    const poses = actors.map(actor => ({ center: bodyCenter(actor), half: body(actor).half }));
-    for (let a = 0; a < actors.length; a++) for (let b = a + 1; b < actors.length; b++) {
+    const outdoor = actors.filter(actor => actor.activity !== "INSIDE");
+    const poses = outdoor.map(actor => ({ center: bodyCenter(actor), half: body(actor).half }));
+    for (let a = 0; a < outdoor.length; a++) for (let b = a + 1; b < outdoor.length; b++) {
       const ap = poses[a]!, bp = poses[b]!;
       if (Math.abs(ap.center.x - bp.center.x) + EPSILON >= ap.half.x + bp.half.x
         || Math.abs(ap.center.y - bp.center.y) + EPSILON >= ap.half.y + bp.half.y) continue;
-      if (actors[a]!.kind === "CAR" && actors[b]!.kind === "CAR") metrics.vehicleUnsafePairs++;
-      else if (actors[a]!.kind === "WALKER" && actors[b]!.kind === "WALKER") metrics.pedestrianUnsafePairs++;
+      if (outdoor[a]!.kind === "CAR" && outdoor[b]!.kind === "CAR") metrics.vehicleUnsafePairs++;
+      else if (outdoor[a]!.kind === "WALKER" && outdoor[b]!.kind === "WALKER") metrics.pedestrianUnsafePairs++;
       else metrics.vehiclePedestrianUnsafePairs++;
     }
     metrics.vehicleUnsafeTotal += metrics.vehicleUnsafePairs;
@@ -275,8 +284,21 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (actor.restMs > 0) {
         actor.restMs = Math.max(0, actor.restMs - STEP_MS);
         if (!actor.restMs) {
-          if (actor.activity === "INSIDE") actor.previous = undefined;
-          actor.activity = "NONE";
+          if (actor.activity === "INSIDE") {
+            // Leaving a doorway can reverse the walking lane. Admit the new
+            // pose while still hidden; planning directly on the live actor
+            // would move its lateral offset before swept collision checks.
+            let exit = actor.pendingExit;
+            if (!exit) {
+              exit = { ...actor, pendingExit: undefined, previous: undefined, activity: "NONE" };
+              plan(exit);
+              actor.pendingExit = exit;
+            }
+            if (actors.some(other => other.id !== actor.id && overlap(exit, other, safetyGap(exit, other)))) {
+              actor.restMs = STEP_MS;
+              actor.yieldReason = "OCCUPIED_EXIT";
+            } else Object.assign(actor, exit, { pendingExit: undefined });
+          } else actor.activity = "NONE";
         }
       }
       if (actor.route.length < 2 && !actor.restMs) plan(actor);
@@ -337,10 +359,11 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
     }
     // Transactional, symmetric collision resolution over the same snapshot.
     // A losing intention is shortened, never rewound or teleported elsewhere.
-    const geometries = new Map(actors.map(actor => [actor.id, motionGeometry(actor)]));
+    const outdoor = actors.filter(actor => actor.activity !== "INSIDE");
+    const geometries = new Map(outdoor.map(actor => [actor.id, motionGeometry(actor)]));
     const candidatePairs: Array<[Agent, Agent]> = [];
-    for (let a = 0; a < actors.length; a++) for (let b = a + 1; b < actors.length; b++) {
-      const left = actors[a]!, right = actors[b]!;
+    for (let a = 0; a < outdoor.length; a++) for (let b = a + 1; b < outdoor.length; b++) {
+      const left = outdoor[a]!, right = outdoor[b]!;
       if (Math.abs(left.position.x - right.position.x) <= 2 && Math.abs(left.position.y - right.position.y) <= 2) candidatePairs.push([left, right]);
     }
     const conflict = (a: Agent, b: Agent, aa: number, ba: number) => motionConflict(geometries.get(a.id)!, geometries.get(b.id)!, aa, ba);
@@ -408,6 +431,9 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         return;
       }
       network = buildMobilityNetwork(updated); metrics.networkBuilds++;
+      carRoutes = createMobilityRouteSearch(network.cars, network.carEdges);
+      walkerRoutes = createMobilityRouteSearch(network.walkers, network.walkerEdges);
+      for (const actor of actors) actor.pendingExit = undefined;
       actors = actors.filter(actor => graph(actor.kind).has(key(actor.current)) && graph(actor.kind).has(key(actor.next))
         // A road edit can reverse a lane while retaining both cells. Such an
         // invalid physical edge is retired, never kept as a wrong-way route.

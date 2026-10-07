@@ -218,6 +218,20 @@ function geometryDigest(scene: CitySceneDto): string {
 
 test("keeps cars and walkers moving safely through a long sampled run, district focus and atlas return", async ({ page }, testInfo) => {
   test.setTimeout(SAMPLE_DURATION_MS + 110_000);
+  if (process.env.MOBILITY_SESSION_SEED) {
+    const seed = Number(process.env.MOBILITY_SESSION_SEED);
+    expect(Number.isInteger(seed) && seed > 0 && seed <= 0xffff_ffff).toBe(true);
+    expect(new URL(process.env.E2E_BASE_URL!).hostname).toMatch(/^(?:localhost|127\.0\.0\.1)$/);
+    // Reproduce the observed local session through its entropy seam. Other
+    // crypto arrays/UUIDs and every product default retain native randomness.
+    await page.addInitScript(seed => {
+      crypto.getRandomValues = new Proxy(crypto.getRandomValues, { apply(target, receiver, args) {
+        const array = args[0];
+        if (array instanceof Uint32Array && array.length === 1) { array[0] = seed; return array; }
+        return Reflect.apply(target, receiver, args);
+      } });
+    }, seed);
+  }
   const directory = process.env.MOBILITY_SCREENSHOT_DIR;
   if (directory) await mkdir(directory, { recursive: true });
   const pageErrors: string[] = [];
@@ -280,8 +294,8 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
   expect(bootstrap.initialCity).not.toBeNull();
   const city = bootstrap.initialCity!;
   await page.locator(".country-title-button").click();
-  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "План страны" }).click();
-  await page.getByRole("complementary", { name: "План страны" }).locator(".plan-row > button:first-child").filter({ hasText: city.name }).click();
+  await page.getByRole("dialog", { name: "Выбор страны" }).getByRole("button", { name: "Города", exact: true }).click();
+  await page.getByRole("complementary", { name: "Города", exact: true }).locator(".plan-row > button:first-child").filter({ hasText: city.name }).click();
   await ready(page);
   const host = page.locator(".world-canvas");
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");

@@ -1,0 +1,1518 @@
+{
+  "baselineRevision": "80bcd0fa28c1fdd099f15e18e75aa92ee177cea8",
+  "candidateScope": "route topology index, park layout cache, scene collection cache, safe doorway admission and invisible indoor visitors, supermarket chroma fix, runtime1.24.12",
+  "environment": {
+    "browser": "151.0.7922.34",
+    "cpu": "Apple M5 Pro",
+    "renderer": "ANGLE Metal Apple M5 Pro",
+    "viewport": [
+      1440,
+      1000
+    ],
+    "DPR": 1,
+    "quality": "NORMAL",
+    "sampleSeconds": 8,
+    "warmupSeconds": 3,
+    "network": "local unrestricted"
+  },
+  "workloads": [
+    {
+      "workload": "parks30",
+      "samples": [
+        {
+          "coldMs": 1323.974083,
+          "appMs": 2242.4147080000002,
+          "warmMs": 31.816415999999663,
+          "geometryHash": "238bc01708e90687297069e233bf257cdac4c2e47bbe761194630a310692dfe2",
+          "chunks": 9,
+          "tasks": 30,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.199999999998909,
+          "p95FrameMs": 9.900000000001455,
+          "heapBytes": 51305788,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 1,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 95,
+              "encodedBodyBytes": 65063,
+              "decodedBodyBytes": 65063
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "index-CuQaUeJE.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-BtSfWzZf.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "Markdown-B0Da-8Ke.js",
+            "TaskModal-BtdIPT5N.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "Geometry-Ckw_XhzT.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Filter-BqdleU4p.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "BufferResource-DFJ3_9YU.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "browserAll-CFqfsfg1.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "init-CPtzLbPr.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1316.486125,
+          "appMs": 2220.543417,
+          "warmMs": 44.367291999999,
+          "geometryHash": "238bc01708e90687297069e233bf257cdac4c2e47bbe761194630a310692dfe2",
+          "chunks": 9,
+          "tasks": 30,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 10,
+          "heapBytes": 53827228,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 1,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 95,
+              "encodedBodyBytes": 65063,
+              "decodedBodyBytes": 65063
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-CicscMw4.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "TaskModal-DQUbTOZs.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "Geometry-Ckw_XhzT.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Filter-BqdleU4p.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GCManagedHash-CtptiOfb.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1327.999292,
+          "appMs": 2218.686375,
+          "warmMs": 26.186999999999898,
+          "geometryHash": "238bc01708e90687297069e233bf257cdac4c2e47bbe761194630a310692dfe2",
+          "chunks": 9,
+          "tasks": 30,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.199999999999818,
+          "p95FrameMs": 9.700000000000728,
+          "heapBytes": 51333672,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 2,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 95,
+              "encodedBodyBytes": 65063,
+              "decodedBodyBytes": 65063
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "index-CuQaUeJE.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-BtSfWzZf.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "world-terrain-DUaaYnoZ.js",
+            "Markdown-B0Da-8Ke.js",
+            "TaskModal-BtdIPT5N.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "browserAll-CFqfsfg1.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1322.459291,
+          "appMs": 2211.520959,
+          "warmMs": 36.292333999999755,
+          "geometryHash": "238bc01708e90687297069e233bf257cdac4c2e47bbe761194630a310692dfe2",
+          "chunks": 9,
+          "tasks": 30,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 53694820,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 2,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 95,
+              "encodedBodyBytes": 65063,
+              "decodedBodyBytes": 65063
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-CicscMw4.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "world-terrain-DUaaYnoZ.js",
+            "TaskModal-DQUbTOZs.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1326.293667,
+          "appMs": 2216.628208,
+          "warmMs": 24.759916000000885,
+          "geometryHash": "238bc01708e90687297069e233bf257cdac4c2e47bbe761194630a310692dfe2",
+          "chunks": 9,
+          "tasks": 30,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 51354584,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 3,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 95,
+              "encodedBodyBytes": 65063,
+              "decodedBodyBytes": 65063
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "index-CuQaUeJE.js",
+            "rolldown-runtime-hePW80VL.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "api-I1isT3Yh.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-BtSfWzZf.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "world-terrain-DUaaYnoZ.js",
+            "TaskModal-BtdIPT5N.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "Filter-BqdleU4p.js",
+            "Geometry-Ckw_XhzT.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1318.880458,
+          "appMs": 2211.495625,
+          "warmMs": 23.429665999999997,
+          "geometryHash": "238bc01708e90687297069e233bf257cdac4c2e47bbe761194630a310692dfe2",
+          "chunks": 9,
+          "tasks": 30,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 9.700000000000728,
+          "heapBytes": 53644504,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 3,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 95,
+              "encodedBodyBytes": 65063,
+              "decodedBodyBytes": 65063
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-CicscMw4.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "TaskModal-DQUbTOZs.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Filter-BqdleU4p.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "Geometry-Ckw_XhzT.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        }
+      ],
+      "medians": {
+        "baseline": {
+          "coldMs": 1326.293667,
+          "warmMs": 26.186999999999898,
+          "appMs": 2218.686375,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 51333672
+        },
+        "candidate": {
+          "coldMs": 1318.880458,
+          "warmMs": 36.292333999999755,
+          "appMs": 2211.520959,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 53694820
+        },
+        "coldChangePercent": -0.5589417475518887,
+        "p95ChangePercent": 0.0
+      }
+    },
+    {
+      "workload": "city300",
+      "samples": [
+        {
+          "coldMs": 1990.17075,
+          "appMs": 2888.470875,
+          "warmMs": 28.937583999999333,
+          "geometryHash": "f10210dedba8e135f70a98e8d77894270e5f65a6015e286e46a8bf9a1121bdf8",
+          "chunks": 18,
+          "tasks": 300,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.900000000001455,
+          "heapBytes": 99189156,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 1,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 150,
+              "encodedBodyBytes": 199769,
+              "decodedBodyBytes": 199769
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "index-CuQaUeJE.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-BtSfWzZf.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "world-terrain-DUaaYnoZ.js",
+            "Markdown-B0Da-8Ke.js",
+            "TaskModal-BtdIPT5N.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1343.808583,
+          "appMs": 2257.2725,
+          "warmMs": 33.158792000000176,
+          "geometryHash": "f10210dedba8e135f70a98e8d77894270e5f65a6015e286e46a8bf9a1121bdf8",
+          "chunks": 18,
+          "tasks": 300,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 105235244,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 1,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 150,
+              "encodedBodyBytes": 199769,
+              "decodedBodyBytes": 199769
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-CicscMw4.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "TaskModal-DQUbTOZs.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Cache-fEfeSd-A.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1821.015833,
+          "appMs": 2710.825375,
+          "warmMs": 30.660791000000245,
+          "geometryHash": "f10210dedba8e135f70a98e8d77894270e5f65a6015e286e46a8bf9a1121bdf8",
+          "chunks": 18,
+          "tasks": 300,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 9.800000000000182,
+          "heapBytes": 99267944,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 2,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 150,
+              "encodedBodyBytes": 199769,
+              "decodedBodyBytes": 199769
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-BtSfWzZf.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "index-CuQaUeJE.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "world-terrain-DUaaYnoZ.js",
+            "Markdown-B0Da-8Ke.js",
+            "TaskModal-BtdIPT5N.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "GCManagedHash-CtptiOfb.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "BufferResource-DFJ3_9YU.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1600.7842080000003,
+          "appMs": 2493.787458,
+          "warmMs": 34.17241699999977,
+          "geometryHash": "f10210dedba8e135f70a98e8d77894270e5f65a6015e286e46a8bf9a1121bdf8",
+          "chunks": 18,
+          "tasks": 300,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 105300688,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 2,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 150,
+              "encodedBodyBytes": 199769,
+              "decodedBodyBytes": 199769
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-CicscMw4.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "Markdown-B0Da-8Ke.js",
+            "TaskModal-DQUbTOZs.js",
+            "esm-BrLCb35z.js",
+            "Geometry-Ckw_XhzT.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Filter-BqdleU4p.js",
+            "Cache-fEfeSd-A.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1844.767,
+          "appMs": 2738.005583,
+          "warmMs": 34.551916999998866,
+          "geometryHash": "f10210dedba8e135f70a98e8d77894270e5f65a6015e286e46a8bf9a1121bdf8",
+          "chunks": 18,
+          "tasks": 300,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 9.900000000001455,
+          "heapBytes": 99189732,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 3,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 150,
+              "encodedBodyBytes": 199769,
+              "decodedBodyBytes": 199769
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "index-CuQaUeJE.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-BtSfWzZf.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "world-terrain-DUaaYnoZ.js",
+            "TaskModal-BtdIPT5N.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "Filter-BqdleU4p.js",
+            "Geometry-Ckw_XhzT.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 1568.0187500000002,
+          "appMs": 2488.006,
+          "warmMs": 25.82641599999988,
+          "geometryHash": "f10210dedba8e135f70a98e8d77894270e5f65a6015e286e46a8bf9a1121bdf8",
+          "chunks": 18,
+          "tasks": 300,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 105271416,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 3,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 150,
+              "encodedBodyBytes": 199769,
+              "decodedBodyBytes": 199769
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "rolldown-runtime-hePW80VL.js",
+            "index-CCaczDIa.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-CicscMw4.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "world-terrain-DUaaYnoZ.js",
+            "TaskModal-DQUbTOZs.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Filter-BqdleU4p.js",
+            "Geometry-Ckw_XhzT.js",
+            "Cache-fEfeSd-A.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "browserAll-CFqfsfg1.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        }
+      ],
+      "medians": {
+        "baseline": {
+          "coldMs": 1844.767,
+          "warmMs": 30.660791000000245,
+          "appMs": 2738.005583,
+          "p95FrameMs": 9.900000000001455,
+          "heapBytes": 99189732
+        },
+        "candidate": {
+          "coldMs": 1568.0187500000002,
+          "warmMs": 33.158792000000176,
+          "appMs": 2488.006,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 105271416
+        },
+        "coldChangePercent": -15.0017996852719,
+        "p95ChangePercent": -1.837419105754634e-11
+      }
+    },
+    {
+      "workload": "city1000",
+      "samples": [
+        {
+          "coldMs": 2341.6892500000004,
+          "appMs": 3258.120875,
+          "warmMs": 31.43829199999891,
+          "geometryHash": "a2e13b2390c69badfcc406a8b8347d21145e9f557932bc51b984a4168d2b4add",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 10.099999999998545,
+          "heapBytes": 250933652,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 1,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 159,
+              "encodedBodyBytes": 217764,
+              "decodedBodyBytes": 217764
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "index-CuQaUeJE.js",
+            "rolldown-runtime-hePW80VL.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "api-I1isT3Yh.js",
+            "catalog-BtSfWzZf.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "TaskModal-BtdIPT5N.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "Cache-fEfeSd-A.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "BitmapFont-lZEG760Y.js",
+            "browserAll-CFqfsfg1.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 2791.5372079999997,
+          "appMs": 3694.887375,
+          "warmMs": 25.51458300000013,
+          "geometryHash": "a2e13b2390c69badfcc406a8b8347d21145e9f557932bc51b984a4168d2b4add",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 10.299999999999272,
+          "heapBytes": 268976476,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 1,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 159,
+              "encodedBodyBytes": 217783,
+              "decodedBodyBytes": 217783
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-CicscMw4.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "Markdown-B0Da-8Ke.js",
+            "TaskModal-DQUbTOZs.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "Cache-fEfeSd-A.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "GCManagedHash-CtptiOfb.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "BufferResource-DFJ3_9YU.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 2286.151708,
+          "appMs": 3195.7575420000003,
+          "warmMs": 25.391749999998865,
+          "geometryHash": "a2e13b2390c69badfcc406a8b8347d21145e9f557932bc51b984a4168d2b4add",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.200000000000728,
+          "p95FrameMs": 10.100000000000364,
+          "heapBytes": 250649848,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 2,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 159,
+              "encodedBodyBytes": 217764,
+              "decodedBodyBytes": 217764
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-BtSfWzZf.js",
+            "index-CuQaUeJE.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "Markdown-B0Da-8Ke.js",
+            "TaskModal-BtdIPT5N.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Filter-BqdleU4p.js",
+            "Geometry-Ckw_XhzT.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GCManagedHash-CtptiOfb.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "BitmapFont-lZEG760Y.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 2209.563584,
+          "appMs": 3105.108041,
+          "warmMs": 27.6104579999992,
+          "geometryHash": "a2e13b2390c69badfcc406a8b8347d21145e9f557932bc51b984a4168d2b4add",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 10.200000000000728,
+          "heapBytes": 268403272,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 2,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 159,
+              "encodedBodyBytes": 217783,
+              "decodedBodyBytes": 217783
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-CicscMw4.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "world-terrain-DUaaYnoZ.js",
+            "TaskModal-DQUbTOZs.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Cache-fEfeSd-A.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Filter-BqdleU4p.js",
+            "Geometry-Ckw_XhzT.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GCManagedHash-CtptiOfb.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "browserAll-CFqfsfg1.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 2227.226791,
+          "appMs": 3118.354333,
+          "warmMs": 27.961875000000873,
+          "geometryHash": "a2e13b2390c69badfcc406a8b8347d21145e9f557932bc51b984a4168d2b4add",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 10,
+          "heapBytes": 251033720,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 3,
+          "variant": "baseline",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 159,
+              "encodedBodyBytes": 217764,
+              "decodedBodyBytes": 217764
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 528290,
+              "decodedBodyBytes": 1999852
+            }
+          },
+          "bundles": [
+            "rolldown-runtime-hePW80VL.js",
+            "index-CuQaUeJE.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "catalog-BtSfWzZf.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "PlanetAtlasCanvas-Cc1cItw0.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "TaskModal-BtdIPT5N.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "WorldCanvas-DwMHbTOh.js",
+            "Geometry-Ckw_XhzT.js",
+            "Filter-BqdleU4p.js",
+            "Cache-fEfeSd-A.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "GCManagedHash-CtptiOfb.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "BitmapFont-lZEG760Y.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "world-chunk-payload-DuSv8Z0t.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "init-CPtzLbPr.js",
+            "browserAll-CFqfsfg1.js",
+            "chunk-materializer-worker-l5pi5fdy.js",
+            "chunk-materializer-worker-l5pi5fdy.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        },
+        {
+          "coldMs": 2128.435875,
+          "appMs": 3020.308833,
+          "warmMs": 32.19666700000016,
+          "geometryHash": "a2e13b2390c69badfcc406a8b8347d21145e9f557932bc51b984a4168d2b4add",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 10.299999999999272,
+          "heapBytes": 268479344,
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+          "pair": 3,
+          "variant": "candidate",
+          "errors": [],
+          "agents": {
+            "Start": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            },
+            "End": {
+              "cars": "24",
+              "walkers": "32",
+              "worldQuality": "NORMAL"
+            }
+          },
+          "resourceTotals": {
+            "png": {
+              "count": 159,
+              "encodedBodyBytes": 217783,
+              "decodedBodyBytes": 217783
+            },
+            "js": {
+              "count": 35,
+              "encodedBodyBytes": 529385,
+              "decodedBodyBytes": 2002027
+            }
+          },
+          "bundles": [
+            "index-CCaczDIa.js",
+            "rolldown-runtime-hePW80VL.js",
+            "api-I1isT3Yh.js",
+            "map-scene-cache-BUWBz2nD.js",
+            "world-cell-runs-BaTy-KN6.js",
+            "catalog-CicscMw4.js",
+            "PlanetAtlasCanvas-BsIMgccm.js",
+            "world-terrain-DUaaYnoZ.js",
+            "map-pointer-gesture-DMdvH0Wu.js",
+            "TaskModal-DQUbTOZs.js",
+            "Markdown-B0Da-8Ke.js",
+            "esm-BrLCb35z.js",
+            "Geometry-Ckw_XhzT.js",
+            "WorldCanvas-hq7gtvIN.js",
+            "Filter-BqdleU4p.js",
+            "getPo2TextureFromSource-D_dTR7iM.js",
+            "Cache-fEfeSd-A.js",
+            "canvasUtils-C3EzOeUa.js",
+            "CanvasPool-3ldCMsRM.js",
+            "getTextureBatchBindGroup-BTLnWq_D.js",
+            "GCManagedHash-CtptiOfb.js",
+            "RenderTargetSystem-CZwX8qce.js",
+            "GraphicsContext-CvtOAmjy.js",
+            "CanvasRenderer-D3a4PssS.js",
+            "BufferResource-DFJ3_9YU.js",
+            "WebGPURenderer-ClDQed5b.js",
+            "WebGLRenderer-DbctGfv_.js",
+            "world-chunk-payload-CPScFUMr.js",
+            "BitmapFont-lZEG760Y.js",
+            "browserAll-CFqfsfg1.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "init-CPtzLbPr.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js",
+            "chunk-materializer-worker-Cy1wNOuV.js"
+          ],
+          "chunkOrViewportResourceReads": 0
+        }
+      ],
+      "medians": {
+        "baseline": {
+          "coldMs": 2286.151708,
+          "warmMs": 27.961875000000873,
+          "appMs": 3195.7575420000003,
+          "p95FrameMs": 10.099999999998545,
+          "heapBytes": 250933652
+        },
+        "candidate": {
+          "coldMs": 2209.563584,
+          "warmMs": 27.6104579999992,
+          "appMs": 3105.108041,
+          "p95FrameMs": 10.299999999999272,
+          "heapBytes": 268479344
+        },
+        "coldChangePercent": -3.350089310870874,
+        "p95ChangePercent": 1.9801980198094649
+      }
+    }
+  ],
+  "limitations": [
+    "3 alternating cold/warm pairs per workload; timing distributions overlap; local results are not a public-network SLA.",
+    "Uncontrolled headless AUTO software series exceeded the p95 budget and is not used as qualification.",
+    "Final18-sample series includes both doorway fixes and runtime1.24.12; the earlier native series is not substituted for final measurements.",
+    "Park warm median increased by about10ms; no warm-phase speedup is claimed.",
+    "Cached topology and entities add about2.3/5.8/16.7MiB for parks30/city300/city1000, released with the live scene."
+  ]
+}

@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { ChunkTaskDto } from "../../src/shared/contracts";
 import { getBuilding } from "../../src/shared/catalog";
+import { buildingEntranceCell, ENTRANCE_NORMAL } from "../../src/shared/building-access";
 
 test.skip(process.env.E2E_BUILDING_DIVERSITY_ART !== "true", "Requires seed-building-diversity-preview's isolated local fixture");
 test.use({ viewport: { width: 1440, height: 1000 } });
@@ -83,6 +84,18 @@ test("city architecture renders all five real construction stages and opens its 
   for (const task of tasks.sort((a, b) => familyOf(a).localeCompare(familyOf(b)) || a.stage - b.stage)) {
     const entry = geometry(task);
     expect(task.footprint).toHaveLength(entry.footprint.width * entry.footprint.height);
+    if (task.visualKind !== "PARK") {
+      const entrance = getBuilding(task.buildingType).entrances[0]!;
+      const threshold = buildingEntranceCell(task.origin, entry.footprint, entrance);
+      const normal = ENTRANCE_NORMAL[entrance.side];
+      expect(task.accessPath[0], `${familyOf(task)}/${task.stage}: approach matches authored door`).toEqual({
+        x: threshold.x + normal.x, y: threshold.y + normal.y,
+      });
+      for (let index = 1; index < task.accessPath.length; index++) {
+        const previous = task.accessPath[index - 1]!, current = task.accessPath[index]!;
+        expect(Math.abs(current.x - previous.x) + Math.abs(current.y - previous.y)).toBe(1);
+      }
+    }
     const point = await center(page, task);
     await page.mouse.move(10, 20);
     const file = `${familyOf(task)}-stage-${task.stage}.png`;
@@ -107,7 +120,7 @@ test("city architecture renders all five real construction stages and opens its 
       await expect(page.getByRole("dialog").locator("#task-title")).toHaveText(task.title);
       await page.getByRole("button", { name: "Закрыть", exact: true }).click();
     }
-    examples.push({ id: task.id, family: familyOf(task), stage: task.stage, file });
+    examples.push({ id: task.id, family: familyOf(task), stage: task.stage, file, origin: task.origin, approach: task.accessPath[0] });
   }
   if (!parks) expect(loaded.size).toBe(families.length * 3);
   // Native scale and the actual regional/global atlas use the same saved city.

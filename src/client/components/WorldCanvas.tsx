@@ -1,4 +1,5 @@
 import { planCityParking } from "../city-parking";
+import { createCityEntityCollector } from "../city-entity-collector";
 import { cityLifeSites, planCityLife, cityLifePose, type CityLifeSite, type CityLifePlan } from "../city-life";
 import { createCityLifeView } from "../city-life-view";
 import { worldDetailProfile } from "../world-detail-profile";
@@ -100,7 +101,6 @@ import { overviewFromDetailChunk } from "../world-chunk-cache";
 import { greenAreaDecorStage, greenAreaSurfaceLayout, type GreenAreaDevelopmentStage } from "../../shared/green-area";
 import { taskParkDecorLayout, taskParkingMarkings } from "../../shared/task-park";
 import { publicSpaceRenderStage } from "../../shared/public-space-stage";
-import type { BlockPlaqueDto } from "../../shared/contracts";
 import {
   CONSTRUCTION_DETAIL_SPEC_BY_KEY,
   CONSTRUCTION_TILE_KEYS,
@@ -1148,6 +1148,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
     };
     const chunks = new Map<string, ChunkDto>();
     const entityChunks = new Map<string, ChunkDto>();
+    const collectCityEntities = createCityEntityCollector();
     const entityChunkLods = new Map<string, MapLod>();
     const chunkLods = new Map<string, MapLod>();
     const chunkDataCache = new Map<string, ChunkDto>();
@@ -1248,7 +1249,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
 
       const attentionLayer = new Graphics({ label: "task-attention", eventMode: "none" });
       world.addChild(attentionLayer);
-      let attentionTasks = new Map<string, ChunkTaskDto>();
+      let attentionTasks: ReadonlyMap<string, ChunkTaskDto> = new Map();
       const renderAttention = () => {
         if (disposed) return;
         attentionLayer.clear();
@@ -1678,7 +1679,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       const mobilityStepMetric = new RollingPerformanceMetric(120);
       const livingWorldFrameMetric = new RollingPerformanceMetric(120);
       let lastMeasuredMobilityStep = 0;
-      let mobilityRoads = new Map<string, RoadCellDto>();
+      let mobilityRoads: ReadonlyMap<string, RoadCellDto> = new Map();
       let mobilityWalkGraph = new Map<string, Cell>();
       let parkingCells=new Set<string>();
       const reportMobility = (): void => {
@@ -2695,38 +2696,12 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
 
       function renderEntities(rebuildMovement: boolean): void {
         syncCityRailway();
-        const districts = new Map<string, ChunkDistrictDto>();
-        const tasks = new Map<string, ChunkTaskDto>();
-        const roads = new Map<string, RoadCellDto>();
-        const surfaces = new Map<string, SurfaceCellDto>();
-        const terrain = new Map<string, ChunkDto["terrain"][number]>();
-        const decorations = new Map<string, ChunkDto["decorations"][number]>();
-        const features = new Map<string, WorldFeatureDto>();
-        const plannedSites = new Map<string, PlannedSiteDto>();
-        const blockPlaques = new Map<string, BlockPlaqueDto>();
-        for (const [cacheKey, chunk] of entityChunks) {
-          if (entityChunkLods.get(cacheKey) !== currentLod) continue;
-          for (const cell of chunk.terrain) terrain.set(key(cell), cell);
-          for (const road of chunk.roads) roads.set(key(road), road);
-          for (const surface of chunk.surfaces) surfaces.set(key(surface), surface);
-          for (const district of chunk.districts) {
-            const existing = districts.get(district.id);
-            if (!existing) districts.set(district.id, district);
-            else {
-              const cells = new Map([...existing.cells, ...district.cells].map((cell) => [key(cell), cell]));
-              districts.set(district.id, { ...district, cells: [...cells.values()] });
-            }
-          }
-          for (const task of chunk.tasks) tasks.set(task.id, task);
-          for (const decoration of chunk.decorations) {
-            if (decoration.kind === "hill-rocky" || decoration.kind === "hill-small" || decoration.kind.startsWith("rock-")) continue;
-            decorations.set(decoration.id, decoration);
-          }
-          for (const feature of chunk.worldFeatures) features.set(feature.id, feature);
-          if (currentLod === "DETAIL") for (const site of chunk.plannedSites ?? []) plannedSites.set(site.id, site);
-          if (currentLod === "DETAIL") for (const plaque of chunk.blockPlaques ?? []) blockPlaques.set(plaque.id, plaque);
-        }
-        for (const task of completedSnapshotTasks.values()) tasks.set(task.id, task);
+        const collected = collectCityEntities([...entityChunks].filter(([id]) => entityChunkLods.get(id) === currentLod)
+          .map(([, chunk]) => chunk), [...completedSnapshotTasks.values()], currentLod === "DETAIL");
+        const { districts, tasks, roads, surfaces, terrain, features, plannedSites, blockPlaques } = collected;
+        // Transport exclusions are local to this render; never mutate the
+        // cached geography when a railway/airport presentation changes.
+        const decorations = new Map(collected.decorations);
         airportGround.clear();
         for (const task of tasks.values()) drawAirportApron(airportGround, task, CELL_SIZE);
         const airportCells = new Set([...tasks.values()].filter(task => task.serviceRole === "AIRPORT" && task.stage >= 3).flatMap(task => task.footprint.map(key)));
@@ -2787,7 +2762,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         }
         host!.dataset.blockPlaques = String(blockPlaques.size);
         const reconcile = <T extends RenderNode, D>(
-          source: Map<string, D>,
+          source: ReadonlyMap<string, D>,
           records: Map<string, EntityViewRecord<T>>,
           layer: Container,
           factory: (item: D) => T | null,

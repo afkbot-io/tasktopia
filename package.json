@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.24.11",
+  "version": "1.24.12",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -100,7 +100,7 @@
     "@fastify/helmet": "^13.1.0",
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/static": "10.1.2",
-    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/client": "^2.2.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "@resvg/resvg-js": "2.6.2",
     "fastify": "^5.12.3",
@@ -136,5 +136,10 @@
     "typescript-eslint": "^8.66.0",
     "vite": "8.2.0",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "concurrently": {
+      "shell-quote": "1.11.0"
+    }
   }
 }
