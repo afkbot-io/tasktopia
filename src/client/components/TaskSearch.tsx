@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TaskSearchResultDto } from "../../shared/contracts";
 import { api } from "../api";
+import { GameIcon } from "./ui";
 
 const statusLabel: Record<TaskSearchResultDto["status"], string> = {
   PLANNING: "План", STARTED: "Старт", IN_PROGRESS: "В работе", TESTING: "Тест", COMPLETED: "Готово",
@@ -49,6 +50,7 @@ export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDt
 
   return (
     <div ref={rootRef} className="task-search" role="search">
+      <span className="task-search-icon"><GameIcon name="search" /></span>
       <input
         value={query}
         onChange={(event) => setQuery(event.target.value)}

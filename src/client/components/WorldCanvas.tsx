@@ -393,10 +393,10 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
       const deadline = district.deadline ? `\nДедлайн: ${new Date(district.deadline).toLocaleDateString("ru-RU")}` : "\nДедлайн не задан";
       const label = new Text({
         text: `${district.name}${deadline}`, resolution: 4,
-        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "700", lineHeight: 11, fill: 0xf2f5ed }),
+        style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: 8, fontWeight: "700", lineHeight: 11, fill: 0xf0f2e7 }),
       });
       const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3)
-        .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color, width: 1 });
+        .fill({ color: 0x10251d, alpha: 0.98 }).stroke({ color, width: 1 });
       tooltip = new Container(); tooltip.eventMode = "none"; tooltip.addChild(panel, label);
       tooltipHeight = label.height;
       tooltipLayer.addChild(tooltip);
@@ -513,8 +513,8 @@ function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
     const badgeY = height - badge.height / 2 - 2;
     content.addChild(new Graphics()
       .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
-      .fill(0x0b171a).stroke({ color: badge.borderColor, width: 1 }));
-    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: badge.fontSize, fontWeight: "900", fill: 0xffffff }) });
+      .fill(0x10251d).stroke({ color: badge.borderColor, width: 1 }));
+    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: badge.fontSize, fontWeight: "800", fill: 0xf0f2e7 }) });
     label.anchor.set(0.5); label.position.set(badgeX, badgeY); content.addChild(label);
   }
   let tooltip: Container | undefined;
@@ -522,10 +522,10 @@ function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
     if (!tooltip) {
       const text = new Text({
         text: `#${task.taskNumber} · ${task.title}\n${TASK_STATUS_LABEL[task.status]} · ${task.progress}%`, resolution: 4,
-        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "600", lineHeight: 11, fill: 0xeaf2ee, wordWrap: true, wordWrapWidth: 144 }),
+        style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: 8, fontWeight: "600", lineHeight: 11, fill: 0xf0f2e7, wordWrap: true, wordWrapWidth: 144 }),
       });
       const panel = new Graphics().roundRect(-5, -5, text.width + 10, text.height + 10, 3)
-        .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x69ad67, width: 1 });
+        .fill({ color: 0x10251d, alpha: 0.98 }).stroke({ color: 0x69ad67, width: 1 });
       tooltip = new Container(); tooltip.eventMode = "none"; tooltip.addChild(panel, text);
       tooltip.position.set(group.position.x + width / 2 - text.width / 2, group.position.y - height - text.height - 8);
       tooltipLayer.addChild(tooltip);
@@ -598,9 +598,9 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
     const { x: badgeX, y: badgeY } = buildingBadgePosition(entry, badge);
     group.addChild(new Graphics()
       .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
-      .fill(0x0b171a)
+      .fill(0x10251d)
       .stroke({ color: badge.borderColor, width: 1 }));
-    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: badge.fontSize, fontWeight: "900", fill: 0xffffff }) });
+    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: badge.fontSize, fontWeight: "800", fill: 0xf0f2e7 }) });
     label.anchor.set(0.5); label.position.set(badgeX, badgeY); group.addChild(label);
   }
   let tooltip: Container | undefined;
@@ -614,11 +614,11 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
       const tooltipText = new Text({
         text: `#${task.taskNumber} · ${task.title}\n${TASK_STATUS_LABEL[task.status]} · ${task.progress}%`,
         resolution: 4,
-        style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "600", lineHeight: 11, fill: 0xeaf2ee, wordWrap: true, wordWrapWidth: 144 }),
+        style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: 8, fontWeight: "600", lineHeight: 11, fill: 0xf0f2e7, wordWrap: true, wordWrapWidth: 144 }),
       });
       const padding = 5;
       const panel = new Graphics().roundRect(-padding, -padding, tooltipText.width + padding * 2, tooltipText.height + padding * 2, 3)
-        .fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x4b6870, width: 1 });
+        .fill({ color: 0x10251d, alpha: 0.98 }).stroke({ color: 0x648575, width: 1 });
       tooltip.addChild(panel, tooltipText);
       tooltip.position.set(
         group.position.x - tooltipText.width / 2,
@@ -757,8 +757,8 @@ function drawWorldFeature(
       let tooltip: Container | undefined;
       visual.on("pointerover", () => {
         if (!tooltip) {
-          const label = new Text({ text: feature.label!, resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "800", fill: 0xf2f5ed }) });
-          const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3).fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0x5ba6ca, width: 1 });
+          const label = new Text({ text: feature.label!, resolution: 4, style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: 8, fontWeight: "800", fill: 0xf0f2e7 }) });
+          const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3).fill({ color: 0x10251d, alpha: 0.98 }).stroke({ color: 0x5ba6ca, width: 1 });
           tooltip = new Container(); tooltip.eventMode = "none"; tooltip.position.set(-label.width / 2, -metadata.size.height - label.height - 8); tooltip.addChild(panel, label); visual.addChild(tooltip);
         }
         tooltip.visible = true;
@@ -786,8 +786,8 @@ function drawWorldFeature(
     let tooltip: Container | undefined;
     visual.on("pointerover", () => {
       if (!tooltip) {
-        const label = new Text({ text: "Государственный архив", resolution: 4, style: new TextStyle({ fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "800", fill: 0xf2f5ed }) });
-        const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3).fill({ color: 0x0b181b, alpha: 0.96 }).stroke({ color: 0xd3ad58, width: 1 });
+        const label = new Text({ text: "Государственный архив", resolution: 4, style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: 8, fontWeight: "800", fill: 0xf0f2e7 }) });
+        const panel = new Graphics().roundRect(-5, -5, label.width + 10, label.height + 10, 3).fill({ color: 0x10251d, alpha: 0.98 }).stroke({ color: 0xd3ad58, width: 1 });
         tooltip = new Container();
         tooltip.eventMode = "none";
         tooltip.position.set(-label.width / 2, -entry.spriteSize.height - label.height - 8);

@@ -98,6 +98,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [copyFallback, setCopyFallback] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const [tab,setTab] = useState<"overview"|"materials"|"discussion"|"history">("overview");
@@ -133,11 +134,13 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   const copyShareLink = async () => {
     if (!task) return;
     const url = `${window.location.origin}${taskLink(countryId, task)}`;
+    setLinkCopied(false);
     try {
       await navigator.clipboard.writeText(url);
+      setCopyFallback(false);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 1600);
-    } catch { window.prompt("Ссылка на задачу:", url); }
+    } catch { setCopyFallback(true); }
   };
 
   return <div className={`modal-backdrop task-inspector-backdrop${standalone ? " task-entry-backdrop" : ""}`} role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
@@ -153,6 +156,11 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
           {standalone && <button className="task-action" onClick={onClose}>В город →</button>}
           <button className="task-action" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "Ссылка"}</button>
           <TaskSharePreview key={`${countryId}:${task.id}`} countryId={countryId} task={task} />
+          {copyFallback && <label className="task-link-fallback">
+            <span id="task-link-label">Ссылка на задачу</span>
+            <input readOnly value={`${window.location.origin}${taskLink(countryId, task)}`} onFocus={event => event.target.select()} aria-labelledby="task-link-label" aria-describedby="task-link-copy-hint" />
+            <small id="task-link-copy-hint" role="status">Буфер обмена недоступен. Выделите и скопируйте ссылку из поля.</small>
+          </label>}
         </div>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
         {task.defects?.some(defect=>defect.status!=="FIXED")&&<button className="task-defect-alert" onClick={()=>{setTab("overview");requestAnimationFrame(()=>dialogRef.current?.querySelector(".task-defects")?.scrollIntoView({block:"start"}));}}>Нужен ремонт · {task.defects.filter(defect=>defect.status!=="FIXED").length} деф.</button>}

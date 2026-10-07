@@ -5,7 +5,7 @@ export function PwaUpdateNotice() {
   const state = useSyncExternalStore(pwaUpdate.subscribe, pwaUpdate.getSnapshot);
   const [deferred, setDeferred] = useState(false);
   if (deferred || state === "idle") return null;
-  return <aside className="pwa-update-notice" aria-label="Обновление приложения">
+  return <aside className="pwa-update-notice" data-state={state} aria-label="Обновление приложения">
     <div role="status"><strong>{state === "error" ? "Не удалось обновить приложение" : "Доступна новая версия Tasktopia"}</strong>
       <p>{state === "updating" ? "Обновляем приложение…" : "Сохраните изменения перед обновлением. Карта откроется заново."}</p></div>
     <div className="pwa-update-actions">

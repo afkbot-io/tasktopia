@@ -35,6 +35,7 @@ async function dispatchPinch(page: Page, target: Locator, factor: number): Promi
 
 async function login(page: Page): Promise<void> {
   await page.goto("/");
+  await page.evaluate(() => document.fonts.ready);
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль").fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
@@ -145,6 +146,7 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
 test("installable shell registers a revisioned worker and survives offline navigation", async ({ page, context, browserName }) => {
   test.skip(browserName !== "chromium", "Playwright WebKit does not expose a production-equivalent service-worker lifecycle");
   await page.goto("/");
+  await page.evaluate(() => document.fonts.ready);
   const manifest = await page.locator('link[rel="manifest"]').getAttribute("href");
   expect(manifest).toBe("/site.webmanifest");
   const pwa = await page.evaluate(async () => {
@@ -165,6 +167,15 @@ test("installable shell registers a revisioned worker and survives offline navig
   expect(pwa.controlled).toBe(true);
   expect(pwa.caches.some((key) => key.startsWith("tasktopia-shell-"))).toBe(true);
   expect(pwa.cachedPaths).toContain("/");
+  // A redesign's self-hosted font must remain available after a cold offline reload.
+  const fontPaths = await page.evaluate(() => performance.getEntriesByType("resource")
+    .filter(entry => /\.woff2(?:$|\?)/.test(entry.name)).map(entry => new URL(entry.name).pathname));
+  expect(fontPaths).toHaveLength(2);
+  await expect.poll(async () => page.evaluate(async paths => {
+    const names = await caches.keys();
+    const cacheKeys = (await Promise.all(names.map(async name => (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname)))).flat();
+    return paths.every(path => cacheKeys.includes(path));
+  }, fontPaths)).toBe(true);
   expect(pwa.cachedPaths.some((path) => path.startsWith("/api/") || path.startsWith("/mcp/") || path.startsWith("/socket.io/"))).toBe(false);
 
   // A warm browser HTTP cache can conceal missing CDN entries in the PWA
@@ -178,6 +189,8 @@ test("installable shell registers a revisioned worker and survives offline navig
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/site.webmanifest");
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByRole("button", { name: "Открыть страну" })).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => document.fonts.check('16px Manrope', 'Страна Tasktopia'))).toBe(true);
   } finally {
     await context.setOffline(false);
   }

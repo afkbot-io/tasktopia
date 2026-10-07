@@ -1,11 +1,12 @@
 import { useToolbarDisclosure } from "../use-toolbar-disclosure";
 import { useSyncExternalStore } from "react";
+import { GameIcon } from "./ui";
 import { readWorldPreferences, serverWorldPreferences, setWorldPreferences, subscribeWorldPreferences, type WorldPreferences as Preferences } from "../world-preferences";
 export function WorldPreferences() {
   const root = useToolbarDisclosure();
   const preferences = useSyncExternalStore(subscribeWorldPreferences, readWorldPreferences, serverWorldPreferences);
   return <details ref={root} className="map-legend world-preferences">
-    <summary aria-label="Вид карты" title="Вид карты">⚙</summary>
+    <summary aria-label="Вид карты" title="Вид карты"><GameIcon name="settings" /></summary>
     <div className="map-legend-panel">
       <strong>Вид карты</strong>
       <label>Детализация<select value={preferences.quality} onChange={event => setWorldPreferences({ quality: event.target.value as Preferences["quality"] })}>

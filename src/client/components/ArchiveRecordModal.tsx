@@ -37,7 +37,7 @@ export function ArchiveRecordModal({ recordId, onClose }: { recordId: string; on
   }, [onClose]);
 
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-    <article ref={dialogRef} className="task-modal archive-record-modal" role="dialog" aria-modal="true" aria-labelledby="archive-record-title">
+    <article ref={dialogRef} className="task-modal archive-record-modal" role="dialog" aria-modal="true" aria-label={!record ? "Запись архива" : undefined} aria-labelledby={record ? "archive-record-title" : undefined}>
       <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
       {loading && <div className="modal-loading">Открываем Государственный архив…</div>}
       {error && <p className="task-delete-error" role="alert">{error}</p>}

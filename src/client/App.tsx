@@ -1,3 +1,4 @@
+import { GameIcon } from "./components/ui";
 import { InvitationEntry } from "./components/InvitationEntry";
 import { countrySelectionPending, invalidateCountrySelections, selectCountrySession } from "./country-selection";
 import { useDialogFocus } from "./use-dialog-focus";
@@ -536,7 +537,7 @@ export function App() {
   </main>;
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "CITY" ? activeCity : null;
-  return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
+  return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)]">
     <header className="app-header map-toolbar" aria-label="Навигация по миру" onClickCapture={event => {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -550,17 +551,17 @@ export function App() {
       setDevelopmentOpen(false);
     }}>
       <div className="map-toolbar-location">
-        <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
+        <div className="brand-mark hidden shrink-0 xl:flex"><GameIcon name="world" /> TASKTOPIA</div>
         <div className="relative min-w-0">
-        <button className="country-title-button grid min-w-0 border-0 border-l-0 px-0 text-left xl:border-l xl:border-[#304850] xl:pl-5" aria-haspopup="dialog" aria-expanded={countryMenuOpen} onClick={() => { setDirectoryOpen(false); setCountryMenuOpen((value) => !value); }}>
-          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">МИР</span>
-          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7] md:max-w-[240px]">{bootstrap.country.name}</strong>
+        <button className="country-title-button grid min-w-0 border-0 border-l-0 px-0 text-left xl:border-l xl:border-line xl:pl-5" aria-haspopup="dialog" aria-expanded={countryMenuOpen} onClick={() => { setDirectoryOpen(false); setCountryMenuOpen((value) => !value); }}>
+          <span className="text-xs font-bold tracking-[.08em] text-[var(--ui-muted)]">МИР</span>
+          <strong className="block max-w-[180px] truncate text-sm text-paper md:max-w-[240px]">{bootstrap.country.name}</strong>
         </button>
         {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={next => { if (renderedAuthenticationEpoch === authenticationEpochRef.current) applyBootstrap(next); }} onCities={() => { setCountryMenuOpen(false); setDirectoryFocus(undefined); setDirectorySection("cities"); setDirectoryOpen(true); }} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} />}
         </div>
         {headerCity && <button className="header-city" aria-label={`Районы города ${headerCity.name}`} onClick={() => { setDirectoryFocus({cityId:headerCity.id,districtId:""});setDirectorySection("cities");setDirectoryOpen(value=>!value); }}>
-          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">ГОРОД</span>
-          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7]">{headerCity.name}<span aria-hidden="true"> ▾</span></strong>
+          <span className="text-xs font-bold tracking-[.08em] text-[var(--ui-muted)]">ГОРОД</span>
+          <strong className="block max-w-[180px] truncate text-sm text-paper">{headerCity.name}<span aria-hidden="true"> ▾</span></strong>
         </button>}
       </div>
 
@@ -571,12 +572,12 @@ export function App() {
       <div className="map-toolbar-actions">
         <nav className="flex items-center justify-end gap-1.5" aria-label="Действия карты">
           <WorldAmbientLighting />
-          {effectiveMapMode === "CITY" && activeCity && <GamePopover label="Фильтры" icon="▤" activeLabel={attention.scope===`${bootstrap.user.id}:${countryId}:${activeCity.id}`?attention.label:undefined}>
+          {effectiveMapMode === "CITY" && activeCity && <GamePopover label="Фильтры" icon={<GameIcon name="filter" />} activeLabel={attention.scope===`${bootstrap.user.id}:${countryId}:${activeCity.id}`?attention.label:undefined}>
             <strong>Показать на карте</strong>
             <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} />
             <button className="city-development-toggle" onClick={event => { const menu = event.currentTarget.closest("details"); if (menu) menu.open = false; setDevelopmentOpen(value => !value); }} aria-expanded={developmentOpen}>Развитие города</button>
           </GamePopover>}
-          <GamePopover label="Меню" icon="≡" className="world-menu">
+          <GamePopover label="Меню" icon={<GameIcon name="menu" />} className="world-menu">
             <strong>{bootstrap.country.name}</strong>
             <button onClick={() => {setDirectoryOpen(false);setCountryMenuOpen(true);}}>Выбрать мир</button>
             <button onClick={() => { setCountryMenuOpen(false);setDirectoryFocus(undefined);setDirectorySection("cities");setDirectoryOpen(true); }}>Города</button>
