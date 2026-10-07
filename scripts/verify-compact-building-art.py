@@ -54,7 +54,10 @@ def common_source_frame(authority: Image.Image, contract: dict) -> tuple[int, in
     return tuple(frame)
 
 
-def extract_source(path: Path, background: str | None) -> Image.Image:
+def extract_source(path: Path, background: str | None, chroma_green_ratio_max: float = .6) -> Image.Image:
+    if (isinstance(chroma_green_ratio_max, bool) or not isinstance(chroma_green_ratio_max, (int, float))
+            or not .6 <= chroma_green_ratio_max <= .75):
+        raise SystemExit("sourceChromaGreenRatioMax must be a number between .6 and .75")
     image = Image.open(path).convert("RGBA")
     if background == "magenta-recovery":
         image.putdata([(0, 0, 0, 0) if red > 180 and blue > 180 and green < 100 else (red, green, blue, alpha) for red, green, blue, alpha in pixel_data(image)])
@@ -66,7 +69,7 @@ def extract_source(path: Path, background: str | None) -> Image.Image:
         # recovery key and cannot be used as a building material color.
         image.putdata([(0, 0, 0, 0) if min(red, blue) > 90
                        and max(red, blue) <= min(red, blue) * 1.35
-                       and green < min(red, blue) * .6
+                       and green < min(red, blue) * chroma_green_ratio_max
                        else (red, green, blue, alpha) for red, green, blue, alpha in pixel_data(image)])
     return image
 
@@ -134,7 +137,7 @@ def main() -> int:
         errors.append("A publishable family requires all three authored stages")
     if 5 not in sources:
         raise SystemExit("stage-5.png is required before reverse-stage normalization")
-    images = {stage: extract_source(path, contract.get("sourceBackground")) for stage, path in sources.items()}
+    images = {stage: extract_source(path, contract.get("sourceBackground"), contract.get("sourceChromaGreenRatioMax", .6)) for stage, path in sources.items()}
     authority = images[5]
     frame = common_source_frame(authority, contract)
     width, height = contract["spriteSize"]
@@ -147,6 +150,8 @@ def main() -> int:
         "targetSize": list(target_size), "offset": list(offset), "paletteMethod": palette_method, "stages": {}, "errors": errors,
         "semanticChecksRequireVisualReview": ["roof-dominant axis-aligned high camera", "same entrance and contracted floor rhythm", "no receding side wall", "stage-4 roof coverage approximately 50% and no final roof equipment", "stage-3 open rooms with opaque floor and interior walls", "no external fence, scenery or black baseline", "same building identity in all stages"],
     }
+    if "sourceChromaGreenRatioMax" in contract:
+        report["sourceChromaGreenRatioMax"] = contract["sourceChromaGreenRatioMax"]
     normalized = {}
     for stage, source in images.items():
         if source.size != authority.size:

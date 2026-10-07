@@ -169,6 +169,14 @@ For backgrounds with dark magenta noise, the already-supported explicit
 brightness cutoff. Magenta cannot be an architectural material in that mode.
 It does not relax the shared-frame or foundation checks.
 
+Для явно объявленного `magenta-chroma-family` допустим индивидуальный параметр
+`sourceChromaGreenRatioMax` в пределах `0.6..0.75` (по умолчанию `0.6`). Он
+расширяет только диапазон удаления зарезервированного magenta фона с бледной
+кромкой. Его значение сохраняется в отчёте; изменение требует повторного
+осмотра всех трёх нормализованных стадий и новых runtime hash approvals.
+Не применять параметр к цветам архитектуры и не исправлять им прозрачные
+дыры, камеру, размеры или положение входа.
+
 All three normalized outputs must be inspected separately at native scale and
 nearest-neighbour zoom before publishing. The three source hashes and review
 must accompany the runtime assets; a montage is review evidence, not a runtime

@@ -86,5 +86,6 @@
   "authoringStatus": "ACCEPTED",
   "sourceBackgroundRationale": "Явный magenta chroma фон; двухобъёмный супермаркет с витриной и правым входом.",
   "semanticRole": "SHOP",
-  "paletteMethod": "MAXCOVERAGE"
+  "paletteMethod": "MAXCOVERAGE",
+  "sourceChromaGreenRatioMax": 0.7
 }

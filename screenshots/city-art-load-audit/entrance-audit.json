@@ -1,0 +1,1544 @@
+[
+  {
+    "schema": "building_diversity_516de9ccdcc34023ae2ab2b26e9181ea",
+    "sceneRevision": "92f3cccef0d72da0745bf225f2e84c5bfa2aa08362e52cb88d9f8f66927a43c3",
+    "violations": [],
+    "examples": [
+      {
+        "family": "compact-olive-five-floor-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 64,
+          "y": -127
+        },
+        "approach": {
+          "x": 64,
+          "y": -126
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-panel-four-floor-v1",
+        "stage": 2,
+        "side": "N",
+        "offset": 4,
+        "threshold": {
+          "x": 123,
+          "y": -137
+        },
+        "approach": {
+          "x": 123,
+          "y": -138
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-panel-four-floor-v1",
+        "stage": 3,
+        "side": "N",
+        "offset": 4,
+        "threshold": {
+          "x": 114,
+          "y": -144
+        },
+        "approach": {
+          "x": 114,
+          "y": -145
+        },
+        "pathLength": 14
+      },
+      {
+        "family": "compact-panel-four-floor-v1",
+        "stage": 4,
+        "side": "N",
+        "offset": 4,
+        "threshold": {
+          "x": 105,
+          "y": -144
+        },
+        "approach": {
+          "x": 105,
+          "y": -145
+        },
+        "pathLength": 9
+      },
+      {
+        "family": "compact-olive-five-floor-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 88,
+          "y": -140
+        },
+        "approach": {
+          "x": 88,
+          "y": -139
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-olive-five-floor-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 79,
+          "y": -155
+        },
+        "approach": {
+          "x": 79,
+          "y": -154
+        },
+        "pathLength": 20
+      },
+      {
+        "family": "compact-olive-five-floor-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 101,
+          "y": -167
+        },
+        "approach": {
+          "x": 101,
+          "y": -166
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-olive-five-floor-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 53,
+          "y": -84
+        },
+        "approach": {
+          "x": 53,
+          "y": -83
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-panel-four-floor-v1",
+        "stage": 1,
+        "side": "N",
+        "offset": 4,
+        "threshold": {
+          "x": 104,
+          "y": -105
+        },
+        "approach": {
+          "x": 104,
+          "y": -106
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-panel-four-floor-v1",
+        "stage": 5,
+        "side": "N",
+        "offset": 4,
+        "threshold": {
+          "x": 80,
+          "y": -124
+        },
+        "approach": {
+          "x": 80,
+          "y": -125
+        },
+        "pathLength": 2
+      }
+    ]
+  },
+  {
+    "schema": "building_diversity_212a98b47d5141299bc385182a449f19",
+    "sceneRevision": "c6cda2c8714161d0b7be26683f4bf55235ed8f5e270bbec97774c0e8b1678984",
+    "violations": [],
+    "examples": [
+      {
+        "family": "compact-court-four-floor-v1",
+        "stage": 3,
+        "side": "W",
+        "offset": 3,
+        "threshold": {
+          "x": 53,
+          "y": -153
+        },
+        "approach": {
+          "x": 52,
+          "y": -153
+        },
+        "pathLength": 7
+      },
+      {
+        "family": "compact-court-four-floor-v1",
+        "stage": 4,
+        "side": "W",
+        "offset": 3,
+        "threshold": {
+          "x": 53,
+          "y": -142
+        },
+        "approach": {
+          "x": 52,
+          "y": -142
+        },
+        "pathLength": 12
+      },
+      {
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 3,
+        "side": "E",
+        "offset": 3,
+        "threshold": {
+          "x": 124,
+          "y": -134
+        },
+        "approach": {
+          "x": 125,
+          "y": -134
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 4,
+        "side": "E",
+        "offset": 3,
+        "threshold": {
+          "x": 115,
+          "y": -141
+        },
+        "approach": {
+          "x": 116,
+          "y": -141
+        },
+        "pathLength": 13
+      },
+      {
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 5,
+        "side": "E",
+        "offset": 3,
+        "threshold": {
+          "x": 106,
+          "y": -141
+        },
+        "approach": {
+          "x": 107,
+          "y": -141
+        },
+        "pathLength": 13
+      },
+      {
+        "family": "compact-court-four-floor-v1",
+        "stage": 2,
+        "side": "W",
+        "offset": 3,
+        "threshold": {
+          "x": 68,
+          "y": -145
+        },
+        "approach": {
+          "x": 67,
+          "y": -145
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-court-four-floor-v1",
+        "stage": 5,
+        "side": "W",
+        "offset": 3,
+        "threshold": {
+          "x": 92,
+          "y": -160
+        },
+        "approach": {
+          "x": 91,
+          "y": -160
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 1,
+        "side": "E",
+        "offset": 3,
+        "threshold": {
+          "x": 105,
+          "y": -102
+        },
+        "approach": {
+          "x": 106,
+          "y": -102
+        },
+        "pathLength": 6
+      },
+      {
+        "family": "compact-gallery-four-floor-v1",
+        "stage": 2,
+        "side": "E",
+        "offset": 3,
+        "threshold": {
+          "x": 114,
+          "y": -117
+        },
+        "approach": {
+          "x": 115,
+          "y": -117
+        },
+        "pathLength": 11
+      },
+      {
+        "family": "compact-court-four-floor-v1",
+        "stage": 1,
+        "side": "W",
+        "offset": 3,
+        "threshold": {
+          "x": 77,
+          "y": -104
+        },
+        "approach": {
+          "x": 76,
+          "y": -104
+        },
+        "pathLength": 8
+      }
+    ]
+  },
+  {
+    "schema": "building_diversity_0e9abd6988ff4c8d8a831ba5f8e4fe06",
+    "sceneRevision": "ec176836ec1e63ef6406ab9dc9d2c76a5983e9e64c3d72fb3e47a121f1c35f17",
+    "violations": [],
+    "examples": [
+      {
+        "family": "compact-modern-five-floor-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 65,
+          "y": -131
+        },
+        "approach": {
+          "x": 65,
+          "y": -130
+        },
+        "pathLength": 7
+      },
+      {
+        "family": "compact-section-five-floor-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 9,
+        "threshold": {
+          "x": 122,
+          "y": -132
+        },
+        "approach": {
+          "x": 122,
+          "y": -131
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-section-five-floor-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 9,
+        "threshold": {
+          "x": 90,
+          "y": -143
+        },
+        "approach": {
+          "x": 90,
+          "y": -142
+        },
+        "pathLength": 6
+      },
+      {
+        "family": "compact-corner-five-floor-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 133,
+          "y": -133
+        },
+        "approach": {
+          "x": 133,
+          "y": -132
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-modern-five-floor-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 67,
+          "y": -103
+        },
+        "approach": {
+          "x": 67,
+          "y": -102
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-modern-five-floor-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 56,
+          "y": -116
+        },
+        "approach": {
+          "x": 56,
+          "y": -115
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-section-five-floor-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 9,
+        "threshold": {
+          "x": 109,
+          "y": -100
+        },
+        "approach": {
+          "x": 109,
+          "y": -99
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-section-five-floor-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 9,
+        "threshold": {
+          "x": 85,
+          "y": -119
+        },
+        "approach": {
+          "x": 85,
+          "y": -118
+        },
+        "pathLength": 13
+      },
+      {
+        "family": "compact-section-five-floor-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 9,
+        "threshold": {
+          "x": 109,
+          "y": -84
+        },
+        "approach": {
+          "x": 109,
+          "y": -83
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-modern-five-floor-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 72,
+          "y": -79
+        },
+        "approach": {
+          "x": 72,
+          "y": -78
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-modern-five-floor-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 115,
+          "y": -60
+        },
+        "approach": {
+          "x": 115,
+          "y": -59
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-corner-five-floor-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 150,
+          "y": -92
+        },
+        "approach": {
+          "x": 150,
+          "y": -91
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-corner-five-floor-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 139,
+          "y": -103
+        },
+        "approach": {
+          "x": 139,
+          "y": -102
+        },
+        "pathLength": 11
+      },
+      {
+        "family": "compact-corner-five-floor-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 139,
+          "y": -92
+        },
+        "approach": {
+          "x": 139,
+          "y": -91
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-corner-five-floor-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 134,
+          "y": -77
+        },
+        "approach": {
+          "x": 134,
+          "y": -76
+        },
+        "pathLength": 10
+      }
+    ]
+  },
+  {
+    "schema": "building_diversity_5ccd0ecab4d74092bd59de74819058ab",
+    "sceneRevision": "55ac2f8a862d2af429341b940a30b04ffefd57bfe636bcfb2b4ff24601678553",
+    "violations": [],
+    "examples": [
+      {
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 2,
+        "threshold": {
+          "x": 46,
+          "y": -132
+        },
+        "approach": {
+          "x": 46,
+          "y": -131
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-school-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 120,
+          "y": -132
+        },
+        "approach": {
+          "x": 120,
+          "y": -131
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-school-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 88,
+          "y": -145
+        },
+        "approach": {
+          "x": 88,
+          "y": -144
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-modern-school-v1",
+        "stage": 3,
+        "side": "N",
+        "offset": 5,
+        "threshold": {
+          "x": 137,
+          "y": -148
+        },
+        "approach": {
+          "x": 137,
+          "y": -149
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 2,
+        "threshold": {
+          "x": 65,
+          "y": -121
+        },
+        "approach": {
+          "x": 65,
+          "y": -120
+        },
+        "pathLength": 7
+      },
+      {
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 2,
+        "threshold": {
+          "x": 65,
+          "y": -114
+        },
+        "approach": {
+          "x": 65,
+          "y": -113
+        },
+        "pathLength": 7
+      },
+      {
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 2,
+        "threshold": {
+          "x": 57,
+          "y": -68
+        },
+        "approach": {
+          "x": 57,
+          "y": -67
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-school-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 101,
+          "y": -100
+        },
+        "approach": {
+          "x": 101,
+          "y": -99
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-school-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 101,
+          "y": -107
+        },
+        "approach": {
+          "x": 101,
+          "y": -106
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-brick-school-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 77,
+          "y": -121
+        },
+        "approach": {
+          "x": 77,
+          "y": -120
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-modern-school-v1",
+        "stage": 5,
+        "side": "N",
+        "offset": 5,
+        "threshold": {
+          "x": 105,
+          "y": -79
+        },
+        "approach": {
+          "x": 105,
+          "y": -80
+        },
+        "pathLength": 9
+      },
+      {
+        "family": "compact-color-kindergarten-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 73,
+          "y": -81
+        },
+        "approach": {
+          "x": 73,
+          "y": -80
+        },
+        "pathLength": 9
+      },
+      {
+        "family": "compact-modern-school-v1",
+        "stage": 1,
+        "side": "N",
+        "offset": 5,
+        "threshold": {
+          "x": 164,
+          "y": -103
+        },
+        "approach": {
+          "x": 164,
+          "y": -104
+        },
+        "pathLength": 4
+      },
+      {
+        "family": "compact-modern-school-v1",
+        "stage": 2,
+        "side": "N",
+        "offset": 5,
+        "threshold": {
+          "x": 164,
+          "y": -110
+        },
+        "approach": {
+          "x": 164,
+          "y": -111
+        },
+        "pathLength": 4
+      },
+      {
+        "family": "compact-modern-school-v1",
+        "stage": 4,
+        "side": "N",
+        "offset": 5,
+        "threshold": {
+          "x": 140,
+          "y": -92
+        },
+        "approach": {
+          "x": 140,
+          "y": -93
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-color-kindergarten-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 164,
+          "y": -68
+        },
+        "approach": {
+          "x": 164,
+          "y": -67
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-rose-kindergarten-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 2,
+        "threshold": {
+          "x": 46,
+          "y": -57
+        },
+        "approach": {
+          "x": 46,
+          "y": -56
+        },
+        "pathLength": 6
+      },
+      {
+        "family": "compact-court-kindergarten-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 56,
+          "y": -33
+        },
+        "approach": {
+          "x": 56,
+          "y": -32
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-color-kindergarten-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 124,
+          "y": -57
+        },
+        "approach": {
+          "x": 124,
+          "y": -56
+        },
+        "pathLength": 4
+      },
+      {
+        "family": "compact-color-kindergarten-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 81,
+          "y": -49
+        },
+        "approach": {
+          "x": 81,
+          "y": -48
+        },
+        "pathLength": 7
+      },
+      {
+        "family": "compact-court-kindergarten-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 93,
+          "y": -12
+        },
+        "approach": {
+          "x": 93,
+          "y": -11
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-court-kindergarten-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 69,
+          "y": -33
+        },
+        "approach": {
+          "x": 69,
+          "y": -32
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-color-kindergarten-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 137,
+          "y": -36
+        },
+        "approach": {
+          "x": 137,
+          "y": -35
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-court-kindergarten-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 144,
+          "y": -12
+        },
+        "approach": {
+          "x": 144,
+          "y": -11
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-court-kindergarten-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 157,
+          "y": -28
+        },
+        "approach": {
+          "x": 157,
+          "y": -27
+        },
+        "pathLength": 2
+      }
+    ]
+  },
+  {
+    "schema": "building_diversity_3ca22153ad8a444181223b2fce9bb845",
+    "sceneRevision": "678915a3f8224b7c98761e37b65cb70554f5341e7f07327b8bba795c869e6409",
+    "violations": [],
+    "examples": [
+      {
+        "family": "compact-hall-fire-station-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 49,
+          "y": -132
+        },
+        "approach": {
+          "x": 49,
+          "y": -131
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-police-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 123,
+          "y": -132
+        },
+        "approach": {
+          "x": 123,
+          "y": -131
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-police-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 91,
+          "y": -145
+        },
+        "approach": {
+          "x": 91,
+          "y": -144
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-modern-police-v1",
+        "stage": 3,
+        "side": "N",
+        "offset": 1,
+        "threshold": {
+          "x": 133,
+          "y": -148
+        },
+        "approach": {
+          "x": 133,
+          "y": -149
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-hall-fire-station-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 68,
+          "y": -121
+        },
+        "approach": {
+          "x": 68,
+          "y": -120
+        },
+        "pathLength": 4
+      },
+      {
+        "family": "compact-hall-fire-station-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 68,
+          "y": -114
+        },
+        "approach": {
+          "x": 68,
+          "y": -113
+        },
+        "pathLength": 4
+      },
+      {
+        "family": "compact-hall-fire-station-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 60,
+          "y": -68
+        },
+        "approach": {
+          "x": 60,
+          "y": -67
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-police-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 104,
+          "y": -100
+        },
+        "approach": {
+          "x": 104,
+          "y": -99
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-brick-police-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 104,
+          "y": -107
+        },
+        "approach": {
+          "x": 104,
+          "y": -106
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-brick-police-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 80,
+          "y": -121
+        },
+        "approach": {
+          "x": 80,
+          "y": -120
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-modern-police-v1",
+        "stage": 5,
+        "side": "N",
+        "offset": 1,
+        "threshold": {
+          "x": 101,
+          "y": -79
+        },
+        "approach": {
+          "x": 101,
+          "y": -80
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-tower-fire-station-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 68,
+          "y": -81
+        },
+        "approach": {
+          "x": 68,
+          "y": -80
+        },
+        "pathLength": 4
+      },
+      {
+        "family": "compact-modern-police-v1",
+        "stage": 1,
+        "side": "N",
+        "offset": 1,
+        "threshold": {
+          "x": 160,
+          "y": -103
+        },
+        "approach": {
+          "x": 160,
+          "y": -104
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-modern-police-v1",
+        "stage": 2,
+        "side": "N",
+        "offset": 1,
+        "threshold": {
+          "x": 160,
+          "y": -110
+        },
+        "approach": {
+          "x": 160,
+          "y": -111
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-modern-police-v1",
+        "stage": 4,
+        "side": "N",
+        "offset": 1,
+        "threshold": {
+          "x": 136,
+          "y": -92
+        },
+        "approach": {
+          "x": 136,
+          "y": -93
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-tower-fire-station-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 159,
+          "y": -68
+        },
+        "approach": {
+          "x": 159,
+          "y": -67
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-hall-fire-station-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 5,
+        "threshold": {
+          "x": 49,
+          "y": -57
+        },
+        "approach": {
+          "x": 49,
+          "y": -56
+        },
+        "pathLength": 9
+      },
+      {
+        "family": "compact-tower-fire-station-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 119,
+          "y": -57
+        },
+        "approach": {
+          "x": 119,
+          "y": -56
+        },
+        "pathLength": 9
+      },
+      {
+        "family": "compact-tower-fire-station-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 76,
+          "y": -49
+        },
+        "approach": {
+          "x": 76,
+          "y": -48
+        },
+        "pathLength": 4
+      },
+      {
+        "family": "compact-tower-fire-station-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 132,
+          "y": -36
+        },
+        "approach": {
+          "x": 132,
+          "y": -35
+        },
+        "pathLength": 2
+      }
+    ]
+  },
+  {
+    "schema": "building_diversity_ada3be554872441f9eabfec3e4d467ed",
+    "sceneRevision": "bb6f4f8ecb83a122f01ca82ae20c14cab3c248d91032748d85dfb1155532840d",
+    "violations": [],
+    "examples": [
+      {
+        "family": "compact-corner-shop-v1",
+        "stage": 5,
+        "side": "E",
+        "offset": 2,
+        "threshold": {
+          "x": 68,
+          "y": -130
+        },
+        "approach": {
+          "x": 69,
+          "y": -130
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-bakery-shop-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 120,
+          "y": -132
+        },
+        "approach": {
+          "x": 120,
+          "y": -131
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-bakery-shop-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 120,
+          "y": -139
+        },
+        "approach": {
+          "x": 120,
+          "y": -138
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-corner-shop-v1",
+        "stage": 1,
+        "side": "E",
+        "offset": 2,
+        "threshold": {
+          "x": 92,
+          "y": -141
+        },
+        "approach": {
+          "x": 93,
+          "y": -141
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-corner-shop-v1",
+        "stage": 2,
+        "side": "E",
+        "offset": 2,
+        "threshold": {
+          "x": 92,
+          "y": -148
+        },
+        "approach": {
+          "x": 93,
+          "y": -148
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-corner-shop-v1",
+        "stage": 3,
+        "side": "E",
+        "offset": 2,
+        "threshold": {
+          "x": 105,
+          "y": -170
+        },
+        "approach": {
+          "x": 106,
+          "y": -170
+        },
+        "pathLength": 6
+      },
+      {
+        "family": "compact-corner-shop-v1",
+        "stage": 4,
+        "side": "E",
+        "offset": 2,
+        "threshold": {
+          "x": 105,
+          "y": -163
+        },
+        "approach": {
+          "x": 106,
+          "y": -163
+        },
+        "pathLength": 13
+      },
+      {
+        "family": "compact-supermarket-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 40,
+          "y": -97
+        },
+        "approach": {
+          "x": 40,
+          "y": -96
+        },
+        "pathLength": 8
+      },
+      {
+        "family": "compact-supermarket-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 32,
+          "y": -108
+        },
+        "approach": {
+          "x": 32,
+          "y": -107
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-flower-shop-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 23,
+          "y": -89
+        },
+        "approach": {
+          "x": 23,
+          "y": -88
+        },
+        "pathLength": 9
+      },
+      {
+        "family": "compact-flower-shop-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 23,
+          "y": -82
+        },
+        "approach": {
+          "x": 23,
+          "y": -81
+        },
+        "pathLength": 9
+      },
+      {
+        "family": "compact-flower-shop-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 15,
+          "y": -100
+        },
+        "approach": {
+          "x": 15,
+          "y": -99
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-bakery-shop-v1",
+        "stage": 1,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 101,
+          "y": -100
+        },
+        "approach": {
+          "x": 101,
+          "y": -99
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-bakery-shop-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 101,
+          "y": -107
+        },
+        "approach": {
+          "x": 101,
+          "y": -106
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-bakery-shop-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 1,
+        "threshold": {
+          "x": 77,
+          "y": -121
+        },
+        "approach": {
+          "x": 77,
+          "y": -120
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-supermarket-v1",
+        "stage": 2,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 91,
+          "y": -89
+        },
+        "approach": {
+          "x": 91,
+          "y": -88
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-supermarket-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 91,
+          "y": -82
+        },
+        "approach": {
+          "x": 91,
+          "y": -81
+        },
+        "pathLength": 5
+      },
+      {
+        "family": "compact-supermarket-v1",
+        "stage": 5,
+        "side": "S",
+        "offset": 4,
+        "threshold": {
+          "x": 115,
+          "y": -76
+        },
+        "approach": {
+          "x": 115,
+          "y": -75
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-flower-shop-v1",
+        "stage": 3,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 36,
+          "y": -52
+        },
+        "approach": {
+          "x": 36,
+          "y": -51
+        },
+        "pathLength": 2
+      },
+      {
+        "family": "compact-flower-shop-v1",
+        "stage": 4,
+        "side": "S",
+        "offset": 0,
+        "threshold": {
+          "x": 36,
+          "y": -59
+        },
+        "approach": {
+          "x": 36,
+          "y": -58
+        },
+        "pathLength": 4
+      }
+    ]
+  }
+]

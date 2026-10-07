@@ -1,0 +1,14 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "sceneRevision": "3eef7bdb9c60a19ccab18a96286f297d0a13ffc69ea49c6f206d73e72872c899",
+  "chunks": 9,
+  "dataReads": [
+    "/api/countries/7abd3745-8606-4670-a67a-71e311b63db5/cities/9af887fd-345b-44b8-8f3c-9bb6b3cec150/scene"
+  ],
+  "errors": [],
+  "driverWarnings": [],
+  "applicationReadbacks": 0
+}

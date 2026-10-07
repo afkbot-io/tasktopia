@@ -10,6 +10,25 @@ const key = (c: { x: number; y: number }) => `${c.x},${c.y}`;
 const identity = (kind: string) => kind.replace(/-stage-[345]$/, "");
 
 describe("task-owned public spaces", () => {
+  it("reuses the finished plan across stages of the same immutable parcel", () => {
+    let reads = 0;
+    const footprint = new Proxy(rectangle(17, 17), { get(target, property, receiver) {
+      if (typeof property === "string" && /^\d+$/.test(property)) reads++;
+      return Reflect.get(target, property, receiver);
+    } });
+    const finished = taskParkDecorLayout(footprint, 5, "urban-botanical", 23);
+    expect(reads).toBeGreaterThan(0);
+    reads = 0;
+    const early = taskParkDecorLayout(footprint, 3, "urban-botanical", 23);
+    expect(early.length).toBeGreaterThan(0);
+    expect(early.every(prop => finished.some(final => identity(final.kind) === identity(prop.kind) && key(final.origin) === key(prop.origin)))).toBe(true);
+    expect(reads).toBe(0);
+    // A consumer must not be able to corrupt the shared plan's coordinates.
+    early[0]!.origin.x = 999;
+    expect(taskParkDecorLayout(footprint, 3, "urban-botanical", 23).some(prop => prop.origin.x === 999)).toBe(false);
+    expect(taskParkDecorLayout(footprint, 5, "urban-pocket", 24)).toEqual(taskParkDecorLayout(rectangle(17, 17), 5, "urban-pocket", 24));
+    expect(taskParkDecorLayout(footprint, 5, "urban-botanical", 23)).toEqual(finished);
+  });
   it("gives six park uses distinct small and large compositions with a useful furniture palette", () => {
     const themes = ["urban-pocket", "urban-promenade", "urban-amusement", "urban-botanical", "urban-fountain", "urban-memorial"];
     const palette = new Set<string>();

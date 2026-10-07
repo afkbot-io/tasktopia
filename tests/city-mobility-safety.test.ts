@@ -64,11 +64,15 @@ function renderedBody(agent: CityMobilityAgent) {
 }
 
 function firstRenderedOverlap(agents: readonly CityMobilityAgent[]) {
-  const bodies = agents.map(renderedBody);
+  // WorldCanvas hides INSIDE visitors; their remembered doorway reference is
+  // not an opaque sprite on the street. Keep this independent visual oracle
+  // aligned with the actual visibility rule, including simultaneous visitors.
+  const outdoor = agents.filter(agent => agent.activity !== "INSIDE");
+  const bodies = outdoor.map(renderedBody);
   for (let i = 0; i < bodies.length; i++) for (let j = i + 1; j < bodies.length; j++) {
     const a = bodies[i]!, b = bodies[j]!;
     if (a.left < b.right - 1e-7 && a.right > b.left + 1e-7 && a.top < b.bottom - 1e-7 && a.bottom > b.top + 1e-7) {
-      return { a: agents[i], b: agents[j], bodyA: a, bodyB: b };
+      return { a: outdoor[i], b: outdoor[j], bodyA: a, bodyB: b };
     }
   }
   return undefined;
@@ -112,6 +116,29 @@ function reachable(graph: ReadonlyMap<string, Cell>, start: Cell): Set<string> {
 }
 
 describe("independent native-pixel mobility acceptance", () => {
+  it("waits inside a building while another person occupies its outgoing lane", () => {
+    // Anonymous local 40-task scene and session from the browser failure.
+    // Before the fix, actor15 reversed its lateral offset into actor36 at
+    // 97,250ms, before the swept movement resolver could reject the overlap.
+    const fixture = JSON.parse(readFileSync(new URL('./fixtures/city-mobility-entrance-queue.json', import.meta.url), 'utf8'));
+    const city = createCityMobility({ ...fixture,
+      roads: new Map((fixture.roads as RoadCellDto[]).map(cell => [cellKey(cell), cell])),
+      walkGraph: new Map((fixture.walkGraph as Cell[]).map(cell => [cellKey(cell), cell])),
+      crosswalks: new Set<string>(fixture.crosswalks), activityCells: new Set<string>(fixture.activityCells),
+      buildingEntrances: new Set<string>(fixture.buildingEntrances),
+    });
+    let wasInside = false, leftAgain = false;
+    for (let step = 0; step < 2_400; step++) {
+      city.advance(50);
+      const exiting = city.agents.find(agent => agent.id === "mobility-848753038-15")!;
+      if (exiting.activity === "INSIDE") wasInside = true;
+      if (wasInside && exiting.activity === "NONE" && exiting.steps > 82) leftAgain = true;
+      expect(firstRenderedOverlap(city.agents), `Opaque bodies at ${(step + 1) * 50}ms`).toBeUndefined();
+    }
+    expect(wasInside).toBe(true); expect(leftAgain).toBe(true);
+    expect(city.metrics.vehicleUnsafeTotal + city.metrics.pedestrianUnsafeTotal + city.metrics.vehiclePedestrianUnsafeTotal).toBe(0);
+    expect(city.metrics.peakWalkerWaitMs).toBeLessThan(60_000);
+  }, 30_000);
   it("preserves eligible real-city access in the FINAL walking network, not just the intermediate spine", ({ task }) => {
     const input = actualCityFixture(), baseline = referenceWalkCore(input), final = buildMobilityNetwork(input).walkers;
     const protectedCells = new Set([...baseline].filter(([key, cell]) => input.crosswalks.has(key)

@@ -1,3 +1,4 @@
+import { createMobilityRouteSearch } from "./mobility-route-search";
 import type { CityParkingPlan } from "./city-parking";
 import type { Cell, RoadCellDto } from "../shared/contracts";
 import { roadBandRole } from "../shared/road-profile";
@@ -41,40 +42,9 @@ export function mobilityNetworkSignature(input: MobilityNetworkInput): string {
   ]);
 }
 
-/** Reachability includes heading: a route cannot bypass a first-edge ban with
- * A→B→A. One bounded search serves destination selection and path reconstruction. */
+/** One-shot utility; the live controller retains the compiled topology. */
 export function searchMobilityRoutes(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>, start: Cell, previous?: Cell) {
-  const direction = (a: Cell, b: Cell) => b.x > a.x ? 1 : b.x < a.x ? 3 : b.y > a.y ? 2 : 0;
-  type State = { cell: Cell; direction: number; previous: number };
-  const initialDirection = previous ? direction(previous, start) : -1;
-  const states: State[] = [{ cell: start, direction: initialDirection, previous: -1 }];
-  const visited = new Set([`${mobilityCellKey(start)}:${initialDirection}`]);
-  const reached = new Map<string, number>([[mobilityCellKey(start), 0]]);
-  for (let index = 0; index < states.length && index < 8_000; index++) {
-    const current = states[index]!;
-    const candidates = [...edges.get(mobilityCellKey(current.cell)) ?? []].sort((a, b) =>
-      Number(direction(current.cell, b) === current.direction) - Number(direction(current.cell, a) === current.direction));
-    for (const cell of candidates) {
-      const nextDirection = direction(current.cell, cell);
-      if (current.direction >= 0 && nextDirection === (current.direction + 2) % 4) continue;
-      const cellKey = mobilityCellKey(cell), stateKey = `${cellKey}:${nextDirection}`;
-      if (!graph.has(cellKey) || visited.has(stateKey)) continue;
-      visited.add(stateKey);
-      if (!reached.has(cellKey)) reached.set(cellKey, states.length);
-      states.push({ cell, direction: nextDirection, previous: index });
-    }
-  }
-  return {
-    cells: [...reached.keys()].map(key => graph.get(key)!),
-    routeTo(target: Cell): Cell[] {
-      const targetIndex = reached.get(mobilityCellKey(target));
-      if (targetIndex === undefined) return [];
-      let index: number = targetIndex;
-      const route: Cell[] = [];
-      while (index >= 0) { const state: State = states[index]!; route.push(state.cell); index = state.previous; }
-      return route.reverse();
-    },
-  };
+  return createMobilityRouteSearch(graph, edges)(start, previous);
 }
 
 /** Pick stable narrow walking routes inside broad paved areas. Only redundant

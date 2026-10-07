@@ -5,6 +5,10 @@ import { compactTreeCover } from "./compact-tree-placement";
 import { courtyardFurnitureFootprint } from "./courtyard-furniture";
 
 export type TaskParkDecorPlacement = { kind: string; origin: Cell; width: number; height: number };
+type PlannedParkDecor = TaskParkDecorPlacement & { from: number; staged: boolean };
+// Scene parcels are immutable. One entry per live footprint keeps the finished
+// composition across consumers/stages, and is collected with the scene itself.
+const finishedPlans = new WeakMap<readonly Cell[], { assetKey: string; seed: number; props: PlannedParkDecor[] }>();
 
 const CENTERPIECE: Readonly<Record<string, string>> = {
   "urban-formal": "compact-park-fountain",
@@ -82,6 +86,18 @@ export function taskParkDecorLayout(
   footprint: readonly Cell[], stage: 1 | 2 | 3 | 4 | 5, assetKey: string, seed: number,
 ): TaskParkDecorPlacement[] {
   if (footprint.length === 0 || stage < 3) return [];
+  let plan = finishedPlans.get(footprint);
+  if (!plan || plan.assetKey !== assetKey || plan.seed !== seed) {
+    plan = { assetKey, seed, props: planTaskParkDecor(footprint, assetKey, seed) };
+    finishedPlans.set(footprint, plan);
+  }
+  return plan.props.filter(prop => stage >= prop.from).map(prop => ({
+    origin: { ...prop.origin }, width: prop.width, height: prop.height,
+    kind: prop.staged ? `${prop.kind}-stage-${stage}` : prop.kind,
+  }));
+}
+
+function planTaskParkDecor(footprint: readonly Cell[], assetKey: string, seed: number): PlannedParkDecor[] {
   const bounds = boundsOf(footprint);
   const width = bounds.maxX - bounds.minX + 1;
   const height = bounds.maxY - bounds.minY + 1;
@@ -89,7 +105,7 @@ export function taskParkDecorLayout(
   const occupied = new Set<string>();
   const allowed = new Set(footprint.map(key));
   const paths = new Set(greenAreaPathCells([...footprint], assetKey).map(key));
-  const result: Array<TaskParkDecorPlacement & { from: number; staged: boolean }> = [];
+  const result: PlannedParkDecor[] = [];
   const dimensions = (kind: string): readonly [number, number] => {
     if (kind.startsWith("compact-park-")) return [2, 2];
     const courtyard = courtyardFurnitureFootprint(kind);
@@ -199,10 +215,7 @@ export function taskParkDecorLayout(
     search(flower, 3, bounds.minX + 1, bounds.minY + 1);
     if (footprint.length >= 36) search(flower, 3, bounds.maxX - 2, bounds.maxY - 2);
   }
-  return result.filter(prop => stage >= prop.from).map(prop => ({
-    origin: prop.origin, width: prop.width, height: prop.height,
-    kind: prop.staged ? `${prop.kind}-stage-${stage}` : prop.kind,
-  }));
+  return result;
 }
 
 export type ParkingPaintRect = { x: number; y: number; width: number; height: number };

@@ -209,6 +209,36 @@ print(json.dumps([Image.open(p / name).size for name in ['stage-5-grid.png','sta
     expect(report.commonSourceFrame).toEqual([0, 3, 48, 48]);
     expect(report.stages["3"].occupiedBoundsPx).toEqual([1, 7, 47, 48]);
   });
+  it("keys an explicitly reviewed pale chroma fringe while preserving warm masonry", () => {
+    const family = fixture("chroma-noise");
+    const contract = JSON.parse(readFileSync(join(family, "geometry.json"), "utf8"));
+    contract.sourceChromaGreenRatioMax = .7;
+    writeFileSync(join(family, "geometry.json"), JSON.stringify(contract));
+    execFileSync(python, ["-c", `
+from PIL import Image
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])/'sources/stage-3.png'
+im=Image.open(p).convert('RGBA'); im.putpixel((47,17),(233,131,203,255)); im.save(p)
+`, family]);
+    expect(run(family).status).toBe(0);
+    const pixels = JSON.parse(execFileSync(python, ["-c", `
+from PIL import Image
+import json,sys
+im=Image.open(sys.argv[1]).convert('RGBA')
+print(json.dumps([im.getpixel((47,17))[3], im.getpixel((20,15))[3]]))
+`, join(family, "normalized/stage-3.png")], { encoding: "utf8" }));
+    expect(pixels).toEqual([0, 255]);
+  });
+  it.each([.5, .9, true, "0.7"])("rejects an unsafe chroma threshold %s", value => {
+    const family = fixture("chroma-noise");
+    const contract = JSON.parse(readFileSync(join(family, "geometry.json"), "utf8"));
+    contract.sourceChromaGreenRatioMax = value;
+    writeFileSync(join(family, "geometry.json"), JSON.stringify(contract));
+    const result = spawnSync(python, [verifier, "--family", family], { encoding: "utf8" });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("sourceChromaGreenRatioMax must be a number between .6 and .75");
+  });
   it("keeps one source frame and allows the documented one-pixel structural inset", () => {
     const { status, report } = run(fixture());
     expect(status).toBe(0);

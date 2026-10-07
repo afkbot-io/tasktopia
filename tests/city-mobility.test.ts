@@ -27,6 +27,26 @@ export function mobilityGrid() {
 }
 
 describe("deterministic joint city mobility", () => {
+  it("lets simultaneous building visitors leave opposite walking lanes without holding each other inside", () => {
+    const cells: Cell[] = [];
+    for (let i = 0; i <= 6; i++) cells.push({ x: i, y: 0 }, { x: i, y: 6 }, { x: 0, y: i }, { x: 6, y: i });
+    const city = createCityMobility({ roads: new Map(), walkGraph: new Map(cells.map(cell => [key(cell), cell])),
+      crosswalks: new Set(), activityCells: new Set(["3,0"]), buildingEntrances: new Set(["3,0"]), seed: 2, carLimit: 0, walkerLimit: 4 });
+    const inside = new Map<string, number>(), exited = new Set<string>();
+    for (let step = 0; step < 2_400; step++) {
+      city.advance(50);
+      for (const actor of city.agents) {
+        if (actor.activity === "INSIDE") {
+          const duration = (inside.get(actor.id) ?? 0) + 50;
+          inside.set(actor.id, duration);
+          expect(duration, `${actor.id} held inside at ${(step + 1) * 50}ms`).toBeLessThan(10_000);
+        } else if (inside.has(actor.id)) { inside.delete(actor.id); exited.add(actor.id); }
+      }
+      expect(city.metrics.pedestrianUnsafePairs).toBe(0);
+    }
+    expect(exited.size).toBe(4);
+    expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
+  });
   it.each([[1, 0], [-1, 0], [0, 1], [0, -1]])("visits and leaves a building approach along (%i,%i)", (dx, dy) => {
     const local = Array.from({ length: 13 }, (_, i) => ({ x: i, y: 0 }));
     for (let i = 0; i <= 6; i++) local.push({ x: 12 + i, y: 0 }, { x: 12 + i, y: 6 }, { x: 12, y: i }, { x: 18, y: i });
