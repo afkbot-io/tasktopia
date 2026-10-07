@@ -131,11 +131,17 @@ controller сохраняет его на время жизни топологи
   с N/E/W-входами:20 объектов, выбор крыш, native1x и возврат через атлас.
   [N-входы](../screenshots/city-art-load-audit/final-north.json),
   [боковые входы](../screenshots/city-art-load-audit/final-sides.json).
+  Региональный вид на zoom3.00 проверен отдельно:
+  [северная группа](../screenshots/city-art-load-audit/final-north-country-region.png),
+  [боковая группа](../screenshots/city-art-load-audit/final-sides-country-region.png).
+  В текущем приложении страны — аннотации PLANET, отдельного режима COUNTRY
+  нет (`planet-presentation.ts`). Исторический `country` capture в mobility
+  означает приостановленный глобальный атлас и сохранён как `mobility-atlas-paused.png`.
 - Итоговая браузерная проверка seed848753038 наблюдала120,065ms реального
   движения:76 завершённых поездок,618 проходов пересечений, ноль видимых
   конфликтов, один network build, step p95=0.9ms. Все интервалы движения
   прошли; максимальное ожидание машины16.4s, пешехода21.5s. Сохранились canvas,
-  геометрия, focus районов и возврат через COUNTRY/PLANET. Это headless
+  геометрия, focus районов и возврат через PLANET. Это headless
   SwiftShader проверка корректности, не квалификация native FPS.
   [Протокол](../screenshots/city-art-load-audit/mobility.json) сохраняет
   ожидаемый начальный401 auth-probe и стартовые driver ReadPixels warnings
@@ -157,7 +163,7 @@ controller сохраняет его на время жизни топологи
 крышу, проверить карточку. Пройти вдоль дороги к N/E/W-входам и строительным
 воротам, проследить выход жителя без разворота/телепорта наружу. Проверить
 парки на стадиях3–5, панорамирование к границе, zoom, resize, возврат через
-PLANET/COUNTRY. Не нужны UI-кнопки создания или редактирования задач.
+атлас и его региональный вид. Не нужны UI-кнопки создания или редактирования задач.
 
 Протоколы/миграции/SCM protection/авторизация не изменены. Документация API,
 AGENTS и runbook не требуют новой модели поведения. План, art contract, этот
