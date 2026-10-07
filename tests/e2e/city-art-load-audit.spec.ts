@@ -60,12 +60,20 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
     await expect.poll(async () => Number(await host.getAttribute("data-camera-world-x"))).not.toBe(beforePan);
     await canvas.hover(); await page.mouse.wheel(0, -1200);
     await expect.poll(async () => Number(await host.getAttribute("data-render-scale"))).toBe(4);
-    const task = [...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)]
-      .find(task => task.visualKind !== "PARK")!;
-    expect(task).toBeDefined();
-    const footprint = getBuilding(task.buildingType).footprint;
-    const target = { x: task.origin.x + footprint.width / 2, y: task.origin.y + footprint.height / 2 };
+    const camera = { x: Number(await host.getAttribute("data-camera-world-x")), y: Number(await host.getAttribute("data-camera-world-y")) };
+    // Any real building exercises selection. The DTO's first entry can be at
+    // the far edge; crossing the whole city at 4x wastes this journey's budget
+    // on dozens of input frames on software renderers.
+    const candidates = [...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)]
+      .filter(task => task.visualKind !== "PARK").map(task => {
+        const footprint = getBuilding(task.buildingType).footprint;
+        const target = { x: task.origin.x + footprint.width / 2, y: task.origin.y + footprint.height / 2 };
+        return { task, target, distance: Math.hypot(target.x - camera.x, target.y - camera.y) };
+      }).sort((left, right) => left.distance - right.distance);
+    expect(candidates.length).toBeGreaterThan(0);
+    const { task, target } = candidates[0]!;
     // Centre through public drag gestures, including on a narrow screen.
+    let centeringDrags = 0;
     for (let attempt = 0; attempt < 30; attempt++) {
       const scale = Number(await host.getAttribute("data-render-scale"));
       const dx = (Number(await host.getAttribute("data-camera-world-x")) - target.x) * 8 * scale;
@@ -74,7 +82,10 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
       const fraction = Math.min(1, box.width * .35 / Math.max(1, Math.abs(dx)), box.height * .35 / Math.max(1, Math.abs(dy)));
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
       await page.mouse.move(box.x + box.width / 2 + dx * fraction, box.y + box.height / 2 + dy * fraction, { steps: 4 }); await page.mouse.up();
+      centeringDrags++;
     }
+    expect(Math.abs(Number(await host.getAttribute("data-camera-world-x")) - target.x) * 8 * 4).toBeLessThan(2);
+    expect(Math.abs(Number(await host.getAttribute("data-camera-world-y")) - target.y) * 8 * 4).toBeLessThan(2);
     await page.waitForTimeout(520); // Documented suppression of clicks immediately after a drag.
     let release!: () => void;
     const gate = new Promise<void>(resolve => { release = resolve; });
@@ -109,6 +120,6 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
     await openMapPlanet(page);
     await expect(host).toHaveAttribute("data-animation-active", "false");
     expect(errors).toEqual([]);
-    await writeFile(`${directory}/viewport-${viewport.width}.json`, JSON.stringify({ viewport, sceneRevision: scene.sceneRevision, chunks: resident.size, dataReads, errors, driverWarnings, applicationReadbacks }, null, 2));
+    await writeFile(`${directory}/viewport-${viewport.width}.json`, JSON.stringify({ viewport, sceneRevision: scene.sceneRevision, chunks: resident.size, dataReads, errors, driverWarnings, applicationReadbacks, selectedTaskId: task.id, centeringDrags }, null, 2));
   });
 }
