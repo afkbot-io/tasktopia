@@ -157,6 +157,41 @@ controller сохраняет его на время жизни топологи
 Сохранить build baseline, чередовать порядок пары, не пересобирать работающий
 сервер между образцами. CPU profile (`AUDIT_PROFILE=true`) снимать отдельно.
 
+## Проверка зависимостей перед выпуском
+
+CI [37667437256](https://github.com/afkbot-io/tasktopia/actions/runs/37667437256)
+для10975d0c прошёл1491 unit-тест и161 браузерный тест (47 skipped), проверку
+графики, типов, lint, сборку и recovery/MCP gates. Единственная ошибка —
+`npm audit --audit-level=high`: две high и две critical записи, включая
+транзитивные зависимости. Это не успешный CI и не разрешение на merge.
+
+Исправлены минимальными совместимыми версиями:
+
+- MCP client2.0.0→2.2.0: [GHSA-6qxp-vccf-f47h](https://github.com/advisories/GHSA-6qxp-vccf-f47h).
+  В приложении клиент используется тестами и smoke со статическим Bearer,
+  OAuth authProvider отсутствует. Серверный SDK и его core2.0.0 не изменены;
+  core2.2.0 установлен только внутри client.
+- shell-quote1.9.0→1.11.0: [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv).
+  concurrently10.0.4 закрепляет уязвимую1.9.0; применён узкий override только
+  этой зависимости. Регрессия сначала воспроизвела допуск перевода строки
+  после comment token, затем прошла с TypeError; опасная строка не передаётся
+  shell. Две обычные команды реального concurrently CLI завершились успешно.
+- source-map-js1.2.1→1.2.2: [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q).
+  Изменён lock-файл существующего build-инструмента; новая зависимость не введена.
+
+После обновления0 high/critical, шесть moderate остаются вне блокирующего
+порога CI. Пять целевых файлов/12 тестов прошли; typecheck, lint и production
+build прошли. Реальный HTTP MCP smoke прошёл47 инструментов, modern и legacy
+2025 negotiation, Origin, Bearer challenge, scopes и отказ revoked token.
+Дополнительно проверена граница product documents с новым SDK.
+
+Проверено SHA256-сравнение всех872 файлов свежего `dist/public`: каждый совпал
+с предыдущей проверенной сборкой.783 immutable revision copies создаются
+сервером после очистки Vite; исходные байты всех этих файлов также совпали.
+Поэтому повторно используются неизменённые130 визуальных стадий и18 native
+замеров. Финальный обязательный CI для dependency-fix фиксируется отдельно
+в RELEASE52 и должен пройти до merge; старый failed run не подменяет его.
+
 ## Границы и ручная проверка
 
 Открыть город с разными стадиями и этажностью; выбрать здание и выступающую
