@@ -16,7 +16,8 @@ def sha(path):
 def normalize():
     result = []
     for name in ('bus', 'school-bus', 'tow', 'tow-loaded', 'child'):
-        source = FAMILY / f'sources/{name}.png'
+        source_file = 'child-v2' if name == 'child' else name
+        source = FAMILY / f'sources/{source_file}.png'
         raw = Image.open(source).convert('RGBA')
         for index, direction in enumerate(DIRECTIONS):
             col, row = index % 2, index // 2
@@ -41,7 +42,7 @@ def normalize():
             rgb = native.convert('RGB').quantize(colors=8, dither=Image.Dither.NONE).convert('RGBA')
             rgb.putalpha(opaque)
             rgb.paste((0, 0, 0, 0), (0, 0, 8, 8), opaque.point(lambda value: 255 - value))
-            result.append((name, direction, rgb, {'source': f'sources/{name}.png', 'sourceSha256': sha(source),
+            result.append((name, direction, rgb, {'source': f'sources/{source_file}.png', 'sourceSha256': sha(source),
                 'crop': list(crop), 'commonSourceFrame': list(box), 'scale': scale, 'alphaThreshold': 192, 'paletteLimit': 8}))
     for name, canvas, maximum, colors in [('market-stall', 16, (14, 12), 16), ('umbrella', 8, (6, 6), 8)]:
         source = FAMILY / f'sources/{name}.png'
@@ -94,6 +95,8 @@ def verify():
         allowed = (2, 2, 6, 6) if name == 'child' else (0, 0, *size) if direction == 'static' else (2, 1, 6, 7) if direction in ('north', 'south') else (1, 2, 7, 6)
         if not box or box[0] < allowed[0] or box[1] < allowed[1] or box[2] > allowed[2] or box[3] > allowed[3]:
             raise ValueError(f'Unsafe physical body envelope {name}:{direction}')
+        if name == 'child' and box != (2, 2, 5, 6):
+            raise ValueError(f'Unstable child registration {direction}: {box}; expected adult-compatible (2, 2, 5, 6)')
         if len({pixel[:3] for pixel in actual.getdata() if pixel[3]}) > frame['paletteLimit']:
             raise ValueError('Native palette overflow')
     return record

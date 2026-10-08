@@ -9531,11 +9531,11 @@
         8
       ],
       "occupiedSize": [
-        2,
+        3,
         4
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
       "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
       "direction": "north"
     },
@@ -9555,11 +9555,11 @@
         8
       ],
       "occupiedSize": [
-        2,
-        3
+        3,
+        4
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
       "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
       "direction": "east"
     },
@@ -9579,11 +9579,11 @@
         8
       ],
       "occupiedSize": [
-        2,
+        3,
         4
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
       "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
       "direction": "south"
     },
@@ -9603,11 +9603,11 @@
         8
       ],
       "occupiedSize": [
-        2,
-        3
+        3,
+        4
       ],
       "artSource": "AI_AUTHORED",
-      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
       "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
       "direction": "west"
     }
@@ -10497,7 +10497,7 @@
       }
     }
   },
-  "assetRevision": "715d1a05d4bdafef",
+  "assetRevision": "063911a9aab7f1a6",
   "buildingProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
   "microAmbient": {
     "schemaVersion": 1,

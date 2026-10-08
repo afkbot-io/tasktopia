@@ -594,27 +594,27 @@
       ]
     },
     {
-      "source": "sources/child.png",
-      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
+      "source": "sources/child-v2.png",
+      "sourceSha256": "bbbf7e4b6e77e931b823e33d103382a007cd81d5a998db06b7bbd5908461b97e",
       "crop": [
         0,
         0,
-        633,
-        621
+        627,
+        627
       ],
       "commonSourceFrame": [
-        271,
-        143,
-        471,
-        551
+        152,
+        133,
+        514,
+        561
       ],
-      "scale": 0.00980392156862745,
+      "scale": 0.008287292817679558,
       "alphaThreshold": 192,
       "paletteLimit": 8,
       "key": "city-event-child-north",
       "direction": "north",
       "path": "normalized/city-event-child-north.png",
-      "sha256": "ca4897691fee726b0b5ff9f40477459fe35d3394ed8987a823b331b7b5df1684",
+      "sha256": "0360145bd9431320e6af369665ca1b89a737a47fc51484ea862e664d62bbc0a1",
       "size": [
         8,
         8
@@ -624,34 +624,34 @@
         8
       ],
       "opaqueBounds": [
-        3,
+        2,
         2,
         5,
         6
       ]
     },
     {
-      "source": "sources/child.png",
-      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
+      "source": "sources/child-v2.png",
+      "sourceSha256": "bbbf7e4b6e77e931b823e33d103382a007cd81d5a998db06b7bbd5908461b97e",
       "crop": [
-        633,
+        627,
         0,
-        1266,
-        621
+        1254,
+        627
       ],
       "commonSourceFrame": [
-        148,
-        143,
-        364,
-        551
+        114,
+        133,
+        475,
+        561
       ],
-      "scale": 0.00980392156862745,
+      "scale": 0.008310249307479225,
       "alphaThreshold": 192,
       "paletteLimit": 8,
       "key": "city-event-child-east",
       "direction": "east",
       "path": "normalized/city-event-child-east.png",
-      "sha256": "e7f5049e5fa3551692a4257944b882e6527a81784a92386a6bd96d56d62c08c3",
+      "sha256": "7c5f8ec7feb63d1f63129abb3f5de773425109d8c85844a7d428b0211d06a69b",
       "size": [
         8,
         8
@@ -661,71 +661,34 @@
         8
       ],
       "opaqueBounds": [
-        3,
         2,
-        5,
-        5
-      ]
-    },
-    {
-      "source": "sources/child.png",
-      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
-      "crop": [
-        0,
-        621,
-        633,
-        1242
-      ],
-      "commonSourceFrame": [
-        272,
-        82,
-        477,
-        482
-      ],
-      "scale": 0.01,
-      "alphaThreshold": 192,
-      "paletteLimit": 8,
-      "key": "city-event-child-south",
-      "direction": "south",
-      "path": "normalized/city-event-child-south.png",
-      "sha256": "adcf21545f0f932dee53c5ae89a4850bfa3ca1d3df64a099125b40c5cfbb674a",
-      "size": [
-        8,
-        8
-      ],
-      "anchorPx": [
-        4,
-        8
-      ],
-      "opaqueBounds": [
-        3,
         2,
         5,
         6
       ]
     },
     {
-      "source": "sources/child.png",
-      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
+      "source": "sources/child-v2.png",
+      "sourceSha256": "bbbf7e4b6e77e931b823e33d103382a007cd81d5a998db06b7bbd5908461b97e",
       "crop": [
-        633,
-        621,
-        1266,
-        1242
+        0,
+        627,
+        627,
+        1254
       ],
       "commonSourceFrame": [
-        145,
-        84,
-        363,
-        485
+        152,
+        68,
+        514,
+        495
       ],
-      "scale": 0.00997506234413965,
+      "scale": 0.008287292817679558,
       "alphaThreshold": 192,
       "paletteLimit": 8,
-      "key": "city-event-child-west",
-      "direction": "west",
-      "path": "normalized/city-event-child-west.png",
-      "sha256": "c0451b2b3bdec8741214e7ce8ccdcd9228fb8312a341bcc6e8f37fbf8fcbf1d7",
+      "key": "city-event-child-south",
+      "direction": "south",
+      "path": "normalized/city-event-child-south.png",
+      "sha256": "6eb393f8c09a6fd9d963232ec0c20c3ae8c891a82d3b2c7b73504de757e3f852",
       "size": [
         8,
         8
@@ -735,10 +698,47 @@
         8
       ],
       "opaqueBounds": [
-        3,
+        2,
         2,
         5,
-        5
+        6
+      ]
+    },
+    {
+      "source": "sources/child-v2.png",
+      "sourceSha256": "bbbf7e4b6e77e931b823e33d103382a007cd81d5a998db06b7bbd5908461b97e",
+      "crop": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "commonSourceFrame": [
+        113,
+        67,
+        476,
+        494
+      ],
+      "scale": 0.008264462809917356,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-child-west",
+      "direction": "west",
+      "path": "normalized/city-event-child-west.png",
+      "sha256": "cd4079757bc0afd7e18fb54798edb5adbf0c8c806b43a0ceaaab73699c949223",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        2,
+        5,
+        6
       ]
     },
     {

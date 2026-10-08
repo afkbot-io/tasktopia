@@ -2696,7 +2696,7 @@
   },
   {
     "key": "city-event-child-north",
-    "sheet": "ai-authored/everyday-city-v1/sources/child.png",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
     "artSource": "AI_AUTHORED",
     "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
     "size": [
@@ -2710,7 +2710,7 @@
   },
   {
     "key": "city-event-child-east",
-    "sheet": "ai-authored/everyday-city-v1/sources/child.png",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
     "artSource": "AI_AUTHORED",
     "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
     "size": [
@@ -2724,7 +2724,7 @@
   },
   {
     "key": "city-event-child-south",
-    "sheet": "ai-authored/everyday-city-v1/sources/child.png",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
     "artSource": "AI_AUTHORED",
     "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
     "size": [
@@ -2738,7 +2738,7 @@
   },
   {
     "key": "city-event-child-west",
-    "sheet": "ai-authored/everyday-city-v1/sources/child.png",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
     "artSource": "AI_AUTHORED",
     "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
     "size": [

@@ -1,7 +1,9 @@
 import { expect, test, type Page, type Locator } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { everydayFixture } from './everyday-city-fixture';
-import { BUILDING_CATALOG } from '../../src/shared/catalog';
+import { ASSET_REVISION, BUILDING_CATALOG } from '../../src/shared/catalog';
 import { rainPose } from '../../src/client/city-everyday-life';
 import { openMapCity } from './map-navigation';
 import { installSceneClock } from './city-scene-clock';
@@ -274,5 +276,49 @@ test('school bus delivers children through the real school entrance independentl
     await f.service.activateDistrict(f.user.countryId, task!.districtId, crypto.randomUUID());
     await f.call('task.delete', { taskId: task!.id, confirmTitle: task!.title }); await page.clock.runFor(500);
     await expect(f.host).toHaveAttribute('data-school-bus-visits', '0'); await safe(f.host);
+  } finally { await f.cleanup(); }
+});
+
+test('authored sprite atlas uses the current revision and stays stable across zoom and compact resize', async ({ page }, info) => {
+  test.setTimeout(120000); await page.setViewportSize({ width: 1440, height: 1100 });
+  const errors: string[] = [], standalone: string[] = [], atlasHashes: string[] = [], scales: number[] = [];
+  const atlasReads: Promise<void>[] = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('request', r => { if (/\/props\/[^/]+\.png/.test(r.url())) standalone.push(r.url()); });
+  page.on('response', response => {
+    if (response.url().includes(`/revisions/${ASSET_REVISION}/atlas/props-v1.png`) && response.ok())
+      atlasReads.push(response.body().then(body => { atlasHashes.push(createHash('sha256').update(body).digest('hex')); })
+        .catch(error => { errors.push(String(error)); }));
+  });
+  const expectedAtlas = createHash('sha256').update(readFileSync('public/game-assets/v5/atlas/props-v1.png')).digest('hex');
+  const f = await everydayFixture(page);
+  try {
+    await f.focus(f.tasks[0]!);
+    await expect.poll(() => atlasHashes).toContain(expectedAtlas);
+    const canvas = page.locator('.world-canvas canvas');
+    const zoom = async (delta: number, target: number, name: string) => {
+      const box = (await canvas.boundingBox())!; await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.wheel(0, delta);
+      await expect.poll(async () => Number(await f.host.getAttribute('data-render-scale'))).toBeCloseTo(target, 2);
+      await page.screenshot({ path: info.outputPath(`sprite-${name}.png`) });
+      scales.push(Number(await f.host.getAttribute('data-render-scale'))); await safe(f.host);
+    };
+    await zoom(-1600, 4, 'maximum');
+    await zoom(Math.log(4 / 1.6) / .0015, 1.6, 'normal');
+    // At the lower wheel boundary the UI deliberately leaves CITY. A fresh
+    // entry from PLANET sets the minimum; returning retains the prior camera.
+    await f.open();
+    await expect(f.host).toHaveAttribute('data-map-active', 'true');
+    await expect.poll(async () => Number(await f.host.getAttribute('data-render-scale'))).toBeCloseTo(.8, 2);
+    await page.screenshot({ path: info.outputPath('sprite-minimum.png') });
+    scales.push(Number(await f.host.getAttribute('data-render-scale'))); await safe(f.host);
+    await zoom(-1600, 4, 'return-maximum');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(f.host).toHaveAttribute('data-minimum-render-scale', '0.8');
+    await page.screenshot({ path: info.outputPath('sprite-compact.png') });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await safe(f.host); await Promise.all(atlasReads);
+    expect(standalone).toEqual([]); expect(errors).toEqual([]);
+    await writeFile(info.outputPath('sprite-projection-runtime.json'), JSON.stringify({ assetRevision: ASSET_REVISION, expectedAtlas, atlasHashes, scales, errors, standalone }, null, 2));
   } finally { await f.cleanup(); }
 });
