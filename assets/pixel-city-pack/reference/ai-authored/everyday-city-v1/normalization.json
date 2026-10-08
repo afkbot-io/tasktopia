@@ -1,0 +1,819 @@
+{
+  "profile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+  "frames": [
+    {
+      "source": "sources/bus.png",
+      "sourceSha256": "b261ae37e116020610cd04547710b33738abc0b5d268af6be29b478d02cb5ef8",
+      "crop": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "commonSourceFrame": [
+        243,
+        223,
+        442,
+        547
+      ],
+      "scale": 0.018518518518518517,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-bus-north",
+      "direction": "north",
+      "path": "normalized/city-event-bus-north.png",
+      "sha256": "fb8c38ff333538099ed4995fac4362bac84af7c9dddd822d2da381c64f924f85",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "sources/bus.png",
+      "sourceSha256": "b261ae37e116020610cd04547710b33738abc0b5d268af6be29b478d02cb5ef8",
+      "crop": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "commonSourceFrame": [
+        59,
+        315,
+        435,
+        501
+      ],
+      "scale": 0.015957446808510637,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-bus-east",
+      "direction": "east",
+      "path": "normalized/city-event-bus-east.png",
+      "sha256": "351580b577ad1807bb3e9b74bd7038315a5da3488342f98aa5a0d207647befda",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/bus.png",
+      "sourceSha256": "b261ae37e116020610cd04547710b33738abc0b5d268af6be29b478d02cb5ef8",
+      "crop": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "commonSourceFrame": [
+        243,
+        104,
+        442,
+        412
+      ],
+      "scale": 0.01948051948051948,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-bus-south",
+      "direction": "south",
+      "path": "normalized/city-event-bus-south.png",
+      "sha256": "f059a0435ba500be6e245599993b24ce280d023b39f147d2fbc246f5db988aef",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "sources/bus.png",
+      "sourceSha256": "b261ae37e116020610cd04547710b33738abc0b5d268af6be29b478d02cb5ef8",
+      "crop": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "commonSourceFrame": [
+        59,
+        159,
+        435,
+        343
+      ],
+      "scale": 0.015957446808510637,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-bus-west",
+      "direction": "west",
+      "path": "normalized/city-event-bus-west.png",
+      "sha256": "7619cb817099a2930156466b6ba17d9710523e51fbde85533763af7a7fcc2439",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/school-bus.png",
+      "sourceSha256": "99957ac441d12ba9150cec63f796742bb138232685d950ee1dfbdce5127d76df",
+      "crop": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "commonSourceFrame": [
+        232,
+        189,
+        436,
+        573
+      ],
+      "scale": 0.015625,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-school-bus-north",
+      "direction": "north",
+      "path": "normalized/city-event-school-bus-north.png",
+      "sha256": "6a2e03acf7d26a25eb0b2dc06645b200dfb8acd6f11d61ad0fc4acd89f16c065",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        5,
+        7
+      ]
+    },
+    {
+      "source": "sources/school-bus.png",
+      "sourceSha256": "99957ac441d12ba9150cec63f796742bb138232685d950ee1dfbdce5127d76df",
+      "crop": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "commonSourceFrame": [
+        59,
+        300,
+        469,
+        527
+      ],
+      "scale": 0.014634146341463415,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-school-bus-east",
+      "direction": "east",
+      "path": "normalized/city-event-school-bus-east.png",
+      "sha256": "ef174bfaf377bf204364121dc99cc9f9d00a8cf3bfadff46f2330ab5b000afca",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/school-bus.png",
+      "sourceSha256": "99957ac441d12ba9150cec63f796742bb138232685d950ee1dfbdce5127d76df",
+      "crop": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "commonSourceFrame": [
+        232,
+        95,
+        436,
+        466
+      ],
+      "scale": 0.016172506738544475,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-school-bus-south",
+      "direction": "south",
+      "path": "normalized/city-event-school-bus-south.png",
+      "sha256": "03845813fbfe71cb1a8c4b9ff35628931259790b74c36241d23bdedfa69cbedb",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        5,
+        7
+      ]
+    },
+    {
+      "source": "sources/school-bus.png",
+      "sourceSha256": "99957ac441d12ba9150cec63f796742bb138232685d950ee1dfbdce5127d76df",
+      "crop": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "commonSourceFrame": [
+        45,
+        141,
+        451,
+        370
+      ],
+      "scale": 0.014778325123152709,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-school-bus-west",
+      "direction": "west",
+      "path": "normalized/city-event-school-bus-west.png",
+      "sha256": "fbff03180668668d76a7eb8a3c48a4b2ed50bb03bf1fefcb922701554fa40468",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/tow.png",
+      "sourceSha256": "b2ca533ad98ea991b9e9f206d5be9f9e8e7f5d07830ec3c318af835abb1ba9c0",
+      "crop": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "commonSourceFrame": [
+        238,
+        221,
+        439,
+        553
+      ],
+      "scale": 0.018072289156626505,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-north",
+      "direction": "north",
+      "path": "normalized/city-event-tow-north.png",
+      "sha256": "6147b886d88803b22861dae4caba018c7eff812982a83dc6141d2af347f8869b",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "sources/tow.png",
+      "sourceSha256": "b2ca533ad98ea991b9e9f206d5be9f9e8e7f5d07830ec3c318af835abb1ba9c0",
+      "crop": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "commonSourceFrame": [
+        61,
+        307,
+        448,
+        506
+      ],
+      "scale": 0.015503875968992248,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-east",
+      "direction": "east",
+      "path": "normalized/city-event-tow-east.png",
+      "sha256": "eb7654db24e7af7ca5fe5a1ba5172536dff28cf5a6ef2a8718d008f152e8c098",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/tow.png",
+      "sourceSha256": "b2ca533ad98ea991b9e9f206d5be9f9e8e7f5d07830ec3c318af835abb1ba9c0",
+      "crop": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "commonSourceFrame": [
+        238,
+        96,
+        441,
+        426
+      ],
+      "scale": 0.01818181818181818,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-south",
+      "direction": "south",
+      "path": "normalized/city-event-tow-south.png",
+      "sha256": "492d35a3121d75f0a4dec766eb8a252183a280f29d2f2e6593dcf10f3895ca54",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "sources/tow.png",
+      "sourceSha256": "b2ca533ad98ea991b9e9f206d5be9f9e8e7f5d07830ec3c318af835abb1ba9c0",
+      "crop": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "commonSourceFrame": [
+        60,
+        166,
+        444,
+        352
+      ],
+      "scale": 0.015625,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-west",
+      "direction": "west",
+      "path": "normalized/city-event-tow-west.png",
+      "sha256": "666b4b9310f022cb85f196dc196591cda4034edce71f643ff9e623ebe1ccfd37",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/tow-loaded.png",
+      "sourceSha256": "61b5b6b163a9cea849aa0efc0faa8480e9e9b996be246cec53ad1a6592ac3b9a",
+      "crop": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "commonSourceFrame": [
+        238,
+        221,
+        439,
+        553
+      ],
+      "scale": 0.018072289156626505,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-loaded-north",
+      "direction": "north",
+      "path": "normalized/city-event-tow-loaded-north.png",
+      "sha256": "1c6b424116ce08b46aedc92b0b04117d82d205c54c9e8977d7c3ec2885dafd13",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "sources/tow-loaded.png",
+      "sourceSha256": "61b5b6b163a9cea849aa0efc0faa8480e9e9b996be246cec53ad1a6592ac3b9a",
+      "crop": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "commonSourceFrame": [
+        61,
+        307,
+        448,
+        506
+      ],
+      "scale": 0.015503875968992248,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-loaded-east",
+      "direction": "east",
+      "path": "normalized/city-event-tow-loaded-east.png",
+      "sha256": "f2ef43af3b1b45b8bc3771a7db0dcd640c8684117085fda3760aa04802dc1ff4",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/tow-loaded.png",
+      "sourceSha256": "61b5b6b163a9cea849aa0efc0faa8480e9e9b996be246cec53ad1a6592ac3b9a",
+      "crop": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "commonSourceFrame": [
+        238,
+        96,
+        441,
+        426
+      ],
+      "scale": 0.01818181818181818,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-loaded-south",
+      "direction": "south",
+      "path": "normalized/city-event-tow-loaded-south.png",
+      "sha256": "0c8244e2d6610efa706b6e9284b29a102b8494094f12af029bfb3a6df3b9e451",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        2,
+        1,
+        6,
+        7
+      ]
+    },
+    {
+      "source": "sources/tow-loaded.png",
+      "sourceSha256": "61b5b6b163a9cea849aa0efc0faa8480e9e9b996be246cec53ad1a6592ac3b9a",
+      "crop": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "commonSourceFrame": [
+        60,
+        166,
+        444,
+        352
+      ],
+      "scale": 0.015625,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-tow-loaded-west",
+      "direction": "west",
+      "path": "normalized/city-event-tow-loaded-west.png",
+      "sha256": "0b4d13d894a79a078063d2034ce8eb871055c9aef831567145771959b69611ea",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        2,
+        7,
+        5
+      ]
+    },
+    {
+      "source": "sources/child.png",
+      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
+      "crop": [
+        0,
+        0,
+        633,
+        621
+      ],
+      "commonSourceFrame": [
+        271,
+        143,
+        471,
+        551
+      ],
+      "scale": 0.00980392156862745,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-child-north",
+      "direction": "north",
+      "path": "normalized/city-event-child-north.png",
+      "sha256": "ca4897691fee726b0b5ff9f40477459fe35d3394ed8987a823b331b7b5df1684",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        3,
+        2,
+        5,
+        6
+      ]
+    },
+    {
+      "source": "sources/child.png",
+      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
+      "crop": [
+        633,
+        0,
+        1266,
+        621
+      ],
+      "commonSourceFrame": [
+        148,
+        143,
+        364,
+        551
+      ],
+      "scale": 0.00980392156862745,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-child-east",
+      "direction": "east",
+      "path": "normalized/city-event-child-east.png",
+      "sha256": "e7f5049e5fa3551692a4257944b882e6527a81784a92386a6bd96d56d62c08c3",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        3,
+        2,
+        5,
+        5
+      ]
+    },
+    {
+      "source": "sources/child.png",
+      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
+      "crop": [
+        0,
+        621,
+        633,
+        1242
+      ],
+      "commonSourceFrame": [
+        272,
+        82,
+        477,
+        482
+      ],
+      "scale": 0.01,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-child-south",
+      "direction": "south",
+      "path": "normalized/city-event-child-south.png",
+      "sha256": "adcf21545f0f932dee53c5ae89a4850bfa3ca1d3df64a099125b40c5cfbb674a",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        3,
+        2,
+        5,
+        6
+      ]
+    },
+    {
+      "source": "sources/child.png",
+      "sourceSha256": "d92e98f616978074915f472803eabe14fdbd7d2ebf2286c2e6e257deff6ac14f",
+      "crop": [
+        633,
+        621,
+        1266,
+        1242
+      ],
+      "commonSourceFrame": [
+        145,
+        84,
+        363,
+        485
+      ],
+      "scale": 0.00997506234413965,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-child-west",
+      "direction": "west",
+      "path": "normalized/city-event-child-west.png",
+      "sha256": "c0451b2b3bdec8741214e7ce8ccdcd9228fb8312a341bcc6e8f37fbf8fcbf1d7",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        3,
+        2,
+        5,
+        5
+      ]
+    },
+    {
+      "source": "sources/market-stall.png",
+      "sourceSha256": "c3dc126e57641eaacbb7926bf05c0ba874c55907d853fe09280705c5bffa89f3",
+      "crop": [
+        0,
+        0,
+        1355,
+        1161
+      ],
+      "commonSourceFrame": [
+        311,
+        288,
+        1045,
+        871
+      ],
+      "scale": 0.01907356948228883,
+      "alphaThreshold": 192,
+      "paletteLimit": 16,
+      "key": "city-event-market-stall",
+      "direction": "static",
+      "path": "normalized/city-event-market-stall.png",
+      "sha256": "5ef30ac04290f8f0417475c7aa0523a8de5022e0a48e44c14297f325508513aa",
+      "size": [
+        16,
+        16
+      ],
+      "anchorPx": [
+        8,
+        16
+      ],
+      "opaqueBounds": [
+        1,
+        5,
+        15,
+        16
+      ]
+    },
+    {
+      "source": "sources/umbrella.png",
+      "sourceSha256": "88817dd132ce1bf8dd55dbda667aa851ae85536869a35825616c9c6b87d0bd3f",
+      "crop": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "commonSourceFrame": [
+        312,
+        312,
+        943,
+        942
+      ],
+      "scale": 0.009508716323296355,
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "key": "city-event-umbrella",
+      "direction": "static",
+      "path": "normalized/city-event-umbrella.png",
+      "sha256": "5fa48bbf8f5f88a2b52e401847afd91f8e16d1baec61b17beb9db3f7ac6e336b",
+      "size": [
+        8,
+        8
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "opaqueBounds": [
+        1,
+        1,
+        7,
+        7
+      ]
+    }
+  ]
+}

@@ -9082,6 +9082,534 @@
       "sourceSheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
       "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
       "direction": "west"
+    },
+    "city-event-bus-north": {
+      "label": "city-event-bus-north",
+      "path": "props/city-event-bus-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        4,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "north"
+    },
+    "city-event-bus-east": {
+      "label": "city-event-bus-east",
+      "path": "props/city-event-bus-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "east"
+    },
+    "city-event-bus-south": {
+      "label": "city-event-bus-south",
+      "path": "props/city-event-bus-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        4,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "south"
+    },
+    "city-event-bus-west": {
+      "label": "city-event-bus-west",
+      "path": "props/city-event-bus-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "west"
+    },
+    "city-event-school-bus-north": {
+      "label": "city-event-school-bus-north",
+      "path": "props/city-event-school-bus-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        3,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "north"
+    },
+    "city-event-school-bus-east": {
+      "label": "city-event-school-bus-east",
+      "path": "props/city-event-school-bus-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "east"
+    },
+    "city-event-school-bus-south": {
+      "label": "city-event-school-bus-south",
+      "path": "props/city-event-school-bus-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        3,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "south"
+    },
+    "city-event-school-bus-west": {
+      "label": "city-event-school-bus-west",
+      "path": "props/city-event-school-bus-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "west"
+    },
+    "city-event-tow-north": {
+      "label": "city-event-tow-north",
+      "path": "props/city-event-tow-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        4,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "north"
+    },
+    "city-event-tow-east": {
+      "label": "city-event-tow-east",
+      "path": "props/city-event-tow-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "east"
+    },
+    "city-event-tow-south": {
+      "label": "city-event-tow-south",
+      "path": "props/city-event-tow-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        4,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "south"
+    },
+    "city-event-tow-west": {
+      "label": "city-event-tow-west",
+      "path": "props/city-event-tow-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "west"
+    },
+    "city-event-tow-loaded-north": {
+      "label": "city-event-tow-loaded-north",
+      "path": "props/city-event-tow-loaded-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        4,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "north"
+    },
+    "city-event-tow-loaded-east": {
+      "label": "city-event-tow-loaded-east",
+      "path": "props/city-event-tow-loaded-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "east"
+    },
+    "city-event-tow-loaded-south": {
+      "label": "city-event-tow-loaded-south",
+      "path": "props/city-event-tow-loaded-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        4,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "south"
+    },
+    "city-event-tow-loaded-west": {
+      "label": "city-event-tow-loaded-west",
+      "path": "props/city-event-tow-loaded-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "west"
+    },
+    "city-event-market-stall": {
+      "label": "city-event-market-stall",
+      "path": "props/city-event-market-stall.png",
+      "size": [
+        16,
+        16
+      ],
+      "footprintCells": [
+        2,
+        2
+      ],
+      "anchorPx": [
+        8,
+        16
+      ],
+      "occupiedSize": [
+        14,
+        11
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/market-stall.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "static"
+    },
+    "city-event-umbrella": {
+      "label": "city-event-umbrella",
+      "path": "props/city-event-umbrella.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        6,
+        6
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/umbrella.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "static"
+    },
+    "city-event-child-north": {
+      "label": "city-event-child-north",
+      "path": "props/city-event-child-north.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        2,
+        4
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "north"
+    },
+    "city-event-child-east": {
+      "label": "city-event-child-east",
+      "path": "props/city-event-child-east.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        2,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "east"
+    },
+    "city-event-child-south": {
+      "label": "city-event-child-south",
+      "path": "props/city-event-child-south.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        2,
+        4
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "south"
+    },
+    "city-event-child-west": {
+      "label": "city-event-child-west",
+      "path": "props/city-event-child-west.png",
+      "size": [
+        8,
+        8
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        4,
+        8
+      ],
+      "occupiedSize": [
+        2,
+        3
+      ],
+      "artSource": "AI_AUTHORED",
+      "sourceSheet": "ai-authored/everyday-city-v1/sources/child.png",
+      "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+      "direction": "west"
     }
   },
   "propAtlas": {
@@ -9283,561 +9811,693 @@
         "width": 16,
         "height": 16
       },
-      "compact-park-fountain-stage-3": {
+      "city-event-market-stall": {
         "x": 255,
+        "y": 34,
+        "width": 16,
+        "height": 16
+      },
+      "compact-park-fountain-stage-3": {
+        "x": 272,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-fountain-stage-4": {
-        "x": 272,
+        "x": 289,
         "y": 34,
         "width": 16,
         "height": 16
       },
       "compact-park-fountain-stage-5": {
-        "x": 289,
-        "y": 34,
-        "width": 16,
-        "height": 16
-      },
-      "compact-park-monument-stage-3": {
         "x": 306,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "compact-park-monument-stage-4": {
+      "compact-park-monument-stage-3": {
         "x": 323,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "compact-park-monument-stage-5": {
+      "compact-park-monument-stage-4": {
         "x": 340,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "courtyard-picnic-table": {
+      "compact-park-monument-stage-5": {
         "x": 357,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "district-development-active": {
+      "courtyard-picnic-table": {
         "x": 374,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "district-development-planned": {
+      "district-development-active": {
         "x": 391,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "fountain-small": {
+      "district-development-planned": {
         "x": 408,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "hill-rocky": {
+      "fountain-small": {
         "x": 425,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "hill-small": {
+      "hill-rocky": {
         "x": 442,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "picnic-table": {
+      "hill-small": {
         "x": 459,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "streetlamp-double": {
+      "picnic-table": {
         "x": 476,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "streetlamp-double-lit": {
+      "streetlamp-double": {
         "x": 493,
         "y": 34,
         "width": 16,
         "height": 16
       },
-      "topiary-animal": {
+      "streetlamp-double-lit": {
         "x": 1,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-apple": {
+      "topiary-animal": {
         "x": 18,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-aspen": {
+      "tree-apple": {
         "x": 35,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-birch": {
+      "tree-aspen": {
         "x": 52,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-cedar": {
+      "tree-birch": {
         "x": 69,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-cherry": {
+      "tree-cedar": {
         "x": 86,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-conifer": {
+      "tree-cherry": {
         "x": 103,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-cypress": {
+      "tree-conifer": {
         "x": 120,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-deadwood": {
+      "tree-cypress": {
         "x": 137,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-flowering": {
+      "tree-deadwood": {
         "x": 154,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-magnolia": {
+      "tree-flowering": {
         "x": 171,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-maple": {
+      "tree-magnolia": {
         "x": 188,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-oak": {
+      "tree-maple": {
         "x": 205,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-palm": {
+      "tree-oak": {
         "x": 222,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-pine": {
+      "tree-palm": {
         "x": 239,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-redwood": {
+      "tree-pine": {
         "x": 256,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-round": {
+      "tree-redwood": {
         "x": 273,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "tree-willow": {
+      "tree-round": {
         "x": 290,
         "y": 59,
         "width": 16,
         "height": 16
       },
-      "active-district-flag": {
+      "tree-willow": {
         "x": 307,
+        "y": 59,
+        "width": 16,
+        "height": 16
+      },
+      "active-district-flag": {
+        "x": 324,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "archive-fence-vertical": {
-        "x": 316,
+        "x": 333,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "bench-vertical": {
-        "x": 325,
+        "x": 342,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "city-sign-horizontal": {
-        "x": 334,
+        "x": 351,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "city-sign-vertical": {
-        "x": 343,
+        "x": 360,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "fence-vertical": {
-        "x": 352,
+        "x": 369,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "guardrail-vertical": {
-        "x": 361,
+        "x": 378,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "park-lamp": {
-        "x": 370,
+        "x": 387,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "park-lamp-lit": {
-        "x": 379,
+        "x": 396,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp": {
-        "x": 388,
+        "x": 405,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-festive": {
-        "x": 397,
+        "x": 414,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-festive-lit": {
-        "x": 406,
+        "x": 423,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-industrial": {
-        "x": 415,
+        "x": 432,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-industrial-lit": {
-        "x": 424,
+        "x": 441,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-lit": {
-        "x": 433,
+        "x": 450,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-modern": {
-        "x": 442,
+        "x": 459,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-modern-lit": {
-        "x": 451,
+        "x": 468,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-solar": {
-        "x": 460,
+        "x": 477,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-solar-lit": {
-        "x": 469,
+        "x": 486,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-vintage": {
-        "x": 478,
+        "x": 495,
         "y": 59,
         "width": 8,
         "height": 16
       },
       "streetlamp-vintage-lit": {
-        "x": 487,
-        "y": 59,
-        "width": 8,
-        "height": 16
-      },
-      "topiary-spiral": {
-        "x": 496,
-        "y": 59,
-        "width": 8,
-        "height": 16
-      },
-      "traffic-light-green": {
         "x": 1,
         "y": 76,
         "width": 8,
         "height": 16
       },
-      "traffic-light-red": {
+      "topiary-spiral": {
         "x": 10,
         "y": 76,
         "width": 8,
         "height": 16
       },
-      "utility-pole": {
+      "traffic-light-green": {
         "x": 19,
         "y": 76,
         "width": 8,
         "height": 16
       },
-      "boat-horizontal-a": {
+      "traffic-light-red": {
         "x": 28,
+        "y": 76,
+        "width": 8,
+        "height": 16
+      },
+      "utility-pole": {
+        "x": 37,
+        "y": 76,
+        "width": 8,
+        "height": 16
+      },
+      "boat-horizontal-a": {
+        "x": 46,
         "y": 76,
         "width": 24,
         "height": 8
       },
       "boat-horizontal-b": {
-        "x": 53,
+        "x": 71,
         "y": 76,
         "width": 24,
         "height": 8
       },
       "boat-horizontal-c": {
-        "x": 78,
+        "x": 96,
         "y": 76,
         "width": 24,
         "height": 8
       },
       "boat-horizontal-d": {
-        "x": 103,
+        "x": 121,
         "y": 76,
         "width": 24,
         "height": 8
       },
       "flower-bed-horizontal": {
-        "x": 128,
+        "x": 146,
         "y": 76,
         "width": 24,
         "height": 8
       },
       "archive-fence-horizontal": {
-        "x": 153,
+        "x": 171,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "archive-security-barrier": {
-        "x": 170,
+        "x": 188,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "bench-horizontal": {
-        "x": 187,
+        "x": 205,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "bicycle-rack": {
-        "x": 204,
+        "x": 222,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "compact-construction-hut": {
-        "x": 221,
+        "x": 239,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "courtyard-cycle-rack": {
-        "x": 238,
+        "x": 256,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "fence-horizontal": {
-        "x": 255,
+        "x": 273,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "guardrail-horizontal": {
-        "x": 272,
+        "x": 290,
         "y": 76,
         "width": 16,
         "height": 8
       },
       "bollard": {
-        "x": 289,
-        "y": 76,
-        "width": 8,
-        "height": 8
-      },
-      "compact-construction-bricks": {
-        "x": 298,
-        "y": 76,
-        "width": 8,
-        "height": 8
-      },
-      "compact-construction-sand": {
         "x": 307,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-east-0": {
+      "city-event-bus-east": {
         "x": 316,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-east-1": {
+      "city-event-bus-north": {
         "x": 325,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-north-0": {
+      "city-event-bus-south": {
         "x": 334,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-north-1": {
+      "city-event-bus-west": {
         "x": 343,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-south-0": {
+      "city-event-child-east": {
         "x": 352,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-south-1": {
+      "city-event-child-north": {
         "x": 361,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-west-0": {
+      "city-event-child-south": {
         "x": 370,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "compact-construction-worker-west-1": {
+      "city-event-child-west": {
         "x": 379,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "courtyard-square-planter": {
+      "city-event-school-bus-east": {
         "x": 388,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "fire-hydrant": {
+      "city-event-school-bus-north": {
         "x": 397,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "flower-pink": {
+      "city-event-school-bus-south": {
         "x": 406,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "flower-white": {
+      "city-event-school-bus-west": {
         "x": 415,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "flower-yellow": {
+      "city-event-tow-east": {
         "x": 424,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "mailbox": {
+      "city-event-tow-loaded-east": {
         "x": 433,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "planter-round": {
+      "city-event-tow-loaded-north": {
         "x": 442,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "recycling-bin": {
+      "city-event-tow-loaded-south": {
         "x": 451,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "shrub-flowering": {
+      "city-event-tow-loaded-west": {
         "x": 460,
         "y": 76,
         "width": 8,
         "height": 8
       },
-      "trash-bin": {
+      "city-event-tow-north": {
         "x": 469,
         "y": 76,
+        "width": 8,
+        "height": 8
+      },
+      "city-event-tow-south": {
+        "x": 478,
+        "y": 76,
+        "width": 8,
+        "height": 8
+      },
+      "city-event-tow-west": {
+        "x": 487,
+        "y": 76,
+        "width": 8,
+        "height": 8
+      },
+      "city-event-umbrella": {
+        "x": 496,
+        "y": 76,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-bricks": {
+        "x": 1,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-sand": {
+        "x": 10,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-east-0": {
+        "x": 19,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-east-1": {
+        "x": 28,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-north-0": {
+        "x": 37,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-north-1": {
+        "x": 46,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-south-0": {
+        "x": 55,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-south-1": {
+        "x": 64,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-west-0": {
+        "x": 73,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "compact-construction-worker-west-1": {
+        "x": 82,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "courtyard-square-planter": {
+        "x": 91,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "fire-hydrant": {
+        "x": 100,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "flower-pink": {
+        "x": 109,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "flower-white": {
+        "x": 118,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "flower-yellow": {
+        "x": 127,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "mailbox": {
+        "x": 136,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "planter-round": {
+        "x": 145,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "recycling-bin": {
+        "x": 154,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "shrub-flowering": {
+        "x": 163,
+        "y": 93,
+        "width": 8,
+        "height": 8
+      },
+      "trash-bin": {
+        "x": 172,
+        "y": 93,
         "width": 8,
         "height": 8
       }
     }
   },
-  "assetRevision": "06e764cec75acf68",
+  "assetRevision": "715d1a05d4bdafef",
   "buildingProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
   "microAmbient": {
     "schemaVersion": 1,

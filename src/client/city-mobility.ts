@@ -1,18 +1,22 @@
 import type { RoadEventSite } from "./city-road-events";
 import type { Cell } from "../shared/contracts";
+import { roadBandRole } from '../shared/road-profile';
 import { MICRO_CAR_VARIANTS, MICRO_PERSON_VARIANTS, microAmbientSprite, type MicroDirection } from "../shared/micro-ambient";
 import { nextSeededRandom } from "./agent-routing";
 import { buildMobilityNetwork, mobilityCellKey as key, mobilityNetworkSignature, type MobilityNetwork, type MobilityNetworkInput, type MobilityZone } from "./city-mobility-network";
 import { createMobilityRouteSearch } from "./mobility-route-search";
 
 export type CityMobilityInput = MobilityNetworkInput & { seed: number; carLimit: number; walkerLimit: number };
-export type CityResponseRole = "POLICE" | "FIRE" | "AMBULANCE" | "REPAIR";
+export type CityResponseRole = "POLICE" | "FIRE" | "AMBULANCE" | "REPAIR" | "BUS" | "SCHOOL_BUS" | "TOW";
 export type CityMobilityAgent = {
   id: string; kind: "CAR" | "WALKER"; variant: string; current: Cell; next: Cell; progress: number;
   position: Cell; direction: MicroDirection; speed: number; steps: number;
   activity: "NONE" | "REST" | "PARKED" | "INSIDE"; waitMs: number;
   yieldReason: "NONE" | "RESERVATION" | "OCCUPIED_EXIT" | "BODY" | "ROAD_CLOSED" | "WORK_SITE";
   response?: CityResponseRole;
+  visit?: { id: string; arrived: boolean };
+  carrier?: string;
+  age?: 'CHILD' | 'ADULT';
 };
 export type CityMobilitySignal = Pick<MobilityZone, "id" | "bounds" | "signalPosts"> & {
   horizontal: "RED" | "GREEN"; vertical: "RED" | "GREEN"; pedestrians: "RED" | "GREEN";
@@ -30,15 +34,27 @@ export type CityMobility = {
   setRoadClosures(cells: ReadonlySet<string>): void;
   setWalkClosures(cells: ReadonlySet<string>): void;
   roadEventSites(): RoadEventSite[];
-  dispatchResponse(role: CityResponseRole, targets: readonly Cell[]): boolean;
-  clearResponses(): void;
+  dispatchResponse(role: CityResponseRole, targets: readonly Cell[], stayMs?: number, agentId?: string): boolean;
+  clearResponses(roles?: readonly CityResponseRole[], agentId?: string): void;
+  dispatchVisit(id: string, targets: readonly Cell[], count: number, stayMs: number, indoors: boolean, actorIds?: readonly string[]): string[];
+  clearVisits(id?: string): void;
+  boardVisit(id: string, vehicleId: string): number;
+  alightVisit(vehicleId: string, targets: readonly Cell[]): number;
+  releaseResponse(agentId: string, retainMs?: number): void;
+  canDrive(from: Cell, to: Cell): boolean;
   readonly agents: readonly CityMobilityAgent[];
   readonly signals: readonly CityMobilitySignal[];
   readonly metrics: Readonly<CityMobilityMetrics>;
+  readonly walkingCells: ReadonlyMap<string, Cell>;
+  readonly visitTargets: ReadonlyMap<string, Cell>;
 };
 
 type Agent = CityMobilityAgent & {
-  baseVariant: string; responseUntil?: number;
+  baseVariant: string; responseUntil?: number; responseStayMs?: number; responseTarget?: Cell; responseRetryAt?: number;
+  visitStayMs?: number; visitUntil?: number; visitDeadline?: number; visitIndoors?: boolean; visitTarget?: Cell; visitRetryAt?: number;
+  alightPending?: boolean;
+  evacuating?: boolean;
+  evacuationTargets?: Cell[];
   route: Cell[]; previous?: Cell; restMs: number; rng: number; requestedAt?: number; zoneId?: string;
   // At most one uncommitted doorway pose; never a chain of prior actors.
   pendingExit?: Agent;
@@ -205,8 +221,40 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
   const graph = (kind: Agent["kind"]) => kind === "CAR" ? network.cars : network.walkers;
   const edges = (kind: Agent["kind"]) => kind === "CAR" ? network.carEdges : network.walkerEdges;
   const safeDestination = (cell: Cell) => !network.zoneByCell.has(key(cell));
+  let visitTargets = new Map([...network.walkers].filter(([id, cell]) => !network.roads.has(id) && safeDestination(cell)));
+  const beginRoute = (agent: Agent, route: Cell[]) => {
+    agent.route = route; agent.next = route[1]!; agent.direction = heading(agent.current, agent.next, agent.direction); agent.progress = 0;
+    agent.segmentStart = agent.previous ? { x: agent.position.x - agent.current.x - .5, y: agent.position.y - agent.current.y - .5 }
+      : agent.kind === "WALKER" ? inset(agent.direction) : { x: 0, y: 0 };
+    agent.segmentEnd = segmentEnd(agent.kind, route, agent.direction); agent.position = position(agent);
+  };
   const plan = (agent: Agent): void => {
+    if (agent.visit && !agent.visit.arrived && clock < (agent.visitRetryAt ?? 0)) return;
+    if (agent.responseTarget && clock < (agent.responseRetryAt ?? 0)) return;
     const search = (agent.kind === "CAR" ? carRoutes : walkerRoutes)(agent.current, agent.previous);
+    if (agent.kind === 'CAR' && agent.response && agent.responseTarget && !agent.evacuating) {
+      // A shortened route is not arrival. Keep the requested curb while a
+      // closure requires a detour or waiting, rather than taking a random trip.
+      if (closures.has(key(agent.responseTarget)) || !network.cars.has(key(agent.responseTarget))) { agent.responseRetryAt = clock + 1000; return; }
+      if (same(agent.current, agent.responseTarget)) {
+        const stay = agent.responseStayMs ?? 2500;
+        agent.responseUntil = clock + stay; agent.activity = 'REST'; agent.restMs = stay; metrics.responseTrips++; return;
+      }
+      const route = search.routeTo(agent.responseTarget);
+      if (route.length < 2 || route.length > (agent.response === 'BUS' || agent.response === 'SCHOOL_BUS' ? 64 : 28)) { agent.responseRetryAt = clock + 1000; return; }
+      agent.responseRetryAt = undefined; beginRoute(agent, route); return;
+    }
+    if (agent.visit && !agent.visit.arrived && agent.visitTarget) {
+      // Closures can shorten a physical route. Its former last edge is not an
+      // arrival: retain the requested destination and retry the actual graph.
+      if (walkClosures.has(key(agent.visitTarget)) || !network.walkers.has(key(agent.visitTarget))) { agent.visitRetryAt = clock + 1000; return; }
+      if (same(agent.current, agent.visitTarget)) {
+        agent.visit = { ...agent.visit, arrived: true }; agent.visitUntil = clock + (agent.visitStayMs ?? 3000);
+        agent.activity = agent.visitIndoors ? 'INSIDE' : 'REST'; agent.restMs = agent.visitStayMs ?? 3000; return;
+      }
+      const route = search.routeTo(agent.visitTarget); if (route.length < 2 || route.length > 48) { agent.visitRetryAt = clock + 1000; return; }
+      beginRoute(agent, route); return;
+    }
     const destinations = search.cells.filter(cell => {
       if (!safeDestination(cell) || same(cell, agent.current)) return false;
       if (agent.kind === "CAR") return true;
@@ -239,11 +287,68 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       }
     }
     if (best.length < 2) return;
-    agent.route = best; agent.next = best[1]!; agent.direction = heading(agent.current, agent.next, agent.direction); agent.progress = 0;
-    agent.segmentStart = agent.previous ? { x: agent.position.x - agent.current.x - .5, y: agent.position.y - agent.current.y - .5 }
-      : agent.kind === "WALKER" ? inset(agent.direction) : { x: 0, y: 0 };
-    agent.segmentEnd = segmentEnd(agent.kind, best, agent.direction);
-    agent.position = position(agent);
+    beginRoute(agent, best);
+  };
+
+  const alight = (vehicleId: string, targets: readonly Cell[]): number => {
+    const vehicle = actors.find(actor => actor.id === vehicleId && actor.kind === 'CAR');
+    if (!vehicle || vehicle.activity !== 'REST' || vehicle.route.length > 1) return 0;
+    let count = 0;
+    for (const passenger of actors.filter(actor => actor.carrier === vehicleId)) {
+      for (const target of targets) {
+        if (!network.walkers.has(key(target)) || network.roads.has(key(target)) || walkClosures.has(key(target)) || !safeDestination(target)
+          || Math.hypot(target.x + .5 - vehicle.position.x, target.y + .5 - vehicle.position.y) > 4 || !curbSide(vehicle.current, target)) continue;
+        const exit: Agent = { ...passenger, carrier: undefined, alightPending: undefined, visit: undefined, visitUntil: undefined, visitTarget: undefined,
+          activity: 'NONE', restMs: 0, pendingExit: undefined, route: [target], current: target, next: target, previous: undefined,
+          progress: 0, position: { x: target.x + .5, y: target.y + .5 }, segmentStart: { x: 0, y: 0 }, segmentEnd: { x: 0, y: 0 } };
+        plan(exit);
+        if (exit.route.length < 2 || actors.some(other => other.id !== passenger.id && overlap(exit, other, safetyGap(exit, other)))) continue;
+        Object.assign(passenger, exit); count++; break;
+      }
+    }
+    return count;
+  };
+
+  const curbSide = (lane: Cell, target: Cell) => {
+    const role = roadBandRole(network.roads, lane);
+    if (role.kind !== 'TRAVEL') return false;
+    const forward = (target.x - lane.x) * role.dx + (target.y - lane.y) * role.dy;
+    const lateral = (target.x - lane.x) * -role.dy + (target.y - lane.y) * role.dx;
+    return lateral > 0 && lateral <= 3 && Math.abs(forward) <= 2;
+  };
+  const nearbyExits = (cell: Cell): Cell[] => {
+    const targets: Cell[] = [];
+    for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) {
+      const target = network.walkers.get(`${cell.x + x},${cell.y + y}`);
+      if (target && !network.roads.has(key(target)) && !walkClosures.has(key(target)) && safeDestination(target) && curbSide(cell, target)) targets.push(target);
+    }
+    return targets.sort((a, b) => Math.abs(a.x - cell.x) + Math.abs(a.y - cell.y) - Math.abs(b.x - cell.x) - Math.abs(b.y - cell.y));
+  };
+  /** Cancellation finishes the physical edge and drives to a reachable curb.
+   * Passengers remain inside until that car rests and a body-safe exit exists. */
+  const recoverPassengers = (vehicle: Agent) => {
+    vehicle.evacuating = true;
+    vehicle.responseTarget = undefined; vehicle.responseRetryAt = undefined;
+    for (const passenger of actors) if (passenger.carrier === vehicle.id) passenger.alightPending = true;
+    const moving = vehicle.route.length > 1, start = moving ? vehicle.next : vehicle.current;
+    const search = carRoutes(start, moving ? vehicle.current : vehicle.previous);
+    for (const cell of search.cells) {
+      if (!network.roads.has(key(cell)) || !safeDestination(cell) || closures.has(key(cell))) continue;
+      const exits = nearbyExits(cell); if (!exits.length) continue;
+      const suffix = search.routeTo(cell); if (!suffix.length || suffix.length > 28) continue;
+      vehicle.route = moving ? [vehicle.current, ...suffix] : suffix;
+      vehicle.evacuationTargets = exits; vehicle.responseUntil = undefined; vehicle.responseStayMs = 30_000;
+      if (vehicle.route.length === 1) { vehicle.activity = 'REST'; vehicle.restMs = 30_000; }
+      else {
+        vehicle.restMs = 0; vehicle.activity = 'NONE';
+        if (!moving) { vehicle.next = vehicle.route[1]!; vehicle.direction = heading(vehicle.current, vehicle.next, vehicle.direction);
+          vehicle.progress = 0; vehicle.segmentStart = { x: 0, y: 0 }; vehicle.segmentEnd = { x: 0, y: 0 }; }
+      }
+      return;
+    }
+    // No safe curb currently reachable: retain ordinary motion and retry once
+    // its current trip ends. Never invent a walk cell or a mid-road exit.
+    vehicle.evacuationTargets = undefined;
   };
 
   const spawn = (): void => {
@@ -257,6 +362,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         const actor: Agent = {
           id: `mobility-${input.seed >>> 0}-${idCounter}`, kind, variant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
           baseVariant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
+          age: kind === 'WALKER' ? count % 4 === 0 ? 'CHILD' : 'ADULT' : undefined,
           current, next: current, progress: 0, position: { x: current.x + .5, y: current.y + .5 }, direction: "east",
           speed: kind === "CAR" ? .0021 + random() * .00045 : .0012 + random() * .00018,
           steps: 0, activity: "NONE", waitMs: 0, yieldReason: "NONE", route: [current], rng: Math.floor(random() * 0x7fff_ffff) || 1, restMs: 0,
@@ -270,7 +376,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
   };
 
   const publish = () => {
-    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response }));
+    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response, visit, carrier, age }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response, visit: visit && { ...visit }, carrier, age }));
     signalSnapshot = network.zones.map(zone => {
       const reservation = reservations.get(zone.id);
       return { id: zone.id, bounds: zone.bounds, signalPosts: zone.signalPosts,
@@ -303,8 +409,22 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
     clock += STEP_MS; metrics.fixedSteps++;
     for (const actor of actors) {
       actor.yieldReason = "NONE";
+      if (actor.evacuating) {
+        if (!actors.some(a => a.carrier === actor.id)) {
+          actor.evacuating = undefined; actor.evacuationTargets = undefined;
+          actor.response = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant;
+          actor.restMs = 0; actor.activity = 'NONE';
+        } else if (actor.activity === 'REST') {
+          alight(actor.id, actor.evacuationTargets ?? nearbyExits(actor.current));
+          if (actor.restMs <= STEP_MS) recoverPassengers(actor);
+        } else if (actor.route.length < 2) recoverPassengers(actor);
+      }
+      if (actor.visit && clock >= (actor.visitUntil ?? actor.visitDeadline ?? Infinity)) {
+        actor.visit = undefined; actor.visitUntil = undefined; actor.visitDeadline = undefined; actor.visitTarget = undefined; actor.visitRetryAt = undefined;
+      }
       if (actor.responseUntil !== undefined && clock >= actor.responseUntil) {
-        actor.response = undefined; actor.responseUntil = undefined; actor.variant = actor.baseVariant;
+        if (actors.some(a => a.carrier === actor.id)) recoverPassengers(actor);
+        else { actor.response = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant; }
       }
       if (actor.restMs > 0) {
         actor.restMs = Math.max(0, actor.restMs - STEP_MS);
@@ -334,6 +454,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
     for (const [zoneId, reservation] of reservations) {
       const owner = actors.find(actor => actor.id === reservation.owner), zone = network.zones.find(zone => zone.id === zoneId);
       if (!owner || !zone) { reservations.delete(zoneId); continue; }
+      if (owner.activity === 'INSIDE') { reservations.delete(zoneId); owner.zoneId = undefined; owner.requestedAt = undefined; continue; }
       const e = body(owner).half, center = bodyCenter(owner);
       let bodyInside = false;
       // Test only tiles beneath this tiny body, not every tile in a whole
@@ -354,7 +475,10 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       const zone = network.zoneByCell.get(key(actor.next));
       if (!zone) { actor.requestedAt = undefined; continue; }
       actor.requestedAt ??= clock;
-      const exitIndex = mobilityPassageExitIndex(actor.route, zone), exit = actor.route[exitIndex];
+      let exitIndex = mobilityPassageExitIndex(actor.route, zone);
+      if (exitIndex < 0 && actor.kind === 'WALKER' && actor.visitIndoors && actor.visitTarget
+        && network.buildingEntrances.has(key(actor.visitTarget)) && same(actor.route.at(-1)!, actor.visitTarget)) exitIndex = actor.route.length - 1;
+      const exit = actor.route[exitIndex];
       if (!exit) { actor.yieldReason = "OCCUPIED_EXIT"; continue; }
       requests.push({ actor, zone, exit, exitIndex });
     }
@@ -427,13 +551,18 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (actor.kind === "CAR") metrics.vehicleSteps += steps; else metrics.walkerSteps += steps;
       if (actor.route.length > 1 && next.route.length < 2) {
         metrics.completedTrips++;
-        if (actor.response && actor.responseUntil === undefined) {
-          next.responseUntil = clock + 2500; next.activity = "REST"; next.restMs = 2500; metrics.responseTrips++;
+        if (actor.response && actor.responseUntil === undefined && (!actor.responseTarget || same(next.current, actor.responseTarget))) {
+          const stay = actor.responseStayMs ?? 2500;
+          next.responseUntil = clock + stay; next.activity = "REST"; next.restMs = stay; metrics.responseTrips++;
         }
         if(!actor.response && actor.kind==='CAR'&&network.parkingBays.has(key(next.current))) {
           next.activity='PARKED';next.restMs=7000+Math.abs(next.rng%9000);
         }
-        if (actor.kind === "WALKER" && !network.roads.has(key(next.current)) && !next.zoneId
+        if (actor.kind === 'WALKER' && actor.visit && !actor.visit.arrived && actor.visitTarget
+          && same(next.current, actor.visitTarget) && !walkClosures.has(key(next.current))) {
+          next.visit = { ...actor.visit, arrived: true }; next.visitUntil = clock + (actor.visitStayMs ?? 3000);
+          next.activity = actor.visitIndoors ? 'INSIDE' : 'REST'; next.restMs = actor.visitStayMs ?? 3000;
+        } else if (actor.kind === "WALKER" && !actor.visit && !network.roads.has(key(next.current)) && !next.zoneId
           && (network.activityCells.has(key(next.current)) || network.buildingEntrances.has(key(next.current)))) {
           next.activity = network.buildingEntrances.has(key(next.current)) ? "INSIDE" : "REST";
           next.restMs = 650 + Math.abs(next.rng % 700);
@@ -441,6 +570,10 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       }
       return next;
     });
+    for (const passenger of actors.filter(actor => actor.carrier)) {
+      const vehicle = actors.find(actor => actor.id === passenger.carrier);
+      if (vehicle) passenger.position = { ...vehicle.position };
+    }
     recordMetrics();
   };
 
@@ -457,10 +590,13 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         for(const [id,reservation] of reservations) if(!alive.has(reservation.owner)) reservations.delete(id);
       }
       if (mobilityNetworkSignature(updated) === network.signature) {
+        const alive = new Set(actors.map(actor => actor.id));
+        actors = actors.filter(actor => !actor.carrier || alive.has(actor.carrier));
         if (oldCarLimit !== limits.CAR || oldWalkerLimit !== limits.WALKER) { spawn(); recordMetrics(); publish(); }
         return;
       }
       network = buildMobilityNetwork(updated); metrics.networkBuilds++;
+      visitTargets = new Map([...network.walkers].filter(([id, cell]) => !network.roads.has(id) && safeDestination(cell)));
       closures = new Set([...closures].filter(id => network.cars.has(id)));
       compileClosures();
       walkClosures = new Set([...walkClosures].filter(id => network.walkers.has(id)));
@@ -470,8 +606,11 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         // A road edit can reverse a lane while retaining both cells. Such an
         // invalid physical edge is retired, never kept as a wrong-way route.
         && (same(actor.current, actor.next) || edges(actor.kind).get(key(actor.current))?.some(next => same(next, actor.next))));
+      const alive = new Set(actors.map(actor => actor.id));
+      actors = actors.filter(actor => !actor.carrier || alive.has(actor.carrier));
       for (const actor of actors) {
         actor.zoneId = undefined; actor.requestedAt = undefined;
+        if (actor.evacuating) recoverPassengers(actor);
         if (actor.route.some((cell, i) => !graph(actor.kind).has(key(cell)) || i > 0 && !edges(actor.kind).get(key(actor.route[i - 1]!))?.some(next => same(cell, next)))) {
           // Preserve the current physical edge; repair only its future suffix.
           actor.route = [actor.current, actor.next];
@@ -537,13 +676,15 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
           const c = network.cars.get(`${first.x + x},${first.y + y}`);
           if (c && reachable.has(key(c)) && !network.zoneByCell.has(key(c)) && cells.every(cell => Math.abs(c.x - cell.x) + Math.abs(c.y - cell.y) >= 3)) responseCells.push(c);
         }
-        if (responseCells.length) sites.push({ cells, responseCells });
+        const behind = { x: first.x - second.x + first.x, y: first.y - second.y + first.y };
+        const towCell = network.carEdges.get(key(behind))?.some(cell => same(cell, first)) && safeDestination(behind) && reachable.has(key(behind)) ? behind : undefined;
+        if (responseCells.length) sites.push({ cells, responseCells, towCell });
       }
       return sites;
     },
-    dispatchResponse(role, targets) {
-      if (!targets.length || actors.filter(a => a.response).length >= 2) return false;
-      const candidates = actors.filter(actor => actor.kind === "CAR" && !actor.response)
+    dispatchResponse(role, targets, stayMs = 2500, agentId) {
+      if (!targets.length || actors.filter(a => a.response && a.id !== agentId).length >= 2) return false;
+      const candidates = actors.filter(actor => actor.kind === "CAR" && !actor.evacuating && (!actor.response || actor.id === agentId) && (!agentId || actor.id === agentId))
         .sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x-a.next.x)+Math.abs(c.y-a.next.y)))-Math.min(...targets.map(c => Math.abs(c.x-b.next.x)+Math.abs(c.y-b.next.y)))).slice(0, 6);
       let picked: { actor: Agent; route: Cell[] } | undefined;
       for (const actor of candidates) {
@@ -553,7 +694,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         for (const target of targets) {
           if (!safeDestination(target) || closures.has(key(target))) continue;
           const suffix = search.routeTo(target);
-          if (suffix.length < 2 || suffix.length > 28) continue;
+          if (suffix.length < 2 || suffix.length > (role === 'BUS' || role === 'SCHOOL_BUS' ? 64 : 28)) continue;
           const route = moving ? [actor.current, ...suffix] : suffix;
           if (!picked || route.length < picked.route.length) picked = { actor, route };
         }
@@ -565,16 +706,95 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         actor.next = actor.route[1]!; actor.direction = heading(actor.current, actor.next, actor.direction);
         actor.progress = 0; actor.segmentStart = { x: 0, y: 0 }; actor.segmentEnd = { x: 0, y: 0 };
       }
-      actor.response = role; actor.responseUntil = undefined;
+      actor.response = role; actor.responseUntil = undefined; actor.responseTarget = { ...picked.route.at(-1)! }; actor.responseRetryAt = undefined;
+      actor.responseStayMs = Math.max(500, Math.min(30_000, Number.isFinite(stayMs) ? stayMs : 2500));
       actor.variant = role === "POLICE" ? "blue" : role === "FIRE" ? "red" : "van";
       publish(); return true;
     },
-    clearResponses() {
-      for (const actor of actors) if (actor.response) {
-        actor.response = undefined; actor.responseUntil = undefined; actor.variant = actor.baseVariant;
+    clearResponses(roles, agentId) {
+      for (const actor of actors) if (actor.response && (!roles || roles.includes(actor.response)) && (!agentId || actor.id === agentId)) {
+        if (actors.some(passenger => passenger.carrier === actor.id)) { recoverPassengers(actor); continue; }
+        actor.response = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant;
         actor.restMs = 0; actor.activity = "NONE"; actor.route = actor.route.slice(0, 2);
       }
       publish();
+    },
+    dispatchVisit(id, targets, count, stayMs, indoors, actorIds) {
+      if (!id || !targets.length || !Number.isFinite(count) || !Number.isFinite(stayMs)) return [];
+      const validTargets = targets.filter(target => network.walkers.has(key(target)) && !network.roads.has(key(target))
+        && !walkClosures.has(key(target)) && (safeDestination(target) || indoors && network.buildingEntrances.has(key(target))));
+      if (!validTargets.length) return [];
+      const selected: string[] = [], quota = Math.max(0, Math.min(6, Math.floor(count)));
+      const candidates = actors.filter(actor => actor.kind === 'WALKER' && (!actor.visit || actorIds?.includes(actor.id) && actor.visit.id === id)
+        && (!actorIds || actorIds.includes(actor.id)) && !actor.carrier && actor.activity !== 'INSIDE')
+        .sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x - a.next.x) + Math.abs(c.y - a.next.y)))
+          - Math.min(...targets.map(c => Math.abs(c.x - b.next.x) + Math.abs(c.y - b.next.y))));
+      for (const actor of candidates) {
+        if (selected.length >= quota) break;
+        // A freshly alighted person has not committed the random outgoing
+        // step yet. Choose the requested destination from the actual curb.
+        // Mid-edge walkers still finish their immutable physical segment.
+        const moving = actor.route.length >= 2 && actor.progress > EPSILON, start = moving ? actor.next : actor.current;
+        const search = walkerRoutes(start, moving ? actor.current : actor.previous);
+        const target = validTargets[selected.length % validTargets.length]!;
+        if (!network.walkers.has(key(target)) || network.roads.has(key(target)) || walkClosures.has(key(target)) || !(safeDestination(target) || indoors && network.buildingEntrances.has(key(target)))) continue;
+        const suffix = search.routeTo(target);
+        if (!suffix.length || suffix.length > 48 || (!moving && suffix.length < 2)) continue;
+        actor.route = moving ? [actor.current, ...suffix] : suffix;
+        actor.restMs = 0; actor.activity = 'NONE'; actor.pendingExit = undefined;
+        if (!moving) {
+          actor.next = actor.route[1]!; actor.direction = heading(actor.current, actor.next, actor.direction); actor.progress = 0;
+          // Keep the physical pose; turning is admitted through the ordinary
+          // swept-body resolution on the next fixed step.
+          actor.segmentStart = { x: actor.position.x - actor.current.x - .5, y: actor.position.y - actor.current.y - .5 };
+          actor.segmentEnd = segmentEnd(actor.kind, actor.route, actor.direction);
+        }
+        actor.visit = { id, arrived: false }; actor.visitTarget = target; actor.visitRetryAt = undefined; actor.visitStayMs = Math.max(500, Math.min(30_000, stayMs));
+        actor.visitIndoors = indoors; actor.visitUntil = undefined; actor.visitDeadline = clock + 60_000;
+        selected.push(actor.id);
+      }
+      publish(); return selected;
+    },
+    clearVisits(id) {
+      for (const actor of actors) if (actor.visit && (!id || actor.visit.id === id)) {
+        actor.visit = undefined; actor.visitUntil = undefined; actor.visitDeadline = undefined; actor.visitTarget = undefined; actor.visitRetryAt = undefined;
+        if (actor.carrier) {
+          actor.alightPending = true;
+          const vehicle = actors.find(candidate => candidate.id === actor.carrier);
+          if (vehicle && !vehicle.evacuating) recoverPassengers(vehicle);
+          continue;
+        }
+        actor.restMs = actor.activity === 'INSIDE' ? STEP_MS : 0; actor.pendingExit = undefined;
+        if (actor.activity !== 'INSIDE') { actor.activity = 'NONE'; actor.route = actor.route.slice(0, 2); }
+      }
+      publish();
+    },
+    boardVisit(id, vehicleId) {
+      const vehicle = actors.find(actor => actor.id === vehicleId && actor.kind === 'CAR' && actor.activity === 'REST'
+        && !actor.evacuating && (actor.response === 'BUS' || actor.response === 'SCHOOL_BUS'));
+      if (!vehicle) return 0;
+      let count = 0;
+      for (const actor of actors) if (actor.visit?.id === id && actor.visit.arrived && !actor.carrier
+        && Math.hypot(actor.position.x - vehicle.position.x, actor.position.y - vehicle.position.y) <= 3 && curbSide(vehicle.current, actor.current)) {
+        actor.carrier = vehicleId; actor.activity = 'INSIDE'; actor.restMs = Number.MAX_SAFE_INTEGER; actor.visitUntil = undefined;
+        actor.visitDeadline = undefined; actor.route = [actor.current]; actor.next = actor.current; actor.progress = 0;
+        actor.position = { ...vehicle.position }; actor.pendingExit = undefined; count++;
+      }
+      publish(); return count;
+    },
+    alightVisit(vehicleId, targets) { const count = alight(vehicleId, targets); publish(); return count; },
+    releaseResponse(agentId, retainMs = 10_000) {
+      const actor = actors.find(a => a.id === agentId && a.kind === 'CAR' && a.response);
+      if (!actor) return;
+      actor.responseTarget = undefined; actor.responseRetryAt = undefined;
+      actor.responseUntil = clock + Math.max(500, Math.min(30_000, Number.isFinite(retainMs) ? retainMs : 10_000));
+      actor.restMs = 0; actor.activity = 'NONE'; actor.route = actor.route.slice(0, 2); publish();
+    },
+    canDrive(from, to) {
+      const role = roadBandRole(network.roads, from);
+      if (role.kind !== 'TRAVEL' || !safeDestination(to) || closures.has(key(to))) return false;
+      const route = carRoutes(from, { x: from.x - role.dx, y: from.y - role.dy }).routeTo(to);
+      return route.length >= 2 && route.length <= 64;
     },
     advance(elapsedMs) {
       if (!Number.isFinite(elapsedMs) || elapsedMs < 0) throw new Error("Mobility elapsed time must be finite and nonnegative");
@@ -584,5 +804,6 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (stepped) publish();
     },
     get agents() { return agentsSnapshot; }, get signals() { return signalSnapshot; }, get metrics() { return { ...metrics }; },
+    get walkingCells() { return network.walkers; }, get visitTargets() { return visitTargets; },
   };
 }

@@ -1,11 +1,14 @@
 import { readWorldPreferences } from './world-preferences';
-export type CitySoundCue='hammer'|'blast'|'rotor'|'reveal'|'siren';
+export type CitySoundCue='hammer'|'blast'|'rotor'|'reveal'|'siren'|'bell'|'chirp'|'whistle';
 const scores:Record<CitySoundCue,{frequency:number;end:number;duration:number;volume:number;type:OscillatorType}>={
  hammer:{frequency:190,end:75,duration:.06,volume:.025,type:'triangle'},
  blast:{frequency:110,end:28,duration:.35,volume:.035,type:'sawtooth'},
  rotor:{frequency:44,end:38,duration:.55,volume:.012,type:'triangle'},
  reveal:{frequency:430,end:620,duration:.14,volume:.02,type:'sine'},
  siren:{frequency:500,end:710,duration:.35,volume:.012,type:'sine'},
+ bell:{frequency:880,end:660,duration:.28,volume:.014,type:'sine'},
+ chirp:{frequency:1200,end:1900,duration:.1,volume:.008,type:'sine'},
+ whistle:{frequency:980,end:1400,duration:.16,volume:.01,type:'sine'},
 };
 let context:AudioContext|undefined;
 let played=0;

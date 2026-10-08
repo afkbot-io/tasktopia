@@ -14,11 +14,11 @@ it('plans bounded deterministic road episodes, with no occupied lane, junction o
  for(let window=0;window<15;window++){
  const episode=planRoadEpisode('town',candidates,window*90000+1000,bounds)!;
  expect(episode).toBeTruthy();expect(planRoadEpisode('town',candidates,window*90000+1000,bounds)).toEqual(episode);
- kinds.add(episode.kind);expect(episode.end-episode.start).toBe(18000);
+ kinds.add(episode.kind);expect(episode.end-episode.start).toBe(episode.kind==='BREAKDOWN'?30000:episode.kind==='WATER'?26000:18000);
  expect(roadEpisodePose(episode,episode.start-1)).toBeNull();expect(roadEpisodePose(episode,episode.end)).toBeNull();
  for(const c of episode.cells){expect(roads.has(key(c))).toBe(true);expect(c.x).toBeGreaterThanOrEqual(0);expect(c.y).toBeGreaterThanOrEqual(0);}
  }
- expect(kinds).toEqual(new Set(['ACCIDENT','REPAIR','FIRE','MEDICAL','PATROL']));
+ expect(kinds).toEqual(new Set(['ACCIDENT','REPAIR','FIRE','MEDICAL','PATROL','BREAKDOWN','WATER']));
  expect(planRoadEpisode('town',[],0,bounds)).toBeUndefined();
 });
 it('closes a real lane, reroutes or safely waits, sends two responders and reopens without overlap or teleport',()=>{
@@ -45,4 +45,20 @@ it('does not place a call in a disconnected district whose curb no service can r
  const city=createCityMobility({...input,roads:separated,carLimit:1});const car=city.agents[0]!;
  const sites=city.roadEventSites();expect(sites.length).toBeGreaterThan(0);
  for(const site of sites)for(const c of site.cells)expect(c.x<60).toBe(car.current.x<60);
+});
+
+it('эвакуатор подъезжает сзади к свободной клетке до перекрытия, а не через закрытый участок', () => {
+ const city=createCityMobility(input), sites=city.roadEventSites().filter(site=>site.towCell);
+ expect(sites.length).toBeGreaterThan(0);
+ for(const site of sites) {
+  const first=site.cells[0]!,second=site.cells[1]!;
+  expect(site.towCell).toEqual({x:first.x-(second.x-first.x),y:first.y-(second.y-first.y)});
+ }
+ let dispatched=false;
+ for(const site of sites) {
+  city.setRoadClosures(new Set(site.cells.map(key)));
+  if(city.dispatchResponse('TOW',[site.towCell!],20000)) {dispatched=true;break;}
+  city.setRoadClosures(new Set());
+ }
+ expect(dispatched).toBe(true);
 });

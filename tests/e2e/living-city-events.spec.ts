@@ -1,3 +1,4 @@
+import { installSceneClock } from './city-scene-clock';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
@@ -188,11 +189,11 @@ test('visibility lifecycle stops work and audio, then releases an expired captur
  }finally{await f.cleanup();}
 });
 
-test('all five road scenes dispatch moving services, close and reopen lanes without unsafe pairs',async({page},info)=>{
- test.setTimeout(240000);await page.setViewportSize({width:1440,height:1100});await page.clock.install();const f=await fixture(page);
+test('all seven road scenes dispatch moving services, close and reopen lanes without unsafe pairs',async({page},info)=>{
+ test.setTimeout(600000);await page.setViewportSize({width:1440,height:1100});await installSceneClock(page);const f=await fixture(page);
  try{
   await f.focus(f.task);const kinds=new Set<string>();
-  for(let attempt=0;attempt<12&&kinds.size<5;attempt++){
+  for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    await expect(f.host).toHaveAttribute('data-road-event-server-now',/\d{13}/);
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
     const now=Number(await f.host.getAttribute('data-road-event-server-now')),next=Number(await f.host.getAttribute('data-road-event-next-start'));
@@ -206,9 +207,9 @@ test('all five road scenes dispatch moving services, close and reopen lanes with
    await page.screenshot({path:info.outputPath(`road-${kind.toLowerCase()}.png`)});
    await expect(f.host).toHaveAttribute('data-mobility-vehicle-unsafe-total','0');
    await expect(f.host).toHaveAttribute('data-mobility-vehicle-pedestrian-unsafe-total','0');
-   await page.clock.runFor(17000);await expect(f.host).toHaveAttribute('data-road-event','');await expect(f.host).toHaveAttribute('data-road-closed-cells','0');
+   await page.clock.runFor(29500);await expect(f.host).toHaveAttribute('data-road-event','');await expect(f.host).toHaveAttribute('data-road-closed-cells','0');
   }
-  expect(kinds).toEqual(new Set(['ACCIDENT','REPAIR','FIRE','MEDICAL','PATROL']));
+  expect(kinds).toEqual(new Set(['ACCIDENT','REPAIR','FIRE','MEDICAL','PATROL','BREAKDOWN','WATER']));
   expect(Number(await f.host.getAttribute('data-road-response-trips'))).toBeGreaterThan(0);
  }finally{await f.cleanup();}
 });
@@ -236,19 +237,19 @@ test('park ground changes and demolition overriding unfinished work settle to au
 });
 
 test('native road captures cover every scene without adding standalone props or browser errors',async({page},info)=>{
- test.setTimeout(90000);await page.setViewportSize({width:1440,height:1100});await page.clock.install();const f=await fixture(page),kinds=new Set<string>(),errors:string[]=[],standalone:string[]=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/\/props\/[^/]+\.png/.test(request.url()))standalone.push(request.url());});
+ test.setTimeout(90000);await page.setViewportSize({width:1440,height:1100});await installSceneClock(page);const f=await fixture(page),kinds=new Set<string>(),errors:string[]=[],standalone:string[]=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/\/props\/[^/]+\.png/.test(request.url()))standalone.push(request.url());});
  try{
   await f.focus(f.task);
-  for(let attempt=0;attempt<12&&kinds.size<5;attempt++){
+  for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
     const now=Number(await f.host.getAttribute('data-road-event-server-now')),next=Number(await f.host.getAttribute('data-road-event-next-start'));
     await page.clock.fastForward(Math.max(100,next-now+300));await page.clock.runFor(100);
    }
    const kind=await f.host.getAttribute('data-road-event');if(!kind)continue;
    await page.clock.fastForward(4500);await page.clock.runFor(100);await page.screenshot({path:info.outputPath(`road-${kind.toLowerCase()}.png`)});kinds.add(kind);
-   await page.clock.fastForward(20000);await page.clock.runFor(100);await expect(f.host).toHaveAttribute('data-road-closed-cells','0');
+   await page.clock.fastForward(35500);await page.clock.runFor(100);await expect(f.host).toHaveAttribute('data-road-closed-cells','0');
   }
-  expect(kinds.size).toBe(5);expect(errors).toEqual([]);expect(standalone).toEqual([]);
+  expect(kinds.size).toBe(7);expect(errors).toEqual([]);expect(standalone).toEqual([]);
  }finally{await f.cleanup();}
 });
 
