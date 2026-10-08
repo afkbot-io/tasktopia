@@ -16,16 +16,21 @@ const count = Number(process.env.AUDIT_SAMPLES ?? 3);
 assert.ok(Number.isInteger(count) && count >= 1 && count <= 10);
 const churnCycles = Number(process.env.AUDIT_CHURN_CYCLES ?? 0);
 assert.ok(Number.isInteger(churnCycles) && churnCycles >= 0 && churnCycles <= 20);
+const steadyMs = Number(process.env.AUDIT_STEADY_MS ?? 8000);
+assert.ok(Number.isInteger(steadyMs) && steadyMs >= 8000 && steadyMs <= 120_000);
 const profile = process.env.AUDIT_PROFILE === "true";
+const profileSteady = process.env.AUDIT_PROFILE_STEADY === "true";
 const compact = process.env.AUDIT_COMPACT === "true";
 const headed = process.env.AUDIT_HEADED === "true";
+const metal = process.env.AUDIT_METAL === "true";
+assert.ok(!metal || platform() === "darwin", "Metal measurement requires macOS");
 const quality = process.env.AUDIT_QUALITY ?? "AUTO";
 assert.ok(["AUTO", "NORMAL", "ECONOMY"].includes(quality));
 const label = process.env.AUDIT_LABEL ?? "";
 assert.ok(/^[a-zA-Z0-9_-]*$/.test(label));
 const directory = `tmp/city-art-load/${variant}-${workload}${compact ? "-compact" : ""}${profile ? "-profile" : ""}${label ? `-${label}` : ""}`;
 await mkdir(directory, { recursive: true });
-const browser = await chromium.launch({ headless: !headed });
+const browser = await chromium.launch({ headless: !headed, args: metal ? ["--enable-gpu", "--use-angle=metal"] : [] });
 const samples = [], errors: string[] = [];
 let failure: string | null = null;
 try {
@@ -81,7 +86,6 @@ try {
         chunks: scene.chunks.map(chunk => ({ x: chunk.chunkX, y: chunk.chunkY, roads: chunk.roadRuns, surfaces: chunk.surfaceRuns,
           districts: chunk.districts, sites: chunk.plannedSites, features: chunk.worldFeatures })),
       })).digest("hex");
-      if (profile) await writeFile(`${directory}/${sample}.cpuprofile`, JSON.stringify((await cdp.send("Profiler.stop")).profile));
       const resources = await page.evaluate(() => performance.getEntriesByType("resource").map(entry => entry.toJSON()));
       const coldTelemetry = await host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
       const renderer = await page.locator(".world-canvas canvas").evaluate(canvas => {
@@ -89,18 +93,23 @@ try {
         const debug = gl?.getExtension("WEBGL_debug_renderer_info");
         return debug ? gl!.getParameter(debug.UNMASKED_RENDERER_WEBGL) as string : "unavailable";
       });
+      if (metal) assert.match(renderer, /ANGLE Metal Renderer/, "Requested Metal must not silently fall back to software rendering");
       await expect(host).toHaveAttribute("data-ground-bake-queue", "0", { timeout: 30_000 });
       await expect(host).toHaveAttribute("data-mobility-ready", "true", { timeout: 30_000 });
+      if (profile) await writeFile(`${directory}/${sample}.cpuprofile`, JSON.stringify((await cdp.send("Profiler.stop")).profile));
       await page.waitForTimeout(3000);
+      if (profileSteady) { await cdp.send("Profiler.enable"); await cdp.send("Profiler.start"); }
       const sampledTelemetryStart = await host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
       const steadyStart = await page.evaluate(() => performance.now());
-      const frames = await page.evaluate<number[]>(`new Promise(resolve => {
-        const values = []; let previous = performance.now(); const start = previous;
-        function frame(now) { values.push(now - previous); previous = now;
-          if (now - start >= 8000) resolve(values); else requestAnimationFrame(frame); }
-        requestAnimationFrame(frame);
-      })`);
+      const frames = await page.evaluate(duration => new Promise<number[]>(resolve => {
+        const values: number[] = []; let previous = performance.now(); const start = previous;
+        // A method avoids tsx's named-function helper inside serialized code.
+        const loop = { frame(now: number) { values.push(now - previous); previous = now;
+          if (now - start >= duration) resolve(values); else requestAnimationFrame(loop.frame); } };
+        requestAnimationFrame(loop.frame);
+      }), steadyMs);
       const sampledTelemetryEnd = await host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
+      if (profileSteady) await writeFile(`${directory}/${sample}-steady.cpuprofile`, JSON.stringify((await cdp.send("Profiler.stop")).profile));
       const steadyLongTasks = await page.evaluate(start => {
         const state = (window as typeof window & { __cityAuditLongTasks: Array<{ startTime: number; duration: number }> }).__cityAuditLongTasks;
         return state.filter(entry => entry.startTime >= start);
@@ -151,7 +160,7 @@ try {
   throw error;
 } finally {
   try {
-    await writeFile(`${directory}/report.json`, JSON.stringify({ variant, workload, profile, compact, headed, quality, churnCycles,
+    await writeFile(`${directory}/report.json`, JSON.stringify({ variant, workload, profile, profileSteady, compact, headed, metal, quality, churnCycles, steadyMs,
       expectedSamples: count, complete: failure === null && samples.length === count, failure,
       viewport: compact ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, deviceScaleFactor: 1,
       browser: browser.version(), host: { platform: platform(), cpu: cpus()[0]?.model }, network: "local unrestricted", samples, errors }, null, 2));

@@ -9,9 +9,9 @@ export type EverydayTask = Pick<ChunkTaskDto, 'id' | 'status' | 'stage' | 'servi
   | 'accessPath' | 'footprint' | 'workItemType' | 'defectSummary'>;
 export type EverydaySite = { id: string; taskId?: string; kind: EverydayKind; route: Cell[]; area: Cell[]; targets?: Cell[]; playTargets?: Cell[]; stopId?: string };
 export type TransitStop = { id: string; lane: Cell; shelter: Cell[]; queue: Cell[]; route: Cell[]; direction: 'horizontal' | 'vertical' };
-export type EverydayInput = { tasks: readonly EverydayTask[]; walk: ReadonlyMap<string, Cell>; blocked: ReadonlySet<string>;
+export type EverydayInput = { tasks: readonly EverydayTask[]; walk: ReadonlyMap<string, Cell>; blocked: Pick<ReadonlySet<string>, 'has'>;
   safeTargets?: ReadonlyMap<string, Cell>;
-  roads: ReadonlyMap<string, RoadCellDto>; ground?: ReadonlyMap<string, Cell>; decorations: readonly unknown[] };
+  roads: ReadonlyMap<string, RoadCellDto>; ground?: Pick<ReadonlyMap<string, Cell>, 'has'>; decorations: readonly unknown[] };
 export type EverydayEpisode = EverydaySite & { start: number; end: number };
 export type EverydayPose = EverydayEpisode & { phase: 'ARRIVE' | 'ACTIVITY' | 'LEAVE'; elapsed: number; progress: number };
 export const EVERYDAY_WINDOW_MS = 75_000;
@@ -34,7 +34,7 @@ export function openingKind(task: Pick<EverydayTask, 'visualAssetKey' | 'service
 }
 
 /** Short, finite graph walk. There is no straight-line fallback through a lot. */
-export function approachRoute(anchor: Cell, walk: ReadonlyMap<string, Cell>, blocked: ReadonlySet<string>, length = 7): Cell[] {
+export function approachRoute(anchor: Cell, walk: ReadonlyMap<string, Cell>, blocked: Pick<ReadonlySet<string>, 'has'>, length = 7): Cell[] {
   if (!walk.has(cellKey(anchor)) || blocked.has(cellKey(anchor))) return [];
   const queue: Cell[][] = [[anchor]], seen = new Set([cellKey(anchor)]);
   for (let i = 0; i < queue.length && i < 128; i++) {
@@ -52,8 +52,10 @@ export function approachRoute(anchor: Cell, walk: ReadonlyMap<string, Cell>, blo
 /** Eligible roles are read from the assigned authored family, never inferred
  * from a building's color or a false frontal door. Compile on scene changes. */
 export function compileEverydaySites(input: EverydayInput): EverydaySite[] {
-  const blocked = new Set([...input.blocked, ...input.roads.keys()]);
-  const existing = cityLifeSites(input.tasks, input.walk, blocked), result: EverydaySite[] = [];
+  const blocked = { has: (id: string) => input.blocked.has(id) || input.roads.has(id) };
+  const eligible = input.tasks.filter(task => task.visualKind === 'PARK'
+    || task.visualKind === 'BUILDING' && (task.serviceRole ?? buildings.get(task.visualAssetKey)?.serviceRole) === 'EDUCATION');
+  const existing = cityLifeSites(eligible, input.walk, blocked), result: EverydaySite[] = [];
   const tasks = new Map(input.tasks.map(task => [task.id, task]));
   for (const base of existing) {
     const task = tasks.get(base.taskId)!;
@@ -63,25 +65,29 @@ export function compileEverydaySites(input: EverydayInput): EverydaySite[] {
       result.push({ id: `${task.id}:${kind}`, taskId: task.id, kind, route: base.route, area: [] });
     }
     if (task.visualKind !== 'PARK') continue;
-    const lot = new Set(task.footprint.map(cellKey));
     // Park items need a full clear2×2 pad, with a connected approach. Water,
     // permanent furniture and neighbouring parcels remain excluded.
-    const safeGround = (cell: Cell) => (input.walk.has(cellKey(cell)) || input.ground?.has(cellKey(cell))) && !blocked.has(cellKey(cell));
+    const safeGround = (cell: Cell) => { const id = cellKey(cell); return (input.walk.has(id) || input.ground?.has(id)) && !blocked.has(id); };
     const free = task.footprint.filter(safeGround);
+    const freeIds = new Set(free.map(cellKey));
     const areas = free.map(c => [c, { x: c.x + 1, y: c.y }, { x: c.x, y: c.y + 1 }, { x: c.x + 1, y: c.y + 1 }])
-      .filter(area => area.every(c => lot.has(cellKey(c)) && safeGround(c)))
+      .filter(area => area.every(c => freeIds.has(cellKey(c))))
       .sort((a, b) => a[0]!.y - b[0]!.y || a[0]!.x - b[0]!.x);
     const offset = cityLifeHash(task.id) % Math.max(1, areas.length);
     let publicSpace = false, sports = false;
     for (const area of [...areas.slice(offset), ...areas.slice(0, offset)]) {
+      const playTargets = area.filter(c => (input.safeTargets ?? input.walk).has(cellKey(c)));
+      // Once the common event pad is chosen, only a sports pad can add a
+      // scene. Do not search another approach when no sports targets exist.
+      if (publicSpace && playTargets.length < 2) continue;
       const center = { x: area[0]!.x + .5, y: area[0]!.y + .5 };
       const destinations = input.safeTargets ?? input.walk, nearby: Cell[] = [];
       // A local pad only needs49 map lookups, not a scan of every walk cell
       // for every possible park square. Compilation stays bounded per lot.
       for (let y = Math.floor(center.y) - 3; y <= Math.floor(center.y) + 3; y++)
         for (let x = Math.floor(center.x) - 3; x <= Math.floor(center.x) + 3; x++) {
-          const c = destinations.get(`${x},${y}`);
-          if (c && !blocked.has(cellKey(c)) && !area.some(a => cellKey(a) === cellKey(c))
+          const id = `${x},${y}`, c = destinations.get(id);
+          if (c && !blocked.has(id) && !area.some(a => a.x === c.x && a.y === c.y)
             && Math.abs(c.x - center.x) + Math.abs(c.y - center.y) <= 3) nearby.push(c);
         }
       const targets = nearby.sort((a, b) => a.y - b.y || a.x - b.x).slice(0, 4);
@@ -91,7 +97,6 @@ export function compileEverydaySites(input: EverydayInput): EverydaySite[] {
         for (const kind of ['MARKET', 'DOG', 'BIRDS'] as const) result.push({ id: `${task.id}:${kind}`, taskId: task.id, kind, route, area, targets });
         publicSpace = true;
       }
-      const playTargets = area.filter(c => (input.safeTargets ?? input.walk).has(cellKey(c)));
       if (!sports && playTargets.length >= 2) {
         result.push({ id: `${task.id}:SPORT`, taskId: task.id, kind: 'SPORT', route, area, targets,
           playTargets: [playTargets[0]!, playTargets.at(-1)!] }); sports = true;
@@ -106,13 +111,23 @@ export function compileEverydaySites(input: EverydayInput): EverydaySite[] {
  * graph/one-way reachability is checked by the real dispatcher before boarding. */
 export function compileTransitStops(input: Pick<EverydayInput, 'roads' | 'walk' | 'blocked' | 'ground' | 'safeTargets'> & Partial<Pick<EverydayInput, 'tasks'>> & { canDrive?: (from: Cell, to: Cell) => boolean }): TransitStop[] {
   const candidates: TransitStop[] = [], result: TransitStop[] = [], occupied = new Set<string>();
-  const approachBlocked = new Set([...input.blocked, ...input.roads.keys()]);
+  const shelterBlocked = new Set<string>();
+  const approachBlocked = { has: (id: string) => input.blocked.has(id) || input.roads.has(id) || shelterBlocked.has(id) };
   const anchors = (input.tasks ?? []).filter(task => (task.serviceRole ?? buildings.get(task.visualAssetKey)?.serviceRole) === 'EDUCATION')
     .sort((a, b) => Number(b.status === 'COMPLETED') - Number(a.status === 'COMPLETED') || a.id.localeCompare(b.id))
     .flatMap(task => task.accessPath[0] ? [task.accessPath[0]] : []);
-  const distance = (cell: Cell) => anchors.length ? Math.min(...anchors.map(anchor => Math.abs(cell.x - anchor.x) + Math.abs(cell.y - anchor.y))) : 0;
-  const distances = new Map([...input.roads.values()].map(lane => [cellKey(lane), distance(lane)]));
-  for (const lane of [...input.roads.values()].sort((a, b) => distances.get(cellKey(a))! - distances.get(cellKey(b))! || a.y - b.y || a.x - b.x)) {
+  const destinations = input.safeTargets ?? input.walk;
+  // A stop needs an adjacent safe queue cell. Reject impossible curbs before
+  // expensive road-band classification and preserve the sorted lane order.
+  const lanes = [...input.roads.values()].filter(lane => directions.some(delta => {
+    const id = `${lane.x + delta.x},${lane.y + delta.y}`;
+    return destinations.has(id) && !input.roads.has(id) && !input.blocked.has(id);
+  })).map(lane => {
+    let distance = anchors.length ? Infinity : 0;
+    for (const anchor of anchors) distance = Math.min(distance, Math.abs(lane.x - anchor.x) + Math.abs(lane.y - anchor.y));
+    return { lane, distance };
+  }).sort((a, b) => a.distance - b.distance || a.lane.y - b.lane.y || a.lane.x - b.lane.x);
+  for (const { lane } of lanes) {
     if (candidates.length >= 128) break;
     const role = roadBandRole(input.roads, lane); if (role.kind !== 'TRAVEL') continue;
     const normal = { x: -role.dy, y: role.dx };
@@ -128,9 +143,9 @@ export function compileTransitStops(input: Pick<EverydayInput, 'roads' | 'walk' 
       || queue.some(c => !(input.safeTargets ?? input.walk).has(cellKey(c)) || input.roads.has(cellKey(c)) || input.blocked.has(cellKey(c)) )) continue;
     // Only four local cells change between candidates. Avoid copying every
     // road and blocked cell up to128 times during scene preparation.
-    for (const cell of shelter) approachBlocked.add(cellKey(cell));
+    for (const cell of shelter) shelterBlocked.add(cellKey(cell));
     const route = approachRoute(queue.at(-1)!, input.walk, approachBlocked);
-    for (const cell of shelter) approachBlocked.delete(cellKey(cell));
+    shelterBlocked.clear();
     if (!route.length) continue;
     candidates.push({ id: `stop:${cellKey(lane)}`, lane, shelter, queue, route, direction: role.dx ? 'horizontal' : 'vertical' });
   }

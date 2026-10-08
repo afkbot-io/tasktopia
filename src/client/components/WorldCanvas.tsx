@@ -101,7 +101,7 @@ import {
   taskPlatformCellPresentation,
   taskPlatformCells,
 } from "../world-building-presentation";
-import { residentGroundPosition } from "../resident-presentation";
+import { residentGroundPosition, pixelAgentPose, pixelAgentIsRegistered } from "../resident-presentation";
 import { SEED_TERRAIN_COLORS, seedTerrainCellPresentation } from "../seed-terrain-presentation";
 import { compareWorldObjects, type WorldObjectKind } from "../world-object-depth";
 import { overviewFromDetailChunk } from "../world-chunk-cache";
@@ -1677,12 +1677,9 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       host.dataset.airplaneSpace = flightLayer.parent === world ? "world" : "screen";
       // Keep tiny 3–6px silhouettes on whole screen pixels during continuous map zoom.
       const placePixelAgent = (view: Sprite, x: number, y: number): void => {
-        const scale = Math.max(1, Math.round(world.scale.x));
-        view.scale.set(scale / world.scale.x);
-        const left = Math.round(world.x + x * world.scale.x - view.texture.width * scale / 2);
-        const top = Math.round(world.y + y * world.scale.y - view.texture.height * scale / 2);
-        view.position.set((left + view.texture.width * scale / 2 - world.x) / world.scale.x,
-          (top + view.texture.height * scale / 2 - world.y) / world.scale.y);
+        const pose = pixelAgentPose(x, y, view.texture.width, view.texture.height, { x: world.x, y: world.y, scale: world.scale.x });
+        view.scale.set(pose.scale);
+        view.position.set(pose.x, pose.y);
       };
       const everydayController = createEverydayController(focusCityId ?? countryId, () => mobility, cue => { playCitySound(cue); });
       const everydayView = createEverydayView(developmentTexture, cachedTexture, placePixelAgent);
@@ -1954,7 +1951,9 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           && (mobilityRoads.has(key(agent.current)) || mobilityRoads.has(key(agent.next)))).length);
         host.dataset.residentCenterErrors = String(walkers.filter(agent => {
           const view = mobilityViews.get(agent.id)?.view;
-          return view && (Math.abs(view.x - agent.position.x * CELL_SIZE) > .01 || Math.abs(view.y - agent.position.y * CELL_SIZE) > .01);
+          return view && !pixelAgentIsRegistered({ x: view.x, y: view.y, scale: view.scale.x },
+            agent.position.x * CELL_SIZE, agent.position.y * CELL_SIZE, view.texture.width, view.texture.height,
+            { x: world.x, y: world.y, scale: world.scale.x });
         }).length);
         host.dataset.residentWalkFrames = [...new Set(walkers.map(agent => mobilityViews.get(agent.id)?.visualKey ?? ""))].sort().join(",");
         host.dataset.residentWalkState = walkers.map(agent => `${agent.id}:${agent.direction}:${agent.steps}`).sort().join(",");
@@ -3405,9 +3404,11 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           mobilityRoads = roads;
           mobilityWalkGraph = walkGraph;
           const everydayPlanningStart = performance.now();
+          const everydayParking = parkingCells, everydayPosts = new Set([...mobilityPostOrigins.values()].map(key));
           everydayController.compile({ tasks: [...tasks.values()], walk: mobility.walkingCells, safeTargets: mobility.visitTargets, roads,
-            blocked: new Set([...blockedCells, ...parkingCells, ...[...mobilityPostOrigins.values()].map(key)]),
-            ground: new Map([...terrain.values()].filter(c => ['GRASS', 'MEADOW', 'DIRT'].includes(c.terrain)).map(c => [key(c), c])), decorations: [...decorations.values()] });
+            blocked: { has: id => blockedCells.has(id) || everydayParking.has(id) || everydayPosts.has(id) },
+            ground: { has: id => { const cell = terrain.get(id); return !!cell && (cell.terrain === 'GRASS' || cell.terrain === 'MEADOW' || cell.terrain === 'DIRT'); } },
+            decorations: [...decorations.values()] });
           everydayView.compile(walkGraph, roads, blockedCells);
           host!.dataset.everydayPlanningMs = (performance.now() - everydayPlanningStart).toFixed(3);
           lastEverydayReservations = undefined;

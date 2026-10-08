@@ -28,6 +28,18 @@ describe("Pixel City source hygiene", () => {
       } else if (prop.key.startsWith("boat-")) {
         expect(prop.visualProfile, prop.key).toBe("TASKTOPIA_MICRO_WATERCRAFT_V2");
         expect(prop.sheet).toBe("ai-authored/micro-ambient-v1/sources/boats-v2.png");
+      } else if (prop.key.startsWith("compact-cargo-helicopter-")) {
+        expect(prop.key).toMatch(/^compact-cargo-helicopter-(north|east|south|west)$/);
+        expect(prop.visualProfile, prop.key).toBe("TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1");
+        expect(prop.size).toEqual([32, 32]); expect(prop.footprintCells).toEqual([4, 4]);
+        expect(prop.sheet).toBe("ai-authored/cargo-helicopter-v1/sources/sheet.png");
+      } else if (prop.key.startsWith("city-event-")) {
+        expect(prop.key).toMatch(/^city-event-((bus|school-bus|tow|tow-loaded|child)-(north|east|south|west)|market-stall|umbrella)$/);
+        expect(prop.visualProfile, prop.key).toBe("TASKTOPIA_EVERYDAY_MICRO_V1");
+        const size = prop.key === 'city-event-market-stall' ? 16 : 8;
+        expect(prop.size).toEqual([size, size]); expect(prop.footprintCells).toEqual([size / 8, size / 8]);
+        const kind = prop.key.replace(/^city-event-/, '').replace(/-(north|east|south|west)$/, '');
+        expect(prop.sheet).toBe(`ai-authored/everyday-city-v1/sources/${kind === 'child' ? 'child-v2' : kind}.png`);
       } else expect(prop.visualProfile, prop.key).toMatch(/^TASKTOPIA_V[56]_/);
     }
   });

@@ -200,17 +200,13 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
   let network: MobilityNetwork = buildMobilityNetwork(input);
   let carRoutes = createMobilityRouteSearch(network.cars, network.carEdges);
   let closures = new Set<string>();
-  let routingEdges = network.carEdges;
   const compileClosures = () => {
-    routingEdges = closures.size ? new Map([...network.carEdges].map(([id, cells]) => [id, cells.filter(cell => !closures.has(key(cell)))])) : network.carEdges;
-    carRoutes = createMobilityRouteSearch(network.cars, routingEdges);
+    carRoutes.setBlocked(closures);
   };
   let walkerRoutes = createMobilityRouteSearch(network.walkers, network.walkerEdges);
   let walkClosures = new Set<string>(), walkClosureInput: ReadonlySet<string> | undefined;
-  let walkingEdges = network.walkerEdges;
   const compileWalkClosures = () => {
-    walkingEdges = walkClosures.size ? new Map([...network.walkerEdges].map(([id, cells]) => [id, cells.filter(cell => !walkClosures.has(key(cell)))])) : network.walkerEdges;
-    walkerRoutes = createMobilityRouteSearch(network.walkers, walkingEdges);
+    walkerRoutes.setBlocked(walkClosures);
   };
   let actors: Agent[] = [], rng = input.seed || 1, idCounter = 0, remainder = 0, clock = 0;
   const limits = { CAR: Math.max(0, Math.min(48, Math.floor(input.carLimit))), WALKER: Math.max(0, Math.min(64, Math.floor(input.walkerLimit))) };
@@ -231,7 +227,6 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
   const plan = (agent: Agent): void => {
     if (agent.visit && !agent.visit.arrived && clock < (agent.visitRetryAt ?? 0)) return;
     if (agent.responseTarget && clock < (agent.responseRetryAt ?? 0)) return;
-    const search = (agent.kind === "CAR" ? carRoutes : walkerRoutes)(agent.current, agent.previous);
     if (agent.kind === 'CAR' && agent.response && agent.responseTarget && !agent.evacuating) {
       // A shortened route is not arrival. Keep the requested curb while a
       // closure requires a detour or waiting, rather than taking a random trip.
@@ -240,7 +235,8 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         const stay = agent.responseStayMs ?? 2500;
         agent.responseUntil = clock + stay; agent.activity = 'REST'; agent.restMs = stay; metrics.responseTrips++; return;
       }
-      const route = search.routeTo(agent.responseTarget);
+      const route = carRoutes(agent.current, agent.previous, agent.responseTarget,
+        agent.response === 'BUS' || agent.response === 'SCHOOL_BUS' ? 64 : 28).routeTo(agent.responseTarget);
       if (route.length < 2 || route.length > (agent.response === 'BUS' || agent.response === 'SCHOOL_BUS' ? 64 : 28)) { agent.responseRetryAt = clock + 1000; return; }
       agent.responseRetryAt = undefined; beginRoute(agent, route); return;
     }
@@ -252,9 +248,11 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         agent.visit = { ...agent.visit, arrived: true }; agent.visitUntil = clock + (agent.visitStayMs ?? 3000);
         agent.activity = agent.visitIndoors ? 'INSIDE' : 'REST'; agent.restMs = agent.visitStayMs ?? 3000; return;
       }
-      const route = search.routeTo(agent.visitTarget); if (route.length < 2 || route.length > 48) { agent.visitRetryAt = clock + 1000; return; }
+      const route = walkerRoutes(agent.current, agent.previous, agent.visitTarget, 48).routeTo(agent.visitTarget);
+      if (route.length < 2 || route.length > 48) { agent.visitRetryAt = clock + 1000; return; }
       beginRoute(agent, route); return;
     }
+    const search = (agent.kind === "CAR" ? carRoutes : walkerRoutes)(agent.current, agent.previous);
     const destinations = search.cells.filter(cell => {
       if (!safeDestination(cell) || same(cell, agent.current)) return false;
       if (agent.kind === "CAR") return true;
@@ -279,7 +277,8 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (best.length >= 12) break;
     }
     if (best.length < 2) {
-      const reachable = (agent.kind === "CAR" ? routingEdges : walkingEdges).get(key(agent.current)) ?? [];
+      const reachable = ((agent.kind === "CAR" ? network.carEdges : network.walkerEdges).get(key(agent.current)) ?? [])
+        .filter(cell => !(agent.kind === "CAR" ? closures : walkClosures).has(key(cell)));
       for (const cell of reachable) {
         if (agent.previous && same(cell, agent.previous)) continue;
         if (!safeDestination(cell)) continue;
@@ -598,8 +597,10 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       network = buildMobilityNetwork(updated); metrics.networkBuilds++;
       visitTargets = new Map([...network.walkers].filter(([id, cell]) => !network.roads.has(id) && safeDestination(cell)));
       closures = new Set([...closures].filter(id => network.cars.has(id)));
+      carRoutes = createMobilityRouteSearch(network.cars, network.carEdges);
       compileClosures();
       walkClosures = new Set([...walkClosures].filter(id => network.walkers.has(id)));
+      walkerRoutes = createMobilityRouteSearch(network.walkers, network.walkerEdges);
       compileWalkClosures();
       for (const actor of actors) actor.pendingExit = undefined;
       actors = actors.filter(actor => graph(actor.kind).has(key(actor.current)) && graph(actor.kind).has(key(actor.next))
@@ -651,7 +652,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       const reachable = new Set<string>();
       for (const actor of actors.filter(a => a.kind === "CAR" && !a.response).slice(0, 6)) {
         const moving = actor.route.length >= 2, start = moving ? actor.next : actor.current;
-        const search = carRoutes(start, moving ? actor.current : actor.previous);
+        const search = carRoutes(start, moving ? actor.current : actor.previous, undefined, 28);
         for (const cell of search.cells) {
           if (!safeDestination(cell) || Math.abs(cell.x - start.x) + Math.abs(cell.y - start.y) > 28) continue;
           const length = search.routeTo(cell).length;
@@ -664,10 +665,18 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         const cell = network.cars.get(id); if (!cell) continue;
         for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) unsafe.add(`${cell.x + x},${cell.y + y}`);
       }
+      // A scene can only use a curb within five cells of a reachable responder.
+      // Index that local coverage once instead of probing121 cells at every
+      // road in a megacity. Preserve the canonical candidate iteration order.
+      const responseCoverage = new Set<string>();
+      for (const id of reachable) {
+        const cell = network.cars.get(id)!;
+        for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) responseCoverage.add(`${cell.x + x},${cell.y + y}`);
+      }
       const sites: RoadEventSite[] = [];
       for (const [id, outgoing] of network.carEdges) {
         const first = network.cars.get(id), second = outgoing[0];
-        if (!first || !second || unsafe.has(id) || closures.has(id)) continue;
+        if (!first || !second || unsafe.has(id) || closures.has(id) || !responseCoverage.has(id)) continue;
         const third = network.carEdges.get(key(second))?.find(cell => cell.x - second.x === second.x - first.x && cell.y - second.y === second.y - first.y);
         if (!third || [second, third].some(cell => unsafe.has(key(cell)) || closures.has(key(cell)) || !network.roads.has(key(cell)))) continue;
         const cells = [first, second, third];
@@ -690,7 +699,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       for (const actor of candidates) {
         const moving = actor.route.length >= 2;
         const start = moving ? actor.next : actor.current;
-        const search = carRoutes(start, moving ? actor.current : actor.previous);
+        const search = carRoutes(start, moving ? actor.current : actor.previous, undefined, role === 'BUS' || role === 'SCHOOL_BUS' ? 64 : 28);
         for (const target of targets) {
           if (!safeDestination(target) || closures.has(key(target))) continue;
           const suffix = search.routeTo(target);
@@ -735,10 +744,9 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         // step yet. Choose the requested destination from the actual curb.
         // Mid-edge walkers still finish their immutable physical segment.
         const moving = actor.route.length >= 2 && actor.progress > EPSILON, start = moving ? actor.next : actor.current;
-        const search = walkerRoutes(start, moving ? actor.current : actor.previous);
         const target = validTargets[selected.length % validTargets.length]!;
         if (!network.walkers.has(key(target)) || network.roads.has(key(target)) || walkClosures.has(key(target)) || !(safeDestination(target) || indoors && network.buildingEntrances.has(key(target)))) continue;
-        const suffix = search.routeTo(target);
+        const suffix = walkerRoutes(start, moving ? actor.current : actor.previous, target, 48).routeTo(target);
         if (!suffix.length || suffix.length > 48 || (!moving && suffix.length < 2)) continue;
         actor.route = moving ? [actor.current, ...suffix] : suffix;
         actor.restMs = 0; actor.activity = 'NONE'; actor.pendingExit = undefined;
@@ -793,7 +801,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
     canDrive(from, to) {
       const role = roadBandRole(network.roads, from);
       if (role.kind !== 'TRAVEL' || !safeDestination(to) || closures.has(key(to))) return false;
-      const route = carRoutes(from, { x: from.x - role.dx, y: from.y - role.dy }).routeTo(to);
+      const route = carRoutes(from, { x: from.x - role.dx, y: from.y - role.dy }, to, 64).routeTo(to);
       return route.length >= 2 && route.length <= 64;
     },
     advance(elapsedMs) {

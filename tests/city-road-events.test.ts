@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { planRoadEpisode, roadEpisodePose } from '../src/client/city-road-events';
 import { createCityMobility } from '../src/client/city-mobility';
 import type { Cell, RoadCellDto } from '../src/shared/contracts';
@@ -6,6 +7,17 @@ const key=(c:Cell)=>`${c.x},${c.y}`;
 const roads=new Map<string,RoadCellDto>();
 for(const axis of [0,20,40])for(let s=-1;s<=41;s++)for(const b of [-1,0,1])for(const c of [{x:s,y:axis+b},{x:axis+b,y:s}])roads.set(key(c),{...c,roadClass:'LOCAL'} as RoadCellDto);
 const input={roads,walkGraph:new Map<string,Cell>(),crosswalks:new Set<string>(),activityCells:new Set<string>(),seed:73,carLimit:12,walkerLimit:0};
+it('сохраняет проверенные дорожные площадки и порядок выбора после ограничения поиска', () => {
+ const city=createCityMobility(input);
+ // Recorded from d52b29d8 before the bounded search/coverage optimization.
+ for(const [elapsed,hash] of [[0,'341a6dac495cd3828df21ead71a878afba0949f808ca87f44804bb17192fe1d3'],
+  [1000,'7925841b48cebd781a085571e97c92395d70005585dd221327ca233aca6ee5d2'],
+  [3000,'4faefb4405673604abe20f4ed711cad2ba049c3ee7c6626dff4765f1975b0b7d'],
+  [7000,'61aea089939008d4bb92b198e7bd8e28fcb61bd5292dac933876105273df716f']] as const) {
+  city.advance(elapsed);
+  expect(createHash('sha256').update(JSON.stringify(city.roadEventSites())).digest('hex')).toBe(hash);
+ }
+});
 it('plans bounded deterministic road episodes, with no occupied lane, junction or offscreen placement',()=>{
  const city=createCityMobility(input), candidates=city.roadEventSites();
  expect(candidates.length).toBeGreaterThan(0);

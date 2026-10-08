@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { compileEverydaySites, compileTransitStops, planEverydayEpisode, everydayPose, rainPose, openingKind, dogFetchPose } from '../src/client/city-everyday-life';
-import type { ChunkTaskDto } from '../src/shared/contracts';
+import { cityLifeHash } from '../src/client/city-life';
+import type { ChunkTaskDto, RoadCellDto } from '../src/shared/contracts';
 
 const walk = new Map(Array.from({ length: 20 }, (_, x) => [`${x},0`, { x, y: 0 }]));
 const task = { id: 'school', status: 'COMPLETED', stage: 5, visualKind: 'BUILDING', visualAssetKey: 'compact-modern-school-v1',
@@ -31,6 +32,50 @@ it('школьная сценка учитывает educationKind и насто
   expect(openingKind({ ...task, serviceRole: undefined })).toBe('OPEN_SCHOOL');
   expect(compileEverydaySites({ ...input, tasks: [{ ...task, stage: 4, status: 'TESTING' }] })).toEqual([]);
   expect(compileEverydaySites({ ...input, blocked: new Set(['3,0']) })).toEqual([]);
+});
+
+it('добавление обычных домов не запускает лишний поиск подходов для учебных и парковых событий', () => {
+  let probes = 0;
+  class ObservedWalk extends Map<string, { x: number; y: number }> {
+    override has(key: string) { probes++; return super.has(key); }
+  }
+  const observed = new ObservedWalk(walk);
+  const expected = compileEverydaySites({ ...input, walk: observed });
+  const baselineProbes = probes; probes = 0;
+  const homes = Array.from({ length: 1000 }, (_, i) => ({ ...task, id: `home-${i}`, visualAssetKey: 'compact-apartment-v1', serviceRole: undefined }));
+  expect(compileEverydaySites({ ...input, walk: observed, tasks: [task, ...homes] })).toEqual(expected);
+  expect(probes).toBeLessThanOrEqual(baselineProbes + 10);
+});
+
+it('не ищет повторный подход к площадкам парка без спортивных конечных точек после выбора общего события', () => {
+  let probes = 0;
+  let groundProbes = 0;
+  class ObservedTargets extends Map<string, { x: number; y: number }> {
+    override get(key: string) { probes++; return super.get(key); }
+  }
+  class ObservedGround extends Map<string, { x: number; y: number }> {
+    override has(key: string) { groundProbes++; return super.has(key); }
+  }
+  const footprint = Array.from({ length: 10 }, (_, y) => Array.from({ length: 10 }, (_, x) => ({ x, y: y + 1 }))).flat();
+  let id = 'park-0';
+  for (let i = 0; cityLifeHash(id) % 81 !== 0; i++) id = `park-${i + 1}`;
+  const park = { ...task, id, visualKind: 'PARK', visualAssetKey: 'urban-formal', serviceRole: undefined, footprint } as ChunkTaskDto;
+  const targets = new ObservedTargets(walk);
+  const sites = compileEverydaySites({ ...input, tasks: [park], safeTargets: targets, ground: new ObservedGround(footprint.map(c => [`${c.x},${c.y}`, c])) });
+  expect(sites.map(s => s.kind).sort()).toEqual(['BIRDS', 'DOG', 'MARKET']);
+  expect(sites.every(s => s.area[0]?.x === 0 && s.area[0]?.y === 1)).toBe(true);
+  expect(probes).toBeLessThanOrEqual(49);
+  expect(groundProbes).toBeLessThanOrEqual(footprint.length * 2);
+});
+
+it('не классифицирует удалённые дорожные клетки, у которых нет доступного бордюра для посадки', () => {
+  let probes = 0;
+  class ObservedRoads extends Map<string, RoadCellDto> {
+    override get(key: string) { probes++; return super.get(key); }
+  }
+  const roads = new ObservedRoads(Array.from({ length: 1000 }, (_, x) => [`${x},100`, { x, y: 100, mask: 0, structure: 'ROAD', roadClass: 'LOCAL' }]));
+  expect(compileTransitStops({ ...input, roads })).toEqual([]);
+  expect(probes).toBeLessThanOrEqual(10);
 });
 
 it('парк выбирает свободную площадку рядом с допустимыми конечными точками, остановка сохраняет бордюр и проход', () => {

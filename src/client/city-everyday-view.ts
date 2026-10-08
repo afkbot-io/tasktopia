@@ -3,7 +3,7 @@ import { microAmbientSprite } from '../shared/micro-ambient';
 import type { Cell, Rect } from '../shared/contracts';
 import type { CityMobilityAgent } from './city-mobility';
 import { cityLifeHash } from './city-life';
-import { EVERYDAY_LABEL, cellKey, dogFetchPose } from './city-everyday-life';
+import { EVERYDAY_LABEL, dogFetchPose } from './city-everyday-life';
 import type { EverydayState } from './city-everyday-controller';
 
 /** Fixed-size authored props and small native activity/weather cues. Actors
@@ -25,7 +25,9 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
     root,
     compile(walk: ReadonlyMap<string, Cell>, roads: ReadonlyMap<string, Cell>, blocked: ReadonlySet<string>) {
       // A sparse deterministic sample; no full-graph scan on animation frames.
-      cells = [...walk.values(), ...roads.values()].filter(c => !blocked.has(cellKey(c)) && cityLifeHash(cellKey(c)) % 11 === 0);
+      cells = [];
+      for (const graph of [walk, roads]) for (const [id, cell] of graph)
+        if (!blocked.has(id) && cityLifeHash(id) % 11 === 0) cells.push(cell);
       lastWeatherFrame = -1;
     },
     update(state: EverydayState, agents: readonly CityMobilityAgent[], now: number, view: Rect, economy: boolean) {

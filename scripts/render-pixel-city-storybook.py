@@ -52,7 +52,7 @@ def classify_prop(key: str) -> str:
         ("Деревья и кустарники", ("tree-", "shrub-", "bush-", "flower-")),
         ("Парки и площадки", ("courtyard-", "park-", "playground-", "fountain-", "gazebo", "bandstand", "statue-", "topiary-", "pond-", "picnic-", "planter-")),
         ("Улицы и транспорт", ("bus-stop-", "streetlamp", "traffic-light-", "utility-pole", "bench-", "trash-", "recycling-", "bollard", "bicycle-", "mailbox", "fire-hydrant", "city-sign-", "guardrail-")),
-        ("События и спецтехника", ("incident-", "active-district-")),
+        ("События и спецтехника", ("incident-", "active-district-", "city-event-", "compact-cargo-helicopter-")),
         ("Природа и животные", ("animal-", "boat-", "reed-", "rock-", "hill-", "mountain-")),
         ("Ограждения и архив", ("fence-", "archive-")),
     )
@@ -128,11 +128,23 @@ def load_storybook_data() -> tuple[dict[str, Any], list[str]]:
         })
         profile = str(entry.get("visualProfile", ""))
         compact_park = key in {f"compact-park-{kind}-stage-{stage}" for kind in ("fountain", "monument") for stage in (3, 4, 5)}
+        directions = ("north", "east", "south", "west")
+        everyday = {f"city-event-{kind}-{direction}" for kind in ("bus", "school-bus", "tow", "tow-loaded", "child") for direction in directions}
+        everyday.update(("city-event-market-stall", "city-event-umbrella"))
+        event_size = 16 if key == "city-event-market-stall" else 8
+        event_direction = key.rsplit("-", 1)[-1] if key not in ("city-event-market-stall", "city-event-umbrella") else "static"
         accepted_profile = (profile == "TASKTOPIA_V7_TREE_COMPACT_45_GRID" if key.startswith("tree-")
                             else profile == "TASKTOPIA_COMPACT_PARK_HIGH_45_V1" if compact_park
                             else (key in COURTYARD_GEOMETRY and profile == COURTYARD_PROFILE
                                   and (entry["size"], entry["footprintCells"], entry["anchorPx"]) == COURTYARD_GEOMETRY[key]) if key.startswith("courtyard-")
                             else profile == "TASKTOPIA_MICRO_WATERCRAFT_V2" if key.startswith("boat-")
+                            else (key in {f"compact-cargo-helicopter-{direction}" for direction in directions}
+                                  and profile == "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1"
+                                  and (entry["size"], entry["footprintCells"], entry["anchorPx"]) == ([32, 32], [4, 4], [16, 32])
+                                  and entry.get("direction") == key.rsplit("-", 1)[-1]) if key.startswith("compact-cargo-helicopter-")
+                            else (key in everyday and profile == "TASKTOPIA_EVERYDAY_MICRO_V1"
+                                  and (entry["size"], entry["footprintCells"], entry["anchorPx"]) == ([event_size, event_size], [event_size // 8, event_size // 8], [event_size // 2, event_size])
+                                  and entry.get("direction") == event_direction) if key.startswith("city-event-")
                             else profile.startswith(("TASKTOPIA_V5_", "TASKTOPIA_V6_")))
         if entry.get("artSource") == "AI_AUTHORED" and not accepted_profile:
             errors.append(f"{key}: active authored prop does not use its accepted visual profile")

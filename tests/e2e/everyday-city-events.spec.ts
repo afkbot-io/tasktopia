@@ -249,32 +249,57 @@ test('rain covers actual walkers, puddles and car splashes then dries completely
 });
 
 test('school bus delivers children through the real school entrance independently of its street ceremony', async ({ page }, info) => {
-  test.setTimeout(240000); await installSceneClock(page); const f = await everydayFixture(page);
+  test.setTimeout(900000); await installSceneClock(page); const f = await everydayFixture(page);
   try {
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
     const kinds = (await f.host.getAttribute('data-everyday-kinds'))!.split(',').sort();
-    let window = Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1;
-    while (window % kinds.length !== kinds.indexOf('SCHOOL')) window++;
-    const start = window * 75_000 + 8000;
-    // Skip the synthetic dead time with life disabled. Repeated clock jumps
-    // must not strand passengers from unrelated earlier background journeys.
-    await setSceneLife(page, false); await seek(page, f.host, start - 2000); await setSceneLife(page, true);
-    await expect(f.host).toHaveAttribute('data-everyday-planned-kind', 'SCHOOL');
-    const taskId = await f.host.getAttribute('data-everyday-planned-task'), task = f.tasks.find(t => t.id === taskId);
-    expect(task).toBeTruthy(); await f.panFocus(task!, true);
-    await seek(page, f.host, Number(await f.host.getAttribute('data-everyday-next-start')) + 300);
-    await expect(f.host).toHaveAttribute('data-everyday-event', 'SCHOOL');
-    const progress: Record<string, unknown>[] = [];
-    for (let i = 0; i < 100 && Number(await f.host.getAttribute('data-school-bus-arrived')) === 0; i++) {
-      await page.clock.runFor(1000); if (i % 5 === 0) { await safe(f.host); progress.push(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }))); await writeFile(info.outputPath('school-bus-progress.json'), JSON.stringify(progress, null, 2)); }
+    // Ordinary traffic can delay passengers beyond a finite boarding window.
+    // Exercise up to three scheduled ceremonies in the same live city, recording
+    // empty/cancelled trips too; never replace a real doorway arrival with a lease.
+    const deliveryBudgetMs = 44_000 + 80_000 + 60_000;
+    const journeys: Record<string, unknown>[] = [], progress: Record<string, unknown>[] = [];
+    let deliveredTask: typeof f.tasks[number] | undefined;
+    for (let episode = 0; episode < 3 && !deliveredTask; episode++) {
+      let window = Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1;
+      while (window % kinds.length !== kinds.indexOf('SCHOOL')) window++;
+      const start = window * 75_000 + 8000;
+      // Skip synthetic dead time with life disabled, preserving physical poses.
+      // Clock jumps must not strand unrelated historical passengers.
+      await setSceneLife(page, false); await seek(page, f.host, start - 2000); await setSceneLife(page, true);
+      await expect(f.host).toHaveAttribute('data-everyday-planned-kind', 'SCHOOL');
+      const taskId = await f.host.getAttribute('data-everyday-planned-task'), task = f.tasks.find(t => t.id === taskId);
+      expect(task).toBeTruthy(); await f.panFocus(task!, true);
+      await seek(page, f.host, Number(await f.host.getAttribute('data-everyday-next-start')) + 300);
+      await expect(f.host).toHaveAttribute('data-everyday-event', 'SCHOOL');
+      const deliveryStartedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
+      const before = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
+      for (let i = 0; i < deliveryBudgetMs / 1000 && Number(await f.host.getAttribute('data-school-bus-arrived')) === Number(before.schoolBusArrived); i++) {
+        await page.clock.runFor(1000);
+        if (i % 5 === 0) {
+          await safe(f.host); progress.push({ episode, ...(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }))) });
+          await writeFile(info.outputPath('school-bus-progress.json'), JSON.stringify(progress, null, 2));
+        }
+        // Once both the ceremony and possible bus run have expired, a trip
+        // without a school visit cannot become a doorway arrival later.
+        if (i >= (44_000 + 80_000) / 1000 && await f.host.getAttribute('data-transit-role') !== 'SCHOOL_BUS'
+          && Number(await f.host.getAttribute('data-school-bus-visits')) === 0) break;
+      }
+      const state = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
+      const deliveryElapsedMs = Number(state.roadEventServerNow) - deliveryStartedAt;
+      journeys.push({ episode, taskId, deliveryBudgetMs, deliveryElapsedMs, before, state });
+      await writeFile(info.outputPath('school-bus-delivery-budget.json'), JSON.stringify(journeys, null, 2));
+      expect(deliveryElapsedMs).toBeLessThanOrEqual(deliveryBudgetMs + 1000); await safe(f.host);
+      if (Number(state.schoolBusArrived) > Number(before.schoolBusArrived)) {
+        expect(Number(state.schoolBusBoarded)).toBeGreaterThan(Number(before.schoolBusBoarded));
+        expect(Number(state.schoolBusAlighted)).toBeGreaterThan(Number(before.schoolBusAlighted));
+        expect(Number(state.schoolBusVisits)).toBeGreaterThan(0); deliveredTask = task;
+        await writeFile(info.outputPath('school-bus-doorway.json'), JSON.stringify(state, null, 2));
+      }
     }
-    const state = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
-    await writeFile(info.outputPath('school-bus-doorway.json'), JSON.stringify(state, null, 2));
-    expect(Number(state.schoolBusBoarded)).toBeGreaterThan(0); expect(Number(state.schoolBusAlighted)).toBeGreaterThan(0);
-    expect(Number(state.schoolBusArrived)).toBeGreaterThan(0); expect(Number(state.schoolBusVisits)).toBeGreaterThan(0); await safe(f.host);
+    expect(deliveredTask, 'No child reached the real doorway in three scheduled school episodes').toBeTruthy();
     await page.screenshot({ path: info.outputPath('school-bus-doorway.png') });
-    await f.service.activateDistrict(f.user.countryId, task!.districtId, crypto.randomUUID());
-    await f.call('task.delete', { taskId: task!.id, confirmTitle: task!.title }); await page.clock.runFor(500);
+    await f.service.activateDistrict(f.user.countryId, deliveredTask!.districtId, crypto.randomUUID());
+    await f.call('task.delete', { taskId: deliveredTask!.id, confirmTitle: deliveredTask!.title }); await page.clock.runFor(500);
     await expect(f.host).toHaveAttribute('data-school-bus-visits', '0'); await safe(f.host);
   } finally { await f.cleanup(); }
 });
@@ -302,6 +327,7 @@ test('authored sprite atlas uses the current revision and stays stable across zo
       await expect.poll(async () => Number(await f.host.getAttribute('data-render-scale'))).toBeCloseTo(target, 2);
       await page.screenshot({ path: info.outputPath(`sprite-${name}.png`) });
       scales.push(Number(await f.host.getAttribute('data-render-scale'))); await safe(f.host);
+      await expect(f.host).toHaveAttribute('data-resident-center-errors', '0');
     };
     await zoom(-1600, 4, 'maximum');
     await zoom(Math.log(4 / 1.6) / .0015, 1.6, 'normal');
@@ -312,12 +338,14 @@ test('authored sprite atlas uses the current revision and stays stable across zo
     await expect.poll(async () => Number(await f.host.getAttribute('data-render-scale'))).toBeCloseTo(.8, 2);
     await page.screenshot({ path: info.outputPath('sprite-minimum.png') });
     scales.push(Number(await f.host.getAttribute('data-render-scale'))); await safe(f.host);
+    await expect(f.host).toHaveAttribute('data-resident-center-errors', '0');
     await zoom(-1600, 4, 'return-maximum');
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(f.host).toHaveAttribute('data-minimum-render-scale', '0.8');
     await page.screenshot({ path: info.outputPath('sprite-compact.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await safe(f.host); await Promise.all(atlasReads);
+    await expect(f.host).toHaveAttribute('data-resident-center-errors', '0');
     expect(standalone).toEqual([]); expect(errors).toEqual([]);
     await writeFile(info.outputPath('sprite-projection-runtime.json'), JSON.stringify({ assetRevision: ASSET_REVISION, expectedAtlas, atlasHashes, scales, errors, standalone }, null, 2));
   } finally { await f.cleanup(); }

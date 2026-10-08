@@ -17,6 +17,17 @@ function fixture() {
   return { city, task, input, sounds, controller, view, options };
 }
 
+it('открытие использует адресные проверки занятости и не копирует все клетки города', () => {
+  const f = fixture();
+  class LocalBlocked extends Set<string> {
+    override [Symbol.iterator](): SetIterator<string> { throw new Error('Full-city copy'); }
+  }
+  f.controller.compile({ ...f.input, blocked: new LocalBlocked() });
+  f.controller.update(0, f.view, f.options);
+  expect(f.controller.open(f.task, 'local-blocked', 1)).toBe(true);
+  expect(f.controller.update(2, f.view, f.options).pose?.kind).toBe('OPEN_SCHOOL');
+});
+
 it('открывает школу только по свежему подтверждённому событию, звонит после прихода и не повторяет версию', () => {
   const f = fixture();
   expect(f.controller.update(0, f.view, f.options).pose).toBeUndefined();

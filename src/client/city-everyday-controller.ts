@@ -162,7 +162,8 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       if (!input || !current || !enabledLast || task.status !== 'COMPLETED' || task.stage !== 5 || incidentMode(task) !== 'NONE' || seen.has(version)
         || current.status !== 'COMPLETED' || current.stage !== 5 || incidentMode(current) !== 'NONE') return false;
       if (!task.accessPath[0] || !current.accessPath[0] || cellKey(task.accessPath[0]) !== cellKey(current.accessPath[0])) return false;
-      const route = approachRoute(current.accessPath[0], input.walk, new Set([...input.blocked, ...input.roads.keys()]));
+      const blocked = { has: (id: string) => input!.blocked.has(id) || input!.roads.has(id) };
+      const route = approachRoute(current.accessPath[0], input.walk, blocked);
       if (!route.length) return false;
       seen.add(version); while (seen.size > 128) seen.delete(seen.values().next().value!);
       // A confirmed opening takes priority over a cosmetic scheduled episode.
