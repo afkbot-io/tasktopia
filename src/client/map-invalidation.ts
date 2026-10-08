@@ -5,7 +5,10 @@ export type MapInvalidation = {
   id: number;
   worldVersion: number;
   type: string;
+  createdAt?: string;
   affectedBounds?: Rect;
+  oldBounds?: Rect;
+  newBounds?: Rect;
   taskId?: string;
   status?: string;
   progress?: number;
@@ -63,11 +66,20 @@ export function eventInvalidation(event: RealtimeEvent): MapInvalidation {
     && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite)
     ? candidate as Rect
     : undefined;
+  const transferBounds = (value: unknown): Rect | undefined => {
+    if (!value || typeof value !== "object") return undefined;
+    const bounds = value as Partial<Rect>;
+    return [bounds.minX, bounds.minY, bounds.maxX, bounds.maxY].every(Number.isFinite)
+      && bounds.minX! <= bounds.maxX! && bounds.minY! <= bounds.maxY! ? bounds as Rect : undefined;
+  };
   return {
     id: event.id,
     worldVersion: event.worldVersion,
     type: event.type,
+    createdAt: event.createdAt,
     affectedBounds,
+    oldBounds: transferBounds(event.payload.oldBounds),
+    newBounds: transferBounds(event.payload.newBounds),
     taskId: typeof event.payload.taskId === "string" ? event.payload.taskId : undefined,
     status: typeof event.payload.status === "string" ? event.payload.status : undefined,
     progress: typeof event.payload.progress === "number" ? event.payload.progress : undefined,

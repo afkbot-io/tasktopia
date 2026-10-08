@@ -70,3 +70,18 @@ representation, but their endpoints must also remain completed airports.
 Random viewport-edge flybys are not a substitute for transport infrastructure.
 General flower/stone/reed scatter is terrain detail, not thousands of sprites.
 Explicit flowers inside a staged park task remain intentional park content.
+
+## Грузовой вертолёт кинематической сцены
+
+Отдельный профиль `TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1`: холст32×32,
+видимый силуэт до24×24, четыре самостоятельно нарисованных направления,
+8 общих непрозрачных цветов и hard alpha. Это тяжёлый транспорт переноса
+задачи, поэтому он крупнее обычных пассажирских micro-aircraft16×16.
+Источник и проверка: `reference/ai-authored/cargo-helicopter-v1`,
+`scripts/cargo_helicopter_art.py --verify`. Прозрачные пиксели канонизированы
+в RGBA0,0,0,0; prop atlas совпадает с каждым отдельным PNG побайтно по пикселям.
+
+Manifest сохраняет стандартный prop anchor16,32. В воздухе Sprite использует
+центр холста, а тросы привязаны к реальной верхней границе старого здания.
+Все направления выбираются по имени, без runtime rotation/mirroring;
+самолёт и существующие люди/машины не заменены и не масштабированы под груз.

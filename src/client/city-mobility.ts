@@ -1,3 +1,4 @@
+import type { RoadEventSite } from "./city-road-events";
 import type { Cell } from "../shared/contracts";
 import { MICRO_CAR_VARIANTS, MICRO_PERSON_VARIANTS, microAmbientSprite, type MicroDirection } from "../shared/micro-ambient";
 import { nextSeededRandom } from "./agent-routing";
@@ -5,11 +6,13 @@ import { buildMobilityNetwork, mobilityCellKey as key, mobilityNetworkSignature,
 import { createMobilityRouteSearch } from "./mobility-route-search";
 
 export type CityMobilityInput = MobilityNetworkInput & { seed: number; carLimit: number; walkerLimit: number };
+export type CityResponseRole = "POLICE" | "FIRE" | "AMBULANCE" | "REPAIR";
 export type CityMobilityAgent = {
   id: string; kind: "CAR" | "WALKER"; variant: string; current: Cell; next: Cell; progress: number;
   position: Cell; direction: MicroDirection; speed: number; steps: number;
   activity: "NONE" | "REST" | "PARKED" | "INSIDE"; waitMs: number;
-  yieldReason: "NONE" | "RESERVATION" | "OCCUPIED_EXIT" | "BODY";
+  yieldReason: "NONE" | "RESERVATION" | "OCCUPIED_EXIT" | "BODY" | "ROAD_CLOSED" | "WORK_SITE";
+  response?: CityResponseRole;
 };
 export type CityMobilitySignal = Pick<MobilityZone, "id" | "bounds" | "signalPosts"> & {
   horizontal: "RED" | "GREEN"; vertical: "RED" | "GREEN"; pedestrians: "RED" | "GREEN";
@@ -19,17 +22,23 @@ export type CityMobilityMetrics = {
   vehiclePedestrianUnsafePairs: number; vehicleUnsafeTotal: number; pedestrianUnsafeTotal: number; vehiclePedestrianUnsafeTotal: number;
   maxVehicleWaitMs: number; maxWalkerWaitMs: number; completedTrips: number; crossingsCompleted: number;
   peakVehicleWaitMs: number; peakWalkerWaitMs: number;
-  fixedSteps: number; networkBuilds: number;
+  fixedSteps: number; networkBuilds: number; closureBuilds: number; responseTrips: number;
 };
 export type CityMobility = {
   updateNetwork(input: MobilityNetworkInput & Partial<Pick<CityMobilityInput, "carLimit" | "walkerLimit">>): void;
   advance(elapsedMs: number): void;
+  setRoadClosures(cells: ReadonlySet<string>): void;
+  setWalkClosures(cells: ReadonlySet<string>): void;
+  roadEventSites(): RoadEventSite[];
+  dispatchResponse(role: CityResponseRole, targets: readonly Cell[]): boolean;
+  clearResponses(): void;
   readonly agents: readonly CityMobilityAgent[];
   readonly signals: readonly CityMobilitySignal[];
   readonly metrics: Readonly<CityMobilityMetrics>;
 };
 
 type Agent = CityMobilityAgent & {
+  baseVariant: string; responseUntil?: number;
   route: Cell[]; previous?: Cell; restMs: number; rng: number; requestedAt?: number; zoneId?: string;
   // At most one uncommitted doorway pose; never a chain of prior actors.
   pendingExit?: Agent;
@@ -174,11 +183,23 @@ export function mobilityExitAvailable(exit: Cell, incoming: Pick<CityMobilityAge
 export function createCityMobility(input: CityMobilityInput): CityMobility {
   let network: MobilityNetwork = buildMobilityNetwork(input);
   let carRoutes = createMobilityRouteSearch(network.cars, network.carEdges);
+  let closures = new Set<string>();
+  let routingEdges = network.carEdges;
+  const compileClosures = () => {
+    routingEdges = closures.size ? new Map([...network.carEdges].map(([id, cells]) => [id, cells.filter(cell => !closures.has(key(cell)))])) : network.carEdges;
+    carRoutes = createMobilityRouteSearch(network.cars, routingEdges);
+  };
   let walkerRoutes = createMobilityRouteSearch(network.walkers, network.walkerEdges);
+  let walkClosures = new Set<string>(), walkClosureInput: ReadonlySet<string> | undefined;
+  let walkingEdges = network.walkerEdges;
+  const compileWalkClosures = () => {
+    walkingEdges = walkClosures.size ? new Map([...network.walkerEdges].map(([id, cells]) => [id, cells.filter(cell => !walkClosures.has(key(cell)))])) : network.walkerEdges;
+    walkerRoutes = createMobilityRouteSearch(network.walkers, walkingEdges);
+  };
   let actors: Agent[] = [], rng = input.seed || 1, idCounter = 0, remainder = 0, clock = 0;
   const limits = { CAR: Math.max(0, Math.min(48, Math.floor(input.carLimit))), WALKER: Math.max(0, Math.min(64, Math.floor(input.walkerLimit))) };
   const reservations = new Map<string, Reservation>();
-  const metrics: CityMobilityMetrics = { vehicleSteps: 0, walkerSteps: 0, vehicleUnsafePairs: 0, pedestrianUnsafePairs: 0, vehiclePedestrianUnsafePairs: 0, vehicleUnsafeTotal: 0, pedestrianUnsafeTotal: 0, vehiclePedestrianUnsafeTotal: 0, maxVehicleWaitMs: 0, maxWalkerWaitMs: 0, peakVehicleWaitMs: 0, peakWalkerWaitMs: 0, completedTrips: 0, crossingsCompleted: 0, fixedSteps: 0, networkBuilds: 1 };
+  const metrics: CityMobilityMetrics = { vehicleSteps: 0, walkerSteps: 0, vehicleUnsafePairs: 0, pedestrianUnsafePairs: 0, vehiclePedestrianUnsafePairs: 0, vehicleUnsafeTotal: 0, pedestrianUnsafeTotal: 0, vehiclePedestrianUnsafeTotal: 0, maxVehicleWaitMs: 0, maxWalkerWaitMs: 0, peakVehicleWaitMs: 0, peakWalkerWaitMs: 0, completedTrips: 0, crossingsCompleted: 0, fixedSteps: 0, networkBuilds: 1, closureBuilds: 0, responseTrips: 0 };
   let agentsSnapshot: readonly CityMobilityAgent[] = [], signalSnapshot: readonly CityMobilitySignal[] = [];
   const random = () => { const result = nextSeededRandom(rng); rng = result.state; return result.value; };
   const graph = (kind: Agent["kind"]) => kind === "CAR" ? network.cars : network.walkers;
@@ -210,7 +231,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (best.length >= 12) break;
     }
     if (best.length < 2) {
-      const reachable = edges(agent.kind).get(key(agent.current)) ?? [];
+      const reachable = (agent.kind === "CAR" ? routingEdges : walkingEdges).get(key(agent.current)) ?? [];
       for (const cell of reachable) {
         if (agent.previous && same(cell, agent.previous)) continue;
         if (!safeDestination(cell)) continue;
@@ -227,7 +248,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
 
   const spawn = (): void => {
     for (const kind of ["CAR", "WALKER"] as const) {
-      const candidates = [...graph(kind).values()].filter(cell => (kind!=="CAR"||network.roads.has(key(cell))) && safeDestination(cell) && (edges(kind).get(key(cell))?.length ?? 0) > 0);
+      const candidates = [...graph(kind).values()].filter(cell => !(kind === "CAR" ? closures : walkClosures).has(key(cell)) && (kind!=="CAR"||network.roads.has(key(cell))) && safeDestination(cell) && (edges(kind).get(key(cell))?.length ?? 0) > 0);
       let remaining = limits[kind] - actors.filter(actor => actor.kind === kind).length;
       for (let attempt = 0; remaining > 0 && attempt < candidates.length * 2; attempt++) {
         const current = candidates[Math.floor(random() * candidates.length)];
@@ -235,6 +256,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         const count = actors.filter(actor => actor.kind === kind).length;
         const actor: Agent = {
           id: `mobility-${input.seed >>> 0}-${idCounter}`, kind, variant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
+          baseVariant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
           current, next: current, progress: 0, position: { x: current.x + .5, y: current.y + .5 }, direction: "east",
           speed: kind === "CAR" ? .0021 + random() * .00045 : .0012 + random() * .00018,
           steps: 0, activity: "NONE", waitMs: 0, yieldReason: "NONE", route: [current], rng: Math.floor(random() * 0x7fff_ffff) || 1, restMs: 0,
@@ -248,7 +270,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
   };
 
   const publish = () => {
-    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason }));
+    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response }));
     signalSnapshot = network.zones.map(zone => {
       const reservation = reservations.get(zone.id);
       return { id: zone.id, bounds: zone.bounds, signalPosts: zone.signalPosts,
@@ -281,6 +303,9 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
     clock += STEP_MS; metrics.fixedSteps++;
     for (const actor of actors) {
       actor.yieldReason = "NONE";
+      if (actor.responseUntil !== undefined && clock >= actor.responseUntil) {
+        actor.response = undefined; actor.responseUntil = undefined; actor.variant = actor.baseVariant;
+      }
       if (actor.restMs > 0) {
         actor.restMs = Math.max(0, actor.restMs - STEP_MS);
         if (!actor.restMs) {
@@ -294,7 +319,7 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
               plan(exit);
               actor.pendingExit = exit;
             }
-            if (actors.some(other => other.id !== actor.id && overlap(exit, other, safetyGap(exit, other)))) {
+            if (walkClosures.has(key(exit.current)) || actors.some(other => other.id !== actor.id && overlap(exit, other, safetyGap(exit, other)))) {
               actor.restMs = STEP_MS;
               actor.yieldReason = "OCCUPIED_EXIT";
             } else Object.assign(actor, exit, { pendingExit: undefined });
@@ -302,6 +327,8 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         }
       }
       if (actor.route.length < 2 && !actor.restMs) plan(actor);
+      if (actor.kind === "CAR" && closures.size && actor.route.length < 2 && !actor.restMs) actor.yieldReason = "ROAD_CLOSED";
+      if (actor.kind === "WALKER" && walkClosures.size && actor.route.length < 2 && !actor.restMs) actor.yieldReason = "WORK_SITE";
     }
     // Release only after the entire body has passed the last conflict tile.
     for (const [zoneId, reservation] of reservations) {
@@ -400,7 +427,10 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
       if (actor.kind === "CAR") metrics.vehicleSteps += steps; else metrics.walkerSteps += steps;
       if (actor.route.length > 1 && next.route.length < 2) {
         metrics.completedTrips++;
-        if(actor.kind==='CAR'&&network.parkingBays.has(key(next.current))) {
+        if (actor.response && actor.responseUntil === undefined) {
+          next.responseUntil = clock + 2500; next.activity = "REST"; next.restMs = 2500; metrics.responseTrips++;
+        }
+        if(!actor.response && actor.kind==='CAR'&&network.parkingBays.has(key(next.current))) {
           next.activity='PARKED';next.restMs=7000+Math.abs(next.rng%9000);
         }
         if (actor.kind === "WALKER" && !network.roads.has(key(next.current)) && !next.zoneId
@@ -431,8 +461,10 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         return;
       }
       network = buildMobilityNetwork(updated); metrics.networkBuilds++;
-      carRoutes = createMobilityRouteSearch(network.cars, network.carEdges);
-      walkerRoutes = createMobilityRouteSearch(network.walkers, network.walkerEdges);
+      closures = new Set([...closures].filter(id => network.cars.has(id)));
+      compileClosures();
+      walkClosures = new Set([...walkClosures].filter(id => network.walkers.has(id)));
+      compileWalkClosures();
       for (const actor of actors) actor.pendingExit = undefined;
       actors = actors.filter(actor => graph(actor.kind).has(key(actor.current)) && graph(actor.kind).has(key(actor.next))
         // A road edit can reverse a lane while retaining both cells. Such an
@@ -446,6 +478,103 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
         }
       }
       reservations.clear(); spawn(); recordMetrics(); publish();
+    },
+    setWalkClosures(cells) {
+      if (walkClosureInput === cells) return;
+      walkClosureInput = cells;
+      const next = new Set([...cells].filter(id => network.walkers.has(id)));
+      if (next.size === walkClosures.size && [...next].every(id => walkClosures.has(id))) return;
+      walkClosures = next; compileWalkClosures();
+      for (const actor of actors) if (actor.kind === "WALKER") {
+        actor.pendingExit = undefined;
+        if (!actor.route.some((cell, i) => i > 0 && walkClosures.has(key(cell)))) continue;
+        if (walkClosures.has(key(actor.next)) && actor.progress === 0) { actor.route = [actor.current]; actor.next = actor.current; }
+        else actor.route = actor.route.slice(0, 2);
+      }
+      publish();
+    },
+    setRoadClosures(cells) {
+      const next = new Set([...cells].filter(id => network.cars.has(id)));
+      if (next.size === closures.size && [...next].every(id => closures.has(id))) return;
+      closures = next; compileClosures(); metrics.closureBuilds++;
+      for (const actor of actors) if (actor.kind === "CAR" && actor.route.some((cell, i) => i > 0 && closures.has(key(cell)))) {
+        // Finish a physical edge already in progress; only future intentions
+        // are replaced. An empty lane is selected before a new episode closes it.
+        if (closures.has(key(actor.next)) && actor.progress === 0) {
+          actor.route = [actor.current]; actor.next = actor.current;
+        } else actor.route = actor.route.slice(0, 2);
+      }
+      publish();
+    },
+    roadEventSites() {
+      // A cosmetic call cannot choose a lane whose curb no available service
+      // can reach. Compute this once per episode, not on animation frames.
+      const reachable = new Set<string>();
+      for (const actor of actors.filter(a => a.kind === "CAR" && !a.response).slice(0, 6)) {
+        const moving = actor.route.length >= 2, start = moving ? actor.next : actor.current;
+        const search = carRoutes(start, moving ? actor.current : actor.previous);
+        for (const cell of search.cells) {
+          if (!safeDestination(cell) || Math.abs(cell.x - start.x) + Math.abs(cell.y - start.y) > 28) continue;
+          const length = search.routeTo(cell).length;
+          if (length >= 2 && length <= 28) reachable.add(key(cell));
+        }
+      }
+      const unsafe = new Set<string>();
+      for (const actor of actors) if (actor.kind === "CAR") for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) unsafe.add(`${Math.floor(actor.position.x) + x},${Math.floor(actor.position.y) + y}`);
+      for (const id of network.zoneByCell.keys()) {
+        const cell = network.cars.get(id); if (!cell) continue;
+        for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) unsafe.add(`${cell.x + x},${cell.y + y}`);
+      }
+      const sites: RoadEventSite[] = [];
+      for (const [id, outgoing] of network.carEdges) {
+        const first = network.cars.get(id), second = outgoing[0];
+        if (!first || !second || unsafe.has(id) || closures.has(id)) continue;
+        const third = network.carEdges.get(key(second))?.find(cell => cell.x - second.x === second.x - first.x && cell.y - second.y === second.y - first.y);
+        if (!third || [second, third].some(cell => unsafe.has(key(cell)) || closures.has(key(cell)) || !network.roads.has(key(cell)))) continue;
+        const cells = [first, second, third];
+        const responseCells: Cell[] = [];
+        for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) {
+          const c = network.cars.get(`${first.x + x},${first.y + y}`);
+          if (c && reachable.has(key(c)) && !network.zoneByCell.has(key(c)) && cells.every(cell => Math.abs(c.x - cell.x) + Math.abs(c.y - cell.y) >= 3)) responseCells.push(c);
+        }
+        if (responseCells.length) sites.push({ cells, responseCells });
+      }
+      return sites;
+    },
+    dispatchResponse(role, targets) {
+      if (!targets.length || actors.filter(a => a.response).length >= 2) return false;
+      const candidates = actors.filter(actor => actor.kind === "CAR" && !actor.response)
+        .sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x-a.next.x)+Math.abs(c.y-a.next.y)))-Math.min(...targets.map(c => Math.abs(c.x-b.next.x)+Math.abs(c.y-b.next.y)))).slice(0, 6);
+      let picked: { actor: Agent; route: Cell[] } | undefined;
+      for (const actor of candidates) {
+        const moving = actor.route.length >= 2;
+        const start = moving ? actor.next : actor.current;
+        const search = carRoutes(start, moving ? actor.current : actor.previous);
+        for (const target of targets) {
+          if (!safeDestination(target) || closures.has(key(target))) continue;
+          const suffix = search.routeTo(target);
+          if (suffix.length < 2 || suffix.length > 28) continue;
+          const route = moving ? [actor.current, ...suffix] : suffix;
+          if (!picked || route.length < picked.route.length) picked = { actor, route };
+        }
+      }
+      if (!picked) return false;
+      const actor = picked.actor, moving = actor.route.length >= 2;
+      actor.route = picked.route; actor.restMs = 0; actor.activity = "NONE";
+      if (!moving) {
+        actor.next = actor.route[1]!; actor.direction = heading(actor.current, actor.next, actor.direction);
+        actor.progress = 0; actor.segmentStart = { x: 0, y: 0 }; actor.segmentEnd = { x: 0, y: 0 };
+      }
+      actor.response = role; actor.responseUntil = undefined;
+      actor.variant = role === "POLICE" ? "blue" : role === "FIRE" ? "red" : "van";
+      publish(); return true;
+    },
+    clearResponses() {
+      for (const actor of actors) if (actor.response) {
+        actor.response = undefined; actor.responseUntil = undefined; actor.variant = actor.baseVariant;
+        actor.restMs = 0; actor.activity = "NONE"; actor.route = actor.route.slice(0, 2);
+      }
+      publish();
     },
     advance(elapsedMs) {
       if (!Number.isFinite(elapsedMs) || elapsedMs < 0) throw new Error("Mobility elapsed time must be finite and nonnegative");

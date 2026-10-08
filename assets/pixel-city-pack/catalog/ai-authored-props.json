@@ -2413,5 +2413,61 @@
     "reviewed": true,
     "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
     "sourceSha256": "01f533ee34aafddc90d00dca15d06270a69da41f8c3c403485713138323dc0fe"
+  },
+  {
+    "key": "compact-cargo-helicopter-north",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
+  },
+  {
+    "key": "compact-cargo-helicopter-east",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
+  },
+  {
+    "key": "compact-cargo-helicopter-south",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
+  },
+  {
+    "key": "compact-cargo-helicopter-west",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
   }
 ]
