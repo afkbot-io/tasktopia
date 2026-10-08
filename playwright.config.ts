@@ -48,7 +48,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: /mobile-pwa\.spec\.ts/,
+      testIgnore: /(?:mobile-pwa|device-compatibility)\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
