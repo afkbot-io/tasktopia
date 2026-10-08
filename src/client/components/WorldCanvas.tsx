@@ -69,7 +69,9 @@ import { createDistrictTerritory } from "../district-territory";
 import { districtDevelopmentState, planDistrictDevelopment, createDistrictDevelopmentGeometry } from "../district-development";
 import { drawDistrictDevelopment, drawDevelopmentEmphasis } from "../district-development-view";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
-import { nextSeededRandom, nextWithoutUTurn, planAgentRoute } from "../agent-routing";
+import { nextSeededRandom, nextWithoutUTurn } from "../agent-routing";
+import { createAgentRoutePlanner } from "../agent-route-planner";
+import { buildingNumberLabel, retainBuildingNumberFont } from "../building-number-label";
 import { createCityMobility } from "../city-mobility";
 import { buildCityWalkNetwork } from "../city-walk-network";
 import { placeCityMobilitySignalPosts } from "../city-mobility-signal-posts";
@@ -521,7 +523,7 @@ function drawTaskPark(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
     content.addChild(new Graphics()
       .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
       .fill(0x10251d).stroke({ color: badge.borderColor, width: 1 }));
-    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: badge.fontSize, fontWeight: "800", fill: 0xf0f2e7 }) });
+    const label = buildingNumberLabel(badge);
     label.anchor.set(0.5); label.position.set(badgeX, badgeY); content.addChild(label);
   }
   let tooltip: Container | undefined;
@@ -607,7 +609,7 @@ function drawBuilding(task: ChunkTaskDto, onSelect: (taskId: string) => void, to
       .roundRect(badgeX - badge.width / 2, badgeY - badge.height / 2, badge.width, badge.height, 1)
       .fill(0x10251d)
       .stroke({ color: badge.borderColor, width: 1 }));
-    const label = new Text({ text: badge.label, resolution: 4, style: new TextStyle({ fontFamily: "Manrope, sans-serif", fontSize: badge.fontSize, fontWeight: "800", fill: 0xf0f2e7 }) });
+    const label = buildingNumberLabel(badge);
     label.anchor.set(0.5); label.position.set(badgeX, badgeY); group.addChild(label);
   }
   let tooltip: Container | undefined;
@@ -1132,6 +1134,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
     };
     const app = new Application();
     const startupDisposers: Array<() => void> = [];
+    startupDisposers.push(retainBuildingNumberFont());
     let startupResourcesCleaned = false;
     let appDestroyed = false;
     const cleanupStartupResources = () => {
@@ -1521,12 +1524,16 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         routeIndex: number;
       };
       let animals: AnimalAgent[] = [];
+      let animalRoutes = createAgentRoutePlanner(new Map());
       const destroyAnimal = (agent: AnimalAgent): void => {
         agent.view.removeFromParent();
         agent.view.destroy();
       };
       type MobilityAgent = ReturnType<typeof createCityMobility>["agents"][number];
       let mobility: ReturnType<typeof createCityMobility> | undefined;
+      let movementEntities: ReturnType<typeof collectCityEntities> | undefined;
+      let movementScene: CitySceneDto | undefined;
+      let movementEconomy: boolean | undefined;
       const mobilityViews = new Map<string, { view: Sprite; marker?: Graphics; activity: MobilityAgent["activity"]; visualKey: string; cueKey?:string }>();
       const trafficSignalViews = new Map<string, { view: Sprite; state: "RED" | "GREEN" }>();
       let mobilityPostOrigins = new Map<string, Cell>();
@@ -2076,7 +2083,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             agent.previous = agent.current; agent.current = agent.next; agent.steps += 1; agent.routeIndex += 1;
             let routed = agent.route[agent.routeIndex];
             if (!routed || !agent.graph.has(key(routed))) {
-              const planned = planAgentRoute(agent.graph, agent.current, agent.randomState, 9, agent.previous);
+              const planned = animalRoutes(agent.current, agent.randomState, 9, agent.previous);
               agent.randomState = planned.randomState; agent.route = planned.route; agent.routeIndex = 1;
               routed = planned.route[1];
             }
@@ -2313,6 +2320,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
       let cityTerrainPadding: CityTerrainPadding | undefined;
       let cityRoadPadding: CityRoadPadding | undefined;
       let cityTreePadding: CityTreePadding | undefined;
+      let paddingPrewarmFrame = 0;
       let nextPaddingBakeId = 0;
       const nativePaddingCells = new Set<string>();
       let nativeFrameCells = 0, nativeFrameReset = 0;
@@ -2360,6 +2368,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         host.dataset.cameraPaddingTreeSample = JSON.stringify(sample);
       };
       startupDisposers.push(() => {
+        cancelAnimationFrame(paddingPrewarmFrame);
         cancelAnimationFrame(nativeFrameReset);
         for (const record of paddingTerrain.values()) removePaddingGround(record);
         paddingTerrain.clear();
@@ -2504,7 +2513,9 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         const visible = cameraTerrainPadding(world.position, world.scale.x, app.screen, cameraBounds(), CELL_SIZE, chunkSize)
           .filter(([x, y]) => !residentTerrainKeys.has(chunkKey(x, y)));
         visiblePaddingKeys = new Set(visible.map(([x, y]) => chunkKey(x, y)));
-        const coordinates = cameraTerrainPadding(world.position, world.scale.x, app.screen, cameraBounds(), CELL_SIZE, chunkSize, 1)
+        // The invisible halo must not spend the first-frame bake/worker budget.
+        // Visible exterior still uses the same exact terrain and tree pipeline.
+        const coordinates = cameraTerrainPadding(world.position, world.scale.x, app.screen, cameraBounds(), CELL_SIZE, chunkSize, paintedFrame ? 1 : 0)
           .filter(([x, y]) => !residentTerrainKeys.has(chunkKey(x, y)));
         const wanted = new Set(coordinates.map(([x, y]) => chunkKey(x, y)));
         cityRoadPadding?.retain(coordinates);
@@ -3377,7 +3388,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
         cityFlightRoutes = cityScene ? cityMicroFlightRoutes(cityScene.airportConnections) : [];
         host!.dataset.airportFlightRoutes = String(cityFlightRoutes.length);
         const agentsVisible = currentLod === "DETAIL" && ambientAssetsReady;
-        if (agentsVisible) {
+        if (agentsVisible && (!mobility || rebuildMovement || collected !== movementEntities || cityScene !== movementScene || economy !== movementEconomy)) {
           const { walkGraph, animalGraph, crosswalks, activityCells, buildingEntrances, blockedCells } = buildCityWalkNetwork({
             roads, terrain: [...terrain.values()], surfaces: [...surfaces.values()],
             tasks: [...tasks.values()], features: [...features.values()], decorations: [...decorations.values()],
@@ -3399,6 +3410,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             posts, terrain, roads, walkGraph, blocked: blockedCells,
           }).map(post => [post.id, post.origin]));
           for (const origin of mobilityPostOrigins.values()) animalGraph.delete(key(origin));
+          animalRoutes = createAgentRoutePlanner(animalGraph);
           host!.dataset.mobilityPostPathConflicts = String([...mobilityPostOrigins.values()]
             .filter(origin => roads.has(key(origin)) || blockedCells.has(key(origin))).length);
           mobilityRoads = roads;
@@ -3435,7 +3447,7 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
             const picked = nextSeededRandom(spawnState); spawnState = picked.state;
             const current = candidates[Math.floor(picked.value * candidates.length)]!;
             if (occupied.has(key(current))) continue;
-            const planned = planAgentRoute(animalGraph, current, spawnState, 9);
+            const planned = animalRoutes(current, spawnState, 9);
             spawnState = planned.randomState;
             const next = planned.route[1];
             if (!next) continue;
@@ -3451,6 +3463,11 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
           }
           drawMobility();
           host!.dataset.agentChanges = String(Math.abs(before - mobilityViews.size - animals.length));
+          // Asset/motion readiness alone does not change physical paths. Keep
+          // the network until immutable geometry, transport or limits change.
+          movementEntities = collected; movementScene = cityScene; movementEconomy = economy;
+        } else if (agentsVisible) {
+          drawMobility();
         } else {
           for (const entry of mobilityViews.values()) { entry.view.visible = false; if (entry.marker) entry.marker.visible = false; }
           for (const entry of trafficSignalViews.values()) entry.view.visible = false;
@@ -4056,12 +4073,17 @@ export function WorldCanvas({ transportRevision = 0, dependencies, attentionIds,
               // Present the coherent stage exactly once before removing its
               // cover, including when animation is disabled by preferences.
               app.render();
+              host!.dataset.cameraPaddingInitialChunks = String(paddingTerrain.size);
               paintedFrame = true;
               host!.dataset.citySceneCommit = "atomic";
               host!.dataset.cityFirstFrameRendered = "true";
               setFirstFrameReady(true);
               updateAnimation();
               preloadAmbientAssets();
+              paddingPrewarmFrame = requestAnimationFrame(() => {
+                paddingPrewarmFrame = 0;
+                if (!disposed && activeRef.current) refreshCameraPadding();
+              });
             }
             let removedEntities = false;
             for (const cacheKey of [...chunks.keys()]) {

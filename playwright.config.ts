@@ -57,7 +57,7 @@ export default defineConfig({
         serviceWorkers: "block",
       },
     },
-    { name: "webkit-visual", testMatch: /(?:city-documents|world-digest|task-entry|atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|planet-feedback|visual-consistency|visual-services|world-preferences|city-asset-overlap|forest-ui-design|forest-ui-surfaces|forest-ui-archive|forest-ui-states|living-city-events|everyday-city-events)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "webkit-visual", testMatch: /(?:city-200-loading|city-documents|world-digest|task-entry|atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|planet-feedback|visual-consistency|visual-services|world-preferences|city-asset-overlap|forest-ui-design|forest-ui-surfaces|forest-ui-archive|forest-ui-states|living-city-events|everyday-city-events)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
     { name: "living-city-mobile-chromium", testMatch: /(?:living-city-events|everyday-city-events)\.spec\.ts/, grep: /touch-sized/, use: { ...devices["Pixel 7"], serviceWorkers: "block" } },
     { name: "living-city-mobile-webkit", testMatch: /(?:living-city-events|everyday-city-events)\.spec\.ts/, grep: /touch-sized/, use: { ...devices["iPhone 13"], serviceWorkers: "block" } },
     { name: "mobile-chromium", testMatch: /mobile-pwa\.spec\.ts/, use: { ...devices["Pixel 7"] } },
