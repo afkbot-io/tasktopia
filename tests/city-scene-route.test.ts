@@ -46,10 +46,10 @@ describe("whole-city scene HTTP boundary", () => {
     const response = await app.inject({ method: "GET", url: `/api/cities/${cityId}/scene`, headers: { cookie } });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-4"$/);
+    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-5"$/);
     const scene = response.json();
     expect(scene).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       sceneRevision: expect.stringMatching(/^[a-f0-9]{64}$/),
       city: { id: cityId, bounds: bootstrap.initialCity.bounds },
       lod: "DETAIL",
@@ -72,8 +72,8 @@ describe("whole-city scene HTTP boundary", () => {
       headers: { cookie, accept: "application/vnd.tasktopia.city-scene+json; version=1" },
     });
     expect(legacy.statusCode).toBe(200);
-    expect(legacy.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-4"$/);
-    expect(legacy.json()).toMatchObject({ schemaVersion: 4, city: { id: cityId } });
+    expect(legacy.headers.etag).toMatch(/^"[a-f0-9]{64}-city-scene-5"$/);
+    expect(legacy.json()).toMatchObject({ schemaVersion: 5, city: { id: cityId } });
     expect((await app.inject({
       method: "GET",
       url: `/api/cities/${cityId}/scene`,

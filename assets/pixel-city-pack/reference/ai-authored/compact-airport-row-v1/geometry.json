@@ -1,0 +1,94 @@
+{
+  "visualProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
+  "cellSizePx": 8,
+  "entrances": [
+    {
+      "side": "S",
+      "offset": 3
+    }
+  ],
+  "floorHeightPxRange": [
+    4,
+    6
+  ],
+  "windowSizePxRange": [
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      2
+    ]
+  ],
+  "doorLeafSizePx": [
+    4,
+    3
+  ],
+  "doorFrameSizePx": [
+    6,
+    5
+  ],
+  "foundationMaskDriftPxMax": 1,
+  "stageCentreDriftPxMax": 1,
+  "stageBaselineDriftPxMax": 1,
+  "paletteColorsMax": 32,
+  "constructionClearanceCells": 1,
+  "sourceBackground": "transparent",
+  "stages": {
+    "0": "Reserved lot outline composed by runtime; no building image.",
+    "1": "Separate fence and south gate around the physical footprint.",
+    "2": "Same footprint with compact foundation, crane, cabin and materials.",
+    "3": "Approximately50%assembled with unchanged physical footprint, open opaque rooms, aligned partitions and rough masonry; no roof.",
+    "4": "Same shell and entrance, dark unfinished windows, approximately half the roof installed, no finished rooftop equipment.",
+    "5": "A compact airport passenger terminal: broad teal glass roof bands with a small square control tower inset into rear-left roof without extending silhouette, cream concourse wing and tiny ochre windsock icon entirely on the right roof. Very short cream-and-teal facade with central passenger entrance and grouped glazing. No aircraft, runway, roads or scenery outside footprint."
+  },
+  "overrides": "New explicitly authorized variable compact families supersede the single 6x6 footprint. Keep the accepted high-45-degree frontal-top camera, all edges axis aligned. No heavy black outline, realistic brick texture, stretching, or image-height-based construction percentage.",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "key": "compact-airport-row-v1",
+  "spriteSize": [
+    48,
+    24
+  ],
+  "footprintCells": [
+    6,
+    3
+  ],
+  "anchorPx": [
+    24,
+    24
+  ],
+  "roofDepthPxRange": [
+    15,
+    17
+  ],
+  "facadeHeightPxRange": [
+    5,
+    6
+  ],
+  "foundationMaskRowsPx": [
+    22,
+    23
+  ],
+  "finishedOccupiedWidthPxRange": [
+    46,
+    48
+  ],
+  "finishedOccupiedHeightPxRange": [
+    21,
+    23
+  ],
+  "stage3OccupiedHeightPxRange": [
+    20,
+    24
+  ],
+  "floorCount": 1,
+  "approvedOpeningEnvelope": "Independently reviewed per-family immutable native measurements; shared envelope door3–4px wide and3–4px high, frame5–7px wide by5px high. Do not rescale openings to match other families.",
+  "doorLeafRectPx": [
+    22,
+    21,
+    4,
+    3
+  ],
+  "openingMeasurementNotes": "Ровная крыша2–18px; фронтальная полоса19–23px. Дверь22,21,4,3 внутри6×5рамы. На стадии3проём тёмный, без ручек; на4окна незавершённые. Нет бокового фасада."
+}

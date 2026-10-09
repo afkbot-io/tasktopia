@@ -3,7 +3,7 @@ import type { CompiledBlockLayoutV1 } from "../../shared/block-world";
 import { blockSlots } from "../../shared/block-templates";
 import { BlockPlacementError } from "./block-layout-compiler";
 import type { Cell, Rect, PlannedSiteDto } from "../../shared/contracts";
-import { planCityRailway, type CityRailway } from "../../shared/city-railway";
+import { planCityRailway,cityRailwayPassengerPaths,cityRailwayPlatformSpan, type CityRailway } from "../../shared/city-railway";
 
 export async function readCityRailway(db:Db,layout:CompiledBlockLayoutV1):Promise<CityRailway|undefined>{
   const row=await db.prepare("SELECT geometry_json FROM city_railway_corridors_v1 WHERE layout_id=?")
@@ -96,7 +96,9 @@ export function cityRailwayReservations(line:CityRailway|undefined, purpose:"PAR
   // Pedestrian approaches may meet streets. Their parcel clearance is not a
   // hard road obstacle; the railway track remains protected for every caller.
   if(purpose==="ROAD")return [track];
-  return [track,...line.access.map(p=>({minX:p.x-1,maxX:p.x+1,minY:p.y-1,maxY:p.y+1}))];
+  const span=cityRailwayPlatformSpan(line);
+  const platform=line.axis==='horizontal'?{minX:span.start,maxX:span.end-1,minY:line.from.y-3,maxY:line.from.y-3}:{minY:span.start,maxY:span.end-1,minX:line.from.x-3,maxX:line.from.x-3};
+  return [track,platform,...cityRailwayPassengerPaths(line).access.map(p=>({minX:p.x-1,maxX:p.x+1,minY:p.y-1,maxY:p.y+1}))];
 }
 
 export async function countryRailwayReservations(db:Db,countryId:string,excludeLayoutId?:string,purpose:"PARCEL"|"ROAD"="PARCEL"):Promise<Rect[]>{

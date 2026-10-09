@@ -11,7 +11,18 @@ it("shares departure, docking, return and absence across full and local views",(
   expect(at(60,[0,.12])).toMatchObject({visible:false,point:null});
   expect(at(144,[.88,1])).toMatchObject({visible:true,phase:"STOPPED",point:{x:8,y:8}});
   expect(at(170,[.88,1])).toMatchObject({visible:true,direction:-1});
-  expect(at(290)).toMatchObject({visible:false,phase:"WAITING"});
+  expect(at(290)).toMatchObject({visible:true,phase:"STOPPED"});
   const bend=at(84);expect(bend.point).toMatchObject({x:0,y:8});
   expect(seaVessel(railPolyline([]),schedule,"a",zero).visible).toBe(false);
+});
+it("keeps two ferries on separate passing lanes without changing the shared voyage",()=>{
+ const schedule=transportSchedule("SEA","a","b",0),line=railPolyline([{x:0,y:0},{x:20,y:0}]);
+ const time=TRANSPORT_EPOCH+schedule.dwellMs+schedule.travelMs/2;
+ const east=seaVessel(line,schedule,"a",time,[0,1],0,.5);
+ const west=seaVessel(line,schedule,"a",time,[0,1],1,.5);
+ expect(east.point).toMatchObject({x:10,y:.5,heading:"east"});
+ expect(west.point).toMatchObject({x:10,y:-.5,heading:"west"});
+ expect(east.vehicleId).not.toBe(west.vehicleId);
+ expect(seaVessel(line,schedule,"a",TRANSPORT_EPOCH,[0,1],0,.5).point).toMatchObject({x:0,y:0});
+ expect(seaVessel(line,schedule,"a",TRANSPORT_EPOCH+288_000,[0,1],0,.5).point).toMatchObject({x:0,y:0});
 });

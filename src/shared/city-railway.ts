@@ -5,15 +5,35 @@ export type CityRailway = {
   platform: Cell; access: Cell[]; stage: number; running: boolean;
 };
 const key = (p: Cell) => `${p.x}:${p.y}`;
+// Scene/corridor owners replace a plan when its geometry changes. The weak
+// index dies with that plan; scenery tests must not reconstruct its footbridge
+// and platform for thousands of cells during a cold city entry.
+const approachIndexes = new WeakMap<CityRailway, { cells: Set<string>; bounds: Rect }>();
 
 /** Keep scenery out of the ballast, platform and pedestrian approach. */
 export function railwayIntersectsRect(line: CityRailway | undefined, origin: Cell, width: number, height: number): boolean {
   if (!line || line.stage <= 0) return false;
   const maxX = origin.x + width, maxY = origin.y + height;
   const track = line.axis === "horizontal"
-    ? origin.y < line.from.y + 3 && maxY > line.from.y - 1 && origin.x <= line.to.x && maxX >= line.from.x
-    : origin.x < line.from.x + 3 && maxX > line.from.x - 1 && origin.y <= line.to.y && maxY >= line.from.y;
-  return track || line.access.some(p => p.x < maxX && p.x + 1 > origin.x && p.y < maxY && p.y + 1 > origin.y);
+    ? origin.y < line.from.y + 4 && maxY > line.from.y - 3 && origin.x <= line.to.x && maxX >= line.from.x
+    : origin.x < line.from.x + 4 && maxX > line.from.x - 3 && origin.y <= line.to.y && maxY >= line.from.y;
+  if (track) return true;
+  let approach = approachIndexes.get(line);
+  if (!approach) {
+    const access = cityRailwayPassengerPaths(line).access;
+    approach = { cells: new Set(access.map(key)), bounds: {
+      minX: Math.min(...access.map(p => p.x)), maxX: Math.max(...access.map(p => p.x)),
+      minY: Math.min(...access.map(p => p.y)), maxY: Math.max(...access.map(p => p.y)),
+    } };
+    approachIndexes.set(line, approach);
+  }
+  const r = approach.bounds;
+  for (let y = Math.max(r.minY, Math.floor(origin.y)); y <= r.maxY && y < maxY; y++) {
+    for (let x = Math.max(r.minX, Math.floor(origin.x)); x <= r.maxX && x < maxX; x++) {
+      if (approach.cells.has(`${x}:${y}`)) return true;
+    }
+  }
+  return false;
 }
 
 /** Derived once from the whole resident scene, never from viewport chunks.
@@ -63,3 +83,34 @@ export function planCityRailway(bounds: Rect, tasks: readonly Pick<ChunkTaskDto,
 }
 
 export const CITY_TRAIN_SPACING = 3.125;
+export const CITY_TRAIN_PARTS = 6;
+/** The entire five-cell corridor is already reserved. Extending the old
+ * platform inside that corridor changes neither parcels nor the track. */
+export function cityRailwayPlatformSpan(line: CityRailway) {
+  const platform = line.axis === "horizontal" ? line.platform.x : line.platform.y;
+  const start = line.axis === "horizontal" ? line.from.x : line.from.y;
+  const end = line.axis === "horizontal" ? line.to.x : line.to.y;
+  return { start: Math.max(start + 1, platform - 20), end: Math.min(end - 1, platform + 3) };
+}
+
+/** Grade-separated end-of-platform footbridge. The old entrance approach is
+ * retained up to the protected corridor; people never walk along a rail. */
+export function cityRailwayPassengerPaths(line:CityRailway,platformLane:0|-1=0){
+ const horizontal=line.axis==="horizontal",cross=horizontal?line.from.y:line.from.x;
+ const along=horizontal?line.platform.x:line.platform.y,span=cityRailwayPlatformSpan(line);
+ const point=(a:number,c:number):Cell=>horizontal?{x:a,y:c}:{x:c,y:a};
+ let cut=line.access.length-1;
+ while(cut>0&&Math.abs((horizontal?line.access[cut]!.y:line.access[cut]!.x)-cross)<2)cut--;
+ const access=line.access.slice(0,cut+1).map(p=>({...p}));
+ const bridgeAlong=along+3;
+ const append=(target:Cell)=>{let current=access.at(-1)??point(bridgeAlong,cross+1);if(!access.length)access.push(current);
+  while(current.x!==target.x){current={x:current.x+Math.sign(target.x-current.x),y:current.y};access.push(current);}
+  while(current.y!==target.y){current={x:current.x,y:current.y+Math.sign(target.y-current.y)};access.push(current);}};
+ const last=access.at(-1),side=last&&(horizontal?last.y:last.x)<cross?-2:2;
+ if(last){append(horizontal?{x:last.x,y:cross+side}:{x:cross+side,y:last.y});append(point(bridgeAlong,cross+side));append(point(bridgeAlong,cross+1));}
+ const bridge=Array.from({length:5},(_,i)=>point(bridgeAlong,cross-2+i));
+ const platformCross=platformLane===0?cross+1:cross-2;
+ const platform=Array.from({length:Math.max(0,Math.floor(span.end-span.start))},(_,i)=>[point(span.start+i,platformCross),point(span.start+i,platformCross+(platformLane===0?1:-1))]).flat();
+ const boardingCells=Array.from({length:CITY_TRAIN_PARTS-1},(_,i)=>point(Math.floor(along-(i+1)*CITY_TRAIN_SPACING),platformCross));
+ return {access,bridge,platform,boardingCells};
+}

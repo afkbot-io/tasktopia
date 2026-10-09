@@ -13,7 +13,7 @@ it("upgrades occupied MOVE parcels without deleting history and allows their reu
     const schema = `relocation_${randomUUID().replaceAll("-", "")}`, directory = join(process.cwd(), "migrations/postgres");
     await db.exec(`CREATE SCHEMA "${schema}"`);
     await db.exec(`SET LOCAL search_path TO "${schema}"`);
-    for (const name of (await readdir(directory)).filter(name => /^\d+.*\.sql$/.test(name) && name < "0038_").sort()) {
+    for (const name of (await readdir(directory)).filter(name => /^\d+.*\.sql$/.test(name) && name !== "0038_reusable_relocated_sites.sql").sort()) {
       await db.exec(await readFile(join(directory, name), "utf8"));
     }
     const countryId = (await registerUser(db, { email: "released@example.test", name: "Released", password: "password123" })).user.countryId;

@@ -406,9 +406,9 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           {labelDetail === "COUNTRIES" && <path d={`M${city.center.x-2} ${city.center.y-2}h4v4h-4z`} fill="#ebd396" pointerEvents="none" />}
         </g>)}</g>
         <g className="planet-railways" aria-hidden="true">{transportPaths.rails.map(route=><g key={route.id}>
-          <path d={route.path} fill="none" stroke="#293c39" strokeWidth="2" />
-          <path d={route.path} fill="none" stroke="#b5b69a" strokeWidth=".8" />
-          <path d={route.path} fill="none" stroke="#293c39" strokeWidth="3" strokeDasharray=".7 3" />
+          <path d={route.path} fill="none" stroke="#293c39" strokeWidth={3.5*camera.zoom} />
+          <path d={route.path} fill="none" stroke="#b5b69a" strokeWidth={2*camera.zoom} />
+          <path d={route.path} fill="none" stroke="#293c39" strokeWidth={.6*camera.zoom} />
         </g>)}</g>
         <ScheduledAtlasTrains routes={transportPaths.rails} scale={camera.zoom} />
         <AtlasShips routes={transportPaths.ships} scale={camera.zoom} />

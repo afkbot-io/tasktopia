@@ -1,0 +1,116 @@
+{
+  "label": "baseline",
+  "clock": 1791553497000,
+  "cpuRate": 4,
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "before": {
+    "roadEvent": "",
+    "roadEventPhase": "",
+    "roadEventServerNow": "1791553501753.75",
+    "roadEventNextStart": "1791553512000"
+  },
+  "after": {
+    "roadEvent": "ACCIDENT",
+    "roadEventPhase": "WORK",
+    "roadEventServerNow": "1791553519742.55",
+    "roadEventNextStart": "1791553602000",
+    "roadEventStarted": "1"
+  },
+  "longTasks": [
+    {
+      "startTime": 15269.200000047684,
+      "duration": 80
+    }
+  ],
+  "windows": [
+    {
+      "startTime": 15269.200000047684,
+      "duration": 80,
+      "cpu": [
+        {
+          "ms": 29.554,
+          "frame": {
+            "functionName": "roadEventSites",
+            "scriptId": "52",
+            "url": "http://127.0.0.1:5225/assets/WorldCanvas-X8cHzztT.js",
+            "lineNumber": 162,
+            "columnNumber": 118021
+          }
+        },
+        {
+          "ms": 5.199,
+          "frame": {
+            "functionName": "Fr",
+            "scriptId": "52",
+            "url": "http://127.0.0.1:5225/assets/WorldCanvas-X8cHzztT.js",
+            "lineNumber": 163,
+            "columnNumber": 35581
+          }
+        },
+        {
+          "ms": 3.904,
+          "frame": {
+            "functionName": "Object.assign.setBlocked",
+            "scriptId": "52",
+            "url": "http://127.0.0.1:5225/assets/WorldCanvas-X8cHzztT.js",
+            "lineNumber": 162,
+            "columnNumber": 93865
+          }
+        },
+        {
+          "ms": 3.722,
+          "frame": {
+            "functionName": "",
+            "scriptId": "52",
+            "url": "http://127.0.0.1:5225/assets/WorldCanvas-X8cHzztT.js",
+            "lineNumber": 162,
+            "columnNumber": 105959
+          }
+        },
+        {
+          "ms": 3.159,
+          "frame": {
+            "functionName": "break",
+            "scriptId": "56",
+            "url": "http://127.0.0.1:5225/assets/RenderTargetSystem-CZwX8qce.js",
+            "lineNumber": 0,
+            "columnNumber": 4819
+          }
+        },
+        {
+          "ms": 2.521,
+          "frame": {
+            "functionName": "(program)",
+            "scriptId": "0",
+            "url": "",
+            "lineNumber": -1,
+            "columnNumber": -1
+          }
+        },
+        {
+          "ms": 2.462,
+          "frame": {
+            "functionName": "break",
+            "scriptId": "55",
+            "url": "http://127.0.0.1:5225/assets/GCManagedHash-CtptiOfb.js",
+            "lineNumber": 2,
+            "columnNumber": 2443
+          }
+        },
+        {
+          "ms": 2.458,
+          "frame": {
+            "functionName": "C",
+            "scriptId": "52",
+            "url": "http://127.0.0.1:5225/assets/WorldCanvas-X8cHzztT.js",
+            "lineNumber": 162,
+            "columnNumber": 104390
+          }
+        }
+      ]
+    }
+  ]
+}

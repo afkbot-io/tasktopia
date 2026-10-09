@@ -1,5 +1,6 @@
 import type { Graphics } from "pixi.js";
 import type { CityPortDto } from "../shared/city-scene-contract";
+import {portPassengerDeck} from '../shared/transport-passenger-paths';
 
 /** Integer native pixels and the city's wood/stone palette. No per-frame work. */
 export function drawCityPorts(view: Graphics, ports: readonly CityPortDto[], cellSize: number): void {
@@ -15,8 +16,9 @@ export function drawCityPorts(view: Graphics, ports: readonly CityPortDto[], cel
         horizontal ? 1 : cellSize).fill(0x989a80);
       view.rect(x + 4, y + 4, 1, 2).fill(0x59635f);
     }
-    const built = stage < 3 ? 0 : Math.ceil(plan.pier.length * (stage === 3 ? .5 : stage === 4 ? .8 : 1));
-    for (const [index, p] of plan.pier.entries()) {
+    const deck=portPassengerDeck(plan);
+    const built = stage < 3 ? 0 : Math.ceil(deck.length * (stage === 3 ? .5 : stage === 4 ? .8 : 1));
+    for (const [index, p] of deck.entries()) {
       const x = p.x * cellSize, y = p.y * cellSize;
       // Timber piles remain visible beneath every construction stage.
       for (const dx of [0, cellSize - 2]) {

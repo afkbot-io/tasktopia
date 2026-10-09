@@ -110,8 +110,11 @@ function reserveNextInfrastructure(district: BlockLayoutDistrictInput, ownBlocks
   }, new Set([...triggers, ...durableTriggers]));
   if (!next) return;
   const candidates = requestedFamily ? slots.filter(({slot}) => familyFitsSlot(requestedFamily,slot)) : slots;
-  // Art is a preference, never a reason to defer the next business service.
-  const { block, slot } = candidates.find(({slot}) => serviceFamilyForSlot(next.role,slot)) ?? candidates[0] ?? slots[0]!;
+  const suitable=candidates.find(({slot})=>serviceFamilyForSlot(next.role,slot));
+  // A new airport must look like a terminal on its immutable parcel. Keep the
+  // milestone pending when the requested parcel cannot fit either native art.
+  if(next.role==="AIRPORT"&&!suitable)return;
+  const { block, slot } = suitable ?? candidates[0] ?? slots[0]!;
   block.parameters = { ...block.parameters,
     slotRoles: { ...block.parameters.slotRoles as Record<string, BlockServiceRole>, [slot.key]: next.role },
     slotRoleTriggers: { ...block.parameters.slotRoleTriggers as Record<string, string>, [slot.key]: next.id } };

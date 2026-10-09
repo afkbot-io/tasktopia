@@ -1,3 +1,4 @@
+import { airportTimetable,airportScheduleOffset } from "./transport-network";
 import { countryAirNetwork } from "./air-network";
 import { transportSchedule } from "./transport-schedule";
 import type { PlanetAtlasDto, PlanetCountryDto } from "./planet-atlas-contract";
@@ -31,6 +32,7 @@ export type PlanetRoute = {
   control: PlanetPoint;
   to: PlanetPoint;
   path: string;
+  scheduleOffsetMs?:number;
   durationSeconds: number;
   delaySeconds: number;
   planeKind: number;
@@ -41,6 +43,7 @@ export type PlanetStar = { id: string; xPercent: number; yPercent: number; size:
 export type PlanetFogCell = { id: string; point: PlanetPoint; size: number; opacity: number };
 export type ProjectedPlanetAtlas = {
   seaRoutes?: import("./planet-atlas-contract").PlanetSeaRouteDto[];
+  railRoutes?:import("./planet-atlas-contract").PlanetRailRouteDto[];
   width: number;
   height: number;
   hexRadius: number;
@@ -357,21 +360,32 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto, sector = 0): Projected
   const pixelHeight = planetHexCenter({ q: columns, r: rows }, hexRadius).y + hexRadius * 2;
   const domestic = countries.flatMap(country=>countryAirNetwork(country.airports.map(airport=>({
     ...airport,taskId:airport.id,cityId:country.cities[airport.cityIndex]!.id,
-  }))));
+  })),country.transportNetworks?.AIR));
   // International links only connect currently visible countries. They do not
   // alter the domestic graph when another country's membership changes.
   const international = countryAirNetwork(countries.flatMap(country=>country.airports.map(airport=>({
     ...airport,taskId:airport.id,cityId:country.id,
   }))));
-  const routes: PlanetRoute[] = [...domestic,...international].map(({from,to})=>{
-    const schedule=transportSchedule("AIR",from.id,to.id), routeKey=schedule.id;
+  const airportsById=new Map(countries.flatMap(country=>country.airports.map(airport=>[airport.id,airport] as const)));
+  const pairs=atlas.airRoutes!==undefined?atlas.airRoutes.flatMap(route=>{
+    const from=airportsById.get(route.fromAirportId),to=airportsById.get(route.toAirportId);
+    return from&&to&&from.countryId===route.fromCountryId&&to.countryId===route.toCountryId?[{from,to}]:[];
+  }):[...domestic,...international.filter(pair=>pair.from.countryId!==pair.to.countryId)];
+  const actualCity=(stop:typeof pairs[number]["from"])=>countries.find(country=>country.id===stop.countryId)!.cities[stop.cityIndex]!.id;
+  const timed=atlas.airRoutes!==undefined?[]:airportTimetable(pairs.map(({from,to})=>({fromCityId:actualCity(from),toCityId:actualCity(to)})),countries.flatMap(country=>country.transportNetworks?.AIR??[]),false);
+  const savedAir=new Map(atlas.airRoutes?.map(route=>[route.id,route.scheduleOffsetMs]));
+  const routes: PlanetRoute[] = pairs.flatMap(({from,to})=>{
+    const timing=timed.find(edge=>edge.fromCityId===actualCity(from)&&edge.toCityId===actualCity(to));
+    const scheduleOffsetMs=savedAir.get(transportSchedule('AIR',from.id,to.id).id)??(timing?airportScheduleOffset(timing,from.id,to.id):undefined);
+    if(scheduleOffsetMs===undefined)return [];
+    const schedule=transportSchedule("AIR",from.id,to.id,scheduleOffsetMs), routeKey=schedule.id;
     const geometry=buildAtlasFlightGeometry(from.point,to.point,routeKey,68);
-    return {
-      id:routeKey,fromCountryId:from.countryId,toCountryId:to.countryId,
+    return [{
+      id:routeKey,scheduleOffsetMs,fromCountryId:from.countryId,toCountryId:to.countryId,
       fromAirportId:from.id,toAirportId:to.id,from:from.point,control:geometry.control,to:to.point,path:geometry.path,
       durationSeconds:schedule.travelMs/1000,delaySeconds:0,planeKind:hashText(routeKey,47)%8,
-      altitudeScale:[.82,1,1.18][hashText(routeKey,73)%3]!,rotateWithPath:true,
-    };
+      altitudeScale:[.82,1,1.18][hashText(routeKey,73)%3]!,rotateWithPath:true as const,
+    }];
   });
 
   const clouds = Array.from({ length: Math.max(25, Math.min(48, Math.ceil((20 + countries.length * 3) * 1.25))) }, (_, index) => {
@@ -403,7 +417,8 @@ export function projectPlanetAtlas(atlas: PlanetAtlasDto, sector = 0): Projected
   });
   const countryIds=new Set(countries.map(country=>country.id));
   const seaRoutes=atlas.seaRoutes?.filter(route=>countryIds.has(route.fromCountryId)&&countryIds.has(route.toCountryId));
-  return { seaRoutes, width: pixelWidth, height: pixelHeight, hexRadius, viewBox: `0 0 ${pixelWidth} ${pixelHeight}`, oceanCells, coastCells, countries, routes, clouds, stars, edgeFog };
+  const railRoutes=atlas.railRoutes?.filter(route=>countryIds.has(route.fromCountryId)&&countryIds.has(route.toCountryId));
+  return { seaRoutes,railRoutes, width: pixelWidth, height: pixelHeight, hexRadius, viewBox: `0 0 ${pixelWidth} ${pixelHeight}`, oceanCells, coastCells, countries, routes, clouds, stars, edgeFog };
 }
 
 export function affineProject(point: PlanetPoint, base: Pick<ProjectedPlanetAtlas, "width" | "height">, camera: PlanetMapCamera): PlanetPoint {

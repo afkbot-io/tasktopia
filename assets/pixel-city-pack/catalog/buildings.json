@@ -4108,6 +4108,60 @@
       ],
       "reviewed": true,
       "floorCount": 1
+    },
+    {
+      "key": "compact-airport-row-v1",
+      "label": "Малый аэровокзал",
+      "category": "CIVIC",
+      "rarity": "UNCOMMON",
+      "spriteSize": [
+        48,
+        24
+      ],
+      "footprintCells": [
+        6,
+        3
+      ],
+      "anchorPx": [
+        24,
+        24
+      ],
+      "platform": "STONE",
+      "estimates": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "tags": [
+        "compact-building",
+        "city-service",
+        "airport"
+      ],
+      "ruleIds": [
+        "STANDARD"
+      ],
+      "entrances": [
+        {
+          "side": "S",
+          "offset": 3
+        }
+      ],
+      "maxPerCity": null,
+      "maxPerDistrict": 1,
+      "serviceRole": "AIRPORT",
+      "stageSources": [
+        "ai-authored/compact-airport-row-v1/sources/stage-3.png",
+        "ai-authored/compact-airport-row-v1/sources/stage-4.png",
+        "ai-authored/compact-airport-row-v1/sources/stage-5.png"
+      ],
+      "stageSha256": [
+        "8fe16dc746a8ae1a9fb509625c813e386b625f5f48faa41bd1bc53a5429bfc07",
+        "658d1108d1d315840b071cdfcf336d66e9c29495b3ecaaae8f29880b03a6ba00",
+        "6294a70f8c63e5a18b1f3c08cdddaeff6bdac29fe598d7e5f7ace1ad430235c7"
+      ],
+      "reviewed": true,
+      "floorCount": 1
     }
   ]
 }

@@ -122,6 +122,7 @@ export function App() {
   const [countryMenuOpen, setCountryMenuOpen] = useState(false);
   const [countryDialog, setCountryDialog] = useState<"manage" | null>(null);
   const [showDistricts, setShowDistricts] = useState(false);
+  const [selectedTransportRoute,setSelectedTransportRoute]=useState<string>();
   const [mapMode, setMapMode] = useState<MapLevel>("PLANET");
   const [mapTransition, setMapTransition] = useState<AtlasTransition | null>(null);
   const mapTransitionAbortRef = useRef<AbortController | null>(null);
@@ -390,6 +391,7 @@ export function App() {
 
   const openPlanetCity = useCallback(async (selectedCountryId: string, cityId: string, focus = {x:.5,y:.5}, cityName?: string) => {
     if (!bootstrap) return;
+    setSelectedTransportRoute(undefined);
     const authenticationEpoch=authenticationEpochRef.current;
     await transitionMap("CITY", focus, async signal => {
       void loadWorldRenderer();
@@ -610,7 +612,7 @@ export function App() {
       </Suspense>
       {activeCity && (effectiveMapMode === "CITY" || preparedCityScene !== null || retainedCityKey===`${bootstrap.country.id}:${activeCity.id}`) && <div aria-hidden={effectiveMapMode !== "CITY"} style={{ position:"absolute", inset:0, visibility:effectiveMapMode === "CITY" ? "visible" : "hidden", pointerEvents:effectiveMapMode === "CITY" ? "auto" : "none" }}>
         <Suspense fallback={<div className="app-loading" role="status">Готовим город…</div>}>
-          <WorldCanvas transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
+          <WorldCanvas selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
                   setRetainedCityKey(`${bootstrap.country.id}:${activeCity.id}`);
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
@@ -641,7 +643,7 @@ export function App() {
       }} />}
       {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
       {effectiveMapMode === "CITY" && dependencyTask?.scope === dependencyScope && <MapDependencies key={`${dependencyScope}:${dependencyTask.id}`} countryId={bootstrap.country.id} taskId={dependencyTask.id} scope={dependencyScope} revision={attentionRevision} onChange={setDependencyData} onClose={() => { setDependencyTask(undefined); setDependencyData({ scope: "" }); }} />}
-      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <Suspense fallback={<div className="city-development-panel" role="status">Загрузка…</div>}><CityDevelopmentPanel key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} /></Suspense>}
+      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <Suspense fallback={<div className="city-development-panel" role="status">Загрузка…</div>}><CityDevelopmentPanel selectedRoute={selectedTransportRoute} key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} onRoute={id=>{setSelectedTransportRoute(id);closeDevelopment();}} onCity={(scope,id,name)=>{closeDevelopment();setSelectedTransportRoute(undefined);void openPlanetCity(scope,id,{x:.5,y:.5},name);}} /></Suspense>}
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
         setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true);
       }} />}

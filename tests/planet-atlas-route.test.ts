@@ -71,7 +71,7 @@ describe("planet atlas HTTP boundary", () => {
     expect(twin!.json().revision).toBe(response!.json().revision);
     expect(response.statusCode).toBe(200);
     expect(response.headers["cache-control"]).toContain("private");
-    expect(response.json()).toMatchObject({ schemaVersion: 4 });
+    expect(response.json()).toMatchObject({ schemaVersion: 5 });
     expect(response.json().countries).toHaveLength(2);
     expect(response.json().countries.map((country: { name: string }) => country.name).sort()).toEqual(["Вторая страна", "Первая страна"]);
     expect(response.json().countries.find((country: { name: string }) => country.name === "Первая страна")).toMatchObject({

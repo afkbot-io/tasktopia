@@ -30,9 +30,9 @@ test("completed task airports launch compact flights and retain their identity i
   await openMapPlanet(page);
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   const flights = page.locator(".planet-routes .atlas-aircraft-flight");
-  await expect(flights).toHaveCount(1);
-  await expect(flights).toHaveAttribute("data-route-id", /.+/);
+  await expect(flights).toHaveCount(2);
+  await expect(flights.first()).toHaveAttribute("data-route-id", /.+/);
   await page.screenshot({ path: "screenshots/compact-rc-airports/planet.png" });
   expect(errors).toEqual([]);
-  await info.attach("airport-identity", { body: JSON.stringify({ cityRoutes: 2, planetFlights: 1, errors }), contentType: "application/json" });
+  await info.attach("airport-identity", { body: JSON.stringify({ cityRoutes: 2, planetFlights: 2, errors }), contentType: "application/json" });
 });

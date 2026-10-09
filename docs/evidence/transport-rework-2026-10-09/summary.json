@@ -1,0 +1,859 @@
+{
+  "date": "2026-10-09",
+  "scope": "Локальная реализация транспорта; без публикации и изменения пользовательских городов",
+  "runtime": {
+    "baseRevision": "e7ad05e7e351a514a63b7fcf7b79c248b0fc3089",
+    "runtimeInputsSha256": "a0667c2249b554517165346816b6b174692eea9d5c30fe263e07e75f3a369ed4",
+    "runtimeInputFiles": 1169,
+    "serverBundleSha256": "2bbab6a0f90dabef625c397b432ad328e5bcc527e250d014c4aac0c62c2e3fe7",
+    "artRevision": "f5ba91abe09a928b",
+    "clientBundles": [
+      {
+        "file": "ArchiveRecordModal-CXSz6Ws2.js",
+        "sha256": "97e6cc7921e7397f6d7728d3383d249ce44ccd8e3da988c6a9c0cd721d5d51da"
+      },
+      {
+        "file": "BitmapFont-CURc5rtx.js",
+        "sha256": "996db474610ca8ad242875c8af8b94bf0d9acbd553e6e775107f919048c7b00d"
+      },
+      {
+        "file": "BufferResource-DFJ3_9YU.js",
+        "sha256": "f2200a0cd8090360eeaf07c9b24e4ab3fb1e1437adf79925d95501927e6e8b06"
+      },
+      {
+        "file": "Cache-fEfeSd-A.js",
+        "sha256": "034810d5138cf5c69da5df651e905d37f609319cbbbc22920a87de91504bcaa4"
+      },
+      {
+        "file": "CanvasPool-3ldCMsRM.js",
+        "sha256": "ab8e2fb6a838780f1d864e6178991d251f6cd2b8460ae8f3a5c872d7d88e85e7"
+      },
+      {
+        "file": "CanvasRenderer-D3a4PssS.js",
+        "sha256": "a97e407c3e011420075e01730b8e671608f338719d8e7ab2ff37c4b270237602"
+      },
+      {
+        "file": "CityDevelopmentPanel-xQLbv0ut.js",
+        "sha256": "b6980fdf89c488e9104bb9eeb78fc2a73fe834d5528632693764d26acec8f7b1"
+      },
+      {
+        "file": "CityDocuments-q2jNd0OS.js",
+        "sha256": "daa9ac036c02ad203f3baf37306c5bfa46645a71c47cb49e47af3a22c9e42468"
+      },
+      {
+        "file": "EventBoundary-BHNF6LZc.js",
+        "sha256": "f64f5c249feecf994fdfddedab6a4404574d019e79ae78d6181da06ed1d6183e"
+      },
+      {
+        "file": "Filter-BqdleU4p.js",
+        "sha256": "332915a167ec50ec600fe303849433b9f6703f1a7d76a88e014c1655cc386629"
+      },
+      {
+        "file": "GCManagedHash-CtptiOfb.js",
+        "sha256": "239baf8de61fc7d5e176b9bd6fb44c9e41db2094f5a3c1c40fb703889a03ccee"
+      },
+      {
+        "file": "Geometry-Ckw_XhzT.js",
+        "sha256": "72e40fd847fc0bc3bbf6fc43104c51a449ab830097531e9794351bcbc21cda7a"
+      },
+      {
+        "file": "GraphicsContext-CvtOAmjy.js",
+        "sha256": "7f1c9c3291000c081767ddfa91d98dcb603134370598b373c60dcd0f2209bdee"
+      },
+      {
+        "file": "Markdown-B0Da-8Ke.js",
+        "sha256": "7ef179bbcb8a758896f171fba1fca59abc05c696193aebd3c31e0fa8a928a959"
+      },
+      {
+        "file": "PlanetAtlasCanvas-CabWcOAT.js",
+        "sha256": "a5979e992cf990e7d972f44a1672cd51486155377b90d5aeee7bdfbdcf09fcdf"
+      },
+      {
+        "file": "RenderTargetSystem-CZwX8qce.js",
+        "sha256": "44ee88144896f2f3cbf30d6b777e7e614e568c7adc77268807d226632f508fc7"
+      },
+      {
+        "file": "TaskModal-BgrA-kIO.js",
+        "sha256": "492828fd83935530a13cb47972d79ac202279cb6e198b9ae1251329ebd2b4f24"
+      },
+      {
+        "file": "TokenPanel-_UTr0xSe.js",
+        "sha256": "a38850e0e98ab96e2a24cdbd3d74bbc9b63f61d0ba5de57b3163049437e64f54"
+      },
+      {
+        "file": "WebGLRenderer-DbctGfv_.js",
+        "sha256": "1c5405687ac7a289adfc3fd416a0ebf5a362ae5eb3ae9508181a9ae3d389d501"
+      },
+      {
+        "file": "WebGPURenderer-ClDQed5b.js",
+        "sha256": "01cb769a404de16bd7f1faee91d3b752832d5e4aa2eaa3bf55570cf63237fbf8"
+      },
+      {
+        "file": "WorldCanvas-DcvhZYDU.js",
+        "sha256": "4983a18e32b0e35e4b5b0a07d57461b6043b8ae1f1741adbe72c7c43bf8e5379"
+      },
+      {
+        "file": "api-I1isT3Yh.js",
+        "sha256": "1b4d1744c339148be4db10df120a36966c627f482426c6b8fa70e5fdff5a9960"
+      },
+      {
+        "file": "atlas-flight-path-DL8B8vmx.js",
+        "sha256": "06488c24d11564d5b78dbe67f42367ea5b502f948f16ca649a27f30e848eb043"
+      },
+      {
+        "file": "browserAll-CkmId6t9.js",
+        "sha256": "e2d0d6b06e3b1c5dacd78e5ee1587cbd24d417e29c8397ea0a9895bbb053eb0f"
+      },
+      {
+        "file": "canvasUtils-C3EzOeUa.js",
+        "sha256": "7cad9251408c5b0eceeee1406bb8932ef0fc7412bd47e0e01b24a3702398e6e0"
+      },
+      {
+        "file": "catalog-Br6x3RCs.js",
+        "sha256": "f5c94fc52add7ce08e13ddd56bf901ac8cac33f9024d61ce960e445a0291e749"
+      },
+      {
+        "file": "chunk-materializer-worker-DyVZfgo8.js",
+        "sha256": "0f589cb089ae48cb09fa52c0e1631d3717564faca6bec6331b26766096197944"
+      },
+      {
+        "file": "esm-BrLCb35z.js",
+        "sha256": "3285aedccc74021afdb82098fb3a10e9fbd556bb26f701637abaa656960379c8"
+      },
+      {
+        "file": "getPo2TextureFromSource-D_dTR7iM.js",
+        "sha256": "9f655c817515a3c8eaf1bd2389cc153f7392f5a157a2c79099440cfa0b9c29fb"
+      },
+      {
+        "file": "getTextureBatchBindGroup-BTLnWq_D.js",
+        "sha256": "37f8caf10eec48a7ab981bbc6a876d1477df78dac2a6a8367c0356043633cd69"
+      },
+      {
+        "file": "index-IJA4Wvof.css",
+        "sha256": "5bc6795c53c621d0bbab6665a5f2e1695ef8bea91559927540de24a500a8aee0"
+      },
+      {
+        "file": "index-yXHY83w8.js",
+        "sha256": "b337fbc0d7b31914d4827d060e73be027b13eefcab940adb5bf1fd8893552a74"
+      },
+      {
+        "file": "init-CPtzLbPr.js",
+        "sha256": "bf3499b71104c2641e740cc5717c9ce432cad026324953bc66a3422cb973a67f"
+      },
+      {
+        "file": "map-scene-cache-ZZppkIWp.js",
+        "sha256": "0b756f02ef2b57fc88239ea1f5e9558344c2d1a93034b6791d55e33c4fef57db"
+      },
+      {
+        "file": "rolldown-runtime-hePW80VL.js",
+        "sha256": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021"
+      },
+      {
+        "file": "transport-schedule-B71Fxw_h.js",
+        "sha256": "3ef9c00cf8c75001bf645f39b15e4852b9d1748df6e38abf492c0254ef053e2b"
+      },
+      {
+        "file": "webworkerAll-Bab4-_Qz.js",
+        "sha256": "823547b370804e1be04412f0a9d0a71ea08a08eeb2d8cb3d32640e102b89e867"
+      },
+      {
+        "file": "world-cell-runs-BaTy-KN6.js",
+        "sha256": "1fdaf8d2f20c4fc41339dfa09b142edfb33982e8c49f6b3a2f446d624ee26726"
+      },
+      {
+        "file": "world-chunk-payload-T1kpLGz7.js",
+        "sha256": "5885036262f0fd13188a189dfa03cd17e4a1f7686bfdcaac197519d3391e7647"
+      },
+      {
+        "file": "world-preferences-DPk6-Zsq.js",
+        "sha256": "572c7c0319b0d0e99683625ac73021a1c88b82ea26a5802a487b4b95a243a20c"
+      },
+      {
+        "file": "world-terrain-DUaaYnoZ.js",
+        "sha256": "b2933271cd33b312c27f6037325ba5b91f282d529fb66eda8291f48d3df3a286"
+      }
+    ]
+  },
+  "workload": {
+    "seed": 424242,
+    "tasks": 200,
+    "districts": 8,
+    "detailChunks": 12,
+    "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11"
+  },
+  "performanceSeries": {
+    "transport-baseline-200": {
+      "variant": "transport-baseline",
+      "workload": "200",
+      "profile": false,
+      "profileSteady": false,
+      "compact": false,
+      "headed": false,
+      "metal": true,
+      "quality": "NORMAL",
+      "churnCycles": 20,
+      "steadyMs": 8000,
+      "cpuRate": 1,
+      "expectedSamples": 5,
+      "complete": true,
+      "failure": null,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScaleFactor": 1,
+      "browser": "151.0.7922.34",
+      "host": {
+        "platform": "darwin",
+        "cpu": "Apple M5 Pro"
+      },
+      "network": "local unrestricted",
+      "errors": [],
+      "rawReport": {
+        "localPath": "tmp/city-art-load/transport-baseline-200/report.json",
+        "sha256": "e68b9c99c41442981e4788699749b942732ba3c18260daab84326d06d4a0cfbb"
+      },
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 1461.088916,
+          "interactiveMs": 1473.2322500000002,
+          "appMs": 2384.3320830000002,
+          "warmMs": 50.29504100000122,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 86414168,
+          "churnCycles": 20,
+          "heapAfterChurn": 87451340,
+          "heapChurnDeltaBytes": 1037172,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 1,
+          "coldMs": 1324.4478340000023,
+          "interactiveMs": 1345.046459000001,
+          "appMs": 2212.7338339999988,
+          "warmMs": 23.668540999999095,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.900000000001455,
+          "heapBytes": 85999592,
+          "churnCycles": 20,
+          "heapAfterChurn": 87390596,
+          "heapChurnDeltaBytes": 1391004,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 2,
+          "coldMs": 1312.2473750000063,
+          "interactiveMs": 1324.3107090000049,
+          "appMs": 2208.7985839999965,
+          "warmMs": 43.0413750000007,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.800000000001091,
+          "heapBytes": 86353504,
+          "churnCycles": 20,
+          "heapAfterChurn": 87768696,
+          "heapChurnDeltaBytes": 1415192,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 3,
+          "coldMs": 1312.7282500000001,
+          "interactiveMs": 1324.904125000001,
+          "appMs": 2209.194708999996,
+          "warmMs": 21.541333000001032,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.799999999999272,
+          "heapBytes": 86123868,
+          "churnCycles": 20,
+          "heapAfterChurn": 87737108,
+          "heapChurnDeltaBytes": 1613240,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 4,
+          "coldMs": 1315.3725829999894,
+          "interactiveMs": 1316.1268750000017,
+          "appMs": 2198.4247909999976,
+          "warmMs": 48.49925000000803,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.900000000001455,
+          "heapBytes": 86492856,
+          "churnCycles": 20,
+          "heapAfterChurn": 87453524,
+          "heapChurnDeltaBytes": 960668,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        }
+      ],
+      "medianColdMs": 1315.3725829999894,
+      "candidateNewTransportActive": false,
+      "newTransportLimit": "В большой фикстуре нет готового peer terminal. Активные AIR/RAIL/SEA рейсы проверены отдельной связанной фикстурой."
+    },
+    "transport-optimized-200": {
+      "variant": "transport-optimized",
+      "workload": "200",
+      "profile": false,
+      "profileSteady": false,
+      "compact": false,
+      "headed": false,
+      "metal": true,
+      "quality": "NORMAL",
+      "churnCycles": 20,
+      "steadyMs": 60000,
+      "cpuRate": 1,
+      "expectedSamples": 5,
+      "complete": true,
+      "failure": null,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScaleFactor": 1,
+      "browser": "151.0.7922.34",
+      "host": {
+        "platform": "darwin",
+        "cpu": "Apple M5 Pro"
+      },
+      "network": "local unrestricted",
+      "errors": [],
+      "rawReport": {
+        "localPath": "tmp/city-art-load/transport-optimized-200/report.json",
+        "sha256": "52a824bb1852ea4970bfe6133fbbd8577615d6a01f6645432c08e4325a722dc8"
+      },
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 1326.004041,
+          "interactiveMs": 1327.0040000000001,
+          "appMs": 2223.6243339999996,
+          "warmMs": 34.76245900000504,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.80000000000291,
+          "heapBytes": 90071484,
+          "churnCycles": 20,
+          "heapAfterChurn": 90703216,
+          "heapChurnDeltaBytes": 631732,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 1,
+          "coldMs": 1330.468875000006,
+          "interactiveMs": 1331.2042079999956,
+          "appMs": 2210.1359590000066,
+          "warmMs": 44.462833000026876,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.799999999999272,
+          "heapBytes": 89643672,
+          "churnCycles": 20,
+          "heapAfterChurn": 90531852,
+          "heapChurnDeltaBytes": 888180,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 2,
+          "coldMs": 1327.1241670000018,
+          "interactiveMs": 1329.0427499999932,
+          "appMs": 2197.664625000005,
+          "warmMs": 22.922624999977415,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.80000000000291,
+          "heapBytes": 89131264,
+          "churnCycles": 20,
+          "heapAfterChurn": 90519056,
+          "heapChurnDeltaBytes": 1387792,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 3,
+          "coldMs": 1329.2583339999837,
+          "interactiveMs": 1331.2655419999792,
+          "appMs": 2194.703542000003,
+          "warmMs": 47.60770799999591,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.799999999999272,
+          "heapBytes": 89460964,
+          "churnCycles": 20,
+          "heapAfterChurn": 90705596,
+          "heapChurnDeltaBytes": 1244632,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 4,
+          "coldMs": 1360.6676250000019,
+          "interactiveMs": 1368.3693330000388,
+          "appMs": 2250.4327080000076,
+          "warmMs": 23.178874999983236,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.299999999999272,
+          "p95FrameMs": 9.80000000000291,
+          "heapBytes": 89111644,
+          "churnCycles": 20,
+          "heapAfterChurn": 90433056,
+          "heapChurnDeltaBytes": 1321412,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        }
+      ],
+      "medianColdMs": 1329.2583339999837,
+      "candidateNewTransportActive": false,
+      "newTransportLimit": "В большой фикстуре нет готового peer terminal. Активные AIR/RAIL/SEA рейсы проверены отдельной связанной фикстурой."
+    },
+    "transport-e7-baseline-cpu4-200-compact": {
+      "variant": "transport-e7-baseline-cpu4",
+      "workload": "200",
+      "profile": false,
+      "profileSteady": false,
+      "compact": true,
+      "headed": false,
+      "metal": true,
+      "quality": "AUTO",
+      "churnCycles": 0,
+      "steadyMs": 8000,
+      "cpuRate": 4,
+      "expectedSamples": 5,
+      "complete": true,
+      "failure": null,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScaleFactor": 1,
+      "browser": "151.0.7922.34",
+      "host": {
+        "platform": "darwin",
+        "cpu": "Apple M5 Pro"
+      },
+      "network": "local unrestricted",
+      "errors": [],
+      "rawReport": {
+        "localPath": "tmp/city-art-load/transport-e7-baseline-cpu4-200-compact/report.json",
+        "sha256": "af1d5844b327048f5b51904e3e7f2429339237ab87292e21acacd71ee6434167"
+      },
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 2221.122458,
+          "interactiveMs": 3548.7265830000006,
+          "appMs": 4680.662709,
+          "warmMs": 156.3825829999987,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 9,
+          "p95FrameMs": 18.100000000000364,
+          "heapBytes": 70980648,
+          "churnCycles": 0,
+          "heapAfterChurn": 70980648,
+          "heapChurnDeltaBytes": 0,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 1,
+          "coldMs": 2161.3722910000033,
+          "interactiveMs": 3393.213708000003,
+          "appMs": 4541.703042000001,
+          "warmMs": 164.38112499999988,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 10.100000000000364,
+          "p95FrameMs": 18.299999999999272,
+          "heapBytes": 70821288,
+          "churnCycles": 0,
+          "heapAfterChurn": 70821288,
+          "heapChurnDeltaBytes": 0,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 2,
+          "coldMs": 2153.882082999997,
+          "interactiveMs": 3464.690791000001,
+          "appMs": 4632.693208999997,
+          "warmMs": 153.40420900000026,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 16.600000000000364,
+          "p95FrameMs": 25.100000000000364,
+          "heapBytes": 70754132,
+          "churnCycles": 0,
+          "heapAfterChurn": 70754132,
+          "heapChurnDeltaBytes": 0,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 3,
+          "coldMs": 2149.9097079999992,
+          "interactiveMs": 3556.6856249999983,
+          "appMs": 4719.0092499999955,
+          "warmMs": 151.76866599998903,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 17.200000000000728,
+          "p95FrameMs": 25.80000000000109,
+          "heapBytes": 70866476,
+          "churnCycles": 0,
+          "heapAfterChurn": 70866476,
+          "heapChurnDeltaBytes": 0,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 4,
+          "coldMs": 2232.5080419999867,
+          "interactiveMs": 3503.236874999988,
+          "appMs": 4672.752124999999,
+          "warmMs": 143.5970420000085,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 16.80000000000109,
+          "p95FrameMs": 25.30000000000109,
+          "heapBytes": 70882912,
+          "churnCycles": 0,
+          "heapAfterChurn": 70882912,
+          "heapChurnDeltaBytes": 0,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        }
+      ],
+      "medianColdMs": 2161.3722910000033,
+      "candidateNewTransportActive": false,
+      "newTransportLimit": "В большой фикстуре нет готового peer terminal. Активные AIR/RAIL/SEA рейсы проверены отдельной связанной фикстурой."
+    },
+    "transport-optimized-cpu4-200-compact": {
+      "variant": "transport-optimized-cpu4",
+      "workload": "200",
+      "profile": false,
+      "profileSteady": false,
+      "compact": true,
+      "headed": false,
+      "metal": true,
+      "quality": "AUTO",
+      "churnCycles": 20,
+      "steadyMs": 60000,
+      "cpuRate": 4,
+      "expectedSamples": 5,
+      "complete": true,
+      "failure": null,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScaleFactor": 1,
+      "browser": "151.0.7922.34",
+      "host": {
+        "platform": "darwin",
+        "cpu": "Apple M5 Pro"
+      },
+      "network": "local unrestricted",
+      "errors": [],
+      "rawReport": {
+        "localPath": "tmp/city-art-load/transport-optimized-cpu4-200-compact/report.json",
+        "sha256": "2e877ef2265b6ce2aeec4837008fe1626f419ba79cd79bf9177bd6a13b1d6d14"
+      },
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 2425.729459,
+          "interactiveMs": 3718.9598340000002,
+          "appMs": 4831.743958,
+          "warmMs": 145.2177090000041,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 8.400000000001455,
+          "p95FrameMs": 16.80000000000291,
+          "heapBytes": 75235264,
+          "churnCycles": 20,
+          "heapAfterChurn": 76189840,
+          "heapChurnDeltaBytes": 954576,
+          "steadyLongTasks": [
+            {
+              "startTime": 58561.89999997616,
+              "duration": 61
+            }
+          ],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 1,
+          "coldMs": 2262.068708000006,
+          "interactiveMs": 3477.866875000007,
+          "appMs": 4600.52900000001,
+          "warmMs": 146.4202079999959,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 9.899999999997817,
+          "p95FrameMs": 18.299999999999272,
+          "heapBytes": 75300992,
+          "churnCycles": 20,
+          "heapAfterChurn": 76164024,
+          "heapChurnDeltaBytes": 863032,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 2,
+          "coldMs": 2235.9672080000164,
+          "interactiveMs": 3541.536374999996,
+          "appMs": 4656.925667000003,
+          "warmMs": 138.59654100000625,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 15.400000000001455,
+          "p95FrameMs": 23.799999999995634,
+          "heapBytes": 75278584,
+          "churnCycles": 20,
+          "heapAfterChurn": 76098016,
+          "heapChurnDeltaBytes": 819432,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 3,
+          "coldMs": 2254.068916999997,
+          "interactiveMs": 3563.2753749999974,
+          "appMs": 4646.687875000003,
+          "warmMs": 144.28525000001537,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 16.400000000001455,
+          "p95FrameMs": 25,
+          "heapBytes": 75092444,
+          "churnCycles": 20,
+          "heapAfterChurn": 76108044,
+          "heapChurnDeltaBytes": 1015600,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        },
+        {
+          "sample": 4,
+          "coldMs": 2519.5741249999846,
+          "interactiveMs": 4082.687082999968,
+          "appMs": 5248.913375000004,
+          "warmMs": 138.64112500002375,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "chunks": 12,
+          "tasks": 200,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p50FrameMs": 9.299999999995634,
+          "p95FrameMs": 18,
+          "heapBytes": 75348964,
+          "churnCycles": 20,
+          "heapAfterChurn": 76169028,
+          "heapChurnDeltaBytes": 820064,
+          "steadyLongTasks": [],
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+        }
+      ],
+      "medianColdMs": 2262.068708000006,
+      "candidateNewTransportActive": false,
+      "newTransportLimit": "В большой фикстуре нет готового peer terminal. Активные AIR/RAIL/SEA рейсы проверены отдельной связанной фикстурой."
+    }
+  },
+  "comparisons": [
+    {
+      "baseline": "transport-baseline-200",
+      "candidate": "transport-optimized-200",
+      "medianColdDeltaPercent": 1.0556515453838067,
+      "coldRelativeBudgetPass": true,
+      "warmBudgetPass": true,
+      "p95BudgetPass": true,
+      "heapChurnBudgetPass": true,
+      "methodDifference": "Cold/warm условия совпадают. Steady baseline 8 с, candidate 60 с; baseline CPU4 churn 0, candidate 20. Нулевой heap delta baseline CPU4 не означает измерение 20 переходов."
+    },
+    {
+      "baseline": "transport-e7-baseline-cpu4-200-compact",
+      "candidate": "transport-optimized-cpu4-200-compact",
+      "medianColdDeltaPercent": 4.658911258338261,
+      "coldRelativeBudgetPass": true,
+      "warmBudgetPass": true,
+      "p95BudgetPass": true,
+      "heapChurnBudgetPass": true,
+      "methodDifference": "Cold/warm условия совпадают. Steady baseline 8 с, candidate 60 с; baseline CPU4 churn 0, candidate 20. Нулевой heap delta baseline CPU4 не означает измерение 20 переходов."
+    }
+  ],
+  "steadyPauseAttribution": {
+    "observedCandidateCpu4": {
+      "sample": 0,
+      "durationMs": 61,
+      "startTimeMs": 58561.89999997616
+    },
+    "controlledReplay": {
+      "serverHeaderClock": 1791553497000,
+      "roadEventStartServerTime": 1791553512000,
+      "event": "ACCIDENT",
+      "cpuRate": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "candidatePauseMs": 66,
+      "baselinePauseMs": 80,
+      "dominantFunction": "roadEventSites",
+      "candidateSampledFunctionMs": 24.654,
+      "baselineSampledFunctionMs": 29.554,
+      "limit": "Повтор одного события, не статистическая оценка всех происшествий. Clock seam: серверный header; реальное время браузера не ускоряется."
+    },
+    "conclusion": "Старая пауза планирования дорожной аварии, а не новая транспортная симуляция. Нельзя утверждать отсутствие всех long tasks на CPU4.",
+    "evidence": [
+      {
+        "file": "incident-candidate.json",
+        "sha256": "d807cf83893bd9b8421e9ba9d08d051470ee99b1b68cb029fdbcad3aaaddbe2a",
+        "localCpuProfile": ".builder/transport-rework-2026-10-09/incident-candidate.cpuprofile",
+        "cpuProfileSha256": "a936096315475e19acc5ebe2d32acddc0f4849a7baf239dd50a4ec61548d297f"
+      },
+      {
+        "file": "incident-baseline.json",
+        "sha256": "ef5706c661cc8c63967c047864628953f736234ddd0aa8cd8e130282ca266d5b",
+        "localCpuProfile": ".builder/transport-rework-2026-10-09/incident-baseline.cpuprofile",
+        "cpuProfileSha256": "7716756319aa76490129f538dd56d9cf0c60a40043c862281877d95acde886b6"
+      }
+    ]
+  },
+  "gates": [
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/unit-optimized.log",
+      "sha256": "19824e023d54a5654dd94fd8a843f0c8f06c0a4eff906e171ccb046750a96e23",
+      "result": "PASS: 299 файлов / 1616 тестов / 203.01 с"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/lint-optimized.log",
+      "sha256": "6ae7633aac706563e696114ee9e0e677eeb7ca566be4a16d6883fc16883c7b65",
+      "result": "PASS: полный ESLint"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/build-optimized.log",
+      "sha256": "c07ec383be7b2ebdb753fb98a50dcf3512d30b5bb17e06e205768a7a8a9b21ad",
+      "result": "PASS: typecheck + production bundles"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/browser-qualified-final.log",
+      "sha256": "632167b4c1e8cddb575a6b99178b262c2fa948ad5b22e3f5bd0a9bef4d2ddcdb",
+      "result": "PASS: AIR/RAIL/SEA полный цикл, ECO/reload/ready; до индекса"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/browser-qualified-engines.log",
+      "sha256": "cd7ff0476e864b2bfe90b9a2564b6e35a757ffa6da6fa2c1383c74ce310f4e10",
+      "result": "PASS: WebKit/Firefox ready"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/browser-qualified-mcp.log",
+      "sha256": "7e3e474e436cb6bd21e02cfef7197133cd518f3e7385563d334e6e7dc752243e",
+      "result": "PASS: два реальных клиента AIR/RAIL/PORT + MCP/WS/idempotency"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/browser-optimized-ready.log",
+      "sha256": "5c9738ee7ea716641249774b82111c0d3cb74ba405d94e9999d534c1739b9bf4",
+      "result": "PASS: три движка ready1440 + Chromium/WebKit полный RAIL цикл после индекса"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/art-qualified-review.log",
+      "sha256": "0598208b06de3e6fca427ef3e3ca697d00f576ba0495bcb6776185d0b43cf541",
+      "result": "PASS: компактный visual review + 12 направленных частей"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/fixture-reproducible.log",
+      "sha256": "8a6a79df3e1925b43de98ede46dfd825553812662e182f1dd0e149c388e293ec",
+      "result": "PASS: seed новой локальной QA схемы"
+    },
+    {
+      "localLog": ".builder/transport-rework-2026-10-09/graphics-optimized.log",
+      "sha256": "f39542597c8bfc5d250699153914cd4f36869faf8ca22ccfb64c957c5a1bc84a",
+      "result": "PASS: 20 переходов связанной AIR/RAIL/SEA сцены"
+    }
+  ],
+  "limits": [
+    "Физические Android/iOS/GPU не проверены: браузерная и touch эмуляция.",
+    "Реальный проблемный город пользователя не предоставлен; исходная причина в нём не подтверждена.",
+    "Пять аэропортовых стадий проверены render seam; MCP выполнял rework/complete/delete, не каждую стадию.",
+    "Native E/W просмотрены в источнике и проверены на обеих осях; отдельного живого сценария каждого направления нет.",
+    "Неизменённые AIR/SEA/MCP/touch проверки использованы повторно после оптимизации индекса подхода.",
+    "Публичный сайт и миграция реальных стран не включены в локальную приёмку."
+  ]
+}

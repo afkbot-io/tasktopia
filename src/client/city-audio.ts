@@ -22,11 +22,11 @@ export function silenceCityAudio(){
  for(const voice of voices){voice.oscillator.onended=null;try{voice.oscillator.stop();}catch{/* Already ended. */}voice.oscillator.disconnect();voice.gain.disconnect();}
  voices.clear();
 }
-export function playCitySound(cue:CitySoundCue){
- if(!context||context.state!=='running'||!readWorldPreferences().sound||document.hidden||voices.size>=4)return false;
+export function playCitySound(cue:CitySoundCue,attenuation=1){
+ if(!Number.isFinite(attenuation)||attenuation<=0||!context||context.state!=='running'||!readWorldPreferences().sound||document.hidden||voices.size>=4)return false;
  const score=scores[cue],now=context.currentTime,oscillator=context.createOscillator(),gain=context.createGain();
  oscillator.type=score.type;oscillator.frequency.setValueAtTime(score.frequency,now);oscillator.frequency.exponentialRampToValueAtTime(score.end,now+score.duration);
- gain.gain.setValueAtTime(score.volume,now);gain.gain.exponentialRampToValueAtTime(.0001,now+score.duration);
+ gain.gain.setValueAtTime(Math.max(.0001,score.volume*Math.min(1,attenuation)),now);gain.gain.exponentialRampToValueAtTime(.0001,now+score.duration);
  oscillator.connect(gain);gain.connect(context.destination);
  const voice={oscillator,gain};voices.add(voice);
  oscillator.onended=()=>{voices.delete(voice);oscillator.disconnect();gain.disconnect();};

@@ -1,3 +1,9 @@
+import { readPersonalTransportRenderSnapshot } from "./world/personal-transport-render-snapshot";
+import { railPolyline } from "../shared/rail-convoy";
+import { transportSchedule } from "../shared/transport-schedule";
+import { localTransportLegMs } from "../shared/transport-local-leg";
+import { countryAirportReservations, readCountryAirportSites } from "./world/city-airport-site-store";
+import { readCountryTransportNetworks, synchronizeCountryTransportNetworks } from "./world/country-transport-network-store";
 import { buildPlanetSeaRoutes } from "../shared/planet-port-transport";
 import { projectForeignSea, projectForeignRail } from "./world/country-foreign-rail";
 import { internationalAirConnections } from "./world/international-air-connections";
@@ -664,7 +670,10 @@ export class AppService {
                                   if (raced.request_hash !== requestHash) throw new DomainError("CONFLICT", "Этот idempotencyKey уже использован с другими данными");
                                   return this.rehydrateGenerationResult(countryId, operation, json<T>(raced.response_json));
                                 }
+                                const transportMutation=/^(?:task\.(?:create|delete|transfer|status)|city\.(?:create|delete)|district\.delete|country\.regenerate)\.v\d+$/.test(operation);
+                                const transportBefore=transportMutation?await readCountryTransportNetworks(this.db,countryId):null;
                                 const result = await callback();
+                                if(transportBefore && await synchronizeCountryTransportNetworks(this.db,countryId,transportBefore))result.eventPayload.transportTopologyChanged=true;
                                 if (["city.created", "city.deleted", "district.created", "district.deleted", "task.created", "task.deleted", "task.transferred", "country.regenerated"].includes(result.eventType)) {
                                   // A newly connected remote city also needs a
                                   // fresh scene. Ordinary task changes must not
@@ -837,11 +846,12 @@ export class AppService {
       FROM cities_v3 city JOIN country_members member ON member.country_id=city.country_id
       WHERE member.user_id=? ORDER BY city.created_at,city.id`).all<Row>(userId);
     const miniatures = await readPlanetMiniatures(this.db, userId);
+    const airportSitesByCountry=new Map(await Promise.all(rows.map(async row=>[String(row.id),await readCountryAirportSites(this.db,String(row.id))] as const)));
     const clusters = new Map<string, PlanetAtlasDto["countries"][number]["cities"]>();
     for (const row of clusterRows) {
       const group = clusters.get(String(row.country_id)) ?? [];
       const infrastructure = json<Array<{ taskId: string; slotKey: string; role?: "AIRPORT" | "RAILWAY" | "PORT"; block: Row }>>(row.airports);
-      const endpoints = (role: "AIRPORT" | "RAILWAY") => infrastructure.filter(item => (item.role ?? "AIRPORT") === role).map(item => ({
+      const endpoints = (role: "AIRPORT" | "RAILWAY") => infrastructure.filter(item => (item.role ?? "AIRPORT") === role && (role!=="AIRPORT" || airportSitesByCountry.get(String(row.country_id))?.get(String(row.id))?.some(site=>site.taskId===item.taskId&&site.plan))).map(item => ({
         taskId: item.taskId,
         center: transportEndpointFromPlacementRow({ ...item.block, task_id: item.taskId, slot_key: item.slotKey, airport_city_id: row.id }, role).point,
       }));
@@ -853,7 +863,9 @@ export class AppService {
       group.push({ports,id:String(row.id),name:String(row.name),miniature:miniatures.get(String(row.id)) ?? [],center:{x:Number(row.center_x),y:Number(row.center_y)},districts:json(row.districts),airports:endpoints("AIRPORT"),stations:endpoints("RAILWAY")});
       clusters.set(String(row.country_id),group);
     }
+    const transportNetworks=new Map(await Promise.all(rows.map(async row=>[String(row.id),await readCountryTransportNetworks(this.db,String(row.id))] as const)));
     const countries = rows.map((row) => ({
+      transportNetworks:transportNetworks.get(String(row.id))!,
       id: String(row.id), name: String(row.name), seed: Number(row.seed), worldVersion: Number(row.world_version),
       terrainProfile: parseWorldTerrainProfile(row.terrain_profile_json),
       cityCount: Number(row.city_count), districtCount: Number(row.district_count), buildingCount: Number(row.building_count),
@@ -868,18 +880,19 @@ export class AppService {
     const source: PlanetAtlasDto = { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed, revision: "", countries };
     const privateGeography=await readOrExtendPersonalPlanet(this.db,userId,source);
     const geography = visiblePersonalPlanet(privateGeography,source);
-    const sectors=new Set(countries.filter(country=>country.cities.some(city=>city.ports?.length)).map(country=>geography.countries[country.id]?.sector??0));
-    const seaRoutes=[...sectors].sort((a,b)=>a-b).flatMap(sector=>{
+    const sectors=new Set(countries.filter(country=>country.cities.some(city=>city.airports.length||city.ports?.length||city.stations?.length)).map(country=>geography.countries[country.id]?.sector??0));
+    const snapshots=await Promise.all([...sectors].sort((a,b)=>a-b).map(async sector=>{
       const blocked=new Set([
         ...Object.values(privateGeography.countries).filter(country=>(country.sector??0)===sector).flatMap(country=>country.cells),
         ...privateGeography.coastCells.filter(cell=>(cell.sector??0)===sector),
       ].map(cell=>`${cell.q},${cell.r}`));
-      return buildPlanetSeaRoutes(projectPlanetAtlas({...source,geography},sector),{blocked,coastOwners:privateGeography.coastOwners});
-    });
-    const canonical = JSON.stringify({countries,geography,seaRoutes}, (_key,value: unknown) => value && typeof value === "object" && !Array.isArray(value)
+      return readPersonalTransportRenderSnapshot(this.db,userId,sector,projectPlanetAtlas({...source,geography},sector),{blocked,coastOwners:privateGeography.coastOwners});
+    }));
+    const airRoutes=snapshots.flatMap(snapshot=>snapshot.air),seaRoutes=snapshots.flatMap(snapshot=>snapshot.ships),railRoutes=snapshots.flatMap(snapshot=>snapshot.rails);
+    const canonical = JSON.stringify({countries,geography,airRoutes,seaRoutes,railRoutes}, (_key,value: unknown) => value && typeof value === "object" && !Array.isArray(value)
       ? Object.fromEntries(Object.keys(value).sort().map(key=>[key,(value as Record<string,unknown>)[key]])) : value);
     const revision = createHash("sha256").update(canonical).digest("hex").slice(0,16);
-    return { ...source, geography, seaRoutes, revision };
+    return { ...source, geography, airRoutes,seaRoutes,railRoutes, revision };
   }
 
   async getWorldManifest(user: AuthUser): Promise<BootstrapDto["worldManifest"]> {
@@ -1100,20 +1113,18 @@ export class AppService {
     const railNames = new Map(projectedPlanet.countries.flatMap(country=>country.cities.map(city=>[city.id,city.name??country.name] as const)));
     const railConnections = buildPlanetRailways(projectedPlanet)
       .filter(route=>route.fromCountryId===countryId || route.toCountryId===countryId)
-      .map(({id,fromStationId,toStationId,fromCityId,toCityId,fromCountryId,toCountryId,points})=>{
-        const foreign=fromCountryId!==toCountryId;
-        const segment=foreign?projectForeignRail(points,[...projectedPlanet.countries.flatMap(c=>c.cells),...projectedPlanet.coastCells],geography,projectedPlanet.hexRadius,fromCountryId===countryId):null;
-        return {id,fromStationId,toStationId,fromCityId,toCityId,
-          ...(foreign?{fromCityName:railNames.get(fromCityId),toCityName:railNames.get(toCityId),points:segment?.points??[],progressRange:segment?.progressRange}:{}),};
+      .map(({id,fromStationId,toStationId,fromCityId,toCityId,fromCountryId,toCountryId,points,scheduleOffsetMs})=>{
+        const segment=projectForeignRail(points,[...projectedPlanet.countries.flatMap(c=>c.cells),...projectedPlanet.coastCells],geography,projectedPlanet.hexRadius,fromCountryId===countryId);
+        return {id,fromStationId,toStationId,fromCityId,toCityId,fromCountryId,toCountryId,scheduleOffsetMs,fromCityName:railNames.get(fromCityId),toCityName:railNames.get(toCityId),points:segment?.points??[],progressRange:segment?.progressRange};
       });
     const seaConnections = buildPlanetSeaRoutes(projectedPlanet)
       .filter(route => route.fromCountryId === countryId || route.toCountryId === countryId)
       .flatMap(route => {
         const segment = projectForeignSea(route.points, projectedPlanet.oceanCells.map(c => ({...c,id:`ocean:${c.q}:${c.r}`})), geography, projectedPlanet.hexRadius, route.fromCountryId === countryId);
         return [{id:route.id,fromPortId:route.fromPortId,toPortId:route.toPortId,
-          fromCityId:route.fromCityId,toCityId:route.toCityId,fromCityName:railNames.get(route.fromCityId),toCityName:railNames.get(route.toCityId),...(segment??{points:[],progressRange:[0,0] as [number,number]})}];
+          fromCityId:route.fromCityId,toCityId:route.toCityId,fromCountryId:route.fromCountryId,toCountryId:route.toCountryId,fromCityName:railNames.get(route.fromCityId),toCityName:railNames.get(route.toCityId),scheduleOffsetMs:route.scheduleOffsetMs,...(segment??{points:[],progressRange:[0,0] as [number,number]})}];
       });
-    const overviewWithoutRevision = {
+    const overviewWithoutRevision:Omit<CountryOverviewDto,'revision'|'groundRoads'> = {
       railConnections, seaConnections,
       schemaVersion: COUNTRY_OVERVIEW_SCHEMA_VERSION,
       countryId,
@@ -1141,9 +1152,17 @@ export class AppService {
       }),
       connections: projection.connections as CountryOverviewDto["connections"],
     };
+    const transportCities=projectedPlanet.countries.flatMap(country=>country.cities);
+    overviewWithoutRevision.transportPeers=Object.fromEntries(overviewWithoutRevision.cities.map(city=>[city.id,{
+      AIR:transportCities.some(peer=>peer.id!==city.id&&peer.airports.length>0),
+      RAIL:transportCities.some(peer=>peer.id!==city.id&&(peer.stations?.length??0)>0),
+      SEA:transportCities.some(peer=>peer.id!==city.id&&(peer.ports?.length??0)>0),
+    }]));
+    const readyAirportIds=new Set(projectedPlanet.countries.find(country=>country.id===countryId)?.cities.flatMap(city=>city.airports.map(airport=>airport.taskId))??[]);
+    for(const city of overviewWithoutRevision.cities)city.miniature.airports=city.miniature.airports.filter(airport=>readyAirportIds.has(airport.taskId));
     overviewWithoutRevision.connections = countryAirNetwork(overviewWithoutRevision.cities.flatMap(city=>
-      city.miniature.airports.map(airport=>({...airport,cityId:city.id}))))
-      .map(({from,to})=>({fromCityId:from.cityId,toCityId:to.cityId,fromAirportId:from.taskId,toAirportId:to.taskId}));
+      city.miniature.airports.map(airport=>({...airport,cityId:city.id}))),projectedPlanet.countries.find(country=>country.id===countryId)?.transportNetworks?.AIR)
+      .map(({from,to})=>({fromCityId:from.cityId,toCityId:to.cityId,fromCountryId:countryId,toCountryId:countryId,fromAirportId:from.taskId,toAirportId:to.taskId,scheduleOffsetMs:projectedPlanet.routes.find(route=>route.id===transportSchedule("AIR",from.taskId,to.taskId).id)?.scheduleOffsetMs}));
     for (const route of internationalAirConnections(projectedPlanet,countryId)) {
       const localFrom = route.from.countryId === countryId;
       const local = localFrom ? route.from : route.to;
@@ -1153,9 +1172,9 @@ export class AppService {
       const point = {x:city.atlasCenter.x+(airport.x-city.miniature.columns/2)*.72,y:city.atlasCenter.y+(airport.y-city.miniature.rows/2)*.72};
       const remote = transportOffmapPoint(point,localFrom?route.atlasFrom:route.atlasTo,localFrom?route.atlasTo:route.atlasFrom,
         {minX:0,minY:0,maxX:geography.grid.columns*geography.grid.cellSize,maxY:geography.grid.rows*geography.grid.cellSize});
-      overviewWithoutRevision.connections.push({fromCityId:route.from.cityId,toCityId:route.to.cityId,
+      overviewWithoutRevision.connections.push({fromCityId:route.from.cityId,toCityId:route.to.cityId,fromCountryId:route.from.countryId,toCountryId:route.to.countryId,
         fromAirportId:route.from.taskId,toAirportId:route.to.taskId,
-        fromCityName:route.from.cityName,toCityName:route.to.cityName,...(localFrom?{toPoint:remote}:{fromPoint:remote})});
+        fromCityName:route.from.cityName,toCityName:route.to.cityName,scheduleOffsetMs:route.scheduleOffsetMs,...(localFrom?{toPoint:remote}:{fromPoint:remote})});
     }
     const countryRoads = await readCountryRoads(this.db, countryId);
     if (!countryRoads && [...layoutsByCity.values()].some(layout => layout.blocks.length > 0)) {
@@ -1199,6 +1218,11 @@ export class AppService {
       for (const district of result.districts) district.name = nameById.get(district.id);
       const needsNetwork = result.services.some(service => (service.role === "AIRPORT" || service.role === "RAILWAY" || service.role === "PORT") && service.state === "READY");
       result.transport = cityTransportDevelopment(cityId, result.services, needsNetwork ? await this.getCountryOverview(userId,countryId) : undefined);
+      if(needsNetwork&&layout?.placements.some(placement=>placement.serviceRole==="AIRPORT")){
+        const sites=(await readCountryAirportSites(this.db,countryId)).get(cityId)??[];
+        const air=result.transport.find(network=>network.kind==="AIR")!;
+        if(sites.some(site=>site.stage===5)&&!sites.some(site=>site.stage===5&&site.plan)){air.state="NOT_READY";air.reason="NO_AIRFIELD";air.routes=[];}
+      }
       return result;
     });
   }
@@ -1213,7 +1237,7 @@ export class AppService {
     const scene = await this.getCityScene(countryId,cityId);
     // Ordinary cities must not load/project the planet just to open their scene.
     const hasAirport = [...scene.chunks.flatMap(chunk=>chunk.tasks),...scene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)]
-      .some(task=>task.cityId===cityId && task.serviceRole==="AIRPORT" && task.stage===5 && task.status==="COMPLETED");
+      .some(task=>task.cityId===cityId && task.serviceRole==="AIRPORT" && task.stage===5 && task.status==="COMPLETED" && scene.airports?.some(airport=>airport.taskId===task.id&&airport.plan));
     if (!scene.railway?.running && !hasAirport && !scene.ports?.some(port=>port.stage===5)) {
       // A coastal owner can develop a port without first opening PLANET. Only
       // the viewer's missing city anchor is initialized; ordinary inland scenes
@@ -1232,11 +1256,18 @@ export class AppService {
       const remote=transportOffmapPoint(local.point,localFrom?route.atlasFrom:route.atlasTo,localFrom?route.atlasTo:route.atlasFrom,scene.city.bounds);
       const endpoint=(value:typeof route.from,point:Cell)=>({taskId:value.taskId,cityId:value.cityId,point});
       const from=endpoint(route.from,localFrom?route.from.point:remote),to=endpoint(route.to,localFrom?remote:route.to.point);
-      airportConnections.push({id:`${from.taskId}:${to.taskId}`,from,to},{id:`${to.taskId}:${from.taskId}`,from:to,to:from});
+      airportConnections.push({id:`${from.taskId}:${to.taskId}`,from,to,scheduleOffsetMs:route.scheduleOffsetMs},{id:`${to.taskId}:${from.taskId}`,from:to,to:from,scheduleOffsetMs:route.scheduleOffsetMs});
     }
     const railConnections = buildPlanetRailways(projected)
       .filter(route=>(route.fromCityId===cityId || route.toCityId===cityId))
-      .map(({id,fromStationId,toStationId,fromCityId,toCityId})=>({id,fromStationId,toStationId,fromCityId,toCityId}));
+      .map(({id,fromStationId,toStationId,fromCityId,toCityId,fromCountryId,toCountryId,scheduleOffsetMs,points})=>{
+        const line=scene.railway;if(!line)return {id,fromStationId,toStationId,fromCityId,toCityId,scheduleOffsetMs};
+        const localFrom=fromCityId===cityId,local=localFrom?points[0]!:points.at(-1)!,remote=localFrom?points.at(-1)!:points[0]!;
+        const tangent=line.axis==="horizontal"?remote.x-local.x:remote.y-local.y;
+        const exit=tangent>=0?line.to:line.from;
+        const distance=Math.hypot(exit.x-line.platform.x,exit.y-line.platform.y);
+        return {id,fromStationId,toStationId,fromCityId,toCityId,fromCountryId,toCountryId,scheduleOffsetMs,exit,localTravelMs:localTransportLegMs("RAIL",distance,transportSchedule("RAIL",fromStationId,toStationId).travelMs)};
+      });
     const seaConnections = buildPlanetSeaRoutes(projected).flatMap(route => {
       const localFrom=route.fromCityId===cityId;
       if(!localFrom && route.toCityId!==cityId)return [];
@@ -1245,7 +1276,7 @@ export class AppService {
       const points=port.plan.waterPath.map(p=>({x:p.x+.5,y:p.y+.5}));
       if(!localFrom)points.reverse();
       return [{id:route.id,fromPortId:route.fromPortId,toPortId:route.toPortId,fromCityId:route.fromCityId,toCityId:route.toCityId,
-        points,progressRange:(localFrom?[0,.12]:[.88,1]) as [number,number]}];
+        scheduleOffsetMs:route.scheduleOffsetMs,points,progressRange:(()=>{const length=railPolyline(points).length,fraction=localTransportLegMs("SEA",length,transportSchedule("SEA",route.fromPortId,route.toPortId).travelMs)/transportSchedule("SEA",route.fromPortId,route.toPortId).travelMs;return localFrom?[0,fraction]:[1-fraction,1];})() as [number,number]}];
     });
     return {...scene,airportConnections,railConnections,seaConnections,sceneRevision:stableHash({scene:scene.sceneRevision,airportConnections,railConnections,seaConnections})};
   }
@@ -1278,6 +1309,7 @@ export class AppService {
       const plan = (layout.blocks.find(block => block.id === p.blockId)?.parameters.slotPortPlans as Record<string, import("../shared/port-site").LocalPortSitePlan> | undefined)?.[p.slotKey];
       return plan ? [{ taskId: p.taskId, stage: p.constructionStage, plan }] : [];
     });
+    const airports=layout.placements.some(p=>p.serviceRole==="AIRPORT")?(await readCountryAirportSites(this.db,countryId)).get(cityId)??[]:[];
     const sceneBounds = ports.flatMap(port => [...port.plan.approach, ...port.plan.pier, ...port.plan.waterPath, port.plan.berth]).reduce((bounds, p) => ({
       minX: Math.min(bounds.minX, p.x - 2), minY: Math.min(bounds.minY, p.y - 2),
       maxX: Math.max(bounds.maxX, p.x + 2), maxY: Math.max(bounds.maxY, p.y + 2),
@@ -1344,7 +1376,7 @@ export class AppService {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       cityId,
       bounds: sceneBounds,
-      ports,
+      ports,airports,
       airportConnections,
       railway,
       intercityRoads,
@@ -1355,7 +1387,7 @@ export class AppService {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       sceneRevision: stableHash(sceneIdentity),
       city: { id: city.id, name: city.name, center: city.center, bounds: sceneBounds },
-      ports,
+      ports,airports,
       lod: "DETAIL",
       chunkSize: CHUNK_SIZE,
       chunks: sceneChunks,
@@ -1792,7 +1824,7 @@ export class AppService {
     if (cities.length >= 100) throw new DomainError("CAPACITY_EXCEEDED", "В стране уже 100 городов. Создайте другую страну для дальнейшего расширения.");
     const historical = await permanentSiteBounds(this.db,countryId,true);
     const roads = intercityRoadCorridors((await readCountryRoads(this.db, countryId))?.plan.routes ?? []);
-    const site = findCompactCitySite(seed, [...cities.map(city => city.bounds),...historical], [...roads,...await countryRailwayReservations(this.db,countryId),...await countryPortReservations(this.db,countryId)], terrainProfile);
+    const site = findCompactCitySite(seed, [...cities.map(city => city.bounds),...historical], [...roads,...await countryRailwayReservations(this.db,countryId),...await countryPortReservations(this.db,countryId),...await countryAirportReservations(this.db,countryId)], terrainProfile);
     if (site) return site;
     throw new DomainError("PLACEMENT_UNAVAILABLE","Не удалось найти сухую площадку для квартальной сетки города");
   }

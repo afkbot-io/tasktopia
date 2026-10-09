@@ -4,7 +4,9 @@ export type DevelopmentObjectState = "PLANNED" | "BUILDING" | "TESTING" | "READY
 export type CityTransportDevelopmentDto = {
   kind: "AIR" | "RAIL" | "SEA";
   state: "NOT_READY" | "NO_CONNECTION" | "CONNECTED";
-  routes: { id: string; destinationCityId: string; destinationName: string; travelMs: number; dwellMs: number }[];
+  reason?:"NO_AIRFIELD"|"NO_READY_PEER"|"NO_CORRIDOR";
+  routes: { id: string; destinationCityId: string;destinationCountryId?:string; destinationName: string; travelMs: number; dwellMs: number;
+    stopId?:string;schedule?:import("./transport-schedule").TransportSchedule; }[];
 };
 export type CityDevelopmentDto = {
   /** Optional for older servers; routes include only currently accessible countries. */

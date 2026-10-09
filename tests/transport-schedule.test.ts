@@ -9,7 +9,7 @@ it.each(["AIR","RAIL","SEA"] as const)("shares a round trip across projections a
   expect(transportProgress(route,"b",midpoint).direction).toBe(-1);
   expect(sampleTransportSchedule(route,base+route.dwellMs+route.travelMs)).toMatchObject({phase:"STOPPED",progress:1});
   expect(sampleTransportSchedule(route,base+2*route.dwellMs+1.5*route.travelMs)).toMatchObject({phase:"MOVING",progress:.5,direction:-1});
-  expect(sampleTransportSchedule(route,base+2*(route.dwellMs+route.travelMs))).toMatchObject({phase:"WAITING",progress:0});
+  expect(sampleTransportSchedule(route,base+2*(route.dwellMs+route.travelMs))).toMatchObject({phase:route.gapMs?"WAITING":"STOPPED",progress:0});
   const state=sampleTransportSchedule(route,midpoint);
   expect(sampleTransportSchedule(route,midpoint+state.cycleMs*100)).toEqual(state);
 });

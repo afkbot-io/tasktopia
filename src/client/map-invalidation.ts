@@ -16,6 +16,7 @@ export type MapInvalidation = {
   groundChanged?: boolean;
   /** A canonical country-road snapshot changed in this mutation transaction. */
   groundRoadTopologyChanged?: boolean;
+  transportTopologyChanged?: boolean;
   serviceRole?: BlockServiceRole;
   cityId?: string;
   changedFields?: string[];
@@ -29,13 +30,13 @@ export function mapInvalidationAffectsCity(event: MapInvalidation, cityId?: stri
   // Each city contains routes to remote completed transport stops. Deletion payloads
   // may no longer contain the removed task's role, so invalidate conservatively.
   return !cityId || !event.cityId || event.cityId === cityId || event.resync === true
-    || event.groundRoadTopologyChanged === true
+    || event.groundRoadTopologyChanged === true || event.transportTopologyChanged === true
     || event.serviceRole === 'AIRPORT' || event.serviceRole === 'RAILWAY' || event.serviceRole === 'PORT'
     || ['country.regenerated', 'task.deleted', 'district.deleted', 'city.deleted'].includes(event.type);
 }
 
 export function mapInvalidationImpact(event: MapInvalidation): MapInvalidationImpact {
-  if (event.resync || event.groundRoadTopologyChanged === true) return 'SCENE';
+  if (event.resync || event.groundRoadTopologyChanged === true || event.transportTopologyChanged === true) return 'SCENE';
   if (['task.comment_added', 'task.assignee_changed', 'country.profile_updated', 'archive.record_updated'].includes(event.type)) return 'NONE';
   if (event.type === 'task.fields_updated' && event.changedFields?.length
     && event.changedFields.every(field => TASK_DETAIL_FIELDS.has(field))) return 'NONE';
@@ -86,6 +87,7 @@ export function eventInvalidation(event: RealtimeEvent): MapInvalidation {
     stage: typeof event.payload.stage === "number" ? event.payload.stage : undefined,
     groundChanged: typeof event.payload.groundChanged === "boolean" ? event.payload.groundChanged : undefined,
     groundRoadTopologyChanged: event.payload.groundRoadTopologyChanged === true ? true : undefined,
+    transportTopologyChanged: event.payload.transportTopologyChanged === true ? true : undefined,
     serviceRole: BLOCK_SERVICE_ROLES.includes(event.payload.serviceRole as BlockServiceRole)
       ? event.payload.serviceRole as BlockServiceRole : undefined,
     cityId: typeof event.payload.cityId === 'string' ? event.payload.cityId

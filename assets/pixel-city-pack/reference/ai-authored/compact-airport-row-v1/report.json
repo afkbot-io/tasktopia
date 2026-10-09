@@ -1,0 +1,189 @@
+{
+  "key": "compact-airport-row-v1",
+  "contract": "geometry.json",
+  "normalization": "One common aspect-preserving source frame derived from stage 5; identical transform for all stages; nearest-neighbour scaling, hard alpha and palette quantization only. Never redraw geometry, warp axes, or independently recenter a reverse stage.",
+  "sourceCanvas": [
+    1774,
+    887
+  ],
+  "sourceBackground": "transparent",
+  "commonSourceFrame": [
+    83,
+    81,
+    1691,
+    806
+  ],
+  "uniformScale": 0.029850746268656716,
+  "targetSize": [
+    48,
+    22
+  ],
+  "offset": [
+    0,
+    2
+  ],
+  "paletteMethod": "MEDIANCUT",
+  "stages": {
+    "5": {
+      "sourceSha256": "6294a70f8c63e5a18b1f3c08cdddaeff6bdac29fe598d7e5f7ace1ad430235c7",
+      "runtimeSha256": "6a95408a49ed2d454e1e7ee7797755fe7bc05ceb71cb8ab57318128565a759fc",
+      "sourceBounds": [
+        83,
+        81,
+        1691,
+        806
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        24
+      ],
+      "occupiedSizePx": [
+        48,
+        22
+      ],
+      "paletteColors": 31,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "4": {
+      "sourceSha256": "658d1108d1d315840b071cdfcf336d66e9c29495b3ecaaae8f29880b03a6ba00",
+      "runtimeSha256": "241f49c1eeca7741c7766a7fe9e38a09387bae8de15abeb44c69716c7d50bcb7",
+      "sourceBounds": [
+        82,
+        78,
+        1692,
+        806
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        24
+      ],
+      "occupiedSizePx": [
+        48,
+        22
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    },
+    "3": {
+      "sourceSha256": "8fe16dc746a8ae1a9fb509625c813e386b625f5f48faa41bd1bc53a5429bfc07",
+      "runtimeSha256": "07f9ed32a3512feccfe9906739021087cd2315c40300088a1e5f01551badfc93",
+      "sourceBounds": [
+        80,
+        72,
+        1695,
+        809
+      ],
+      "occupiedBoundsPx": [
+        0,
+        2,
+        48,
+        24
+      ],
+      "occupiedSizePx": [
+        48,
+        22
+      ],
+      "paletteColors": 32,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "transparentHolePixels": 0,
+      "centreDriftPx": 0.0,
+      "baselineDriftPx": 0,
+      "foundationMaskDifferencePixels": 0,
+      "foundationMaskMaxDriftPx": 0
+    }
+  },
+  "errors": [],
+  "semanticChecksRequireVisualReview": [
+    "roof-dominant axis-aligned high camera",
+    "same entrance and contracted floor rhythm",
+    "no receding side wall",
+    "stage-4 roof coverage approximately 50% and no final roof equipment",
+    "stage-3 open rooms with opaque floor and interior walls",
+    "no external fence, scenery or black baseline",
+    "same building identity in all stages"
+  ],
+  "visualReview": {
+    "key": "compact-airport-row-v1",
+    "reviewedAt": "2026-10-09",
+    "reviewMethod": "\u041f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u044b \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e \u043d\u0430\u0442\u0438\u0432\u043d\u044b\u04353/4/5\u04388xgrid, \u0440\u044f\u0434 \u0441\u0442\u0430\u0434\u0438\u0439 \u0438 \u043f\u0438\u043a\u0441\u0435\u043b\u044c\u043d\u044b\u0435 \u043a\u043e\u043e\u0440\u0434\u0438\u043d\u0430\u0442\u044b \u0432\u0445\u043e\u0434\u0430. \u041e\u0431\u0449\u0430\u044f \u043d\u043e\u0440\u043c\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f, \u0431\u0435\u0437 \u043f\u0435\u0440\u0435\u0440\u0438\u0441\u043e\u0432\u043a\u0438 \u0433\u0435\u043e\u043c\u0435\u0442\u0440\u0438\u0438. \u0418\u0433\u0440\u043e\u0432\u0430\u044f \u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442\u0441\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e.",
+    "projection": {
+      "camera": "\u0412\u044b\u0441\u043e\u043a\u0430\u044f \u0444\u0440\u043e\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f45\u00b0, \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u044b\u0435 \u043b\u0438\u043d\u0438\u0438 \u043f\u043e \u043e\u0441\u044f\u043c, \u0431\u0435\u0437 \u0431\u043e\u043a\u043e\u0432\u043e\u0439 \u0441\u0442\u0435\u043d\u044b.",
+      "roofDepthPx": 17,
+      "facadeHeightPx": 5,
+      "floorStepPx": 5,
+      "floorCount": 1,
+      "doorLeafSizePx": [
+        4,
+        3
+      ],
+      "doorFrameSizePx": [
+        6,
+        5
+      ],
+      "doorLeafRectPx": [
+        22,
+        21,
+        4,
+        3
+      ],
+      "southEntranceAxisPx": 24,
+      "sideFacadeWidthPx": 0,
+      "primaryRoofIsDominantSurface": true,
+      "roofAndFloorLinesAreAxisAligned": true,
+      "sameCameraAcrossStages": true,
+      "noHeavyBlackBaseline": true
+    },
+    "stages": {
+      "3": {
+        "accepted": true,
+        "sourceSha256": "8fe16dc746a8ae1a9fb509625c813e386b625f5f48faa41bd1bc53a5429bfc07",
+        "runtimeSha256": "07f9ed32a3512feccfe9906739021087cd2315c40300088a1e5f01551badfc93",
+        "notes": "\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043d\u0435\u043f\u0440\u043e\u0437\u0440\u0430\u0447\u043d\u044b\u0435 \u043a\u043e\u043c\u043d\u0430\u0442\u044b; \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0439 \u043d\u0438\u0437\u043a\u0438\u0439 \u0444\u0440\u043e\u043d\u0442 \u0438 \u0442\u0451\u043c\u043d\u044b\u0439 \u0432\u0445\u043e\u0434, \u043a\u0440\u044b\u0448\u0430 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442."
+      },
+      "4": {
+        "accepted": true,
+        "sourceSha256": "658d1108d1d315840b071cdfcf336d66e9c29495b3ecaaae8f29880b03a6ba00",
+        "runtimeSha256": "241f49c1eeca7741c7766a7fe9e38a09387bae8de15abeb44c69716c7d50bcb7",
+        "notes": "\u041b\u0435\u0432\u0430\u044f \u043f\u043e\u043b\u043e\u0432\u0438\u043d\u0430 \u043a\u0440\u044b\u0448\u0438; \u0441\u043f\u0440\u0430\u0432\u0430 \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043a\u043e\u043c\u043d\u0430\u0442\u044b, \u0442\u0451\u043c\u043d\u044b\u0435 \u043e\u043a\u043d\u0430. \u0424\u0438\u043d\u0430\u043b\u044c\u043d\u043e\u0435 \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u0435 \u0441\u043d\u044f\u0442\u043e."
+      },
+      "5": {
+        "accepted": true,
+        "sourceSha256": "6294a70f8c63e5a18b1f3c08cdddaeff6bdac29fe598d7e5f7ace1ad430235c7",
+        "runtimeSha256": "6a95408a49ed2d454e1e7ee7797755fe7bc05ceb71cb8ab57318128565a759fc",
+        "notes": "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0439 \u0442\u0435\u0440\u043c\u0438\u043d\u0430\u043b6\u00d73: \u043a\u0440\u0435\u043c\u043e\u0432\u044b\u0439 \u0444\u0440\u043e\u043d\u0442, \u0431\u0438\u0440\u044e\u0437\u043e\u0432\u044b\u0435 \u043e\u043a\u043d\u0430, \u0448\u0438\u0440\u043e\u043a\u0430\u044f \u043f\u043b\u043e\u0441\u043a\u0430\u044f \u043a\u0440\u044b\u0448\u0430 \u0438 \u0432\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u0430\u044f \u0434\u0438\u0441\u043f\u0435\u0442\u0447\u0435\u0440\u0441\u043a\u0430\u044f."
+      }
+    },
+    "runtimeSceneReview": "ACCEPTED",
+    "runtimeSceneEvidence": {
+      "reviewedAt": "2026-10-09",
+      "assetRevision": "f5ba91abe09a928b",
+      "scope": "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u043d\u044b \u0444\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 CITY \u043a\u0430\u0434\u0440\u044b \u0432\u0441\u0435\u0445 \u043f\u044f\u0442\u0438 \u0441\u0442\u0430\u0434\u0438\u0439 \u0447\u0435\u0440\u0435\u0437 scene render seam. \u0421\u0442\u0430\u0434\u0438\u0438 1/2 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u044e\u0442 \u043e\u0431\u0449\u0443\u044e \u0441\u0442\u0440\u043e\u0439\u043a\u0443, 3/4/5 \u2014 \u043d\u0435\u0437\u0430\u0432\u0438\u0441\u0438\u043c\u044b\u0435 AI \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438. \u0420\u0430\u043a\u0443\u0440\u0441, \u0432\u0445\u043e\u0434 \u0438 footprint \u043d\u0435\u0438\u0437\u043c\u0435\u043d\u043d\u044b \u043c\u0435\u0436\u0434\u0443 \u0441\u0442\u0430\u0434\u0438\u044f\u043c\u0438.",
+      "screenshots": [
+        ".builder/transport-rework-2026-10-09/screenshots/render-states"
+      ]
+    }
+  }
+}
