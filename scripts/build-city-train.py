@@ -5,6 +5,7 @@ import importlib.util
 import json
 from pathlib import Path
 from PIL import Image
+from reviewed_png import save_reviewed_png
 ROOT=Path(__file__).resolve().parents[1]
 PACK=ROOT/'assets/pixel-city-pack'
 spec=importlib.util.spec_from_file_location('micro_builder',ROOT/'scripts/build-micro-ambient.py')
@@ -14,6 +15,23 @@ entries={}
 sheetPath=PACK/'reference/ai-authored/city-train-v3/sheet.png'
 sheet=Image.open(sheetPath).convert('RGBA')
 preview=Image.new('RGBA',(24*8,24),'#81955c')
+def publish(image,relative,source,sourceRect,key):
+ review_path=source.parent/'visual-review.json'
+ review=json.loads(review_path.read_text()) if review_path.is_file() else {}
+ approval=review.get('sprites',{}).get(key)
+ if approval and approval.get('accepted'):
+  if approval.get('sourceRect')!=list(sourceRect):
+   raise ValueError(f'{key}: authored extraction rectangle differs from review')
+ else:
+  approval=None
+ runtime=PACK/'runtime'/relative
+ runtime.parent.mkdir(parents=True,exist_ok=True)
+ source_sha=hashlib.sha256(source.read_bytes()).hexdigest()
+ digest=save_reviewed_png(image,runtime,source_sha,approval)
+ public=ROOT/'public/game-assets/v5'/relative
+ public.parent.mkdir(parents=True,exist_ok=True)
+ public.write_bytes(runtime.read_bytes())
+ return source_sha,digest
 for index,(part,direction) in enumerate((p,d) for p in ('locomotive','carriage') for d in ('east','north','west','south')):
  source=sheetPath
  column=0 if part=='locomotive' else 1
@@ -29,9 +47,8 @@ for index,(part,direction) in enumerate((p,d) for p in ('locomotive','carriage')
  if (direction in ('east','west') and not (width>=16 and 3<=height<=8)) or (direction in ('north','south') and not (height>=16 and 3<=width<=8)):
   raise ValueError(f'{part}-{direction}: wrong heading envelope {bounds}')
  relative=f'city-transport/{part}-{direction}.png'
- for base in (PACK/'runtime',ROOT/'public/game-assets/v5'):
-  output=base/relative;output.parent.mkdir(parents=True,exist_ok=True);image.save(output,optimize=True)
- entries[f'{part}-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(source.relative_to(PACK)),'sourceRect':list(sourceRect),'sourceSha256':hashlib.sha256(source.read_bytes()).hexdigest(),'sha256':hashlib.sha256(output.read_bytes()).hexdigest()}
+ source_sha,digest=publish(image,relative,source,sourceRect,f'{part}-{direction}')
+ entries[f'{part}-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(source.relative_to(PACK)),'sourceRect':list(sourceRect),'sourceSha256':source_sha,'sha256':digest}
  preview.alpha_composite(image,(index*24,0))
 (PACK/'city-train-manifest.json').write_text(json.dumps({'schemaVersion':2,'artSource':'AI_AUTHORED','styleProfile':'TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1','sprites':entries},indent=2)+'\n')
 preview.resize((1536,192),Image.Resampling.NEAREST).save(PACK/'reference/ai-authored/city-train-v3/preview.png')
@@ -43,9 +60,8 @@ for index,direction in enumerate(('east','north','west','south')):
  sourceRect=(column*ferrySheet.width//2,row*ferrySheet.height//2,(column+1)*ferrySheet.width//2,(row+1)*ferrySheet.height//2)
  image=micro.normalize(ferrySheet.crop(sourceRect),24,(16,6) if direction in ('east','west') else (6,16))
  relative=f'city-transport/ferry-{direction}.png'
- for base in (PACK/'runtime',ROOT/'public/game-assets/v5'):
-  output=base/relative;output.parent.mkdir(parents=True,exist_ok=True);image.save(output,optimize=True)
- entries[f'ferry-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(ferrySource.relative_to(PACK)),'sourceRect':list(sourceRect),'sourceSha256':hashlib.sha256(ferrySource.read_bytes()).hexdigest(),'sha256':hashlib.sha256(output.read_bytes()).hexdigest()}
+ source_sha,digest=publish(image,relative,ferrySource,sourceRect,f'ferry-{direction}')
+ entries[f'ferry-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(ferrySource.relative_to(PACK)),'sourceRect':list(sourceRect),'sourceSha256':source_sha,'sha256':digest}
  ferryPreview.alpha_composite(image,(index*24,0))
 (PACK/'city-train-manifest.json').write_text(json.dumps({'schemaVersion':2,'artSource':'AI_AUTHORED','styleProfile':'TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1','sprites':entries},indent=2)+'\n')
 ferryPreview.save(PACK/'reference/ai-authored/city-ferry-v1/native.png')
