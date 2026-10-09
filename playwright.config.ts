@@ -7,6 +7,9 @@ process.env.E2E_BASE_URL = baseURL;
 const seedCommand = process.env.E2E_SEED_COMMAND ?? "npm run seed:test";
 const testDatabaseURL = process.env.TEST_DATABASE_URL
   ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
+// The server and direct database fixtures must use the same isolated database.
+// webServer.env alone does not propagate this alias into Playwright workers.
+process.env.E2E_DATABASE_URL ??= testDatabaseURL;
 const serverPort = new URL(baseURL).port || (baseURL.startsWith("https:") ? "443" : "80");
 const webCommand = process.env.E2E_WEB_COMMAND
   ?? `${seedCommand} && npm run build && NODE_ENV=production PORT=${serverPort} SESSION_COOKIE_SECURE=false npm start`;
