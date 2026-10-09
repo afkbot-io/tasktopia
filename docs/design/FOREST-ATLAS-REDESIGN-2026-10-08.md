@@ -51,7 +51,7 @@
 | ENTRY-01 | AuthScreen, ui | вход/регистрация, domain cards, обычные/disabled поля, pending, несовпадение паролей, duplicate/503/retry, ссылка recovery |
 | ENTRY-02 | RecoveryScreen | четыре поля, ошибка, pending, success, возврат |
 | ENTRY-03 | InvitationEntry | приглашение/нет страны, accept/retry/pending/error, возврат |
-| SHELL-01 | App, ProfilePresence, TaskSearch | шапка PLANET/CITY, страна/город, поиск results/empty и существующее pending-состояние, номер/stage, профиль online/offline |
+| SHELL-01 | App, ProfilePresence, TaskSearch | шапка PLANET/CITY, страна/город, поиск results/loading/error/retry/empty, выбор стрелками/Enter, номер/stage, профиль online/offline |
 | SHELL-02 | GamePopover, CountrySwitcher | menu/filter/settings/legend disclosures, выбранная страна, loading/error, паспорт/города, keyboard/outside/Escape |
 | MAP-01 | PlanetAtlasCanvas, PlanetCityMiniature, PlanetCloud, AtlasShips, ScheduledAtlasFlights, ScheduledAtlasTrains | планета, sector select, подписи стран/городов, hover/focus, loading/empty/error/retry; спрайты/маршруты сохраняются |
 | MAP-02 | WorldCanvas, WorldAmbientLighting | CITY, HUD/подписи/badges, первый кадр, streaming/retry, пустота/ошибка; renderer/дороги/дома сохраняются |
@@ -73,7 +73,7 @@
 | PUBLIC-01 | share-preview.css, task-share-routes, task-share-image | публичный preview/отозванный404, CTA/keyboard, OG PNG с кириллицей, длинным текстом и географией |
 | PRIMITIVE-01 | ui, GameTabs, GamePopover, Markdown | buttons primary/secondary/quiet/danger, fields normal/hover/focus/disabled/invalid, tabs/summary, headings/code/table/list/blockquote |
 
-Исчерпывающий список 41 TSX-владельца снимается из AST и приводится в приложении ниже. Неиспользуемая UI-ветка не объявляется проверенной только из-за наличия CSS. Pure visual components карты проверяются в реальной PLANET/CITY-сцене.
+Исходный список 41 TSX-владельца снят из AST и приведён в приложении ниже. Последующий аудит добавляет общий `UiLoadState`; его состояния и актуальная карта проверки описаны в [дизайн-ревью](../QA-UI-DESIGN-REVIEW-2026-10-09.md). Неиспользуемая UI-ветка не объявляется проверенной только из-за наличия CSS. Pure visual components карты проверяются в реальной PLANET/CITY-сцене.
 
 ## Инварианты и границы
 
@@ -141,7 +141,9 @@ API, права, идентификаторы, ссылки, география,
 
 Локальные шрифты лежат в `public/fonts/manrope`; Vite выпускает два файла с content hash в `/assets/`. Worker устанавливает шрифты вместе с entry CSS, поэтому первая офлайн-перезагрузка сохраняет типографику. Lazy map/worker JS по-прежнему не входит в install graph; allowlist CDN остаётся точным списком build assets, приватные URL не кэшируются.
 
-Слои: нижняя навигация 10, предложение push 40, открытые боковые панели 42, шапка 45, модальные окна 50+, realtime-сообщения 80. Архив/районы/развитие доступны поверх предложения push. Нативный фокус и Escape сохраняются. Архив получил доступное имя в состояниях loading/error; подпись истории участка резервирует место под закрытие.
+Слои: нижняя навигация 10, предложение push 40, открытые боковые панели 42, шапка 45, модальные окна 50+, realtime-сообщения 80. Архив/районы/развитие доступны поверх предложения push. Общий `useDialogFocus` удерживает фокус в верхнем модальном окне, блокирует фон через `inert`, сохраняет существующее состояние блокировки и возвращает фокус при закрытии. Escape закрывает только верхний слой, вложенное превью обрабатывает его раньше карточки. Документы и список района/архива сохраняют контекст после просмотра задачи. Архив имеет доступное имя в loading/error и повтор запроса; подпись истории участка резервирует место под закрытие.
+
+Lazy-окна показывают закрываемый loader со статусом, а отказ JS — локальную ошибку `UiLoadBoundary`. Явное восстановление повторно читает неудачные modulepreload перед reload для WebKit; при обычном открытии новых сетевых запросов нет. Поиск сразу скрывает прежние строки и различает ожидание, пустоту и ошибку. На низком экране документы прокручиваются целиком с закреплённым заголовком. Длинный заголовок задачи прокручивается отдельно и сохраняет место для содержимого и кнопки закрытия.
 
 При ширине до 400px четыре вкладки карточки задачи располагаются в два ряда: подписи и счётчики сохраняют полный текст и не заходят в соседний контрол. Копирование ссылки при недоступном Clipboard API показывает readonly-поле в карточке с выделением всей ссылки при фокусе.
 

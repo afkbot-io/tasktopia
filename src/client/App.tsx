@@ -30,6 +30,7 @@ import { acknowledgeMapInvalidations, enqueueMapInvalidation, eventInvalidation,
 import { clearPushSubscriptionForLogout } from "./push-notifications";
 import { PushNotificationCard } from "./components/PushNotificationCard";
 import { SiteHistoryModal } from "./components/SiteHistoryModal";
+import { DialogLoadState, PanelLoadState, UiLoadBoundary } from "./components/UiLoadState";
 import { advanceMapSceneCaches, clearMapSceneCaches, invalidateTransportSceneCaches, loadCityScene, rememberCountryRevision } from "./map-scene-cache";
 import { clearTaskDetailCache, invalidateTaskDetails } from "./task-detail-cache";
 import { taskResolutionQuery } from "./task-navigation";
@@ -53,12 +54,7 @@ type BuildingNavigationTarget = Pick<BuildingEventContext, "id" | "origin" | "ci
 
 function TaskModalFallback({ onClose, standalone = false, error, onRetry }: { onClose: () => void; standalone?: boolean; error?: string; onRetry?: () => void }) {
   const dialogRef = useRef<HTMLElement>(null);
-  useDialogFocus(dialogRef);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useDialogFocus(dialogRef, { onClose });
   return <div className={`modal-backdrop task-inspector-backdrop${standalone ? " task-entry-backdrop" : ""}`} role="presentation">
     <section ref={dialogRef} className="task-modal task-inspector" role="dialog" aria-modal="true" aria-label={error ? "Задача недоступна" : "Загрузка задачи"}>
       <button className="modal-close" aria-label="Закрыть" onClick={onClose}>×</button>
@@ -532,10 +528,10 @@ export function App() {
   const activeCity = focusCity ?? bootstrap.initialCity;
   const dependencyScope = `${bootstrap.user.id}:${countryId}:${activeCity?.id}`;
   if (taskEntry) return <main className="task-entry" aria-label="Карточка задачи">
-    {selectedTask ? <Suspense fallback={<TaskModalFallback standalone onClose={closeTask} />}>
+    {selectedTask ? <UiLoadBoundary key={`${countryId}:${selectedTask}`} fallback={<DialogLoadState label="Задача" onClose={closeTask} error />}><Suspense fallback={<TaskModalFallback standalone onClose={closeTask} />}>
       <TaskModal onAuthenticationRequired={load} standalone key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision}
         onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} />
-    </Suspense> : <TaskModalFallback standalone onClose={closeTask} error={mapTransitionError} onRetry={() => { void openCanonicalTask(taskEntry, true); }} />}
+    </Suspense></UiLoadBoundary> : <TaskModalFallback standalone onClose={closeTask} error={mapTransitionError} onRetry={() => { void openCanonicalTask(taskEntry, true); }} />}
   </main>;
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "CITY" ? activeCity : null;
@@ -643,11 +639,11 @@ export function App() {
       }} />}
       {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
       {effectiveMapMode === "CITY" && dependencyTask?.scope === dependencyScope && <MapDependencies key={`${dependencyScope}:${dependencyTask.id}`} countryId={bootstrap.country.id} taskId={dependencyTask.id} scope={dependencyScope} revision={attentionRevision} onChange={setDependencyData} onClose={() => { setDependencyTask(undefined); setDependencyData({ scope: "" }); }} />}
-      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <Suspense fallback={<div className="city-development-panel" role="status">Загрузка…</div>}><CityDevelopmentPanel selectedRoute={selectedTransportRoute} key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} onRoute={id=>{setSelectedTransportRoute(id);closeDevelopment();}} onCity={(scope,id,name)=>{closeDevelopment();setSelectedTransportRoute(undefined);void openPlanetCity(scope,id,{x:.5,y:.5},name);}} /></Suspense>}
+      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <UiLoadBoundary key={dependencyScope} fallback={<PanelLoadState onClose={closeDevelopment} error />}><Suspense fallback={<PanelLoadState onClose={closeDevelopment} />}><CityDevelopmentPanel selectedRoute={selectedTransportRoute} key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} onRoute={id=>{setSelectedTransportRoute(id);closeDevelopment();}} onCity={(scope,id,name)=>{closeDevelopment();setSelectedTransportRoute(undefined);void openPlanetCity(scope,id,{x:.5,y:.5},name);}} /></Suspense></UiLoadBoundary>}
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
         setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true);
       }} />}
-      {documentsOpen && <Suspense fallback={<div role="status" className="app-loading">Открываем документы…</div>}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={setSelectedTask} /></Suspense>}
+      {documentsOpen && <UiLoadBoundary fallback={<DialogLoadState label="Документы" onClose={closeDocuments} error />}><Suspense fallback={<DialogLoadState label="Загрузка документов" onClose={closeDocuments} />}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={setSelectedTask} /></Suspense></UiLoadBoundary>}
       {directoryOpen && <CityDirectory key={`${countryId}:${directoryFocus?.districtId ?? "general"}`} initialFocus={directoryFocus} bootstrap={bootstrap} refreshToken={revision} initialSection={directorySection} onClose={() => setDirectoryOpen(false)} onCityFocus={(city) => {
         setDirectoryOpen(false);
         void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
@@ -664,11 +660,11 @@ export function App() {
       }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} />}
     </section>
 
-    {selectedTask && <Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense>}
+    {selectedTask && <UiLoadBoundary key={`${countryId}:${selectedTask}`} fallback={<DialogLoadState label="Задача" onClose={closeTask} error />}><Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense></UiLoadBoundary>}
     {selectedSite?.countryId === bootstrap.country.id && <SiteHistoryModal feature={selectedSite.feature} onClose={closeSite} />}
-    {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
+    {selectedArchiveRecord && <UiLoadBoundary key={selectedArchiveRecord} fallback={<DialogLoadState label="Архив" onClose={closeArchiveRecord} error />}><Suspense fallback={<DialogLoadState label="Загрузка архива" onClose={closeArchiveRecord} />}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense></UiLoadBoundary>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} onClose={() => setCountryDialog(null)} />}
-    {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
+    {tokensOpen && <UiLoadBoundary fallback={<DialogLoadState label="Настройки" onClose={closeSettings} error />}><Suspense fallback={<DialogLoadState label="Загрузка настроек" onClose={closeSettings} />}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense></UiLoadBoundary>}
     {!pushOfferDismissed && <PushNotificationCard compact onDismiss={() => {
       localStorage.setItem("tasktopia:push-offer-dismissed", "1");
       setPushOfferDismissed(true);

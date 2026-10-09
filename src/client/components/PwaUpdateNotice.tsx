@@ -7,7 +7,7 @@ export function PwaUpdateNotice() {
   if (deferred || state === "idle") return null;
   return <aside className="pwa-update-notice" data-state={state} aria-label="Обновление приложения">
     <div role="status"><strong>{state === "error" ? "Не удалось обновить приложение" : "Доступна новая версия Tasktopia"}</strong>
-      <p>{state === "updating" ? "Обновляем приложение…" : "Сохраните изменения перед обновлением. Карта откроется заново."}</p></div>
+      <p>{state === "updating" ? "Обновляем приложение…" : "После обновления карта откроется заново."}</p></div>
     <div className="pwa-update-actions">
     <button type="button" disabled={state === "updating"} onClick={pwaUpdate.apply}>{state === "error" ? "Повторить обновление" : "Обновить"}</button>
     <button type="button" disabled={state === "updating"} onClick={() => setDeferred(true)}>Позже</button>

@@ -5,8 +5,8 @@ import { AppService } from "../../src/server/app-service";
 const database = new URL(process.env.E2E_DATABASE_URL ?? "invalid");
 const schema = database.searchParams.get("options")?.match(/^-csearch_path=([a-z][a-z0-9_]*)$/)?.[1];
 if (!["127.0.0.1", "localhost"].includes(database.hostname) || database.pathname !== "/tasktopia_test"
-  || !schema?.startsWith("forest_ui_") || !/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL ?? "")) {
-  throw new Error("Forest UI fixtures require their own local forest_ui_ schema and loopback server");
+  || !schema || !(schema.startsWith("forest_ui_") || /^ui_design_[a-f0-9]{32}$/.test(schema)) || !/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL ?? "")) {
+  throw new Error("Forest UI fixtures require their own local forest_ui_ or ui_design_ schema and loopback server");
 }
 const [countryId, cityId] = process.argv.slice(2);
 if (!countryId || !cityId) throw new Error("Pass the fixture country and city IDs");

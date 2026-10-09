@@ -29,25 +29,38 @@ test("архив, его ошибки и история участка чита�
   await page.getByRole("button", { name: "Архив проекта", exact: true }).click();
   await page.route(`**/api/archive/records/${record.id}`, route => route.fulfill({ status: 503, json: { message: "Архив временно недоступен" } }));
   await page.getByRole("button", { name: new RegExp(record.title) }).click();
-  await expect(modal.getByRole("alert")).toHaveText("Архив временно недоступен");
+  await expect(modal.getByRole("alert")).toContainText("Архив временно недоступен");
   expect((await new AxeBuilder({ page }).include(".archive-record-modal").withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([]);
   await page.screenshot({ path: info.outputPath("archive-error.png") });
   await page.keyboard.press("Escape");
   await page.unroute(`**/api/archive/records/${record.id}`);
-  // Escape closes the underlying drawer together with the record in the current flow.
+  // The record closes independently. Finish the archive journey before panning.
+  await page.getByRole("button", { name: "Закрыть список", exact: true }).click();
   await openMapCity(page);
   const world = page.locator(".world-canvas");
   await expect(world).toHaveAttribute("data-city-scene-commit", "atomic");
+  await expect(page.locator(".map-level-transition")).toHaveCount(0);
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
+  expect(await canvas.evaluate(el => Boolean(el.closest("[inert]")))).toBe(false);
   const box = (await canvas.boundingBox())!;
   const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  const hit = await page.evaluate(p => { const el = document.elementFromPoint(p.x, p.y); return { tag: el?.tagName, class: el?.getAttribute("class") }; }, center);
   const x = task.origin.x + 3, y = task.origin.y + 2;
-  const scale = Number(await world.getAttribute("data-render-scale"));
-  const cameraX = Number(await world.getAttribute("data-camera-world-x")), cameraY = Number(await world.getAttribute("data-camera-world-y"));
-  await page.mouse.move(center.x, center.y); await page.mouse.down();
-  await page.mouse.move(center.x + (cameraX - x) * 8 * scale, center.y + (cameraY - y) * 8 * scale, { steps: 10 }); await page.mouse.up();
+  // Keep each drag inside the phone viewport: a single long drag can leave the
+  // browser window before reaching an outer plot and stop delivering pointers.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const scale = Number(await world.getAttribute("data-render-scale"));
+    const cameraX = Number(await world.getAttribute("data-camera-world-x")), cameraY = Number(await world.getAttribute("data-camera-world-y"));
+    const dx = (cameraX - x) * 8 * scale, dy = (cameraY - y) * 8 * scale;
+    if (Math.abs(dx) < box.width / 3 && Math.abs(dy) < box.height / 3) break;
+    await page.mouse.move(center.x, center.y); await page.mouse.down();
+    await page.mouse.move(center.x + Math.max(-box.width / 3, Math.min(box.width / 3, dx)), center.y + Math.max(-box.height / 3, Math.min(box.height / 3, dy)), { steps: 10 }); await page.mouse.up();
+    await page.waitForTimeout(60); // Camera attributes follow the next animation frame.
+  }
   await page.waitForTimeout(520); // Documented 500 ms suppression after a pan gesture.
   const currentX = Number(await world.getAttribute("data-camera-world-x")), currentY = Number(await world.getAttribute("data-camera-world-y"));
+  const scale = Number(await world.getAttribute("data-render-scale"));
+  await info.attach("site-hit-geometry", { body: JSON.stringify({ hit, box, center, origin: task.origin, currentX, currentY, scale, click: { x: center.x + (x - currentX) * 8 * scale, y: center.y + (y - currentY) * 8 * scale } }), contentType: "application/json" });
   await page.mouse.click(center.x + (x - currentX) * 8 * scale, center.y + (y - currentY) * 8 * scale);
   await expect(page.getByRole("dialog", { name: "Задача удалена" })).toBeVisible();
   expect((await new AxeBuilder({ page }).include(".site-history-modal").withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([]);

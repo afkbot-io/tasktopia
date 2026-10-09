@@ -104,7 +104,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   const [tab,setTab] = useState<"overview"|"materials"|"discussion"|"history">("overview");
   const [visited, setVisited] = useState(() => new Set(["overview"]));
   const changeTab = (next: typeof tab) => { setTab(next); setVisited(current => new Set([...current, next])); };
-  useDialogFocus(dialogRef);
+  useDialogFocus(dialogRef, { onClose });
 
   useEffect(() => {
     let cancelled = false;
@@ -119,9 +119,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
         if (reason instanceof ApiError && reason.status === 401) void Promise.resolve(onAuthenticationRequired?.()).catch(() => undefined);
         setError(reason instanceof Error ? reason.message : "Не удалось открыть задачу");
       });
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => { cancelled = true; window.removeEventListener("keydown", onKey); };
+    return () => { cancelled = true; };
   }, [countryId, taskId, revision, retry, onClose, onAuthenticationRequired]);
 
   useEffect(() => {
@@ -148,7 +146,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
       <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть" title={standalone ? "Закрыть и открыть город" : "Закрыть"}>×</button>
       {task && error && <p className="task-refresh-error" role="alert">{error} <button onClick={() => setRetry(value => value + 1)}>Повторить</button></p>}
       {!task ? <div className="task-load-state" role={error ? "alert" : "status"}><strong>{error || "Загружаем задачу…"}</strong>{error && <button className="primary-button" onClick={() => setRetry(value => value + 1)}>Повторить</button>}</div> : <>
-        <header className="task-header">
+        <header className="task-header" tabIndex={0} role="group" aria-label="Название и параметры задачи">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
           <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · <span title="Объём работ в условных единицах сложности (SP)">Объём: {task.estimate} SP</span></p><h2 id="task-title">{task.title}</h2></div>
         </header>
