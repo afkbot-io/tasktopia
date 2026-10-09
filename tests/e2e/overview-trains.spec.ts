@@ -1,11 +1,16 @@
 import { expect,test } from "@playwright/test";
 import { transportAtlasFixture } from "../fixtures/atlas-transport";
 import { transportSchedule,TRANSPORT_EPOCH } from "../../src/shared/transport-schedule";
+import { projectPlanetAtlas } from "../../src/shared/planet-atlas";
+import { buildPlanetSurfaceTransport } from "../../src/shared/planet-surface-transport";
 test("PLANET preserves the server-scheduled consist and honour reduced motion",async({page},info)=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local visual fixture only");
   const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));
   await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
-  const atlas=transportAtlasFixture(),schedule=transportSchedule("RAIL","station-0-0","station-0-1");
+  const atlas=transportAtlasFixture();
+  const route=buildPlanetSurfaceTransport(projectPlanetAtlas(atlas)).rails.find(route=>route.id==="rail:station-0-0:station-0-1")!;
+  expect(route).toBeDefined();
+  const schedule=transportSchedule("RAIL",route.fromStationId,route.toStationId,route.scheduleOffsetMs);
   let started=performance.now(),anchor=TRANSPORT_EPOCH-schedule.offsetMs+schedule.dwellMs+schedule.travelMs*.4;
   await page.clock.setFixedTime(new Date("2035-01-01"));
   await page.route("**/api/**",async route=>{
@@ -15,8 +20,10 @@ test("PLANET preserves the server-scheduled consist and honour reduced motion",a
     else await route.fulfill({response,headers});
   });
   await page.goto("/");
-  const planet=page.locator(`.atlas-train[data-route-id="${schedule.id}"]`);
-  await expect(planet).toBeVisible();await expect(planet.locator("image")).toHaveCount(4);
+  const fleet=page.locator(`.atlas-train[data-route-id="${schedule.id}"]`);
+  await expect(fleet).toHaveCount(schedule.fleetSize);
+  const planet=page.locator(`.atlas-train[data-vehicle-id="${schedule.id}:vehicle:0"]`);
+  await expect(planet).toBeVisible();await expect(planet.locator("image")).toHaveCount(6);
   const after=Number(await planet.getAttribute("data-progress"));expect(after).toBeGreaterThan(.35);expect(after).toBeLessThan(.6);
   const planetZoom=await page.locator(".planet-atlas").getAttribute("data-globe-zoom");
   const box=await planet.boundingBox();await page.mouse.move(box!.x+box!.width/2,box!.y+box!.height/2);await page.mouse.wheel(0,-250);
@@ -29,8 +36,9 @@ test("PLANET preserves the server-scheduled consist and honour reduced motion",a
   await page.reload();
   await expect(planet).toHaveAttribute("data-phase","STOPPED");
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready","true");
-  const stopped=await planet.locator("image").first().getAttribute("style");
+  const stopped=await planet.locator("image").first().getAttribute("transform");
+  expect(stopped).toMatch(/^translate\(/);
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
-  expect(await planet.locator("image").first().getAttribute("style")).toBe(stopped);
+  expect(await planet.locator("image").first().getAttribute("transform")).toBe(stopped);
   expect(errors).toEqual([]);
 });
