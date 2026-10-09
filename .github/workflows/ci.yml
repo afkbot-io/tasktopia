@@ -11,12 +11,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # Asset regeneration, the full unit suite, and the ultra-wide streaming
-    # browser gate intentionally run together and exceed 15 minutes on hosted
-    # runners. The complete matrix measured 44+ minutes, leaving no margin
-    # under the old 45-minute job ceiling. This only bounds the whole job;
-    # browser readiness, simulation and performance budgets stay in each test.
-    timeout-minutes: 60
+    # The expanded 363-case browser matrix took 19.7 minutes through case 91
+    # on the hosted software renderer, after the asset/unit/recovery gates.
+    # Give the aggregate matrix room to finish; individual readiness,
+    # simulation and performance budgets remain unchanged inside each test.
+    timeout-minutes: 120
     services:
       postgres:
         image: postgres:16-alpine
