@@ -192,6 +192,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         fetched ||= state.dogCarrying === 'true'; scattered ||= state.birdsScattered === 'true';
         if (i === 8) await page.screenshot({ path: info.outputPath(`everyday-${kind!.toLowerCase()}.png`) });
       }
+      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
       if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })), null, 2));
       expect(arrivals, `${kind} residents never arrived`).toBeGreaterThan(0);
       if (kind === 'DOG' || kind === 'BIRDS') expect(animals).toBeGreaterThan(0);

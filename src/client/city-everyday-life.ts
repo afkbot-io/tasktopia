@@ -88,7 +88,9 @@ export function compileEverydaySites(input: EverydayInput): EverydaySite[] {
       for (let y = Math.floor(center.y) - 3; y <= Math.floor(center.y) + 3; y++)
         for (let x = Math.floor(center.x) - 3; x <= Math.floor(center.x) + 3; x++) {
           const id = `${x},${y}`, c = destinations.get(id);
-          if (c && !blocked.has(id) && !area.some(a => a.x === c.x && a.y === c.y)
+          // An adjacent spectator's .25-cell walking inset can overlap the
+          // pad clearance and suppress the stall/animal after arrival.
+          if (c && !blocked.has(id) && !area.some(a => Math.abs(a.x - c.x) + Math.abs(a.y - c.y) <= 1)
             && Math.abs(c.x - center.x) + Math.abs(c.y - center.y) <= 3) nearby.push(c);
         }
       const targets = nearby.sort((a, b) => a.y - b.y || a.x - b.x).slice(0, 4);

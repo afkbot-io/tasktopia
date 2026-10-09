@@ -21,6 +21,17 @@ it('ярмарка, собака и птицы оставляют существ
   for (const site of publicSites) expect(site.area.some(c => paths.has(`${c.x},${c.y}`))).toBe(false);
 });
 
+it('зрители на любой стороне пешеходной полосы оставляют площадке запас места', () => {
+  const footprint = Array.from({ length: 10 }, (_, y) => Array.from({ length: 10 }, (_, x) => ({ x, y: y + 1 }))).flat();
+  const park = { ...task, id: 'clear-pad', visualKind: 'PARK', visualAssetKey: 'urban-formal', serviceRole: undefined, footprint } as ChunkTaskDto;
+  const ground = new Map(footprint.map(c => [`${c.x},${c.y}`, c]));
+  const publicSites = compileEverydaySites({ ...input, tasks: [park], ground }).filter(s => s.kind !== 'SPORT');
+  expect(publicSites.length).toBe(3);
+  for (const site of publicSites) for (const target of site.targets!) for (const [dx, dy] of [[.25, 0], [-.25, 0], [0, .25], [0, -.25]]) {
+    expect(site.area.some(c => Math.abs(target.x + dx! - c.x) < .8 && Math.abs(target.y + dy! - c.y) < .8)).toBe(false);
+  }
+});
+
 it('собака подбирает мяч и приносит обратно к краю площадки рядом с реальным хозяином', () => {
   const area = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }], owner = { x: -.5, y: .5 };
   const fetch = dogFetchPose(area, owner, 3000);
