@@ -1,4 +1,4 @@
-import { installSceneClock } from './city-scene-clock';
+import { installSceneClock, clockSceneTest } from './city-scene-clock';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
@@ -189,7 +189,7 @@ test('visibility lifecycle stops work and audio, then releases an expired captur
  }finally{await f.cleanup();}
 });
 
-test('all seven road scenes dispatch moving services, close and reopen lanes without unsafe pairs',async({page},info)=>{
+clockSceneTest('all seven road scenes dispatch moving services, close and reopen lanes without unsafe pairs',async({page},info)=>{
  test.setTimeout(600000);await page.setViewportSize({width:1440,height:1100});await installSceneClock(page);const f=await fixture(page);
  try{
   await f.focus(f.task);const kinds=new Set<string>();

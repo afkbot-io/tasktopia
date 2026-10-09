@@ -8,6 +8,19 @@ const task = { id: 'school', status: 'COMPLETED', stage: 5, visualKind: 'BUILDIN
   serviceRole: 'EDUCATION', accessPath: [{ x: 0, y: 0 }], footprint: [{ x: 0, y: -1 }], workItemType: 'TASK' } as ChunkTaskDto;
 const input = { tasks: [task], walk, blocked: new Set<string>(), roads: new Map(), decorations: [] };
 
+it('ярмарка, собака и птицы оставляют существующие пешеходные пути свободными', () => {
+  const footprint = Array.from({ length: 10 }, (_, y) => Array.from({ length: 10 }, (_, x) => ({ x, y: y + 1 }))).flat();
+  let id = 'park-0';
+  for (let i = 0; cityLifeHash(id) % 81 !== 0; i++) id = `park-${i + 1}`;
+  const park = { ...task, id, visualKind: 'PARK', visualAssetKey: 'urban-formal', serviceRole: undefined, footprint } as ChunkTaskDto;
+  const ground = new Map(footprint.map(c => [`${c.x},${c.y}`, c]));
+  const paths = new Map([...walk, ...Array.from({ length: 20 }, (_, x) => [`${x},2`, { x, y: 2 }] as const)]);
+  const sites = compileEverydaySites({ ...input, tasks: [park], walk: paths, safeTargets: paths, ground });
+  const publicSites = sites.filter(s => ['MARKET', 'DOG', 'BIRDS'].includes(s.kind));
+  expect(publicSites.map(s => s.kind)).toEqual(['BIRDS', 'DOG', 'MARKET']);
+  for (const site of publicSites) expect(site.area.some(c => paths.has(`${c.x},${c.y}`))).toBe(false);
+});
+
 it('собака подбирает мяч и приносит обратно к краю площадки рядом с реальным хозяином', () => {
   const area = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }], owner = { x: -.5, y: .5 };
   const fetch = dogFetchPose(area, owner, 3000);

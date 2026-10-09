@@ -77,9 +77,10 @@ export function compileEverydaySites(input: EverydayInput): EverydaySite[] {
     let publicSpace = false, sports = false;
     for (const area of [...areas.slice(offset), ...areas.slice(0, offset)]) {
       const playTargets = area.filter(c => (input.safeTargets ?? input.walk).has(cellKey(c)));
+      const publicPad = !area.some(c => input.walk.has(cellKey(c)));
       // Once the common event pad is chosen, only a sports pad can add a
       // scene. Do not search another approach when no sports targets exist.
-      if (publicSpace && playTargets.length < 2) continue;
+      if ((publicSpace || !publicPad) && (sports || playTargets.length < 2)) continue;
       const center = { x: area[0]!.x + .5, y: area[0]!.y + .5 };
       const destinations = input.safeTargets ?? input.walk, nearby: Cell[] = [];
       // A local pad only needs49 map lookups, not a scan of every walk cell
@@ -93,7 +94,7 @@ export function compileEverydaySites(input: EverydayInput): EverydaySite[] {
       const targets = nearby.sort((a, b) => a.y - b.y || a.x - b.x).slice(0, 4);
       const route = targets[0] ? approachRoute(targets[0], input.walk, blocked) : [];
       if (!route.length) continue;
-      if (!publicSpace) {
+      if (!publicSpace && publicPad) {
         for (const kind of ['MARKET', 'DOG', 'BIRDS'] as const) result.push({ id: `${task.id}:${kind}`, taskId: task.id, kind, route, area, targets });
         publicSpace = true;
       }

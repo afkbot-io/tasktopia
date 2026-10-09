@@ -820,7 +820,10 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
           continue;
         }
         actor.restMs = actor.activity === 'INSIDE' ? STEP_MS : 0; actor.pendingExit = undefined;
-        if (actor.activity !== 'INSIDE') { actor.activity = 'NONE'; actor.route = actor.route.slice(0, 2); }
+        // Retain a valid route through the next bend/crossing. Cutting it to
+        // one edge can remove the reserved exit and strand the whole queue.
+        // With the visit cleared, its endpoint resumes ordinary walking.
+        if (actor.activity !== 'INSIDE') actor.activity = 'NONE';
       }
       publish();
     },

@@ -1,4 +1,21 @@
-import type { Page } from '@playwright/test';
+import { test, type Page, type TestInfo } from '@playwright/test';
+
+/** Keep the full CSS viewport, NORMAL density, real renderer and every fixed
+ * physics step. A smaller raster buffer bounds software GPU cost in CI; native
+ * visual and real-clock performance cases retain their original device scale. */
+export function clockSceneTest(name: string, body: (args: { page: Page }, info: TestInfo) => Promise<void>) {
+  const dpr = Number(process.env.E2E_SCENE_DPR ?? (process.env.CI ? '0.25' : '1'));
+  if (!Number.isFinite(dpr) || dpr < .25 || dpr > 2) throw new Error('Invalid clock scene raster scale');
+  test.describe(name, () => {
+    test.use({ deviceScaleFactor: dpr });
+    test(name, async ({ page }, info) => {
+      const actualDpr = await page.evaluate(() => devicePixelRatio);
+      if (actualDpr !== dpr) throw new Error(`Clock scene raster scale ${actualDpr}, expected ${dpr}`);
+      await info.attach('clock-renderer-workload', { body: JSON.stringify({ deviceScaleFactor: actualDpr, fixedStep: 'unchanged', sceneDensity: 'unchanged' }), contentType: 'application/json' });
+      await body({ page }, info);
+    });
+  });
+}
 
 /** The simulation clock jumps minutes; heartbeat deadlines must stay outside
  * that synthetic horizon. Handshake still comes from the real owned server,

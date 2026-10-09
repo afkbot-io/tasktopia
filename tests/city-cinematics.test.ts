@@ -79,10 +79,32 @@ it("перенос поглощает следующую стадию, ждёт 
  expect(t.sample(3000)[0]).toMatchObject({phase:"LIFT",revealTarget:false});
  t.begin({...move,eventId:2,version:2,kind:"CONSTRUCT",toStage:3},1000);
  t.ready("home",1);expect(t.sample(5100)[0]).toMatchObject({kind:"TRANSFER",toStage:3,revealTarget:false});
- t.ready("home",2);expect(t.sample(5200)[0]).toMatchObject({kind:"TRANSFER",revealTarget:true});
+ t.ready("home",2);expect(t.sample(5200)[0]).toMatchObject({kind:"TRANSFER",phase:"CARRY",phaseProgress:0,revealTarget:false});
+ expect(t.sample(7300)[0]).toMatchObject({kind:"TRANSFER",revealTarget:true});
  for(let i=0;i<600;i++)t.begin({...move,taskId:`skipped-${i}`,occurredAtMs:0},20000);
  expect(t.historySize).toBe(512);expect(t.begin({...move,eventId:3,version:2},20000)).toBe(false);
  expect(t.sample(NaN)).toEqual([]);expect(t.sample(20000)[0]).toMatchObject({done:true});
+});
+it('после поздней загрузки участка перенос проходит полёт и посадку до прежнего предельного срока',()=>{
+ const timeline=createCityCinematics();
+ timeline.begin({eventId:1,version:2,taskId:'late',kind:'TRANSFER',fromStage:5},0);
+ expect(timeline.sample(4000)[0]).toMatchObject({phase:'LIFT',revealTarget:false});
+ timeline.ready('late',2);
+ expect(timeline.sample(4500)[0]).toMatchObject({phase:'CARRY',phaseProgress:0,oldVisible:true,revealTarget:false});
+ expect(timeline.sample(5500)[0]).toMatchObject({phase:'CARRY',oldVisible:true,revealTarget:false});
+ expect(timeline.sample(6700)[0]).toMatchObject({phase:'LOWER',oldVisible:true,revealTarget:false});
+ expect(timeline.sample(7200)[0]).toMatchObject({phase:'DEPART',revealTarget:true});
+ expect(timeline.sample(7700)[0]).toMatchObject({done:true});expect(timeline.size).toBe(0);
+ const missing=createCityCinematics();missing.begin({eventId:1,version:1,taskId:'missing',kind:'TRANSFER',fromStage:5},0);
+ missing.sample(4000);expect(missing.sample(7700)[0]).toMatchObject({done:true,revealTarget:false});
+});
+it('новая стадия во время полёта не возвращает груз назад к подъёму',()=>{
+ const t=createCityCinematics(),move={eventId:1,version:1,taskId:'one',kind:'TRANSFER' as const,fromStage:4};
+ t.begin(move,0);t.ready('one',1);expect(t.sample(3000)[0]).toMatchObject({phase:'CARRY'});
+ t.begin({...move,eventId:2,version:2,kind:'CONSTRUCT',toStage:5},3100);
+ expect(t.sample(3500)[0]).toMatchObject({phase:'CARRY',revealTarget:false});
+ expect(t.sample(5300)[0]).toMatchObject({phase:'LOWER',revealTarget:false});
+ t.ready('one',2);expect(t.sample(5400)[0]).toMatchObject({phase:'DEPART',revealTarget:true});
 });
 it('rejects a malformed timestamp and does not expire on a nonfinite sample',()=>{
  const timeline=createCityCinematics();const request={eventId:1,version:1,taskId:'one',kind:'CONSTRUCT' as const,fromStage:1,toStage:2};

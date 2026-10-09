@@ -6,7 +6,12 @@ import { everydayFixture } from './everyday-city-fixture';
 import { ASSET_REVISION, BUILDING_CATALOG } from '../../src/shared/catalog';
 import { rainPose } from '../../src/client/city-everyday-life';
 import { openMapCity } from './map-navigation';
-import { installSceneClock } from './city-scene-clock';
+import { installSceneClock, clockSceneTest } from './city-scene-clock';
+
+// Long fixed-step journeys already save native checkpoints and telemetry.
+// Repeated automatic DOM/canvas snapshots produced a 306 MiB failure artifact
+// in addition to software rendering cost; retain calls, sources and failures.
+test.use({ trace: { mode: 'retain-on-failure', snapshots: false, screenshots: false, sources: true } });
 
 test('real city exposes six education families, safe event pads and connected transit stops', async ({ page }, info) => {
   test.setTimeout(120000); await page.setViewportSize({ width: 1440, height: 1100 });
@@ -47,8 +52,22 @@ test('fresh MCP completions open every institution after the construction reveal
       await page.emulateMedia({ reducedMotion: 'no-preference' });
     }
     const home = await f.service.getTask(f.user.countryId, f.pendingHome.id); await f.panFocus(home);
-    await f.call('task.transfer', { taskId: home.id, targetDistrictId: f.pendingSchool.districtId });
-    await expect(f.host).toHaveAttribute('data-cinematic-phases', /TRANSFER:CARRY/);
+    // Hold the real post-transfer scene beyond the original carry window.
+    // The renderer must resume a flight instead of jumping from lift to land.
+    const scenePattern = /\/api\/countries\/[^/]+\/cities\/[^/]+\/scene(?:\?|$)/;
+    let releaseScene!: () => void, delayedScene = false;
+    const sceneGate = new Promise<void>(resolve => { releaseScene = resolve; });
+    await page.route(scenePattern, async route => {
+      const response = await route.fetch(); delayedScene = true; await sceneGate; await route.fulfill({ response });
+    });
+    const transferStarted = performance.now();
+    try {
+      await f.call('task.transfer', { taskId: home.id, targetDistrictId: f.pendingSchool.districtId });
+      await expect(f.host).toHaveAttribute('data-cinematic-phases', /TRANSFER:LIFT/);
+      await page.waitForTimeout(Math.max(0, 4500 - (performance.now() - transferStarted)));
+      expect(delayedScene).toBe(true); releaseScene();
+      await expect(f.host).toHaveAttribute('data-cinematic-phases', /TRANSFER:CARRY/);
+    } finally { releaseScene(); await page.unroute(scenePattern); }
     await expect(f.host).toHaveAttribute('data-city-cinematics', '0', { timeout: 10000 });
     expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
     await page.reload(); await openMapCity(page); await expect(f.host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
@@ -57,7 +76,7 @@ test('fresh MCP completions open every institution after the construction reveal
   } finally { await f.cleanup(); }
 });
 
-test('tow loading and water repair wait for actual service arrivals, drive and reopen safely', async ({ page }, info) => {
+clockSceneTest('tow loading and water repair wait for actual service arrivals, drive and reopen safely', async ({ page }, info) => {
   test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
   const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [];
   try {
@@ -72,9 +91,9 @@ test('tow loading and water repair wait for actual service arrivals, drive and r
       expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(3);
       let arrived = false, loaded = false;
       for (let i = 0; i < 31; i++) {
-        await page.clock.runFor(1000); await safe(f.host);
-        arrived ||= await f.host.getAttribute('data-road-service-arrived') === 'true';
-        loaded ||= await f.host.getAttribute('data-road-cargo-loaded') === 'true';
+        await page.clock.runFor(1000); const state = await safe(f.host);
+        arrived ||= state.roadServiceArrived === 'true';
+        loaded ||= state.roadCargoLoaded === 'true';
         if (i === 12 || kind === 'BREAKDOWN' && loaded && i === 18) await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}-${i}.png`) });
       }
       expect(arrived, `${kind} service never arrived`).toBe(true); if (kind === 'BREAKDOWN') expect(loaded).toBe(true);
@@ -120,15 +139,17 @@ async function seek(page: Page, host: Locator, target: number) {
   }
 }
 async function safe(host: Locator) {
-  for (const name of ['mobility-vehicle-unsafe-total', 'mobility-pedestrian-unsafe-total', 'mobility-vehicle-pedestrian-unsafe-total', 'wrong-way-cars', 'walker-off-path'])
-    await expect(host).toHaveAttribute(`data-${name}`, '0');
+  const state = await host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
+  expect([state.mobilityVehicleUnsafeTotal, state.mobilityPedestrianUnsafeTotal,
+    state.mobilityVehiclePedestrianUnsafeTotal, state.wrongWayCars, state.walkerOffPath]).toEqual(['0', '0', '0', '0', '0']);
+  return state;
 }
 async function setSceneLife(page: Page, on: boolean) {
   await page.locator('.world-menu > summary').click(); const prefs = page.locator('.world-preferences:visible'); await prefs.locator('> summary').click();
   await prefs.getByLabel('Жизнь города').setChecked(on); await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.clock.runFor(100);
 }
 
-test('six everyday scenes use actual residents and approaches', async ({ page }, info) => {
+clockSceneTest('six everyday scenes use actual residents and approaches', async ({ page }, info) => {
   test.setTimeout(720000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
   const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   const seen = new Set<string>(), samples: Record<string, unknown>[] = [];
@@ -152,9 +173,10 @@ test('six everyday scenes use actual residents and approaches', async ({ page },
       expect(Number(await f.host.getAttribute('data-everyday-visitors'))).toBeGreaterThan(0);
       let arrivals = 0, animals = 0, fetched = false, scattered = false;
       for (let i = 0; i < 16; i++) {
-        await page.clock.runFor(2000); arrivals = Math.max(arrivals, Number(await f.host.getAttribute('data-everyday-arrived')));
-        animals = Math.max(animals, Number(await f.host.getAttribute('data-everyday-animals')));
-        fetched ||= await f.host.getAttribute('data-dog-carrying') === 'true'; scattered ||= await f.host.getAttribute('data-birds-scattered') === 'true'; await safe(f.host);
+        await page.clock.runFor(2000); const state = await safe(f.host);
+        arrivals = Math.max(arrivals, Number(state.everydayArrived));
+        animals = Math.max(animals, Number(state.everydayAnimals));
+        fetched ||= state.dogCarrying === 'true'; scattered ||= state.birdsScattered === 'true';
         if (i === 8) await page.screenshot({ path: info.outputPath(`everyday-${kind!.toLowerCase()}.png`) });
       }
       if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })), null, 2));
@@ -208,7 +230,7 @@ test('everyday live lifecycle clears hidden, map exit, reconnect and deleted ins
 });
 
 
-test('public bus completes an actual boarding, directed trip and safe alighting', async ({ page }, info) => {
+clockSceneTest('public bus completes an actual boarding, directed trip and safe alighting', async ({ page }, info) => {
   test.setTimeout(210000); await installSceneClock(page); const f = await everydayFixture(page);
   try {
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
@@ -230,7 +252,7 @@ test('public bus completes an actual boarding, directed trip and safe alighting'
   } finally { await f.cleanup(); }
 });
 
-test('rain covers actual walkers, puddles and car splashes then dries completely', async ({ page }, info) => {
+clockSceneTest('rain covers actual walkers, puddles and car splashes then dries completely', async ({ page }, info) => {
   test.setTimeout(90000); await installSceneClock(page); const f = await everydayFixture(page);
   try {
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
@@ -248,7 +270,7 @@ test('rain covers actual walkers, puddles and car splashes then dries completely
   } finally { await f.cleanup(); }
 });
 
-test('school bus delivers children through the real school entrance independently of its street ceremony', async ({ page }, info) => {
+clockSceneTest('school bus delivers children through the real school entrance independently of its street ceremony', async ({ page }, info) => {
   test.setTimeout(900000); await installSceneClock(page); const f = await everydayFixture(page);
   try {
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));

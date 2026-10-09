@@ -9,6 +9,17 @@ function fixture() {
   return createCityMobility({ roads: new Map<string, RoadCellDto>(), walkGraph: new Map(cells.map(c => [key(c), c])),
     crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['3,0']), seed: 19, carLimit: 0, walkerLimit: 6 });
 }
+it('отмена подхода перед поворотом сохраняет выход из конфликтного участка', () => {
+  const city = fixture();
+  const before = city.agents.find(a => a.id === 'mobility-19-0')!;
+  expect(city.dispatchVisit('cancel-before-corner', [{ x: 3, y: 0 }], 1, 8000, false, [before.id])).toEqual([before.id]);
+  city.clearVisits('cancel-before-corner');
+  expect(city.agents.find(a => a.id === before.id)!.position).toEqual(before.position);
+  city.advance(20_000);
+  expect(city.agents.find(a => a.id === before.id)!.steps).toBeGreaterThan(before.steps);
+  expect(city.agents.some(a => a.visit)).toBe(false);
+  expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
+});
 it('направляет существующих жителей к школе, допускает вход без наложений и выпускает после занятия', () => {
   const city = fixture(), before = city.agents.map(a => a.position);
   const ids = city.dispatchVisit('school-arrival', [{ x: 3, y: 0 }], 4, 3000, true);

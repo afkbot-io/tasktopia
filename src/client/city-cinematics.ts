@@ -10,7 +10,8 @@ export function cinematicMarkerMatches(kind: CityCinematicKind, task: Pick<Chunk
 export type CityCinematicRequest = { eventId: number; version: number; taskId: string; kind: CityCinematicKind; fromStage: number; toStage?: number; occurredAtMs?: number };
 export type CityCinematicPhase = "CREW" | "WORK" | "COVER" | "REVEAL" | "APPROACH" | "LIFT" | "CARRY" | "LOWER" | "DEPART";
 export type CityCinematicFrame = CityCinematicRequest & { startedAtMs: number; elapsedMs: number; progress: number; phaseProgress: number; phase: CityCinematicPhase; oldVisible: boolean; revealTarget: boolean; done: boolean };
-type Entry = { request: CityCinematicRequest; start: number; readyVersion: number };
+type Entry = { request: CityCinematicRequest; start: number; readyVersion: number;
+  transferHeld?: boolean; transferResumedAt?: number; transferRate?: number };
 const schedules: Record<CityCinematicKind, ReadonlyArray<readonly [number, CityCinematicPhase]>> = {
   CONSTRUCT: [[650, "CREW"], [2200, "WORK"], [2750, "COVER"], [3100, "REVEAL"]],
   DEMOLISH: [[800, "CREW"], [1600, "WORK"], [2500, "COVER"], [2900, "REVEAL"]],
@@ -35,7 +36,10 @@ export function createCityCinematics(capacity = 3) {
       if (current) {
         if (current.request.kind === "DEMOLISH") return false;
         const kind = current.request.kind === "TRANSFER" && request.kind === "CONSTRUCT" ? "TRANSFER" : request.kind;
-        if (kind !== current.request.kind) current.start = now;
+        if (kind !== current.request.kind) {
+          current.start = now; current.transferHeld = false;
+          current.transferResumedAt = undefined; current.transferRate = undefined;
+        }
         current.request = { ...request, kind, fromStage: current.request.fromStage };
         return true;
       }
@@ -54,16 +58,33 @@ export function createCityCinematics(capacity = 3) {
         const elapsedMs = Math.max(0, now - entry.start);
         const schedule = schedules[entry.request.kind], duration = schedule.at(-1)![0];
         const ready = entry.readyVersion >= entry.request.version;
-        let index = schedule.findIndex(([end]) => elapsedMs < end);
+        let phaseElapsedMs = elapsedMs;
+        if (entry.request.kind === 'TRANSFER') {
+          const carryStart = schedule[1]![0];
+          if (!ready && elapsedMs >= carryStart && entry.transferResumedAt === undefined) entry.transferHeld = true;
+          if (entry.transferHeld && ready && entry.transferResumedAt === undefined) {
+            entry.transferResumedAt = now;
+            // A delayed scene must not consume the flight while the cargo is
+            // held at lift. Fit flight/landing/departure into the existing hard
+            // deadline; missing artwork still cannot hold a ghost indefinitely.
+            entry.transferRate = (duration - carryStart) / Math.min(duration - carryStart, Math.max(1, duration + 2000 - elapsedMs));
+          }
+          if (!entry.transferHeld && ready && elapsedMs >= carryStart && entry.transferResumedAt === undefined) {
+            entry.transferResumedAt = entry.start + carryStart; entry.transferRate = 1;
+          }
+          if (entry.transferHeld) phaseElapsedMs = entry.transferResumedAt === undefined ? Math.min(elapsedMs, carryStart)
+            : carryStart + Math.max(0, now - entry.transferResumedAt) * entry.transferRate!;
+        }
+        let index = schedule.findIndex(([end]) => phaseElapsedMs < end);
         if (index < 0) index = schedule.length - 1;
-        if (!ready && elapsedMs >= schedule.at(-2)![0]) index = schedule.length - 2;
-        if (!ready && entry.request.kind === "TRANSFER" && elapsedMs >= 1700) index = 1;
+        if (!ready && phaseElapsedMs >= schedule.at(-2)![0]) index = schedule.length - 2;
+        if (!ready && entry.request.kind === "TRANSFER" && phaseElapsedMs >= 1700 && entry.transferResumedAt === undefined) index = 1;
         const [end, phase] = schedule[index]!;
         const start = index === 0 ? 0 : schedule[index - 1]![0];
-        const revealTarget = ready && elapsedMs >= schedule.at(-2)![0];
-        const done = elapsedMs >= duration + 2000 || revealTarget && elapsedMs >= duration;
-        frames.push({ ...entry.request, startedAtMs: entry.start, elapsedMs, progress: Math.min(1, elapsedMs / duration),
-          phaseProgress: Math.min(1, Math.max(0, (elapsedMs - start) / (end - start))), phase,
+        const revealTarget = ready && phaseElapsedMs >= schedule.at(-2)![0];
+        const done = elapsedMs >= duration + 2000 || revealTarget && phaseElapsedMs >= duration;
+        frames.push({ ...entry.request, startedAtMs: entry.start, elapsedMs, progress: Math.min(1, phaseElapsedMs / duration),
+          phaseProgress: Math.min(1, Math.max(0, (phaseElapsedMs - start) / (end - start))), phase,
           oldVisible: !revealTarget && !done, revealTarget, done });
         if (done) active.delete(id);
       }

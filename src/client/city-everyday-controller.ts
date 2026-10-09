@@ -41,7 +41,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       && cellKey(current.accessPath[0]) === cellKey(school.entrance);
   };
   const rebuildReservations = (enabled: boolean) => {
-    const cells = enabled ? [...stops.flatMap(stop => stop.shelter), ...(active?.kind === 'SPORT' ? active.area.filter(c => !active!.playTargets?.some(target => cellKey(c) === cellKey(target))) : active?.area ?? [])] : [];
+    const cells = enabled ? [...stops.flatMap(stop => stop.shelter), ...(active?.area.filter(c => !input?.walk.has(cellKey(c))) ?? [])] : [];
     const signature = cells.map(cellKey).sort().join(';');
     if (signature !== reservedSignature) { reservedSignature = signature; reservations = new Set(cells.map(cellKey)); }
   };

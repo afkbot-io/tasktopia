@@ -17,6 +17,20 @@ function fixture() {
   return { city, task, input, sounds, controller, view, options };
 }
 
+it('спортивная площадка не закрывает проходы между своими конечными точками', () => {
+  const f = fixture();
+  const footprint = Array.from({ length: 10 }, (_, y) => Array.from({ length: 10 }, (_, x) => ({ x, y: y + 1 }))).flat();
+  const park = { ...f.task, id: 'sports', visualKind: 'PARK', visualAssetKey: 'urban-formal', footprint, accessPath: [{ x: 3, y: 0 }] } as ChunkTaskDto;
+  const walk = new Map([...f.input.walk, ...footprint.map(c => [`${c.x},${c.y}`, c] as const)]);
+  f.controller.compile({ ...f.input, tasks: [park], walk, safeTargets: walk });
+  const kinds = [...new Set(f.controller.sites.map(s => s.kind))].sort();
+  expect(kinds).toContain('SPORT');
+  const start = kinds.indexOf('SPORT') * 75_000 + 8000;
+  f.controller.update(start - 1000, f.view, f.options);
+  expect(f.controller.update(start + 1, f.view, f.options).pose?.kind).toBe('SPORT');
+  expect([...f.controller.reservedCells()].some(id => walk.has(id))).toBe(false);
+});
+
 it('открытие использует адресные проверки занятости и не копирует все клетки города', () => {
   const f = fixture();
   class LocalBlocked extends Set<string> {
