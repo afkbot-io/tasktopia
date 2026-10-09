@@ -1,0 +1,8 @@
+
+ RUN  v4.1.10 /Users/kikasnikita/.codex/worktrees/forest-ui-redesign/Game3.0
+
+
+ Test Files  3 passed (3)
+      Tests  38 passed (38)
+   Start at  18:30:40
+   Duration  10.10s (transform 311ms, setup 0ms, import 615ms, tests 9.32s, environment 0ms)

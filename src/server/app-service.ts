@@ -20,7 +20,7 @@ import { readOrExtendPersonalPlanet } from "./personal-planet-geography";
 import { visiblePersonalPlanet } from "../shared/planet-geography";
 import { readPlanetMiniatures } from "./planet-miniature-read";
 import { createHash,randomUUID } from "node:crypto";
-import { mkdir,unlink,writeFile } from "node:fs/promises";
+import { mkdir,readFile,unlink,writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { blockSlots } from "../shared/block-templates";
 import { blockTaskRange } from "../shared/block-plaque";
@@ -1674,13 +1674,37 @@ export class AppService {
     if (input.content.length > config.maxAttachmentBytes) {
       throw new DomainError("INVALID_INPUT", `Файл больше допустимых ${Math.floor(config.maxAttachmentBytes / 1024 / 1024)} МБ`);
     }
-    return this.mutate(countryId, "task.attachment.add.v1", input.idempotencyKey, { ...input, content: undefined, fileName, sizeBytes: input.content.length }, async () => {
+    const legacyPayload = { ...input, content: undefined, fileName, sizeBytes: input.content.length };
+    const payload = { ...legacyPayload, contentSha256: createHash("sha256").update(input.content).digest("hex") };
+    // Old receipts compared only filename/metadata/length. Upgrade an identical
+    // retry only after proving the bytes against its existing country-scoped
+    // file; never silently accept a different same-size file or create a copy.
+    const legacyHash = stableHash(legacyPayload);
+    const receipt = await this.db.prepare("SELECT request_hash FROM idempotency WHERE country_id=? AND operation='task.attachment.add.v1' AND idempotency_key=?")
+      .get<{ request_hash: string }>(countryId, input.idempotencyKey);
+    if (receipt?.request_hash === legacyHash) await transaction(this.db, async () => {
+      await this.db.prepare("SELECT id FROM countries WHERE id=? FOR UPDATE").get(countryId);
+      const current = await this.db.prepare("SELECT request_hash,response_json FROM idempotency WHERE country_id=? AND operation='task.attachment.add.v1' AND idempotency_key=?")
+        .get<{ request_hash: string; response_json: unknown }>(countryId, input.idempotencyKey);
+      if (current?.request_hash !== legacyHash) return;
+      const attachment = json<TaskAttachmentDto>(current.response_json);
+      let existingBytes: Buffer;
+      try { existingBytes = await readFile((await this.getTaskAttachment(countryId, attachment.id)).absolutePath); }
+      catch { throw new DomainError("CONFLICT", "Старое вложение недоступно для проверки повторного запроса"); }
+      if (createHash("sha256").update(existingBytes).digest("hex") !== payload.contentSha256) {
+        throw new DomainError("CONFLICT", "Этот idempotencyKey уже использован с другим содержимым файла");
+      }
+      await this.db.prepare("UPDATE idempotency SET request_hash=? WHERE country_id=? AND operation='task.attachment.add.v1' AND idempotency_key=?")
+        .run(stableHash(payload), countryId, input.idempotencyKey);
+    });
+    return this.mutate(countryId, "task.attachment.add.v1", input.idempotencyKey, payload, async () => {
       const task = await this.getTask(countryId, input.taskId);
       const id = randomUUID();
       const createdAt = now();
       const relative = join(countryId, task.id, `${id}-${fileName}`);
       const absolute = join(this.uploadDir, relative);
       await mkdir(join(this.uploadDir, countryId, task.id), { recursive: true });
+      onTransactionRollback(() => { void unlink(absolute).catch(() => undefined); });
       await writeFile(absolute, input.content);
       await this.db.prepare(`INSERT INTO task_attachments_v1
         (id, task_id, country_id, file_name, mime_type, size_bytes, storage_path, actor, actor_user_id, created_at)
@@ -1706,8 +1730,17 @@ export class AppService {
       const row = await this.db.prepare("SELECT * FROM task_attachments_v1 WHERE id = ? AND country_id = ?").get(input.attachmentId, countryId) as Row | undefined;
       if (!row) throw new DomainError("NOT_FOUND", "Файл не найден");
       await this.db.prepare("DELETE FROM task_attachments_v1 WHERE id = ?").run(input.attachmentId);
-      await unlink(join(this.uploadDir, String(row.storage_path))).catch(() => undefined);
+      onTransactionCommit(() => { void unlink(join(this.uploadDir, String(row.storage_path))).catch(() => undefined); });
       return { data: { ok: true as const }, eventType: "task.fields_updated", eventPayload: { taskId: String(row.task_id), changedFields: ["attachments"] } };
+    });
+  }
+
+  private async scheduleAttachmentCleanup(countryId: string, kind: "task" | "district" | "city", id: string): Promise<void> {
+    const column = { task: "t.id", district: "t.district_id", city: "t.city_id" }[kind];
+    const files = await this.db.prepare(`SELECT a.storage_path FROM task_attachments_v1 a
+      JOIN tasks_v3 t ON t.id=a.task_id WHERE a.country_id=? AND ${column}=?`).all<{ storage_path: string }>(countryId, id);
+    onTransactionCommit(() => {
+      for (const file of files) void unlink(join(this.uploadDir, file.storage_path)).catch(() => undefined);
     });
   }
 
@@ -1912,6 +1945,7 @@ export class AppService {
                         jsonb_build_object('taskNumber',t.task_number,'title',t.title,'buildingFamily',t.building_type,'lastStage',p.construction_stage) AS snapshot
                         FROM tasks_v3 t JOIN task_placements_v1 p ON p.task_id=t.id
                         JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE t.city_id=?`).all<Row>(city.id);
+                      await this.scheduleAttachmentCleanup(countryId, "city", city.id);
                       await this.db.prepare("DELETE FROM tasks_v3 WHERE city_id=?").run(city.id);
                       for (const p of tasks) await this.db.prepare(`INSERT INTO site_markers_v1
                         (id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at)
@@ -1998,6 +2032,7 @@ export class AppService {
         jsonb_build_object('taskId',t.id,'taskNumber',t.task_number,'title',t.title,'buildingFamily',t.building_type,'lastStage',p.construction_stage) AS snapshot
         FROM tasks_v3 t JOIN task_placements_v1 p ON p.task_id=t.id
         JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE t.district_id=?`).all(district.id);
+      await this.scheduleAttachmentCleanup(countryId, "district", district.id);
       await this.db.prepare("DELETE FROM tasks_v3 WHERE district_id=?").run(district.id);
       await this.db.prepare(`INSERT INTO site_markers_v1(id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at)
         SELECT gen_random_uuid()::text,x.layout_id,x.block_id,x.slot_key,'RUINED',x.snapshot,'compact-rubble',?,?
@@ -2232,6 +2267,7 @@ export class AppService {
       const task=await this.getTask(countryId,input.taskId),building=await this.buildingEventContext(countryId,input.taskId);
       if(input.confirmTitle.trim()!==task.title) throw new DomainError("CONFIRMATION_MISMATCH","Для удаления укажите точное название задачи");
       const placement=await this.db.prepare("SELECT p.* FROM task_placements_v1 p JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE p.task_id=?").get<Row>(task.id);
+      await this.scheduleAttachmentCleanup(countryId, "task", task.id);
       await this.db.prepare("DELETE FROM tasks_v3 WHERE id=?").run(task.id);
       if(placement) await this.db.prepare("INSERT INTO site_markers_v1(id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at) VALUES(?,?,?,?,'RUINED',?::jsonb,'compact-rubble',?,?)")
         .run(randomUUID(),placement.layout_id,placement.block_id,placement.slot_key,JSON.stringify({taskId:task.id,taskNumber:task.taskNumber,title:task.title,buildingFamily:task.buildingType,lastStage:task.stage}),now(),now());
