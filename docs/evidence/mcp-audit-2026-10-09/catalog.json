@@ -1,0 +1,332 @@
+[
+  {
+    "name": "country.get",
+    "readOnly": true,
+    "scopes": [
+      "country:read"
+    ]
+  },
+  {
+    "name": "world_generation.get",
+    "readOnly": true,
+    "scopes": [
+      "country:read"
+    ]
+  },
+  {
+    "name": "country.list",
+    "readOnly": true,
+    "scopes": [
+      "country:read"
+    ]
+  },
+  {
+    "name": "country.update_profile",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  },
+  {
+    "name": "city.list",
+    "readOnly": true,
+    "scopes": [
+      "country:read"
+    ]
+  },
+  {
+    "name": "city.get",
+    "readOnly": true,
+    "scopes": [
+      "country:read",
+      "tasks:read"
+    ]
+  },
+  {
+    "name": "city.create",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  },
+  {
+    "name": "city.rename",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  },
+  {
+    "name": "city.update",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  },
+  {
+    "name": "city.delete",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  },
+  {
+    "name": "district.list",
+    "readOnly": true,
+    "scopes": [
+      "country:read"
+    ]
+  },
+  {
+    "name": "district.create",
+    "readOnly": false,
+    "scopes": [
+      "districts:write"
+    ]
+  },
+  {
+    "name": "district.rename",
+    "readOnly": false,
+    "scopes": [
+      "districts:write"
+    ]
+  },
+  {
+    "name": "district.update",
+    "readOnly": false,
+    "scopes": [
+      "districts:write"
+    ]
+  },
+  {
+    "name": "district.delete",
+    "readOnly": false,
+    "scopes": [
+      "districts:write"
+    ]
+  },
+  {
+    "name": "district.activate",
+    "readOnly": false,
+    "scopes": [
+      "districts:write"
+    ]
+  },
+  {
+    "name": "district.complete",
+    "readOnly": false,
+    "scopes": [
+      "districts:write"
+    ]
+  },
+  {
+    "name": "task.list",
+    "readOnly": true,
+    "scopes": [
+      "tasks:read"
+    ]
+  },
+  {
+    "name": "task.get",
+    "readOnly": true,
+    "scopes": [
+      "tasks:read"
+    ]
+  },
+  {
+    "name": "task.create",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.rename",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.transfer",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.update_fields",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.defect_create",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.defect_update",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.delete",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.set_status",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.report_progress",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.add_comment",
+    "readOnly": false,
+    "scopes": [
+      "comments:write"
+    ]
+  },
+  {
+    "name": "task.assign",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.activity",
+    "readOnly": true,
+    "scopes": [
+      "tasks:read"
+    ]
+  },
+  {
+    "name": "task.dependency_add",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.dependency_remove",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.document_list",
+    "readOnly": true,
+    "scopes": [
+      "tasks:read"
+    ]
+  },
+  {
+    "name": "task.document_upsert",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.document_delete",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.checklist_replace",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.checklist_item_update",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.link_add",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.link_remove",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.attachment_add",
+    "readOnly": false,
+    "scopes": [
+      "tasks:write"
+    ]
+  },
+  {
+    "name": "task.attachment_list",
+    "readOnly": true,
+    "scopes": [
+      "tasks:read"
+    ]
+  },
+  {
+    "name": "archive.get",
+    "readOnly": true,
+    "scopes": [
+      "country:read"
+    ]
+  },
+  {
+    "name": "archive.record_list",
+    "readOnly": true,
+    "scopes": [
+      "tasks:read"
+    ]
+  },
+  {
+    "name": "archive.record_create",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  },
+  {
+    "name": "archive.record_update",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  },
+  {
+    "name": "archive.record_delete",
+    "readOnly": false,
+    "scopes": [
+      "cities:write"
+    ]
+  }
+]

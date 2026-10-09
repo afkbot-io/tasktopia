@@ -6,7 +6,10 @@ import { openMapCity, openMapPlanet } from "./map-navigation";
 
 for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844 }]) {
   test(`город сохраняет объекты, выбор и границы масштаба на ${viewport.width}×${viewport.height}`, async ({ page }, info) => {
-    test.setTimeout(90_000);
+    // CI's software renderer completed every individual gate, but the full
+    // selection/resize/three-map journey exhausted 90 s before its screenshot.
+    // Keep readiness budgets unchanged and bound the aggregate separately.
+    test.setTimeout(150_000);
     await page.setViewportSize(viewport);
     const errors: string[] = [], dataReads: string[] = [], driverWarnings: string[] = [];
     let startup = true;
@@ -56,7 +59,7 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
     const beforePan = Number(await host.getAttribute("data-camera-world-x"));
     const box = (await canvas.boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
-    await page.mouse.move(box.x + box.width * .75, box.y + box.height / 2, { steps: 10 }); await page.mouse.up();
+    await page.mouse.move(box.x + box.width * .75, box.y + box.height / 2, { steps: 2 }); await page.mouse.up();
     await expect.poll(async () => Number(await host.getAttribute("data-camera-world-x"))).not.toBe(beforePan);
     await canvas.hover(); await page.mouse.wheel(0, -1200);
     await expect.poll(async () => Number(await host.getAttribute("data-render-scale"))).toBe(4);
@@ -75,13 +78,14 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
     // Centre through public drag gestures, including on a narrow screen.
     let centeringDrags = 0;
     for (let attempt = 0; attempt < 30; attempt++) {
-      const scale = Number(await host.getAttribute("data-render-scale"));
-      const dx = (Number(await host.getAttribute("data-camera-world-x")) - target.x) * 8 * scale;
-      const dy = (Number(await host.getAttribute("data-camera-world-y")) - target.y) * 8 * scale;
+      const state = await host.evaluate(node => ({ scale: Number((node as HTMLElement).dataset.renderScale),
+        x: Number((node as HTMLElement).dataset.cameraWorldX), y: Number((node as HTMLElement).dataset.cameraWorldY) }));
+      const dx = (state.x - target.x) * 8 * state.scale;
+      const dy = (state.y - target.y) * 8 * state.scale;
       if (Math.abs(dx) < 2 && Math.abs(dy) < 2) break;
       const fraction = Math.min(1, box.width * .35 / Math.max(1, Math.abs(dx)), box.height * .35 / Math.max(1, Math.abs(dy)));
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
-      await page.mouse.move(box.x + box.width / 2 + dx * fraction, box.y + box.height / 2 + dy * fraction, { steps: 4 }); await page.mouse.up();
+      await page.mouse.move(box.x + box.width / 2 + dx * fraction, box.y + box.height / 2 + dy * fraction); await page.mouse.up();
       centeringDrags++;
     }
     expect(Math.abs(Number(await host.getAttribute("data-camera-world-x")) - target.x) * 8 * 4).toBeLessThan(2);

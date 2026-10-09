@@ -42,7 +42,17 @@ test("small atlas labels, land railways and visible air/sea traffic",async({page
   expect(houseAfter.width).toBeGreaterThan(houseBefore.width); expect(houseAfter.height).toBeGreaterThan(houseBefore.height);
   const zoomedShip=await position();await expect.poll(position).not.toEqual(zoomedShip);
   await page.emulateMedia({reducedMotion:"reduce"});
-  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+  await expect(planet).toHaveAttribute("data-paused","true");
+  // Camera interpolation may still commit a final reprojected snapshot after
+  // the frame loop stops. Require a stable interval before testing the pause.
+  await expect.poll(async()=>{
+    const before=await ship.getAttribute("data-progress");
+    await page.evaluate(()=>new Promise<void>(resolve=>{
+      let remaining=12;const frame=()=>{if(--remaining)requestAnimationFrame(frame);else resolve();};
+      requestAnimationFrame(frame);
+    }));
+    return await ship.getAttribute("data-progress")===before;
+  }).toBe(true);
   const still=await ship.getAttribute("data-progress");
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
   expect(await ship.getAttribute("data-progress")).toEqual(still);

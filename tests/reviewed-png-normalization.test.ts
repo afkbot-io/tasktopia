@@ -77,6 +77,47 @@ im.save(p, compress_level=0)
 
 afterEach(() => { for (const directory of temporary.splice(0)) rmSync(directory, { recursive: true }); });
 
+function transportFixture(key: string) {
+  const directory = mkdtempSync(join(tmpdir(), "tasktopia-reviewed-transport-"));
+  temporary.push(directory);
+  mkdirSync(join(directory, "scripts"));
+  for (const name of ["build-city-train.py", "build-micro-ambient.py", "micro_ambient_contract.py", "reviewed_png.py"]) {
+    copyFileSync(join(root, "scripts", name), join(directory, "scripts", name));
+  }
+  for (const family of ["city-train-v3", "city-ferry-v1"]) {
+    cpSync(join(root, authored, family), join(directory, authored, family), { recursive: true });
+  }
+  const runtime = "assets/pixel-city-pack/runtime/city-transport";
+  cpSync(join(root, runtime), join(directory, runtime), { recursive: true });
+  const png = join(directory, runtime, `${key}.png`);
+  const reviewPath = join(directory, authored, key.startsWith("ferry") ? "city-ferry-v1" : "city-train-v3", "visual-review.json");
+  const review = JSON.parse(readFileSync(reviewPath, "utf8"));
+  return { png, reviewPath, review, run: () => spawnSync(python, [join(directory, "scripts/build-city-train.py")], { encoding: "utf8" }) };
+}
+
+describe.each(["locomotive-north", "ferry-north"])("$0 transport PNG normalization", key => {
+  it("retains a reviewed lossless encoding after regenerating identical pixels", () => {
+    const f = transportFixture(key);
+    reencode(f.png);
+    f.review.sprites[key].runtimeSha256 = hash(f.png);
+    writeFileSync(f.reviewPath, JSON.stringify(f.review));
+    const before = hash(f.png);
+    expect(f.run().status).toBe(0);
+    expect(hash(f.png)).toBe(before);
+  });
+  it("rejects reviewed bytes whose pixels differ from the authored extraction", () => {
+    const f = transportFixture(key);
+    reencode(f.png, "pixels");
+    f.review.sprites[key].runtimeSha256 = hash(f.png);
+    writeFileSync(f.reviewPath, JSON.stringify(f.review));
+    const before = hash(f.png);
+    const result = f.run();
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("fresh normalized pixels or dimensions differ");
+    expect(hash(f.png)).toBe(before);
+  });
+});
+
 describe.each(cases)("$kind reviewed PNG normalization", spec => {
   it("preserves hash-pinned canonical encoding when fresh RGBA is exactly equal", () => {
     const f = fixture(spec);

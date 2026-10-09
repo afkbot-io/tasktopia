@@ -15,6 +15,7 @@ export function countryRailways(overview: CountryOverviewDto) {
   })).filter(stop=>stop!==null);
   const allowed = new Set(land.map(cell=>`${cell.x},${cell.y}`)), byId = new Map(stops.map(stop=>[stop.id,stop]));
   const routes = overview.railConnections === undefined ? atlasRailRoutes(stops,land) : overview.railConnections.flatMap(route=>{
+    if(route.points!==undefined)return [];
     const from=byId.get(route.fromStationId),to=byId.get(route.toStationId);
     if(!from||!to)return [];
     const cells=atlasGridPath(from.cell,new Set([`${to.cell.x},${to.cell.y}`]),allowed);

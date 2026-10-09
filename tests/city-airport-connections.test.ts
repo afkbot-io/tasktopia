@@ -39,6 +39,8 @@ describe("task-backed cross-city airport scene connections", { timeout: 30_000 }
     }
     await service.activateDistrict(scope, districtId, `${name}-activate`);
     let task = await service.createTask(scope, { cityId: city.id, districtId, title: "Regional airport", estimate: 1, idempotencyKey: `${name}-airport` });
+    // An undersized next lot defers the airport until a native terminal fits.
+    for(let i=0;task.serviceRole!=="AIRPORT"&&i<24;i++)task=await service.createTask(scope,{cityId:city.id,districtId,title:`Airport approach ${i}`,estimate:1,idempotencyKey:`${name}-airport-fit-${i}`});
     expect(task.serviceRole).toBe("AIRPORT");
     for (const status of ["STARTED", "IN_PROGRESS", "TESTING", ...(finished ? ["COMPLETED"] : [])] as const) {
       task = await service.updateTaskStatus(scope, { taskId: task.id, status: status as typeof task.status, comment: "Airport progress", idempotencyKey: `${name}-${status}` });
@@ -62,14 +64,14 @@ describe("task-backed cross-city airport scene connections", { timeout: 30_000 }
     const completionEvent = (await service.listEvents(countryId)).findLast(event => event.type === "task.status_changed");
     expect(completionEvent?.payload).toMatchObject({ taskId: unfinished.task.id, serviceRole: "AIRPORT", stage: 5, groundChanged: false });
     const after = await service.getCityScene(countryId, first.city.id);
-    expect(after.schemaVersion).toBe(4);
+    expect(after.schemaVersion).toBe(5);
     expect(after.sceneRevision).not.toBe(before.sceneRevision);
     expect(after.airportConnections).toHaveLength(2);
-    expect(after.airportConnections).toContainEqual({
+    expect(after.airportConnections).toContainEqual(expect.objectContaining({
       id: `${first.task.id}:${unfinished.task.id}`,
       from: { taskId: first.task.id, cityId: first.city.id, point: first.point },
       to: { taskId: unfinished.task.id, cityId: unfinished.city.id, point: unfinished.point },
-    });
+    }));
     expect(after.airportConnections.some(c => [c.from.taskId, c.to.taskId].includes(outside.task.id))).toBe(false);
     expect((await service.getCityScene(countryId, unfinished.city.id)).airportConnections).toEqual(after.airportConnections);
     await service.deleteTask(countryId, { taskId: unfinished.task.id, confirmTitle: unfinished.task.title, idempotencyKey: "Arrival-demolish" });
@@ -77,6 +79,23 @@ describe("task-backed cross-city airport scene connections", { timeout: 30_000 }
     expect(removed.sceneRevision).not.toBe(after.sceneRevision);
     expect(removed.airportConnections).toEqual([]);
     expect((await service.getCityScene(countryId, unfinished.city.id)).airportConnections).toEqual([]);
+  });
+
+  it("keeps an unavailable airfield closed consistently and never writes geometry during reads",async()=>{
+    const first=await airportInCity(countryId,"No field local",true),second=await airportInCity(countryId,"No field peer",true);
+    await db.prepare("UPDATE city_airport_sites_v1 SET geometry_json=NULL WHERE task_id=?").run(first.task.id);
+    await db.prepare("UPDATE countries SET world_version=world_version+1 WHERE id=?").run(countryId);
+    await db.prepare("DELETE FROM country_overview_snapshots_v1 WHERE country_id=?").run(countryId);
+    const before=await db.prepare("SELECT geometry_json FROM city_airport_sites_v1 WHERE task_id=?").get(first.task.id);
+    const scene=await service.getCitySceneForUser(userId,countryId,first.city.id);
+    expect(scene.airports).toContainEqual(expect.objectContaining({taskId:first.task.id,plan:null,reason:"NO_AIRFIELD"}));
+    expect(scene.airportConnections).toEqual([]);
+    const atlas=await service.getPlanetAtlas(userId);
+    expect(atlas.countries.flatMap(country=>country.cities.flatMap(city=>city.airports.map(airport=>airport.taskId)))).not.toContain(first.task.id);
+    const overview=await service.getCountryOverview(userId,countryId);expect(overview.connections).toEqual([]);
+    expect((await service.getCityDevelopment(userId,countryId,first.city.id)).transport?.find(network=>network.kind==="AIR")).toMatchObject({state:"NOT_READY",reason:"NO_AIRFIELD",routes:[]});
+    expect(await db.prepare("SELECT geometry_json FROM city_airport_sites_v1 WHERE task_id=?").get(first.task.id)).toEqual(before);
+    expect(second.task.serviceRole).toBe("AIRPORT");
   });
 
   it("publishes the same three-city domestic graph on CITY, COUNTRY and PLANET and reconnects after deletion",async()=>{
@@ -164,11 +183,11 @@ describe("task-backed cross-city airport scene connections", { timeout: 30_000 }
       } else {
         expect(planetAirports.find(airport => airport.taskId === arrival.task.id)?.center).toEqual(arrival.point);
         expect(views.city.airportConnections).toHaveLength(2);
-        expect(views.city.airportConnections).toContainEqual({
+        expect(views.city.airportConnections).toContainEqual(expect.objectContaining({
           id: `${departure.task.id}:${arrival.task.id}`,
           from: { taskId: departure.task.id, cityId: departure.city.id, point: departure.point },
           to: { taskId: arrival.task.id, cityId: arrival.city.id, point: arrival.point },
-        });
+        }));
         expect(views.overview.connections).toHaveLength(1);
         expect(new Set(views.overview.connections.flatMap(route => [route.fromCityId, route.toCityId])))
           .toEqual(new Set([departure.city.id, arrival.city.id]));

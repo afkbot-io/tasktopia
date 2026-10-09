@@ -14,8 +14,8 @@ const script = new URL("../deploy/compact-release-preflight.sh", import.meta.url
 const migrations = ["0023_compact_block_cutover.sql", "0024_dense_slot_planning.sql", "0029_country_road_snapshots.sql"];
 const currentCapabilities = {
   blockTemplateVersions: [2, BLOCK_TEMPLATE_VERSION],
-  citySceneSchemaVersions: [CITY_SCENE_SCHEMA_VERSION],
-  countryOverviewSchemaVersions: [COUNTRY_OVERVIEW_SCHEMA_VERSION],
+  citySceneSchemaVersions: [4,CITY_SCENE_SCHEMA_VERSION],
+  countryOverviewSchemaVersions: [7,COUNTRY_OVERVIEW_SCHEMA_VERSION],
   countryRoadSnapshotTables: ["country_road_snapshots_v1"],
   blockStructuralShapes: COMPACT_BUILDING_SHAPES,
 };

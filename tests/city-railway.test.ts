@@ -1,9 +1,35 @@
 import { describe, expect, it } from "vitest";
 import { planCityRailway, railwayIntersectsRect } from "../src/client/city-railway";
 import type { ChunkTaskDto } from "../src/shared/contracts";
+import { cityRailwayPassengerPaths } from "../src/shared/city-railway";
 const station = { id: "station", cityId: "city", serviceRole: "RAILWAY", stage: 5, status: "COMPLETED", origin: {x: 10, y: 10}, footprint: Array.from({length:24}, (_,i)=>({x:10+i%6,y:10+Math.floor(i/6)})), accessPath:[{x:13,y:14}] } as ChunkTaskDto;
 const bounds = {minX:0,minY:0,maxX:40,maxY:40};
 describe("city railway", () => {
+  it("does not rebuild the station approach for every scenery cell", () => {
+    const line = planCityRailway(bounds, [station], [])!;
+    const access = line.access;
+    let reads = 0;
+    Object.defineProperty(line, "access", { get: () => { reads++; return access; } });
+    railwayIntersectsRect(line, { x: 100, y: 100 }, 1, 1);
+    reads = 0;
+    for (let i = 0; i < 2000; i++) expect(railwayIntersectsRect(line, { x: 100 + i % 50, y: 100 }, 1, 1)).toBe(false);
+    expect(reads).toBe(0);
+  });
+  it("preserves native approach intersections for both axes and a replaced plan", () => {
+    const original = planCityRailway(bounds, [station], [])!;
+    const moved = { ...original, access: original.access.map(p => ({ x: p.x + 4, y: p.y + 4 })), platform: { x: original.platform.x + 4, y: original.platform.y + 4 } };
+    for (const line of [original, moved, { ...original, axis: "vertical" as const, from: { x: 4, y: -10 }, to: { x: 4, y: 60 } }]) {
+      const access = cityRailwayPassengerPaths(line).access;
+      for (let y = -10; y < 55; y += 3) for (let x = -10; x < 55; x += 3) {
+        const origin = { x: x + .25, y: y + .25 }, width = 3, height = 2;
+        const track = line.axis === "horizontal"
+          ? origin.y < line.from.y + 4 && origin.y + height > line.from.y - 3 && origin.x <= line.to.x && origin.x + width >= line.from.x
+          : origin.x < line.from.x + 4 && origin.x + width > line.from.x - 3 && origin.y <= line.to.y && origin.y + height >= line.from.y;
+        const expected = track || access.some(p => p.x < origin.x + width && p.x + 1 > origin.x && p.y < origin.y + height && p.y + 1 > origin.y);
+        expect(railwayIntersectsRect(line, origin, width, height)).toBe(expected);
+      }
+    }
+  });
   it("has no line without a station", () => expect(planCityRailway(bounds, [], [])).toBeUndefined());
   it("keeps the straight line and access off existing and reserved parcels", () => {
     const sites = [{id:"future",kind:"BUILDING" as const,origin:{x:0,y:17},width:40,height:7}];

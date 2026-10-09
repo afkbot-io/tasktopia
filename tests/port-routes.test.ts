@@ -6,14 +6,20 @@ const stops:PortStop[]=[
  {id:"a",cityId:"a-city",countryId:"a-country",continent:0,stage:5,dock:{x:2,y:4}},
  {id:"b",cityId:"b-city",countryId:"b-country",continent:1,stage:5,dock:{x:12,y:4}},
 ];
-it("requires two completed real ports on different continents and uses their shared SEA schedule",()=>{
+it("requires two completed real ports and uses their shared SEA schedule",()=>{
  const routes=portRoutes(stops,water,1);expect(routes).toHaveLength(1);
  expect(routes[0]).toMatchObject({id:transportSchedule("SEA","a","b").id,from:stops[0],to:stops[1]});
  expect(routes[0]!.cells[0]).toEqual(stops[0]!.dock);expect(routes[0]!.cells.at(-1)).toEqual(stops[1]!.dock);
  expect(portRoutes(stops.slice(0,1),water,1)).toEqual([]);
  expect(portRoutes([stops[0]!,{...stops[1]!,stage:4}],water,1)).toEqual([]);
- expect(portRoutes([stops[0]!,{...stops[1]!,continent:0}],water,1)).toEqual([]);
+ expect(portRoutes([stops[0]!,{...stops[1]!,continent:0}],water,1)).toHaveLength(1);
  expect(portRoutes([...stops].reverse(),water,1)).toEqual(routes);
+});
+
+it("connects coastal projects in the same country without an artificial continent restriction", () => {
+ const domestic = stops.map(stop => ({ ...stop, countryId: "country", continent: 0 }));
+ expect(portRoutes(domestic, water, 1)).toHaveLength(1);
+ expect(portRoutes(domestic, water.filter(p => p.x !== 7), 1)).toEqual([]);
 });
 it("rejects narrow channels and land docks, and checks full hull clearance around every bend",()=>{
  const narrow=water.filter(p=>p.x!==7||p.y===4);

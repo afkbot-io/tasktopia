@@ -1,0 +1,3958 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-08T00:06:40.813484+00:00",
+  "runtimeRevision": "f6e0adad9398cd23ab5723d3536ef26c71ab4c68",
+  "baseRevision": "e6c173c7e0c4a44b2c9c3f7b379a7bebd2e34daf",
+  "status": "partial-external-blocker",
+  "scope": {
+    "runtimeChangedDuringAudit": false,
+    "publicLoadTest": false,
+    "deploymentPerformed": false,
+    "scmApprovalPerformed": false
+  },
+  "runtimeInputs": {
+    "runtimeRevision": "f6e0adad9398cd23ab5723d3536ef26c71ab4c68",
+    "filesChecked": 28,
+    "changed": []
+  },
+  "checks": {
+    "typecheck": "passed",
+    "eslint": "passed",
+    "vitest": {
+      "caseInstances": 1493,
+      "sourceFiles": 278,
+      "outcomes": {
+        "passed": 1493
+      },
+      "runs": [
+        "unit.json",
+        "unit-rerun.json",
+        "unit-final-retry.json",
+        "unit-temp-final.json"
+      ],
+      "identity": "file + fullName + duplicate occurrence per run"
+    },
+    "pythonUnitPassed": 55,
+    "assetVerification": "passed",
+    "mcpHttp": {
+      "passed": true,
+      "inventoryTools": 47,
+      "everyToolMutatedOverHttp": false,
+      "countryIdExplicit": true,
+      "protocolNegotiation": [
+        "modern",
+        "legacy 2025"
+      ],
+      "authChecks": [
+        "Bearer-only",
+        "401 challenge",
+        "Origin 403",
+        "revoked token",
+        "read-only/task/country scopes",
+        "resource scopes"
+      ]
+    },
+    "dependencies": {
+      "info": 0,
+      "low": 0,
+      "moderate": 6,
+      "high": 0,
+      "critical": 0,
+      "total": 6
+    }
+  },
+  "browser": {
+    "passedUniqueCases": 201,
+    "standard": {
+      "startTime": "2026-10-07T23:14:36.511Z",
+      "duration": 758847.277,
+      "expected": 182,
+      "skipped": 47,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "devices": {
+      "startTime": "2026-10-07T23:27:50.169Z",
+      "duration": 60848.001000000004,
+      "expected": 12,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "recoveredOriginalSkips": [
+      {
+        "file": "ground-bake-cache.spec.ts",
+        "title": "keeps one ground instruction set across disposable sequential sources",
+        "project": "chromium",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ],
+        "report": "extra-browser.json"
+      },
+      {
+        "file": "task-modal-unavailable.spec.ts",
+        "title": "real deletion clears an already open task after its authoritative HTTP 404",
+        "project": "chromium",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ],
+        "report": "task-modal-accepted.json"
+      },
+      {
+        "file": "task-modal-unavailable.spec.ts",
+        "title": "a definitive HTTP 403 clears task details and actions on realtime refresh",
+        "project": "chromium",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ],
+        "report": "task-modal-accepted.json"
+      },
+      {
+        "file": "task-modal-unavailable.spec.ts",
+        "title": "temporary HTTP 503 preserves the loaded card and a later refresh recovers",
+        "project": "chromium",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ],
+        "report": "task-modal-accepted.json"
+      },
+      {
+        "file": "navigation-cache.spec.ts",
+        "title": "replays both task statuses before renderer readiness, caches task cards, and retries a failed authoritative refresh",
+        "project": "chromium",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ],
+        "report": "navigation-final.json"
+      },
+      {
+        "file": "navigation-cache.spec.ts",
+        "title": "десять возвратов Планета–Город сохраняют камеру, renderer и не читают сцену",
+        "project": "chromium",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ],
+        "report": "navigation-final.json"
+      },
+      {
+        "file": "city-mobility.spec.ts",
+        "title": "keeps cars and walkers moving safely through a long sampled run, district focus and atlas return",
+        "project": "chromium",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ],
+        "report": "mobility-final.json"
+      }
+    ],
+    "remainingOriginalSkippedCount": 40,
+    "remainingOriginalSkips": [
+      {
+        "file": "block-infill.spec.ts",
+        "title": "infill tasks, block plaques and district boundaries survive a map round trip",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Isolated block_infill_20260906 fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "building-diversity-art.spec.ts",
+        "title": "city architecture renders all five real construction stages and opens its tasks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires seed-building-diversity-preview's isolated local fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "city-landmark-art.spec.ts",
+        "title": "пять стадий торгового центра на одном участке открывают одну задачу",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Изолированный сценарий seed-landmark-preview"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "city-padding-large.spec.ts",
+        "title": "20 sprint city: bounded exterior materials during a real >64-cell jump and full-territory review",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only release_perf_20260907_b fixture required"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 1 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          47
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 2 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          44
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 3 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          41
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 4 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          44
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 5 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          38
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "completed city station has a moving locomotive and three coupled wagons",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Dedicated local fixture with completed transport services"
+        ],
+        "durations": [
+          40
+        ]
+      },
+      {
+        "file": "compact-airports.spec.ts",
+        "title": "completed task airports launch compact flights and retain their identity in both map levels",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Dedicated two-city task-backed airport fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-public-spaces.spec.ts",
+        "title": "real generated compact public spaces preserve stages, object selection and all map levels",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated public-spaces preview fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-release.spec.ts",
+        "title": "480real tasks across20sprints keep compact art, one resident scene and accessible map transitions",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit480task/20sprint isolated release fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-release.spec.ts",
+        "title": "six newly authored service families render and open their actual tasks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit480task/20sprint isolated release fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-release.spec.ts",
+        "title": "whole20sprint city fits one review capture without changing its geography",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit480task/20sprint isolated release fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-service-art.spec.ts",
+        "title": "real auto-assigned clinic and fire station render at native proportions and open their own tasks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires the exact isolated service-art fixture; read-only after login"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-sites-incidents.spec.ts",
+        "title": "transfer releases its old parcel without an editing control; deletion retains only the final ruin",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated local mutable compact fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-sites-incidents.spec.ts",
+        "title": "HOTFIX verification is quiet; active compact construction has bounded effects that clean up",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated local mutable compact fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-sites-incidents.spec.ts",
+        "title": "ruins remain selectable after a new login without relocation markers",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated local mutable compact fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "courtyard-art.spec.ts",
+        "title": "published developed families and completed courtyard furniture render through one real scene",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only gate for a newly seeded local courtyard art fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "courtyard-art.spec.ts",
+        "title": "recaptures settled overview and clock-controlled night without transition overlays",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only gate for a newly seeded local courtyard art fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "growth.spec.ts",
+        "title": "captures a deterministic city growth checkpoint",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with a growth fixture and output path"
+        ],
+        "durations": [
+          66
+        ]
+      },
+      {
+        "file": "intercity-bridge.spec.ts",
+        "title": "recorded bridge and its road approaches render outside resident city chunks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local map fixture"
+        ],
+        "durations": [
+          42
+        ]
+      },
+      {
+        "file": "intercity-roads.spec.ts",
+        "title": "canonical dry roads continue beyond city chunks and render on the country map without foreign reads",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only isolated intercity preview required"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "map-loading-geography.spec.ts",
+        "title": "100-task city opens repeatedly and planet zoom preserves a panned anchor",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires the isolated megacity fixture"
+        ],
+        "durations": [
+          44
+        ]
+      },
+      {
+        "file": "map-loading-geography.spec.ts",
+        "title": "a silent worker cannot leave city loading forever",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires the isolated megacity fixture"
+        ],
+        "durations": [
+          39
+        ]
+      },
+      {
+        "file": "map-opening-budget.spec.ts",
+        "title": "records cold and repeated map opening on the fixed 100-task city",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Dedicated local 100-task fixture"
+        ],
+        "durations": [
+          40
+        ]
+      },
+      {
+        "file": "megacity-validation.spec.ts",
+        "title": "opens and captures the 100-task megacity",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with MEGACITY_VALIDATION_SCREENSHOT_DIR"
+        ],
+        "durations": [
+          76
+        ]
+      },
+      {
+        "file": "padding-native-prototype.spec.ts",
+        "title": "measures bounded missing-region native atlas approaches without changing the live CITY renderer",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated renderer prototype only, not an app acceptance test"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "padding-retry.spec.ts",
+        "title": "native atlas preload failure stays unready and explicit Retry rebuilds one complete renderer",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit read-only large-city padding fixture required"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "planet-city-races.spec.ts",
+        "title": "отмена медленного входа и быстрый выбор другого проекта сохраняют единую сессию",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Нужен небольшой изолированный мир навигации"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "planet-city-roads.spec.ts",
+        "title": "каноническая дорога продолжается за резидентную сцену при панорамировании и изменении окна",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Нужен изолированный мир с несколькими городами"
+        ],
+        "durations": [
+          47
+        ]
+      },
+      {
+        "file": "readme-showcase.spec.ts",
+        "title": "captures the real README showcase city",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with README_SCREENSHOT_PATH"
+        ],
+        "durations": [
+          45
+        ]
+      },
+      {
+        "file": "release-scale.spec.ts",
+        "title": "1000-task city: cold frame, bounded residency and 30 warm atlas round trips",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit local, real-generator scale fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "контраст и прокрутка четырёх разделов соответствуют WCAG AA",
+        "project": "webkit-visual",
+        "status": "skipped",
+        "skipReasons": [
+          "Одинаковая палитра; браузерная геометрия отдельно проверяется в WebKit"
+        ],
+        "durations": [
+          153
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "карточка PWA остаётся внутри безопасной области экрана",
+        "project": "webkit-visual",
+        "status": "skipped",
+        "skipReasons": [
+          "CDP-эмуляция выреза экрана доступна в Chromium"
+        ],
+        "durations": [
+          155
+        ]
+      },
+      {
+        "file": "world-validation.spec.ts",
+        "title": "validates and captures ten new-build cities",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with WORLD_VALIDATION_SCREENSHOT_DIR"
+        ],
+        "durations": [
+          56
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "installable shell registers a revisioned worker and survives offline navigation",
+        "project": "mobile-webkit",
+        "status": "skipped",
+        "skipReasons": [
+          "Playwright WebKit does not expose a production-equivalent service-worker lifecycle"
+        ],
+        "durations": [
+          136
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "push opt-in waits for a user gesture and can be disabled from the mobile profile",
+        "project": "mobile-webkit",
+        "status": "skipped",
+        "skipReasons": [
+          "The deterministic PushManager test double targets Chromium's PWA container"
+        ],
+        "durations": [
+          143
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "PWA открывает обычную ссылку, превью и уведомление сразу карточкой",
+        "project": "mobile-webkit",
+        "status": "skipped",
+        "skipReasons": [
+          "Service Worker и Notifications проверяются в Chromium; прямые ссылки отдельно проходят WebKit"
+        ],
+        "durations": [
+          140
+        ]
+      }
+    ],
+    "standardCases": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "authentication and MCP settings have no serious accessibility violations",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1377
+        ]
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "key screens do not overflow at supported breakpoints",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1020
+        ]
+      },
+      {
+        "file": "account-lifecycle.spec.ts",
+        "title": "password change, recovery and fresh login work through the UI",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2284
+        ]
+      },
+      {
+        "file": "account-lifecycle.spec.ts",
+        "title": "owner creates a link for a new user who registers and accepts it",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          982
+        ]
+      },
+      {
+        "file": "aircraft-clock.spec.ts",
+        "title": "CITY and PLANET resume the same airport pair phase after a reload",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5930
+        ]
+      },
+      {
+        "file": "app.spec.ts",
+        "title": "CSP permits CDN asset fetches and the web manifest",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          6
+        ]
+      },
+      {
+        "file": "app.spec.ts",
+        "title": "public AI integration guide is directly accessible",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          26
+        ]
+      },
+      {
+        "file": "app.spec.ts",
+        "title": "login, map and MCP token management",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          8176
+        ]
+      },
+      {
+        "file": "app.spec.ts",
+        "title": "registration creates the named country and first city",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1907
+        ]
+      },
+      {
+        "file": "atlas-flight-geometry.spec.ts",
+        "title": "flight arc sampler agrees with native SVG geometry across zoom and direction",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          236
+        ]
+      },
+      {
+        "file": "atlas-flight-geometry.spec.ts",
+        "title": "flight arc sampler agrees with native SVG geometry across zoom and direction",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1106
+        ]
+      },
+      {
+        "file": "atlas-pixel-zoom.spec.ts",
+        "title": "planet camera retains terrain cells while zooming and keeps pixel materials",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4166
+        ]
+      },
+      {
+        "file": "atlas-pixel-zoom.spec.ts",
+        "title": "planet camera retains terrain cells while zooming and keeps pixel materials",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3563
+        ]
+      },
+      {
+        "file": "atlas-transport.spec.ts",
+        "title": "small atlas labels, land railways and visible air/sea traffic",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1620
+        ]
+      },
+      {
+        "file": "atlas-transport.spec.ts",
+        "title": "small atlas labels, land railways and visible air/sea traffic",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3273
+        ]
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "uses the game asset pack without exposing implementation notes",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          298
+        ]
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "keeps the mobile login form ahead of decorative content",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          152
+        ]
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "shows a clear duplicate-registration error and keeps the form usable",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          340
+        ]
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "requires matching passwords before sending registration",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          323
+        ]
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "shows only login when public registration is disabled",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          234
+        ]
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "keeps authentication pending through bootstrap and offers retry after a country-load failure",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1991
+        ]
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "double submission sends one request and keeps the mode stable",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          266
+        ]
+      },
+      {
+        "file": "block-infill.spec.ts",
+        "title": "infill tasks, block plaques and district boundaries survive a map round trip",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Isolated block_infill_20260906 fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "building-diversity-art.spec.ts",
+        "title": "city architecture renders all five real construction stages and opens its tasks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires seed-building-diversity-preview's isolated local fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "building-profile-city.spec.ts",
+        "title": "real city generation and rendering: PRIVATE",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          9714
+        ]
+      },
+      {
+        "file": "building-profile-city.spec.ts",
+        "title": "real city generation and rendering: NEW_BUILD",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          10140
+        ]
+      },
+      {
+        "file": "building-profile-city.spec.ts",
+        "title": "real city generation and rendering: MIXED_URBAN",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          9843
+        ]
+      },
+      {
+        "file": "building-profile-city.spec.ts",
+        "title": "real city generation and rendering: COMMERCIAL",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          9848
+        ]
+      },
+      {
+        "file": "building-profile-city.spec.ts",
+        "title": "real city generation and rendering: CIVIC",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          11287
+        ]
+      },
+      {
+        "file": "chunk-pipeline.spec.ts",
+        "title": "starts the whole-city request before slow sprite downloads",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4150
+        ]
+      },
+      {
+        "file": "chunk-pipeline.spec.ts",
+        "title": "retries a failed building texture before the atomic scene commit",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2824
+        ]
+      },
+      {
+        "file": "city-art-load-audit.spec.ts",
+        "title": "город сохраняет объекты, выбор и границы масштаба на 1440×1100",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          12360
+        ]
+      },
+      {
+        "file": "city-art-load-audit.spec.ts",
+        "title": "город сохраняет объекты, выбор и границы масштаба на 390×844",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          8878
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "resident images finishing on the planet do not rebuild the hidden city",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3260
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "city starts building images while terrain is pending, but waits before publishing",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2923
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "city reuses the authored prop atlas instead of fetching individual park and construction props",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2739
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "a delayed first connection preserves the initial scene through first-frame activation",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2887
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "walking routes wait for resident sprites without holding the first city frame",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2975
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "resident images finishing on the planet do not rebuild the hidden city",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3311
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "city starts building images while terrain is pending, but waits before publishing",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3087
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "city reuses the authored prop atlas instead of fetching individual park and construction props",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2592
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "a delayed first connection preserves the initial scene through first-frame activation",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2544
+        ]
+      },
+      {
+        "file": "city-asset-overlap.spec.ts",
+        "title": "walking routes wait for resident sprites without holding the first city frame",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2923
+        ]
+      },
+      {
+        "file": "city-development.spec.ts",
+        "title": "city development opens lazily and links to existing service tasks",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4376
+        ]
+      },
+      {
+        "file": "city-development.spec.ts",
+        "title": "separates city milestones from districts and identifies repeated services",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1704
+        ]
+      },
+      {
+        "file": "city-development.spec.ts",
+        "title": "transport cards explain paired routes and waiting infrastructure on mobile",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2064
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "documents remain read-only, preserve context across task preview and fit a phone",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3233
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "document failure retries without stale rows and empty attention is explicit",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1163
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "world inspection has no work mutation controls or requests",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          410
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "a shrinking queue returns to an existing page",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1128
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "documents remain read-only, preserve context across task preview and fit a phone",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2549
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "document failure retries without stale rows and empty attention is explicit",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1252
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "world inspection has no work mutation controls or requests",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1046
+        ]
+      },
+      {
+        "file": "city-documents.spec.ts",
+        "title": "a shrinking queue returns to an existing page",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1127
+        ]
+      },
+      {
+        "file": "city-grass-continuity.spec.ts",
+        "title": "трава на границе города: проверка цвета",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4218
+        ]
+      },
+      {
+        "file": "city-grass-continuity.spec.ts",
+        "title": "трава на границе города: родные текстуры",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4211
+        ]
+      },
+      {
+        "file": "city-landmark-art.spec.ts",
+        "title": "пять стадий торгового центра на одном участке открывают одну задачу",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Изолированный сценарий seed-landmark-preview"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "city-life-parking.spec.ts",
+        "title": "событие у завершённого дома прибывает, действует и завершается без записей задач",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          7320
+        ]
+      },
+      {
+        "file": "city-life-parking.spec.ts",
+        "title": "машина заезжает на существующий мощёный участок парковки и возвращается на дорогу",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          22509
+        ]
+      },
+      {
+        "file": "city-loading-panel.spec.ts",
+        "title": "переход показывает настоящий этап и не рисует полноэкранную анимацию",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3149
+        ]
+      },
+      {
+        "file": "city-mobility.spec.ts",
+        "title": "keeps cars and walkers moving safely through a long sampled run, district focus and atlas return",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Use the dedicated compact demo schema and E2E_MOBILITY_FIXTURE=true"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "city-padding-large.spec.ts",
+        "title": "20 sprint city: bounded exterior materials during a real >64-cell jump and full-territory review",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only release_perf_20260907_b fixture required"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "city-railway-transfer.spec.ts",
+        "title": "moving a station updates its approach on the open map while retaining the corridor",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5637
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 1 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          47
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 2 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          44
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 3 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          41
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 4 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          44
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "transport construction stage 5 renders without a premature train",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local transport scene fixture"
+        ],
+        "durations": [
+          38
+        ]
+      },
+      {
+        "file": "city-railway.spec.ts",
+        "title": "completed city station has a moving locomotive and three coupled wagons",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Dedicated local fixture with completed transport services"
+        ],
+        "durations": [
+          40
+        ]
+      },
+      {
+        "file": "city-train-clock.spec.ts",
+        "title": "server time preserves a platform stop across remount despite a wrong device clock",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5463
+        ]
+      },
+      {
+        "file": "coastal-port.spec.ts",
+        "title": "shows five real port stages with a continuous approach and pier",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          16344
+        ]
+      },
+      {
+        "file": "coastal-port.spec.ts",
+        "title": "a real port docks and dispatches the same scheduled ship",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          6277
+        ]
+      },
+      {
+        "file": "coastal-port.spec.ts",
+        "title": "renders a coastal country provisioned outside the display interface",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2850
+        ]
+      },
+      {
+        "file": "coastal-port.spec.ts",
+        "title": "an automatically assigned port keeps its approach clear beside a landward railway",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4911
+        ]
+      },
+      {
+        "file": "coastal-world.spec.ts",
+        "title": "renders the persisted sea profile continuously when panning beyond city chunks",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3570
+        ]
+      },
+      {
+        "file": "comment-layout.spec.ts",
+        "title": "keeps every Markdown block in a task comment at full readable width",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          89
+        ]
+      },
+      {
+        "file": "comment-layout.spec.ts",
+        "title": "keeps task documents and checklist readable without horizontal overflow",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          95
+        ]
+      },
+      {
+        "file": "compact-airports.spec.ts",
+        "title": "completed task airports launch compact flights and retain their identity in both map levels",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Dedicated two-city task-backed airport fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-city.spec.ts",
+        "title": "renders every compact city ground chunk, opens its task, and survives country return",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          6364
+        ]
+      },
+      {
+        "file": "compact-city.spec.ts",
+        "title": "opens a deep-linked task card before requesting city terrain",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2501
+        ]
+      },
+      {
+        "file": "compact-public-spaces.spec.ts",
+        "title": "real generated compact public spaces preserve stages, object selection and all map levels",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated public-spaces preview fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-release.spec.ts",
+        "title": "480real tasks across20sprints keep compact art, one resident scene and accessible map transitions",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit480task/20sprint isolated release fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-release.spec.ts",
+        "title": "six newly authored service families render and open their actual tasks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit480task/20sprint isolated release fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-release.spec.ts",
+        "title": "whole20sprint city fits one review capture without changing its geography",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit480task/20sprint isolated release fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-service-art.spec.ts",
+        "title": "real auto-assigned clinic and fire station render at native proportions and open their own tasks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires the exact isolated service-art fixture; read-only after login"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-sites-incidents.spec.ts",
+        "title": "transfer releases its old parcel without an editing control; deletion retains only the final ruin",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated local mutable compact fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-sites-incidents.spec.ts",
+        "title": "HOTFIX verification is quiet; active compact construction has bounded effects that clean up",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated local mutable compact fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "compact-sites-incidents.spec.ts",
+        "title": "ruins remain selectable after a new login without relocation markers",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated local mutable compact fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "construction-lifecycle.spec.ts",
+        "title": "construction life reacts live to task stages and defects without reloading the map",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          6964
+        ]
+      },
+      {
+        "file": "country-activity.spec.ts",
+        "title": "live progress keeps the planet scene and camera",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2537
+        ]
+      },
+      {
+        "file": "country-members.spec.ts",
+        "title": "owner invites a registered viewer, handles errors and revokes access with confirmation",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1544
+        ]
+      },
+      {
+        "file": "country-members.spec.ts",
+        "title": "MEMBER has no membership controls",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          352
+        ]
+      },
+      {
+        "file": "country-members.spec.ts",
+        "title": "VIEWER has no membership controls",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          364
+        ]
+      },
+      {
+        "file": "country-members.spec.ts",
+        "title": "membership load failure retries without enabling changes against an unknown list",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          462
+        ]
+      },
+      {
+        "file": "courtyard-art.spec.ts",
+        "title": "published developed families and completed courtyard furniture render through one real scene",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only gate for a newly seeded local courtyard art fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "courtyard-art.spec.ts",
+        "title": "recaptures settled overview and clock-controlled night without transition overlays",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only gate for a newly seeded local courtyard art fixture"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "district-development.spec.ts",
+        "title": "active district is visible in city mode and empty plans never reserve land",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          12474
+        ]
+      },
+      {
+        "file": "district-development.spec.ts",
+        "title": "указатель района и отдельная сводка — 1440×900",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5604
+        ]
+      },
+      {
+        "file": "district-development.spec.ts",
+        "title": "указатель района и отдельная сводка — 1440×1100",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          6091
+        ]
+      },
+      {
+        "file": "district-development.spec.ts",
+        "title": "указатель района и отдельная сводка — 390×844",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4094
+        ]
+      },
+      {
+        "file": "foreign-transport-live.spec.ts",
+        "title": "foreign airport changes refresh an open map without reloading the page",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4420
+        ]
+      },
+      {
+        "file": "forest-ui-archive.spec.ts",
+        "title": "архив, его ошибки и история участка читаются в общей теме",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4875
+        ]
+      },
+      {
+        "file": "forest-ui-archive.spec.ts",
+        "title": "архив, его ошибки и история участка читаются в общей теме",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5319
+        ]
+      },
+      {
+        "file": "forest-ui-design.spec.ts",
+        "title": "вход использует хвойную поверхность и читаемые локальные шрифты",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          471
+        ]
+      },
+      {
+        "file": "forest-ui-design.spec.ts",
+        "title": "вход использует хвойную поверхность и читаемые локальные шрифты",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          878
+        ]
+      },
+      {
+        "file": "forest-ui-load.spec.ts",
+        "title": "новая тема укладывается в бюджеты шрифтов и открывает город без дополнительных чтений",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4295
+        ]
+      },
+      {
+        "file": "forest-ui-states.spec.ts",
+        "title": "без буфера обмена ссылка доступна в карточке вместо системного диалога",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1255
+        ]
+      },
+      {
+        "file": "forest-ui-states.spec.ts",
+        "title": "пустое состояние, ошибка, ожидание, секрет и отзыв MCP-ключа доступны в новой теме",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2003
+        ]
+      },
+      {
+        "file": "forest-ui-states.spec.ts",
+        "title": "корневой шрифт 200%, уменьшенное движение и горизонтальный экран сохраняют навигацию",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1405
+        ]
+      },
+      {
+        "file": "forest-ui-states.spec.ts",
+        "title": "без буфера обмена ссылка доступна в карточке вместо системного диалога",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          877
+        ]
+      },
+      {
+        "file": "forest-ui-states.spec.ts",
+        "title": "пустое состояние, ошибка, ожидание, секрет и отзыв MCP-ключа доступны в новой теме",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2743
+        ]
+      },
+      {
+        "file": "forest-ui-states.spec.ts",
+        "title": "корневой шрифт 200%, уменьшенное движение и горизонтальный экран сохраняют навигацию",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1294
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 320",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          10776
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 390",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          11476
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 768",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          12366
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 1440",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          20007
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 320",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          13196
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 390",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          13232
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 768",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          13943
+        ]
+      },
+      {
+        "file": "forest-ui-surfaces.spec.ts",
+        "title": "все основные панели согласованы и доступны на ширине 1440",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          16139
+        ]
+      },
+      {
+        "file": "game-interface.spec.ts",
+        "title": "карточка и компактное меню сохраняют функции, а настройки реально ограничивают рендер",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          7465
+        ]
+      },
+      {
+        "file": "ground-bake-cache.spec.ts",
+        "title": "keeps one ground instruction set across disposable sequential sources",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit installed-Pixi ground bake cache regression"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "growth.spec.ts",
+        "title": "captures a deterministic city growth checkpoint",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with a growth fixture and output path"
+        ],
+        "durations": [
+          66
+        ]
+      },
+      {
+        "file": "intercity-bridge.spec.ts",
+        "title": "recorded bridge and its road approaches render outside resident city chunks",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Local map fixture"
+        ],
+        "durations": [
+          42
+        ]
+      },
+      {
+        "file": "intercity-roads.spec.ts",
+        "title": "canonical dry roads continue beyond city chunks and render on the country map without foreign reads",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only isolated intercity preview required"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "map-attention.spec.ts",
+        "title": "attention outlines assigned buildings without camera or terrain changes",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          14299
+        ]
+      },
+      {
+        "file": "map-attention.spec.ts",
+        "title": "overdue attention advances with time and retry recovers metadata",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3384
+        ]
+      },
+      {
+        "file": "map-image-cdn.spec.ts",
+        "title": "display-only map images decode a CDN response without CORS headers",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          115
+        ]
+      },
+      {
+        "file": "map-image-cdn.spec.ts",
+        "title": "planet terrain compositor uses origin sheets even with a display-only CDN",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          93
+        ]
+      },
+      {
+        "file": "map-loading-geography.spec.ts",
+        "title": "100-task city opens repeatedly and planet zoom preserves a panned anchor",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires the isolated megacity fixture"
+        ],
+        "durations": [
+          44
+        ]
+      },
+      {
+        "file": "map-loading-geography.spec.ts",
+        "title": "a silent worker cannot leave city loading forever",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires the isolated megacity fixture"
+        ],
+        "durations": [
+          39
+        ]
+      },
+      {
+        "file": "map-opening-budget.spec.ts",
+        "title": "records cold and repeated map opening on the fixed 100-task city",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Dedicated local 100-task fixture"
+        ],
+        "durations": [
+          40
+        ]
+      },
+      {
+        "file": "map-retry.spec.ts",
+        "title": "ошибка данных города оставляет планету доступной для повторного входа",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2643
+        ]
+      },
+      {
+        "file": "map-retry.spec.ts",
+        "title": "таймаут декодера города освобождает обещание Pixi и разрешает повтор",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          23271
+        ]
+      },
+      {
+        "file": "map-retry.spec.ts",
+        "title": "таймаут графики планеты освобождает загрузку и повторно декодирует изображения",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          20719
+        ]
+      },
+      {
+        "file": "map-streaming.spec.ts",
+        "title": "initial realtime connection preserves the scene but reconnect refreshes transport",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4659
+        ]
+      },
+      {
+        "file": "map-streaming.spec.ts",
+        "title": "loads a complete city through one request and never calls chunk endpoints",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          6500
+        ]
+      },
+      {
+        "file": "map-streaming.spec.ts",
+        "title": "renders the normalized city frame before input and crosses one level at the shared zoom-out limit",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3244
+        ]
+      },
+      {
+        "file": "map-streaming.spec.ts",
+        "title": "keeps the loader visible until the delayed whole-city scene commits",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2804
+        ]
+      },
+      {
+        "file": "map-streaming.spec.ts",
+        "title": "returns to the planet and allows city re-entry when the scene request fails",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2986
+        ]
+      },
+      {
+        "file": "map-streaming.spec.ts",
+        "title": "reduced motion still produces one complete static city frame",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2806
+        ]
+      },
+      {
+        "file": "map-streaming.spec.ts",
+        "title": "ten planet-city cycles keep one renderer and a stable asset residency",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          6976
+        ]
+      },
+      {
+        "file": "megacity-validation.spec.ts",
+        "title": "opens and captures the 100-task megacity",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with MEGACITY_VALIDATION_SCREENSHOT_DIR"
+        ],
+        "durations": [
+          76
+        ]
+      },
+      {
+        "file": "navigation-cache.spec.ts",
+        "title": "replays both task statuses before renderer readiness, caches task cards, and retries a failed authoritative refresh",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only run against the explicitly selected compact/atlas QA schema"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "navigation-cache.spec.ts",
+        "title": "десять возвратов Планета–Город сохраняют камеру, renderer и не читают сцену",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Read-only run against the explicitly selected compact/atlas QA schema"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "overview-trains.spec.ts",
+        "title": "PLANET preserves the server-scheduled consist and honour reduced motion",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2350
+        ]
+      },
+      {
+        "file": "padding-native-prototype.spec.ts",
+        "title": "measures bounded missing-region native atlas approaches without changing the live CITY renderer",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit isolated renderer prototype only, not an app acceptance test"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "padding-retry.spec.ts",
+        "title": "native atlas preload failure stays unready and explicit Retry rebuilds one complete renderer",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit read-only large-city padding fixture required"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "planet-city-races.spec.ts",
+        "title": "отмена медленного входа и быстрый выбор другого проекта сохраняют единую сессию",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Нужен небольшой изолированный мир навигации"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "planet-city-roads.spec.ts",
+        "title": "каноническая дорога продолжается за резидентную сцену при панорамировании и изменении окна",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Нужен изолированный мир с несколькими городами"
+        ],
+        "durations": [
+          47
+        ]
+      },
+      {
+        "file": "planet-city-ui.spec.ts",
+        "title": "планета открывает город напрямую и сохраняет камеру без фоновой сцены",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5349
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "планета не предлагает городской слой и фильтры",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1047
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "верхние панели закрывают предыдущую при мыши и клавиатуре",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1224
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "городская панель без пустой колонки 1440",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3520
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "городская панель без пустой колонки 390",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2678
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "подписи меняются от стран к городам, материал не перестраивается при зуме",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2998
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "маска планеты покрывает высокий экран без прямого обрезания",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1904
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "планета не предлагает городской слой и фильтры",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1333
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "верхние панели закрывают предыдущую при мыши и клавиатуре",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1744
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "городская панель без пустой колонки 1440",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2930
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "городская панель без пустой колонки 390",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2259
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "подписи меняются от стран к городам, материал не перестраивается при зуме",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3681
+        ]
+      },
+      {
+        "file": "planet-feedback.spec.ts",
+        "title": "маска планеты покрывает высокий экран без прямого обрезания",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2130
+        ]
+      },
+      {
+        "file": "planet-navigation.spec.ts",
+        "title": "районы различают загрузку, пустой ответ и ошибку с повтором",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3602
+        ]
+      },
+      {
+        "file": "planet-navigation.spec.ts",
+        "title": "список на 150 городов загружается страницами и ищет город на последней странице",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          394
+        ]
+      },
+      {
+        "file": "planet-navigation.spec.ts",
+        "title": "подписи следуют географии, исчезают за экраном и возвращаются без запросов",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2149
+        ]
+      },
+      {
+        "file": "planet-navigation.spec.ts",
+        "title": "подписи следуют географии, исчезают за экраном и возвращаются без запросов",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2482
+        ]
+      },
+      {
+        "file": "planet-pan-profile.spec.ts",
+        "title": "близкая планета: ограниченная стоимость кадров при перемещении",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4615
+        ]
+      },
+      {
+        "file": "planet-sectors.spec.ts",
+        "title": "switches overview areas without rescaling or displaying the other area's countries",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1163
+        ]
+      },
+      {
+        "file": "port-terminal-art.spec.ts",
+        "title": "port terminal stage 1 retains its native parcel and image",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4165
+        ]
+      },
+      {
+        "file": "port-terminal-art.spec.ts",
+        "title": "port terminal stage 2 retains its native parcel and image",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3786
+        ]
+      },
+      {
+        "file": "port-terminal-art.spec.ts",
+        "title": "port terminal stage 3 retains its native parcel and image",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4105
+        ]
+      },
+      {
+        "file": "port-terminal-art.spec.ts",
+        "title": "port terminal stage 4 retains its native parcel and image",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4026
+        ]
+      },
+      {
+        "file": "port-terminal-art.spec.ts",
+        "title": "port terminal stage 5 retains its native parcel and image",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3994
+        ]
+      },
+      {
+        "file": "production-map-hotfix.spec.ts",
+        "title": "hotfix keeps city and planet usable and visually connected",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5814
+        ]
+      },
+      {
+        "file": "pwa-update.spec.ts",
+        "title": "PWA offers a waiting release and activates it only on explicit update",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1358
+        ]
+      },
+      {
+        "file": "pwa-update.spec.ts",
+        "title": "PWA offers a waiting release and activates it only on explicit update after retry",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          16996
+        ]
+      },
+      {
+        "file": "pwa-update.spec.ts",
+        "title": "PWA offers a waiting release and activates it only on explicit update",
+        "project": "mobile-webkit",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          563
+        ]
+      },
+      {
+        "file": "pwa-update.spec.ts",
+        "title": "PWA offers a waiting release and activates it only on explicit update after retry",
+        "project": "mobile-webkit",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          15953
+        ]
+      },
+      {
+        "file": "readme-showcase.spec.ts",
+        "title": "captures the real README showcase city",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with README_SCREENSHOT_PATH"
+        ],
+        "durations": [
+          45
+        ]
+      },
+      {
+        "file": "release-scale.spec.ts",
+        "title": "1000-task city: cold frame, bounded residency and 30 warm atlas round trips",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Explicit local, real-generator scale fixture only"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "ссылка открывает карточку без карты; закрытие загружает нужный город",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2554
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "ошибки ссылки и карточки допускают повтор без загрузки мира",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1044
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "закрытая во время поиска карточка не возвращается с поздним ответом",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1171
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "карточка читается на узком и низком экране, все разделы доступны с клавиатуры",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1145
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "истёкшая сессия возвращает вход и сохраняет ссылку на задачу",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1073
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "ссылка в другой мир выбирает его один раз и загружает правильный город после закрытия",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2219
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "контраст и прокрутка четырёх разделов соответствуют WCAG AA",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1845
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "карточка PWA остаётся внутри безопасной области экрана",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1875
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "ссылка открывает карточку без карты; закрытие загружает нужный город",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1479
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "ошибки ссылки и карточки допускают повтор без загрузки мира",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          563
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "закрытая во время поиска карточка не возвращается с поздним ответом",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1518
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "карточка читается на узком и низком экране, все разделы доступны с клавиатуры",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          719
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "истёкшая сессия возвращает вход и сохраняет ссылку на задачу",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          642
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "ссылка в другой мир выбирает его один раз и загружает правильный город после закрытия",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1824
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "контраст и прокрутка четырёх разделов соответствуют WCAG AA",
+        "project": "webkit-visual",
+        "status": "skipped",
+        "skipReasons": [
+          "Одинаковая палитра; браузерная геометрия отдельно проверяется в WebKit"
+        ],
+        "durations": [
+          153
+        ]
+      },
+      {
+        "file": "task-entry.spec.ts",
+        "title": "карточка PWA остаётся внутри безопасной области экрана",
+        "project": "webkit-visual",
+        "status": "skipped",
+        "skipReasons": [
+          "CDP-эмуляция выреза экрана доступна в Chromium"
+        ],
+        "durations": [
+          155
+        ]
+      },
+      {
+        "file": "task-modal-unavailable.spec.ts",
+        "title": "real deletion clears an already open task after its authoritative HTTP 404",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires an explicitly selected disposable local schema"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "task-modal-unavailable.spec.ts",
+        "title": "a definitive HTTP 403 clears task details and actions on realtime refresh",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires an explicitly selected disposable local schema"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "task-modal-unavailable.spec.ts",
+        "title": "temporary HTTP 503 preserves the loaded card and a later refresh recovers",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Requires an explicitly selected disposable local schema"
+        ],
+        "durations": [
+          0
+        ]
+      },
+      {
+        "file": "task-share-preview.spec.ts",
+        "title": "publishes a reviewable preview and revokes it from the task",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1964
+        ]
+      },
+      {
+        "file": "task-share-preview.spec.ts",
+        "title": "recovers the same preview after losing a successful publication response",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1231
+        ]
+      },
+      {
+        "file": "task-share-preview.spec.ts",
+        "title": "offers visible controls, recovers draft loading and publishes only the selected fields",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1195
+        ]
+      },
+      {
+        "file": "task-share-preview.spec.ts",
+        "title": "refreshes a changed draft without silently publishing it",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1131
+        ]
+      },
+      {
+        "file": "visual-consistency.spec.ts",
+        "title": "map navigation, labels and task controls follow the revised visual contract",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4562
+        ]
+      },
+      {
+        "file": "visual-consistency.spec.ts",
+        "title": "map navigation, labels and task controls follow the revised visual contract",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3687
+        ]
+      },
+      {
+        "file": "visual-services.spec.ts",
+        "title": "incident response appears and cleans up through real task updates",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5056
+        ]
+      },
+      {
+        "file": "visual-services.spec.ts",
+        "title": "incident response appears and cleans up through real task updates",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4336
+        ]
+      },
+      {
+        "file": "warm-city-timing.spec.ts",
+        "title": "warm timing measures 0 ms activation independently of driver waits",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1524
+        ]
+      },
+      {
+        "file": "warm-city-timing.spec.ts",
+        "title": "warm timing measures 1100 ms activation independently of driver waits",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2797
+        ]
+      },
+      {
+        "file": "world-digest.spec.ts",
+        "title": "server news keeps unseen cards, shares read state and retains history on mobile",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1495
+        ]
+      },
+      {
+        "file": "world-digest.spec.ts",
+        "title": "news failures retry and do not expose cached content",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          282
+        ]
+      },
+      {
+        "file": "world-digest.spec.ts",
+        "title": "server news keeps unseen cards, shares read state and retains history on mobile",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1830
+        ]
+      },
+      {
+        "file": "world-digest.spec.ts",
+        "title": "news failures retry and do not expose cached content",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          493
+        ]
+      },
+      {
+        "file": "world-preferences.spec.ts",
+        "title": "детализация и уменьшение движения сохраняют сцену и не возвращают старое ночное освещение",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          7151
+        ]
+      },
+      {
+        "file": "world-preferences.spec.ts",
+        "title": "мобильные настройки работают при недоступном localStorage и помещаются на экран",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2688
+        ]
+      },
+      {
+        "file": "world-preferences.spec.ts",
+        "title": "AUTO облегчает планету при устойчивой нагрузке, сохраняя географию и подписи",
+        "project": "chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          1421
+        ]
+      },
+      {
+        "file": "world-preferences.spec.ts",
+        "title": "детализация и уменьшение движения сохраняют сцену и не возвращают старое ночное освещение",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5629
+        ]
+      },
+      {
+        "file": "world-preferences.spec.ts",
+        "title": "мобильные настройки работают при недоступном localStorage и помещаются на экран",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          2646
+        ]
+      },
+      {
+        "file": "world-preferences.spec.ts",
+        "title": "AUTO облегчает планету при устойчивой нагрузке, сохраняя географию и подписи",
+        "project": "webkit-visual",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          3309
+        ]
+      },
+      {
+        "file": "world-validation.spec.ts",
+        "title": "validates and captures ten new-build cities",
+        "project": "chromium",
+        "status": "skipped",
+        "skipReasons": [
+          "Run explicitly with WORLD_VALIDATION_SCREENSHOT_DIR"
+        ],
+        "durations": [
+          56
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "mobile viewport keeps controls safe and all map levels accept continuous touch zoom",
+        "project": "mobile-chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          5798
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "installable shell registers a revisioned worker and survives offline navigation",
+        "project": "mobile-chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          267
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "push opt-in waits for a user gesture and can be disabled from the mobile profile",
+        "project": "mobile-chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4443
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "PWA открывает обычную ссылку, превью и уведомление сразу карточкой",
+        "project": "mobile-chromium",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4948
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "mobile viewport keeps controls safe and all map levels accept continuous touch zoom",
+        "project": "mobile-webkit",
+        "status": "expected",
+        "skipReasons": [],
+        "durations": [
+          4339
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "installable shell registers a revisioned worker and survives offline navigation",
+        "project": "mobile-webkit",
+        "status": "skipped",
+        "skipReasons": [
+          "Playwright WebKit does not expose a production-equivalent service-worker lifecycle"
+        ],
+        "durations": [
+          136
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "push opt-in waits for a user gesture and can be disabled from the mobile profile",
+        "project": "mobile-webkit",
+        "status": "skipped",
+        "skipReasons": [
+          "The deterministic PushManager test double targets Chromium's PWA container"
+        ],
+        "durations": [
+          143
+        ]
+      },
+      {
+        "file": "mobile-pwa.spec.ts",
+        "title": "PWA открывает обычную ссылку, превью и уведомление сразу карточкой",
+        "project": "mobile-webkit",
+        "status": "skipped",
+        "skipReasons": [
+          "Service Worker и Notifications проверяются в Chromium; прямые ссылки отдельно проходят WebKit"
+        ],
+        "durations": [
+          140
+        ]
+      }
+    ],
+    "deviceCases": [
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+        "project": "desktop-firefox",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+        "project": "desktop-firefox",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+        "project": "desktop-4k",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+        "project": "desktop-4k",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+        "project": "android-small",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+        "project": "android-small",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+        "project": "iphone-portrait",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+        "project": "iphone-portrait",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+        "project": "ipad-portrait",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+        "project": "ipad-portrait",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+        "project": "ipad-landscape",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      },
+      {
+        "file": "device-compatibility.spec.ts",
+        "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+        "project": "ipad-landscape",
+        "status": "expected",
+        "resultStatuses": [
+          "passed"
+        ]
+      }
+    ]
+  },
+  "performance": {
+    "network": "unthrottled localhost",
+    "host": "Apple M5 Pro / macOS",
+    "baselineOnly": true,
+    "completedCells": [
+      {
+        "workloadTasks": 1000,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "deviceScaleFactor": 1,
+        "headed": true,
+        "quality": "NORMAL",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+        "browser": "151.0.7922.34",
+        "samples": [
+          {
+            "sample": 0,
+            "coldMs": 3003.896709,
+            "interactiveMs": 3022.0022089999998,
+            "appMs": 3943.782417,
+            "warmMs": 33.87750000000233,
+            "p95FrameMs": 16.100000000000364,
+            "heapBytes": 268614780,
+            "heapChurnDeltaBytes": 857440,
+            "churnCycles": 20,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "e83844aa8ec0f5886e7a3b1a1d70fba46af0bb05356d1a2b6458ddd415ff8155"
+          },
+          {
+            "sample": 1,
+            "coldMs": 2242.026750000001,
+            "interactiveMs": 2265.198292000001,
+            "appMs": 3144.0415839999987,
+            "warmMs": 40.39220800000476,
+            "p95FrameMs": 14.5,
+            "heapBytes": 268378384,
+            "heapChurnDeltaBytes": 697872,
+            "churnCycles": 20,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "e83844aa8ec0f5886e7a3b1a1d70fba46af0bb05356d1a2b6458ddd415ff8155"
+          },
+          {
+            "sample": 2,
+            "coldMs": 2231.055500000002,
+            "interactiveMs": 2720.3565000000017,
+            "appMs": 3605.5891249999986,
+            "warmMs": 44.167999999997846,
+            "p95FrameMs": 14.399999999999636,
+            "heapBytes": 268958140,
+            "heapChurnDeltaBytes": 790980,
+            "churnCycles": 20,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "e83844aa8ec0f5886e7a3b1a1d70fba46af0bb05356d1a2b6458ddd415ff8155"
+          }
+        ],
+        "metrics": {
+          "coldMs": {
+            "median": 2242.026750000001,
+            "min": 2231.055500000002,
+            "max": 3003.896709
+          },
+          "interactiveMs": {
+            "median": 2720.3565000000017,
+            "min": 2265.198292000001,
+            "max": 3022.0022089999998
+          },
+          "appMs": {
+            "median": 3605.5891249999986,
+            "min": 3144.0415839999987,
+            "max": 3943.782417
+          },
+          "warmMs": {
+            "median": 40.39220800000476,
+            "min": 33.87750000000233,
+            "max": 44.167999999997846
+          },
+          "p95FrameMs": {
+            "median": 14.5,
+            "min": 14.399999999999636,
+            "max": 16.100000000000364
+          },
+          "heapBytes": {
+            "median": 268614780,
+            "min": 268378384,
+            "max": 268958140
+          },
+          "heapChurnDeltaBytes": {
+            "median": 790980,
+            "min": 697872,
+            "max": 857440
+          }
+        },
+        "steadyLongTaskCount": 0,
+        "errors": [],
+        "budgetFailures": [],
+        "complete": true,
+        "report": "tmp/city-art-load/forest-city1000-global/report.json"
+      },
+      {
+        "workloadTasks": 300,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "deviceScaleFactor": 1,
+        "headed": true,
+        "quality": "NORMAL",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+        "browser": "151.0.7922.34",
+        "samples": [
+          {
+            "sample": 0,
+            "coldMs": 955.3956249999999,
+            "interactiveMs": 974.4953330000001,
+            "appMs": 1878.3852499999998,
+            "warmMs": 30.50604200000089,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 92591132,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "085d236bbc711748dc7bb8b9f255cb9353fe952987fd7232ed867a24f1bc84e8"
+          },
+          {
+            "sample": 1,
+            "coldMs": 932.3419580000009,
+            "interactiveMs": 948.1133750000008,
+            "appMs": 1817.0123749999984,
+            "warmMs": 52.103415999998106,
+            "p95FrameMs": 9.900000000001455,
+            "heapBytes": 92788744,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "085d236bbc711748dc7bb8b9f255cb9353fe952987fd7232ed867a24f1bc84e8"
+          },
+          {
+            "sample": 2,
+            "coldMs": 986.6854590000003,
+            "interactiveMs": 1008.9674169999998,
+            "appMs": 1882.6915420000005,
+            "warmMs": 69.45191599999816,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 92967988,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "085d236bbc711748dc7bb8b9f255cb9353fe952987fd7232ed867a24f1bc84e8"
+          }
+        ],
+        "metrics": {
+          "coldMs": {
+            "median": 955.3956249999999,
+            "min": 932.3419580000009,
+            "max": 986.6854590000003
+          },
+          "interactiveMs": {
+            "median": 974.4953330000001,
+            "min": 948.1133750000008,
+            "max": 1008.9674169999998
+          },
+          "appMs": {
+            "median": 1878.3852499999998,
+            "min": 1817.0123749999984,
+            "max": 1882.6915420000005
+          },
+          "warmMs": {
+            "median": 52.103415999998106,
+            "min": 30.50604200000089,
+            "max": 69.45191599999816
+          },
+          "p95FrameMs": {
+            "median": 9.899999999999636,
+            "min": 9.899999999999636,
+            "max": 9.900000000001455
+          },
+          "heapBytes": {
+            "median": 92788744,
+            "min": 92591132,
+            "max": 92967988
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "steadyLongTaskCount": 0,
+        "errors": [],
+        "budgetFailures": [],
+        "complete": true,
+        "report": "tmp/city-art-load/forest-city300-compact-global/report.json"
+      },
+      {
+        "workloadTasks": 300,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "deviceScaleFactor": 1,
+        "headed": true,
+        "quality": "NORMAL",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+        "browser": "151.0.7922.34",
+        "samples": [
+          {
+            "sample": 0,
+            "coldMs": 1311.963834,
+            "interactiveMs": 1313.1673750000002,
+            "appMs": 2201.38375,
+            "warmMs": 48.98441699999967,
+            "p95FrameMs": 9.799999999999272,
+            "heapBytes": 105225060,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "085d236bbc711748dc7bb8b9f255cb9353fe952987fd7232ed867a24f1bc84e8"
+          },
+          {
+            "sample": 1,
+            "coldMs": 1562.4793329999993,
+            "interactiveMs": 1576.1758330000011,
+            "appMs": 2451.778042,
+            "warmMs": 34.94141700000182,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 105665508,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "085d236bbc711748dc7bb8b9f255cb9353fe952987fd7232ed867a24f1bc84e8"
+          },
+          {
+            "sample": 2,
+            "coldMs": 1527.0373749999999,
+            "interactiveMs": 1540.7432499999995,
+            "appMs": 2429.7679999999964,
+            "warmMs": 60.30575000000681,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 105111892,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "085d236bbc711748dc7bb8b9f255cb9353fe952987fd7232ed867a24f1bc84e8"
+          }
+        ],
+        "metrics": {
+          "coldMs": {
+            "median": 1527.0373749999999,
+            "min": 1311.963834,
+            "max": 1562.4793329999993
+          },
+          "interactiveMs": {
+            "median": 1540.7432499999995,
+            "min": 1313.1673750000002,
+            "max": 1576.1758330000011
+          },
+          "appMs": {
+            "median": 2429.7679999999964,
+            "min": 2201.38375,
+            "max": 2451.778042
+          },
+          "warmMs": {
+            "median": 48.98441699999967,
+            "min": 34.94141700000182,
+            "max": 60.30575000000681
+          },
+          "p95FrameMs": {
+            "median": 9.899999999999636,
+            "min": 9.799999999999272,
+            "max": 9.899999999999636
+          },
+          "heapBytes": {
+            "median": 105225060,
+            "min": 105111892,
+            "max": 105665508
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "steadyLongTaskCount": 0,
+        "errors": [],
+        "budgetFailures": [],
+        "complete": true,
+        "report": "tmp/city-art-load/forest-city300-global/report.json"
+      },
+      {
+        "workloadTasks": 40,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "deviceScaleFactor": 1,
+        "headed": true,
+        "quality": "NORMAL",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+        "browser": "151.0.7922.34",
+        "samples": [
+          {
+            "sample": 0,
+            "coldMs": 1191.2835830000001,
+            "interactiveMs": 1196.4045829999998,
+            "appMs": 2089.052459,
+            "warmMs": 37.881250000000364,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 39519992,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "6b4f40b70758c5094cbe598ae1d1ae74152d9abaf6aaa032a57be6c1316f55be"
+          },
+          {
+            "sample": 1,
+            "coldMs": 1227.316417,
+            "interactiveMs": 1232.1207090000007,
+            "appMs": 2119.6684589999986,
+            "warmMs": 38.218541999998706,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 39851536,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "6b4f40b70758c5094cbe598ae1d1ae74152d9abaf6aaa032a57be6c1316f55be"
+          },
+          {
+            "sample": 2,
+            "coldMs": 1096.7809579999994,
+            "interactiveMs": 1101.7168749999983,
+            "appMs": 1987.012834000001,
+            "warmMs": 29.287209000001894,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 39549700,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "6b4f40b70758c5094cbe598ae1d1ae74152d9abaf6aaa032a57be6c1316f55be"
+          }
+        ],
+        "metrics": {
+          "coldMs": {
+            "median": 1191.2835830000001,
+            "min": 1096.7809579999994,
+            "max": 1227.316417
+          },
+          "interactiveMs": {
+            "median": 1196.4045829999998,
+            "min": 1101.7168749999983,
+            "max": 1232.1207090000007
+          },
+          "appMs": {
+            "median": 2089.052459,
+            "min": 1987.012834000001,
+            "max": 2119.6684589999986
+          },
+          "warmMs": {
+            "median": 37.881250000000364,
+            "min": 29.287209000001894,
+            "max": 38.218541999998706
+          },
+          "p95FrameMs": {
+            "median": 9.899999999999636,
+            "min": 9.899999999999636,
+            "max": 9.899999999999636
+          },
+          "heapBytes": {
+            "median": 39549700,
+            "min": 39519992,
+            "max": 39851536
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "steadyLongTaskCount": 0,
+        "errors": [],
+        "budgetFailures": [],
+        "complete": true,
+        "report": "tmp/city-art-load/forest-city40-compact-global/report.json"
+      },
+      {
+        "workloadTasks": 40,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "deviceScaleFactor": 1,
+        "headed": true,
+        "quality": "NORMAL",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+        "browser": "151.0.7922.34",
+        "samples": [
+          {
+            "sample": 0,
+            "coldMs": 1527.331792,
+            "interactiveMs": 1534.168334,
+            "appMs": 2530.94325,
+            "warmMs": 37.55179099999805,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 54223836,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "6b4f40b70758c5094cbe598ae1d1ae74152d9abaf6aaa032a57be6c1316f55be"
+          },
+          {
+            "sample": 1,
+            "coldMs": 1345.6328749999993,
+            "interactiveMs": 1352.552749999999,
+            "appMs": 2235.8917919999985,
+            "warmMs": 49.18366600000081,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 53837368,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "6b4f40b70758c5094cbe598ae1d1ae74152d9abaf6aaa032a57be6c1316f55be"
+          },
+          {
+            "sample": 2,
+            "coldMs": 1445.24525,
+            "interactiveMs": 1452.2733330000046,
+            "appMs": 2336.465624999997,
+            "warmMs": 60.58258399999613,
+            "p95FrameMs": 9.899999999999636,
+            "heapBytes": 53903248,
+            "heapChurnDeltaBytes": 0,
+            "churnCycles": 0,
+            "sceneRequests": 1,
+            "viewportRequests": 0,
+            "geometryHash": "6b4f40b70758c5094cbe598ae1d1ae74152d9abaf6aaa032a57be6c1316f55be"
+          }
+        ],
+        "metrics": {
+          "coldMs": {
+            "median": 1445.24525,
+            "min": 1345.6328749999993,
+            "max": 1527.331792
+          },
+          "interactiveMs": {
+            "median": 1452.2733330000046,
+            "min": 1352.552749999999,
+            "max": 1534.168334
+          },
+          "appMs": {
+            "median": 2336.465624999997,
+            "min": 2235.8917919999985,
+            "max": 2530.94325
+          },
+          "warmMs": {
+            "median": 49.18366600000081,
+            "min": 37.55179099999805,
+            "max": 60.58258399999613
+          },
+          "p95FrameMs": {
+            "median": 9.899999999999636,
+            "min": 9.899999999999636,
+            "max": 9.899999999999636
+          },
+          "heapBytes": {
+            "median": 53903248,
+            "min": 53837368,
+            "max": 54223836
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "steadyLongTaskCount": 0,
+        "errors": [],
+        "budgetFailures": [],
+        "complete": true,
+        "report": "tmp/city-art-load/forest-city40-global/report.json"
+      }
+    ],
+    "incompleteCell": {
+      "tasks": 1000,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "expectedSamples": 3,
+      "stdoutCompletedSamples": [
+        {
+          "sample": 0,
+          "coldMs": 2146.372542,
+          "appMs": 3086.078,
+          "warmMs": 81.53374999999869,
+          "geometryHash": "e83844aa8ec0f5886e7a3b1a1d70fba46af0bb05356d1a2b6458ddd415ff8155",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 10.099999999998545,
+          "heapBytes": 259933032
+        },
+        {
+          "sample": 1,
+          "coldMs": 2095.4805419999975,
+          "appMs": 3442.1874169999974,
+          "warmMs": 66.58862499999668,
+          "geometryHash": "e83844aa8ec0f5886e7a3b1a1d70fba46af0bb05356d1a2b6458ddd415ff8155",
+          "chunks": 60,
+          "tasks": 1000,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 10.200000000000728,
+          "heapBytes": 259997668
+        }
+      ],
+      "qualified": false,
+      "reason": "Docker engine shutdown removed PostgreSQL 55432 during third sample; Mac locked",
+      "requiredAction": "Unlock Mac, restore test PostgreSQL, repeat this cell with 3 samples"
+    },
+    "server100": {
+      "tier": "a",
+      "workload": {
+        "cities": 1,
+        "tasks": 100,
+        "districts": 6
+      },
+      "samples": 20,
+      "budgetsMs": {
+        "taskOpenP95": 100,
+        "cityWarmP95": 150,
+        "countryWarmP95": 150,
+        "planetP95": 100,
+        "cityCold": 2000,
+        "countryCold": 2000,
+        "stageUpdateP95": 250
+      },
+      "cityCold": {
+        "p50Ms": 109.32537500000035,
+        "p95Ms": 109.32537500000035,
+        "maxMs": 109.32537500000035,
+        "queriesMin": 13,
+        "queriesMax": 13,
+        "sqlP95Ms": 77.31291600000986,
+        "bytes": 530092,
+        "gzipBytes": 71801
+      },
+      "countryCold": {
+        "p50Ms": 46.22004200000083,
+        "p95Ms": 46.22004200000083,
+        "maxMs": 46.22004200000083,
+        "queriesMin": 13,
+        "queriesMax": 13,
+        "sqlP95Ms": 34.35408199999438,
+        "bytes": 5432,
+        "gzipBytes": 1507
+      },
+      "taskOpen": {
+        "p50Ms": 6.258166999999958,
+        "p95Ms": 8.311709000001429,
+        "maxMs": 8.541042000000743,
+        "queriesMin": 2,
+        "queriesMax": 2,
+        "sqlP95Ms": 7.0419179999989865,
+        "bytes": 3109,
+        "gzipBytes": 1087
+      },
+      "cityWarm": {
+        "p50Ms": 3.8970829999998386,
+        "p95Ms": 5.351707999998325,
+        "maxMs": 8.303625000000466,
+        "queriesMin": 3,
+        "queriesMax": 3,
+        "sqlP95Ms": 7.751375000003463,
+        "bytes": 530092,
+        "gzipBytes": 71801
+      },
+      "countryWarm": {
+        "p50Ms": 16.99383300000045,
+        "p95Ms": 20.98112499999843,
+        "maxMs": 22.07641700000022,
+        "queriesMin": 5,
+        "queriesMax": 5,
+        "sqlP95Ms": 17.635291000002326,
+        "bytes": 5432,
+        "gzipBytes": 1507
+      },
+      "planet": {
+        "p50Ms": 16.266916000000492,
+        "p95Ms": 21.126374999999825,
+        "maxMs": 23.977875000000495,
+        "queriesMin": 5,
+        "queriesMax": 5,
+        "sqlP95Ms": 17.055416999992303,
+        "bytes": 9705,
+        "gzipBytes": 1900
+      },
+      "taskOpenConcurrent8": {
+        "p50Ms": 22.500292000000627,
+        "p95Ms": 73.16087499999776,
+        "maxMs": 73.16087499999776,
+        "queriesMin": 16,
+        "queriesMax": 16,
+        "sqlP95Ms": 353.58479100000113,
+        "bytes": 24881,
+        "gzipBytes": 1286
+      },
+      "stageUpdate": {
+        "p50Ms": 48.805584000001545,
+        "p95Ms": 73.56533300000228,
+        "maxMs": 77.59029100000043,
+        "queriesMin": 17,
+        "queriesMax": 17,
+        "sqlP95Ms": 64.54845999999816,
+        "bytes": 8293,
+        "gzipBytes": 1443,
+        "countryLockWaitP95Ms": 2.1094169999996666
+      },
+      "stageUpdateConcurrent2": {
+        "p50Ms": 130.45145799999955,
+        "p95Ms": 148.9082500000004,
+        "maxMs": 148.9082500000004,
+        "queriesMin": 34,
+        "queriesMax": 34,
+        "sqlP95Ms": 221.72700100000657,
+        "bytes": 13973,
+        "gzipBytes": 1906,
+        "countryLockWaitP95Ms": 79.33733399999983
+      },
+      "sourcesUnchangedDuringMeasurement": true,
+      "budgetFailures": [],
+      "accepted": true
+    },
+    "navigation": {
+      "entry": {
+        "initialMap": "PLANET",
+        "loginToFirstFrameMs": 425.5
+      },
+      "samples": [
+        {
+          "target": "PLANET",
+          "elapsedMs": 95.30000001192093
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 18.099999994039536
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 47.70000001788139
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 21.5
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 48.5
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 12.299999982118607
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 47.80000001192093
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 14.199999988079071
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 46.599999994039536
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 22.80000001192093
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 50
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 10.099999994039536
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 43
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 20.399999976158142
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 50.5
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 13.600000023841858
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 47.30000001192093
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 17.100000023841858
+        },
+        {
+          "target": "PLANET",
+          "elapsedMs": 48.80000001192093
+        },
+        {
+          "target": "CITY",
+          "elapsedMs": 21.19999998807907
+        }
+      ],
+      "reads": []
+    },
+    "warmTaskMs": 3.2000000178813934,
+    "mobility": {
+      "durationMs": 120112.09999999404,
+      "tasks": 40,
+      "completedTrips": 76,
+      "completedCrossings": 614,
+      "stepP95Ms": 0.8,
+      "stepMaxMs": 3.4,
+      "networkBuilds": 1,
+      "sameCanvasRetained": true,
+      "frameTiming": {
+        "frames": 6820,
+        "p50Ms": 16.700000000000728,
+        "p95Ms": 25.099999999998545,
+        "maxMs": 59.400000000001455,
+        "longTasks": [
+          55
+        ],
+        "longTaskTimeline": [
+          {
+            "startMs": 30218.59999999404,
+            "durationMs": 55
+          }
+        ]
+      },
+      "unexpectedConsoleIssues": [],
+      "failedRequests": [],
+      "missingResponses": []
+    },
+    "mobilityRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "publicHealth": {
+    "health": {
+      "status": "ok",
+      "version": "1.24.12",
+      "uptime": 6617
+    },
+    "mcpCountryRead": {
+      "ok": true,
+      "countryId": "4201d605-751a-469b-8d5f-a7e322a7ece1",
+      "worldVersion": 675,
+      "cities": 1,
+      "checkedAt": "2026-10-08T00:03:28.183Z",
+      "operation": "country.get",
+      "readOnly": true
+    },
+    "rootStatus": 200,
+    "unauthenticatedMcpStatus": 401,
+    "designPublishedByThisAudit": false
+  },
+  "limitations": [
+    "40 original opt-in/capability browser skips not executed",
+    "Device profiles emulate viewport/touch/DPR on macOS; physical iOS/Android and Windows/Linux GPU drivers unqualified",
+    "No production/mobile-network load test",
+    "No real Docker/Linux recovery qualification, SCM CI or managed-release gate",
+    "One compact 1000-task performance cell interrupted externally"
+  ],
+  "history": [
+    "Full Vitest initially 105 failed: 104 missing canonical Python/Pillow, 1 inherited APP_ORIGIN; targeted setup and fixture retries aggregate all 1493 passed",
+    "Courtyard fixture parent tmp missing: fixed 3 ENOENT cases, 5 final cases passed",
+    "Task availability tests used removed HTTP mutations and old UI; fixed to scoped MCP; 3 final cases passed",
+    "Navigation tests expected old CITY entry and one-shot outage; updated to PLANET navigation and persistent outage; 2 final cases passed",
+    "Manual fixture world_version reset behind a live server caused a legitimate stale revision fence; own runtime restarted after seed; mobility passed",
+    "Docker backend logged shutdown requested 2026-10-07T23:55:51Z; local PostgreSQL ECONNREFUSED interrupted the final performance cell",
+    "Benchmark now saves incomplete reports on errors; isolated 503 reporter fault smoke passed"
+  ],
+  "evidenceHashes": {
+    "browser-full.json": "18b675c93eec6f6645fd6d6deca952ede36aa2a2e3d8e5ae3e16a0b3b04717d2",
+    "devices.json": "486a1748ca17013a416141628ed568af6573cf6f49c7ed58f14c6a23b9958e9c",
+    "task-modal-accepted.json": "049367c725c28b8afaf537fa945b46a4437517b6e15877bc2a79f58073a971a4",
+    "navigation-final.json": "1a829ffc07595007f8e436537ce7664250a995547958667181e757b12f0b3f52",
+    "extra-browser.json": "deb5ab035d1eb55ddb37fb177caed51db989d143f8b694e2f92ca3ffbab0c93c",
+    "mobility-final.json": "14cc542a669a830f54015a1b954eb2973e8b5ff75c51baf09003f2ff00e27acf",
+    "mcp-smoke.log": "757e8b6489bef412c262e5c6268d321671b0632797055f6e10b96712f0650821",
+    "python-unit.log": "c16b5b59f6a19c68644996645c922b4c6c3ddcdd6222663c3f31c2ef5d144826",
+    "assets.log": "be64cd5b06455e57bea13e941284c767f0ff524a5f9e1844b8a5df7bcc979ac7",
+    "typecheck-audit-final.log": "10c74868647dcaf23c69fff9658daa34b5717049d218ad4e9a4b125c1f8a8ec3",
+    "lint-audit-final.log": "6ae7633aac706563e696114ee9e0e677eeb7ca566be4a16d6883fc16883c7b65",
+    "unit.json": "58608f22600a8402448435aa9f18ae48ff1aee9e20ba6c3619de9c8e045db2ba",
+    "unit-rerun.json": "8acff24b12f61c6b767b0339521ecdd1cbacee517d6137d9ae2afc5e99e3bd13",
+    "unit-final-retry.json": "b598384b1cd2420aff3607e3e5b7716a48b00793fd330f703e48a36560cbbadf",
+    "unit-temp-final.json": "b1772d98ccab5003af3245556071f9569b95eaca8eb7e91bae826ef623d579fd",
+    "server-scale-100.json": "f65cbd2b485c5dd8b0b2200428f9666ba0e5a8b032ac2aa884a5205bb59d07cb",
+    "browser-performance.log": "892166bb808407e2f3b05851879bb82d7996461fd248b0f4f5b2468e3d2ebf00",
+    "dependencies.json": "b9de7ba662860d60f2a349520296298f12171531f61c01b5adaf694f94f91546",
+    "reporter-fault-smoke.log": "419cf0ebbb88537b29ce562ad6ccfd06e26f163eece2448d3653474869c7bfec"
+  }
+}

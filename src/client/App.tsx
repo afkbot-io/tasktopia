@@ -1,3 +1,4 @@
+import { GameIcon } from "./components/ui";
 import { InvitationEntry } from "./components/InvitationEntry";
 import { countrySelectionPending, invalidateCountrySelections, selectCountrySession } from "./country-selection";
 import { useDialogFocus } from "./use-dialog-focus";
@@ -29,6 +30,7 @@ import { acknowledgeMapInvalidations, enqueueMapInvalidation, eventInvalidation,
 import { clearPushSubscriptionForLogout } from "./push-notifications";
 import { PushNotificationCard } from "./components/PushNotificationCard";
 import { SiteHistoryModal } from "./components/SiteHistoryModal";
+import { DialogLoadState, PanelLoadState, UiLoadBoundary } from "./components/UiLoadState";
 import { advanceMapSceneCaches, clearMapSceneCaches, invalidateTransportSceneCaches, loadCityScene, rememberCountryRevision } from "./map-scene-cache";
 import { clearTaskDetailCache, invalidateTaskDetails } from "./task-detail-cache";
 import { taskResolutionQuery } from "./task-navigation";
@@ -52,12 +54,7 @@ type BuildingNavigationTarget = Pick<BuildingEventContext, "id" | "origin" | "ci
 
 function TaskModalFallback({ onClose, standalone = false, error, onRetry }: { onClose: () => void; standalone?: boolean; error?: string; onRetry?: () => void }) {
   const dialogRef = useRef<HTMLElement>(null);
-  useDialogFocus(dialogRef);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useDialogFocus(dialogRef, { onClose });
   return <div className={`modal-backdrop task-inspector-backdrop${standalone ? " task-entry-backdrop" : ""}`} role="presentation">
     <section ref={dialogRef} className="task-modal task-inspector" role="dialog" aria-modal="true" aria-label={error ? "Задача недоступна" : "Загрузка задачи"}>
       <button className="modal-close" aria-label="Закрыть" onClick={onClose}>×</button>
@@ -121,6 +118,7 @@ export function App() {
   const [countryMenuOpen, setCountryMenuOpen] = useState(false);
   const [countryDialog, setCountryDialog] = useState<"manage" | null>(null);
   const [showDistricts, setShowDistricts] = useState(false);
+  const [selectedTransportRoute,setSelectedTransportRoute]=useState<string>();
   const [mapMode, setMapMode] = useState<MapLevel>("PLANET");
   const [mapTransition, setMapTransition] = useState<AtlasTransition | null>(null);
   const mapTransitionAbortRef = useRef<AbortController | null>(null);
@@ -389,6 +387,7 @@ export function App() {
 
   const openPlanetCity = useCallback(async (selectedCountryId: string, cityId: string, focus = {x:.5,y:.5}, cityName?: string) => {
     if (!bootstrap) return;
+    setSelectedTransportRoute(undefined);
     const authenticationEpoch=authenticationEpochRef.current;
     await transitionMap("CITY", focus, async signal => {
       void loadWorldRenderer();
@@ -529,14 +528,14 @@ export function App() {
   const activeCity = focusCity ?? bootstrap.initialCity;
   const dependencyScope = `${bootstrap.user.id}:${countryId}:${activeCity?.id}`;
   if (taskEntry) return <main className="task-entry" aria-label="Карточка задачи">
-    {selectedTask ? <Suspense fallback={<TaskModalFallback standalone onClose={closeTask} />}>
+    {selectedTask ? <UiLoadBoundary key={`${countryId}:${selectedTask}`} fallback={<DialogLoadState label="Задача" onClose={closeTask} error />}><Suspense fallback={<TaskModalFallback standalone onClose={closeTask} />}>
       <TaskModal onAuthenticationRequired={load} standalone key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision}
         onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} />
-    </Suspense> : <TaskModalFallback standalone onClose={closeTask} error={mapTransitionError} onRetry={() => { void openCanonicalTask(taskEntry, true); }} />}
+    </Suspense></UiLoadBoundary> : <TaskModalFallback standalone onClose={closeTask} error={mapTransitionError} onRetry={() => { void openCanonicalTask(taskEntry, true); }} />}
   </main>;
   const effectiveMapMode = mapMode;
   const headerCity = effectiveMapMode === "CITY" ? activeCity : null;
-  return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)] bg-[#081316]">
+  return <main className="app-shell grid h-full grid-rows-[auto_minmax(0,1fr)]">
     <header className="app-header map-toolbar" aria-label="Навигация по миру" onClickCapture={event => {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -550,17 +549,17 @@ export function App() {
       setDevelopmentOpen(false);
     }}>
       <div className="map-toolbar-location">
-        <div className="brand-mark hidden shrink-0 xl:flex"><span>▦</span> TASKTOPIA</div>
+        <div className="brand-mark hidden shrink-0 xl:flex"><GameIcon name="world" /> TASKTOPIA</div>
         <div className="relative min-w-0">
-        <button className="country-title-button grid min-w-0 border-0 border-l-0 px-0 text-left xl:border-l xl:border-[#304850] xl:pl-5" aria-haspopup="dialog" aria-expanded={countryMenuOpen} onClick={() => { setDirectoryOpen(false); setCountryMenuOpen((value) => !value); }}>
-          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">МИР</span>
-          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7] md:max-w-[240px]">{bootstrap.country.name}</strong>
+        <button className="country-title-button grid min-w-0 border-0 border-l-0 px-0 text-left xl:border-l xl:border-line xl:pl-5" aria-haspopup="dialog" aria-expanded={countryMenuOpen} onClick={() => { setDirectoryOpen(false); setCountryMenuOpen((value) => !value); }}>
+          <span className="text-xs font-bold tracking-[.08em] text-[var(--ui-muted)]">МИР</span>
+          <strong className="block max-w-[180px] truncate text-sm text-paper md:max-w-[240px]">{bootstrap.country.name}</strong>
         </button>
         {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={next => { if (renderedAuthenticationEpoch === authenticationEpochRef.current) applyBootstrap(next); }} onCities={() => { setCountryMenuOpen(false); setDirectoryFocus(undefined); setDirectorySection("cities"); setDirectoryOpen(true); }} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} />}
         </div>
         {headerCity && <button className="header-city" aria-label={`Районы города ${headerCity.name}`} onClick={() => { setDirectoryFocus({cityId:headerCity.id,districtId:""});setDirectorySection("cities");setDirectoryOpen(value=>!value); }}>
-          <span className="text-[9px] font-black tracking-[.16em] text-[#81979b]">ГОРОД</span>
-          <strong className="block max-w-[180px] truncate text-sm text-[#edf0e7]">{headerCity.name}<span aria-hidden="true"> ▾</span></strong>
+          <span className="text-xs font-bold tracking-[.08em] text-[var(--ui-muted)]">ГОРОД</span>
+          <strong className="block max-w-[180px] truncate text-sm text-paper">{headerCity.name}<span aria-hidden="true"> ▾</span></strong>
         </button>}
       </div>
 
@@ -571,12 +570,12 @@ export function App() {
       <div className="map-toolbar-actions">
         <nav className="flex items-center justify-end gap-1.5" aria-label="Действия карты">
           <WorldAmbientLighting />
-          {effectiveMapMode === "CITY" && activeCity && <GamePopover label="Фильтры" icon="▤" activeLabel={attention.scope===`${bootstrap.user.id}:${countryId}:${activeCity.id}`?attention.label:undefined}>
+          {effectiveMapMode === "CITY" && activeCity && <GamePopover label="Фильтры" icon={<GameIcon name="filter" />} activeLabel={attention.scope===`${bootstrap.user.id}:${countryId}:${activeCity.id}`?attention.label:undefined}>
             <strong>Показать на карте</strong>
             <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} />
             <button className="city-development-toggle" onClick={event => { const menu = event.currentTarget.closest("details"); if (menu) menu.open = false; setDevelopmentOpen(value => !value); }} aria-expanded={developmentOpen}>Развитие города</button>
           </GamePopover>}
-          <GamePopover label="Меню" icon="≡" className="world-menu">
+          <GamePopover label="Меню" icon={<GameIcon name="menu" />} className="world-menu">
             <strong>{bootstrap.country.name}</strong>
             <button onClick={() => {setDirectoryOpen(false);setCountryMenuOpen(true);}}>Выбрать мир</button>
             <button onClick={() => { setCountryMenuOpen(false);setDirectoryFocus(undefined);setDirectorySection("cities");setDirectoryOpen(true); }}>Города</button>
@@ -609,7 +608,7 @@ export function App() {
       </Suspense>
       {activeCity && (effectiveMapMode === "CITY" || preparedCityScene !== null || retainedCityKey===`${bootstrap.country.id}:${activeCity.id}`) && <div aria-hidden={effectiveMapMode !== "CITY"} style={{ position:"absolute", inset:0, visibility:effectiveMapMode === "CITY" ? "visible" : "hidden", pointerEvents:effectiveMapMode === "CITY" ? "auto" : "none" }}>
         <Suspense fallback={<div className="app-loading" role="status">Готовим город…</div>}>
-          <WorldCanvas transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
+          <WorldCanvas selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
                   setRetainedCityKey(`${bootstrap.country.id}:${activeCity.id}`);
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
@@ -640,11 +639,11 @@ export function App() {
       }} />}
       {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
       {effectiveMapMode === "CITY" && dependencyTask?.scope === dependencyScope && <MapDependencies key={`${dependencyScope}:${dependencyTask.id}`} countryId={bootstrap.country.id} taskId={dependencyTask.id} scope={dependencyScope} revision={attentionRevision} onChange={setDependencyData} onClose={() => { setDependencyTask(undefined); setDependencyData({ scope: "" }); }} />}
-      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <Suspense fallback={<div className="city-development-panel" role="status">Загрузка…</div>}><CityDevelopmentPanel key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} /></Suspense>}
+      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <UiLoadBoundary key={dependencyScope} fallback={<PanelLoadState onClose={closeDevelopment} error />}><Suspense fallback={<PanelLoadState onClose={closeDevelopment} />}><CityDevelopmentPanel selectedRoute={selectedTransportRoute} key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} onRoute={id=>{setSelectedTransportRoute(id);closeDevelopment();}} onCity={(scope,id,name)=>{closeDevelopment();setSelectedTransportRoute(undefined);void openPlanetCity(scope,id,{x:.5,y:.5},name);}} /></Suspense></UiLoadBoundary>}
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
         setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true);
       }} />}
-      {documentsOpen && <Suspense fallback={<div role="status" className="app-loading">Открываем документы…</div>}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={setSelectedTask} /></Suspense>}
+      {documentsOpen && <UiLoadBoundary fallback={<DialogLoadState label="Документы" onClose={closeDocuments} error />}><Suspense fallback={<DialogLoadState label="Загрузка документов" onClose={closeDocuments} />}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={setSelectedTask} /></Suspense></UiLoadBoundary>}
       {directoryOpen && <CityDirectory key={`${countryId}:${directoryFocus?.districtId ?? "general"}`} initialFocus={directoryFocus} bootstrap={bootstrap} refreshToken={revision} initialSection={directorySection} onClose={() => setDirectoryOpen(false)} onCityFocus={(city) => {
         setDirectoryOpen(false);
         void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
@@ -661,11 +660,11 @@ export function App() {
       }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} />}
     </section>
 
-    {selectedTask && <Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense>}
+    {selectedTask && <UiLoadBoundary key={`${countryId}:${selectedTask}`} fallback={<DialogLoadState label="Задача" onClose={closeTask} error />}><Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense></UiLoadBoundary>}
     {selectedSite?.countryId === bootstrap.country.id && <SiteHistoryModal feature={selectedSite.feature} onClose={closeSite} />}
-    {selectedArchiveRecord && <Suspense fallback={null}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense>}
+    {selectedArchiveRecord && <UiLoadBoundary key={selectedArchiveRecord} fallback={<DialogLoadState label="Архив" onClose={closeArchiveRecord} error />}><Suspense fallback={<DialogLoadState label="Загрузка архива" onClose={closeArchiveRecord} />}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense></UiLoadBoundary>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} onClose={() => setCountryDialog(null)} />}
-    {tokensOpen && <Suspense fallback={null}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense>}
+    {tokensOpen && <UiLoadBoundary fallback={<DialogLoadState label="Настройки" onClose={closeSettings} error />}><Suspense fallback={<DialogLoadState label="Загрузка настроек" onClose={closeSettings} />}><TokenPanel bootstrap={bootstrap} initialSection={settingsSection} onClose={closeSettings} onAccountChanged={load} onLogout={logout} /></Suspense></UiLoadBoundary>}
     {!pushOfferDismissed && <PushNotificationCard compact onDismiss={() => {
       localStorage.setItem("tasktopia:push-offer-dismissed", "1");
       setPushOfferDismissed(true);

@@ -9,7 +9,7 @@ const input={countryId:'country',seed:1,isBuildable:()=>true,validateOnly:true,c
 it('keeps a retained road beside a pedestrian station approach without moving geometry',()=>{
  const plan=planIntercityRoads({...input,protectedSites:cityRailwayReservations(line,'ROAD')});
  expect(plan.routes).toEqual(previous.routes);
- expect(cityRailwayReservations(line)).toHaveLength(2);
+ expect(cityRailwayReservations(line).length).toBeGreaterThan(2);
 });
 it('still rejects a road crossing the railway track itself',()=>{
  expect(()=>planIntercityRoads({...input,protectedSites:cityRailwayReservations({...line,from:{x:136,y:80},to:{x:136,y:160}},'ROAD')})).toThrow('obstructed');

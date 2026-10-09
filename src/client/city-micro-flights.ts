@@ -24,7 +24,7 @@ export function cityMicroFlightRoutes(connections: readonly CityAirportConnectio
       return length > 0 ? [{
         id: connection.id, fromTaskId: connection.from.taskId, toTaskId: connection.to.taskId,
         curve: buildAtlasFlightGeometry(start, end, connection.id, 24), length,
-        schedule:transportSchedule("AIR",connection.from.taskId,connection.to.taskId),
+        schedule:transportSchedule("AIR",connection.from.taskId,connection.to.taskId,connection.scheduleOffsetMs),
       }] : [];
     });
 }

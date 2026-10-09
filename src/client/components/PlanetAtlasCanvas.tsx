@@ -406,9 +406,9 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
           {labelDetail === "COUNTRIES" && <path d={`M${city.center.x-2} ${city.center.y-2}h4v4h-4z`} fill="#ebd396" pointerEvents="none" />}
         </g>)}</g>
         <g className="planet-railways" aria-hidden="true">{transportPaths.rails.map(route=><g key={route.id}>
-          <path d={route.path} fill="none" stroke="#293c39" strokeWidth="2" />
-          <path d={route.path} fill="none" stroke="#b5b69a" strokeWidth=".8" />
-          <path d={route.path} fill="none" stroke="#293c39" strokeWidth="3" strokeDasharray=".7 3" />
+          <path d={route.path} fill="none" stroke="#293c39" strokeWidth={3.5*camera.zoom} />
+          <path d={route.path} fill="none" stroke="#b5b69a" strokeWidth={2*camera.zoom} />
+          <path d={route.path} fill="none" stroke="#293c39" strokeWidth={.6*camera.zoom} />
         </g>)}</g>
         <ScheduledAtlasTrains routes={transportPaths.rails} scale={camera.zoom} />
         <AtlasShips routes={transportPaths.ships} scale={camera.zoom} />
@@ -421,17 +421,17 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
         const country = visibleCountries.find(country => country.id === label.countryId)!;
         return <g key={label.countryId} className="planet-country-label" data-country-id={label.countryId} aria-label={country.name}>
           <title>{country.name}</title>
-          <rect x={label.x} y={label.y} width={label.width} height={label.height} rx="2" fill="#183731" stroke="#b8a572" />
-          <text x={label.x+label.width/2} y={label.y+13*labelScale} textAnchor="middle" fill="#f1e5bd" fontSize={9*labelScale} fontWeight="700">{country.name.length > 25 ? `${country.name.slice(0,24)}…` : country.name}</text>
+          <rect x={label.x} y={label.y} width={label.width} height={label.height} rx="4" fill="var(--ui-surface)" stroke="var(--ui-border-control)" />
+          <text x={label.x+label.width/2} y={label.y+13*labelScale} textAnchor="middle" fill="var(--ui-text)" fontSize={9*labelScale} fontWeight="700">{country.name.length > 25 ? `${country.name.slice(0,24)}…` : country.name}</text>
         </g>;
       })}</g>
       <g className="planet-city-labels">{labels.map(label => <g key={label.id}>
-        <path d={`M${label.x+label.width/2} ${label.y+label.height}L${label.center.x} ${label.center.y}`} stroke="#cdbd83" strokeWidth="1" opacity=".6" pointerEvents="none" />
+        <path d={`M${label.x+label.width/2} ${label.y+label.height}L${label.center.x} ${label.center.y}`} stroke="var(--ui-accent)" strokeWidth="1" opacity=".6" pointerEvents="none" />
         <g className="planet-city-label" data-city-id={label.id} data-country-id={label.countryId} data-selecting={selectingCityId===label.id}
           role="button" tabIndex={0} aria-label={`Открыть город ${label.name}`} onClick={()=>void selectCity(label)}
           onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();void selectCity(label);}}}>
-          <rect x={label.x} y={label.y} width={label.width} height={label.height} rx="2" fill="#183731" stroke="#b8a572" />
-          <text x={label.x+label.width/2} y={label.y+17*labelScale} textAnchor="middle" fill="#f1e5bd" fontSize={11*labelScale} fontWeight="700">{label.name.length>22?`${label.name.slice(0,21)}…`:label.name}</text>
+          <rect x={label.x} y={label.y} width={label.width} height={label.height} rx="4" fill="var(--ui-surface)" stroke="var(--ui-border-control)" />
+          <text x={label.x+label.width/2} y={label.y+17*labelScale} textAnchor="middle" fill="var(--ui-text)" fontSize={11*labelScale} fontWeight="700">{label.name.length>22?`${label.name.slice(0,21)}…`:label.name}</text>
         </g>
       </g>)}</g>
     </svg>

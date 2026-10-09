@@ -1,0 +1,96 @@
+{
+  "family": "city-ferry-v1",
+  "reviewedAt": "2026-10-09",
+  "artSource": "AI_AUTHORED",
+  "reviewMethod": "Четыре самостоятельных направления E/N/W/S, кремовая палуба и тёмный бирюзовый корпус. Нативный opaque≤16×6/6×16 в canvas24×24, восемь цветов, hard alpha. Проверены native и 8x; физическая ширина соответствует 3×3 водному коридору с полосой.",
+  "nativeCellPx": 8,
+  "canvasPx": [
+    24,
+    24
+  ],
+  "anchorPx": [
+    12,
+    12
+  ],
+  "independentlyAuthoredDirections": true,
+  "lighting": "upper-left",
+  "runtimeSceneReview": "ACCEPTED",
+  "sprites": {
+    "ferry-east": {
+      "accepted": true,
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "runtimeSha256": "fffd1dc05f92641f2e06d36ffc1f9e5f1954986ecb44cb48090fb6038dccc67d",
+      "sourceRect": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "opaqueBounds": [
+        5,
+        9,
+        19,
+        15
+      ]
+    },
+    "ferry-north": {
+      "accepted": true,
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "runtimeSha256": "b488314bf7f25c512815419618d9d21359bf4abbe38e724dc1a3c0bae0f3b302",
+      "sourceRect": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "opaqueBounds": [
+        9,
+        4,
+        15,
+        19
+      ]
+    },
+    "ferry-west": {
+      "accepted": true,
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "runtimeSha256": "6a97fabb483be485066ad662f55a0a92fe82dde523d3c8f4650dcc88083d98e5",
+      "sourceRect": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "opaqueBounds": [
+        5,
+        9,
+        19,
+        15
+      ]
+    },
+    "ferry-south": {
+      "accepted": true,
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "runtimeSha256": "07134ed5138ef15b0046ee1eda5095571d73e50e44e387cd1aee26648ffbe756",
+      "sourceRect": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "opaqueBounds": [
+        9,
+        4,
+        15,
+        19
+      ]
+    }
+  },
+  "runtimeSceneEvidence": {
+    "reviewedAt": "2026-10-09",
+    "assetRevision": "f5ba91abe09a928b",
+    "scope": "Просмотрены фактические CITY кадры отправления/швартовки/высадки, native корпус, трап и пешеходный подход. Все четыре направления отдельно проверены в native/8x источнике; полный живой цикл не повторён для каждого направления.",
+    "screenshots": [
+      ".builder/transport-rework-2026-10-09/screenshots/qualified-final/transport-rework-live-real-ffd3f-ravel-arrival-and-alighting-chromium/SEA-alighted.png"
+    ]
+  }
+}

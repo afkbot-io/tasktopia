@@ -1,5 +1,5 @@
-export type WorldPreferences = { cityLife: boolean; reduceMotion: boolean; quality: "AUTO" | "NORMAL" | "ECONOMY" };
-const defaults: WorldPreferences = { cityLife:true, reduceMotion:false, quality:"AUTO" };
+export type WorldPreferences = { sound: boolean; cityLife: boolean; reduceMotion: boolean; quality: "AUTO" | "NORMAL" | "ECONOMY" };
+const defaults: WorldPreferences = { sound:false, cityLife:true, reduceMotion:false, quality:"AUTO" };
 const storageKey = "tasktopia:world-preferences:v2";
 let snapshot = defaults;
 let initialized = false;
@@ -7,12 +7,12 @@ const listeners = new Set<() => void>();
 export function parseWorldPreferences(raw: string | null): WorldPreferences {
   try {
     const value = JSON.parse(raw ?? "null");
-    return { cityLife:value?.cityLife !== false, reduceMotion:value?.reduceMotion === true,
+    return { sound:value?.sound === true, cityLife:value?.cityLife !== false, reduceMotion:value?.reduceMotion === true,
       quality: value?.quality === "NORMAL" || value?.quality === "ECONOMY" ? value.quality : "AUTO" };
   } catch { return defaults; }
 }
 function publish(next: WorldPreferences) {
-  if (next.cityLife === snapshot.cityLife && next.reduceMotion === snapshot.reduceMotion && next.quality === snapshot.quality) return;
+  if (next.sound === snapshot.sound && next.cityLife === snapshot.cityLife && next.reduceMotion === snapshot.reduceMotion && next.quality === snapshot.quality) return;
   snapshot = next;
   listeners.forEach(listener => listener());
 }

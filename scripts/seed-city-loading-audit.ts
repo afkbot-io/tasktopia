@@ -10,7 +10,7 @@ import { synchronizeCityBlocks } from "../src/server/world/active-block-layout";
 import { auditWorld } from "../src/server/world/world-audit";
 
 const count = Number(process.env.AUDIT_TASKS ?? 300);
-assert.ok([300, 1000].includes(count));
+assert.ok([200, 300, 1000].includes(count));
 const url = process.env.TEST_DATABASE_URL ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(url).hostname));
 assert.equal(new URL(url).pathname, "/tasktopia_test");

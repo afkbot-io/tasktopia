@@ -13,34 +13,27 @@ export function ArchiveRecordModal({ recordId, onClose }: { recordId: string; on
   const [record, setRecord] = useState<ArchiveRecordDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const [retry, setRetry] = useState(0);
   const dialogRef = useRef<HTMLElement>(null);
-  useDialogFocus(dialogRef);
+  useDialogFocus(dialogRef, { onClose });
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setError(""); setRecord(null);
     void api<ArchiveRecordDto>(`/api/archive/records/${recordId}`, { signal: controller.signal })
-      .then(setRecord)
+      .then(value => { if (!controller.signal.aborted) setRecord(value); })
       .catch((reason: unknown) => {
         if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Не удалось открыть запись архива");
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    closeRef.current?.focus();
     return () => controller.abort();
-  }, [recordId]);
-
-  useEffect(() => {
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    document.addEventListener("keydown", close);
-    return () => document.removeEventListener("keydown", close);
-  }, [onClose]);
+  }, [recordId, retry]);
 
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-    <article ref={dialogRef} className="task-modal archive-record-modal" role="dialog" aria-modal="true" aria-labelledby="archive-record-title">
-      <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
-      {loading && <div className="modal-loading">Открываем Государственный архив…</div>}
-      {error && <p className="task-delete-error" role="alert">{error}</p>}
+    <article ref={dialogRef} className="task-modal archive-record-modal" role="dialog" aria-modal="true" aria-label={!record ? "Запись архива" : undefined} aria-labelledby={record ? "archive-record-title" : undefined}>
+      <button className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
+      {loading && <div className="modal-loading" role="status">Открываем запись архива…</div>}
+      {error && <div className="task-load-state" role="alert"><p>{error}</p><button className="primary-button" onClick={() => setRetry(n => n + 1)}>Повторить</button></div>}
       {!loading && record && <>
         <header className="task-header"><span className={`reference-kind kind-${record.kind.toLowerCase()}`}>{kindLabel[record.kind]}</span><div className="min-w-0">
           <p className="eyebrow">{record.tags.length > 0 ? record.tags.join(" · ") : "Государственный архив"}</p>

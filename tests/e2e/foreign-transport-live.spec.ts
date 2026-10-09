@@ -27,7 +27,8 @@ test("foreign airport changes refresh an open map without reloading the page",as
       await service.createTask(owner.countryId,{cityId:city.id,districtId,title:`Building ${i}`,estimate:1,idempotencyKey:crypto.randomUUID()});
     }
     await service.activateDistrict(owner.countryId,districtId,crypto.randomUUID());
-    const airport=await service.createTask(owner.countryId,{cityId:city.id,districtId,title:"Foreign airport QA",estimate:1,idempotencyKey:crypto.randomUUID()});
+    let airport=await service.createTask(owner.countryId,{cityId:city.id,districtId,title:"Foreign airport QA",estimate:1,idempotencyKey:crypto.randomUUID()});
+    for(let i=0;airport.serviceRole!=="AIRPORT"&&i<24;i++)airport=await service.createTask(owner.countryId,{cityId:city.id,districtId,title:`Foreign airport follow-up ${i}`,estimate:1,idempotencyKey:crypto.randomUUID()});
     expect(airport.serviceRole).toBe("AIRPORT");
     for(const status of ["STARTED","IN_PROGRESS","TESTING"] as const)await service.updateTaskStatus(owner.countryId,{taskId:airport.id,status,comment:"QA setup",idempotencyKey:crypto.randomUUID()});
     const call=async(name:string,args:Record<string,unknown>)=>{

@@ -1,4 +1,4 @@
-import { openMapCity } from "./map-navigation";
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test, type Page } from "@playwright/test";
 import type { BootstrapDto, RealtimeEvent } from "../../src/shared/contracts";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
@@ -27,14 +27,17 @@ async function openTask(page: Page, number: number): Promise<void> {
 const isDataRead = (path: string) => /\/scene$|\/overview$|\/planet-atlas$|\/world\/viewport|\/chunks\//.test(path);
 const isTaskRead = (path: string) => /^\/api\/tasks\/[\da-f-]{36}$/.test(path);
 
-/** Timer starts on the actual trusted UI click, finishes in the browser RAF
+/** Timer starts on the actual trusted UI activation, finishes in the browser RAF
  * after the target first frame and transition cover. Playwright polling is
  * outside the measured interval. This observes DOM only, not renderer internals. */
 async function armTiming(page: Page, target: "CITY" | "PLANET" | "TASK" | "ENTRY"): Promise<void> {
   await page.evaluate(target => {
     const state = { start: 0, elapsed: -1, target };
     (window as typeof window & { __navigationTiming?: typeof state }).__navigationTiming = state;
-    document.addEventListener("click", () => {
+    const activated = (event: Event) => {
+      if (event instanceof KeyboardEvent && event.key !== "Enter" && event.key !== " ") return;
+      document.removeEventListener("click", activated, true);
+      document.removeEventListener("keydown", activated, true);
       state.start = performance.now();
       const check = () => {
         const selectors = { CITY: '.world-canvas[data-map-active="true"][data-city-scene-commit="atomic"]',
@@ -45,7 +48,9 @@ async function armTiming(page: Page, target: "CITY" | "PLANET" | "TASK" | "ENTRY
         else if (performance.now() - state.start < 30_000) requestAnimationFrame(check);
       };
       requestAnimationFrame(check);
-    }, { once: true, capture: true });
+    };
+    document.addEventListener("click", activated, { capture: true });
+    document.addEventListener("keydown", activated, { capture: true });
   }, target);
 }
 async function finishTiming(page: Page): Promise<number> {
@@ -66,6 +71,7 @@ test("replays both task statuses before renderer readiness, caches task cards, a
   let phase: "initial" | "comment" | "rename" | "done" = "initial";
   let replayBatches = 0;
   let failRefresh = false;
+  let failedRefreshes = 0;
   let authoritativeRefreshes = 0;
   let targetIds: string[] = [];
   const reads: string[] = [];
@@ -79,7 +85,11 @@ test("replays both task statuses before renderer readiness, caches task cards, a
     await route.fulfill({ response });
   });
   await page.route("**/api/countries/*/cities/*/scene", async route => {
-    if (scene && failRefresh) { failRefresh = false; await route.fulfill({ status: 503, json: { message: "Intentional one-shot QA refresh failure" } }); return; }
+    if (scene && failRefresh) {
+      failedRefreshes += 1;
+      await route.fulfill({ status: 503, json: { message: "Intentional QA service outage" } });
+      return;
+    }
     const response = await route.fetch();
     const next = await response.json() as CitySceneDto;
     if (!scene) {
@@ -159,17 +169,23 @@ test("replays both task statuses before renderer readiness, caches task cards, a
   await context.setOffline(false);
   await expect(page.getByRole("alert")).toContainText("Не удалось обновить город", { timeout: 20_000 });
   const beforeRetry = authoritativeRefreshes;
+  const failuresBeforeWaiting = failedRefreshes;
   // Parent bootstrap/onReady changes must not masquerade as activation and
   // silently retry or dismiss the error before the user's action.
   await page.waitForTimeout(300);
   expect(authoritativeRefreshes).toBe(beforeRetry);
+  expect(failedRefreshes).toBe(failuresBeforeWaiting);
+  expect(failedRefreshes).toBeGreaterThan(0);
   await expect(page.getByRole("alert")).toContainText("Не удалось обновить город");
+  // Reconnect and the replayed rename may each invalidate the scene. Keep the
+  // service unavailable through that burst, then restore it before user retry.
+  failRefresh = false;
   await page.getByRole("alert").getByRole("button", { name: "Повторить" }).click();
   await expect(host).toHaveAttribute("data-city-scene-revision", /navigation-qa-refreshed$/);
   await expect(page.getByRole("alert")).toHaveCount(0);
   expect(authoritativeRefreshes).toBe(beforeRetry + 1);
   expect(errors).toEqual([]);
-  await info.attach("replay-cache-evidence", { body: Buffer.from(JSON.stringify({ targetIds, warmTaskMs, replayBatches, authoritativeRefreshes, reads }, null, 2)), contentType: "application/json" });
+  await info.attach("replay-cache-evidence", { body: Buffer.from(JSON.stringify({ targetIds, warmTaskMs, replayBatches, authoritativeRefreshes, failedRefreshes, reads }, null, 2)), contentType: "application/json" });
 });
 
 test("десять возвратов Планета–Город сохраняют камеру, renderer и не читают сцену", async ({ page }, info) => {
@@ -181,7 +197,7 @@ test("десять возвратов Планета–Город сохраня
   const samples:Array<{target:string;elapsedMs:number}>=[],started=Date.now();
   for(let i=0;i<10;i++)for(const target of ['PLANET','CITY'] as const) {
     await armTiming(page,target);
-    await page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:target==='PLANET'?'Планета':'Город',exact:true}).click();
+    if(target==='PLANET')await openMapPlanet(page);else await openMapCity(page);
     samples.push({target,elapsedMs:await finishTiming(page)});
     if(target==='PLANET')await expect(host).toHaveAttribute('data-animation-active','false');
     else {

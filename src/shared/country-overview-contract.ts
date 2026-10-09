@@ -1,6 +1,6 @@
 import type { Cell, CityDto, DistrictDto, Rect } from "./contracts";
 
-export const COUNTRY_OVERVIEW_SCHEMA_VERSION = 7 as const;
+export const COUNTRY_OVERVIEW_SCHEMA_VERSION = 8 as const;
 export const COUNTRY_TERRAIN_KINDS = [
   "grass", "meadow", "forest", "hill", "mountain", "coast", "river", "stone", "deep_water", "shallow_water", "unknown",
 ] as const;
@@ -32,14 +32,16 @@ export type CountryOverviewCityDto = {
   miniature: CountryCityMiniature;
 };
 export type CountryOverviewDto = {
-  schemaVersion: typeof COUNTRY_OVERVIEW_SCHEMA_VERSION;
+  schemaVersion: typeof COUNTRY_OVERVIEW_SCHEMA_VERSION | 7;
   countryId: string; revision: string; terrainSeed: number; bounds: Rect;
   geography: { columns: number; rows: number; cellSize: number; topology: "SQUARE_4"; terrainCodes: string; territoryCodes: string };
   cities: CountryOverviewCityDto[];
+  /** Presence only, derived from the same accessible ready endpoints as routes. */
+  transportPeers?: Record<string,Record<'AIR'|'RAIL'|'SEA',boolean>>;
   seaConnections?: import("./city-scene-contract").SeaConnectionDto[];
   railConnections?: import("./city-scene-contract").CityRailConnectionDto[];
   /** Logical flight connections only; never rendered as inter-city roads. */
-  connections: Array<{ fromCityId: string; toCityId: string; fromAirportId?: string; toAirportId?: string;
+  connections: Array<{ fromCityId: string; toCityId: string;fromCountryId?:string;toCountryId?:string; fromAirportId?: string; toAirportId?: string;scheduleOffsetMs?:number;
     /** A foreign endpoint is beyond this view; local endpoints use real miniatures. */
     fromPoint?: Cell; toPoint?: Cell; fromCityName?: string; toCityName?: string }>;
   /** Cartographic read model of actual world roads, separate from flights.

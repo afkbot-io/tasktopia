@@ -1,0 +1,165 @@
+{
+  "family": "city-train-v3",
+  "reviewedAt": "2026-10-09",
+  "artSource": "AI_AUTHORED",
+  "reviewMethod": "Крыша доминирует; тонкий фасад и колёса в нативной геометрии. Локомотив/вагон отдельно E/N/W/S, верхний левый свет. Восемь частей проверены на 8xконтактном листе, без программного вращения.",
+  "nativeCellPx": 8,
+  "canvasPx": [
+    24,
+    24
+  ],
+  "anchorPx": [
+    12,
+    12
+  ],
+  "independentlyAuthoredDirections": true,
+  "lighting": "upper-left",
+  "runtimeSceneReview": "ACCEPTED",
+  "sprites": {
+    "locomotive-east": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "6e03a7f8b97fd1da36f42a6e14a29b24d635ec1811f47025a9b11741a07dce98",
+      "sourceRect": [
+        0,
+        0,
+        443,
+        417
+      ],
+      "opaqueBounds": [
+        0,
+        8,
+        24,
+        16
+      ]
+    },
+    "locomotive-north": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "88e1c85d46394496e2cd0c6af6022b921821bceafad694d92625b836b66b7367",
+      "sourceRect": [
+        0,
+        417,
+        443,
+        940
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        15,
+        24
+      ]
+    },
+    "locomotive-west": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "8dd828cec2d5545427f0fa35d4cb8bf2f8a65b07d9a1078fa1a1eddc4bae43c3",
+      "sourceRect": [
+        0,
+        940,
+        443,
+        1171
+      ],
+      "opaqueBounds": [
+        0,
+        8,
+        24,
+        16
+      ]
+    },
+    "locomotive-south": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "b00d3d0b014ef4ddb44ee885ed7f943dde1bd35a552c7ae613a2115cf6655bf6",
+      "sourceRect": [
+        0,
+        1171,
+        443,
+        1774
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        15,
+        24
+      ]
+    },
+    "carriage-east": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "291fedee52cae3133442989132f00f18d5f1080ef7cf839b55c41e23c3d418bf",
+      "sourceRect": [
+        443,
+        0,
+        887,
+        417
+      ],
+      "opaqueBounds": [
+        0,
+        8,
+        24,
+        16
+      ]
+    },
+    "carriage-north": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "8e823ec027b286e996553642c290442a5ac40a6cadf10dbc49d07776fb361ca7",
+      "sourceRect": [
+        443,
+        417,
+        887,
+        940
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        15,
+        24
+      ]
+    },
+    "carriage-west": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "68702739bee8dd382b90da54ee86471b7f6bcad88d9570385fe2c588982206b7",
+      "sourceRect": [
+        443,
+        940,
+        887,
+        1171
+      ],
+      "opaqueBounds": [
+        0,
+        8,
+        24,
+        16
+      ]
+    },
+    "carriage-south": {
+      "accepted": true,
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "runtimeSha256": "fbdd03a2c543fe0a12c686ff4e11466335d8ac3288b96e3983e310c89f7838f6",
+      "sourceRect": [
+        443,
+        1171,
+        887,
+        1774
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        15,
+        24
+      ]
+    }
+  },
+  "runtimeSceneEvidence": {
+    "reviewedAt": "2026-10-09",
+    "assetRevision": "f5ba91abe09a928b",
+    "scope": "Просмотрены фактические CITY кадры отправления/возвращения N/S, пять вагонов, две платформы, мостик, люди. E/W отдельно проверены в авторских native/8x источниках; габариты всех четырёх направлений и обеих осей проверены тестом. Отдельный живой CITY сценарий E/W не выполнялся.",
+    "screenshots": [
+      ".builder/transport-rework-2026-10-09/screenshots/qualified-final/transport-rework-live-real-738c5-ravel-arrival-and-alighting-chromium/RAIL-departed.png",
+      ".builder/transport-rework-2026-10-09/screenshots/qualified-final/transport-rework-live-real-738c5-ravel-arrival-and-alighting-chromium/RAIL-alighted.png"
+    ]
+  }
+}

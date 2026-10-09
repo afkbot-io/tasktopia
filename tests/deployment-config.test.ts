@@ -656,6 +656,19 @@ mkdir "$FAKE_FLOCK_DIR" 2>/dev/null
     expect(playwright).toContain("TEST_DATABASE_URL: testDatabaseURL");
   });
 
+  it.each([undefined, "postgres://test:test@localhost:55434/owned_fixture"])("exports the resolved browser database to fixture workers (%s)", override => {
+    const env: NodeJS.ProcessEnv = { ...process.env, TEST_DATABASE_URL: "postgres://test:test@127.0.0.1:55432/ci_fixture" };
+    delete env.E2E_DATABASE_URL;
+    if (override) env.E2E_DATABASE_URL = override;
+    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e",
+      'const {default: config} = await import("./playwright.config.ts"); console.log(JSON.stringify({worker:process.env.E2E_DATABASE_URL,server:config.webServer.env.DATABASE_URL}));'],
+    { cwd: new URL("..", import.meta.url), env, encoding: "utf8" });
+    expect(result.status, result.stderr).toBe(0);
+    const resolved = JSON.parse(result.stdout);
+    expect(resolved.worker).toBe(override ?? env.TEST_DATABASE_URL);
+    expect(resolved.server).toBe(resolved.worker);
+  });
+
   it("keeps heavy world generation in the explicit local release gate", () => {
     expect(ci).not.toMatch(/^ {2}(worldgen|atlas):/mu);
     expect(packageJson.scripts["test:release-world"]).toContain("npm run test:worldgen");

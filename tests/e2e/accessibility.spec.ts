@@ -16,6 +16,8 @@ test("authentication and MCP settings have no serious accessibility violations",
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await page.getByRole("button", { name: "Настройки аккаунта" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  // The lazy loading dialog deliberately traps focus on its only control.
+  await expect(page.getByRole("heading", { name: "Аккаунт и интеграции" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Закрыть" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.locator(".settings-panel :focus")).toBeVisible();

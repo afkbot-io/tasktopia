@@ -29,7 +29,7 @@ export function CityDocuments({
 }) {
   const ref = useRef<HTMLElement>(null);
   const body = useRef<HTMLDivElement>(null);
-  useDialogFocus(ref);
+  useDialogFocus(ref, { onClose, active: !hidden });
   const districtScope = useRef("");
   const [tab, setTab] = useState<"plan" | "summary" | "attention">("plan");
   const [city, setCity] = useState(initialCityId ?? "");
@@ -44,16 +44,6 @@ export function CityDocuments({
   const [retry, setRetry] = useState(0);
   const [offset, setOffset] = useState(0);
   const [days, setDays] = useState(7);
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !hidden) {
-        e.stopImmediatePropagation();
-        onClose();
-      }
-    };
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
-  }, [hidden, onClose]);
   useEffect(() => {
     const c = new AbortController();
     setScopeError(false);
@@ -170,7 +160,6 @@ export function CityDocuments({
       >
         <header>
           <div>
-            <small>ГОРОДСКАЯ КАНЦЕЛЯРИЯ</small>
             <h2 id="city-documents-title">Документы</h2>
           </div>
           <button onClick={onClose} aria-label="Закрыть документы">
@@ -330,7 +319,7 @@ export function CityDocuments({
                       <ul className="document-tasks">
                         {tasks.map((t) => (
                           <li key={t.id}>
-                            <button onClick={() => onTask(t.id)}>
+                            <button onClick={event => { event.currentTarget.focus(); onTask(t.id); }}>
                               <i aria-hidden="true">
                                 {t.status === "COMPLETED"
                                   ? "✓"
@@ -345,10 +334,10 @@ export function CityDocuments({
                                 <small>
                                   {!city ? `${t.cityName} · ` : ""}
                                   {!district ? `${t.districtName} · ` : ""}
-                                  {t.assignee ?? "Не назначен"}
+                                  {t.assignee ?? "Нет исполнителя"}
                                 </small>
-                                {taskAttention(t).length > 0 && (
-                                  <em>{taskAttention(t).join(" · ")}</em>
+                                {taskAttention(t).filter(label => label !== "Нет исполнителя").length > 0 && (
+                                  <em>{taskAttention(t).filter(label => label !== "Нет исполнителя").join(" · ")}</em>
                                 )}
                               </span>
                             </button>

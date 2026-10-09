@@ -1,0 +1,1253 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-08T18:08:45.885146+00:00",
+  "status": "passed-with-documented-limits",
+  "baseline": "d52b29d85470f1a2e6f8449bcd1d3389af450e2a",
+  "reviewBase": "e6c173c7e0c4a44b2c9c3f7b379a7bebd2e34daf",
+  "branch": "codex/city-everyday-events",
+  "scope": {
+    "accumulatedFiles": 195,
+    "remoteCountryId": "4201d605-751a-469b-8d5f-a7e322a7ece1",
+    "deploymentPerformed": false,
+    "scmApprovalPerformed": false,
+    "publicLoadTest": false,
+    "trackedTask": null
+  },
+  "inputs": {
+    "path": "docs/evidence/global-followup-2026-10-08/inputs.json",
+    "sha256": "f65bf00abd1989fed07ce8df6394b25a146ca942b006948e18e13e8a61e0f573",
+    "files": 193,
+    "mainQualificationComparedChanges": [
+      "docs/ARCHITECTURE.md",
+      "src/server/asset-revisions.ts",
+      "tests/asset-revisions.test.ts",
+      "tests/e2e/everyday-city-events.spec.ts"
+    ],
+    "clientRuntime": {
+      "sourceInputsMatch": 184,
+      "loadedArtifactsMatch": 34,
+      "serverOnlyDifference": "published revision directory mode 0755",
+      "assetRevision": "063911a9aab7f1a6"
+    }
+  },
+  "gates": {
+    "typecheck": "passed",
+    "eslint": "passed",
+    "productionBuild": "passed",
+    "vitest": {
+      "passed": 1564,
+      "files": 287,
+      "failed": 0,
+      "skipped": 0,
+      "basis": "Полный набор 1564, затем 4 affected tests после изменения только permissions; 1560 неизменённых результатов повторно использованы",
+      "affectedRepeat": 4
+    },
+    "python": {
+      "passed": 55,
+      "basis": "Неизменённые входы"
+    },
+    "art": {
+      "pngs": 679,
+      "violations": 0,
+      "compactReviewedFamilies": 77,
+      "storybook": {
+        "buildings": 77,
+        "stages": 385,
+        "props": 146,
+        "vehicles": 19,
+        "areas": 7,
+        "terrainFamilies": 12,
+        "reviewedBuildings": 77
+      },
+      "storybookErrors": [],
+      "historicalSilhouetteWarnings": 8,
+      "assetRevision": "063911a9aab7f1a6",
+      "atlasSHA256": "6406f64d63f99610ecd41ca06a449f571dabf1c3a36d38e2d37db1414d909055"
+    },
+    "mcp": {
+      "tools": 47,
+      "status": "passed",
+      "basis": "HTTP modern/legacy negotiation, Bearer, Origin, revoked token, scopes; не 47 мутаций"
+    },
+    "concurrentStartup": {
+      "revision": "063911a9aab7f1a6",
+      "results": [
+        {
+          "port": 5222,
+          "health": 200,
+          "atlas": 200,
+          "atlasSHA256": "6406f64d63f99610ecd41ca06a449f571dabf1c3a36d38e2d37db1414d909055"
+        },
+        {
+          "port": 5223,
+          "health": 200,
+          "atlas": 200,
+          "atlasSHA256": "6406f64d63f99610ecd41ca06a449f571dabf1c3a36d38e2d37db1414d909055"
+        },
+        {
+          "port": 5224,
+          "health": 200,
+          "atlas": 200,
+          "atlasSHA256": "6406f64d63f99610ecd41ca06a449f571dabf1c3a36d38e2d37db1414d909055"
+        }
+      ],
+      "publishedMode": "0o755",
+      "stagingLeft": 0
+    },
+    "browser": {
+      "uniqueCases": 79,
+      "qualifiedOutcomes": {
+        "passed": 78,
+        "failed": 0,
+        "skipped": 1,
+        "timedOut": 0
+      },
+      "runs": [
+        {
+          "path": ".builder/global-followup-2026-10-08/browser-life.json",
+          "sha256": "9aedbe64fd10e5c154f555367fbec49bd0603419b9b5a61bdb9c6482aa3c88d0",
+          "stats": {
+            "startTime": "2026-10-08T17:10:40.179Z",
+            "duration": 2351201.221,
+            "expected": 43,
+            "skipped": 1,
+            "unexpected": 1,
+            "flaky": 0
+          }
+        },
+        {
+          "path": ".builder/global-followup-2026-10-08/browser-school-final.json",
+          "sha256": "289e832bfc92e0f7b94be86c5759f6a79c316f99b449ef08564bf37f39753ac2",
+          "stats": {
+            "startTime": "2026-10-08T17:51:37.988Z",
+            "duration": 429000.542,
+            "expected": 0,
+            "skipped": 0,
+            "unexpected": 2,
+            "flaky": 0
+          }
+        },
+        {
+          "path": ".builder/global-followup-2026-10-08/browser-ui-visual.json",
+          "sha256": "9f20be78c12881080d0b70aebecee7ae92363206b60f502a2af5cf9208644bd3",
+          "stats": {
+            "startTime": "2026-10-08T17:35:58.476Z",
+            "duration": 127090.469,
+            "expected": 16,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "path": ".builder/global-followup-2026-10-08/browser-devices.json",
+          "sha256": "04984786e275e7b44b718383b30e2112bae791a79e7e5cac210ce0d860edda15",
+          "stats": {
+            "startTime": "2026-10-08T17:38:06.178Z",
+            "duration": 58235.05,
+            "expected": 12,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "path": ".builder/global-followup-2026-10-08/browser-school-qualified.json",
+          "sha256": "afad94ecfb92119bf8755873e787c246ae9acedca8e3b0521d2444a35418141e",
+          "stats": {
+            "startTime": "2026-10-08T18:00:33.578Z",
+            "duration": 187110.541,
+            "expected": 2,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "path": ".builder/global-followup-2026-10-08/browser-living-cpu-final.json",
+          "sha256": "d8b0ace6294cccfc4e0bcbad74500aac76f1ce7eced918d739ea7f2d91fb27a5",
+          "stats": {
+            "startTime": "2026-10-08T18:03:41.287Z",
+            "duration": 61332.844,
+            "expected": 1,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "path": ".builder/global-followup-2026-10-08/browser-ui-timed-final.json",
+          "sha256": "9675e3ee0fe856d51d65f5c43932700d3174feb1e2347f666bc05eb9a022e71a",
+          "stats": {
+            "startTime": "2026-10-08T18:04:43.205Z",
+            "duration": 27933.138,
+            "expected": 6,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        }
+      ],
+      "cases": [
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "real city exposes six education families, safe event pads and connected transit stops",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "fresh MCP completions open every institution after the construction reveal and never replay on reload",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "tow loading and water repair wait for actual service arrivals, drive and reopen safely",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "touch-sized everyday city keeps preferences, sound opt-in, motion cancellation and read-only task controls usable",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "six everyday scenes use actual residents and approaches",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "everyday live lifecycle clears hidden, map exit, reconnect and deleted institutions without historical openings",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "public bus completes an actual boarding, directed trip and safe alighting",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "rain covers actual walkers, puddles and car splashes then dries completely",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "school bus delivers children through the real school entrance independently of its street ceremony",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-school-qualified"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "authored sprite atlas uses the current revision and stays stable across zoom and compact resize",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "real city exposes six education families, safe event pads and connected transit stops",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "fresh MCP completions open every institution after the construction reveal and never replay on reload",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "tow loading and water repair wait for actual service arrivals, drive and reopen safely",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "touch-sized everyday city keeps preferences, sound opt-in, motion cancellation and read-only task controls usable",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "six everyday scenes use actual residents and approaches",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "everyday live lifecycle clears hidden, map exit, reconnect and deleted institutions without historical openings",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "public bus completes an actual boarding, directed trip and safe alighting",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "rain covers actual walkers, puddles and car splashes then dries completely",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "school bus delivers children through the real school entrance independently of its street ceremony",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-school-qualified"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "authored sprite atlas uses the current revision and stays stable across zoom and compact resize",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "touch-sized everyday city keeps preferences, sound opt-in, motion cancellation and read-only task controls usable",
+          "project": "living-city-mobile-chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-events.spec.ts",
+          "title": "touch-sized everyday city keeps preferences, sound opt-in, motion cancellation and read-only task controls usable",
+          "project": "living-city-mobile-webkit",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "everyday-city-performance.spec.ts",
+          "title": "everyday real-clock paired CPU and retained heap stay bounded after lifecycle changes",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "MCP/WebSocket keeps the old building through all stages, delivers a helicopter transfer and leaves ruins after demolition",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "delayed artwork, rapid stage coalescing, rollback, map departure and reduced motion keep the latest state",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "touch-sized economy mode, trusted sound opt-in and cancellation remain usable",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "live cards stay current, reconnect skips old events and failed artwork cannot hold a ghost forever",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "real-clock effects stay within the CPU and retained-heap budgets over repeated updates",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-living-cpu-final"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "visibility lifecycle stops work and audio, then releases an expired capture onto the latest server stage",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "all seven road scenes dispatch moving services, close and reopen lanes without unsafe pairs",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "park ground changes and demolition overriding unfinished work settle to authoritative scene",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "native road captures cover every scene without adding standalone props or browser errors",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "deleting cargo in flight demolishes the authoritative destination without reserving former lots",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "MCP/WebSocket keeps the old building through all stages, delivers a helicopter transfer and leaves ruins after demolition",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "delayed artwork, rapid stage coalescing, rollback, map departure and reduced motion keep the latest state",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "touch-sized economy mode, trusted sound opt-in and cancellation remain usable",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "live cards stay current, reconnect skips old events and failed artwork cannot hold a ghost forever",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "real-clock effects stay within the CPU and retained-heap budgets over repeated updates",
+          "project": "webkit-visual",
+          "status": "skipped",
+          "outcome": "skipped",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "visibility lifecycle stops work and audio, then releases an expired capture onto the latest server stage",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "all seven road scenes dispatch moving services, close and reopen lanes without unsafe pairs",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "park ground changes and demolition overriding unfinished work settle to authoritative scene",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "native road captures cover every scene without adding standalone props or browser errors",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "deleting cargo in flight demolishes the authoritative destination without reserving former lots",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "touch-sized economy mode, trusted sound opt-in and cancellation remain usable",
+          "project": "living-city-mobile-chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "living-city-events.spec.ts",
+          "title": "touch-sized economy mode, trusted sound opt-in and cancellation remain usable",
+          "project": "living-city-mobile-webkit",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-life"
+        },
+        {
+          "file": "forest-ui-design.spec.ts",
+          "title": "вход использует хвойную поверхность и читаемые локальные шрифты",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-design.spec.ts",
+          "title": "вход использует хвойную поверхность и читаемые локальные шрифты",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-states.spec.ts",
+          "title": "без буфера обмена ссылка доступна в карточке вместо системного диалога",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-states.spec.ts",
+          "title": "пустое состояние, ошибка, ожидание, секрет и отзыв MCP-ключа доступны в новой теме",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-states.spec.ts",
+          "title": "корневой шрифт 200%, уменьшенное движение и горизонтальный экран сохраняют навигацию",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-states.spec.ts",
+          "title": "без буфера обмена ссылка доступна в карточке вместо системного диалога",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-states.spec.ts",
+          "title": "пустое состояние, ошибка, ожидание, секрет и отзыв MCP-ключа доступны в новой теме",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-states.spec.ts",
+          "title": "корневой шрифт 200%, уменьшенное движение и горизонтальный экран сохраняют навигацию",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 320",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 390",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 768",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 1440",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 320",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 390",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 768",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "forest-ui-surfaces.spec.ts",
+          "title": "все основные панели согласованы и доступны на ширине 1440",
+          "project": "webkit-visual",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-visual"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+          "project": "desktop-firefox",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+          "project": "desktop-firefox",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+          "project": "desktop-4k",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+          "project": "desktop-4k",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+          "project": "android-small",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+          "project": "android-small",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+          "project": "iphone-portrait",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+          "project": "iphone-portrait",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+          "project": "ipad-portrait",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+          "project": "ipad-portrait",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "вход, карта, панели и карточка удобны на выбранном устройстве",
+          "project": "ipad-landscape",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "device-compatibility.spec.ts",
+          "title": "ошибка загрузки карточки допускает повтор на выбранном устройстве",
+          "project": "ipad-landscape",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-devices"
+        },
+        {
+          "file": "forest-ui-load.spec.ts",
+          "title": "новая тема укладывается в бюджеты шрифтов и открывает город без дополнительных чтений",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-timed-final"
+        },
+        {
+          "file": "navigation-cache.spec.ts",
+          "title": "replays both task statuses before renderer readiness, caches task cards, and retries a failed authoritative refresh",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-timed-final"
+        },
+        {
+          "file": "navigation-cache.spec.ts",
+          "title": "десять возвратов Планета–Город сохраняют камеру, renderer и не читают сцену",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-timed-final"
+        },
+        {
+          "file": "task-modal-unavailable.spec.ts",
+          "title": "real deletion clears an already open task after its authoritative HTTP 404",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-timed-final"
+        },
+        {
+          "file": "task-modal-unavailable.spec.ts",
+          "title": "a definitive HTTP 403 clears task details and actions on realtime refresh",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-timed-final"
+        },
+        {
+          "file": "task-modal-unavailable.spec.ts",
+          "title": "temporary HTTP 503 preserves the loaded card and a later refresh recovers",
+          "project": "chromium",
+          "status": "expected",
+          "outcome": "passed",
+          "qualifiedBy": "browser-ui-timed-final"
+        }
+      ],
+      "priorFailuresRecorded": 3,
+      "flakyRetries": 0,
+      "skipReason": "WebKit не поддерживает CDP heap inspection",
+      "schoolDeliveries": [
+        {
+          "project": "chromium",
+          "journeys": [
+            {
+              "episode": 0,
+              "deliveryElapsedMs": 80092.33666992188,
+              "deliveryBudgetMs": 184000,
+              "boarded": 1,
+              "alighted": 1,
+              "arrived": 1,
+              "activeVisits": 1
+            }
+          ],
+          "path": ".builder/global-followup-2026-10-08/browser-school-qualified/everyday-city-events-schoo-43622-ntly-of-its-street-ceremony-chromium/school-bus-delivery-budget.json",
+          "sha256": "f5ab4e5156770bf94e0b56c0c4dbacc0e061e3b5da49f9445261894a192aa8ff"
+        },
+        {
+          "project": "webkit-visual",
+          "journeys": [
+            {
+              "episode": 0,
+              "deliveryElapsedMs": 69292.3994140625,
+              "deliveryBudgetMs": 184000,
+              "boarded": 1,
+              "alighted": 1,
+              "arrived": 1,
+              "activeVisits": 1
+            }
+          ],
+          "path": ".builder/global-followup-2026-10-08/browser-school-qualified/everyday-city-events-schoo-43622-ntly-of-its-street-ceremony-webkit-visual/school-bus-delivery-budget.json",
+          "sha256": "b2ee623e80a8154167f97c6106a9c3e454f22b018e431d114ccf210617ba97d2"
+        }
+      ]
+    }
+  },
+  "performance": {
+    "environment": "Node24.15.0 Chromium151 macOS/M5Pro ANGLE Metal DPR1 NORMAL localhost",
+    "samples": 18,
+    "series": [
+      {
+        "workload": 40,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "path": "tmp/city-art-load/global-qualified-final-metal-40-compact/report.json",
+        "sha256": "6f5cdb5225626c1fac9baf161229adf965633ee37c1773b4b34e1f2f55253972",
+        "statistics": {
+          "coldMs": {
+            "median": 800.1467089999969,
+            "min": 796.2507920000007,
+            "max": 846.2338330000002
+          },
+          "interactiveMs": {
+            "median": 800.8299169999991,
+            "min": 797.078458,
+            "max": 851.7486250000002
+          },
+          "warmMs": {
+            "median": 39.87137499999881,
+            "min": 39.57512500000121,
+            "max": 41.438374999997905
+          },
+          "p95FrameMs": {
+            "median": 9.800000000000182,
+            "min": 9.799999999999272,
+            "max": 9.899999999999636
+          },
+          "heapBytes": {
+            "median": 36253200,
+            "min": 36088032,
+            "max": 36361200
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "longTasks": 0,
+        "errors": [],
+        "planningMs": [
+          6.7,
+          7.5,
+          6.9
+        ]
+      },
+      {
+        "workload": 40,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "path": "tmp/city-art-load/global-qualified-final-metal-40/report.json",
+        "sha256": "555a1386662e1c6cd6ccfecd59600daea1c66b2006087f1139b5a039b0553134",
+        "statistics": {
+          "coldMs": {
+            "median": 810.7292080000002,
+            "min": 802.8729170000006,
+            "max": 1297.1352079999979
+          },
+          "interactiveMs": {
+            "median": 813.8617080000001,
+            "min": 810.8432919999977,
+            "max": 1305.324208
+          },
+          "warmMs": {
+            "median": 43.25975000000108,
+            "min": 42.038791000000856,
+            "max": 48.133499999996275
+          },
+          "p95FrameMs": {
+            "median": 9.899999999999636,
+            "min": 9.799999999999272,
+            "max": 9.899999999999636
+          },
+          "heapBytes": {
+            "median": 53014692,
+            "min": 52938320,
+            "max": 53203936
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "longTasks": 0,
+        "errors": [],
+        "planningMs": [
+          7.6,
+          6.9,
+          7.8
+        ]
+      },
+      {
+        "workload": 300,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "path": "tmp/city-art-load/global-qualified-final-metal-300-compact/report.json",
+        "sha256": "407c24d6994483c1d47b8d23f859ea0ec855ff9a24d603fd9945ad50b2d7555a",
+        "statistics": {
+          "coldMs": {
+            "median": 956.3787090000005,
+            "min": 936.8962499999998,
+            "max": 1699.6571250000002
+          },
+          "interactiveMs": {
+            "median": 976.7900420000005,
+            "min": 954.0674579999995,
+            "max": 1728.686333
+          },
+          "warmMs": {
+            "median": 41.705957999998645,
+            "min": 41.33937499999956,
+            "max": 43.52170800000022
+          },
+          "p95FrameMs": {
+            "median": 9.899999999999636,
+            "min": 9.799999999999272,
+            "max": 9.899999999999636
+          },
+          "heapBytes": {
+            "median": 93841696,
+            "min": 93784368,
+            "max": 93954816
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "longTasks": 0,
+        "errors": [],
+        "planningMs": [
+          25.3,
+          23.9,
+          25.1
+        ]
+      },
+      {
+        "workload": 300,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "path": "tmp/city-art-load/global-qualified-final-metal-300/report.json",
+        "sha256": "6e1f17949704291aafc39b329abb3a350c68041d9f3424809568b408db8837c1",
+        "statistics": {
+          "coldMs": {
+            "median": 1528.7780000000002,
+            "min": 1519.9871670000011,
+            "max": 1533.5117499999978
+          },
+          "interactiveMs": {
+            "median": 1547.1537080000003,
+            "min": 1537.878458000001,
+            "max": 1551.0149999999994
+          },
+          "warmMs": {
+            "median": 46.989042000001064,
+            "min": 42.64708299999984,
+            "max": 52.03966700000092
+          },
+          "p95FrameMs": {
+            "median": 9.800000000001091,
+            "min": 9.799999999999272,
+            "max": 9.899999999999636
+          },
+          "heapBytes": {
+            "median": 106218724,
+            "min": 106214260,
+            "max": 106326360
+          },
+          "heapChurnDeltaBytes": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "longTasks": 0,
+        "errors": [],
+        "planningMs": [
+          23.9,
+          24.7,
+          24.9
+        ]
+      },
+      {
+        "workload": 1000,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "path": "tmp/city-art-load/global-qualified-final-metal-1000-compact/report.json",
+        "sha256": "288d070ea9e9fab7b48448ff4b7dc546eae10d4fbb67415615165ca7acb6a38b",
+        "statistics": {
+          "coldMs": {
+            "median": 2027.675083000002,
+            "min": 2009.1268750000002,
+            "max": 2047.5334159999984
+          },
+          "interactiveMs": {
+            "median": 2050.6750409999986,
+            "min": 2033.0909580000007,
+            "max": 2485.21
+          },
+          "warmMs": {
+            "median": 53.892875000005006,
+            "min": 22.286041999999725,
+            "max": 56.86241600000358
+          },
+          "p95FrameMs": {
+            "median": 15,
+            "min": 10,
+            "max": 17.899999999999636
+          },
+          "heapBytes": {
+            "median": 260486536,
+            "min": 260083012,
+            "max": 261664452
+          },
+          "heapChurnDeltaBytes": {
+            "median": 858152,
+            "min": 720380,
+            "max": 1026584
+          }
+        },
+        "longTasks": 0,
+        "errors": [],
+        "planningMs": [
+          57.7,
+          59.3,
+          61.6
+        ]
+      },
+      {
+        "workload": 1000,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "path": "tmp/city-art-load/global-qualified-final-metal-1000/report.json",
+        "sha256": "6d6f5891410fc9df70cac24cf4bf18bfb8886d2554b9f94f4874061af7000d13",
+        "statistics": {
+          "coldMs": {
+            "median": 1992.8915839999972,
+            "min": 1982.765666,
+            "max": 1999.7071250000008
+          },
+          "interactiveMs": {
+            "median": 2015.3004169999986,
+            "min": 1999.025375,
+            "max": 2015.930375
+          },
+          "warmMs": {
+            "median": 44.43154100000538,
+            "min": 20.83533400000306,
+            "max": 53.209750000001804
+          },
+          "p95FrameMs": {
+            "median": 10.199999999998909,
+            "min": 10.199999999998909,
+            "max": 10.299999999999272
+          },
+          "heapBytes": {
+            "median": 269914244,
+            "min": 269310500,
+            "max": 270461600
+          },
+          "heapChurnDeltaBytes": {
+            "median": 906224,
+            "min": 880968,
+            "max": 1654312
+          }
+        },
+        "longTasks": 0,
+        "errors": [],
+        "planningMs": [
+          59.2,
+          56.8,
+          54.6
+        ]
+      }
+    ],
+    "rareRoad": {
+      "path": "tmp/city-art-load/global-qualified-final-metal-1000-compact-rare-road/report.json",
+      "sha256": "600e4fcaf334f6ba4f942ee891e5aa0afc3929d91760f82cc9c912f9df8feea6",
+      "steadyMs": 100000,
+      "p95FrameMs": 17.400000000001455,
+      "longTasks": [],
+      "roadPlanningMs": "21.800",
+      "errors": []
+    },
+    "isolatedLiving": {
+      "path": ".builder/global-followup-2026-10-08/browser-living-cpu-final/living-city-events-real-cl-16af6-dgets-over-repeated-updates-chromium/performance.json",
+      "sha256": "fa1e0cb09b54934669cbc22ade25412b4f0617380c90de8cfc042174dbadbd60",
+      "cpuP95MaxMs": 0.4,
+      "roadPlanningMs": 4.4,
+      "retainedHeapGrowthBytes": 873376,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "budgets": {
+        "livingCpuP95Ms": 8,
+        "roadPlanningMs": 50,
+        "retainedHeapGrowthBytes": 8388608,
+        "ghosts": 3,
+        "workers": 18
+      }
+    }
+  },
+  "review": {
+    "status": "passed",
+    "blockingFindingsRemaining": 0,
+    "basis": "AI review exact diff + originating scope + product MCP-only rules; не SCM approval",
+    "artifact": {
+      "path": ".builder/global-followup-2026-10-08/final-review.md",
+      "sha256": "ec9643150a67650bc505705875d83bb304f3ed1098b50c60cbdb2b966795c12b"
+    }
+  },
+  "artifacts": [
+    {
+      "path": ".builder/global-followup-2026-10-08/vitest-delivery.json",
+      "sha256": "4ab238b09685c32e63e0d9986393e4ebc2d93d7b68f49ae2c84108fed2e53312"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/asset-permissions-green.json",
+      "sha256": "5e50f81254e88c57c422da8f0c148a4f45b0e11f20c412c50363e451e3b1c738"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/closure-local-green.json",
+      "sha256": "42e2cd6e7c281c1d78243786c73564f23c7a16e9ca7ad123ebf09c2a916f7a05"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/python-final-qualified.log",
+      "sha256": "6b903b9dd060c0e04f46c49755f5b51bb3b334080a80dc8ee9b6d252817452dd"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/assets-final-complete.log",
+      "sha256": "22c52de7a7e433af130251d782be71be1392d5a886871a56b92bd539eef25179"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/mcp-final-permissions.log",
+      "sha256": "757e8b6489bef412c262e5c6268d321671b0632797055f6e10b96712f0650821"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/typecheck-school-scenarios.log",
+      "sha256": "10c74868647dcaf23c69fff9658daa34b5717049d218ad4e9a4b125c1f8a8ec3"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/lint-school-scenarios.log",
+      "sha256": "6ae7633aac706563e696114ee9e0e677eeb7ca566be4a16d6883fc16883c7b65"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/build-final-permissions.log",
+      "sha256": "f8be3a67d5280c1570ce4a40f485997e2ffe006e4a60f15adcf6248ba51c4745"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/qualified-runtime-inputs.json",
+      "sha256": "6ce65cbc329a5a0b9c36a1485884d0dcb11c15782094856f26e48dd27ccead6f"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/final-permissions-inputs.json",
+      "sha256": "02e72235850169fe01b45fb34f40cfdd61392bc25d78f5bc38b3628218223801"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/concurrent-start-final-permissions.json",
+      "sha256": "3dc20564beca902ca1b51bfb251afc3a42dac537d4f79c39dffdb6f9a35e1960"
+    },
+    {
+      "path": ".builder/global-followup-2026-10-08/dependency-audit.json",
+      "sha256": "b9de7ba662860d60f2a349520296298f12171531f61c01b5adaf694f94f91546"
+    }
+  ],
+  "limits": [
+    "6 moderate dependency records, 0 high/critical; ip-address входит в production tree",
+    "Холодный everyday planner 57.7–61.6ms выше желательного50ms",
+    "Heap1000 около250MiB, не включает всю GPU/OS память",
+    "Физические телефоны, всеGPU/OS, слабая сеть не квалифицированы",
+    "Пустые поездки и отмена конечного посещения допустимы при задержках; доставка не гарантирована в каждом школьном эпизоде",
+    "8 предупреждений одинаковых alpha silhouettes не означают одинаковые RGBA PNG"
+  ]
+}

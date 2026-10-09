@@ -558,7 +558,9 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     inputSchema: z.object({
       countryId: countryIdSchema,
       taskId: z.string().uuid(), fileName: z.string().min(1).max(200), mimeType: z.string().max(120).optional(),
-      contentBase64: z.string().min(1), idempotencyKey: z.string().min(4).max(160),
+      contentBase64: z.string().min(4).max(Math.ceil(config.maxAttachmentBytes / 3) * 4)
+        .regex(/^[A-Za-z0-9+/]+={0,2}$/).refine(value => value.length % 4 === 0, { message: "Нужен полный стандартный Base64 без префикса или пробелов" }),
+      idempotencyKey: z.string().min(4).max(160),
     }),
     annotations: { idempotentHint: true },
   }, async (input) => {

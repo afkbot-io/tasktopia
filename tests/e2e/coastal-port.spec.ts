@@ -77,13 +77,13 @@ test("a real port docks and dispatches the same scheduled ship",async({page},inf
   const local=ports[0]!,errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
   try{
     const scene=await service.getCitySceneForUser(user.id,local.countryId,local.city.id);
-    const route=scene.seaConnections![0]!,schedule=transportSchedule("SEA",route.fromPortId,route.toPortId);
+    const route=scene.seaConnections![0]!,schedule=transportSchedule("SEA",route.fromPortId,route.toPortId,route.scheduleOffsetMs);
     const localFrom=local.port.id===schedule.fromId;
     let anchor=TRANSPORT_EPOCH-schedule.offsetMs+(localFrom?0:schedule.dwellMs+schedule.travelMs),started=performance.now();
     await page.route("**/api/**",async request=>{
       if(request.request().url().includes("/events")){await request.continue();return;}
       const response=await request.fetch();
-      await request.fulfill({response,headers:{...response.headers(),"x-tasktopia-server-time":String(anchor+performance.now()-started)}});
+      await request.fulfill({response,headers:{...response.headers(),"cache-control":"private, no-store","x-tasktopia-server-time":String(anchor+performance.now()-started)}});
     });
     expect((await page.request.post("/api/auth/login",{data:{email:user.email,password:"password123"}})).ok()).toBe(true);
     const open=async()=>{

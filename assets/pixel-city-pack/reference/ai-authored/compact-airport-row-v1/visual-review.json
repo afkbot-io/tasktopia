@@ -1,0 +1,61 @@
+{
+  "key": "compact-airport-row-v1",
+  "reviewedAt": "2026-10-09",
+  "reviewMethod": "Проверены отдельно нативные3/4/5и8xgrid, ряд стадий и пиксельные координаты входа. Общая нормализация, без перерисовки геометрии. Игровая интеграция проверяется отдельно.",
+  "projection": {
+    "camera": "Высокая фронтальная45°, структурные линии по осям, без боковой стены.",
+    "roofDepthPx": 17,
+    "facadeHeightPx": 5,
+    "floorStepPx": 5,
+    "floorCount": 1,
+    "doorLeafSizePx": [
+      4,
+      3
+    ],
+    "doorFrameSizePx": [
+      6,
+      5
+    ],
+    "doorLeafRectPx": [
+      22,
+      21,
+      4,
+      3
+    ],
+    "southEntranceAxisPx": 24,
+    "sideFacadeWidthPx": 0,
+    "primaryRoofIsDominantSurface": true,
+    "roofAndFloorLinesAreAxisAligned": true,
+    "sameCameraAcrossStages": true,
+    "noHeavyBlackBaseline": true
+  },
+  "stages": {
+    "3": {
+      "accepted": true,
+      "sourceSha256": "8fe16dc746a8ae1a9fb509625c813e386b625f5f48faa41bd1bc53a5429bfc07",
+      "runtimeSha256": "07f9ed32a3512feccfe9906739021087cd2315c40300088a1e5f01551badfc93",
+      "notes": "Открытые непрозрачные комнаты; незавершённый низкий фронт и тёмный вход, крыша отсутствует."
+    },
+    "4": {
+      "accepted": true,
+      "sourceSha256": "658d1108d1d315840b071cdfcf336d66e9c29495b3ecaaae8f29880b03a6ba00",
+      "runtimeSha256": "241f49c1eeca7741c7766a7fe9e38a09387bae8de15abeb44c69716c7d50bcb7",
+      "notes": "Левая половина крыши; справа открытые комнаты, тёмные окна. Финальное оборудование снято."
+    },
+    "5": {
+      "accepted": true,
+      "sourceSha256": "6294a70f8c63e5a18b1f3c08cdddaeff6bdac29fe598d7e5f7ace1ad430235c7",
+      "runtimeSha256": "6a95408a49ed2d454e1e7ee7797755fe7bc05ceb71cb8ab57318128565a759fc",
+      "notes": "Завершённый терминал6×3: кремовый фронт, бирюзовые окна, широкая плоская крыша и встроенная диспетчерская."
+    }
+  },
+  "runtimeSceneReview": "ACCEPTED",
+  "runtimeSceneEvidence": {
+    "reviewedAt": "2026-10-09",
+    "assetRevision": "f5ba91abe09a928b",
+    "scope": "Просмотрены фактические CITY кадры всех пяти стадий через scene render seam. Стадии 1/2 используют общую стройку, 3/4/5 — независимые AI источники. Ракурс, вход и footprint неизменны между стадиями.",
+    "screenshots": [
+      ".builder/transport-rework-2026-10-09/screenshots/render-states"
+    ]
+  }
+}

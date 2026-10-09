@@ -1,0 +1,309 @@
+{
+  "baseRevision": "545a0de10c646e28267cb9f62e3034270c912bd2",
+  "sourceInputs": [
+    {
+      "file": "src/server/app-service.ts",
+      "sha256": "b72f8af274ad0e916db14608d471c218b32cc341f36f493aad56e73ec5d122d1"
+    },
+    {
+      "file": "src/server/mcp.ts",
+      "sha256": "a9e908c5981046d898f7e1749f3937038bf20bfeadee40142a76610300bed362"
+    },
+    {
+      "file": "src/server/request-logging.ts",
+      "sha256": "182f5f49965402fc6eefa8bb53e18a701c1785f186f0770dde102e16a0404f60"
+    },
+    {
+      "file": "tests/mcp-http-contract.test.ts",
+      "sha256": "3e1f2d003fb34b99d3953374b1200d6bc5d8926865011245233e2a98cdc31b6f"
+    },
+    {
+      "file": "tests/task-extras.test.ts",
+      "sha256": "f61234484673b06c94aa4590c535e5061902de08ac4c170d895b608d92e83843"
+    },
+    {
+      "file": "package.json",
+      "sha256": "7c8a17d95b37947e94d209fdf5ab2fe6c8f4e70d61f842318854e26fddd36a50"
+    },
+    {
+      "file": "package-lock.json",
+      "sha256": "614080b380897f7b8068f30b3f151a701224242206a7683e680b796a3a553e93"
+    }
+  ],
+  "serverBundleSha256": "f26e8487f38ff81fd60657d1b4c0de1442123fc1234936c05dbde37e891d769a",
+  "clientBundlesUnchanged": true,
+  "clientBundleCount": 41,
+  "clientBundleComparison": [
+    {
+      "file": "ArchiveRecordModal-CXSz6Ws2.js",
+      "same": true
+    },
+    {
+      "file": "BitmapFont-CURc5rtx.js",
+      "same": true
+    },
+    {
+      "file": "BufferResource-DFJ3_9YU.js",
+      "same": true
+    },
+    {
+      "file": "Cache-fEfeSd-A.js",
+      "same": true
+    },
+    {
+      "file": "CanvasPool-3ldCMsRM.js",
+      "same": true
+    },
+    {
+      "file": "CanvasRenderer-D3a4PssS.js",
+      "same": true
+    },
+    {
+      "file": "CityDevelopmentPanel-xQLbv0ut.js",
+      "same": true
+    },
+    {
+      "file": "CityDocuments-q2jNd0OS.js",
+      "same": true
+    },
+    {
+      "file": "EventBoundary-BHNF6LZc.js",
+      "same": true
+    },
+    {
+      "file": "Filter-BqdleU4p.js",
+      "same": true
+    },
+    {
+      "file": "GCManagedHash-CtptiOfb.js",
+      "same": true
+    },
+    {
+      "file": "Geometry-Ckw_XhzT.js",
+      "same": true
+    },
+    {
+      "file": "GraphicsContext-CvtOAmjy.js",
+      "same": true
+    },
+    {
+      "file": "Markdown-B0Da-8Ke.js",
+      "same": true
+    },
+    {
+      "file": "PlanetAtlasCanvas-CabWcOAT.js",
+      "same": true
+    },
+    {
+      "file": "RenderTargetSystem-CZwX8qce.js",
+      "same": true
+    },
+    {
+      "file": "TaskModal-BgrA-kIO.js",
+      "same": true
+    },
+    {
+      "file": "TokenPanel-_UTr0xSe.js",
+      "same": true
+    },
+    {
+      "file": "WebGLRenderer-DbctGfv_.js",
+      "same": true
+    },
+    {
+      "file": "WebGPURenderer-ClDQed5b.js",
+      "same": true
+    },
+    {
+      "file": "WorldCanvas-DcvhZYDU.js",
+      "same": true
+    },
+    {
+      "file": "api-I1isT3Yh.js",
+      "same": true
+    },
+    {
+      "file": "atlas-flight-path-DL8B8vmx.js",
+      "same": true
+    },
+    {
+      "file": "browserAll-CkmId6t9.js",
+      "same": true
+    },
+    {
+      "file": "canvasUtils-C3EzOeUa.js",
+      "same": true
+    },
+    {
+      "file": "catalog-Br6x3RCs.js",
+      "same": true
+    },
+    {
+      "file": "chunk-materializer-worker-DyVZfgo8.js",
+      "same": true
+    },
+    {
+      "file": "esm-BrLCb35z.js",
+      "same": true
+    },
+    {
+      "file": "getPo2TextureFromSource-D_dTR7iM.js",
+      "same": true
+    },
+    {
+      "file": "getTextureBatchBindGroup-BTLnWq_D.js",
+      "same": true
+    },
+    {
+      "file": "index-IJA4Wvof.css",
+      "same": true
+    },
+    {
+      "file": "index-yXHY83w8.js",
+      "same": true
+    },
+    {
+      "file": "init-CPtzLbPr.js",
+      "same": true
+    },
+    {
+      "file": "map-scene-cache-ZZppkIWp.js",
+      "same": true
+    },
+    {
+      "file": "rolldown-runtime-hePW80VL.js",
+      "same": true
+    },
+    {
+      "file": "transport-schedule-B71Fxw_h.js",
+      "same": true
+    },
+    {
+      "file": "webworkerAll-Bab4-_Qz.js",
+      "same": true
+    },
+    {
+      "file": "world-cell-runs-BaTy-KN6.js",
+      "same": true
+    },
+    {
+      "file": "world-chunk-payload-T1kpLGz7.js",
+      "same": true
+    },
+    {
+      "file": "world-preferences-DPk6-Zsq.js",
+      "same": true
+    },
+    {
+      "file": "world-terrain-DUaaYnoZ.js",
+      "same": true
+    }
+  ],
+  "date": "2026-10-09",
+  "scope": "Локальный MCP аудит и исправления; сайт и рабочие данные не изменялись",
+  "protocols": [
+    "2026-07-28",
+    "2025-11-25"
+  ],
+  "catalog": {
+    "total": 47,
+    "reads": 13,
+    "writes": 34,
+    "scoped": 46
+  },
+  "gates": [
+    {
+      "artifact": "full-suite.log",
+      "sha256": "fd0dc218c25d2a0a4cfc644cb0ca46fec78888307b9c31cd0e14fb31b989dbb7",
+      "result": "passed",
+      "rawLogSha256": "b65b4a90d56c6b09fd3f9a359245436aef7825a1ca3aa0f2414be9b949a5cd6f"
+    },
+    {
+      "artifact": "green-expanded-contract.log",
+      "sha256": "127d02982172eda99e3dffe348bd87f14ea23e84bdc423694add095445577a34",
+      "result": "passed",
+      "rawLogSha256": "dfdc082c8284d64c78c8fbfba90f883ca82ecd2690f35d8a023a2439fb9c7dfb"
+    },
+    {
+      "artifact": "lint.log",
+      "sha256": "3dd9ba751e395ff5384d08d22a0645127fe939d944c61da2e0d571ce698f1daa",
+      "result": "passed",
+      "rawLogSha256": "6ae7633aac706563e696114ee9e0e677eeb7ca566be4a16d6883fc16883c7b65"
+    },
+    {
+      "artifact": "build-final.log",
+      "sha256": "1383e30412a579cd147a62a996e42bd73424e8fd84c3231d1604d644b8736bd2",
+      "result": "passed",
+      "rawLogSha256": "1383e30412a579cd147a62a996e42bd73424e8fd84c3231d1604d644b8736bd2"
+    },
+    {
+      "artifact": "built-smoke.log",
+      "sha256": "757e8b6489bef412c262e5c6268d321671b0632797055f6e10b96712f0650821",
+      "result": "passed",
+      "rawLogSha256": "757e8b6489bef412c262e5c6268d321671b0632797055f6e10b96712f0650821"
+    },
+    {
+      "artifact": "live-websocket.log",
+      "sha256": "946aa0205cf9ab5ebae3fb71ba565d00d0ebb787a5c3b423c1924906a30bf13d",
+      "result": "passed",
+      "rawLogSha256": "946aa0205cf9ab5ebae3fb71ba565d00d0ebb787a5c3b423c1924906a30bf13d"
+    },
+    {
+      "artifact": "public-doc-final.log",
+      "sha256": "17788bc2d8fc67f88b052b7256550ed949a4218277417953abac93fdbb9e98e2",
+      "result": "passed",
+      "rawLogSha256": "c68fcaacbe5efa2871a129f1b94211f94a12b60b44bbbfb4951ccee27584d290"
+    }
+  ],
+  "fullSuite": {
+    "files": 300,
+    "tests": 1641,
+    "durationSeconds": 199.92
+  },
+  "focusedSuite": {
+    "files": 3,
+    "tests": 38,
+    "durationSeconds": 10.1
+  },
+  "liveWebSocket": {
+    "tests": 1,
+    "durationSeconds": 12.7,
+    "clients": 2,
+    "modes": [
+      "AIR",
+      "RAIL",
+      "SEA"
+    ]
+  },
+  "publicDocs": {
+    "tests": 3
+  },
+  "newRegressionTests": 25,
+  "review": {
+    "mode": "AI + security",
+    "base": "545a0de10c646e28267cb9f62e3034270c912bd2",
+    "blockingFindings": 0,
+    "scmApproval": false
+  },
+  "publicInputs": [
+    {
+      "file": "public/ai.md",
+      "sha256": "b975a66484e1a678833905718154b9d706e06c236824b711f2efbdac55b118ab"
+    },
+    {
+      "file": "public/skills/tasktopia-progress/SKILL.md",
+      "sha256": "a997194db29992ff235d2b697cc49c16f5d19a405d3be8da922827da777b3fdd"
+    },
+    {
+      "file": "docs/MCP.md",
+      "sha256": "9e1f1e3f5535b30c96b3480648584e789f5dfa5feef13277a9e90ae08567e0a7"
+    }
+  ],
+  "limits": [
+    "Без релиза, remote write, push или merge",
+    "Проверен обычный commit/rollback, не SIGKILL или неисправность файловой системы",
+    "Прежняя браузерная и 200-задачная performance приёмка переиспользована по 41 идентичному client bundle",
+    "Прошедшая полная suite относится к неизменным production/test inputs; поздние правки публичных инструкций проверены отдельно и пересобраны"
+  ],
+  "logNormalization": "В опубликованных логах удалены только пустые строки в конце; hashes оригиналов сохранены отдельно."
+}

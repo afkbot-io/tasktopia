@@ -98,12 +98,13 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [copyFallback, setCopyFallback] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const [tab,setTab] = useState<"overview"|"materials"|"discussion"|"history">("overview");
   const [visited, setVisited] = useState(() => new Set(["overview"]));
   const changeTab = (next: typeof tab) => { setTab(next); setVisited(current => new Set([...current, next])); };
-  useDialogFocus(dialogRef);
+  useDialogFocus(dialogRef, { onClose });
 
   useEffect(() => {
     let cancelled = false;
@@ -118,9 +119,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
         if (reason instanceof ApiError && reason.status === 401) void Promise.resolve(onAuthenticationRequired?.()).catch(() => undefined);
         setError(reason instanceof Error ? reason.message : "Не удалось открыть задачу");
       });
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => { cancelled = true; window.removeEventListener("keydown", onKey); };
+    return () => { cancelled = true; };
   }, [countryId, taskId, revision, retry, onClose, onAuthenticationRequired]);
 
   useEffect(() => {
@@ -133,11 +132,13 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   const copyShareLink = async () => {
     if (!task) return;
     const url = `${window.location.origin}${taskLink(countryId, task)}`;
+    setLinkCopied(false);
     try {
       await navigator.clipboard.writeText(url);
+      setCopyFallback(false);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 1600);
-    } catch { window.prompt("Ссылка на задачу:", url); }
+    } catch { setCopyFallback(true); }
   };
 
   return <div className={`modal-backdrop task-inspector-backdrop${standalone ? " task-entry-backdrop" : ""}`} role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
@@ -145,7 +146,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
       <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть" title={standalone ? "Закрыть и открыть город" : "Закрыть"}>×</button>
       {task && error && <p className="task-refresh-error" role="alert">{error} <button onClick={() => setRetry(value => value + 1)}>Повторить</button></p>}
       {!task ? <div className="task-load-state" role={error ? "alert" : "status"}><strong>{error || "Загружаем задачу…"}</strong>{error && <button className="primary-button" onClick={() => setRetry(value => value + 1)}>Повторить</button>}</div> : <>
-        <header className="task-header">
+        <header className="task-header" tabIndex={0} role="group" aria-label="Название и параметры задачи">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
           <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · <span title="Объём работ в условных единицах сложности (SP)">Объём: {task.estimate} SP</span></p><h2 id="task-title">{task.title}</h2></div>
         </header>
@@ -153,6 +154,11 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
           {standalone && <button className="task-action" onClick={onClose}>В город →</button>}
           <button className="task-action" onClick={() => void copyShareLink()} title="Скопировать ссылку на задачу">{linkCopied ? "Скопировано ✓" : "Ссылка"}</button>
           <TaskSharePreview key={`${countryId}:${task.id}`} countryId={countryId} task={task} />
+          {copyFallback && <label className="task-link-fallback">
+            <span id="task-link-label">Ссылка на задачу</span>
+            <input readOnly value={`${window.location.origin}${taskLink(countryId, task)}`} onFocus={event => event.target.select()} aria-labelledby="task-link-label" aria-describedby="task-link-copy-hint" />
+            <small id="task-link-copy-hint" role="status">Буфер обмена недоступен. Выделите и скопируйте ссылку из поля.</small>
+          </label>}
         </div>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
         {task.defects?.some(defect=>defect.status!=="FIXED")&&<button className="task-defect-alert" onClick={()=>{setTab("overview");requestAnimationFrame(()=>dialogRef.current?.querySelector(".task-defects")?.scrollIntoView({block:"start"}));}}>Нужен ремонт · {task.defects.filter(defect=>defect.status!=="FIXED").length} деф.</button>}

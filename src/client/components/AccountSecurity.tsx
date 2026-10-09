@@ -21,14 +21,14 @@ export function AccountSecurity({ onLogout }: { onLogout: () => Promise<void> })
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось изменить пароль"); }
     finally { busy.current = false; setPending(false); }
   }
-  return <section className="settings-section">
-    <h3>Защита аккаунта</h3>
-    <p>После смены пароля нужно войти заново на всех устройствах. MCP-ключи будут отозваны.</p>
+  return <section className="settings-section account-security">
+    <div className="settings-section-heading"><div><h3>Защита аккаунта</h3>
+    <p>После смены пароля нужно войти заново на всех устройствах. MCP-ключи будут отозваны.</p></div></div>
     <form className="government-access-form" onSubmit={submit}>
       <Field label="Текущий пароль" type="password" autoComplete="current-password" required maxLength={128} value={currentPassword} disabled={pending} onChange={e => setCurrentPassword(e.target.value)} />
       <Field label="Новый пароль" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={password} disabled={pending} onChange={e => setPassword(e.target.value)} />
       <Field label="Повторите новый пароль" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={confirmation} disabled={pending} onChange={e => setConfirmation(e.target.value)} />
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
       <Button type="submit" disabled={pending}>{pending ? "Сохраняем…" : "Сменить пароль"}</Button>
     </form>
     <details className="government-access"><summary>Резервные коды восстановления</summary>

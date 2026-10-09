@@ -1,0 +1,133 @@
+{
+  "profile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+  "sourceSha256": "a4acee68448ccd22b781317cc99e9ea8a4e6512ab6dc78811aaf7c558ca4e57f",
+  "alphaThreshold": 128,
+  "sharedScale": 0.043010752688172046,
+  "paletteLimit": 8,
+  "frames": [
+    {
+      "direction": "north",
+      "crop": [
+        0,
+        0,
+        768,
+        512
+      ],
+      "sourceBounds": [
+        273,
+        43,
+        559,
+        496
+      ],
+      "path": "normalized/cargo-helicopter-north.png",
+      "size": [
+        32,
+        32
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "opaqueBounds": [
+        10,
+        6,
+        22,
+        25
+      ],
+      "sha256": "65a2b1b62330c0ca69761270f183e870f6b5d9f7906720987655d0ed52396c08"
+    },
+    {
+      "direction": "east",
+      "crop": [
+        768,
+        0,
+        1536,
+        512
+      ],
+      "sourceBounds": [
+        57,
+        146,
+        608,
+        432
+      ],
+      "path": "normalized/cargo-helicopter-east.png",
+      "size": [
+        32,
+        32
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "opaqueBounds": [
+        4,
+        10,
+        28,
+        22
+      ],
+      "sha256": "1b3d61010811c0505b7e30c2a40133e5e28e7388728e75ee411d8e51dab91ed9"
+    },
+    {
+      "direction": "south",
+      "crop": [
+        0,
+        512,
+        768,
+        1024
+      ],
+      "sourceBounds": [
+        273,
+        23,
+        559,
+        460
+      ],
+      "path": "normalized/cargo-helicopter-south.png",
+      "size": [
+        32,
+        32
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "opaqueBounds": [
+        10,
+        6,
+        22,
+        25
+      ],
+      "sha256": "a543dc8a4cebaba65cc9cc1aa33b33d8e115549534e3091a8bac7d671cba374f"
+    },
+    {
+      "direction": "west",
+      "crop": [
+        768,
+        512,
+        1536,
+        1024
+      ],
+      "sourceBounds": [
+        47,
+        116,
+        605,
+        400
+      ],
+      "path": "normalized/cargo-helicopter-west.png",
+      "size": [
+        32,
+        32
+      ],
+      "anchorPx": [
+        16,
+        32
+      ],
+      "opaqueBounds": [
+        4,
+        10,
+        28,
+        22
+      ],
+      "sha256": "6a42607e532f895ab53deff377596b42f3836ca4603cd01b52bb4fe176d46f15"
+    }
+  ]
+}

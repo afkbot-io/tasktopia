@@ -1,19 +1,22 @@
 import type { Cell, ChunkPayloadDto, ChunkTaskDto, CityDto } from "./contracts";
 import type { IntercityRoadRoute } from "./intercity-roads";
 
-export const CITY_SCENE_SCHEMA_VERSION = 4 as const;
+export const CITY_SCENE_SCHEMA_VERSION = 5 as const;
 export const CITY_AIRPORT_CONNECTION_LIMIT = 8;
 
 export type CityAirportEndpointDto = { taskId: string; cityId: string; point: Cell };
 export type CityAirportConnectionDto = {
   id: string;
+  scheduleOffsetMs?:number;
   from: CityAirportEndpointDto;
   to: CityAirportEndpointDto;
 };
 
 export type CityRailConnectionDto = {
   id: string; fromStationId: string; toStationId: string; fromCityId: string; toCityId: string;
-  fromCityName?: string; toCityName?: string;
+  fromCityName?: string; toCityName?: string;fromCountryId?:string;toCountryId?:string; scheduleOffsetMs?: number;
+  /** CITY: reserved track exit toward the real destination, aperture in ms. */
+  exit?:Cell;localTravelMs?:number;
   /** COUNTRY-only visible segment of a foreign route, with full-trip fractions. */
   points?: Cell[]; progressRange?: [number,number];
 };
@@ -27,15 +30,15 @@ export type CompletedDistrictRenderSnapshotDto = {
 
 export type SeaConnectionDto = {
   id: string; fromPortId: string; toPortId: string; fromCityId: string; toCityId: string;
-  fromCityName?: string; toCityName?: string;
+  fromCityName?: string; toCityName?: string;fromCountryId?:string;toCountryId?:string;
   /** Contiguous water-only segment, in this view's coordinates, and its full-trip fractions. */
-  points: Cell[]; progressRange: [number, number];
+  points: Cell[]; progressRange: [number, number];scheduleOffsetMs?:number;
 };
 
 export type CityPortDto = { taskId: string; stage: import("./block-world").ConstructionStage; plan: import("./port-site").LocalPortSitePlan };
 
 export type CitySceneDto = {
-  schemaVersion: typeof CITY_SCENE_SCHEMA_VERSION;
+  schemaVersion: typeof CITY_SCENE_SCHEMA_VERSION | 4;
   sceneRevision: string;
   city: Pick<CityDto, "id" | "name" | "center" | "bounds">;
   lod: "DETAIL";
@@ -46,6 +49,7 @@ export type CitySceneDto = {
   airportConnections: CityAirportConnectionDto[];
   /** Server-owned fixed corridor. Undefined only in older scene responses. */
   railway?: import("./city-railway").CityRailway | null;
+  airports?: Array<{taskId:string;stage:number;plan:import("./airport-site").AirportSitePlan|null;reason:"NO_AIRFIELD"|null}>;
   ports?: CityPortDto[];
   seaConnections?: SeaConnectionDto[];
   /** Ready domestic routes from the viewer's personal land topology. */
