@@ -172,7 +172,15 @@
         "file": "world-terrain-DUaaYnoZ.js",
         "sha256": "b2933271cd33b312c27f6037325ba5b91f282d529fb66eda8291f48d3df3a286"
       }
-    ]
+    ],
+    "postQualificationProof": {
+      "runtimeFilesMatchImplementationCommit": true,
+      "runtimeFileCount": 1169,
+      "canonicalRuntimeManifestSha256": "92a2a2004fff018a6006767e2c2b827d2d3c62eac628630f8607a5f50794e2f3",
+      "canonicalAlgorithm": "SHA256 UTF-8 JSON массива {path,sha256}, отсортированного по относительному пути; separators=(comma,colon), без завершающего newline. Файлы: src/**, migrations/**, public/game-assets/v5/**, package.json, package-lock.json.",
+      "all41ClientBundleHashesMatch": true,
+      "serverBundleHashMatches": true
+    }
   },
   "workload": {
     "seed": 424242,
@@ -855,5 +863,16 @@
     "Native E/W просмотрены в источнике и проверены на обеих осях; отдельного живого сценария каждого направления нет.",
     "Неизменённые AIR/SEA/MCP/touch проверки использованы повторно после оптимизации индекса подхода.",
     "Публичный сайт и миграция реальных стран не включены в локальную приёмку."
-  ]
+  ],
+  "implementationRevision": "449ff11c8b84c426cdd3bfd95f0e2cc5f3cb75c4",
+  "implementationTree": "f46dd6e8e99891ffb49266e6c5f83a0c469f44f3",
+  "review": {
+    "type": "AI_REVIEW_NOT_SCM_APPROVAL",
+    "reviewer": "primary agent",
+    "baseRevision": "e7ad05e7e351a514a63b7fcf7b79c248b0fc3089",
+    "implementationRevision": "449ff11c8b84c426cdd3bfd95f0e2cc5f3cb75c4",
+    "scope": "Полный фиксированный diff: domain/state/persistence/contracts/authz/cache/invalidation/native graphics/mobility/performance/tests/docs.",
+    "result": "Блокирующих замечаний к квалифицированному runtime нет; найденные регрессии исправлены, ограничения опубликованы в QA.",
+    "receiptOnlyChange": "После implementationRevision добавлены только этот SHA/доказательство и ссылка в QA; production inputs не меняются."
+  }
 }
