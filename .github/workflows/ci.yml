@@ -73,7 +73,7 @@ jobs:
           NODE_ENV: production
           SESSION_COOKIE_SECURE: "false"
           APP_ORIGIN: http://127.0.0.1:3000
-      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright install --with-deps chromium firefox webkit
       # Emit each failure immediately: the compact reporter buffers details
       # until the end, losing diagnostics if the overall job times out. A
       # failing run stops after three failures; a passing run still runs the
