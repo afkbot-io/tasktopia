@@ -21,7 +21,7 @@ test('карточка и компактное меню сохраняют фу�
   await page.locator('.world-preferences:visible').getByLabel('Детализация').selectOption('NORMAL');await expect(world).toHaveAttribute('data-frame-limit','60');
   await page.locator('.world-preferences:visible').getByLabel('Уменьшить движение').uncheck();await expect(world).toHaveAttribute('data-animation-active','true');
   await page.locator('.world-preferences:visible > summary').click();
-  await page.getByRole('textbox',{name:'Поиск здания по номеру или названию'}).fill('1');await page.locator('.task-search-results button').first().click();
+  await page.getByRole('combobox',{name:'Поиск здания по номеру или названию'}).fill('1');await page.locator('.task-search-results button').first().click();
   await page.getByRole('tab',{name:'Задача',exact:true}).waitFor();
   for(const name of ['Материалы','Обсуждение','История','Задача']) {
     await page.getByRole('tab',{name:new RegExp(`^${name}`)}).first().click();

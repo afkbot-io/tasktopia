@@ -10,6 +10,10 @@ import { openMapCity } from './map-navigation';
 import { taskLink } from '../../src/client/task-navigation';
 import type { TaskDto } from '../../src/shared/contracts';
 
+// Continuous trace thumbnails contend with native rendering on software GPUs.
+// Explicit phase captures, failure PNGs and DOM/call/source traces remain.
+test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: true, sources: true } });
+
 async function fixture(page:Page){
  const database=process.env.E2E_DATABASE_URL!;
  expect(['127.0.0.1','localhost']).toContain(new URL(database).hostname);
@@ -159,7 +163,7 @@ test('real-clock effects stay within the CPU and retained-heap budgets over repe
   await f.focus(f.task);await page.locator('.world-menu > summary').click();const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
   const samples:{label:string;cpuP95:number;cpuMax:number;workers:number;ghosts:number}[]=[];
   const sample=async(label:string)=>samples.push(await f.host.evaluate((el,label)=>{const d=(el as HTMLElement).dataset;return {label,cpuP95:Number(d.livingWorldFrameCpuP95Ms),cpuMax:Number(d.livingWorldFrameCpuMaxMs),workers:Number(d.cinematicWorkers),ghosts:Number(d.cityCinematics)};},label));
-  await expect.poll(async()=>Number(await f.host.getAttribute('data-living-world-frame-samples'))).toBe(120);await sample('idle baseline');
+  await expect(f.host).toHaveAttribute('data-living-world-frame-samples','120',{timeout:30000});await sample('idle baseline');
   for(const status of ['STARTED','IN_PROGRESS','TESTING']as const){await f.call('task.set_status',{taskId:f.task.id,status,...status==='IN_PROGRESS'?{progress:40}:{}});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await sample(`warm ${status}`);await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:COVER/);await sample(`cover ${status}`);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});}
   const cdp=await page.context().newCDPSession(page);await cdp.send('HeapProfiler.collectGarbage');const before=await cdp.send('Runtime.getHeapUsage');
   for(let cycle=0;cycle<3;cycle++)for(const status of ['IN_PROGRESS','TESTING']as const){await f.call('task.set_status',{taskId:f.task.id,status,...status==='IN_PROGRESS'?{progress:40,comment:'Цикл проверки памяти'}:{}});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await sample(`cycle ${cycle} ${status}`);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});}

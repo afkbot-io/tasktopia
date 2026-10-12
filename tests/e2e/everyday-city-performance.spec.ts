@@ -2,6 +2,10 @@ import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { everydayFixture } from './everyday-city-fixture';
 
+// Match the mobility benchmark: avoid continuous WebGL readback while timing
+// native frames. Keep DOM/call/source traces and the failure screenshot.
+test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: true, sources: true } });
+
 test('everyday real-clock paired CPU and retained heap stay bounded after lifecycle changes', async ({ page, browserName }, info) => {
   test.skip(browserName !== 'chromium', 'CDP heap measurement requires Chromium'); test.setTimeout(120000);
   await page.setViewportSize({ width: 1440, height: 1100 }); const f = await everydayFixture(page);
@@ -23,7 +27,7 @@ test('everyday real-clock paired CPU and retained heap stay bounded after lifecy
     await enabled.uncheck();
     // Populate the real 120-frame CPU ring before paired sampling. A hosted
     // software GPU may draw fewer than 120 frames in the first 2.5 seconds.
-    await expect(f.host).toHaveAttribute('data-living-world-frame-samples', '120', { timeout: 15000 });
+    await expect(f.host).toHaveAttribute('data-living-world-frame-samples', '120', { timeout: 30000 });
     for (let i = 0; i < 3; i++) await sample(`baseline ${i}`);
     await enabled.check(); for (let i = 0; i < 3; i++) await sample(`everyday idle ${i}`);
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');

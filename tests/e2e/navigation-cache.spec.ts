@@ -20,7 +20,7 @@ async function login(page: Page): Promise<{ initialMap: "PLANET"; loginToFirstFr
   return { initialMap, loginToFirstFrameMs };
 }
 async function openTask(page: Page, number: number): Promise<void> {
-  await page.getByRole("search").getByRole("textbox").fill(String(number));
+  await page.getByRole("search").getByRole("combobox").fill(String(number));
   await page.getByRole("option").filter({ hasText: `#${number}` }).first().click();
   await expect(page.locator("#task-title")).toBeVisible();
 }
@@ -153,7 +153,7 @@ test("replays both task statuses before renderer readiness, caches task cards, a
   expect(reads.slice(baselineReads)).toEqual([expect.stringMatching(/\/scene$/)]);
   await expect(page.locator("#task-title")).toHaveText(task.title);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
-  await page.getByRole("search").getByRole("textbox").fill(String(task.taskNumber));
+  await page.getByRole("search").getByRole("combobox").fill(String(task.taskNumber));
   await expect(page.getByRole("option").first()).toBeVisible();
   await armTiming(page, "TASK");
   await page.getByRole("option").first().click();

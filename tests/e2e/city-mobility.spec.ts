@@ -418,7 +418,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
     expect(target).toBeDefined();
     // The normal header search performs the public building/camera-focus
     // journey. No renderer handles, synthetic events or application state writes.
-    await page.getByRole("textbox", { name: "Поиск здания по номеру или названию" }).fill(String(target.taskNumber));
+    await page.getByRole("combobox", { name: "Поиск здания по номеру или названию" }).fill(String(target.taskNumber));
     await page.getByRole("option").filter({ has: page.locator("strong", { hasText: new RegExp(`^#${target.taskNumber}$`) }) }).click();
     await expect(page.locator("#task-title")).toHaveText(target.title);
     await page.getByRole("button", { name: "Закрыть", exact: true }).click();
