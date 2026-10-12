@@ -16,6 +16,8 @@ async function menu(page: Page, label: string) {
 for (const width of [320, 390, 768, 1440]) test(`все основные панели согласованы и доступны на ширине ${width}`, async ({ page }, info) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width, height: width === 1440 ? 1100 : 844 });
+  // Audit settled UI at native DPR; world motion has separate live coverage.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   const errors: string[] = [];
   const externalFonts: string[] = [];
   page.on("pageerror", error => errors.push(error.message));

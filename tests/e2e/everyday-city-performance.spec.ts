@@ -20,7 +20,11 @@ test('everyday real-clock paired CPU and retained heap stay bounded after lifecy
           cars: Number(d.cars), walkers: Number(d.walkers), stops: Number(d.transitStops), visitors: Number(d.everydayVisitors) };
       }, label));
     };
-    await enabled.uncheck(); for (let i = 0; i < 3; i++) await sample(`baseline ${i}`);
+    await enabled.uncheck();
+    // Populate the real 120-frame CPU ring before paired sampling. A hosted
+    // software GPU may draw fewer than 120 frames in the first 2.5 seconds.
+    await expect(f.host).toHaveAttribute('data-living-world-frame-samples', '120', { timeout: 15000 });
+    for (let i = 0; i < 3; i++) await sample(`baseline ${i}`);
     await enabled.check(); for (let i = 0; i < 3; i++) await sample(`everyday idle ${i}`);
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
     await f.service.activateDistrict(f.user.countryId, f.pendingSchool.districtId, crypto.randomUUID());

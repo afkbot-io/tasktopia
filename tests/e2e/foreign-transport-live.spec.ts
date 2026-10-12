@@ -4,14 +4,18 @@ import { AppService } from "../../src/server/app-service";
 import { createDb } from "../../src/server/db";
 import { registerUser } from "../../src/server/auth";
 import { Client,StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { writeFile } from "node:fs/promises";
+import type { TaskDto } from "../../src/shared/contracts";
 
-test("foreign airport changes refresh an open map without reloading the page",async({page})=>{
+test("foreign airport changes refresh an open map without reloading the page",async({page},info)=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Isolated local fixture only");
   test.setTimeout(60000);
   const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));
   await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
   const bootstrap=await(await page.request.get("/api/bootstrap")).json();expect(bootstrap.country.name).toBe("Тестовая страна");
-  const db=await createDb(process.env.E2E_DATABASE_URL??"postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test",{migrate:false}),service=new AppService(db);
+  const database=process.env.E2E_DATABASE_URL??"postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
+  expect(["127.0.0.1","localhost"]).toContain(new URL(database).hostname);
+  const db=await createDb(database,{migrate:false}),service=new AppService(db);
   const token=await(await page.request.post("/api/tokens",{data:{name:"Foreign transport QA",scopes:["tasks:write"],expiresInDays:30}})).json();
   const client=new Client({name:"foreign-transport-qa",version:"1.0.0"});
   let owner:Awaited<ReturnType<typeof registerUser>>["user"]|undefined;
@@ -27,8 +31,25 @@ test("foreign airport changes refresh an open map without reloading the page",as
       await service.createTask(owner.countryId,{cityId:city.id,districtId,title:`Building ${i}`,estimate:1,idempotencyKey:crypto.randomUUID()});
     }
     await service.activateDistrict(owner.countryId,districtId,crypto.randomUUID());
-    let airport=await service.createTask(owner.countryId,{cityId:city.id,districtId,title:"Foreign airport QA",estimate:1,idempotencyKey:crypto.randomUUID()});
-    for(let i=0;airport.serviceRole!=="AIRPORT"&&i<24;i++)airport=await service.createTask(owner.countryId,{cityId:city.id,districtId,title:`Foreign airport follow-up ${i}`,estimate:1,idempotencyKey:crypto.randomUUID()});
+    // This journey tests foreign WS refresh, not random milestone allocation.
+    // Request native airport art through the same public command as a user.
+    let airport:TaskDto|undefined=(await service.listTasks(owner.countryId)).find(t=>t.serviceRole==="AIRPORT");
+    for(let attempt=0;attempt<12&&!airport;attempt++){
+      try{
+        const created=await service.createTask(owner.countryId,{cityId:city.id,districtId,title:"Foreign airport QA",estimate:1,
+          visualKind:"BUILDING",buildingHint:"compact-airport-row-v1",idempotencyKey:`${city.id}:airport`});
+        airport=created.serviceRole==="AIRPORT"?created:(await service.listTasks(owner.countryId)).find(t=>t.serviceRole==="AIRPORT");
+      }
+      catch(error){
+        if(!(error instanceof Error)||!("code" in error)||error.code!=="INFRASTRUCTURE_RESERVATION_CONFLICT")throw error;
+        const reserved=await service.createTask(owner.countryId,{cityId:city.id,districtId,title:`Reserved infrastructure ${attempt}`,estimate:1,idempotencyKey:crypto.randomUUID()});
+        if(reserved.serviceRole==="AIRPORT")airport=reserved;
+      }
+    }
+    await writeFile(info.outputPath("foreign-airport-fixture.json"),JSON.stringify({districts:await service.listDistricts(owner.countryId,city.id),
+      tasks:(await service.listTasks(owner.countryId)).map(t=>({id:t.id,title:t.title,districtId:t.districtId,serviceRole:t.serviceRole,visualAssetKey:t.visualAssetKey}))},null,2));
+    expect(airport).toBeTruthy();
+    if(!airport)throw new Error("Native airport fixture was not allocated");
     expect(airport.serviceRole).toBe("AIRPORT");
     for(const status of ["STARTED","IN_PROGRESS","TESTING"] as const)await service.updateTaskStatus(owner.countryId,{taskId:airport.id,status,comment:"QA setup",idempotencyKey:crypto.randomUUID()});
     const call=async(name:string,args:Record<string,unknown>)=>{
