@@ -98,7 +98,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const canRetryCountry = countryLoadFailed || Boolean(initialError);
 
   if (recovering) return <RecoveryScreen onBack={() => setRecovering(false)} />;
-  return <main className="auth-screen grid h-full overflow-y-auto lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
+  return <main className="auth-screen flex h-full flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
     <section className="auth-visual relative min-h-[500px] overflow-hidden px-6 py-7 sm:px-10 lg:min-h-0 lg:px-14 lg:py-10" aria-label="Описание Tasktopia">
       <div className="brand-mark relative z-[2]"><GameIcon name="world" /> TASKTOPIA</div>
       <div className="relative z-[2] mt-16 max-w-3xl lg:mt-[14vh]">
