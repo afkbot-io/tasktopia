@@ -478,8 +478,11 @@ input:focus { border-color: var(--ui-border-control); box-shadow: none; }
   .auth-visual { min-height: 500px; padding: 28px; }
   .auth-world { position: relative; left: -4px; right: auto; top: auto; bottom: auto; margin-top: 32px; margin-bottom: -138px; transform: scale(.68) rotate(-2deg); transform-origin: top left; }
 }
-@media (min-width: 1024px) and (max-height: 900px) {
-  .auth-world { bottom: -238px; }
+@media (min-width: 1024px) {
+  .auth-visual { display: flex; flex-direction: column; }
+  .auth-visual > div { flex-shrink: 0; }
+  .auth-visual > div:nth-child(2) { margin-bottom: 32px; }
+  .auth-world { position: relative; right: -78px; bottom: auto; align-self: flex-end; margin-top: auto; margin-bottom: -78px; }
 }
 @media (min-width: 1024px) and (max-height: 680px) {
   .auth-screen { overflow-y: auto; }

@@ -32,7 +32,7 @@ test("вход использует хвойную поверхность и ч�
   expect(await email.evaluate(el => getComputedStyle(el).outlineStyle)).not.toBe("none");
   const violations = (await new AxeBuilder({ page }).analyze()).violations.filter(v => v.impact === "serious" || v.impact === "critical");
   expect(violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([]);
-  for (const [width, height] of [[1280,720],[1440,600],[960,768],[1440,1100],[390,844]]) {
+  for (const [width, height] of [[1280,681],[1280,901],[1023,681],[1024,681],[1024,901],[1280,720],[1440,600],[960,768],[1440,1001],[1440,1100],[390,844],[320,568]]) {
     await page.setViewportSize({ width, height });
     const layout=await page.locator('.auth-visual').evaluate(el=>{
       const copy=el.children[1]!.getBoundingClientRect();
