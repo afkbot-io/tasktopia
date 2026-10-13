@@ -240,7 +240,13 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       seen.add(kind!);
       samples.push({ kind, arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) });
       await writeFile(info.outputPath('everyday-scenes-progress.json'), JSON.stringify(samples, null, 2));
-      await page.clock.runFor(14000); await seek(page, f.host, start + 44_200);
+      // Complete the real physical steps only until the published event end.
+      // A fixed extra14s kept rendering after expiry and exhausted WebKit's
+      // aggregate wall budget after all six arrivals had already passed.
+      for (let step = 0; step < 14 && Number(await f.host.getAttribute('data-road-event-server-now')) < start + 44_200; step++) {
+        await page.clock.runFor(1000); await safe(f.host);
+      }
+      await seek(page, f.host, start + 44_200);
       await expect(f.host).toHaveAttribute('data-everyday-event', '');
       await setSceneLife(page, false);
       // Cancellation must finish real carrier motion before skipping the next
