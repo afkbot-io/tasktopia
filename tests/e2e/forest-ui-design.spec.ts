@@ -17,7 +17,7 @@ async function surfaceColors(locator: Locator) {
   });
 }
 
-test("вход использует хвойную поверхность и читаемые локальные шрифты", async ({ page }) => {
+test("вход использует хвойную поверхность и читаемые локальные шрифты", async ({ page }, info) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Войти в Tasktopia" })).toBeVisible();
   const panel = page.locator(".auth-screen > section:last-child > div");
@@ -32,4 +32,20 @@ test("вход использует хвойную поверхность и ч�
   expect(await email.evaluate(el => getComputedStyle(el).outlineStyle)).not.toBe("none");
   const violations = (await new AxeBuilder({ page }).analyze()).violations.filter(v => v.impact === "serious" || v.impact === "critical");
   expect(violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([]);
+  for (const [width, height] of [[1280,681],[1280,901],[1023,681],[1024,681],[1024,901],[1280,720],[1440,600],[960,768],[1440,1001],[1440,1100],[390,844],[320,568],[1024,480],[1280,480],[1440,480]]) {
+    await page.setViewportSize({ width, height });
+    await page.locator(".auth-visual .brand-mark").scrollIntoViewIfNeeded();
+    const layout=await page.locator('.auth-visual').evaluate(el=>{
+      const copy=el.children[1]!.getBoundingClientRect();
+      const city=el.querySelector<HTMLElement>('.auth-world')!;
+      return { cityShown:getComputedStyle(city).display!=='none',cityTop:city.getBoundingClientRect().top,copyBottom:copy.bottom,visualBottom:el.getBoundingClientRect().bottom };
+    });
+    await page.screenshot({ path:info.outputPath(`auth-layout-${width}-${height}.png`) });
+    expect(layout.copyBottom,`${width}x${height}: hero text must remain inside its clipping container`).toBeLessThanOrEqual(layout.visualBottom);
+    if(layout.cityShown)expect(layout.cityTop,`${width}x${height}: decorative city must remain below readable copy`).toBeGreaterThanOrEqual(layout.copyBottom+12);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    const submit=page.getByRole("button",{name:"Открыть страну",exact:true});
+    await submit.scrollIntoViewIfNeeded();
+    await expect(submit).toBeInViewport();
+  }
 });

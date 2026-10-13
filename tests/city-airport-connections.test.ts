@@ -38,10 +38,26 @@ describe("task-backed cross-city airport scene connections", { timeout: 30_000 }
       await service.createTask(scope, { cityId: city.id, districtId, title: `Building ${i}`, estimate: 1, idempotencyKey: `${name}-task-${i}` });
     }
     await service.activateDistrict(scope, districtId, `${name}-activate`);
-    let task = await service.createTask(scope, { cityId: city.id, districtId, title: "Regional airport", estimate: 1, idempotencyKey: `${name}-airport` });
-    // An undersized next lot defers the airport until a native terminal fits.
-    for(let i=0;task.serviceRole!=="AIRPORT"&&i<24;i++)task=await service.createTask(scope,{cityId:city.id,districtId,title:`Airport approach ${i}`,estimate:1,idempotencyKey:`${name}-airport-fit-${i}`});
-    expect(task.serviceRole).toBe("AIRPORT");
+    // Route/access tests need a real native terminal, not a random milestone
+    // within 24 ordinary parcels. Follow the public foreign-transport fixture.
+    const airport = async () => (await service.listTasks(scope)).find(t => t.cityId === city.id && t.serviceRole === "AIRPORT");
+    let task = await airport();
+    for (let attempt = 0; attempt < 12 && !task; attempt++) {
+      try {
+        const created = await service.createTask(scope, { cityId: city.id, districtId, title: "Regional airport", estimate: 1,
+          visualKind: "BUILDING", buildingHint: "compact-airport-row-v1", idempotencyKey: `${name}-airport` });
+        task = created.serviceRole === "AIRPORT" ? created : await airport();
+      } catch (error) {
+        if (!(error instanceof Error) || !("code" in error) || error.code !== "INFRASTRUCTURE_RESERVATION_CONFLICT") throw error;
+      }
+      if (!task) {
+        const reserved = await service.createTask(scope, { cityId: city.id, districtId, title: `Reserved infrastructure ${attempt}`,
+          estimate: 1, idempotencyKey: `${name}-airport-fit-${attempt}` });
+        task = reserved.serviceRole === "AIRPORT" ? reserved : await airport();
+      }
+    }
+    expect(task?.serviceRole).toBe("AIRPORT");
+    if (!task) throw new Error("Native airport fixture was not allocated");
     for (const status of ["STARTED", "IN_PROGRESS", "TESTING", ...(finished ? ["COMPLETED"] : [])] as const) {
       task = await service.updateTaskStatus(scope, { taskId: task.id, status: status as typeof task.status, comment: "Airport progress", idempotencyKey: `${name}-${status}` });
     }
