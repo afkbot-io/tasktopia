@@ -167,7 +167,11 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     await checked("task.list", { districtId: district.id }); await checked("task.get", { taskId });
     await checked("task.rename", { taskId, title: "Обновлённая задача", idempotencyKey: "all-rename" });
     await checked("task.update_fields", { taskId, description: "Новый текст", workItemType: "BUG", dueAt: null, idempotencyKey: "all-fields" });
+    const fieldEvent = (await service.listEvents(countryId)).findLast(event => event.type === 'task.fields_updated' && event.payload.taskId === taskId)!;
+    expect((fieldEvent.payload.changedFields as string[]).sort(), 'событие содержит изменённые поля задачи, без MCP country/actor context').toEqual(['description', 'dueAt', 'workItemType']);
     await checked("task.add_comment", { taskId, body: "Проверка завершена", idempotencyKey: "all-comment" });
+    const commentEvent = (await service.listEvents(countryId)).findLast(event => event.type === 'task.comment_added' && event.payload.taskId === taskId)!;
+    expect(commentEvent.payload.cityId, 'доставка комментария ограничена настоящим городом задачи').toBe(city.id);
     await checked("task.dependency_add", { taskId, dependsOnTaskId: dependency.id, idempotencyKey: "all-dep-add" });
     await checked("task.dependency_remove", { taskId, dependsOnTaskId: dependency.id, idempotencyKey: "all-dep-remove" });
     await checked("task.document_upsert", { taskId, fileName: "architecture.md", content: "# Архитектура", idempotencyKey: "all-standard-doc" });

@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 import { api } from "../api";
 import { Button, Field } from "./ui";
+import { AuthPanel } from './AuthPanel';
 export function RecoveryScreen({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState(""); const [done, setDone] = useState(false); const [pending, setPending] = useState(false); const busy = useRef(false);
-  return <main className="auth-screen"><section className="account-entry settings-panel settings-body"><h1>Вернуться в свой мир</h1>
+  return <main className="auth-screen auth-screen-single"><section className="auth-entry"><AuthPanel title="Вернуться в свой мир">
     {done ? <p role="status">Пароль изменён. Войдите с новым паролем. Все прежние сессии, MCP-ключи и резервные коды отозваны.</p> : <form className="government-access-form" onSubmit={event => {
       event.preventDefault(); if (busy.current) return;
       const data = Object.fromEntries(new FormData(event.currentTarget));
@@ -16,9 +17,9 @@ export function RecoveryScreen({ onBack }: { onBack: () => void }) {
       <Field label="Резервный код" name="code" required autoComplete="off" maxLength={64} disabled={pending} />
       <Field label="Новый пароль" name="password" type="password" required minLength={8} maxLength={128} autoComplete="new-password" disabled={pending} />
       <Field label="Повторите новый пароль" name="passwordConfirmation" type="password" required minLength={8} maxLength={128} autoComplete="new-password" disabled={pending} />
-      {error && <p role="alert">{error}</p>}
-      <Button type="submit" disabled={pending}>Восстановить доступ</Button>
+      {error && <div className="form-error" role="alert">{error}</div>}
+      <Button variant="primary" type="submit" disabled={pending}>{pending ? 'Подождите…' : 'Восстановить доступ'}</Button>
     </form>}
-    <Button onClick={onBack} disabled={pending}>Вернуться ко входу</Button>
-  </section></main>;
+    <Button variant="quiet" onClick={onBack} disabled={pending}>Вернуться ко входу</Button>
+  </AuthPanel></section></main>;
 }

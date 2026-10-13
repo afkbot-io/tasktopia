@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { eventInvalidation, mapInvalidationAffectsCity, mapInvalidationImpact } from "../src/client/map-invalidation";
 import type { RealtimeEvent } from "../src/shared/contracts";
 
+it('пустой подтверждённый список изменений не перезагружает город; неизвестные метаданные требуют снимок',()=>{
+  const event:RealtimeEvent={id:11,worldVersion:12,countryId:'country',createdAt:'2026-10-13',type:'task.fields_updated',payload:{taskId:'home',changedFields:[]}};
+  expect(mapInvalidationImpact(eventInvalidation(event))).toBe('NONE');
+  for(const changedFields of [undefined,[null],['description',1]])expect(mapInvalidationImpact(eventInvalidation({...event,payload:{...event.payload,changedFields}}))).toBe('SCENE');
+});
+
 describe("airport realtime invalidation", () => {
   it("preserves the typed role needed to refresh routes without treating every task completion as infrastructure", () => {
     const event: RealtimeEvent = {

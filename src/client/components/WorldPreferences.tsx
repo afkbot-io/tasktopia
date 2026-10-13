@@ -17,7 +17,7 @@ export function WorldPreferences() {
       <label className="preference-check"><input type="checkbox" checked={preferences.sound} onChange={event=>{setWorldPreferences({sound:event.target.checked});if(event.target.checked)void unlockCityAudio(event.nativeEvent.isTrusted);else silenceCityAudio();}} />Звуки города</label>
       <label className="preference-check"><input type="checkbox" checked={preferences.reduceMotion} onChange={event=>setWorldPreferences({reduceMotion:event.target.checked})} />Уменьшить движение</label>
       <p>Экономная детализация уменьшает количество прохожих, машин и эффектов. Все здания, состояния задач и маршруты доступны.</p>
-      <p>«Жизнь города» управляет фоновыми сценами и дорожными событиями. Звуки выключены по умолчанию. Уменьшение движения также учитывает настройки устройства.</p>
+      <p>«Жизнь города» управляет фоновыми сценами, доставками комментариев и дорожными событиями. Звуки выключены по умолчанию. Уменьшение движения также учитывает настройки устройства.</p>
     </div>
   </details>;
 }

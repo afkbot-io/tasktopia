@@ -2198,7 +2198,9 @@ export class AppService {
         await this.db.prepare("UPDATE task_documents_v1 SET content = ?, actor = ?, actor_user_id = ?, updated_at = ? WHERE task_id = ? AND file_name = ?")
           .run(content.trim().slice(0, 64_000), input.actor ?? "MCP", input.actorUserId ?? null, updatedAt, input.taskId, fileName);
       }
-      const changedFields = Object.keys(input).filter((field) => !["taskId", "idempotencyKey", "actor", "actorUserId"].includes(field));
+      const changedFields = Object.entries(input)
+        .filter(([field, value]) => value !== undefined && !["countryId", "taskId", "idempotencyKey", "actor", "actorUserId"].includes(field))
+        .map(([field]) => field);
       await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { changedFields }, updatedAt);
       const data = await this.getTask(countryId, input.taskId);
       return { data, eventType: "task.fields_updated", eventPayload: { taskId: data.id, districtId: data.districtId, changedFields, affectedBounds: boundsOf(data.footprint) } };
@@ -2393,7 +2395,7 @@ export class AppService {
                                                         .run(randomUUID(), input.taskId, input.body.trim().slice(0, 8000), input.actor ?? "MCP client", now());
                       await this.recordTaskEvent(input.taskId, "COMMENT_ADDED", input.actor ?? "MCP", input.actorUserId, { body: input.body.trim().slice(0, 8000) });
                       const data = await this.getTask(countryId, input.taskId);
-                      return { data, eventType: "task.comment_added", eventPayload: { taskId: input.taskId, affectedBounds: boundsOf(data.footprint) } };
+                      return { data, eventType: "task.comment_added", eventPayload: { taskId: input.taskId, cityId: data.cityId, affectedBounds: boundsOf(data.footprint) } };
                     });
   }
 

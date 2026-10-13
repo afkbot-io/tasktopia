@@ -1,9 +1,9 @@
-import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { microAmbientSprite } from '../shared/micro-ambient';
 import type { Cell, Rect } from '../shared/contracts';
 import type { CityMobilityAgent } from './city-mobility';
 import { cityLifeHash } from './city-life';
-import { EVERYDAY_LABEL, dogFetchPose } from './city-everyday-life';
+import { dogFetchPose } from './city-everyday-life';
 import type { EverydayState } from './city-everyday-controller';
 
 /** Fixed-size authored props and small native activity/weather cues. Actors
@@ -11,16 +11,15 @@ import type { EverydayState } from './city-everyday-controller';
 export function createEverydayView(texture: (key: string) => Texture | undefined, cached: (url: string) => Texture | undefined,
   place: (view: Sprite, x: number, y: number) => void) {
   const root = new Container({ label: 'everyday-city', eventMode: 'none' });
-  const weather = new Graphics(), cues = new Graphics(), plate = new Graphics();
+  const weather = new Graphics(), cues = new Graphics();
   const stall = new Sprite(), animals = Array.from({ length: 4 }, () => new Sprite());
-  const caption = new Text({ text: '', resolution: 2, style: { fontFamily: 'Manrope, sans-serif', fontSize: 7, fontWeight: '600', fill: 0xf0e6bd } });
-  caption.anchor.set(.5, 1); stall.anchor.set(.5, 1);
+  stall.anchor.set(.5, 1);
   for (const animal of animals) animal.anchor.set(.5);
   const stopViews = new Map<string, Sprite>(), umbrellas = new Map<string, Sprite>();
   let cells: Cell[] = [], lastWeatherFrame = -1;
   let lastRainPhase = '', animalEpisode = '', dogOwner = '', scatterAt: number | undefined;
-  root.addChild(weather, stall, ...animals, cues, plate, caption);
-  const hideActivity = () => { stall.visible = false; caption.visible = false; plate.visible = false; cues.clear(); for (const animal of animals) animal.visible = false; };
+  root.addChild(weather, stall, ...animals, cues);
+  const hideActivity = () => { stall.visible = false; cues.clear(); for (const animal of animals) animal.visible = false; };
   return {
     root,
     compile(walk: ReadonlyMap<string, Cell>, roads: ReadonlyMap<string, Cell>, blocked: ReadonlySet<string>) {
@@ -47,13 +46,6 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
       if (pose?.id !== animalEpisode) { animalEpisode = pose?.id ?? ''; dogOwner = ''; scatterAt = undefined; }
       if (pose) {
         const anchor = pose.route.at(-1)!;
-        const label = EVERYDAY_LABEL[pose.kind];
-        if (caption.text !== label) {
-          caption.text = label;
-          plate.clear().rect(-caption.width / 2 - 3, -caption.height - 2, caption.width + 6, caption.height + 4).fill({ color: 0x183932, alpha: .9 });
-        }
-        caption.position.set((anchor.x + .5) * 8, (anchor.y + .5) * 8 - 14);
-        plate.position.copyFrom(caption.position); caption.visible = true; plate.visible = true;
         const activity = pose.phase === 'ACTIVITY' && state.areaReady && state.visitors.some(a => a.visit?.arrived);
         if (pose.kind === 'MARKET' && activity) {
           const loaded = texture('city-event-market-stall'); if (loaded) { stall.texture = loaded; stall.visible = true; }

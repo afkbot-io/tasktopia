@@ -25,7 +25,7 @@ test.beforeEach(async({page,browserName},info)=>{
 });
 
 
-async function fixture(page:Page){
+async function fixture(page:Page, comments=false){
  const database=process.env.E2E_DATABASE_URL!;
  expect(['127.0.0.1','localhost']).toContain(new URL(database).hostname);
  const db=await createDb(database,{migrate:false}),service=new AppService(db);
@@ -35,7 +35,7 @@ async function fixture(page:Page){
  const tasks=await service.listTasks(user.countryId),task=tasks.find(t=>t.stage===1&&t.visualKind==='BUILDING'&&!['AIRPORT','PORT','RAILWAY'].includes(t.serviceRole??''))!;
  expect(task).toBeTruthy();
  expect((await page.request.post('/api/auth/login',{data:{email:user.email,password:'password123'}})).ok()).toBe(true);
- const tokenResponse=await page.request.post('/api/tokens',{data:{name:'Living city local QA',scopes:['tasks:read','tasks:write'],expiresInDays:30}});
+ const tokenResponse=await page.request.post('/api/tokens',{data:{name:'Living city local QA',scopes:['tasks:read','tasks:write',...comments?['comments:write']:[]],expiresInDays:30}});
  expect(tokenResponse.ok(),await tokenResponse.text()).toBe(true);const token=await tokenResponse.json();
  const client=new Client({name:'living-city-live-qa',version:'1.0.0'});
  await client.connect(new StreamableHTTPClientTransport(new URL('/mcp',process.env.E2E_BASE_URL),{requestInit:{headers:{Authorization:`Bearer ${token.token}`}}}));
@@ -49,6 +49,60 @@ async function fixture(page:Page){
  const cleanup=async()=>{await page.close();await client.close();await db.prepare('DELETE FROM countries WHERE id=?').run(user.countryId);await db.prepare('DELETE FROM users WHERE id=?').run(user.id);await db.close();};
  return {db,service,user,city,task,tasks,call,host,focus,cleanup};
 }
+
+test('реальные MCP комментарии и документы оживляют вход без чтения сцены, серия объединяется, стадия сохраняет дымок', async ({ page }, info) => {
+ test.setTimeout(120000); await page.setViewportSize({width:1440,height:1000}); const f=await fixture(page,true);
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ const reads:string[]=[];page.on('request',r=>{const p=new URL(r.url()).pathname;if(r.method()==='GET'&&(/\/scene$|\/world\/viewport|\/chunks\//.test(p)))reads.push(p);});
+ try {
+  await f.focus(f.task);
+  await page.locator('.world-menu > summary').click();const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+  const baseline=reads.length;
+  const poses=async()=>JSON.parse(await f.host.getAttribute('data-task-activity')??'[]') as Array<{taskId:string;kind:string;phase:string;arrived:number;visitors:number}>;
+  const key=crypto.randomUUID(),comment={taskId:f.task.id,body:'Обсудим следующий шаг'};
+  await f.call('task.add_comment',comment,key);
+  await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT'})]));
+  await page.screenshot({path:info.outputPath('comment-envelope.png')});
+  await f.call('task.add_comment',comment,key);
+  await expect.poll(poses,{timeout:35000}).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT',phase:'DISCUSS',arrived:expect.any(Number)})]));
+  expect((await poses())[0]!.arrived).toBeGreaterThan(0);
+  await page.screenshot({path:info.outputPath('comment-discussion.png')});
+  const starts=Number(await f.host.getAttribute('data-task-activity-started'));
+  await Promise.all(Array.from({length:5},(_,i)=>f.call('task.add_comment',{taskId:f.task.id,body:`Продолжение обсуждения ${i+1}`})));
+  await expect.poll(async()=>Number(await f.host.getAttribute('data-task-activity-merged'))).toBeGreaterThanOrEqual(1);
+  expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6);
+  expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
+  await f.call('task.update_fields',{taskId:f.task.id,description:'Уточнённое описание для проверки живого обновления'});
+  await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'UPDATE'})]));
+  await page.screenshot({path:info.outputPath('updated-document.png')});
+  expect(reads.slice(baseline)).toEqual([]);
+  await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});
+  await f.call('task.add_comment',{taskId:f.task.id,body:'Комментарий во время стройки'});
+  await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT',phase:'SIGNAL',visitors:0})]));
+  await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);
+  await page.screenshot({path:info.outputPath('status-work-smoke.png')});
+  await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:10000});
+  for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total','data-wrong-way-cars','data-walker-off-path'])await expect(f.host).toHaveAttribute(metric,'0');
+  const cpu=await f.host.evaluate(el=>({p95:Number((el as HTMLElement).dataset.livingWorldFrameCpuP95Ms),max:Number((el as HTMLElement).dataset.livingWorldFrameCpuMaxMs)}));
+  expect(cpu.p95).toBeLessThanOrEqual(8);await info.attach('feedback-frame-cpu',{body:JSON.stringify(cpu),contentType:'application/json'});
+  expect(errors).toEqual([]);
+ } finally {await f.cleanup();}
+});
+
+test('touch-sized комментарий в reduced motion статичен, исчезает и не проигрывается после выключения жизни города', async ({page},info)=>{
+ test.setTimeout(90000);await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});const f=await fixture(page,true);
+ try{
+  await f.focus(f.task);await f.call('task.add_comment',{taskId:f.task.id,body:'Без лишнего движения'});
+  await expect.poll(async()=>JSON.parse(await f.host.getAttribute('data-task-activity')??'[]')).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,static:true,visitors:0,phase:'SIGNAL'})]));
+  await page.screenshot({path:info.outputPath('comment-reduced-motion-phone.png')});
+  await expect(f.host).toHaveAttribute('data-task-activity','[]',{timeout:6000});
+  await page.locator('.world-menu > summary').click();const preferences=page.locator('.mobile-menu-tools .world-preferences');await preferences.locator('> summary').click();await preferences.getByLabel('Жизнь города').uncheck();await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+  const started=Number(await f.host.getAttribute('data-task-activity-started'));
+  await f.call('task.add_comment',{taskId:f.task.id,body:'Не запускать фоновую сцену'});
+  await expect(f.host).toHaveAttribute('data-task-activity','[]');
+  expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(started);
+ }finally{await f.cleanup();}
+});
 
 test('MCP/WebSocket keeps the old building through all stages, delivers a helicopter transfer and leaves ruins after demolition',async({page},info)=>{
  test.setTimeout(180000);await page.setViewportSize({width:1440,height:1100});

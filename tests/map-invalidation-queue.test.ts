@@ -27,6 +27,15 @@ describe('pending CITY invalidations', () => {
     expect(overflow).toEqual([{ id: 3, worldVersion: 13, type: 'world.resync_required', resync: true }]);
     expect(enqueueMapInvalidation(overflow, status(4, 'fourth'), 2)).toEqual([{ id: 4, worldVersion: 14, type: 'world.resync_required', resync: true }]);
   });
+  it('объединяет тысячу комментариев до готовности renderer без загрузки нового снимка и сохраняет структурные события', () => {
+    let queue: MapInvalidation[] = [{ id: 1, worldVersion: 1, type: 'task.created', taskId: 'new' }];
+    for (let id = 2; id <= 1001; id++) queue = enqueueMapInvalidation(queue, { id, worldVersion: id, type: 'task.comment_added', taskId: 'home' });
+    expect(queue).toEqual([
+      { id: 1, worldVersion: 1, type: 'task.created', taskId: 'new' },
+      { id: 1001, worldVersion: 1001, type: 'task.comment_added', taskId: 'home' },
+    ]);
+    expect(acknowledgeMapInvalidations(queue, 1001)).toEqual([]);
+  });
   it('does not confuse task details with rendered city geometry or airport changes', () => {
     expect(mapInvalidationImpact({ ...status(1, 'first'), type: 'task.comment_added' })).toBe('NONE');
     expect(mapInvalidationImpact({ ...status(1, 'first'), type: 'task.fields_updated', changedFields: ['documents'] })).toBe('NONE');
