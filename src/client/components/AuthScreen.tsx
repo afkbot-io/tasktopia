@@ -1,15 +1,9 @@
 import { RecoveryScreen } from "./RecoveryScreen";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { gameAssetUrl, getBuilding, PROP_CATALOG, TERRAIN_SPRITES } from "../../shared/catalog";
-import { microAmbientSprite } from "../../shared/micro-ambient";
 import { api } from "../api";
-import { Button, Field, GameIcon } from "./ui";
+import { Button, Field } from "./ui";
 import { AuthPanel } from './AuthPanel';
-import { AuthRoad } from './AuthRoad';
-
-// The decorative city uses the same reviewed family and stage URLs as the map.
-const authBuilding = getBuilding("compact-apartment-v1");
-const authBuildingStages = [5, 3, 4, 5] as const;
+import { AuthLayout } from './AuthLayout';
 
 export function AuthScreen({ onAuthenticated, initialError = "" }: {
   onAuthenticated: () => Promise<void>;
@@ -22,6 +16,13 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const [pending, setPending] = useState(false);
   const [countryLoadFailed, setCountryLoadFailed] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [registerStep, setRegisterStep] = useState<0 | 1>(0);
+  const accountDraft = useRef<Record<string, FormDataEntryValue>>({});
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (mode === 'register') formRef.current?.querySelector<HTMLInputElement>(registerStep === 1 ? '[name="countryName"]' : '[name="name"]')?.focus();
+  }, [mode, registerStep]);
 
   useEffect(() => {
     let active = true;
@@ -43,9 +44,12 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
     event.preventDefault();
     if (submitting.current) return;
     const data = new FormData(event.currentTarget);
-    if (mode === "register" && data.get("password") !== data.get("passwordConfirmation")) {
-      setError("Пароли не совпадают");
-      return;
+    if (mode === 'register' && registerStep === 0 && data.get('password') !== data.get('passwordConfirmation')) {
+      setError('Пароли не совпадают'); return;
+    }
+    if (mode === 'register' && registerStep === 0) {
+      accountDraft.current = Object.fromEntries(data);
+      setError(''); setRegisterStep(1); return;
     }
     submitting.current = true;
     setPending(true);
@@ -53,7 +57,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
     try {
       const body = mode === "register"
         ? {
-            email: data.get("email"), password: data.get("password"), passwordConfirmation: data.get("passwordConfirmation"), name: data.get("name"),
+            email: accountDraft.current.email, password: accountDraft.current.password, passwordConfirmation: accountDraft.current.passwordConfirmation, name: accountDraft.current.name,
             countryName: data.get("countryName"), cityName: data.get("cityName"),
           }
         : { email: data.get("email"), password: data.get("password") };
@@ -93,51 +97,38 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const canRetryCountry = countryLoadFailed || Boolean(initialError);
 
   if (recovering) return <RecoveryScreen onBack={() => setRecovering(false)} />;
-  return <main className="auth-screen flex h-full flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
-    <section className="auth-visual relative min-h-[500px] overflow-hidden px-6 py-7 sm:px-10 lg:min-h-0 lg:px-14 lg:py-10" aria-label="Описание Tasktopia">
-      <div className="brand-mark relative z-[2]"><GameIcon name="world" /> TASKTOPIA</div>
-      <div className="auth-intro relative z-[2]">
-        <h1>Дела становятся городом.</h1>
-        <p>Задачи — здания, районы — спринты, города — ваши проекты.</p>
-      </div>
-      <div className="auth-world" aria-hidden="true" style={{ backgroundImage: `url(${gameAssetUrl(TERRAIN_SPRITES.GRASS![0]!)})` }}>
-        <i className="auth-world-water" style={{ backgroundImage: `url(${gameAssetUrl(TERRAIN_SPRITES.SHALLOW_WATER![0]!)})` }} />
-        <AuthRoad /><AuthRoad vertical />
-        {authBuildingStages.map((stage, index) => <img key={index} data-auth-scene-sprite
-          className={`auth-world-sprite auth-world-building auth-world-building-${index + 1}`}
-          src={authBuilding.stages[stage - 1]} width={authBuilding.spriteSize.width * 2} height={authBuilding.spriteSize.height * 2} alt="" />)}
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-oak" src={PROP_CATALOG["tree-oak"]!.path} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-tree-pine" src={PROP_CATALOG["tree-pine"]!.path} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-car" src={microAmbientSprite("car", "van", "east").url} width={16} height={16} alt="" />
-        <img data-auth-scene-sprite className="auth-world-sprite auth-world-statue" src={PROP_CATALOG["statue-hero"]!.path} alt="" />
-        <i className="auth-world-pulse" />
-      </div>
-    </section>
-
-    <section className="auth-form-section">
-      <AuthPanel headingLevel={2} title={mode === 'login' ? 'Войти в Tasktopia' : 'Основать страну'}>
-        {mode === 'register' && <p>Создадим страну и первый город. Карта откроется после регистрации.</p>}
-
-        <form onSubmit={submit} className="mt-6 grid gap-3.5">
-          {mode === "register" && <>
-            <Field label="Имя" name="name" minLength={2} maxLength={60} required autoComplete="name" disabled={pending} />
-            <div className="grid gap-3.5 sm:grid-cols-2">
-              <Field label="Название вашей первой страны" name="countryName" minLength={2} maxLength={100} required placeholder="Например, Атутаелия" hint="Её имя появится на карте" disabled={pending} />
-              <Field label="Название первого города" name="cityName" minLength={2} maxLength={100} required placeholder="Например, Столица" hint="Первый город создаётся сразу" disabled={pending} />
-            </div>
-          </>}
-          <Field label="Email" name="email" type="email" required autoComplete="email" disabled={pending} />
-          <Field label="Пароль" name="password" type="password" minLength={8} maxLength={128} required autoComplete={mode === "login" ? "current-password" : "new-password"} disabled={pending} />
-          {mode === "register" && <Field label="Повторите пароль" name="passwordConfirmation" type="password" minLength={8} maxLength={128} required autoComplete="new-password" disabled={pending} />}
+  const changeMode = (next: 'login' | 'register') => {
+    if (next === mode) return;
+    formRef.current?.reset(); accountDraft.current = {}; setRegisterStep(0); setMode(next); setError(''); setCountryLoadFailed(false);
+  };
+  return <AuthLayout>
+      <AuthPanel title={mode === 'login' ? 'Войти в Tasktopia' : 'Создать аккаунт'}>
+        {registrationEnabled && <nav className="auth-mode-switch" aria-label="Доступ в Tasktopia">
+          <Button aria-pressed={mode === 'login'} disabled={pending} onClick={() => changeMode('login')}>Вход</Button>
+          <Button aria-pressed={mode === 'register'} disabled={pending} onClick={() => changeMode('register')}>Регистрация</Button>
+        </nav>}
+        {mode === 'login' ? <p className="auth-form-description">Продолжите работу в своей стране.</p> : <ol className="auth-registration-steps" aria-label="Этапы регистрации">
+          <li aria-current={registerStep === 0 ? 'step' : undefined}><span>1</span> Аккаунт</li>
+          <li aria-current={registerStep === 1 ? 'step' : undefined}><span>2</span> Первый город</li>
+        </ol>}
+        <form ref={formRef} onSubmit={submit} className="auth-entry-form">
+          <fieldset hidden={mode === 'register' && registerStep === 1} disabled={pending || mode === 'register' && registerStep === 1}>
+            {mode === 'register' && <Field label="Имя" name="name" minLength={2} maxLength={60} required autoComplete="name" />}
+            <Field label="Email" name="email" type="email" required autoComplete="email" />
+            <Field label="Пароль" name="password" type="password" minLength={8} maxLength={128} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+            {mode === 'register' && <Field label="Повторите пароль" name="passwordConfirmation" type="password" minLength={8} maxLength={128} required autoComplete="new-password" />}
+          </fieldset>
+          {mode === 'register' && <fieldset hidden={registerStep === 0} disabled={pending || registerStep === 0}>
+            <p className="auth-form-description">Дайте имя своей стране и первому городу. Названия появятся на карте.</p>
+            <Field label="Название вашей первой страны" name="countryName" minLength={2} maxLength={100} required placeholder="Например, Атутаелия" />
+            <Field label="Название первого города" name="cityName" minLength={2} maxLength={100} required placeholder="Например, Столица" />
+          </fieldset>}
           {visibleError && <div className="form-error" role="alert">{visibleError}</div>}
-          <Button variant="primary" type="submit" className="mt-1 w-full" disabled={pending}>{pending ? "Подождите…" : mode === "login" ? "Открыть страну" : "Создать аккаунт"}</Button>
+          <Button variant="primary" type="submit" className="auth-submit" disabled={pending}>{pending ? 'Подождите…' : mode === 'login' ? 'Открыть страну' : registerStep === 0 ? 'Продолжить' : 'Создать аккаунт'}</Button>
+          {mode === 'register' && registerStep === 1 && <Button variant="quiet" disabled={pending} onClick={() => {setRegisterStep(0);setError('');}}>Назад к аккаунту</Button>}
         </form>
         {mode === "login" && <Button variant="quiet" disabled={pending} onClick={() => setRecovering(true)}>Забыли пароль?</Button>}
         {canRetryCountry && <Button className="mt-2 w-full" disabled={pending} onClick={() => void retryCountryLoad()}>Повторить загрузку</Button>}
-        {(registrationEnabled || mode === "register") && <Button variant="quiet" disabled={pending} className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
-          {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
-        </Button>}
       </AuthPanel>
-    </section>
-  </main>;
+  </AuthLayout>;
 }

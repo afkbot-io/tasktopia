@@ -216,20 +216,21 @@ test("login, map and MCP token management", async ({ page, context }) => {
   expect(consoleErrors).toEqual([]);
 });
 
-test("registration creates the named country and first city", async ({ page }) => {
+test("registration creates the named country and first city", async ({ page }, info) => {
   const email = `new-mayor-${Date.now()}@example.test`;
   await page.goto("/");
-  await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
+  await page.getByRole("button", { name: "Регистрация" }).click();
   await page.getByLabel("Имя", { exact: true }).fill("New Mayor");
-  await page.getByLabel("Название вашей первой страны").fill("Новый продукт");
-  await page.getByLabel("Название первого города").fill("Первый релиз");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
   await page.getByLabel("Повторите пароль", { exact: true }).fill("safe-password-123");
+  await page.getByRole("button", {name:"Продолжить",exact:true}).click();
+  await page.getByLabel("Название вашей первой страны").fill("Новый продукт");
+  await page.getByLabel("Название первого города").fill("Первый релиз");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
   await expect(page.locator(".country-title-button strong")).toBeVisible({ timeout: 90_000 });
   await openMapCity(page);
   await expect(page.locator(".header-city strong")).toContainText("Первый релиз", { timeout: 90_000 });
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 90_000 });
-  await capture(page, "screenshots/release-onboarding-city.png");
+  await capture(page, info.outputPath("release-onboarding-city.png"));
 });

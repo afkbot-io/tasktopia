@@ -57,13 +57,14 @@ test("owner creates a link for a new user who registers and accepts it", async (
   const guest = await browser.newContext({ baseURL: String(info.project.use.baseURL) });
   const visitor = await guest.newPage();
   await visitor.goto(link);
-  await visitor.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
+  await visitor.getByRole("button", { name: "Регистрация" }).click();
   await visitor.getByLabel("Имя", { exact: true }).fill("Новый житель");
   await visitor.getByLabel("Email", { exact: true }).fill(email);
-  await visitor.getByLabel("Название вашей первой страны").fill("Личный мир");
-  await visitor.getByLabel("Название первого города").fill("Личный город");
   await visitor.getByLabel("Пароль", { exact: true }).fill("password-123");
   await visitor.getByLabel("Повторите пароль", { exact: true }).fill("password-123");
+  await visitor.getByRole("button", {name:"Продолжить",exact:true}).click();
+  await visitor.getByLabel("Название вашей первой страны").fill("Личный мир");
+  await visitor.getByLabel("Название первого города").fill("Личный город");
   await visitor.getByRole("button", { name: "Создать аккаунт" }).click();
   await visitor.getByRole("button", { name: "Принять приглашение" }).click();
   await expect(visitor.locator(".country-title-button")).toContainText("Тестовая страна");

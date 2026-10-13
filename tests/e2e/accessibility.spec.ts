@@ -32,8 +32,8 @@ test("key screens do not overflow at supported breakpoints", async ({ page }) =>
   for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
-    await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
-    await expect(page.getByLabel("Название вашей первой страны")).toBeVisible();
+    await page.getByRole("button", { name: "Регистрация" }).click();
+    await expect(page.getByLabel("Имя", {exact:true})).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
   }
 

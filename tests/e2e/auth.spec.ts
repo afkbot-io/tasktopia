@@ -5,37 +5,29 @@ test("uses the game asset pack without exposing implementation notes", async ({ 
   await page.goto("/");
 
   await expect(page.getByText(/HTTP-only|Пароль не передаётся интеграциям/i)).toHaveCount(0);
-  const sceneSprites = page.locator("[data-auth-scene-sprite]");
-  await expect(sceneSprites).toHaveCount(8);
-  for (const sprite of await sceneSprites.all()) {
-    await expect(sprite).toHaveAttribute("src", /\/game-assets\/v5\/revisions\/[a-f0-9]{16}\//);
-    await expect.poll(() => sprite.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
-  }
-  for (const building of await page.locator(".auth-world-building").all()) {
-    expect(await building.evaluate((image: HTMLImageElement) => ({
-      width: image.width, height: image.height,
-      naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight,
-      rendering: getComputedStyle(image).imageRendering,
-    }))).toEqual({ width: 96, height: 96, naturalWidth: 48, naturalHeight: 48, rendering: "pixelated" });
-  }
+  const scene=page.locator('.auth-city-scene');
+  await expect(scene).toHaveAttribute('data-scene-state','ready');
+  expect(await scene.evaluate(el=>getComputedStyle(el).imageRendering)).toBe('pixelated');
+
 });
 
 test("keeps the mobile login form ahead of decorative content", async ({ page }) => {
   await page.setViewportSize({width:390,height:844}); await page.goto("/");
   await expect(page.getByLabel("Email")).toBeInViewport();
-  await expect(page.locator(".auth-world")).toBeHidden();
+  await expect(page.locator('.auth-city-scene')).toHaveAttribute('data-scene-motion','static');
   expect(await page.locator(".auth-screen").evaluate(n=>n.scrollWidth<=n.clientWidth)).toBe(true);
 });
 
 test("shows a clear duplicate-registration error and keeps the form usable", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
+  await page.getByRole("button", { name: "Регистрация" }).click();
   await page.getByLabel("Имя", { exact: true }).fill("Duplicate Mayor");
-  await page.getByLabel("Название вашей первой страны").fill("Duplicate Product");
-  await page.getByLabel("Название первого города").fill("Duplicate Epic");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
   await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
   await page.getByLabel("Повторите пароль", { exact: true }).fill("safe-password-123");
+  await page.getByRole("button", {name:"Продолжить",exact:true}).click();
+  await page.getByLabel("Название вашей первой страны").fill("Duplicate Product");
+  await page.getByLabel("Название первого города").fill("Duplicate Epic");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
 
   await expect(page.getByRole("alert")).toHaveText("Аккаунт с таким email уже существует");
@@ -49,14 +41,12 @@ test("requires matching passwords before sending registration", async ({ page })
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" }).click();
+  await page.getByRole("button", { name: "Регистрация" }).click();
   await page.getByLabel("Имя", { exact: true }).fill("Private Mayor");
-  await page.getByLabel("Название вашей первой страны").fill("Private Product");
-  await page.getByLabel("Название первого города").fill("Private City");
   await page.getByLabel("Email").fill("private@example.test");
   await page.getByLabel("Пароль", { exact: true }).fill("safe-password-123");
   await page.getByLabel("Повторите пароль", { exact: true }).fill("different-password-456");
-  await page.getByRole("button", { name: "Создать аккаунт" }).click();
+  await page.getByRole("button", { name: "Продолжить" }).click();
 
   await expect(page.getByRole("alert")).toHaveText("Пароли не совпадают");
   expect(registrationRequests).toBe(0);
@@ -74,7 +64,7 @@ test("shows only login when public registration is disabled", async ({ page }) =
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Войти в Tasktopia" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Регистрация" })).toHaveCount(0);
 });
 
 test("keeps authentication pending through bootstrap and offers retry after a country-load failure", async ({ page }) => {
@@ -119,7 +109,7 @@ test("double submission sends one request and keeps the mode stable", async ({ p
   try {
     await page.locator("form").evaluate((form: HTMLFormElement) => { form.requestSubmit(); form.requestSubmit(); });
     await expect.poll(() => count).toBe(1);
-    await expect(page.getByRole("button", { name: "Нет аккаунта? Зарегистрироваться" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Регистрация" })).toBeDisabled();
   } finally { release(); }
   await expect(page.getByText("Проверьте данные для входа")).toBeVisible();
   await expect(page.getByRole("button", { name: "Открыть страну" })).toBeEnabled();
