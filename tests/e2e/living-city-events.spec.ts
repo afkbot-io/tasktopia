@@ -1,5 +1,5 @@
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Locator } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { AppService } from '../../src/server/app-service';
@@ -13,6 +13,46 @@ import type { TaskDto } from '../../src/shared/contracts';
 // Continuous trace thumbnails contend with native rendering on software GPUs.
 // Explicit phase captures, failure PNGs and DOM/call/source traces remain.
 test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: true, sources: true } });
+
+const nativeCpuRate=Number(process.env.E2E_CINEMATIC_CPU_RATE??1);
+if(![1,4].includes(nativeCpuRate))throw new Error('Invalid native cinematic CPU profile');
+test.beforeEach(async({page,browserName},info)=>{
+  if(nativeCpuRate===1)return;
+  test.skip(browserName!=='chromium','Native CPU fault injection requires CDP');
+  const cdp=await page.context().newCDPSession(page);await cdp.send('Emulation.setCPUThrottlingRate',{rate:nativeCpuRate});
+  await info.attach('native-cpu-workload',{body:JSON.stringify({cpuRate:nativeCpuRate,clock:'real',raster:'native',budgets:'unchanged'}),contentType:'application/json'});
+});
+
+type CineSample = { states: { taskId: string; kind: string; phase: string; fromStage: number; toStage: number; oldVisible: boolean; targetVisible: boolean; aircraftVisible: boolean }[];
+  workers: number; ghosts: number; cpuP95: number; cpuMax: number };
+type CineNode = HTMLElement & { __qaCinematics?: { records: CineSample[]; observer: MutationObserver } };
+
+// Observe a whole published frame, before the command. Separate protocol reads
+// can span WORK/COVER on a software GPU; polling can miss a short phase entirely.
+async function observeCinematics(host: Locator) {
+  await host.evaluate(el => {
+    const node = el as CineNode; node.__qaCinematics?.observer.disconnect();
+    const records: CineSample[] = []; let signature = '';
+    const read = () => {
+      const d = node.dataset, states: CineSample['states'] = JSON.parse(d.cinematicState ?? '[]');
+      const workers = Number(d.cinematicWorkers ?? 0), ghosts = Number(d.cityCinematics ?? 0);
+      const next = JSON.stringify(states.map(s => [s.taskId, s.kind, s.phase, s.fromStage, s.toStage, s.oldVisible, s.targetVisible, s.aircraftVisible])) + `:${workers}:${ghosts}`;
+      if (signature === next) {
+        const last=records.at(-1);
+        if(last){last.cpuP95=Math.max(last.cpuP95,Number(d.livingWorldFrameCpuP95Ms??0));last.cpuMax=Math.max(last.cpuMax,Number(d.livingWorldFrameCpuMaxMs??0));}
+        return;
+      }
+      signature = next;
+      records.push({ states, workers, ghosts, cpuP95: Number(d.livingWorldFrameCpuP95Ms ?? 0), cpuMax: Number(d.livingWorldFrameCpuMaxMs ?? 0) });
+      if (records.length > 32) records.shift();
+    };
+    const observer = new MutationObserver(read);
+    observer.observe(node, { attributes: true, attributeFilter: ['data-cinematic-state', 'data-cinematic-workers', 'data-city-cinematics'] });
+    node.__qaCinematics = { records, observer };
+  });
+  const frames = () => host.evaluate(el => (el as CineNode).__qaCinematics!.records);
+  return { frames, clear: () => host.evaluate(el => { const recorder = (el as CineNode).__qaCinematics!; recorder.observer.takeRecords(); recorder.records.length = 0; }) };
+}
 
 async function fixture(page:Page){
  const database=process.env.E2E_DATABASE_URL!;
@@ -45,15 +85,14 @@ test('MCP/WebSocket keeps the old building through all stages, delivers a helico
  const f=await fixture(page);
  try{
   await f.focus(f.task);
+  const observed=await observeCinematics(f.host);
   let current=f.task,oldStage=current.stage;
   for(const [status,progress] of [['STARTED',undefined],['IN_PROGRESS',40],['IN_PROGRESS',60],['TESTING',undefined],['COMPLETED',undefined]] as const){
-   const changed=await f.call('task.set_status',{taskId:current.id,status,...progress===undefined?{}:{progress},comment:'Живой локальный тест'});
+   await observed.clear();const changed=await f.call('task.set_status',{taskId:current.id,status,...progress===undefined?{}:{progress},comment:'Живой локальный тест'});
    current=changed;
    if(current.stage!==oldStage){
-    await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${current.id}:CONSTRUCT:WORK`));
-    const state=JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0];
-    expect(state).toMatchObject({taskId:current.id,fromStage:oldStage,toStage:current.stage,oldVisible:true,targetVisible:false});
-    expect(Number(await f.host.getAttribute('data-cinematic-workers'))).toBeGreaterThan(1);
+    await expect.poll(async()=> (await observed.frames()).some(frame=>frame.workers>1&&frame.states.some(state=>state.taskId===current.id&&state.kind==='CONSTRUCT'&&state.phase==='WORK'&&state.fromStage===oldStage&&state.toStage===current.stage&&state.oldVisible&&!state.targetVisible))).toBe(true);
+    await writeFile(info.outputPath(`build-${oldStage}-${current.stage}-observed.json`),JSON.stringify(await observed.frames(),null,2));
     await page.screenshot({path:info.outputPath(`build-${oldStage}-${current.stage}-work.png`)});
     await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
    }
@@ -164,9 +203,18 @@ test('real-clock effects stay within the CPU and retained-heap budgets over repe
   const samples:{label:string;cpuP95:number;cpuMax:number;workers:number;ghosts:number}[]=[];
   const sample=async(label:string)=>samples.push(await f.host.evaluate((el,label)=>{const d=(el as HTMLElement).dataset;return {label,cpuP95:Number(d.livingWorldFrameCpuP95Ms),cpuMax:Number(d.livingWorldFrameCpuMaxMs),workers:Number(d.cinematicWorkers),ghosts:Number(d.cityCinematics)};},label));
   await expect(f.host).toHaveAttribute('data-living-world-frame-samples','120',{timeout:30000});await sample('idle baseline');
-  for(const status of ['STARTED','IN_PROGRESS','TESTING']as const){await f.call('task.set_status',{taskId:f.task.id,status,...status==='IN_PROGRESS'?{progress:40}:{}});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await sample(`warm ${status}`);await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:COVER/);await sample(`cover ${status}`);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});}
+  const observed=await observeCinematics(f.host);
+  const waitPhase=async(phase:string)=>{
+    await expect.poll(async()=> (await observed.frames()).some(frame=>frame.states.some(state=>state.taskId===f.task.id&&state.kind==='CONSTRUCT'&&state.phase===phase))).toBe(true);
+  };
+  const phaseSample=async(label:string,phase:string)=>{
+    const frames=(await observed.frames()).filter(frame=>frame.states.some(state=>state.taskId===f.task.id&&state.kind==='CONSTRUCT'&&state.phase===phase));
+    expect(frames.length).toBeGreaterThan(0);
+    samples.push({label,cpuP95:Math.max(...frames.map(f=>f.cpuP95)),cpuMax:Math.max(...frames.map(f=>f.cpuMax)),workers:Math.max(...frames.map(f=>f.workers)),ghosts:Math.max(...frames.map(f=>f.ghosts))});
+  };
+  for(const status of ['STARTED','IN_PROGRESS','TESTING']as const){await observed.clear();await f.call('task.set_status',{taskId:f.task.id,status,...status==='IN_PROGRESS'?{progress:40}:{}});await waitPhase('WORK');await waitPhase('COVER');await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});await phaseSample(`warm ${status}`,'WORK');await phaseSample(`cover ${status}`,'COVER');}
   const cdp=await page.context().newCDPSession(page);await cdp.send('HeapProfiler.collectGarbage');const before=await cdp.send('Runtime.getHeapUsage');
-  for(let cycle=0;cycle<3;cycle++)for(const status of ['IN_PROGRESS','TESTING']as const){await f.call('task.set_status',{taskId:f.task.id,status,...status==='IN_PROGRESS'?{progress:40,comment:'Цикл проверки памяти'}:{}});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await sample(`cycle ${cycle} ${status}`);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});}
+  for(let cycle=0;cycle<3;cycle++)for(const status of ['IN_PROGRESS','TESTING']as const){await observed.clear();await f.call('task.set_status',{taskId:f.task.id,status,...status==='IN_PROGRESS'?{progress:40,comment:'Цикл проверки памяти'}:{}});await waitPhase('WORK');await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});await phaseSample(`cycle ${cycle} ${status}`,'WORK');}
   await cdp.send('HeapProfiler.collectGarbage');const after=await cdp.send('Runtime.getHeapUsage');
   const renderer=await page.locator('.world-canvas canvas').evaluate(el=>{const gl=(el as HTMLCanvasElement).getContext('webgl2')??(el as HTMLCanvasElement).getContext('webgl');const ext=gl?.getExtension('WEBGL_debug_renderer_info');return ext?gl!.getParameter(ext.UNMASKED_RENDERER_WEBGL):'unavailable';});
   await expect.poll(async()=>Number(await f.host.getAttribute('data-road-event-started')),{timeout:95000}).toBeGreaterThan(0);

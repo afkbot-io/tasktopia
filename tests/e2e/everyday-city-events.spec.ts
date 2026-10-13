@@ -149,6 +149,21 @@ async function setSceneLife(page: Page, on: boolean) {
   await prefs.getByLabel('Жизнь города').setChecked(on); await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.clock.runFor(100);
 }
 
+type EverydayObservedNode=HTMLElement&{__qaEveryday?:{arrivals:number;animals:number;fetched:boolean;scattered:boolean;observer:MutationObserver}};
+async function observeEveryday(host:Locator,taskId:string){
+  await host.evaluate((el,taskId)=>{
+    const node=el as EverydayObservedNode;node.__qaEveryday?.observer.disconnect();
+    const read=()=>{const d=node.dataset,record=node.__qaEveryday!;if(d.everydayTask!==taskId||!d.everydayEvent)return;
+      record.arrivals=Math.max(record.arrivals,Number(d.everydayArrived??0));record.animals=Math.max(record.animals,Number(d.everydayAnimals??0));
+      record.fetched||=d.dogCarrying==='true';record.scattered||=d.birdsScattered==='true';};
+    const observer=new MutationObserver(read);
+    node.__qaEveryday={arrivals:0,animals:0,fetched:false,scattered:false,observer};
+    observer.observe(node,{attributes:true,attributeFilter:['data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered']});
+    read();
+  },taskId);
+  return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered};});
+}
+
 clockSceneTest('six everyday scenes use actual residents and approaches', async ({ page }, info) => {
   test.setTimeout(720000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
   const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
@@ -161,11 +176,29 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
     await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
     await setSceneLife(page, false);
+    const drainCarriers=async()=>{
+      await page.clock.runFor(2000);
+      for(let i=0;i<30&&Number(await f.host.getAttribute('data-transit-passengers'))>0;i++)await page.clock.runFor(1000);
+      await expect(f.host).toHaveAttribute('data-transit-passengers','0');await safe(f.host);
+    };
     for (let attempt = 0; attempt < 36 && seen.size < 6; attempt++) {
       const start = (Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1) * 75_000 + 8000;
-      await seek(page, f.host, start - 2000); await setSceneLife(page, true);
-      const id = await f.host.getAttribute('data-everyday-planned-task'), task = f.tasks.find(t => t.id === id);
+      // Clock/readback latency can consume the last two seconds before start.
+      // Prepare near the beginning of the real window, not its final moments.
+      await seek(page, f.host, start - 7000); await setSceneLife(page, true);
+      const preparation=await safe(f.host);
+      if(!preparation.everydayPlannedTask){
+        // After start the director intentionally consumes/skips the plan rather
+        // than replaying an offscreen event. Only that expired preparation may
+        // be retried; a missing plan before start remains a failing assertion.
+        expect(Number(preparation.roadEventServerNow),'Missing future plan before its start').toBeGreaterThanOrEqual(start);
+        unavailable.push({reason:'preparation-crossed-window-start',start,state:preparation});
+        await writeFile(info.outputPath('everyday-unavailable-slots.json'),JSON.stringify(unavailable,null,2));
+        await setSceneLife(page,false);await drainCarriers();continue;
+      }
+      const id = preparation.everydayPlannedTask, task = f.tasks.find(t => t.id === id);
       expect(task, `No planned task ${id}`).toBeTruthy(); await f.panFocus(task!, true);
+      const observed=await observeEveryday(f.host,id!);
       await seek(page, f.host, start + 350); await page.clock.runFor(1000);
       const kind = await f.host.getAttribute('data-everyday-event');
       if (!kind) await writeFile(info.outputPath('missing-scene.json'), JSON.stringify({ start, task, data: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
@@ -177,21 +210,23 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       if (seen.has(kind!) || visitors === 0) {
         if (visitors === 0) unavailable.push({ kind, taskId: id, reason: 'no-reachable-idle-residents' });
         await setSceneLife(page, false); await seek(page, f.host, start + 44_200);
-        await page.clock.runFor(2000);
-        for (let i = 0; i < 30 && Number(await f.host.getAttribute('data-transit-passengers')) > 0; i++) await page.clock.runFor(1000);
-        await expect(f.host).toHaveAttribute('data-transit-passengers', '0');
+        await drainCarriers();
         await writeFile(info.outputPath('everyday-unavailable-slots.json'), JSON.stringify(unavailable, null, 2));
         await safe(f.host); continue;
       }
       expect(visitors).toBeGreaterThan(0);
       let arrivals = 0, animals = 0, fetched = false, scattered = false;
-      for (let i = 0; i < 16; i++) {
+      // Include the final arrivals before LEAVE; a 32-second prefix can miss
+      // a real arrival near the end of the 34-second approach/activity period.
+      for (let i = 0; i < 20; i++) {
         await page.clock.runFor(2000); const state = await safe(f.host);
         arrivals = Math.max(arrivals, Number(state.everydayArrived));
         animals = Math.max(animals, Number(state.everydayAnimals));
         fetched ||= state.dogCarrying === 'true'; scattered ||= state.birdsScattered === 'true';
         if (i === 8) await page.screenshot({ path: info.outputPath(`everyday-${kind!.toLowerCase()}.png`) });
       }
+      const actualFrames=await observed();arrivals=Math.max(arrivals,actualFrames.arrivals);animals=Math.max(animals,actualFrames.animals);
+      fetched||=actualFrames.fetched;scattered||=actualFrames.scattered;
       await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
       if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })), null, 2));
       expect(arrivals, `${kind} residents never arrived`).toBeGreaterThan(0);
@@ -205,8 +240,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       await setSceneLife(page, false);
       // Cancellation must finish real carrier motion before skipping the next
       // dead interval; synthetic epoch jumps cannot evacuate a physical body.
-      for (let i = 0; i < 30 && Number(await f.host.getAttribute('data-transit-passengers')) > 0; i++) await page.clock.runFor(1000);
-      await expect(f.host).toHaveAttribute('data-transit-passengers', '0'); await safe(f.host);
+      await drainCarriers();
     }
     expect(seen).toEqual(new Set(['SCHOOL', 'KINDERGARTEN', 'MARKET', 'SPORT', 'DOG', 'BIRDS']));
     expect(Number(await f.host.getAttribute('data-school-buses'))).toBeGreaterThan(0);
