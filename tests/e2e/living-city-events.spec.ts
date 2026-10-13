@@ -1,5 +1,6 @@
+import { observeCinematics } from './city-cinematic-observer';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
-import { expect, test, type Page, type Locator } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { AppService } from '../../src/server/app-service';
@@ -23,36 +24,6 @@ test.beforeEach(async({page,browserName},info)=>{
   await info.attach('native-cpu-workload',{body:JSON.stringify({cpuRate:nativeCpuRate,clock:'real',raster:'native',budgets:'unchanged'}),contentType:'application/json'});
 });
 
-type CineSample = { states: { taskId: string; kind: string; phase: string; fromStage: number; toStage: number; oldVisible: boolean; targetVisible: boolean; aircraftVisible: boolean }[];
-  workers: number; ghosts: number; cpuP95: number; cpuMax: number };
-type CineNode = HTMLElement & { __qaCinematics?: { records: CineSample[]; observer: MutationObserver } };
-
-// Observe a whole published frame, before the command. Separate protocol reads
-// can span WORK/COVER on a software GPU; polling can miss a short phase entirely.
-async function observeCinematics(host: Locator) {
-  await host.evaluate(el => {
-    const node = el as CineNode; node.__qaCinematics?.observer.disconnect();
-    const records: CineSample[] = []; let signature = '';
-    const read = () => {
-      const d = node.dataset, states: CineSample['states'] = JSON.parse(d.cinematicState ?? '[]');
-      const workers = Number(d.cinematicWorkers ?? 0), ghosts = Number(d.cityCinematics ?? 0);
-      const next = JSON.stringify(states.map(s => [s.taskId, s.kind, s.phase, s.fromStage, s.toStage, s.oldVisible, s.targetVisible, s.aircraftVisible])) + `:${workers}:${ghosts}`;
-      if (signature === next) {
-        const last=records.at(-1);
-        if(last){last.cpuP95=Math.max(last.cpuP95,Number(d.livingWorldFrameCpuP95Ms??0));last.cpuMax=Math.max(last.cpuMax,Number(d.livingWorldFrameCpuMaxMs??0));}
-        return;
-      }
-      signature = next;
-      records.push({ states, workers, ghosts, cpuP95: Number(d.livingWorldFrameCpuP95Ms ?? 0), cpuMax: Number(d.livingWorldFrameCpuMaxMs ?? 0) });
-      if (records.length > 32) records.shift();
-    };
-    const observer = new MutationObserver(read);
-    observer.observe(node, { attributes: true, attributeFilter: ['data-cinematic-state', 'data-cinematic-workers', 'data-city-cinematics'] });
-    node.__qaCinematics = { records, observer };
-  });
-  const frames = () => host.evaluate(el => (el as CineNode).__qaCinematics!.records);
-  return { frames, clear: () => host.evaluate(el => { const recorder = (el as CineNode).__qaCinematics!; recorder.observer.takeRecords(); recorder.records.length = 0; }) };
-}
 
 async function fixture(page:Page){
  const database=process.env.E2E_DATABASE_URL!;
@@ -252,7 +223,8 @@ test('visibility lifecycle stops work and audio, then releases an expired captur
 clockSceneTest('all seven road scenes dispatch moving services, close and reopen lanes without unsafe pairs',async({page},info)=>{
  test.setTimeout(600000);await page.setViewportSize({width:1440,height:1100});await installSceneClock(page);const f=await fixture(page);
  try{
-  await f.focus(f.task);const kinds=new Set<string>();
+  // Protocol/trace latency must not advance a second calendar window.
+  await f.focus(f.task);await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));const kinds=new Set<string>();
   for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    await expect(f.host).toHaveAttribute('data-road-event-server-now',/\d{13}/);
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
@@ -260,9 +232,10 @@ clockSceneTest('all seven road scenes dispatch moving services, close and reopen
     await page.clock.fastForward(Math.max(100,Math.round(next-now)+300));await page.clock.runFor(100);
    }
    await expect.poll(()=>f.host.getAttribute('data-road-event'),{timeout:3000}).not.toBe('');
-   const kind=(await f.host.getAttribute('data-road-event'))!;kinds.add(kind);
+   const kind=(await f.host.getAttribute('data-road-event'))!,duplicate=kinds.has(kind);kinds.add(kind);
    expect(Number(await f.host.getAttribute('data-road-responders'))).toBeGreaterThan(0);
    expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(kind==='PATROL'?0:3);
+   if(duplicate){await page.clock.fastForward(40_000);await page.clock.runFor(100);await expect(f.host).toHaveAttribute('data-road-event','');await expect(f.host).toHaveAttribute('data-road-closed-cells','0');continue;}
    await page.clock.runFor(5500);
    await page.screenshot({path:info.outputPath(`road-${kind.toLowerCase()}.png`)});
    await expect(f.host).toHaveAttribute('data-mobility-vehicle-unsafe-total','0');
@@ -299,7 +272,7 @@ test('park ground changes and demolition overriding unfinished work settle to au
 test('native road captures cover every scene without adding standalone props or browser errors',async({page},info)=>{
  test.setTimeout(90000);await page.setViewportSize({width:1440,height:1100});await installSceneClock(page);const f=await fixture(page),kinds=new Set<string>(),errors:string[]=[],standalone:string[]=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/\/props\/[^/]+\.png/.test(request.url()))standalone.push(request.url());});
  try{
-  await f.focus(f.task);
+  await f.focus(f.task);await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));
   for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
     const now=Number(await f.host.getAttribute('data-road-event-server-now')),next=Number(await f.host.getAttribute('data-road-event-next-start'));

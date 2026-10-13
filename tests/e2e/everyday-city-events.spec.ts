@@ -1,3 +1,4 @@
+import { observeCinematics } from './city-cinematic-observer';
 import { expect, test, type Page, type Locator } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
@@ -63,14 +64,15 @@ test('fresh MCP completions open every institution after the construction reveal
     await page.route(scenePattern, async route => {
       const response = await route.fetch(); delayedScene = true; await sceneGate; await route.fulfill({ response });
     });
+    const cinematicFrames=await observeCinematics(f.host);
     const transferStarted = performance.now();
     try {
       await f.call('task.transfer', { taskId: home.id, targetDistrictId: f.pendingSchool.districtId });
       await expect(f.host).toHaveAttribute('data-cinematic-phases', /TRANSFER:LIFT/);
       await page.waitForTimeout(Math.max(0, 4500 - (performance.now() - transferStarted)));
       expect(delayedScene).toBe(true); releaseScene();
-      await expect(f.host).toHaveAttribute('data-cinematic-phases', /TRANSFER:CARRY/);
-    } finally { releaseScene(); await page.unroute(scenePattern); }
+      await expect.poll(async()=> (await cinematicFrames.frames()).some(frame=>frame.states.some(state=>state.taskId===home.id&&state.kind==='TRANSFER'&&state.phase==='CARRY'&&state.oldVisible&&!state.targetVisible&&state.aircraftVisible))).toBe(true);
+    } finally { await writeFile(info.outputPath('delayed-transfer-frames.json'),JSON.stringify(await cinematicFrames.frames(),null,2));releaseScene(); await page.unroute(scenePattern); }
     await expect(f.host).toHaveAttribute('data-city-cinematics', '0', { timeout: 10000 });
     expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
     await page.reload(); await openMapCity(page); await expect(f.host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
