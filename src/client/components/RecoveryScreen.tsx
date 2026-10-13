@@ -2,9 +2,10 @@ import { useRef, useState } from "react";
 import { api } from "../api";
 import { Button, Field } from "./ui";
 import { AuthPanel } from './AuthPanel';
+import { AuthLayout } from './AuthLayout';
 export function RecoveryScreen({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState(""); const [done, setDone] = useState(false); const [pending, setPending] = useState(false); const busy = useRef(false);
-  return <main className="auth-screen auth-screen-single"><section className="auth-entry"><AuthPanel title="Вернуться в свой мир">
+  return <AuthLayout><AuthPanel title="Вернуться в свой мир">
     {done ? <p role="status">Пароль изменён. Войдите с новым паролем. Все прежние сессии, MCP-ключи и резервные коды отозваны.</p> : <form className="government-access-form" onSubmit={event => {
       event.preventDefault(); if (busy.current) return;
       const data = Object.fromEntries(new FormData(event.currentTarget));
@@ -21,5 +22,5 @@ export function RecoveryScreen({ onBack }: { onBack: () => void }) {
       <Button variant="primary" type="submit" disabled={pending}>{pending ? 'Подождите…' : 'Восстановить доступ'}</Button>
     </form>}
     <Button variant="quiet" onClick={onBack} disabled={pending}>Вернуться ко входу</Button>
-  </AuthPanel></section></main>;
+  </AuthPanel></AuthLayout>;
 }

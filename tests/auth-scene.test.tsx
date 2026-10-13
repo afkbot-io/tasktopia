@@ -3,46 +3,33 @@ import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AuthScreen } from "../src/client/components/AuthScreen";
-import { ASSET_REVISION, BUILDING_CATALOG, PROP_CATALOG } from "../src/shared/catalog";
-import { microAmbientAssetUrls } from "../src/shared/micro-ambient";
+import { ASSET_REVISION, BUILDING_CATALOG } from "../src/shared/catalog";
+import { createAuthScenePlan } from "../src/client/auth-scene-plan";
 
 const publicAssets = resolve("public/game-assets/v5");
 const assetPath = (url: string) => url.replace(`/game-assets/v5/revisions/${ASSET_REVISION}/`, "");
-const authImages = () => [...renderToStaticMarkup(<AuthScreen onAuthenticated={async () => undefined} />)
-  .matchAll(/<img\b[^>]*data-auth-scene-sprite[^>]*>/g)].map(([tag]) => tag);
-
 describe("authentication scene asset contract", () => {
-  it("renders only existing published images, including while bootstrap is pending", () => {
-    const images = authImages();
-    const published = new Set([
-      ...microAmbientAssetUrls(),
-      ...BUILDING_CATALOG.flatMap((entry) => entry.stages),
-      ...Object.values(PROP_CATALOG).map((entry) => entry.path),
-    ]);
-    expect(images).toHaveLength(8);
-    for (const tag of images) {
-      const source = /src="([^"]+)"/.exec(tag)?.[1];
-      expect(source, tag).toBeDefined();
+  it("uses published native scene resources without a map engine or old image fragment", () => {
+    const scene=createAuthScenePlan();
+    expect(scene.buildings).toHaveLength(7);
+    expect(scene.assets.length).toBeLessThanOrEqual(64);
+    for(const source of scene.assets){
       expect(source).toContain(`/game-assets/v5/revisions/${ASSET_REVISION}/`);
-      expect(published.has(source!), source).toBe(true);
-      expect(existsSync(resolve(publicAssets, assetPath(source!))), source).toBe(true);
+      expect(existsSync(resolve(publicAssets,assetPath(source))),source).toBe(true);
     }
+    const markup=renderToStaticMarkup(<AuthScreen onAuthenticated={async()=>undefined}/>);
+    expect(markup).toContain('auth-city-scene');expect(markup).not.toContain('auth-world-building');
   });
 
-  it("uses the catalog's compact stages with integer scaling and an unchanged aspect ratio", () => {
-    const images = authImages().filter((tag) => /\/buildings\//.test(tag));
-    expect(images).toHaveLength(4);
-    const renderedStages = new Set<string>();
-    for (const tag of images) {
-      const source = /src="([^"]+)"/.exec(tag)![1]!;
-      const building = BUILDING_CATALOG.find((entry) => entry.stages.includes(source));
-      expect(building, source).toBeDefined();
-      expect(building?.tags).toContain("compact-building");
-      expect(Number(/\bwidth="(\d+)"/.exec(tag)?.[1])).toBe(building!.spriteSize.width * 2);
-      expect(Number(/\bheight="(\d+)"/.exec(tag)?.[1])).toBe(building!.spriteSize.height * 2);
-      renderedStages.add(source);
+  it("keeps native building sizes and anchors on the preview ground", () => {
+    const scene=createAuthScenePlan();
+    for(const placement of scene.buildings){
+      const family=BUILDING_CATALOG.find(b=>b.key===placement.key)!;
+      const sprite=scene.sprites.find(s=>s.url===family.stages[placement.stage-1])!;
+      expect(sprite.width).toBe(family.spriteSize.width);expect(sprite.height).toBe(family.spriteSize.height);
+      expect(sprite.x+family.anchor.x).toBe((placement.x+family.footprint.width/2)*8);
+      expect(sprite.y+family.anchor.y).toBe((placement.y+family.footprint.height)*8);
     }
-    expect(renderedStages).toEqual(new Set(BUILDING_CATALOG.find(entry => entry.key === "compact-apartment-v1")!.stages.slice(2)));
   });
 
   it("keeps every static client gameAssetUrl reference reachable in the published pack", () => {
