@@ -1,5 +1,5 @@
 import type { Cell } from "./contracts";
-import { transportProgress, type TransportSchedule } from "./transport-schedule";
+import { transportJourney, type TransportSchedule } from "./transport-schedule";
 export type RailPolyline={points:Cell[];distances:number[];length:number};
 export function railPolyline(source:readonly Cell[]):RailPolyline{
   const points=source.filter((p,i)=>i===0||p.x!==source[i-1]!.x||p.y!==source[i-1]!.y).map(p=>({...p}));
@@ -17,13 +17,14 @@ export function sampleTransportPolyline(line:RailPolyline,distance:number,direct
     angle:Math.atan2(dy,dx),
     heading:Math.abs(dx)>=Math.abs(dy)?dx<0?"west" as const:"east" as const:dy<0?"north" as const:"south" as const};
 }
-/** A four-part consist stays inside the route at both terminal stops. Cubic
+/** A consist stays inside the route at both terminal stops. Cubic
  * easing has zero velocity at arrival/departure; spacing is arc length, so
  * carriages follow corners instead of cutting across water or parcels. */
-export function railConvoy(line:RailPolyline,schedule:TransportSchedule,sourceId:string,time:number,spacing:number,progressRange:readonly [number,number]=[0,1]){
-  const state=transportProgress(schedule,sourceId,time);
+export function railConvoy(line:RailPolyline,schedule:TransportSchedule,sourceId:string,time:number,spacing:number,progressRange:readonly [number,number]=[0,1],partCount=6,fleetIndex=0,laneOffset=0){
+  const state=transportJourney(schedule,sourceId,time,fleetIndex);
   if(line.points.length<2||line.length<=0)return {...state,visible:false,cars:[]};
-  const gap=Math.min(spacing,line.length/4),body=gap*3;
+  const count=Math.max(2,Math.min(7,Math.floor(partCount)));
+  const gap=Math.min(spacing,line.length/count),body=gap*(count-1);
   const eased=state.progress*state.progress*(3-2*state.progress);
   const [start,end]=progressRange;
   const fraction=(eased-start)/(end-start);
@@ -33,5 +34,9 @@ export function railConvoy(line:RailPolyline,schedule:TransportSchedule,sourceId
   // when reversing. Switching travel direction must not teleport carriages.
   const bodyDirection=sourceId===schedule.fromId?1:-1;
   const lead=center+bodyDirection*body/2;
-  return {...state,visible:state.phase!=="WAITING",cars:Array.from({length:4},(_,index)=>sampleTransportPolyline(line,lead-index*gap*bodyDirection,state.direction))};
+  const lane=laneOffset*Math.min(1,state.progress*12,(1-state.progress)*12);
+  return {...state,visible:state.phase!=="WAITING" && (!laneOffset||line.length>2*body+gap),cars:Array.from({length:count},(_,index)=>{
+    const point=sampleTransportPolyline(line,lead-index*gap*bodyDirection,state.direction);
+    return {...point,x:point.x-Math.sin(point.angle)*lane,y:point.y+Math.cos(point.angle)*lane};
+  })};
 }

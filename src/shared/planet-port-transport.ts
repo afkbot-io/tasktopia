@@ -4,9 +4,10 @@ import { planetHexCenter } from "./planet-atlas";
 import { openOceanCells } from "./ocean-connectivity";
 import { resolvePortOceanLink } from "./port-ocean-link";
 import { portRoutes, type PortStop } from "./port-routes";
+import {seaTimetable,seaScheduleOffset} from "./transport-network";
 
 /** Only task-backed ready ports in this authorized sector produce voyages. */
-export function buildPlanetSeaRoutes(atlas: ProjectedPlanetAtlas, navigation?: {blocked:ReadonlySet<string>;coastOwners:Readonly<Record<string,readonly string[]>>}):PlanetSeaRouteDto[] {
+export function buildPlanetSeaRoutes(atlas: ProjectedPlanetAtlas, navigation?: {blocked:ReadonlySet<string>;coastOwners:Readonly<Record<string,readonly string[]>>},previous:readonly PlanetSeaRouteDto[]=[]):PlanetSeaRouteDto[] {
   if(atlas.seaRoutes && !navigation)return atlas.seaRoutes;
   if (!atlas.countries.some(country => country.cities.some(city => city.ports?.length))) return [];
   const ocean = openOceanCells(atlas.oceanCells.map(cell => ({ x: cell.q, y: cell.r })).filter(cell=>!navigation?.blocked.has(`${cell.x},${cell.y}`)), {
@@ -37,10 +38,17 @@ export function buildPlanetSeaRoutes(atlas: ProjectedPlanetAtlas, navigation?: {
       return link ? [{ id: port.taskId, cityId: city.id, countryId: country.id, continent: country.continent, stage: port.stage, dock: link.oceanOutlet }] : [];
     }));
   });
-  return portRoutes(stops, ocean, 1).map(route => ({
+  const candidates=portRoutes(stops,ocean,1,previous.map(route=>({fromCityId:route.fromCityId,toCityId:route.toCityId})));
+  const saved=previous.filter(route=>route.scheduleOffsetMs!==undefined).map(route=>({fromCityId:route.fromCityId,toCityId:route.toCityId,arrivalPhaseMs:((-route.scheduleOffsetMs!%144_000)+144_000)%144_000}));
+  const timings=seaTimetable(candidates.map(route=>({fromCityId:route.from.cityId,toCityId:route.to.cityId})),saved,false);
+  return candidates.flatMap(route => {
+    const timing=timings.find(edge=>edge.fromCityId===route.from.cityId&&edge.toCityId===route.to.cityId);
+    if(!timing)return [];
+    return [{
     id: route.id, fromPortId: route.from.id, toPortId: route.to.id,
     fromCityId: route.from.cityId, toCityId: route.to.cityId,
     fromCountryId: route.from.countryId, toCountryId: route.to.countryId,
     points: route.cells.map(cell => planetHexCenter({ q: cell.x, r: cell.y }, atlas.hexRadius)),
-  }));
+    scheduleOffsetMs:seaScheduleOffset(timing,route.from.id,route.to.id),
+  }];});
 }

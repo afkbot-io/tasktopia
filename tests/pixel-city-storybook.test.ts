@@ -4,6 +4,29 @@ import catalog from "../assets/pixel-city-pack/catalog/buildings.json";
 import manifest from "../assets/pixel-city-pack/manifest.json";
 
 describe("Pixel City asset Storybook", () => {
+  it("accepts only registered event families with their exact camera, canvas and anchor", () => {
+    const stdout = execFileSync(".venv-assets/bin/python", ["-c", `import copy,json,runpy,tempfile,sys
+from pathlib import Path
+sys.path.insert(0,'scripts')
+module=runpy.run_path('scripts/render-pixel-city-storybook.py')
+load=module['load_storybook_data']; original=json.loads(module['MANIFEST_PATH'].read_text()); result={}
+with tempfile.TemporaryDirectory(prefix='event-storybook-') as directory:
+ for case in ('unknown-event','wrong-camera','wrong-anchor','wrong-footprint','wrong-heading'):
+  manifest=copy.deepcopy(original); prop=manifest['props']['city-event-bus-north']
+  if case=='unknown-event': manifest['props']['city-event-unreviewed']=copy.deepcopy(prop)
+  elif case=='wrong-camera': prop['visualProfile']='TASKTOPIA_V6_LEGACY'
+  elif case=='wrong-anchor': prop['anchorPx']=[4,4]
+  elif case=='wrong-footprint': prop['footprintCells']=[2,1]
+  else: manifest['props']['compact-cargo-helicopter-north']['direction']='east'
+  path=Path(directory)/'manifest.json'; path.write_text(json.dumps(manifest)); load.__globals__['MANIFEST_PATH']=path
+  result[case]=load()[1]
+print(json.dumps(result))`], { encoding: "utf8" });
+    const results = JSON.parse(stdout) as Record<string, string[]>;
+    for (const [name, errors] of Object.entries(results)) {
+      const key = name === 'unknown-event' ? 'city-event-unreviewed' : name === 'wrong-heading' ? 'compact-cargo-helicopter-north' : 'city-event-bus-north';
+      expect(errors.some(error => error.startsWith(`${key}:`) && error.includes('accepted visual profile')), name).toBe(true);
+    }
+  });
   it("rejects substituted courtyard profiles, unknown family members and stretched accepted geometry", () => {
     const stdout = execFileSync(".venv-assets/bin/python", ["-c", `import copy,json,runpy,tempfile,sys
 from pathlib import Path

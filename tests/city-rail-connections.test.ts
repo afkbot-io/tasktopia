@@ -42,12 +42,15 @@ it("uses the same ready domestic railway graph in personal CITY, COUNTRY and PLA
   const railCard=(await service.getCityDevelopment(user.id,scope,first.city.id)).transport!.find(n=>n.kind==="RAIL")!;
   expect(railCard.state).toBe("CONNECTED");
   expect(railCard.routes.map(r=>r.id)).toEqual(ids);
-  expect(railCard.routes[0]).toMatchObject({destinationCityId:second.city.id,destinationName:"Second",travelMs:90000,dwellMs:12000});
+  expect(railCard.routes[0]).toMatchObject({destinationCityId:second.city.id,destinationName:"Second",travelMs:90000,dwellMs:18000});
   const overview=await service.getCountryOverview(user.id,scope);
   const planet=projectPlanetAtlas(await service.getPlanetAtlas(user.id));
   expect(countryRailways(overview).map(r=>r.id).sort()).toEqual(ids);
   expect(buildPlanetRailways(planet).map(r=>r.id).sort()).toEqual(ids);
-  expect((await service.getCitySceneForUser(user.id,scope,second.city.id)).railConnections).toEqual(connected.railConnections);
+  const reverse=(await service.getCitySceneForUser(user.id,scope,second.city.id)).railConnections!;
+  const identity=(route:typeof reverse[number])=>({id:route.id,fromStationId:route.fromStationId,toStationId:route.toStationId,fromCityId:route.fromCityId,toCityId:route.toCityId,scheduleOffsetMs:route.scheduleOffsetMs});
+  expect(reverse.map(identity)).toEqual(connected.railConnections!.map(identity));
+  expect(reverse[0]!.exit).toBeDefined();expect(reverse[0]!.localTravelMs).toBeGreaterThan(0);
   const other=(await registerUser(db,{email:"private-rail@example.test",name:"Other",password:"password123"})).user;
   await expect(service.getCitySceneForUser(other.id,scope,first.city.id)).rejects.toMatchObject({code:"FORBIDDEN"});
   await service.deleteTask(scope,{taskId:second.task.id,confirmTitle:second.task.title,idempotencyKey:"delete-second"});

@@ -1,6 +1,7 @@
 import type {Cell} from "./contracts";
 import {atlasGridPath} from "./atlas-grid-transport";
 import {transportSchedule} from "./transport-schedule";
+import {retainedTransportNetwork,type TransportNetworkEdge} from "./transport-network";
 export type PortStop={id:string;cityId:string;countryId:string;continent:number;stage:number;dock:Cell};
 export type PortRoute={id:string;from:PortStop;to:PortStop;cells:Cell[]};
 const key=(point:Cell)=>`${point.x},${point.y}`;
@@ -9,7 +10,7 @@ const key=(point:Cell)=>`${point.x},${point.y}`;
  * must enclose the entire vessel at every heading (including turns). Eroding
  * water by that square protects the full swept hull between adjacent centres.
  * Only ready, real stops participate; at most N-1 deterministic routes exist. */
-export function portRoutes(stops:readonly PortStop[],ocean:readonly Cell[],hullRadius:number):PortRoute[]{
+export function portRoutes(stops:readonly PortStop[],ocean:readonly Cell[],hullRadius:number,previous:readonly TransportNetworkEdge[]=[]):PortRoute[]{
   if(!Number.isInteger(hullRadius)||hullRadius<0||hullRadius>32)throw new Error("Invalid vessel clearance");
   const water=new Set(ocean.filter(p=>Number.isInteger(p.x)&&Number.isInteger(p.y)).map(key));
   const clear=new Set<string>();
@@ -40,17 +41,17 @@ export function portRoutes(stops:readonly PortStop[],ocean:readonly Cell[],hullR
     if(stop.stage!==5||!stop.id||!stop.cityId||!stop.countryId||unique.has(stop.id)||cities.has(stop.cityId)||!clear.has(key(stop.dock)))continue;
     unique.set(stop.id,stop);cities.add(stop.cityId);
   }
-  const ready=[...unique.values()],parents=new Map(ready.map(stop=>[stop.id,stop.id]));
-  const root=(id:string):string=>{let value=id;while(parents.get(value)!==value)value=parents.get(value)!;return value;};
-  const pairs=ready.flatMap((from,i)=>ready.slice(i+1).filter(to=>to.continent!==from.continent&&components.get(key(from.dock))===components.get(key(to.dock)))
-    .map(to=>({from,to,distance:(from.dock.x-to.dock.x)**2+(from.dock.y-to.dock.y)**2})));
-  pairs.sort((a,b)=>a.distance-b.distance||a.from.id.localeCompare(b.from.id)||a.to.id.localeCompare(b.to.id));
+  const groups=new Map<number,PortStop[]>();
+  for(const stop of unique.values()){const component=components.get(key(stop.dock))!,group=groups.get(component)??[];group.push(stop);groups.set(component,group);}
+  const pairs=[...groups.values()].flatMap(group=>{
+    const byCity=new Map(group.map(stop=>[stop.cityId,stop]));
+    return retainedTransportNetwork(group.map(stop=>({taskId:stop.id,cityId:stop.cityId,point:stop.dock})),previous)
+      .map(edge=>({from:byCity.get(edge.fromCityId)!,to:byCity.get(edge.toCityId)!}));
+  });
   const routes:PortRoute[]=[];
   for(const {from,to} of pairs){
-    if(root(from.id)===root(to.id))continue;
     const cells=atlasGridPath(from.dock,new Set([key(to.dock)]),clear);
     if(cells.length<2)continue;
-    parents.set(root(to.id),root(from.id));
     routes.push({id:transportSchedule("SEA",from.id,to.id).id,from,to,cells});
   }
   return routes.sort((a,b)=>a.id.localeCompare(b.id));

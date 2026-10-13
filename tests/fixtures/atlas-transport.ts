@@ -1,10 +1,10 @@
-import type { PlanetAtlasDto } from "../../src/shared/planet-atlas-contract";
+import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../../src/shared/planet-atlas-contract";
 
 // Country IDs affect continent topology. Keep the entire rendering fixture
 // independent of the randomly generated country used to authenticate the test.
 export function transportAtlasFixture(): PlanetAtlasDto {
   return {
-    schemaVersion: 4, planetSeed: 782441, revision: "transport-fixture-v2",
+    schemaVersion: PLANET_ATLAS_SCHEMA_VERSION, planetSeed: 782441, revision: "transport-fixture-v3",
     countries: Array.from({ length: 4 }, (_, i) => ({
       id: ["north", "south", "east", "west"][i]!, name: ["Дедлайново", "Северия", "Островная", "Приморье"][i]!,
       terrainProfile: { version: 1 as const, kind: "EAST_COAST" as const, coastX: 128 },

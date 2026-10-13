@@ -1,3 +1,4 @@
+import { airportScheduleOffset,type TimetabledAirEdge } from "../../shared/transport-network";
 import { countryAirNetwork } from "../../shared/air-network";
 import { blockSlotAirportPoint } from "../../shared/airport-location";
 import { blockSlots } from "../../shared/block-templates";
@@ -25,12 +26,15 @@ export function transportEndpointFromPlacementRow(row: Row, role: "AIRPORT" | "R
 }
 
 /** Bounded route selection over canonical airport points, independent of the viewport. */
-export function connectCityAirports(cityId: string, endpoints: readonly CityAirportEndpointDto[]): CityAirportConnectionDto[] {
-  const pairs = countryAirNetwork(endpoints).filter(({from,to})=>from.cityId===cityId||to.cityId===cityId);
-  return pairs.flatMap(({ from, to }) => [
-    { id: `${from.taskId}:${to.taskId}`, from, to },
-    { id: `${to.taskId}:${from.taskId}`, from: to, to: from },
-  ]).sort((a, b) => a.id.localeCompare(b.id));
+export function connectCityAirports(cityId: string, endpoints: readonly CityAirportEndpointDto[], edges?: readonly import("../../shared/transport-network").TransportNetworkEdge[]): CityAirportConnectionDto[] {
+  const pairs = countryAirNetwork(endpoints,edges).filter(({from,to})=>from.cityId===cityId||to.cityId===cityId);
+  return pairs.flatMap(({ from, to }) => {
+    const timing=edges?.find(edge=>edge.fromCityId===from.cityId&&edge.toCityId===to.cityId) as TimetabledAirEdge|undefined;
+    const scheduleOffsetMs=timing&&Number.isFinite(timing.arrivalPhaseMs)?airportScheduleOffset(timing,from.taskId,to.taskId):undefined;
+    return [
+    { id: `${from.taskId}:${to.taskId}`, from, to,scheduleOffsetMs },
+    { id: `${to.taskId}:${from.taskId}`, from: to, to: from,scheduleOffsetMs },
+  ];}).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function readCityAirportConnections(db: Db, countryId: string, cityId: string): Promise<CityAirportConnectionDto[]> {
@@ -42,5 +46,8 @@ export async function readCityAirportConnections(db: Db, countryId: string, city
     WHERE city.country_id=? AND l.country_id=? AND p.construction_stage=5 AND t.status='COMPLETED'
       AND b.parameters_json->'slotRoles'->>p.slot_key='AIRPORT'
     ORDER BY city.id,t.id`).all(countryId, countryId);
-  return connectCityAirports(cityId, rows.map(airportEndpointFromPlacementRow));
+  const {readCountryAirportSites}=await import("./city-airport-site-store");
+  const ready=new Set([...(await readCountryAirportSites(db,countryId)).values()].flatMap(sites=>sites.filter(site=>site.plan).map(site=>site.taskId)));
+  const {readCountryTransportNetworks}=await import("./country-transport-network-store");
+  return connectCityAirports(cityId, rows.filter(row=>ready.has(String(row.task_id))).map(airportEndpointFromPlacementRow),(await readCountryTransportNetworks(db,countryId)).AIR);
 }

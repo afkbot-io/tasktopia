@@ -1,12 +1,13 @@
 import type { Cell, Rect } from "./contracts";
 
-export const PLANET_ATLAS_SCHEMA_VERSION = 4 as const;
+export const PLANET_ATLAS_SCHEMA_VERSION = 5 as const;
 
 export type PlanetCountryDto = {
   id: string;
   name: string;
   seed: number;
   terrainProfile?: import("./world-terrain-profile").WorldTerrainProfile;
+  transportNetworks?: {schemaVersion:1;AIR:import("./transport-network").TimetabledAirEdge[];RAIL:import("./transport-network").TimetabledRailEdge[]};
   worldVersion: number;
   cityCount: number;
   districtCount: number;
@@ -30,12 +31,20 @@ export type PlanetCountryDto = {
 
 export type PlanetSeaRouteDto = {
   id: string; fromPortId: string; toPortId: string; fromCityId: string; toCityId: string;
-  fromCountryId: string; toCountryId: string; points: Cell[];
+  fromCountryId: string; toCountryId: string; points: Cell[];scheduleOffsetMs?:number;
+};
+export type PlanetRailRouteDto=Omit<PlanetSeaRouteDto,"fromPortId"|"toPortId">&{fromStationId:string;toStationId:string};
+export type PlanetAirRouteDto = {
+  id: string; fromAirportId: string; toAirportId: string;
+  fromCityId: string; toCityId: string; fromCountryId: string; toCountryId: string;
+  scheduleOffsetMs: number;
 };
 export type PlanetAtlasDto = {
+  airRoutes?: PlanetAirRouteDto[];
   /** Server-authorized routes avoid private geographic reserves without exposing them. */
   seaRoutes?: PlanetSeaRouteDto[];
-  schemaVersion: typeof PLANET_ATLAS_SCHEMA_VERSION;
+  railRoutes?:PlanetRailRouteDto[];
+  schemaVersion: typeof PLANET_ATLAS_SCHEMA_VERSION | 4;
   planetSeed: number;
   geography?: import("./planet-geography").VisiblePlanetGeography;
   revision: string;

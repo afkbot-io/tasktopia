@@ -1,0 +1,8 @@
+
+Running 1 test using 1 worker
+
+(node:61746) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/e2e/transport-rework-live.spec.ts:154:1 › two live clients receive MCP rework completion deletion and idempotent transport changes over WebSocket (12.3s)
+
+  1 passed (12.7s)

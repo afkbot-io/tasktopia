@@ -5,7 +5,10 @@ export type MapInvalidation = {
   id: number;
   worldVersion: number;
   type: string;
+  createdAt?: string;
   affectedBounds?: Rect;
+  oldBounds?: Rect;
+  newBounds?: Rect;
   taskId?: string;
   status?: string;
   progress?: number;
@@ -13,6 +16,7 @@ export type MapInvalidation = {
   groundChanged?: boolean;
   /** A canonical country-road snapshot changed in this mutation transaction. */
   groundRoadTopologyChanged?: boolean;
+  transportTopologyChanged?: boolean;
   serviceRole?: BlockServiceRole;
   cityId?: string;
   changedFields?: string[];
@@ -26,13 +30,13 @@ export function mapInvalidationAffectsCity(event: MapInvalidation, cityId?: stri
   // Each city contains routes to remote completed transport stops. Deletion payloads
   // may no longer contain the removed task's role, so invalidate conservatively.
   return !cityId || !event.cityId || event.cityId === cityId || event.resync === true
-    || event.groundRoadTopologyChanged === true
+    || event.groundRoadTopologyChanged === true || event.transportTopologyChanged === true
     || event.serviceRole === 'AIRPORT' || event.serviceRole === 'RAILWAY' || event.serviceRole === 'PORT'
     || ['country.regenerated', 'task.deleted', 'district.deleted', 'city.deleted'].includes(event.type);
 }
 
 export function mapInvalidationImpact(event: MapInvalidation): MapInvalidationImpact {
-  if (event.resync || event.groundRoadTopologyChanged === true) return 'SCENE';
+  if (event.resync || event.groundRoadTopologyChanged === true || event.transportTopologyChanged === true) return 'SCENE';
   if (['task.comment_added', 'task.assignee_changed', 'country.profile_updated', 'archive.record_updated'].includes(event.type)) return 'NONE';
   if (event.type === 'task.fields_updated' && event.changedFields?.length
     && event.changedFields.every(field => TASK_DETAIL_FIELDS.has(field))) return 'NONE';
@@ -63,17 +67,27 @@ export function eventInvalidation(event: RealtimeEvent): MapInvalidation {
     && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite)
     ? candidate as Rect
     : undefined;
+  const transferBounds = (value: unknown): Rect | undefined => {
+    if (!value || typeof value !== "object") return undefined;
+    const bounds = value as Partial<Rect>;
+    return [bounds.minX, bounds.minY, bounds.maxX, bounds.maxY].every(Number.isFinite)
+      && bounds.minX! <= bounds.maxX! && bounds.minY! <= bounds.maxY! ? bounds as Rect : undefined;
+  };
   return {
     id: event.id,
     worldVersion: event.worldVersion,
     type: event.type,
+    createdAt: event.createdAt,
     affectedBounds,
+    oldBounds: transferBounds(event.payload.oldBounds),
+    newBounds: transferBounds(event.payload.newBounds),
     taskId: typeof event.payload.taskId === "string" ? event.payload.taskId : undefined,
     status: typeof event.payload.status === "string" ? event.payload.status : undefined,
     progress: typeof event.payload.progress === "number" ? event.payload.progress : undefined,
     stage: typeof event.payload.stage === "number" ? event.payload.stage : undefined,
     groundChanged: typeof event.payload.groundChanged === "boolean" ? event.payload.groundChanged : undefined,
     groundRoadTopologyChanged: event.payload.groundRoadTopologyChanged === true ? true : undefined,
+    transportTopologyChanged: event.payload.transportTopologyChanged === true ? true : undefined,
     serviceRole: BLOCK_SERVICE_ROLES.includes(event.payload.serviceRole as BlockServiceRole)
       ? event.payload.serviceRole as BlockServiceRole : undefined,
     cityId: typeof event.payload.cityId === 'string' ? event.payload.cityId

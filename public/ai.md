@@ -626,9 +626,9 @@ step done or refine its title. Re-read `task.get` before and after the write.
 }
 ```
 
-People inspect task documents, checklist, MR links, evidence, defects and history
-in the UI; its separate sprint-transfer form uses the same server operation.
-AI agents use MCP for authorized task mutations.
+В интерфейсе просматривают документы, чек-лист, MR, доказательства, дефекты
+и историю задачи. Рабочие изменения, включая перенос между спринтами,
+выполняются через MCP; интерфейс служит для просмотра и навигации.
 
 #### `task.defect_create`
 
@@ -779,6 +779,13 @@ Required scope: `tasks:write`.
   Base64 `contentBase64`, and `idempotencyKey`. Use it for evidence that cannot
   be represented by a stable URL. `task.attachment_list` reads attachment
   metadata; the human UI remains view-only.
+
+`contentBase64` — полный стандартный Base64 с padding, без пробелов и `data:`.
+Пустой файл и файл больше настроенного лимита (по умолчанию 10 MiB) отклоняются.
+Повтор с тем же `idempotencyKey` проверяет SHA-256 содержимого:
+другие байты, в том числе той же длины,
+возвращают `CONFLICT`. Старый receipt проверяется по сохранённому файлу;
+если файл недоступен, повтор возвращает `CONFLICT`, не создавая дубль.
 
 Read before mutation, use a stable `idempotencyKey` for every write, and keep
 repository artifacts linked to the task that produced or verified them.

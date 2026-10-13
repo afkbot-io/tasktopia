@@ -1,0 +1,1109 @@
+{
+  "date": "2026-10-09",
+  "base": "d872ab4b1abd9123964ae64da1e44efb55047af1",
+  "environment": {
+    "scope": "isolated-local-ui-review",
+    "server": "http://127.0.0.1:5230",
+    "data": "named ui_design_* schema in local tasktopia_test",
+    "published": false
+  },
+  "gates": {
+    "typecheck": "passed as part of final-build.log",
+    "productionBuild": "passed; public art synchronized after build",
+    "lint": "passed final-lint.log",
+    "diffCheck": "passed",
+    "affectedUnit": {
+      "files": 6,
+      "passed": 49,
+      "durationSeconds": 2.05,
+      "evidence": "unit.log",
+      "reusedReason": "unchanged unit input modules"
+    }
+  },
+  "browserTotals": {
+    "passed": 109,
+    "skipped": 5,
+    "failed": 0
+  },
+  "browserProjects": {
+    "chromium": {
+      "passed": 57,
+      "skipped": 1
+    },
+    "ui-review-firefox": {
+      "passed": 12,
+      "skipped": 1
+    },
+    "ui-review-mobile-chromium": {
+      "passed": 1
+    },
+    "ui-review-mobile-webkit": {
+      "passed": 1
+    },
+    "ui-review-webkit": {
+      "passed": 12,
+      "skipped": 1
+    },
+    "webkit-visual": {
+      "passed": 26,
+      "skipped": 2
+    }
+  },
+  "browsers": [
+    {
+      "project": "chromium",
+      "file": "tests/e2e/account-lifecycle.spec.ts",
+      "title": "owner creates a link for a new user who registers and accepts it",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "1.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/account-lifecycle.spec.ts",
+      "title": "password change, recovery and fresh login work through the UI",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "2.3s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/auth.spec.ts",
+      "title": "double submission sends one request and keeps the mode stable",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "274ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/auth.spec.ts",
+      "title": "keeps authentication pending through bootstrap and offers retry after a country-load failure",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "2.0s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/auth.spec.ts",
+      "title": "keeps the mobile login form ahead of decorative content",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "135ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/auth.spec.ts",
+      "title": "requires matching passwords before sending registration",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "324ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/auth.spec.ts",
+      "title": "shows a clear duplicate-registration error and keeps the form usable",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "305ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/auth.spec.ts",
+      "title": "shows only login when public registration is disabled",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "215ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/auth.spec.ts",
+      "title": "uses the game asset pack without exposing implementation notes",
+      "status": "passed",
+      "evidence": "final-account.log",
+      "duration": "266ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/city-development.spec.ts",
+      "title": "city development opens lazily and links to existing service tasks",
+      "status": "passed",
+      "evidence": "final-task-paths.log",
+      "duration": "4.7s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/city-development.spec.ts",
+      "title": "separates city milestones from districts and identifies repeated services",
+      "status": "passed",
+      "evidence": "final-task-paths.log",
+      "duration": "1.8s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/city-development.spec.ts",
+      "title": "transport cards explain paired routes and waiting infrastructure on mobile",
+      "status": "passed",
+      "evidence": "final-task-paths.log",
+      "duration": "2.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "a shrinking queue returns to an existing page",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "document failure retries without stale rows and empty attention is explicit",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.2s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "documents remain read-only, preserve context across task preview and fit a phone",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "3.3s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "world inspection has no work mutation controls or requests",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "406ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-archive.spec.ts",
+      "title": "архив, его ошибки и история участка читаются в общей теме",
+      "status": "passed",
+      "evidence": "archive-geometry.log",
+      "duration": "5.0s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-design.spec.ts",
+      "title": "вход использует хвойную поверхность и читаемые локальные шрифты",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "457ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-load.spec.ts",
+      "title": "новая тема укладывается в бюджеты шрифтов и открывает город без дополнительных чтений",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "4.2s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-states.spec.ts",
+      "title": "без буфера обмена ссылка доступна в карточке вместо системного диалога",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.2s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-states.spec.ts",
+      "title": "корневой шрифт 200%, уменьшенное движение и горизонтальный экран сохраняют навигацию",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.3s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-states.spec.ts",
+      "title": "пустое состояние, ошибка, ожидание, секрет и отзыв MCP-ключа доступны в новой теме",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.9s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 1440",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "20.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 320",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "10.6s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 390",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "11.5s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 768",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "11.7s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/pwa-update.spec.ts",
+      "title": "PWA offers a waiting release and activates it only on explicit update",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.4s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/pwa-update.spec.ts",
+      "title": "PWA offers a waiting release and activates it only on explicit update after retry",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "16.9s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "закрытая во время поиска карточка не возвращается с поздним ответом",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "истёкшая сессия возвращает вход и сохраняет ссылку на задачу",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "карточка PWA остаётся внутри безопасной области экрана",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.8s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "карточка читается на узком и низком экране, все разделы доступны с клавиатуры",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "контраст и прокрутка четырёх разделов соответствуют WCAG AA",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.7s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "ошибки ссылки и карточки допускают повтор без загрузки мира",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.0s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "ссылка в другой мир выбирает его один раз и загружает правильный город после закрытия",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.9s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "ссылка открывает карточку без карты; закрытие загружает нужный город",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "2.4s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-share-preview.spec.ts",
+      "title": "offers visible controls, recovers draft loading and publishes only the selected fields",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "1.2s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-share-preview.spec.ts",
+      "title": "publishes a reviewable preview and revokes it from the task",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "2.0s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-share-preview.spec.ts",
+      "title": "recovers the same preview after losing a successful publication response",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "1.2s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/task-share-preview.spec.ts",
+      "title": "refreshes a changed draft without silently publishing it",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "1.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "touch: документы, карточка и меню работают при касании и смене ориентации",
+      "status": "skipped",
+      "evidence": "final-candidate.log"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "архив показывает загрузку, повторяет 503 и сохраняет список при закрытии записи",
+      "status": "passed",
+      "evidence": "final-candidate.log",
+      "duration": "1.1s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "длинное название и материалы не вытесняют содержимое карточки на телефоне",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "1.0s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "документы доступны на низком экране при 200% тексте",
+      "status": "passed",
+      "evidence": "final-candidate.log",
+      "duration": "1.9s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "здание открывает свою карточку на карте телефона и компьютера",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "5.5s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "карточка из списка блокирует фон и закрывает только себя, сохраняя фокус и район",
+      "status": "passed",
+      "evidence": "final-candidate.log",
+      "duration": "3.3s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "окно Аккаунт и настройки: загрузка видна, блокирует фон и отменяется до получения кода",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "647ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "окно Документы: загрузка видна, блокирует фон и отменяется до получения кода",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "650ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "отказ загрузки кода оставляет доступное закрываемое окно и рабочую карту",
+      "status": "passed",
+      "evidence": "final-candidate.log",
+      "duration": "2.4s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "паспорт страны возвращает клавиатурный фокус к выбору страны",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "332ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "поиск выбирает второй результат стрелками и не открывается вновь после Escape",
+      "status": "passed",
+      "evidence": "final-candidate.log",
+      "duration": "1.9s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "поиск показывает ожидание и ошибку, скрывает прежние результаты и повторяет запрос",
+      "status": "passed",
+      "evidence": "final-candidate.log",
+      "duration": "1.2s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/ui-public-preview.spec.ts",
+      "title": "публичное превью доступно гостю, совпадает с темой и показывает отзыв ссылки",
+      "status": "passed",
+      "evidence": "final-candidate.log",
+      "duration": "1.7s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/world-digest.spec.ts",
+      "title": "news failures retry and do not expose cached content",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "250ms"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/world-digest.spec.ts",
+      "title": "server news keeps unseen cards, shares read state and retains history on mobile",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.4s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/world-preferences.spec.ts",
+      "title": "AUTO облегчает планету при устойчивой нагрузке, сохраняя географию и подписи",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "1.4s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/world-preferences.spec.ts",
+      "title": "детализация и уменьшение движения сохраняют сцену и не возвращают старое ночное освещение",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "6.6s"
+    },
+    {
+      "project": "chromium",
+      "file": "tests/e2e/world-preferences.spec.ts",
+      "title": "мобильные настройки работают при недоступном localStorage и помещаются на экран",
+      "status": "passed",
+      "evidence": "final-chromium.log",
+      "duration": "2.5s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "touch: документы, карточка и меню работают при касании и смене ориентации",
+      "status": "skipped",
+      "evidence": "final-engines.log"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "архив показывает загрузку, повторяет 503 и сохраняет список при закрытии записи",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.3s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "длинное название и материалы не вытесняют содержимое карточки на телефоне",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "412ms"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "документы доступны на низком экране при 200% тексте",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.3s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "здание открывает свою карточку на карте телефона и компьютера",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "2.7s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "карточка из списка блокирует фон и закрывает только себя, сохраняя фокус и район",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "2.7s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "окно Аккаунт и настройки: загрузка видна, блокирует фон и отменяется до получения кода",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "805ms"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "окно Документы: загрузка видна, блокирует фон и отменяется до получения кода",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "1.3s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "отказ загрузки кода оставляет доступное закрываемое окно и рабочую карту",
+      "status": "passed",
+      "evidence": "recovery-green.log",
+      "duration": "2.2s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "паспорт страны возвращает клавиатурный фокус к выбору страны",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "869ms"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "поиск выбирает второй результат стрелками и не открывается вновь после Escape",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "2.0s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "поиск показывает ожидание и ошибку, скрывает прежние результаты и повторяет запрос",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.8s"
+    },
+    {
+      "project": "ui-review-firefox",
+      "file": "tests/e2e/ui-public-preview.spec.ts",
+      "title": "публичное превью доступно гостю, совпадает с темой и показывает отзыв ссылки",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.5s"
+    },
+    {
+      "project": "ui-review-mobile-chromium",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "touch: документы, карточка и меню работают при касании и смене ориентации",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.5s"
+    },
+    {
+      "project": "ui-review-mobile-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "touch: документы, карточка и меню работают при касании и смене ориентации",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.1s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "touch: документы, карточка и меню работают при касании и смене ориентации",
+      "status": "skipped",
+      "evidence": "final-engines.log"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "архив показывает загрузку, повторяет 503 и сохраняет список при закрытии записи",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.8s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "длинное название и материалы не вытесняют содержимое карточки на телефоне",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "561ms"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "документы доступны на низком экране при 200% тексте",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.6s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "здание открывает свою карточку на карте телефона и компьютера",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "2.6s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "карточка из списка блокирует фон и закрывает только себя, сохраняя фокус и район",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.9s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "окно Аккаунт и настройки: загрузка видна, блокирует фон и отменяется до получения кода",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "1.6s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "окно Документы: загрузка видна, блокирует фон и отменяется до получения кода",
+      "status": "passed",
+      "evidence": "final-spacing.log",
+      "duration": "2.2s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "отказ загрузки кода оставляет доступное закрываемое окно и рабочую карту",
+      "status": "passed",
+      "evidence": "recovery-green.log",
+      "duration": "2.8s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "паспорт страны возвращает клавиатурный фокус к выбору страны",
+      "status": "passed",
+      "evidence": "final-navigation.log",
+      "duration": "1.3s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "поиск выбирает второй результат стрелками и не открывается вновь после Escape",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.7s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "title": "поиск показывает ожидание и ошибку, скрывает прежние результаты и повторяет запрос",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "2.4s"
+    },
+    {
+      "project": "ui-review-webkit",
+      "file": "tests/e2e/ui-public-preview.spec.ts",
+      "title": "публичное превью доступно гостю, совпадает с темой и показывает отзыв ссылки",
+      "status": "passed",
+      "evidence": "final-engines.log",
+      "duration": "1.9s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/city-development.spec.ts",
+      "title": "city development opens lazily and links to existing service tasks",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "3.3s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/city-development.spec.ts",
+      "title": "separates city milestones from districts and identifies repeated services",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.1s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/city-development.spec.ts",
+      "title": "transport cards explain paired routes and waiting infrastructure on mobile",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.0s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "a shrinking queue returns to an existing page",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "1.0s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "document failure retries without stale rows and empty attention is explicit",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "1.2s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "documents remain read-only, preserve context across task preview and fit a phone",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.3s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/city-documents.spec.ts",
+      "title": "world inspection has no work mutation controls or requests",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "942ms"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-archive.spec.ts",
+      "title": "архив, его ошибки и история участка читаются в общей теме",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "5.0s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-states.spec.ts",
+      "title": "без буфера обмена ссылка доступна в карточке вместо системного диалога",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "745ms"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-states.spec.ts",
+      "title": "корневой шрифт 200%, уменьшенное движение и горизонтальный экран сохраняют навигацию",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "1.3s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-states.spec.ts",
+      "title": "пустое состояние, ошибка, ожидание, секрет и отзыв MCP-ключа доступны в новой теме",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.6s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 1440",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "15.4s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 320",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "12.1s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 390",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "12.0s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/forest-ui-surfaces.spec.ts",
+      "title": "все основные панели согласованы и доступны на ширине 768",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "13.2s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "закрытая во время поиска карточка не возвращается с поздним ответом",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "1.5s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "истёкшая сессия возвращает вход и сохраняет ссылку на задачу",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "595ms"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "карточка PWA остаётся внутри безопасной области экрана",
+      "status": "skipped",
+      "evidence": "final-webkit-surfaces.log"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "карточка читается на узком и низком экране, все разделы доступны с клавиатуры",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "675ms"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "контраст и прокрутка четырёх разделов соответствуют WCAG AA",
+      "status": "skipped",
+      "evidence": "final-webkit-surfaces.log"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "ошибки ссылки и карточки допускают повтор без загрузки мира",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "529ms"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "ссылка в другой мир выбирает его один раз и загружает правильный город после закрытия",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "1.9s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/task-entry.spec.ts",
+      "title": "ссылка открывает карточку без карты; закрытие загружает нужный город",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "1.4s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/world-digest.spec.ts",
+      "title": "news failures retry and do not expose cached content",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "485ms"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/world-digest.spec.ts",
+      "title": "server news keeps unseen cards, shares read state and retains history on mobile",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "1.7s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/world-preferences.spec.ts",
+      "title": "AUTO облегчает планету при устойчивой нагрузке, сохраняя географию и подписи",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.8s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/world-preferences.spec.ts",
+      "title": "детализация и уменьшение движения сохраняют сцену и не возвращают старое ночное освещение",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "5.5s"
+    },
+    {
+      "project": "webkit-visual",
+      "file": "tests/e2e/world-preferences.spec.ts",
+      "title": "мобильные настройки работают при недоступном localStorage и помещаются на экран",
+      "status": "passed",
+      "evidence": "final-webkit-surfaces.log",
+      "duration": "2.6s"
+    }
+  ],
+  "performance": {
+    "city": {
+      "cityTasksApprox": 40,
+      "cityDistricts": 3,
+      "samplesMs": [
+        1597,
+        94,
+        87,
+        78
+      ],
+      "sceneReads": 1,
+      "pageErrors": [],
+      "fontBytes": 39336
+    },
+    "warmBuildingOpenings": {
+      "ui-review-firefox": {
+        "widths": [
+          320,
+          1440
+        ],
+        "openings": [
+          43,
+          50
+        ]
+      },
+      "ui-review-webkit": {
+        "widths": [
+          320,
+          1440
+        ],
+        "openings": [
+          43,
+          50
+        ]
+      },
+      "chromium": {
+        "widths": [
+          320,
+          1440
+        ],
+        "openings": [
+          47,
+          140
+        ]
+      }
+    },
+    "warmOpeningBudgetMs": 1500
+  },
+  "inputSha256": {
+    "playwright.config.ts": "59bf2ed84a110ede59dfb395f20f0de6170e3446aa9c5ea8a0bc8ccad0506e31",
+    "src/client/App.tsx": "6cf72e5b9af893aa3dfd8015a994c697b7d21eea59b027411a10d4d94fd2da57",
+    "src/client/components/ArchiveRecordModal.tsx": "e66be61f4eac44cff6c5f25a2866be1a1d8e41aae1081df656a13cf57001f443",
+    "src/client/components/CityDirectory.tsx": "e5f5449dc3ee99009f2c4b2130a77031a0a2b6abfd2ba77624487a1e21cdd575",
+    "src/client/components/CityDocuments.tsx": "429e20b40967d0e424d63ca0ba5f10da4392f1bb9258b1fe1632215303ecd874",
+    "src/client/components/CountryPanel.tsx": "80ed405b7329e0de344d474af88f4ecd6de66e016fbc0359534ad7ded76cc8da",
+    "src/client/components/CountrySwitcher.tsx": "74564a7d2bd49052c5b11219a85db050f3bc4e3ee61c829041267df2f5ae0904",
+    "src/client/components/GamePopover.tsx": "ab87a29a1c942c872b2b0ae5beaef0efaecf47b106bdfd263d8c276b16d407a4",
+    "src/client/components/PwaUpdateNotice.tsx": "d47e46ec67f7e24fa6d5fc9125372340d463bfba82029a39b2af94b93628738d",
+    "src/client/components/SiteHistoryModal.tsx": "3b5cdb05b3a1de2d9744c7700c891e786c9c4a5b76148ba8efcc6d3ba68fd75f",
+    "src/client/components/TaskModal.tsx": "8f5d398424199803ff91166c2f21db36161abf5592849b7c4f5ed9b59ad81027",
+    "src/client/components/TaskSearch.tsx": "0b28347c36beac8afb4b91a75d95e7544200c96aafd7c31cb8ea54e2c0805f52",
+    "src/client/components/TokenPanel.tsx": "b727aa381954880e884dd71a32f21fb2328bd127cd726493510ba97aac12fb8f",
+    "src/client/components/UiLoadState.tsx": "7662d417c3d03a54d0a357d9ad00eb00bb889757ee1cd72e32135633ffe8b6b5",
+    "src/client/game-ui.css": "83b5b2f8012a9a24ab8b366a2cb44d50bad02a398392aa8479071bbc9c91165e",
+    "src/client/use-dialog-focus.ts": "155ba60be129071205618b27158a66e1e25dde04969c2ce74437a1d55912c95e",
+    "tests/e2e/forest-ui-archive.spec.ts": "db9f81b9d6b658bbd89d3d08b587689fc0b702b6c9822d30697ce8628696fe0b",
+    "tests/e2e/ui-design-review.spec.ts": "29116a2018b5d41b9d18136c60702fbd701568cd3cfeb0e2d120ce2e708a5d7f",
+    "tests/e2e/ui-public-preview.spec.ts": "86a3d29fab6e68b95bba509e892db0b330d2c2a25c934c534352297caff07084",
+    "tests/fixtures/seed-forest-ui.ts": "f35f41a5e32c036705524669fa6396e56874970834fa1b430575050c0c37a93c"
+  },
+  "screenshots": [
+    {
+      "file": "account-320.png",
+      "sha256": "74788f597fd2a6eaa0a47e1943681af13083b159e2c6495b8e942ad7795ae13d",
+      "bytes": 41200
+    },
+    {
+      "file": "chunk-error-webkit.png",
+      "sha256": "7d142da10f293c54c705fb636a5f23539945460e8c6892314129428ae7a18e20",
+      "bytes": 452273
+    },
+    {
+      "file": "documents-320.png",
+      "sha256": "7b5e5c5f8e8696c4767f3d6aa8400c870af99c1fa03c1a83e85c6b3bf701d8f7",
+      "bytes": 68337
+    },
+    {
+      "file": "documents-landscape-200-webkit.png",
+      "sha256": "efb7bbe45aa4ba48603898f243b63056f1719cae15babb8fd10e2b4fd23c94e2",
+      "bytes": 81965
+    },
+    {
+      "file": "passport-390.png",
+      "sha256": "7f61142fbe3345cadefa89a72ffeb6ce16961500468e226f01af39ae551a6f60",
+      "bytes": 42478
+    },
+    {
+      "file": "public-preview-320.png",
+      "sha256": "dec17fc68d9ee05f5e9c2cea1cc903107062e6d64ea366208944c74e4067c1d2",
+      "bytes": 22400
+    },
+    {
+      "file": "settings-loading-webkit.png",
+      "sha256": "269f302396ec945f22e43b304716d94ba72cb5d243e776713da31066683fd17d",
+      "bytes": 439375
+    },
+    {
+      "file": "site-history-320.png",
+      "sha256": "b58116672279b566314a6d9a33ac9c5c4a07ac0ecfba5f5c0b955ed614d2e8a5",
+      "bytes": 37915
+    },
+    {
+      "file": "task-320.png",
+      "sha256": "1fc4a541e7cec1eb66e4916ba8183c16512c37790da7a4d995be28f3862027b1",
+      "bytes": 57996
+    },
+    {
+      "file": "task-long-title-320-webkit.png",
+      "sha256": "0eab87816742a8df9bc8d6a5ee86a495859789febc830b3cf012f302fe2e0878",
+      "bytes": 117522
+    }
+  ],
+  "review": {
+    "source": "all changed source/test/config files, supporting owners and contracts",
+    "design": "palette, spacing, responsive geometry, pending/error/disabled, focus, nesting and actual screenshots",
+    "remainingActionableFindings": 0,
+    "externalReviewOrScmApproval": false
+  },
+  "limits": [
+    "Physical devices and native browser zoom not executed",
+    "Root font size 200% is a text enlargement case, not OS/browser zoom",
+    "MCP, 200-task load and long simulations were not rerun: backend and renderer unchanged",
+    "Axe and scripted journeys do not enumerate every data/permission/assistive-technology combination",
+    "No push, PR, merge or managed release in this local review"
+  ],
+  "browserLogsRoot": ".builder/ui-design-review-2026-10-09",
+  "browserLogSha256": {
+    "archive-geometry.log": "dffcc28db459c7dd0485ae7885633f9a1a0936e3853e13893021236347a96b74",
+    "final-account.log": "9946f98af657d267f21c3d8ecbbfc82e33023058593b0fa404856bb20aca85a3",
+    "final-candidate.log": "5d2294e18cb12fbeb1d273cdc80cf12de7ad9535791d75758da1505379cdc396",
+    "final-chromium.log": "b90de73bc7a14d3628015a48d8ccf2ccb9a3a86fab8096802ba645ef143714d8",
+    "final-engines.log": "5d23a95108d62b7d4a5ced27dcb46d77aecb9bd3e85888ff9d6ed6ef7229f5c6",
+    "final-navigation.log": "7cd528142840148ad8d1411020bd3cb078137cdbac487b22679195a3bf751d64",
+    "final-spacing.log": "a7b37ef395af00649b5720ba326158bab7840018cb0afe9577bcd33953a4003c",
+    "final-task-paths.log": "409b0d42c278c43ada48bc9488bafd6856966c42c535b8ec8ca47a82ecf7cdb1",
+    "final-webkit-surfaces.log": "864a4990d287015c6185ce910b2c7f0b0ad9d8944d5bd963221bb3b08bc497e8",
+    "recovery-green.log": "7315f45b2a84d2cda794e2f7c226843d2f6ab2a55cd942cc5453dec3d6e081d5"
+  }
+}

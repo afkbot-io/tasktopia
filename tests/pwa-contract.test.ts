@@ -82,6 +82,21 @@ describe("generated worker CDN offline boundary", () => {
     expect(cdnRequests.every(request => request.credentials === "omit" && request.mode === "cors")).toBe(true);
   });
 
+  it("keeps entry fonts offline while leaving lazy map bundles for runtime loading", async () => {
+    const font = "/assets/manrope.abc123.woff2";
+    const lazy = "/assets/WorldCanvas.abc123.js";
+    const platform = workerPlatform(renderServiceWorker("fonts", [...candidates, font, lazy], cdn,
+      ["/", "/assets/app.abc123.css", font]));
+    await platform.install();
+    expect(platform.entries.has(cdn + lazy)).toBe(false);
+    platform.offline();
+    const response = await platform.fetch(new Request(cdn + font));
+    expect(await response!.text()).toBe(`public asset ${cdn}${font}`);
+    const request = platform.requests.find(request => request.url === cdn + font)!;
+    expect(request.credentials).toBe("omit");
+    expect(request.mode).toBe("cors");
+  });
+
   it("never intercepts private, unknown, credentialed, authenticated or modified CDN requests", async () => {
     const platform = workerPlatform(renderServiceWorker("cdn-rev", candidates, cdn));
     await platform.install();

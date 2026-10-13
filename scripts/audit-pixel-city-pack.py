@@ -12,6 +12,7 @@ from PIL import Image
 from compact_asset_contract import audit_compact_building
 from micro_ambient_contract import audit_micro_ambient
 from city_transport_contract import audit_city_transport
+from everyday_city_art import audit_runtime as audit_everyday_city
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -241,6 +242,7 @@ def audit() -> dict[str, Any]:
 
 
 def main() -> None:
+    audit_everyday_city(json.loads(MANIFEST_PATH.read_text()))
     report = audit()
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if report["violations"]:

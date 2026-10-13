@@ -1,4 +1,5 @@
 import {expect,test} from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 test("publishes a reviewable preview and revokes it from the task",async({page,browser})=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL??""),"Local fixture only");
   expect((await page.request.post("/api/auth/login",{data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}})).ok()).toBe(true);
@@ -24,6 +25,9 @@ test("publishes a reviewable preview and revokes it from the task",async({page,b
     await expect(preview.locator('.share-location')).not.toContainText(bootstrap.initialCity.name);
     await expect(preview.locator('.share-card')).toBeVisible();
     expect(await preview.locator('.share-card').evaluate((image:HTMLImageElement)=>image.naturalWidth)).toBe(1200);
+    await preview.evaluate(() => document.fonts.ready);
+    expect(await preview.locator("main").evaluate(el => getComputedStyle(el).fontFamily)).toContain("Manrope");
+    expect((await new AxeBuilder({ page: preview }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([]);
     await preview.screenshot({path:"test-results/public-og-desktop.png"});
     await preview.setViewportSize({width:320,height:740});
     expect(await preview.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
@@ -48,6 +52,8 @@ test("publishes a reviewable preview and revokes it from the task",async({page,b
     expect((await anonymous.request.get(`${url}/image.png`)).status()).toBe(404);
     const response=await preview.reload();expect(response!.status()).toBe(404);
     await expect(preview.locator("h1")).toContainText("ссылка недоступна");
+    expect((await new AxeBuilder({ page: preview }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([]);
+    await preview.screenshot({ path: "test-results/public-og-revoked-mobile.png" });
     expect(browserErrors).toEqual([]);
   } finally {await anonymous.close();await page.getByRole("button",{name:"Отозвать",exact:true}).click();}
 });

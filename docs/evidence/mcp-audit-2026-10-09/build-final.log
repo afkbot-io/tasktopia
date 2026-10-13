@@ -1,0 +1,87 @@
+
+> tasktopia@1.24.12 build
+> npm run typecheck && vite build && esbuild src/server/index.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/server.mjs && esbuild src/server/regenerate-worlds.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/regenerate-worlds.mjs && esbuild src/server/create-user-cli.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/create-user.mjs && esbuild src/server/synchronize-assets-cli.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/synchronize-assets.mjs && esbuild src/server/migrate-worlds.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/migrate-worlds.mjs && esbuild scripts/audit-prod.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/audit-worlds.mjs && esbuild src/server/synchronize-transport-cli.ts --bundle --packages=external --platform=node --format=esm --target=node24 --outfile=dist/synchronize-transport.mjs
+
+
+> tasktopia@1.24.12 typecheck
+> tsc --noEmit
+
+vite v8.2.0 building client environment for production...
+[2Ktransforming...✓ 958 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                                            2.29 kB │ gzip:   0.89 kB
+dist/public/sw.js                                                 5.09 kB
+dist/public/assets/manrope-cyrillic-wght-normal-Dvxsihut.woff2   14.50 kB
+dist/public/assets/manrope-latin-wght-normal-DHIcAJRg.woff2      24.83 kB
+dist/public/assets/chunk-materializer-worker-DyVZfgo8.js        176.55 kB
+dist/public/assets/index-IJA4Wvof.css                           132.65 kB │ gzip:  25.05 kB
+dist/public/assets/webworkerAll-Bab4-_Qz.js                       0.07 kB │ gzip:   0.08 kB
+dist/public/assets/getTextureBatchBindGroup-BTLnWq_D.js           0.40 kB │ gzip:   0.31 kB │ map:     1.78 kB
+dist/public/assets/world-cell-runs-BaTy-KN6.js                    0.56 kB │ gzip:   0.32 kB │ map:     5.04 kB
+dist/public/assets/rolldown-runtime-hePW80VL.js                   0.71 kB │ gzip:   0.42 kB
+dist/public/assets/CanvasPool-3ldCMsRM.js                         0.80 kB │ gzip:   0.46 kB │ map:     3.52 kB
+dist/public/assets/Cache-fEfeSd-A.js                              1.14 kB │ gzip:   0.59 kB │ map:     4.86 kB
+dist/public/assets/Markdown-B0Da-8Ke.js                           2.16 kB │ gzip:   0.98 kB │ map:     7.80 kB
+dist/public/assets/transport-schedule-B71Fxw_h.js                 2.53 kB │ gzip:   1.17 kB │ map:     9.17 kB
+dist/public/assets/ArchiveRecordModal-CXSz6Ws2.js                 2.87 kB │ gzip:   1.39 kB │ map:     6.41 kB
+dist/public/assets/world-terrain-DUaaYnoZ.js                      3.21 kB │ gzip:   1.56 kB │ map:    13.60 kB
+dist/public/assets/canvasUtils-C3EzOeUa.js                        6.06 kB │ gzip:   2.07 kB │ map:    21.92 kB
+dist/public/assets/map-scene-cache-ZZppkIWp.js                    7.22 kB │ gzip:   2.86 kB │ map:    27.78 kB
+dist/public/assets/CityDocuments-q2jNd0OS.js                      7.47 kB │ gzip:   2.99 kB │ map:    23.55 kB
+dist/public/assets/atlas-flight-path-DL8B8vmx.js                  8.33 kB │ gzip:   3.62 kB │ map:    35.90 kB
+dist/public/assets/CityDevelopmentPanel-xQLbv0ut.js               8.38 kB │ gzip:   3.23 kB │ map:    18.97 kB
+dist/public/assets/api-I1isT3Yh.js                               10.33 kB │ gzip:   4.23 kB │ map:    36.56 kB
+dist/public/assets/BufferResource-DFJ3_9YU.js                    10.61 kB │ gzip:   2.83 kB │ map:    25.63 kB
+dist/public/assets/TokenPanel-_UTr0xSe.js                        14.35 kB │ gzip:   4.58 kB │ map:    46.72 kB
+dist/public/assets/init-CPtzLbPr.js                              15.33 kB │ gzip:   4.80 kB │ map:    53.36 kB
+dist/public/assets/EventBoundary-BHNF6LZc.js                     17.56 kB │ gzip:   4.66 kB │ map:    71.69 kB
+dist/public/assets/GCManagedHash-CtptiOfb.js                     19.36 kB │ gzip:   6.32 kB │ map:    67.33 kB
+dist/public/assets/world-chunk-payload-T1kpLGz7.js               19.90 kB │ gzip:   7.17 kB │ map:    79.71 kB
+dist/public/assets/TaskModal-BgrA-kIO.js                         23.57 kB │ gzip:   7.55 kB │ map:    53.57 kB
+dist/public/assets/getPo2TextureFromSource-D_dTR7iM.js           24.20 kB │ gzip:   8.39 kB │ map:   102.70 kB
+dist/public/assets/browserAll-CkmId6t9.js                        25.36 kB │ gzip:   7.09 kB │ map:    85.06 kB
+dist/public/assets/CanvasRenderer-D3a4PssS.js                    26.71 kB │ gzip:   7.84 kB │ map:   118.00 kB
+dist/public/assets/world-preferences-DPk6-Zsq.js                 29.97 kB │ gzip:   6.76 kB │ map:    61.33 kB
+dist/public/assets/BitmapFont-CURc5rtx.js                        33.57 kB │ gzip:  11.25 kB │ map:   153.57 kB
+dist/public/assets/WebGPURenderer-ClDQed5b.js                    38.66 kB │ gzip:  10.79 kB │ map:   123.88 kB
+dist/public/assets/Filter-BqdleU4p.js                            38.67 kB │ gzip:  11.06 kB │ map:   182.44 kB
+dist/public/assets/esm-BrLCb35z.js                               41.24 kB │ gzip:  12.91 kB │ map:   181.57 kB
+dist/public/assets/RenderTargetSystem-CZwX8qce.js                51.85 kB │ gzip:  14.49 kB │ map:   195.25 kB
+dist/public/assets/PlanetAtlasCanvas-CabWcOAT.js                 56.66 kB │ gzip:  20.16 kB │ map:   204.91 kB
+dist/public/assets/GraphicsContext-CvtOAmjy.js                   61.11 kB │ gzip:  20.44 kB │ map:   345.43 kB
+dist/public/assets/Geometry-Ckw_XhzT.js                          62.48 kB │ gzip:  20.54 kB │ map:   317.85 kB
+dist/public/assets/WebGLRenderer-DbctGfv_.js                     68.17 kB │ gzip:  18.64 kB │ map:   215.79 kB
+dist/public/assets/catalog-Br6x3RCs.js                          155.35 kB │ gzip:  20.07 kB │ map:   314.18 kB
+dist/public/assets/index-yXHY83w8.js                            285.19 kB │ gzip:  88.63 kB │ map: 1,082.86 kB
+dist/public/assets/WorldCanvas-DcvhZYDU.js                      316.80 kB │ gzip: 106.93 kB │ map: 1,316.44 kB
+
+✓ built in 609ms
+
+  dist/server.mjs  1.1mb ⚠️
+
+⚡ Done in 17ms
+
+  dist/regenerate-worlds.mjs  894.1kb
+
+⚡ Done in 10ms
+
+  dist/create-user.mjs  880.3kb
+
+⚡ Done in 12ms
+
+  dist/synchronize-assets.mjs  279.6kb
+
+⚡ Done in 4ms
+
+  dist/migrate-worlds.mjs  4.3kb
+
+⚡ Done in 1ms
+
+  dist/audit-worlds.mjs  889.7kb
+
+⚡ Done in 10ms
+
+  dist/synchronize-transport.mjs  526.2kb
+
+⚡ Done in 7ms

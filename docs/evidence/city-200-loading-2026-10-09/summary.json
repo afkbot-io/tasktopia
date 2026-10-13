@@ -1,0 +1,901 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-08T21:17:47.041934+00:00",
+  "status": "passed-with-documented-limits",
+  "base": "157b1a29ae2a7f41595f9322ecc5c32ebd0920f2",
+  "branch": "codex/city-everyday-events",
+  "scope": {
+    "remoteCountryId": "4201d605-751a-469b-8d5f-a7e322a7ece1",
+    "trackedTask": null,
+    "actualRequestedCityIdentified": false,
+    "fixtureTasks": 200,
+    "fixtureDistricts": 8,
+    "fixtureChunks": 12,
+    "fixtureSeed": 424242,
+    "fixtureAuditViolations": 0,
+    "publicLoadTest": false,
+    "deploymentPerformed": false,
+    "pushPerformed": false,
+    "scmApprovalPerformed": false
+  },
+  "inputs": {
+    "path": "docs/evidence/city-200-loading-2026-10-09/inputs.json",
+    "sha256": "184b41e6575101444ef29522cdbc66fd324189f72c1852c31fe242476dbe70e3",
+    "files": 8
+  },
+  "gates": {
+    "typecheck": "passed: production build",
+    "productionBuild": "passed",
+    "eslint": "passed: full, then changed planner repeated",
+    "unit": {
+      "uniquePassed": 141,
+      "files": 20,
+      "failed": 0,
+      "affectedRepeatPassed": 10,
+      "reuse": "131 tests unchanged after replacing only the compiled adjacency storage"
+    },
+    "browser": {
+      "uniquePassed": 23,
+      "failed": 0,
+      "skipped": 0,
+      "mainPassed": 21,
+      "liveMcpPassed": 2,
+      "affectedRepeatPassed": 6,
+      "reuse": "15 E2E results retained for unchanged font/assets/API/cinematic boundaries after replacing only internal adjacency storage; six first-frame viewport cases repeated and route outputs rechecked by golden tests"
+    },
+    "aiReview": "passed, no blocking findings; local review only",
+    "unchangedBoundaries": {
+      "server": "not changed",
+      "contracts": "not changed",
+      "mcp": "not changed; historical gate linked and two live journeys repeated",
+      "art": "not changed; historical qualification linked",
+      "dependencies": "not changed",
+      "historicalEvidence": "docs/evidence/global-followup-2026-10-08/summary.json",
+      "historicalEvidenceSHA256": "f76526194b9f5e887d4ebc0b5fc7c29da9703ede0de0328991d8b94d4066639a"
+    }
+  },
+  "budgets": {
+    "nativeColdMs": 3000,
+    "warmMs": 500,
+    "rafP95Ms": 50,
+    "heapGrowthAfter20TransitionsBytes": 5242880,
+    "stageReductionTargetPercent": 20,
+    "throttledColdMs": 10000,
+    "throttledAppMs": 15000
+  },
+  "environment": {
+    "browser": "151.0.7922.34",
+    "host": {
+      "platform": "darwin",
+      "cpu": "Apple M5 Pro"
+    },
+    "metal": true,
+    "deviceScaleFactor": 1
+  },
+  "performance": {
+    "city200-baseline-200": {
+      "quality": "NORMAL",
+      "cpuRate": 1,
+      "network": "local unrestricted",
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 1677.5595829999997,
+          "appMs": 3346.1380419999996,
+          "warmMs": 26.08958299999904,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.700000000000728,
+          "heapBytes": 85185828,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 1670.5,
+              "duration": 83
+            },
+            {
+              "startTime": 2120.899999976158,
+              "duration": 59
+            },
+            {
+              "startTime": 2181.300000011921,
+              "duration": 160
+            },
+            {
+              "startTime": 2539.800000011921,
+              "duration": 129
+            },
+            {
+              "startTime": 2928.600000023842,
+              "duration": 398
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 1,
+          "coldMs": 1437.073708,
+          "appMs": 2329.916459,
+          "warmMs": 18.128790999999183,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.699999999999818,
+          "heapBytes": 85063768,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 1250.3999999761581,
+              "duration": 52
+            },
+            {
+              "startTime": 1502.0999999642372,
+              "duration": 117
+            },
+            {
+              "startTime": 1873.0999999642372,
+              "duration": 439
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 2,
+          "coldMs": 1335.8236670000042,
+          "appMs": 2211.1622080000016,
+          "warmMs": 44.88695800000278,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.800000000001091,
+          "heapBytes": 85739624,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 1235.5,
+              "duration": 52
+            },
+            {
+              "startTime": 1489.5,
+              "duration": 126
+            },
+            {
+              "startTime": 1851.699999988079,
+              "duration": 337
+            }
+          ],
+          "steadyLongTasks": []
+        }
+      ]
+    },
+    "city200-baseline-200-compact": {
+      "quality": "NORMAL",
+      "cpuRate": 1,
+      "network": "local unrestricted",
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 802.7647080000002,
+          "appMs": 1727.0539170000002,
+          "warmMs": 19.533124999999927,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.799999999999272,
+          "heapBytes": 70395144,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 1519.199999988079,
+              "duration": 153
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 1,
+          "coldMs": 819.8435000000009,
+          "appMs": 2166.7536660000005,
+          "warmMs": 20.35241700000188,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.800000000000182,
+          "heapBytes": 70044620,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 1487.199999988079,
+              "duration": 146
+            },
+            {
+              "startTime": 1694.1000000238419,
+              "duration": 471
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 2,
+          "coldMs": 811.0805839999994,
+          "appMs": 1708.9614169999986,
+          "warmMs": 16.232292000000598,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.700000000000728,
+          "heapBytes": 70259112,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 1506.5,
+              "duration": 156
+            }
+          ],
+          "steadyLongTasks": []
+        }
+      ]
+    },
+    "city200-delivery-200": {
+      "quality": "NORMAL",
+      "cpuRate": 1,
+      "network": "local unrestricted",
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 1333.2551669999998,
+          "appMs": 2287.295209,
+          "warmMs": 23.412500000000364,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.700000000000728,
+          "heapBytes": 86038804,
+          "churnCycles": 20,
+          "heapChurnDeltaBytes": 1495576,
+          "coldLongTasks": [
+            {
+              "startTime": 1308.0999999642372,
+              "duration": 56
+            },
+            {
+              "startTime": 1590.699999988079,
+              "duration": 128
+            },
+            {
+              "startTime": 1958.3999999761581,
+              "duration": 255
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 1,
+          "coldMs": 1326.1425419999978,
+          "appMs": 2212.7292080000007,
+          "warmMs": 18.427208000000974,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 85939312,
+          "churnCycles": 20,
+          "heapChurnDeltaBytes": 1494484,
+          "coldLongTasks": [
+            {
+              "startTime": 1501.300000011921,
+              "duration": 140
+            },
+            {
+              "startTime": 1881.7000000476837,
+              "duration": 249
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 2,
+          "coldMs": 1323.7232500000027,
+          "appMs": 2198.8893339999995,
+          "warmMs": 26.071499999998196,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 86065112,
+          "churnCycles": 20,
+          "heapChurnDeltaBytes": 1463516,
+          "coldLongTasks": [
+            {
+              "startTime": 1509,
+              "duration": 135
+            },
+            {
+              "startTime": 1879,
+              "duration": 236
+            }
+          ],
+          "steadyLongTasks": []
+        }
+      ]
+    },
+    "city200-delivery-200-compact": {
+      "quality": "NORMAL",
+      "cpuRate": 1,
+      "network": "local unrestricted",
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 800.223375,
+          "appMs": 1698.9382500000002,
+          "warmMs": 42.38266599999952,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.899999999999636,
+          "heapBytes": 71350232,
+          "churnCycles": 20,
+          "heapChurnDeltaBytes": 1070380,
+          "coldLongTasks": [
+            {
+              "startTime": 1518.699999988079,
+              "duration": 166
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 1,
+          "coldMs": 808.0709999999999,
+          "appMs": 1715.085916,
+          "warmMs": 42.15408299999763,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.800000000000182,
+          "heapBytes": 71509220,
+          "churnCycles": 20,
+          "heapChurnDeltaBytes": 921892,
+          "coldLongTasks": [
+            {
+              "startTime": 1494.300000011921,
+              "duration": 165
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 2,
+          "coldMs": 797.9560409999976,
+          "appMs": 1682.0040840000001,
+          "warmMs": 40.13691700000345,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 9.799999999999272,
+          "heapBytes": 71411816,
+          "churnCycles": 20,
+          "heapChurnDeltaBytes": 1003064,
+          "coldLongTasks": [
+            {
+              "startTime": 1493.800000011921,
+              "duration": 173
+            }
+          ],
+          "steadyLongTasks": []
+        }
+      ]
+    },
+    "city200-throttled-baseline-200-compact": {
+      "quality": "AUTO",
+      "cpuRate": 4,
+      "network": "local CDP: 60ms latency, 1.6Mbps down, 750Kbps up",
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 5716.225791999999,
+          "appMs": 8376.26075,
+          "warmMs": 128.0071250000001,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 18.200000000000728,
+          "heapBytes": 70089100,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 5165.200000047684,
+              "duration": 159
+            },
+            {
+              "startTime": 6919.200000047684,
+              "duration": 52
+            },
+            {
+              "startTime": 7165.400000035763,
+              "duration": 68
+            },
+            {
+              "startTime": 7233.900000035763,
+              "duration": 65
+            },
+            {
+              "startTime": 7299.700000047684,
+              "duration": 52
+            },
+            {
+              "startTime": 7432.800000011921,
+              "duration": 59
+            },
+            {
+              "startTime": 7492.100000023842,
+              "duration": 57
+            },
+            {
+              "startTime": 7549.400000035763,
+              "duration": 696
+            },
+            {
+              "startTime": 8288.700000047684,
+              "duration": 81
+            },
+            {
+              "startTime": 8376.300000011921,
+              "duration": 58
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 1,
+          "coldMs": 5724.002,
+          "appMs": 8458.692958,
+          "warmMs": 121.68799999999464,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 24.299999999999272,
+          "heapBytes": 70070124,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 5189.5,
+              "duration": 169
+            },
+            {
+              "startTime": 6945.899999976158,
+              "duration": 54
+            },
+            {
+              "startTime": 7198.599999964237,
+              "duration": 60
+            },
+            {
+              "startTime": 7259.599999964237,
+              "duration": 68
+            },
+            {
+              "startTime": 7328.599999964237,
+              "duration": 53
+            },
+            {
+              "startTime": 7460.899999976158,
+              "duration": 58
+            },
+            {
+              "startTime": 7519.5,
+              "duration": 59
+            },
+            {
+              "startTime": 7579.899999976158,
+              "duration": 699
+            },
+            {
+              "startTime": 8316,
+              "duration": 84
+            }
+          ],
+          "steadyLongTasks": []
+        }
+      ]
+    },
+    "city200-throttled-delivery-200-compact": {
+      "quality": "AUTO",
+      "cpuRate": 4,
+      "network": "local CDP: 60ms latency, 1.6Mbps down, 750Kbps up",
+      "samples": [
+        {
+          "sample": 0,
+          "coldMs": 5771.585333000001,
+          "appMs": 8566.314124999999,
+          "warmMs": 150.54087499999878,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 24.299999999999272,
+          "heapBytes": 70903708,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 4692.199999988079,
+              "duration": 50
+            },
+            {
+              "startTime": 5262.899999976158,
+              "duration": 166
+            },
+            {
+              "startTime": 6989.399999976158,
+              "duration": 60
+            },
+            {
+              "startTime": 7280.199999988079,
+              "duration": 58
+            },
+            {
+              "startTime": 7339.300000011921,
+              "duration": 63
+            },
+            {
+              "startTime": 7402.899999976158,
+              "duration": 53
+            },
+            {
+              "startTime": 7535,
+              "duration": 67
+            },
+            {
+              "startTime": 7603.399999976158,
+              "duration": 58
+            },
+            {
+              "startTime": 7661.800000011921,
+              "duration": 713
+            },
+            {
+              "startTime": 8394.199999988079,
+              "duration": 89
+            },
+            {
+              "startTime": 8490.199999988079,
+              "duration": 71
+            }
+          ],
+          "steadyLongTasks": []
+        },
+        {
+          "sample": 1,
+          "coldMs": 5786.619166,
+          "appMs": 8496.148708,
+          "warmMs": 150.73570800000016,
+          "geometryHash": "28dffefe5a3ddbf9b490a17f138abedd54f02b66b3412e6463f428e9e0ad3f11",
+          "tasks": 200,
+          "chunks": 12,
+          "sceneRequests": 1,
+          "viewportRequests": 0,
+          "p95FrameMs": 25.400000000001455,
+          "heapBytes": 70908672,
+          "churnCycles": 0,
+          "heapChurnDeltaBytes": 0,
+          "coldLongTasks": [
+            {
+              "startTime": 5217.400000035763,
+              "duration": 168
+            },
+            {
+              "startTime": 6935.900000035763,
+              "duration": 58
+            },
+            {
+              "startTime": 7228.100000023842,
+              "duration": 60
+            },
+            {
+              "startTime": 7289.200000047684,
+              "duration": 74
+            },
+            {
+              "startTime": 7363.600000023842,
+              "duration": 56
+            },
+            {
+              "startTime": 7504.900000035763,
+              "duration": 62
+            },
+            {
+              "startTime": 7567.900000035763,
+              "duration": 59
+            },
+            {
+              "startTime": 7627.900000035763,
+              "duration": 719
+            },
+            {
+              "startTime": 8375.100000023842,
+              "duration": 116
+            }
+          ],
+          "steadyLongTasks": []
+        }
+      ]
+    }
+  },
+  "serverProfile": [
+    {
+      "sample": 0,
+      "phase": "cold",
+      "serviceMs": 115.16829200000001,
+      "stringifyMs": 3.094875000000002,
+      "bytes": 1250317,
+      "queryCount": 18
+    },
+    {
+      "sample": 0,
+      "phase": "cached",
+      "serviceMs": 12.796791999999982,
+      "stringifyMs": 2.5262500000000045,
+      "bytes": 1250317,
+      "queryCount": 9
+    },
+    {
+      "sample": 1,
+      "phase": "cold",
+      "serviceMs": 100.55283299999996,
+      "stringifyMs": 2.975083999999981,
+      "bytes": 1250317,
+      "queryCount": 18
+    },
+    {
+      "sample": 1,
+      "phase": "cached",
+      "serviceMs": 10.997042000000022,
+      "stringifyMs": 3.00408299999998,
+      "bytes": 1250317,
+      "queryCount": 9
+    },
+    {
+      "sample": 2,
+      "phase": "cold",
+      "serviceMs": 96.06216699999999,
+      "stringifyMs": 2.9521669999999176,
+      "bytes": 1250317,
+      "queryCount": 18
+    },
+    {
+      "sample": 2,
+      "phase": "cached",
+      "serviceMs": 11.38579100000004,
+      "stringifyMs": 2.972582999999986,
+      "bytes": 1250317,
+      "queryCount": 9
+    }
+  ],
+  "routingCpuProfile": {
+    "before": {
+      "legacyRoutingMs": 138.05599999999998,
+      "numericRoutingMs": 0,
+      "gcMs": 79.70100000000001,
+      "profileMs": 3244.029000000009
+    },
+    "after": {
+      "legacyRoutingMs": 0,
+      "numericRoutingMs": 16.043000000000003,
+      "gcMs": 74.947,
+      "profileMs": 3169.028000000004
+    },
+    "reductionPercent": 88.37935330590486,
+    "method": "exclusive sampled CPU mapped to legacy route helpers lines 20–127 and the whole new numeric planner, one profile each; not wall time"
+  },
+  "font": {
+    "glyphs": 10,
+    "physicalPagePixels": 262144,
+    "rawRgbaBytesPerPage": 1048576,
+    "priorIntermediatePageBytes": 16777216,
+    "density": "24px glyph at 6px display size, same 4x as previous Text",
+    "lifecycle": "font unavailable fallback and logout/relogin in Chromium and WebKit"
+  },
+  "observedLimits": [
+    "Requested real city is unidentified; local dense fixture cannot substitute for its data.",
+    "Desktop cold median remains above the optional 1000ms target; route-stage reduction exceeds 20%.",
+    "Compact cold change is small; cold long-task maxima do not improve in every viewport.",
+    "CPU4 + weak network does not materially improve whole entry and retains about 0.72s cold main-thread pauses.",
+    "One 59ms steady pause on the prior intermediate revision was not reproduced in a 20s diagnostic profile or the final two throttled samples; absence of all rare pauses is not proven.",
+    "JS heap excludes native canvas/GPU memory; physical devices and an exhaustive OS/GPU matrix were not tested."
+  ],
+  "attempts": [
+    {
+      "case": "font fault route",
+      "result": "test setup failed: Vite emits hashed /assets/manrope-*.woff2; corrected against resource evidence"
+    },
+    {
+      "case": "motion toggle",
+      "result": "AUTO changed legitimate quality limits concurrently; dedicated assertion isolated with NORMAL"
+    },
+    {
+      "case": "4x capture",
+      "result": "wheel delta rounds; test now reaches the real maximum via clamping"
+    },
+    {
+      "case": "font page budget",
+      "result": "red at 4194304 pixels; green at <=262144 pixels through public font size/resolution/padding"
+    },
+    {
+      "case": "native comparison settings",
+      "result": "AUTO preliminary series excluded from the matched NORMAL comparison"
+    },
+    {
+      "case": "steady CPU4 pause",
+      "result": "59ms retained as an observed intermediate limit, not hidden as a passing attempt"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".builder/city-200-loading-2026-10-08/REVIEW.md",
+      "sha256": "180192414555d5186ded27a8bc5f1d6441db346749878290b579898ada38cdae"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/build-numeric-final.log",
+      "sha256": "84f0a3125daef8aa4b1863a6ceb2a4897ed9e482d0d5dd9d4bff5d63426a0076"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/lint-final.log",
+      "sha256": "6ae7633aac706563e696114ee9e0e677eeb7ca566be4a16d6883fc16883c7b65"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/lint-numeric-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/unit-final.log",
+      "sha256": "b4eabba809ef343a32c354bedda2e7790b459bdc1330dab4f8eba4647276b719"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/routes-numeric-final.log",
+      "sha256": "48a4729bb012d17b9f0385681b30052b0c6e07c92836deef9205a541d967b37d"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-font-final.log",
+      "sha256": "4cca16dece78ee5f4cc5f33b15d009499d7719594a4d894010892e2da1e0717f"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-numeric-final.log",
+      "sha256": "64a5c7d2309f1a548dc173f8e7ea52cd333af7098d51151f60024c46de173c85"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/live-final.log",
+      "sha256": "2dd139f2719e0f77485d80c31f72df536152c4470ef5a2c643e4b8e90fe90150"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/server-profile.json",
+      "sha256": "6f3c72b1c939c8781b5037d4c9ae34d7365ab00e89342ff1efd53cd76f345571"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/cpu-routing-baseline.json",
+      "sha256": "7f030f00c58c533ebee30641f0bc3d3339223f8824aaa3910ab74642ea42b239"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/cpu-routing-delivery.json",
+      "sha256": "6cba96a49863f6195bc6aa77e0c32f44c7c7d2c9a7f971b2faf20aea409527b2"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/font-memory-red.log",
+      "sha256": "294e094c1dd825e9d9a0c3864d8469bc88b68d89db3ac224449c177218951867"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/font-zoom-final.log",
+      "sha256": "3d62d0a6947e597e3ddd772aef26ded74bbe057d4190fa8e1d03de3d2053e081"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/throttled-diagnostic.log",
+      "sha256": "312498dc8984edf08d3e803c8df62262dc208b32877dcbf7a7e2eca9c22db6a7"
+    },
+    {
+      "path": "tmp/city-art-load/city200-baseline-200/report.json",
+      "sha256": "881876cc13aef42d4ce50b98509f6cc78d551e20ade0b341bccee070015ee9af"
+    },
+    {
+      "path": "tmp/city-art-load/city200-baseline-200-compact/report.json",
+      "sha256": "adcb45361bea86813c00ecfbe19ffe3f2ea79d678703e376d7f3f22665263404"
+    },
+    {
+      "path": "tmp/city-art-load/city200-delivery-200/report.json",
+      "sha256": "768f37e42ca59d7bcdaa652e7a88a0c4a985057fc25775e29c4bb76eb5804303"
+    },
+    {
+      "path": "tmp/city-art-load/city200-delivery-200-compact/report.json",
+      "sha256": "e5a62aa9b48517221f336e9b401c86c99f5ca59de56d506228408c9fe861c781"
+    },
+    {
+      "path": "tmp/city-art-load/city200-throttled-baseline-200-compact/report.json",
+      "sha256": "3620cbf521bf5497559ce2fdd3a7e58b3e6609fd313a83ce452cf0afade757c9"
+    },
+    {
+      "path": "tmp/city-art-load/city200-throttled-delivery-200-compact/report.json",
+      "sha256": "f8667f12a5039e40cbf580c01ead6245087743a1e2685b2256e0d03a9e733721"
+    },
+    {
+      "path": "tmp/city-art-load/city200-baseline-200-profile/0.cpuprofile",
+      "sha256": "a022f634d6f57bea3269f6899ef617af7081a0a7afb98c170cdbbcf2dbaa4143"
+    },
+    {
+      "path": "tmp/city-art-load/city200-delivery-200-profile/0.cpuprofile",
+      "sha256": "8d1944919b694bb62d55f9ad9c9a7a1d7d7a1afa715043492429735b58dbbd3e"
+    },
+    {
+      "path": "tmp/city-art-load/city200-throttled-final-qualified-200-compact/report.json",
+      "sha256": "e80e5f791a6100688f7a64116775e35bc89b304773e3ae3c8a302a0d76308624"
+    },
+    {
+      "path": "tmp/city-art-load/city200-throttled-diagnostic-200-compact/report.json",
+      "sha256": "e84b797e71637b0b6613ede8b8d69f3b65fa45f05209cce2722ce465ed0099a3"
+    },
+    {
+      "path": "tmp/city-art-load/city200-throttled-diagnostic-200-compact/0-steady.cpuprofile",
+      "sha256": "63be6c51bc56ed9fa40072fd08866b59eef3ea2783b985c414a4a426d041f2fa"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-numeric-final/city-200-loading-200-task--391e0-terior-prewarm-at-1440x1000-webkit-visual/native-1x.png",
+      "sha256": "0c378105b5c9035fd63eb1afebab42aed4df8024c749900de0d55fce0de412e6"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-numeric-final/city-200-loading-200-task--391e0-terior-prewarm-at-1440x1000-chromium/native-1x.png",
+      "sha256": "d8b70a114efa8abad490b54900285e4c964304ca9de6500a5098b13bcbb4eab0"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-numeric-final/city-200-loading-200-task--391e0-terior-prewarm-at-1440x1000-webkit-visual/zoom-4x.png",
+      "sha256": "444e9dca2f7b1a617d2678911a8a9f5a1c9a32b894b6435cad1b1eb21b5623cb"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-numeric-final/city-200-loading-200-task--391e0-terior-prewarm-at-1440x1000-chromium/zoom-4x.png",
+      "sha256": "c7107d3dbf5332dd44a1c731505b7eaf5886e7dee31a88c8807497bc63ccfe72"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-numeric-final/city-200-loading-200-task--fa862-exterior-prewarm-at-390x844-webkit-visual/first-frame.png",
+      "sha256": "b4ea93ff24f98c5d0dd245604c858a8fcf1a0caafe78d71e9d17c746762ca531"
+    },
+    {
+      "path": ".builder/city-200-loading-2026-10-08/browser-numeric-final/city-200-loading-200-task--fa862-exterior-prewarm-at-390x844-chromium/first-frame.png",
+      "sha256": "48cebbf65270f45681655b31e3bd1efb493d1fb9f71e26d1ec298773df14c188"
+    }
+  ]
+}

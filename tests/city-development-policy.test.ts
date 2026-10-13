@@ -15,3 +15,14 @@ it("preserves allocation thresholds, priorities and durable trigger identities",
   expect(roles).toEqual(["EDUCATION","MEDICAL","FIRE","POLICE","RAILWAY","AIRPORT","CIVIC","SHOP","SHOP","SHOP"]);
   expect(used.has("city:AIRPORT:3")).toBe(true);
 });
+
+it("opens the airport in a large single-district city without changing its durable trigger", () => {
+  const airport = (cityBlocks: number, cityDistricts: number) => infrastructureMilestones({ ...counts, cityBlocks, cityDistricts }).find(m => m.role === "AIRPORT")!;
+  expect(airport(11, 1).eligible).toBe(false);
+  expect(airport(12, 1)).toMatchObject({ id: "city:AIRPORT:3", eligible: true, count: 12, required: 12, unit: "CITY_BLOCKS" });
+  expect(airport(3, 3).eligible).toBe(true);
+  expect(airport(12, 0).eligible).toBe(true);
+  const otherTriggers = new Set(infrastructureMilestones({ ...counts, cityBlocks: 12, buildings: 20 }).filter(m => m.role !== "AIRPORT").map(m => m.id));
+  expect(nextInfrastructure({ ...counts, cityBlocks: 12, buildings: 20 }, otherTriggers)?.role).toBe("AIRPORT");
+  expect(nextInfrastructure({ ...counts, cityBlocks: 12, buildings: 20 }, new Set([...otherTriggers, "city:AIRPORT:3"]))?.role).not.toBe("AIRPORT");
+});

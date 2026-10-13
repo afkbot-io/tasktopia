@@ -28,7 +28,7 @@ test("server time preserves a platform stop across remount despite a wrong devic
       anchor=TRANSPORT_EPOCH-schedule.offsetMs+1000;
     }
     // Each mount samples the same server instant. Wall time spent loading
-    // a software-rendered scene must not exhaust the 12-second station stop.
+    // a software-rendered scene must not exhaust the 18-second station stop.
     headers["cache-control"]="private, no-store";
     headers["x-tasktopia-server-time"]=String(anchor);
     await route.fulfill({response,headers,json:scene});
@@ -38,7 +38,7 @@ test("server time preserves a platform stop across remount despite a wrong devic
   const city=page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit","atomic");
   await expect(city).toHaveAttribute("data-city-train-phase","stopped");
-  await expect(city).toHaveAttribute("data-city-train-wagons","3");
+  await expect(city).toHaveAttribute("data-city-train-wagons","5");
   await expect(city).toHaveAttribute("data-city-train-lead",/.+/);
   const before=await city.getAttribute("data-city-train-lead");
   await page.reload();

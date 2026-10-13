@@ -25,17 +25,17 @@ function lines(text: string, width: number, count: number): string[] {
 export function taskShareImageSvg(data: ShareImageData): string {
   const text = (value: string, x: number, y: number, size: number, color: string) =>
     `<text x="${x}" y="${y}" font-size="${size}" fill="${color}">${escapeShareHtml(value)}</text>`;
-  const cells = Array.from({length: 18}, (_, i) => `<rect x="${1020 + (i % 3) * 40}" y="${80 + Math.floor(i / 3) * 40}" width="32" height="32" fill="${["#29483e", "#426450", "#8c995c"][i % 3]}"/>`).join("");
+  const cells = Array.from({length: 18}, (_, i) => `<rect x="${1020 + (i % 3) * 40}" y="${80 + Math.floor(i / 3) * 40}" width="32" height="32" rx="6" fill="${["#172f26", "#2c5140", "#d9bd78"][i % 3]}"/>`).join("");
   const geography = ([['СТРАНА',data.location.country],['ГОРОД',data.location.city],['РАЙОН',data.location.district]] as const)
     .filter((entry): entry is readonly [typeof entry[0], string] => Boolean(entry[1]));
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-    <rect width="1200" height="630" fill="#0c2023"/><rect x="24" y="24" width="1152" height="582" fill="#142e2c" stroke="#526c58" stroke-width="2"/>
-    <rect x="24" y="24" width="1152" height="8" fill="#d9bd65"/>${cells}
-    <g font-family="Noto Sans">${text('TASKTOPIA',64,91,26,'#d9bd65')}${text(`ЗАДАЧА #${data.taskNumber}`,64,143,20,'#a6bca7')}
-    ${lines(data.title,22,3).map((line,i)=>text(line,64,209+i*56,42,'#f0efdb')).join('')}
-    ${lines(data.description,46,2).map((line,i)=>text(line,64,382+i*34,23,'#b9cec0')).join('')}
-    <path d="M64 450H1136" stroke="#456056"/>
-    ${geography.map(([label,value],i)=>text(label,64+i*360,488,15,'#a6bca7')+lines(value,15,2).map((line,j)=>text(line,64+i*360,522+j*29,22,'#eee3b0')).join('')).join('')}
+    <rect width="1200" height="630" fill="#0b1814"/><rect x="24" y="24" width="1152" height="582" rx="24" fill="#10251d" stroke="#365647" stroke-width="1"/>
+    <rect x="64" y="114" width="48" height="4" rx="2" fill="#d9bd78"/>${cells}
+    <g font-family="Noto Sans">${text('TASKTOPIA',64,91,26,'#d9bd78')}${text(`ЗАДАЧА #${data.taskNumber}`,64,143,20,'#b6c6bb')}
+    ${lines(data.title,22,3).map((line,i)=>text(line,64,209+i*56,42,'#f0f2e7')).join('')}
+    ${lines(data.description,46,2).map((line,i)=>text(line,64,382+i*34,23,'#b6c6bb')).join('')}
+    <path d="M64 450H1136" stroke="#365647"/>
+    ${geography.map(([label,value],i)=>text(label,64+i*360,488,15,'#b6c6bb')+lines(value,15,2).map((line,j)=>text(line,64+i*360,522+j*29,22,'#f0f2e7')).join('')).join('')}
     </g></svg>`;
 }
 let rendering = 0;

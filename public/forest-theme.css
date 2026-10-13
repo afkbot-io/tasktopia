@@ -1,0 +1,82 @@
+@import './fonts/manrope/font.css';
+
+/* Forest Atlas: roles are shared by every DOM surface, including entry states. */
+:root {
+  color-scheme: dark;
+  --ui-canvas: #0b1814;
+  --ui-surface: #10251d;
+  --ui-raised: #172f26;
+  --ui-hover: #203d31;
+  --ui-selected: #2c5140;
+  --ui-border: #365647;
+  --ui-border-control: #648575;
+  --ui-text: #f0f2e7;
+  --ui-muted: #b6c6bb;
+  --ui-quiet: #98afa1;
+  --ui-accent: #d9bd78;
+  --ui-accent-hover: #e8ce92;
+  --ui-on-accent: #14251b;
+  --ui-link: #9ed9c9;
+  --ui-success: #add39b;
+  --ui-success-bg: #203a2c;
+  --ui-warning: #e4c88b;
+  --ui-warning-bg: #3a3424;
+  --ui-danger: #f0a5a1;
+  --ui-danger-bg: #3a2626;
+  --ui-info: #9ed0d3;
+  --ui-info-bg: #1d3439;
+  --ui-shadow: 0 16px 48px #020b0766;
+  --ui-font: Manrope, ui-sans-serif, system-ui, sans-serif;
+  --ui-radius-control: 8px;
+  --ui-radius-card: 12px;
+  --ui-radius-panel: 16px;
+  --ui-control-size: 44px;
+  --layout-header-height: 64px;
+  --layout-header-mobile-height: 56px;
+
+  --panel: var(--ui-surface);
+  --panel-2: var(--ui-raised);
+  --line: var(--ui-border);
+  --muted: var(--ui-muted);
+  --yellow: var(--ui-accent);
+  --green: var(--ui-success);
+  --blue: var(--ui-info);
+  --game-frame: var(--ui-raised);
+  --game-frame-dark: var(--ui-canvas);
+  --game-brass: var(--ui-border);
+  --game-paper: var(--ui-surface);
+  --game-ink: var(--ui-text);
+  --game-muted: var(--ui-muted);
+  --atlas-panel: var(--ui-surface);
+  --atlas-ground: #29463d;
+  --atlas-line: var(--ui-border-control);
+  --atlas-line-active: var(--ui-accent);
+  --atlas-progress-track: var(--ui-raised);
+  --atlas-progress-value: var(--ui-success);
+  --notice-panel: var(--ui-surface);
+  --notice-panel-success: var(--ui-success-bg);
+  --notice-line: var(--ui-border-control);
+  --notice-line-success: var(--ui-success);
+  --notice-location: var(--ui-muted);
+  --notice-action: var(--ui-link);
+  --control-compact-size: var(--ui-control-size);
+  --control-compact-radius: var(--ui-radius-control);
+  font-family: var(--ui-font);
+  font-size: 16px;
+  line-height: 1.6;
+  font-synthesis: none;
+  color: var(--ui-text);
+  background: var(--ui-canvas);
+}
+
+body { font-size: 14px; }
+
+::selection { background: var(--ui-selected); color: var(--ui-text); }
+* { scrollbar-color: var(--ui-border-control) var(--ui-surface); }
+button, input, select, textarea, summary { font: inherit; }
+:is(button, summary, a, input, select, textarea, [role='button'], [role='tab']):focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+input::placeholder, textarea::placeholder { color: var(--ui-quiet); opacity: 1; }
+input[type='checkbox'], input[type='radio'] { accent-color: var(--ui-accent); }

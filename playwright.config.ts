@@ -7,6 +7,9 @@ process.env.E2E_BASE_URL = baseURL;
 const seedCommand = process.env.E2E_SEED_COMMAND ?? "npm run seed:test";
 const testDatabaseURL = process.env.TEST_DATABASE_URL
   ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
+// The server and direct database fixtures must use the same isolated database.
+// webServer.env alone does not propagate this alias into Playwright workers.
+process.env.E2E_DATABASE_URL ??= testDatabaseURL;
 const serverPort = new URL(baseURL).port || (baseURL.startsWith("https:") ? "443" : "80");
 const webCommand = process.env.E2E_WEB_COMMAND
   ?? `${seedCommand} && npm run build && NODE_ENV=production PORT=${serverPort} SESSION_COOKIE_SECURE=false npm start`;
@@ -48,7 +51,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: /mobile-pwa\.spec\.ts/,
+      testIgnore: /(?:mobile-pwa|device-compatibility)\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -57,7 +60,16 @@ export default defineConfig({
         serviceWorkers: "block",
       },
     },
-    { name: "webkit-visual", testMatch: /(?:city-documents|world-digest|task-entry|atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|planet-feedback|visual-consistency|visual-services|world-preferences|city-asset-overlap)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "webkit-visual", testMatch: /(?:transport-rework-live|city-200-loading|city-documents|city-development|world-digest|task-entry|atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|planet-feedback|visual-consistency|visual-services|world-preferences|city-asset-overlap|forest-ui-design|forest-ui-surfaces|forest-ui-archive|forest-ui-states|living-city-events|everyday-city-events)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "ui-review-firefox", testMatch: /(?:ui-design-review|ui-public-preview)\.spec\.ts/, use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "ui-review-webkit", testMatch: /(?:ui-design-review|ui-public-preview)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "ui-review-mobile-chromium", testMatch: /ui-design-review\.spec\.ts/, grep: /touch:/, use: { ...devices["Pixel 7"], serviceWorkers: "block" } },
+    { name: "ui-review-mobile-webkit", testMatch: /ui-design-review\.spec\.ts/, grep: /touch:/, use: { ...devices["iPhone 13"], serviceWorkers: "block" } },
+    { name: "transport-firefox",testMatch:/transport-rework-live\.spec\.ts/,grep:/ready real/,use:{...devices["Desktop Firefox"],viewport:{width:1440,height:900},serviceWorkers:"block"}},
+    { name:'transport-mobile-chromium',testMatch:/transport-rework-live\.spec\.ts/,grep:/touch transport/,use:{...devices['Pixel 7'],serviceWorkers:'block'}},
+    { name:'transport-mobile-webkit',testMatch:/transport-rework-live\.spec\.ts/,grep:/touch transport/,use:{...devices['iPhone 13'],serviceWorkers:'block'}},
+    { name: "living-city-mobile-chromium", testMatch: /(?:living-city-events|everyday-city-events)\.spec\.ts/, grep: /touch-sized/, use: { ...devices["Pixel 7"], serviceWorkers: "block" } },
+    { name: "living-city-mobile-webkit", testMatch: /(?:living-city-events|everyday-city-events)\.spec\.ts/, grep: /touch-sized/, use: { ...devices["iPhone 13"], serviceWorkers: "block" } },
     { name: "mobile-chromium", testMatch: /mobile-pwa\.spec\.ts/, use: { ...devices["Pixel 7"] } },
     { name: "mobile-webkit", testMatch: /(?:mobile-pwa|pwa-update)\.spec\.ts/, use: { ...devices["iPhone 13"] } },
   ],

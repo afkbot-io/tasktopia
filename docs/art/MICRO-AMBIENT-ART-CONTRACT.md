@@ -70,3 +70,43 @@ representation, but their endpoints must also remain completed airports.
 Random viewport-edge flybys are not a substitute for transport infrastructure.
 General flower/stone/reed scatter is terrain detail, not thousands of sprites.
 Explicit flowers inside a staged park task remain intentional park content.
+
+## Грузовой вертолёт кинематической сцены
+
+Отдельный профиль `TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1`: холст32×32,
+видимый силуэт до24×24, четыре самостоятельно нарисованных направления,
+8 общих непрозрачных цветов и hard alpha. Это тяжёлый транспорт переноса
+задачи, поэтому он крупнее обычных пассажирских micro-aircraft16×16.
+Источник и проверка: `reference/ai-authored/cargo-helicopter-v1`,
+`scripts/cargo_helicopter_art.py --verify`. Прозрачные пиксели канонизированы
+в RGBA0,0,0,0; prop atlas совпадает с каждым отдельным PNG побайтно по пикселям.
+
+Manifest сохраняет стандартный prop anchor16,32. В воздухе Sprite использует
+центр холста, а тросы привязаны к реальной верхней границе старого здания.
+Все направления выбираются по имени, без runtime rotation/mirroring;
+самолёт и существующие люди/машины не заменены и не масштабированы под груз.
+
+## Повседневная жизнь города
+
+Профиль `TASKTOPIA_EVERYDAY_MICRO_V1` добавляет22 authored кадра: автобус,
+школьный автобус, пустой/загруженный эвакуатор и ребёнок в четырёх направлениях,
+прилавок и зонт. У транспорта остаётся штатная физическая оболочка4×6/6×4.
+Ребёнок использует тот же native envelope3×4 `[2,2,5,6]` и консервативную
+физическую оболочку взрослого. Молодой персонаж отличается пропорциями головы,
+коротким охристым корпусом и рюкзаком, сохраняя overhead camera и одинаковую
+регистрацию во всех четырёх направлениях. Ориентация выбирается по имени без runtime rotation.
+Активный источник — `sources/child-v2.png`; прежний `child.png` сохранён только
+как история. Повторный аудит отклонил его фронтальный ракурс и сжатые боковые кадры.
+
+Все micro-акторы используют центр холста4,4 и целый экранный pixel scale.
+В prop manifest сохранён стандартный нижний anchor4,8, как у грузового
+вертолёта; actor renderer явно задаёт центр. Прилавок16×16 имеет anchor8,16,
+полностью свободную площадку2×2; зонт8×8 привязан к существующему жителю.
+Новое население для сцен не создаётся. За посадку/высадку отвечает общий
+mobility controller, а atlas предоставляет только изображения.
+
+Источники, brief, hashes, нормализация и review:
+`assets/pixel-city-pack/reference/ai-authored/everyday-city-v1`.
+`scripts/everyday_city_art.py --verify` проверяет восстановление кадров;
+whole-pack audit сравнивает runtime/public/atlas по пикселям. Звуки по
+умолчанию выключены; reduced-motion отключает сценки и погоду.

@@ -7,7 +7,10 @@ export async function openMapCity(page: Page) {
   await expect(planet.or(city)).toBeVisible({ timeout: 30_000 });
   if (await planet.isVisible()) {
     await expect(planet).toHaveAttribute('data-planet-ready', 'true');
-    const bootstrap = await (await page.request.get('/api/bootstrap')).json();
+    const response = await page.request.get('/api/bootstrap');
+    expect(response.status(), 'Map navigation requires a successful bootstrap').toBe(200);
+    const bootstrap = await response.json();
+    expect(bootstrap.initialCity?.id, 'Map navigation requires a fixture city').toBeTruthy();
     const target = page.locator(`.planet-city-targets [data-city-id="${bootstrap.initialCity.id}"]`);
     await target.focus();
     await page.keyboard.press('Enter');

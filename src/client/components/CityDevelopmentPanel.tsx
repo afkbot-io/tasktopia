@@ -1,3 +1,5 @@
+import { nextTransportDeparture,transportJourneys,transportStopActivity } from "../../shared/transport-schedule";
+import { readServerWorldTime } from "../server-world-clock";
 import { useEffect, useRef, useState } from "react";
 import type { InfrastructureMilestone } from "../../shared/city-development-policy";
 import type { CityDevelopmentDto } from "../../shared/city-development";
@@ -5,9 +7,11 @@ import { INFRASTRUCTURE_LABELS } from "../../shared/city-development-policy";
 import { api } from "../api";
 const STATE = { PLANNED: "Запланировано", BUILDING: "Строится", TESTING: "На проверке", READY: "Готово", HISTORICAL: "Историческое место", UNDISCOVERED: "Ещё не построено" };
 const UNIT = { BUILDINGS: "зданий района", DISTRICT_BLOCKS: "кварталов района", CITY_BLOCKS: "кварталов города", CITY_DISTRICTS: "застроенных районов" };
-export function CityDevelopmentPanel({ countryId, cityId, revision, onClose, onTask }: {
-  countryId: string; cityId: string; revision: number; onClose: () => void; onTask: (id: string) => void;
+export function CityDevelopmentPanel({ countryId, cityId, revision, onClose, onTask,onCity,onRoute,selectedRoute }: {
+  countryId: string; cityId: string; revision: number; onClose: () => void; onTask: (id: string) => void;onCity?:(countryId:string,cityId:string,name:string)=>void;onRoute?:(routeId?:string)=>void;selectedRoute?:string;
 }) {
+  const [clockTime,setClockTime]=useState(()=>readServerWorldTime()??Date.now());
+  useEffect(()=>{const timer=window.setInterval(()=>{if(!document.hidden)setClockTime(readServerWorldTime()??Date.now());},1000);return()=>window.clearInterval(timer);},[]);
   const [data,setData]=useState<CityDevelopmentDto>();
   const [error,setError]=useState(false), [retry,setRetry]=useState(0);
   const close=useRef<HTMLButtonElement>(null);
@@ -33,12 +37,20 @@ export function CityDevelopmentPanel({ countryId, cityId, revision, onClose, onT
       {data.transport && <section aria-label="Транспортные направления"><h3>Транспортные направления</h3>
         <ul>{data.transport.map(network => <li key={network.kind}>
           <strong>{network.kind === "AIR" ? "Авиарейсы" : network.kind === "SEA" ? "Морские рейсы" : "Железная дорога"}</strong>
-          {network.state === "NOT_READY" && <span>{network.kind === "SEA" ? "Завершите строительство порта, чтобы открыть навигацию." : network.kind === "AIR" ? "Завершите строительство аэропорта, чтобы открыть рейсы." : "Завершите строительство вокзала, чтобы открыть движение."}</span>}
-          {network.state === "NO_CONNECTION" && <span>{network.kind === "SEA" ? "Порт готов. Нужен готовый порт на другом материке с открытым морским проходом." : network.kind === "AIR" ? "Аэропорт готов. Нужен ещё один готовый аэропорт в доступной части мира." : "Вокзал готов. Нужен готовый вокзал в другом городе на связной суше."}</span>}
-          {network.routes.map(route => <div key={route.id} data-transport-route={route.id}>
+          {network.state === "NOT_READY" && <span>{network.reason==="NO_AIRFIELD"?"Терминал готов, но для полосы и подхода пока нет свободного сухого участка.":network.kind === "SEA" ? "Завершите строительство порта, чтобы открыть навигацию." : network.kind === "AIR" ? "Завершите строительство аэропорта, чтобы открыть рейсы." : "Завершите строительство вокзала, чтобы открыть движение."}</span>}
+          {network.state === "NO_CONNECTION" && <span>{network.reason==='NO_CORRIDOR'?(network.kind==='SEA'?"Порты готовы, но между ними нет свободного морского прохода.":network.kind==='RAIL'?"Вокзалы готовы, но между ними нет доступного сухого коридора.":"Аэропорты готовы. Направление пока недоступно."):network.kind === "SEA" ? "Порт готов. Нужен ещё один готовый порт в доступной части мира." : network.kind === "AIR" ? "Аэропорт готов. Нужен ещё один готовый аэропорт в доступной части мира." : "Вокзал готов. Нужен готовый вокзал в другом городе."}</span>}
+          {network.routes.map(route => {
+            const local=route.schedule&&route.stopId?transportJourneys(route.schedule,route.stopId,clockTime).find(state=>state.phase==="STOPPED"&&state.progress===0):undefined;
+            const activity=local&&route.schedule?transportStopActivity(route.schedule,local):undefined;
+            const departure=route.schedule&&route.stopId?Math.max(0,Math.ceil((nextTransportDeparture(route.schedule,route.stopId,clockTime)-clockTime)/1000)):undefined;
+            return <div key={route.id} data-transport-route={route.id}>
             <strong>↔ {route.destinationName}</strong><br />
             <span>{network.kind === "AIR" ? "Перелёт" : "В пути"} · {route.travelMs / 1000} с · стоянка {route.dwellMs / 1000} с</span>
-          </div>)}
+            {departure!==undefined&&<span data-departure-seconds={departure}>{activity==="ALIGHTING"?"Высадка пассажиров":activity==="BOARDING"?"Посадка пассажиров":activity==="CLOSING"?"Закрываются двери":activity==="OPENING"?"Прибытие":"Рейс в пути"} · отправление через {departure} с</span>}
+            {route.schedule&&<span>{route.schedule.fleetSize} {network.kind==="RAIL"?"состава":network.kind==="SEA"?"парома":"самолёта"} на линии</span>}
+            {onRoute&&<button aria-pressed={selectedRoute===route.id} onClick={()=>onRoute(selectedRoute===route.id?undefined:route.id)}>{selectedRoute===route.id?'Скрыть направление':'Показать направление'}</button>}
+            {onCity&&route.destinationCountryId&&<button onClick={()=>onCity(route.destinationCountryId!,route.destinationCityId,route.destinationName)}>Открыть город {route.destinationName}</button>}
+          </div>;})}
         </li>)}</ul>
         <p>Время игровое. Рейсы ходят по общему расписанию на всех масштабах карты.</p>
       </section>}

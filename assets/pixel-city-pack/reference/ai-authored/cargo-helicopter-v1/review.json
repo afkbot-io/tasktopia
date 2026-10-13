@@ -1,0 +1,17 @@
+{
+  "reviewed": true,
+  "sourceSha256": "a4acee68448ccd22b781317cc99e9ea8a4e6512ab6dc78811aaf7c558ca4e57f",
+  "reviewedAt": "2026-10-08",
+  "reviewer": "Codex AI visual review",
+  "evidence": [
+    "preview-native.png",
+    "preview-8x.png",
+    "../../../../../screenshots/micro-ambient-v1.png"
+  ],
+  "checks": [
+    "four independent authored headings",
+    "hard alpha and shared eight-color palette",
+    "native32 visible24 transport exception",
+    "two rotors readable at native size"
+  ]
+}

@@ -102,7 +102,8 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await page.locator(".header-city").click();
   cityDirectory = page.getByRole("complementary", { name: "Районы города" });
   await cityDirectory.getByRole("button", { name: /^Квартальный район 1 / }).click();
-  await cityDirectory.getByRole("button", { name: /^\d+ #1 · Задача района 1\.1/ }).click();
+  const taskRow = cityDirectory.getByRole("button", { name: /^\d+ #1 · Задача района 1\.1/ });
+  await taskRow.click();
   const taskDialog = page.getByRole("dialog");
   await expect(taskDialog).toBeVisible();
   await expect(taskDialog.locator(".game-tabs [role=tab]")).toHaveCount(4);
@@ -116,7 +117,9 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(taskDialog.getByRole("button", { name: /Удалить задачу|Добавить/ })).toHaveCount(0);
   await capture(page, "screenshots/release-task-modal.png");
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
-  await expect(cityDirectory).toBeHidden();
+  await expect(cityDirectory).toBeVisible();
+  await expect(taskRow).toBeFocused();
+  await cityDirectory.getByRole("button", { name: "Закрыть список" }).click();
 
   await canvas.hover();
   await page.mouse.wheel(0, 4000);

@@ -1,0 +1,12 @@
+
+> tasktopia@1.24.12 smoke:mcp
+> tsx scripts/mcp-smoke.ts
+
+MCP smoke passed (47 tools).
+Legacy 2025 MCP fallback passed.
+Only Authorization Bearer credentials were accepted.
+Bearer challenge and Origin validation passed.
+Revoked MCP token was rejected as expected.
+Read-only MCP scopes were enforced as expected.
+MCP resource scopes were enforced as expected.
+city.get task data requires tasks:read as expected.

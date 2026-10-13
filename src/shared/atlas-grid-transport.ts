@@ -25,7 +25,7 @@ export function atlasGridPath(start: Cell, goals: ReadonlySet<string>, allowed: 
 }
 
 /** One deterministic connection per additional served city, never across water. */
-export function atlasRailRoutes(stops: readonly AtlasTransportStop[], land: readonly Cell[]): AtlasGroundRoute[] {
+export function atlasRailRoutes(stops: readonly AtlasTransportStop[], land: readonly Cell[], edges?: readonly import("./transport-network").TransportNetworkEdge[]): AtlasGroundRoute[] {
   const allowed = new Set(land.map(key)), component = new Map<string,number>();
   let nextComponent=0;
   for(const cell of land){
@@ -44,7 +44,7 @@ export function atlasRailRoutes(stops: readonly AtlasTransportStop[], land: read
     const group=groups.get(id)??[];group.push(stop);groups.set(id,group);
   }
   const routes:AtlasGroundRoute[]=[];
-  for(const group of groups.values())for(const {from,to} of countryTransportNetwork(group.map(stop=>({...stop,taskId:stop.id})))){
+  for(const group of groups.values())for(const {from,to} of countryTransportNetwork(group.map(stop=>({...stop,taskId:stop.id})),edges)){
     const cells=atlasGridPath(from.cell,new Set([key(to.cell)]),allowed);
     if(cells.length)routes.push({id:transportSchedule("RAIL",from.id,to.id).id,from,to,cells});
   }

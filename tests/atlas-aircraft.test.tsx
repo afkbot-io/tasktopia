@@ -9,5 +9,5 @@ it("keeps aircraft hidden until the absolute schedule is sampled, without a load
   }]} /></svg>);
   expect(markup).toContain("visibility:hidden");
   expect(markup).not.toContain("animateMotion");
-  expect(markup.match(/atlas-aircraft-sprite/g)).toHaveLength(1);
+  expect(markup.match(/atlas-aircraft-sprite/g)).toHaveLength(2);
 });

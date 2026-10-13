@@ -3,6 +3,7 @@ import { MCP_READ_SCOPES, MCP_SCOPES, type BootstrapDto, type McpScope, type Mcp
 import { api, ApiError } from "../api";
 import { AccountSecurity } from "./AccountSecurity";
 import { PushNotificationCard } from "./PushNotificationCard";
+import { useDialogFocus } from "../use-dialog-focus";
 
 const scopeLabels: Record<McpScope, string> = {
   "country:read": "Читать страну", "cities:write": "Создавать города", "districts:write": "Управлять районами",
@@ -32,7 +33,7 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
   const [error, setError] = useState("");
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const onCloseRef = useRef(onClose);
+  useDialogFocus(panelRef, { onClose });
 
   const endpoint = `${location.origin}/mcp`;
   const aiGuide = `${location.origin}/ai.md`;
@@ -40,31 +41,8 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
   const connectionExample = `URL: ${endpoint}\nAuthorization: Bearer ВАШ_КЛЮЧ\nTransport: Streamable HTTP`;
   const load = useCallback(() => api<McpTokenDto[]>("/api/tokens").then(setTokens), []);
 
-  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
-
   useEffect(() => {
-    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     void load().catch(() => setError("Не удалось загрузить ключи доступа"));
-    closeRef.current?.focus({ preventScroll: true });
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== "Tab" || !panelRef.current) return;
-      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled), select:not(:disabled), summary, [href], [tabindex]:not([tabindex='-1'])")];
-      if (focusable.length === 0) return;
-      const first = focusable[0]!;
-      const last = focusable.at(-1)!;
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      previouslyFocused?.focus({ preventScroll: true });
-    };
   }, [load]);
 
   async function copy(value: string, target: CopyTarget) {
@@ -127,7 +105,7 @@ export function TokenPanel({ bootstrap, initialSection, onClose, onAccountChange
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
     <section ref={panelRef} className="token-panel settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <header className="settings-header">
-        <div><p className="eyebrow">НАСТРОЙКИ</p><h2 id="settings-title">Аккаунт и интеграции</h2></div>
+        <div><h2 id="settings-title">Аккаунт и интеграции</h2></div>
         <button ref={closeRef} type="button" className="modal-close" onClick={onClose} aria-label="Закрыть">×</button>
         <nav className="settings-tabs" aria-label="Разделы настроек">
           <button type="button" className={section === "mcp" ? "active" : ""} aria-current={section === "mcp" ? "page" : undefined} onClick={() => setSection("mcp")}>MCP-интеграция</button>

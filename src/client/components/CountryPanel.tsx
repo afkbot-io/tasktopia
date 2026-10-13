@@ -40,7 +40,7 @@ function CountryGovernment({
   const isOwner = bootstrap.countryRole === "OWNER";
   const [retry, setRetry] = useState(0);
   const panelRef = useRef<HTMLElement>(null);
-  useDialogFocus(panelRef);
+  useDialogFocus(panelRef, { onClose });
   useEffect(() => {
     const controller = new AbortController();
     setMembers(null);
@@ -62,13 +62,6 @@ function CountryGovernment({
       });
     return () => controller.abort();
   }, [bootstrap.country.id, retry]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
   const mutate = async (work: () => Promise<void>) => {
     if (busyRef.current || !isOwner) return;
     busyRef.current = true;

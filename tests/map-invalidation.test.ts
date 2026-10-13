@@ -37,3 +37,14 @@ it.each(["RAILWAY", "PORT"])("refreshes local and remote %s route readiness inst
   expect(mapInvalidationImpact(event)).toBe("SCENE");
   expect(mapInvalidationImpact({...event,serviceRole:undefined})).toBe("TASK_STATUS");
 });
+
+it("сохраняет время и обе площадки переноса, отбрасывая невалидную геометрию", () => {
+  const oldBounds = { minX: 1, minY: 2, maxX: 4, maxY: 5 };
+  const newBounds = { minX: 10, minY: 20, maxX: 13, maxY: 23 };
+  const event: RealtimeEvent = { id: 10, worldVersion: 15, countryId: "country", type: "task.transferred", createdAt: "2026-10-08T00:00:00Z",
+    payload: { cityId: "city", taskId: "home", oldBounds, newBounds } };
+  expect(eventInvalidation(event)).toMatchObject({ createdAt: event.createdAt, oldBounds, newBounds });
+  for (const invalid of [{ ...newBounds, maxX: Infinity }, { ...newBounds, minX: 50 }, { minX: 0 }, null]) {
+    expect(eventInvalidation({ ...event, payload: { ...event.payload, newBounds: invalid } }).newBounds).toBeUndefined();
+  }
+});

@@ -1,0 +1,28 @@
+{
+  "kind": "requested WebGL allocations",
+  "scope": "RGBA texture/buffer calls and single canvas backing estimate; excludes driver overhead, compressed/multisample/renderbuffer allocations and non-WebGL decoder memory",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "dpr": 1,
+  "browser": "151.0.7922.34",
+  "cycles": 20,
+  "start": {
+    "contexts": 1,
+    "textures": 138,
+    "textureBytes": 50909704,
+    "buffers": 20,
+    "bufferBytes": 2480144,
+    "canvasBackingBytesEstimate": 5391360
+  },
+  "after": {
+    "contexts": 1,
+    "textures": 143,
+    "textureBytes": 50913800,
+    "buffers": 20,
+    "bufferBytes": 2480144,
+    "canvasBackingBytesEstimate": 5391360
+  },
+  "errors": []
+}

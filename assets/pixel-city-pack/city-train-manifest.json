@@ -1,5 +1,7 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "artSource": "AI_AUTHORED",
+  "styleProfile": "TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1",
   "sprites": {
     "locomotive-east": {
       "path": "city-transport/locomotive-east.png",
@@ -15,11 +17,17 @@
         0,
         8,
         24,
-        15
+        16
       ],
-      "source": "reference/ai-authored/city-train-v2/sheet.png",
-      "sourceSha256": "669017e5c2f0155adef4c356a44a8821fe57c64167603ab2d431c5f4928e081a",
-      "sha256": "a35edc7cb355588994083b8476289621f42538fa3ac4a6cfea7a10a77c3bceaa"
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        0,
+        0,
+        443,
+        417
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "6e03a7f8b97fd1da36f42a6e14a29b24d635ec1811f47025a9b11741a07dce98"
     },
     "locomotive-north": {
       "path": "city-transport/locomotive-north.png",
@@ -37,9 +45,67 @@
         15,
         24
       ],
-      "source": "reference/ai-authored/city-train-v2/sheet.png",
-      "sourceSha256": "669017e5c2f0155adef4c356a44a8821fe57c64167603ab2d431c5f4928e081a",
-      "sha256": "ab9b78a5156af8dafc7fad13ef870f50d8ffdb6baa32bc6dcc3ef1c8015fd871"
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        0,
+        417,
+        443,
+        940
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "88e1c85d46394496e2cd0c6af6022b921821bceafad694d92625b836b66b7367"
+    },
+    "locomotive-west": {
+      "path": "city-transport/locomotive-west.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        0,
+        8,
+        24,
+        16
+      ],
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        0,
+        940,
+        443,
+        1171
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "8dd828cec2d5545427f0fa35d4cb8bf2f8a65b07d9a1078fa1a1eddc4bae43c3"
+    },
+    "locomotive-south": {
+      "path": "city-transport/locomotive-south.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        15,
+        24
+      ],
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        0,
+        1171,
+        443,
+        1774
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "b00d3d0b014ef4ddb44ee885ed7f943dde1bd35a552c7ae613a2115cf6655bf6"
     },
     "carriage-east": {
       "path": "city-transport/carriage-east.png",
@@ -55,11 +121,17 @@
         0,
         8,
         24,
-        15
+        16
       ],
-      "source": "reference/ai-authored/city-train-v2/sheet.png",
-      "sourceSha256": "669017e5c2f0155adef4c356a44a8821fe57c64167603ab2d431c5f4928e081a",
-      "sha256": "7d20755c80a0834574bce4ccaee18a412b940ef7cfd2fa17f4d5f7e3ce970804"
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        443,
+        0,
+        887,
+        417
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "291fedee52cae3133442989132f00f18d5f1080ef7cf839b55c41e23c3d418bf"
     },
     "carriage-north": {
       "path": "city-transport/carriage-north.png",
@@ -77,9 +149,171 @@
         15,
         24
       ],
-      "source": "reference/ai-authored/city-train-v2/sheet.png",
-      "sourceSha256": "669017e5c2f0155adef4c356a44a8821fe57c64167603ab2d431c5f4928e081a",
-      "sha256": "d38472a22e5f56ecae1fe715b0baae73d827f7158f6be7c62ec525dd06f8f43d"
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        443,
+        417,
+        887,
+        940
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "8e823ec027b286e996553642c290442a5ac40a6cadf10dbc49d07776fb361ca7"
+    },
+    "carriage-west": {
+      "path": "city-transport/carriage-west.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        0,
+        8,
+        24,
+        16
+      ],
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        443,
+        940,
+        887,
+        1171
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "68702739bee8dd382b90da54ee86471b7f6bcad88d9570385fe2c588982206b7"
+    },
+    "carriage-south": {
+      "path": "city-transport/carriage-south.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        9,
+        0,
+        15,
+        24
+      ],
+      "source": "reference/ai-authored/city-train-v3/sheet.png",
+      "sourceRect": [
+        443,
+        1171,
+        887,
+        1774
+      ],
+      "sourceSha256": "21d17d0ddecce85a1026158bca2f36e8650cff1c4435086202d77d84a637608a",
+      "sha256": "fbdd03a2c543fe0a12c686ff4e11466335d8ac3288b96e3983e310c89f7838f6"
+    },
+    "ferry-east": {
+      "path": "city-transport/ferry-east.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        5,
+        9,
+        19,
+        15
+      ],
+      "source": "reference/ai-authored/city-ferry-v1/sheet.png",
+      "sourceRect": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "sha256": "fffd1dc05f92641f2e06d36ffc1f9e5f1954986ecb44cb48090fb6038dccc67d"
+    },
+    "ferry-north": {
+      "path": "city-transport/ferry-north.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        9,
+        4,
+        15,
+        19
+      ],
+      "source": "reference/ai-authored/city-ferry-v1/sheet.png",
+      "sourceRect": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "sha256": "b488314bf7f25c512815419618d9d21359bf4abbe38e724dc1a3c0bae0f3b302"
+    },
+    "ferry-west": {
+      "path": "city-transport/ferry-west.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        5,
+        9,
+        19,
+        15
+      ],
+      "source": "reference/ai-authored/city-ferry-v1/sheet.png",
+      "sourceRect": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "sha256": "6a97fabb483be485066ad662f55a0a92fe82dde523d3c8f4650dcc88083d98e5"
+    },
+    "ferry-south": {
+      "path": "city-transport/ferry-south.png",
+      "size": [
+        24,
+        24
+      ],
+      "anchorPx": [
+        12,
+        12
+      ],
+      "opaqueBounds": [
+        9,
+        4,
+        15,
+        19
+      ],
+      "source": "reference/ai-authored/city-ferry-v1/sheet.png",
+      "sourceRect": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "sourceSha256": "03e059938413851ed9a29de6ca0d6a7d6ed655d65b71347db5220bff7a0b0dfa",
+      "sha256": "07134ed5138ef15b0046ee1eda5095571d73e50e44e387cd1aee26648ffbe756"
     }
   }
 }

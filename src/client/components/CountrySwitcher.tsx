@@ -22,6 +22,12 @@ export function CountrySwitcher({ bootstrap, onClose, onBootstrap, onCities, onM
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const trigger = rootRef.current?.parentElement?.querySelector<HTMLButtonElement>(".country-title-button");
+    // Return to the persistent trigger before the passport captures its opener.
+    return () => { if (trigger?.isConnected && !trigger.closest("[inert]")) trigger.focus({ preventScroll: true }); };
+  }, []);
+
+  useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest(".country-title-button")) return;
       if (event.target instanceof Node && !rootRef.current?.contains(event.target)) {

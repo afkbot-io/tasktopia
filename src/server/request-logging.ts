@@ -1,4 +1,5 @@
-/** Shared-preview tokens grant access to an excerpt and must not enter access logs. */
+/** Shared capabilities and rejected MCP query credentials must not enter access logs. */
 export function serializeRequest(request:{method:string;url:string;hostname?:string;ip?:string}) {
-  return {method:request.method,url:request.url.replace(/(\/share\/task\/)[^?/#]+/,"$1[REDACTED]"),host:request.hostname,remoteAddress:request.ip};
+  const url = request.url.replace(/(\/share\/task\/)[^?/#]+/,"$1[REDACTED]").replace(/^\/mcp\?.*$/,"/mcp?[REDACTED]");
+  return {method:request.method,url,host:request.hostname,remoteAddress:request.ip};
 }

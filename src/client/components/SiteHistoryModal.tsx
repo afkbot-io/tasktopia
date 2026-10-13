@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useDialogFocus } from "../use-dialog-focus";
 import type { WorldFeatureDto } from "../../shared/contracts";
 import { siteMarkerPresentation } from "../site-marker-presentation";
 
@@ -6,26 +7,14 @@ export function SiteHistoryModal({ feature, onClose }: {
   feature: WorldFeatureDto;
   onClose: () => void;
 }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    closeRef.current?.focus();
-    return () => { previous?.focus(); };
-  }, []);
+  useDialogFocus(dialogRef, { onClose });
   const marker = feature.siteMarker;
   if (!marker) return null;
   const presentation = siteMarkerPresentation();
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section ref={dialogRef} className="task-modal site-history-modal" role="dialog" aria-modal="true" aria-labelledby="site-history-title" onKeyDown={(event) => {
-      if (event.key === "Escape") { event.stopPropagation(); onClose(); }
-      if (event.key !== "Tab") return;
-      const buttons = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
-      const first = buttons?.[0]; const last = buttons?.[buttons.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-    }}>
-      <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть историю участка">×</button>
+    <section ref={dialogRef} className="task-modal site-history-modal" role="dialog" aria-modal="true" aria-labelledby="site-history-title">
+      <button className="modal-close" onClick={onClose} aria-label="Закрыть историю участка">×</button>
       <p className="eyebrow">{presentation.badge} · постоянный участок</p>
       <h2 id="site-history-title">{presentation.heading}</h2>
       <h3>#{marker.snapshot.taskNumber} · {marker.snapshot.title}</h3>

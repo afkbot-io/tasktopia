@@ -52,11 +52,11 @@ describe("country overview HTTP boundary", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-7"$/);
+    expect(response.headers.etag).toMatch(/^"[a-f0-9]{64}-country-overview-8"$/);
     expect(response.headers.vary).toBe("Accept");
     expect(response.headers["cache-control"]).toBe("private, max-age=60, stale-while-revalidate=600");
     expect(response.json()).toMatchObject({
-      schemaVersion: 7,
+      schemaVersion: 8,
       countryId: expect.any(String),
       revision: expect.stringMatching(/^[a-f0-9]{64}$/),
       geography: {
@@ -89,7 +89,7 @@ describe("country overview HTTP boundary", () => {
     expect(Buffer.byteLength(response.body)).toBeLessThan(24_000);
     expect(await db.prepare(`SELECT schema_version, planet_revision, payload_json->>'revision' AS payload_revision
       FROM country_overview_snapshots_v1 WHERE country_id = ?`).get(countryId)).toMatchObject({
-      schema_version: 7,
+      schema_version: 8,
       planet_revision: expect.stringMatching(/^[a-f0-9]{16}$/),
       payload_revision: response.json().revision,
     });

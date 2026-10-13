@@ -5,34 +5,64 @@ import importlib.util
 import json
 from pathlib import Path
 from PIL import Image
+from reviewed_png import save_reviewed_png
 ROOT=Path(__file__).resolve().parents[1]
 PACK=ROOT/'assets/pixel-city-pack'
 spec=importlib.util.spec_from_file_location('micro_builder',ROOT/'scripts/build-micro-ambient.py')
 micro=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(micro)
 entries={}
-sheetPath=PACK/'reference/ai-authored/city-train-v2/sheet.png'
+sheetPath=PACK/'reference/ai-authored/city-train-v3/sheet.png'
 sheet=Image.open(sheetPath).convert('RGBA')
-preview=Image.new('RGBA',(24*4,24),'#81955c')
-for index,(part,direction) in enumerate((p,d) for p in ('locomotive','carriage') for d in ('east','north')):
+preview=Image.new('RGBA',(24*8,24),'#81955c')
+def publish(image,relative,source,sourceRect,key):
+ review_path=source.parent/'visual-review.json'
+ review=json.loads(review_path.read_text()) if review_path.is_file() else {}
+ approval=review.get('sprites',{}).get(key)
+ if approval and approval.get('accepted'):
+  if approval.get('sourceRect')!=list(sourceRect):
+   raise ValueError(f'{key}: authored extraction rectangle differs from review')
+ else:
+  approval=None
+ runtime=PACK/'runtime'/relative
+ runtime.parent.mkdir(parents=True,exist_ok=True)
+ source_sha=hashlib.sha256(source.read_bytes()).hexdigest()
+ digest=save_reviewed_png(image,runtime,source_sha,approval)
+ public=ROOT/'public/game-assets/v5'/relative
+ public.parent.mkdir(parents=True,exist_ok=True)
+ public.write_bytes(runtime.read_bytes())
+ return source_sha,digest
+for index,(part,direction) in enumerate((p,d) for p in ('locomotive','carriage') for d in ('east','north','west','south')):
  source=sheetPath
  column=0 if part=='locomotive' else 1
- row=0 if direction=='east' else 1
- top,bottom=(.16,.35) if row==0 else (.43,.97)
- cell=sheet.crop((column*sheet.width//2,round(top*sheet.height),(column+1)*sheet.width//2,round(bottom*sheet.height)))
- # Authored vertical cells face south; cardinal transpose preserves pixel edges.
- if direction=='north': cell=cell.transpose(Image.Transpose.ROTATE_180)
- image=micro.normalize(cell,24,(24,8) if direction=='east' else (8,24))
+ row=('east','north','west','south').index(direction)
+ top,bottom=((0,.235),(.235,.53),(.53,.66),(.66,1))[row]
+ sourceRect=(column*sheet.width//2,round(top*sheet.height),(column+1)*sheet.width//2,round(bottom*sheet.height))
+ cell=sheet.crop(sourceRect)
+ image=micro.normalize(cell,24,(24,8) if direction in ('east','west') else (8,24))
  bounds=image.getbbox()
  if not bounds or set(image.getchannel('A').getdata())-set((0,255)):
   raise ValueError(f'{part}-{direction}: empty or blurred train sprite')
  width,height=bounds[2]-bounds[0],bounds[3]-bounds[1]
- if (direction=='east' and not (width>=16 and 3<=height<=8)) or (direction=='north' and not (height>=16 and 3<=width<=8)):
+ if (direction in ('east','west') and not (width>=16 and 3<=height<=8)) or (direction in ('north','south') and not (height>=16 and 3<=width<=8)):
   raise ValueError(f'{part}-{direction}: wrong heading envelope {bounds}')
  relative=f'city-transport/{part}-{direction}.png'
- for base in (PACK/'runtime',ROOT/'public/game-assets/v5'):
-  output=base/relative;output.parent.mkdir(parents=True,exist_ok=True);image.save(output,optimize=True)
- entries[f'{part}-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(source.relative_to(PACK)),'sourceSha256':hashlib.sha256(source.read_bytes()).hexdigest(),'sha256':hashlib.sha256(output.read_bytes()).hexdigest()}
+ source_sha,digest=publish(image,relative,source,sourceRect,f'{part}-{direction}')
+ entries[f'{part}-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(source.relative_to(PACK)),'sourceRect':list(sourceRect),'sourceSha256':source_sha,'sha256':digest}
  preview.alpha_composite(image,(index*24,0))
-(PACK/'city-train-manifest.json').write_text(json.dumps({'schemaVersion':1,'sprites':entries},indent=2)+'\n')
-preview.resize((768,192),Image.Resampling.NEAREST).save(PACK/'reference/ai-authored/city-train-v2/preview.png')
+(PACK/'city-train-manifest.json').write_text(json.dumps({'schemaVersion':2,'artSource':'AI_AUTHORED','styleProfile':'TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1','sprites':entries},indent=2)+'\n')
+preview.resize((1536,192),Image.Resampling.NEAREST).save(PACK/'reference/ai-authored/city-train-v3/preview.png')
+ferrySource=PACK/'reference/ai-authored/city-ferry-v1/sheet.png'
+ferrySheet=Image.open(ferrySource).convert('RGBA')
+ferryPreview=Image.new('RGBA',(24*4,24),'#5c8787')
+for index,direction in enumerate(('east','north','west','south')):
+ column=index%2;row=index//2
+ sourceRect=(column*ferrySheet.width//2,row*ferrySheet.height//2,(column+1)*ferrySheet.width//2,(row+1)*ferrySheet.height//2)
+ image=micro.normalize(ferrySheet.crop(sourceRect),24,(16,6) if direction in ('east','west') else (6,16))
+ relative=f'city-transport/ferry-{direction}.png'
+ source_sha,digest=publish(image,relative,ferrySource,sourceRect,f'ferry-{direction}')
+ entries[f'ferry-{direction}']={'path':relative,'size':[24,24],'anchorPx':[12,12],'opaqueBounds':list(image.getbbox()),'source':str(ferrySource.relative_to(PACK)),'sourceRect':list(sourceRect),'sourceSha256':source_sha,'sha256':digest}
+ ferryPreview.alpha_composite(image,(index*24,0))
+(PACK/'city-train-manifest.json').write_text(json.dumps({'schemaVersion':2,'artSource':'AI_AUTHORED','styleProfile':'TASKTOPIA_COMPACT_CARTOON_HIGH_45_V1','sprites':entries},indent=2)+'\n')
+ferryPreview.save(PACK/'reference/ai-authored/city-ferry-v1/native.png')
+ferryPreview.resize((768,192),Image.Resampling.NEAREST).save(PACK/'reference/ai-authored/city-ferry-v1/preview.png')

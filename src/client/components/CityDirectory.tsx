@@ -47,6 +47,7 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (!(event.target instanceof Element)) return;
+      if (event.target.closest(".modal-backdrop")) return;
       if (!drawerRef.current?.contains(event.target)) onClose();
     };
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
@@ -146,7 +147,7 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
       {!archiveSelected && !initialFocus && <section>
         <h3 className="plan-subheading">Города <span>{bootstrap.stats.cities}</span></h3>
         <input className="directory-search" aria-label="Найти город" placeholder="Найти город…" value={cityQuery} onChange={event=>setCityQuery(event.target.value)} />
-        {citiesLoading && !error && <p className="plan-placeholder">Загружаем города…</p>}
+        {citiesLoading && !error && <p className="plan-placeholder" role="status">Загружаем города…</p>}
         {!citiesLoading && cities.length === 0 && !error && <p className="plan-placeholder">Нет городов</p>}
         {!citiesLoading && cities.length>0 && visibleCities.length===0 && <p className="plan-placeholder">Подходящих городов нет</p>}
         {visibleCities.map((city) => <div key={city.id} className="plan-row"><button className={city.id === cityId ? "selected" : ""} onClick={() => chooseCity(city.id)}>
@@ -155,15 +156,15 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
       </section>}
       {archiveSelected ? <section className="plan-tasks plan-archive-records"><h3>Записи архива <span>{archiveRecords.length}</span></h3>
         <p className="plan-section-note">Короткий устойчивый контекст проекта. Текущая работа остаётся в задачах.</p>
-        {archiveLoading && !error && <p className="plan-placeholder">Загружаем архив…</p>}
+        {archiveLoading && !error && <p className="plan-placeholder" role="status">Загружаем архив…</p>}
         {!archiveLoading && archiveRecords.length === 0 && !error && <p className="plan-placeholder">Архив пока пуст</p>}
-        {archiveRecords.map((record) => <div key={record.id} className="plan-row"><button onClick={() => onArchiveRecordSelect(record.id)}>
+        {archiveRecords.map((record) => <div key={record.id} className="plan-row"><button onClick={event => { event.currentTarget.focus(); onArchiveRecordSelect(record.id); }}>
           <i className={`reference-kind-dot kind-${record.kind.toLowerCase()}`} /><span><strong>{record.title}</strong><small>{kindLabel[record.kind]}{record.body ? ` · ${record.body.slice(0, 72)}` : ""}</small></span>
         </button></div>)}
       </section> : initialFocus ? <>
       {!districtId && <section><h3>Районы <span>{districts.length}</span></h3>
         {!cityId && <p className="plan-placeholder">Выберите город</p>}
-        {districtsLoading && !error && <p className="plan-placeholder">Загружаем районы…</p>}
+        {districtsLoading && !error && <p className="plan-placeholder" role="status">Загружаем районы…</p>}
         {cityId && !districtsLoading && districts.length === 0 && !error && <p className="plan-placeholder">В городе пока нет районов</p>}
         {districts.map((district) => <div key={district.id} className="plan-row"><button className={district.id === districtId ? "selected" : ""} onClick={() => setDistrictId(district.id)}>
           <i className={`district-dot district-${district.status.toLowerCase()}`} /><span><strong>{district.name}</strong><small>{districtStatus[district.status]} · {district.taskCount} задач{district.deadline ? ` · до ${new Date(district.deadline).toLocaleDateString("ru-RU")}` : ""}</small></span>
@@ -173,9 +174,9 @@ export function CityDirectory({ bootstrap, refreshToken, initialSection, initial
         {!tasksLoading && !error && tasks.length > 0 && <div className="directory-district-summary" role="group" aria-label="Сводка района"><p>{districtSummary.line}</p><p>{districtSummary.detail}</p></div>}
         <h3>Задачи <span>{tasks.length}</span></h3>
         {!districtId && <p className="plan-placeholder">Выберите район</p>}
-        {tasksLoading && !error && <p className="plan-placeholder">Загружаем задачи…</p>}
+        {tasksLoading && !error && <p className="plan-placeholder" role="status">Загружаем задачи…</p>}
         {!tasksLoading && tasks.length === 0 && !error && <p className="plan-placeholder">В районе пока нет задач</p>}
-        {tasks.map((task) => <div key={task.id} className="plan-row"><button onClick={() => onTaskSelect(task.id)}>
+        {tasks.map((task) => <div key={task.id} className="plan-row"><button onClick={event => { event.currentTarget.focus(); onTaskSelect(task.id); }}>
           <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>#{task.taskNumber} · {task.title}</strong><small>{taskType[task.workItemType]} · {taskStatus[task.status]} · {task.progress}% · <span title="Объём работ в условных единицах сложности (SP)">Объём: {task.estimate} SP</span>{task.activeDefectCount > 0 ? ` · ${task.activeDefectCount} деф.` : ""}</small></span>
         </button></div>)}
       </section>}

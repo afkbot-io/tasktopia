@@ -1,10 +1,11 @@
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppService, DomainError } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
-import { createTestDb, type Db } from "../src/server/db";
+import { createTestDb, transaction, type Db } from "../src/server/db";
 
 describe("task extras: numbers, MR links, attachments, search", () => {
   let db: Db;
@@ -105,7 +106,7 @@ describe("task extras: numbers, MR links, attachments, search", () => {
 
     await service.deleteTaskAttachment(countryId, { attachmentId: attachment.id, idempotencyKey: "attachment-delete" });
     expect((await service.getTask(countryId, task.id)).attachments).toHaveLength(0);
-    await expect(stat(absolutePath)).rejects.toThrow();
+    await expect.poll(async () => stat(absolutePath).then(() => true, () => false)).toBe(false);
     await expect(service.getTaskAttachment(countryId, attachment.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
@@ -117,6 +118,78 @@ describe("task extras: numbers, MR links, attachments, search", () => {
     await expect(service.addTaskAttachment(countryId, {
       taskId: task.id, fileName: "huge.bin", content: Buffer.alloc(11 * 1024 * 1024, 1), idempotencyKey: "attachment-huge",
     })).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("checks attachment bytes on retries, including old metadata-only receipts", async () => {
+    const task = await makeTask("Повтор файла", 1);
+    const input = { taskId: task.id, fileName: "proof.txt", content: Buffer.from("AAAA"), actor: "Extras", idempotencyKey: "attachment-retry" };
+    const attachment = await service.addTaskAttachment(countryId, input);
+    const version = (await service.getCountry(countryId)).worldVersion;
+    const legacyHash = createHash("sha256").update(JSON.stringify({ ...input, content: undefined, fileName: input.fileName, sizeBytes: input.content.length })).digest("hex");
+    await db.prepare("UPDATE idempotency SET request_hash=? WHERE country_id=? AND operation='task.attachment.add.v1' AND idempotency_key=?")
+      .run(legacyHash, countryId, input.idempotencyKey);
+    await expect(service.addTaskAttachment(countryId, { ...input, content: Buffer.from("BBBB") })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(await service.addTaskAttachment(countryId, input)).toEqual(attachment);
+    expect(await service.addTaskAttachment(countryId, input)).toEqual(attachment);
+    await expect(service.addTaskAttachment(countryId, { ...input, content: Buffer.from("BBBB") })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await service.getCountry(countryId)).worldVersion).toBe(version);
+    expect((await service.getTask(countryId, task.id)).attachments).toHaveLength(1);
+    expect(await readFile((await service.getTaskAttachment(countryId, attachment.id)).absolutePath)).toEqual(input.content);
+  });
+
+  it("fails closed when an old attachment receipt cannot prove its removed file", async () => {
+    const task = await makeTask("Удалённый файл", 1);
+    const input = { taskId: task.id, fileName: "missing.txt", content: Buffer.from("AAAA"), idempotencyKey: "attachment-missing-retry" };
+    const attachment = await service.addTaskAttachment(countryId, input);
+    const legacyHash = createHash("sha256").update(JSON.stringify({ ...input, content: undefined, fileName: input.fileName, sizeBytes: input.content.length })).digest("hex");
+    await db.prepare("UPDATE idempotency SET request_hash=? WHERE country_id=? AND operation='task.attachment.add.v1' AND idempotency_key=?")
+      .run(legacyHash, countryId, input.idempotencyKey);
+    await rm((await service.getTaskAttachment(countryId, attachment.id)).absolutePath);
+    await expect(service.addTaskAttachment(countryId, input)).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await service.getTask(countryId, task.id)).attachments).toHaveLength(1);
+  });
+
+  it("removes attachment files when an enclosing database transaction rolls back", async () => {
+    const task = await makeTask("Откат файла", 1);
+    let absolutePath = "";
+    await expect(transaction(db, async () => {
+      const attachment = await service.addTaskAttachment(countryId, {
+        taskId: task.id, fileName: "rollback.txt", content: Buffer.from("proof"), idempotencyKey: "attachment-rollback",
+      });
+      absolutePath = (await service.getTaskAttachment(countryId, attachment.id)).absolutePath;
+      throw new Error("rollback upload");
+    })).rejects.toThrow("rollback upload");
+    expect((await service.getTask(countryId, task.id)).attachments).toHaveLength(0);
+    await expect.poll(async () => stat(absolutePath).then(() => true, () => false)).toBe(false);
+  });
+
+  it("preserves an attachment file when its deletion rolls back", async () => {
+    const task = await makeTask("Откат удаления", 1);
+    const attachment = await service.addTaskAttachment(countryId, { taskId: task.id, fileName: "kept.txt", content: Buffer.from("proof"), idempotencyKey: "kept-file" });
+    const { absolutePath } = await service.getTaskAttachment(countryId, attachment.id);
+    await expect(transaction(db, async () => {
+      await service.deleteTaskAttachment(countryId, { attachmentId: attachment.id, idempotencyKey: "delete-kept-file" });
+      throw new Error("rollback delete");
+    })).rejects.toThrow("rollback delete");
+    expect((await service.getTask(countryId, task.id)).attachments).toHaveLength(1);
+    expect(await readFile(absolutePath, "utf8")).toBe("proof");
+    await service.deleteTaskAttachment(countryId, { attachmentId: attachment.id, idempotencyKey: "delete-kept-file" });
+    await expect.poll(async () => stat(absolutePath).then(() => true, () => false)).toBe(false);
+  });
+
+  it.each(["task", "district", "city"] as const)("cleans files only after committed %s cascade deletion", async kind => {
+    const task = await makeTask("Каскад файла", 1);
+    const attachment = await service.addTaskAttachment(countryId, { taskId: task.id, fileName: "cascade.txt", content: Buffer.from("proof"), idempotencyKey: "cascade-file" });
+    const { absolutePath } = await service.getTaskAttachment(countryId, attachment.id);
+    const remove = () => kind === "task" ? service.deleteTask(countryId, { taskId: task.id, confirmTitle: task.title, idempotencyKey: "cascade-delete" })
+      : kind === "district" ? service.deleteDistrict(countryId, { districtId, confirmName: "Sprint", idempotencyKey: "cascade-delete" })
+        : service.deleteCity(countryId, { cityId, confirmName: "Extras City", idempotencyKey: "cascade-delete" });
+    await expect(transaction(db, async () => { await remove(); throw new Error("rollback cascade"); })).rejects.toThrow("rollback cascade");
+    expect((await service.getTask(countryId, task.id)).attachments).toHaveLength(1);
+    expect(await readFile(absolutePath, "utf8")).toBe("proof");
+    await remove();
+    await expect(service.getTaskAttachment(countryId, attachment.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect.poll(async () => stat(absolutePath).then(() => true, () => false)).toBe(false);
   });
 
   it("does not leak attachments across countries", async () => {

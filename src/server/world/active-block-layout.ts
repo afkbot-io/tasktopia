@@ -1,3 +1,4 @@
+import { countryAirportReservations, freezeCityAirportSites,freezeMissingCountryAirports } from "./city-airport-site-store";
 import { PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
 import { countryPortReservations, portReservationRects, type LocalPortPlan } from "./port-reservations";
 import { createPortSiteProvider } from "./port-site-provider";
@@ -116,7 +117,7 @@ export async function freezeMissingCountryRailways(db:Db,countryId:string):Promi
     const bounds=await db.prepare("SELECT city_id,bounds_json FROM city_layouts_v1 WHERE country_id=? AND status='ACTIVE'")
       .all<{city_id:string;bounds_json:Rect}>(countryId);
     const roads=intercityRoadCorridors((await readCountryRoads(db,countryId))?.plan.routes??[]);
-    const historical=[...await permanentSiteBounds(db,countryId,true),...await countryPortReservations(db,countryId)];
+    const historical=[...await permanentSiteBounds(db,countryId,true),...await countryPortReservations(db,countryId),...await countryAirportReservations(db,countryId,"ROAD")];
     for(const layout of layouts)await freezeCityRailway(db,layout,[...roads,...historical,
       ...bounds.filter(row=>row.city_id!==layout.cityId).map(row=>row.bounds_json)]);
   });
@@ -130,18 +131,22 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
     const city = await db.prepare("SELECT c.*,country.seed,country.terrain_profile_json FROM cities_v3 c JOIN countries country ON country.id=c.country_id WHERE c.id=? AND c.country_id=?").get<Row>(cityId,countryId);
     if (!city) throw new Error("Unknown city for block layout");
     const terrainProfile = parseWorldTerrainProfile(city.terrain_profile_json);
+    await freezeMissingCountryAirports(db,countryId);
     await freezeMissingCountryRailways(db,countryId);
     const old = await readActiveBlockLayout(db,cityId);
     await freezePermanentSiteGeometry(db,countryId);
     const historicalBounds = await permanentSiteBounds(db,countryId,true);
     const portReservations = await countryPortReservations(db,countryId);
+    const airportReservations=await countryAirportReservations(db,countryId);
     const otherCities = await db.prepare("SELECT bounds_json FROM city_layouts_v1 WHERE country_id=? AND city_id<>? AND status='ACTIVE'").all<Row>(countryId,cityId);
     const otherBounds = otherCities.map(row=>parse<Rect>(row.bounds_json));
     const roadCorridors = intercityRoadCorridors((await readCountryRoads(db, countryId))?.plan.routes ?? []);
     // A rebuild cannot erase occupied historical parcels. Their block/street
     // topology remains fixed; only disposable projections are regenerated.
-    const previous = reset && !old?.siteMarkers.length ? undefined : old;
-    if (previous) await freezeCityRailway(db,previous,[...roadCorridors,...otherBounds,...historicalBounds,...portReservations]);
+    // A saved airfield also protects the terminal approach. Replaying its
+    // source parcels against that approach would move the city under the pad.
+    const previous = reset && !old?.siteMarkers.length && !old?.placements.some(p=>p.serviceRole==='AIRPORT') ? undefined : old;
+    if (previous) await freezeCityRailway(db,previous,[...roadCorridors,...otherBounds,...historicalBounds,...portReservations,...airportReservations]);
     const railwayReservations = await countryRailwayReservations(db,countryId,reset&&!previous?old?.id:undefined);
     const districts = await db.prepare("SELECT id,archetype,created_at FROM districts_v3 WHERE city_id=? ORDER BY created_at,id").all<Row>(cityId);
     const tasks = await db.prepare("SELECT id,district_id,task_number,status,visual_kind,visual_asset_key,visual_auto,building_type,requested_building_family,service_role,service_trigger,service_role_assigned FROM tasks_v3 WHERE city_id=? ORDER BY task_number,id").all<Row>(cityId);
@@ -162,7 +167,7 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
     const planPort = terrainProfile && (explicitPort || mayAutoPort) ? await createPortSiteProvider(db, {
       countryId, cityId, seed: Number(city.seed), profile: terrainProfile,
       center: { x: Number(city.center_x), y: Number(city.center_y) },
-      reservations: [...otherBounds, ...historicalBounds, ...railwayReservations, ...roadCorridors, ...portReservations],
+      reservations: [...otherBounds, ...historicalBounds, ...railwayReservations, ...roadCorridors, ...portReservations,...airportReservations],
     }) : undefined;
     const terrain = new Map<string, boolean>();
     let nextSequence = Math.max(-1,...existingSequence.values()) + 1;
@@ -171,7 +176,7 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
       countryId,cityId,seed:Number(city.seed),revision:(old?.revision ?? 0)+1,
       origin:{x:Number(city.center_x),y:Number(city.center_y)},previous,
       canPlaceBlock: (bounds) => {
-        if ([...otherBounds,...historicalBounds,...railwayReservations,...portReservations].some(other=>blockBoundsIntersect(bounds,other))) return false;
+        if ([...otherBounds,...historicalBounds,...railwayReservations,...portReservations,...airportReservations].some(other=>blockBoundsIntersect(bounds,other))) return false;
         // Compiler envelopes include two clearance cells. The block interior
         // starts three cells inside its perimeter, hence envelope +5. An old
         // road may become a shared perimeter; it may never become a parcel.
@@ -239,9 +244,10 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
     for (const d of layout.districtLayouts) {
       await db.prepare("UPDATE districts_v3 SET spatial_bounds_json=?::jsonb WHERE id=?").run(JSON.stringify(d.bounds),d.districtId);
     }
+    await freezeCityAirportSites(db,layout,[...otherBounds,...historicalBounds,...portReservations,...railwayReservations],roadCorridors);
     // Freeze newly assigned stations before future blocks or country roads can
     // claim their corridor. Existing lines only refresh task readiness on read.
-    await freezeCityRailway(db,layout,[...roadCorridors,...otherBounds,...historicalBounds,...portReservations,
+    await freezeCityRailway(db,layout,[...roadCorridors,...otherBounds,...historicalBounds,...portReservations,...await countryAirportReservations(db,countryId,"ROAD"),
       ...portReservationRects(layout.blocks.flatMap(block => Object.values(block.parameters.slotPortPlans as Record<string, LocalPortPlan> ?? {})))]);
     // A country-wide rebuild refreshes once after all cities. Normal task stage
     // updates do not pay for country routing or rewrite its snapshot.

@@ -21,7 +21,7 @@ function kindFor(task:CityLifeTask):CityLifeKind {
 }
 
 /** Compile only real walkable approaches. Completed task records remain immutable. */
-export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:ReadonlySet<string>):CityLifeSite[] {
+export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):CityLifeSite[] {
   const sites:CityLifeSite[]=[];
   for(const task of [...new Map(tasks.map(task=>[task.id,task])).values()].sort((a,b)=>a.id.localeCompare(b.id))) {
     if(task.status!=='COMPLETED'||task.stage!==5||incidentMode(task)!=='NONE')continue;

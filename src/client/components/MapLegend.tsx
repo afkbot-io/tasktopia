@@ -1,9 +1,10 @@
 import { useToolbarDisclosure } from "../use-toolbar-disclosure";
+import { GameIcon } from "./ui";
 /** Explain task identity separately from workflow and incident markers. */
 export function MapLegend() {
   const root = useToolbarDisclosure();
   return <details ref={root} className="map-legend">
-    <summary aria-label="Обозначения карты" title="Обозначения карты">?</summary>
+    <summary aria-label="Обозначения карты" title="Обозначения карты"><GameIcon name="help" /></summary>
     <div className="map-legend-panel">
       <strong>Обозначения карты</strong>
       <p>Номер на участке — номер задачи. Табличка квартала — диапазон от минимального до максимального номера.</p>

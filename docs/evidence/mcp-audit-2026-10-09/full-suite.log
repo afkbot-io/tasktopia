@@ -1,0 +1,12 @@
+
+> tasktopia@1.24.12 test
+> vitest run
+
+
+ RUN  v4.1.10 /Users/kikasnikita/.codex/worktrees/forest-ui-redesign/Game3.0
+
+
+ Test Files  300 passed (300)
+      Tests  1641 passed (1641)
+   Start at  18:32:08
+   Duration  199.92s (transform 1.75s, setup 0ms, import 10.20s, tests 171.93s, environment 11ms)

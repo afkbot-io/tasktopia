@@ -33,7 +33,7 @@ describe("task-backed compact city flights", () => {
     expect(cityMicroFlightPosition(routes[0]!, 0.5).scale).toBe(1);
     expect(cityMicroFlightPosition(routes[0]!, 1)).toMatchObject({ x: 10.5, y: 10.5, scale: .05 });
     expect(cityMicroFlightPosition(routes[1]!, 1)).toMatchObject({ x: 0.5, y: 0.5, scale: .05 });
-    expect(cityMicroFlightDuration(routes[0]!)).toBe(30_000);
+    expect(cityMicroFlightDuration(routes[0]!)).toBe(75_000);
     const samples = [.498, .499, .5, .501, .502].map(p => cityMicroFlightPosition(routes[0]!, p));
     for (let i = 1; i < samples.length - 1; i++) {
       const left = samples[i - 1]!, current = samples[i]!, right = samples[i + 1]!;
@@ -58,7 +58,7 @@ describe("task-backed compact city flights", () => {
     expect(connections).toHaveLength(2);
     expect(new Set(connections.flatMap(c => [c.from.taskId, c.to.taskId]))).toEqual(new Set(["a", "remote-9"]));
     const far = cityMicroFlightRoutes([{ id: "far", from: local, to: airport("far", "far-city", 5000, 5000) }])[0]!;
-    expect(cityMicroFlightDuration(far)).toBe(30_000);
+    expect(cityMicroFlightDuration(far)).toBe(75_000);
     expect(cityMicroFlightPosition(far, 1)).toMatchObject({ x: 5000, y: 5000, scale: .05 });
   });
 });

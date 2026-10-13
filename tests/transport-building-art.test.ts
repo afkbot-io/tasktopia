@@ -11,3 +11,11 @@ it("does not squeeze a transport terminal into an undersized parcel", () => {
  const art=transportBuildingArt({buildingType:"compact-apartment-v1",serviceRole:"AIRPORT",origin:{x:0,y:0},footprint:[{x:0,y:0}]});
  expect(art.key).toBe("compact-apartment-v1");
 });
+it("uses the authored small airport on a historical6x3lot without moving its entrance",()=>{
+ const origin={x:10,y:20},footprint=Array.from({length:18},(_,i)=>({x:10+i%6,y:20+Math.floor(i/6)}));
+ const task={buildingType:"compact-row-v1",serviceRole:"AIRPORT",origin,footprint};
+ const art=transportBuildingArt(task);
+ expect(art.key).toBe("compact-airport-row-v1");expect(art.origin).toEqual(origin);
+ expect(art.entry.footprint).toEqual({width:6,height:3});expect(art.entry.entrances).toEqual([{side:"S",offset:3}]);
+ expect(task.footprint).toEqual(footprint);
+});

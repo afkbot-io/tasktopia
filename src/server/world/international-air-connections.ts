@@ -9,6 +9,6 @@ export function internationalAirConnections(atlas: ProjectedPlanetAtlas, country
     if (!route.fromAirportId || route.fromCountryId === route.toCountryId
       || (route.fromCountryId !== countryId && route.toCountryId !== countryId)) return [];
     const from = endpoints.get(route.fromAirportId), to = endpoints.get(route.toAirportId);
-    return from && to ? [{ id:route.id, from, to, atlasFrom:route.from, atlasTo:route.to }] : [];
+    return from && to ? [{ id:route.id,scheduleOffsetMs:route.scheduleOffsetMs, from, to, atlasFrom:route.from, atlasTo:route.to }] : [];
   });
 }

@@ -1,10 +1,11 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test.use({ serviceWorkers: "allow", viewport: { width: 390, height: 844 } });
 
-test("PWA offers a waiting release and activates it only on explicit update", async ({ page, baseURL }, testInfo) => {
+for (const simulateFailure of [false, true]) test(`PWA offers a waiting release and activates it only on explicit update${simulateFailure ? " after retry" : ""}`, async ({ page, baseURL }, testInfo) => {
   const source = await readFile("dist/public/sw.js", "utf8");
   let version = 1;
   // Real built app and worker at an isolated origin; changing the worker's
@@ -13,7 +14,8 @@ test("PWA offers a waiting release and activates it only on explicit update", as
     try {
       if (request.url === "/sw.js") {
         response.writeHead(200, { "content-type": "application/javascript", "cache-control": "no-store" });
-        response.end(source.replace(/tasktopia-shell-[a-f0-9]+/g, `tasktopia-shell-e2e-${version}`) + `\n// release ${version}\nself.addEventListener('message', e => { if(e.data === 'release-test') e.ports[0].postMessage(${version}); });`);
+        const worker = simulateFailure && version === 2 ? source.replace('if (event.data?.type === "TASKTOPIA_SKIP_WAITING") event.waitUntil(self.skipWaiting());', 'if (event.data?.type === "TASKTOPIA_SKIP_WAITING") { if (!self.forestRetry) { self.forestRetry = true; return; } event.waitUntil(self.skipWaiting()); }') : source;
+        response.end(worker.replace(/tasktopia-shell-[a-f0-9]+/g, `tasktopia-shell-e2e-${version}`) + `\n// release ${version}\nself.addEventListener('message', e => { if(e.data === 'release-test') e.ports[0].postMessage(${version}); });`);
         return;
       }
       const upstream = await fetch(new URL(request.url!, baseURL), { headers: { accept: request.headers.accept ?? "*/*" } });
@@ -45,8 +47,17 @@ test("PWA offers a waiting release and activates it only on explicit update", as
     await expect(page.getByLabel("Email")).toHaveValue("draft@example.test");
     await page.reload();
     await expect(notice).toBeVisible();
+    if (simulateFailure) {
+      await notice.getByRole("button", { name: "Обновить", exact: true }).click();
+      await expect(notice).toHaveAttribute("data-state", "updating");
+      await expect(notice.getByRole("button", { name: "Позже", exact: true })).toBeDisabled();
+      await page.screenshot({ path: testInfo.outputPath("pwa-updating.png") });
+      await expect(notice).toHaveAttribute("data-state", "error", { timeout: 20_000 });
+      expect((await new AxeBuilder({ page }).include(".pwa-update-notice").withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([]);
+      await page.screenshot({ path: testInfo.outputPath("pwa-error.png") });
+    }
     const navigation = page.waitForEvent("framenavigated", frame => frame === page.mainFrame());
-    await notice.getByRole("button", { name: "Обновить", exact: true }).click();
+    await notice.getByRole("button", { name: simulateFailure ? "Повторить обновление" : "Обновить", exact: true }).click();
     await navigation;
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(notice).toBeHidden();

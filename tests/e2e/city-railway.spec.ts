@@ -16,6 +16,7 @@ for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage}
       task.stage = stage;
       task.status = stage === 5 ? "COMPLETED" : "IN_PROGRESS";
     }
+    scene.airports=scene.airports?.map(site=>({...site,stage}));
     if(scene.railway){
       scene.railway={...scene.railway,stage,running:stage===5};
       const stationId=scene.railway.stationId,schedule=transportSchedule("RAIL",stationId,"z-other-station");
@@ -32,7 +33,7 @@ for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage}
   await expect(city).toHaveAttribute("data-city-railway-stage", String(stage));
   await expect(city).toHaveAttribute("data-city-train", stage === 5 ? "running" : "none");
   if (stage >= 3) for (const family of ["airport", "railway"]) {
-    expect([...loaded].some(path => path.endsWith(`/compact-${family}-v1/stage-${stage}.png`)), family).toBe(true);
+    expect([...loaded].some(path => new RegExp(`/compact-${family}(?:-row)?-v1/stage-${stage}\\.png$`).test(path)), family).toBe(true);
   }
   await page.getByLabel("Поиск здания по номеру или названию").fill("37");
   await page.getByRole("option").filter({hasText:"#37"}).click();
@@ -41,7 +42,7 @@ for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage}
   await page.screenshot({path:info.outputPath(`transport-stage-${stage}.png`)});
 });
 
-test("completed city station has a moving locomotive and three coupled wagons", async ({ page }, testInfo) => {
+test("completed city station has a moving locomotive and five coupled wagons", async ({ page }, testInfo) => {
   test.skip(process.env.E2E_MAP_LOADING_FIXTURE !== "true", "Dedicated local fixture with completed transport services");
   // Supply the authoritative clock at the HTTP boundary, not the device clock.
   await page.route("**/api/**", async route => {
@@ -72,7 +73,7 @@ test("completed city station has a moving locomotive and three coupled wagons", 
   const city=page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit","atomic",{timeout:45_000});
   await expect(city).toHaveAttribute("data-city-train","running",{timeout:15_000});
-  await expect(city).toHaveAttribute("data-city-train-wagons","3");
+  await expect(city).toHaveAttribute("data-city-train-wagons","5");
   expect(await city.getAttribute("data-city-railway")).toMatch(/horizontal|vertical/);
   const first=await city.getAttribute("data-city-train-lead");
   await expect.poll(()=>city.getAttribute("data-city-train-lead")).not.toBe(first);

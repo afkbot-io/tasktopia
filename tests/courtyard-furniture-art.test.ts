@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const family = `${root}assets/pixel-city-pack/reference/ai-authored/compact-courtyard-furniture-v1`;
 const python = `${root}.venv-assets/bin/python`;
 const temporary: string[] = [];
-const tempDirectory = () => { const dir = mkdtempSync(`${root}tmp/courtyard-art-test-`); temporary.push(dir); return dir; };
+const tempDirectory = () => { mkdirSync(`${root}tmp`, { recursive: true }); const dir = mkdtempSync(`${root}tmp/courtyard-art-test-`); temporary.push(dir); return dir; };
 afterEach(() => { for (const dir of temporary.splice(0)) rmSync(dir, { recursive: true }); });
 
 describe("courtyard art source acceptance", () => {

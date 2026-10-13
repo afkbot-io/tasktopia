@@ -2413,5 +2413,369 @@
     "reviewed": true,
     "visualProfile": "TASKTOPIA_COMPACT_COURTYARD_HIGH_45_V1",
     "sourceSha256": "01f533ee34aafddc90d00dca15d06270a69da41f8c3c403485713138323dc0fe"
+  },
+  {
+    "key": "compact-cargo-helicopter-north",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
+  },
+  {
+    "key": "compact-cargo-helicopter-east",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
+  },
+  {
+    "key": "compact-cargo-helicopter-south",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
+  },
+  {
+    "key": "compact-cargo-helicopter-west",
+    "sheet": "ai-authored/cargo-helicopter-v1/sources/sheet.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_CARGO_HELICOPTER_TOPDOWN_V1",
+    "size": [
+      32,
+      32
+    ],
+    "footprintCells": [
+      4,
+      4
+    ]
+  },
+  {
+    "key": "city-event-bus-north",
+    "sheet": "ai-authored/everyday-city-v1/sources/bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-bus-east",
+    "sheet": "ai-authored/everyday-city-v1/sources/bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-bus-south",
+    "sheet": "ai-authored/everyday-city-v1/sources/bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-bus-west",
+    "sheet": "ai-authored/everyday-city-v1/sources/bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-school-bus-north",
+    "sheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-school-bus-east",
+    "sheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-school-bus-south",
+    "sheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-school-bus-west",
+    "sheet": "ai-authored/everyday-city-v1/sources/school-bus.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-north",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-east",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-south",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-west",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-loaded-north",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-loaded-east",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-loaded-south",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-tow-loaded-west",
+    "sheet": "ai-authored/everyday-city-v1/sources/tow-loaded.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-child-north",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-child-east",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-child-south",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-child-west",
+    "sheet": "ai-authored/everyday-city-v1/sources/child-v2.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
+  },
+  {
+    "key": "city-event-market-stall",
+    "sheet": "ai-authored/everyday-city-v1/sources/market-stall.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      2,
+      2
+    ]
+  },
+  {
+    "key": "city-event-umbrella",
+    "sheet": "ai-authored/everyday-city-v1/sources/umbrella.png",
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_EVERYDAY_MICRO_V1",
+    "size": [
+      8,
+      8
+    ],
+    "footprintCells": [
+      1,
+      1
+    ]
   }
 ]

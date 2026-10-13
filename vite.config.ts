@@ -45,7 +45,9 @@ export default defineConfig({
         };
         for (const chunk of Object.values(bundle)) {
           if (chunk.type === "chunk" && chunk.isEntry) visit(chunk.fileName);
-          if (chunk.fileName.endsWith(".css")) installAssets.push(`/${chunk.fileName}`);
+          // Entry typography can load before the worker takes control. Include
+          // emitted local fonts so the first offline reload keeps the same UI.
+          if (/\.(?:css|woff2?)$/.test(chunk.fileName)) installAssets.push(`/${chunk.fileName}`);
         }
         const revisionHash = createHash("sha256").update(JSON.stringify(publicAssets.sort())).update(staticOrigin);
         for (const path of publicAssets.filter((candidate) => candidate !== "/" && !candidate.startsWith("/assets/"))) {

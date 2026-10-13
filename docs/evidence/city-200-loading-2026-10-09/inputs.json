@@ -1,0 +1,10 @@
+{
+  "playwright.config.ts": "34fd79664f696581a05ab421935d448f2d7c1b103a01a2487b97d9722d5812db",
+  "scripts/measure-city-loading-audit.ts": "372ef7c7ab5fa184448b622d8b32ce038443f0712c3e9354b2bf5c0a139c24f3",
+  "scripts/seed-city-loading-audit.ts": "4f0062b1e56ab32324a1bc5d128e285d48379d9d3abfc899baf4302c33238bde",
+  "src/client/components/WorldCanvas.tsx": "b1b3fb7e80566637352424842e5ef7a9feee0d7d99495324d2896e7cc1f03448",
+  "src/client/agent-route-planner.ts": "fea18d19226e6a4d9c69ff4e86a65ab7ee14f80d13b2baf6a2d55bf0dbb33cae",
+  "src/client/building-number-label.ts": "271b5863eea8be6baa6a4058119c1a2c428ab22002708c5af51e6d9e1841f07c",
+  "tests/agent-route-planner.test.ts": "88df00f48b9c5a063290a030ead1cb949e8357b08796baf05e34694445c6cd2e",
+  "tests/e2e/city-200-loading.spec.ts": "4f692a43530a278cbaa129dfdd5af954c6af8172e75a0b0966a0adc2ac5602c9"
+}
