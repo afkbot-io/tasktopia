@@ -20,6 +20,9 @@ test('real city exposes six education families, safe event pads and connected tr
   const f = await everydayFixture(page);
   try {
     await f.open();
+    // Mobility publishes readiness before the first everyday frame. Wait for
+    // that separate compiled director before asserting its full inventory.
+    await expect(f.host).toHaveAttribute('data-everyday-kinds', /.+/, { timeout: 15000 });
     const data = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
     await writeFile(info.outputPath('initial-state.json'), JSON.stringify(data, null, 2));
     await page.screenshot({ path: info.outputPath('everyday-native-city.png') });

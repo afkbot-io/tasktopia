@@ -749,6 +749,13 @@ export function createCityMobility(input: CityMobilityInput): CityMobility {
           const suffix = search.routeTo(target);
           if (suffix.length < 2 || suffix.length > (role === 'BUS' || role === 'SCHOOL_BUS' ? 64 : 28)) continue;
           const route = moving ? [actor.current, ...suffix] : suffix;
+          // A service assignment can enlarge the authored opaque body (e.g.
+          // delivery -> van). Admit that new silhouette before mutating the
+          // live actor; the next movement resolver cannot undo an overlap
+          // already introduced by dispatch. Stopped cars can also turn here.
+          const candidate = { ...actor, variant: role === "POLICE" ? "blue" : role === "FIRE" ? "red" : "van",
+            direction: moving ? actor.direction : heading(actor.current, route[1]!, actor.direction), activity: "NONE" as const };
+          if (actors.some(other => other.id !== actor.id && overlap(candidate, other, safetyGap(candidate, other)))) continue;
           if (!picked || route.length < picked.route.length) picked = { actor, route };
         }
       }

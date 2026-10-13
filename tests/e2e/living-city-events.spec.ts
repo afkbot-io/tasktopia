@@ -85,6 +85,14 @@ test('MCP/WebSocket keeps the old building through all stages, delivers a helico
  const f=await fixture(page);
  try{
   await f.focus(f.task);
+  // This case verifies the complete six-worker presentation. AUTO can
+  // intentionally cancel it when a software GPU downgrades to ECONOMY;
+  // the separate economy/cancellation journey covers that policy.
+  await page.locator('.world-menu > summary').click();
+  const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();
+  await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+  await expect(f.host).toHaveAttribute('data-world-quality','NORMAL');
+  await expect(f.host).toHaveAttribute('data-ambient-assets','ready');
   const observed=await observeCinematics(f.host);
   let current=f.task,oldStage=current.stage;
   for(const [status,progress] of [['STARTED',undefined],['IN_PROGRESS',40],['IN_PROGRESS',60],['TESTING',undefined],['COMPLETED',undefined]] as const){

@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import { createCityMobility } from '../src/client/city-mobility';
 import type { Cell, RoadCellDto } from '../src/shared/contracts';
 import { compileTransitStops } from '../src/client/city-everyday-life';
+import { microAmbientSprite } from '../src/shared/micro-ambient';
 const key = (c: Cell) => `${c.x},${c.y}`;
 function fixture() {
   const cells: Cell[] = [];
@@ -46,7 +47,7 @@ it('отмена и недоступный подход не телепорти�
   expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
 });
 
-function transitFixture() {
+function transitFixture(carLimit=2, seed=37) {
   const roads = new Map<string, RoadCellDto>(), walk = new Map<string, Cell>(), ground = new Map<string, Cell>();
   for (const axis of [0, 20, 40]) for (let s = -1; s <= 41; s++) for (const b of [-1, 0, 1])
     for (const c of [{ x: s, y: axis + b }, { x: axis + b, y: s }]) roads.set(key(c), { ...c, roadClass: 'LOCAL' } as RoadCellDto);
@@ -55,10 +56,33 @@ function transitFixture() {
     if (Array.from({ length: 5 }, (_, dx) => Array.from({ length: 5 }, (_, dy) => ({ x: x + dx - 2, y: y + dy - 2 }))).flat()
       .some(n => Math.abs(n.x - x) + Math.abs(n.y - y) <= 2 && roads.has(key(n)))) walk.set(key(c), c);
   }
-  const input = { roads, walkGraph: walk, crosswalks: new Set<string>(), activityCells: new Set<string>(), seed: 37, carLimit: 2, walkerLimit: 10 };
+  const input = { roads, walkGraph: walk, crosswalks: new Set<string>(), activityCells: new Set<string>(), seed, carLimit, walkerLimit: 10 };
   const city = createCityMobility(input), stops = compileTransitStops({ roads, walk, ground, blocked: new Set() });
   return { city, stops, input };
 }
+
+it('назначение и отмена автобуса в плотном потоке не расширяют кузов поверх соседей',()=>{
+  const {city,stops}=transitFixture(24,6);let dispatched=0;
+  for(let step=0;step<1600;step++){
+    city.advance(50);
+    if(step%37===0&&city.dispatchResponse('BUS',[stops[step%stops.length]!.lane],30000))dispatched++;
+    if(step%53===0)city.clearResponses(['BUS']);
+    // Check the authored opaque pixels immediately after dispatch/cancellation,
+    // before the next physics step updates the cumulative safety counters.
+    const outdoor=city.agents.filter(a=>a.activity!=='INSIDE');
+    const bodies=outdoor.map(a=>{const art=microAmbientSprite(a.kind==='CAR'?'car':'person',a.variant,a.direction);return {
+      left:a.position.x+(art.opaqueBounds.left-art.anchor.x)/8,right:a.position.x+(art.opaqueBounds.right-art.anchor.x)/8,
+      top:a.position.y+(art.opaqueBounds.top-art.anchor.y)/8,bottom:a.position.y+(art.opaqueBounds.bottom-art.anchor.y)/8};});
+    for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++){
+      const a=bodies[i]!,b=bodies[j]!;
+      expect(a.left<b.right-1e-7&&a.right>b.left+1e-7&&a.top<b.bottom-1e-7&&a.bottom>b.top+1e-7,
+        `step ${step}: ${outdoor[i]!.id}/${outdoor[j]!.id}`).toBe(false);
+    }
+    expect(city.metrics.vehicleUnsafeTotal,`step ${step}`).toBe(0);
+    expect(city.metrics.vehiclePedestrianUnsafeTotal,`step ${step}`).toBe(0);
+  }
+  expect(dispatched).toBeGreaterThan(0);
+});
 
 it('пассажиры едут внутри настоящего автобуса и выходят только после остановки на свободный тротуар', () => {
   const { city, stops } = transitFixture();
