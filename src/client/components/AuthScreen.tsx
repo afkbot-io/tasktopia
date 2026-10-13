@@ -1,16 +1,11 @@
 import { RecoveryScreen } from "./RecoveryScreen";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { getBuilding, PROP_CATALOG } from "../../shared/catalog";
+import { gameAssetUrl, getBuilding, PROP_CATALOG, TERRAIN_SPRITES } from "../../shared/catalog";
 import { microAmbientSprite } from "../../shared/micro-ambient";
 import { api } from "../api";
 import { Button, Field, GameIcon } from "./ui";
-
-const domainLevels = [
-  ["Страна", "ваш мир", "01"],
-  ["Город", "центр развития", "02"],
-  ["Район", "спринт команды", "03"],
-  ["Здание", "задача", "04"],
-] as const;
+import { AuthPanel } from './AuthPanel';
+import { AuthRoad } from './AuthRoad';
 
 // The decorative city uses the same reviewed family and stage URLs as the map.
 const authBuilding = getBuilding("compact-apartment-v1");
@@ -101,13 +96,13 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   return <main className="auth-screen flex h-full flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] lg:overflow-hidden">
     <section className="auth-visual relative min-h-[500px] overflow-hidden px-6 py-7 sm:px-10 lg:min-h-0 lg:px-14 lg:py-10" aria-label="Описание Tasktopia">
       <div className="brand-mark relative z-[2]"><GameIcon name="world" /> TASKTOPIA</div>
-      <div className="relative z-[2] mt-16 max-w-3xl lg:mt-[14vh]">
-        <p className="eyebrow">УПРАВЛЕНИЕ, КОТОРОЕ ВИДНО</p>
-        <h1 className="m-0 max-w-3xl text-balance text-[clamp(42px,5.5vw,78px)] font-extrabold leading-[.96] tracking-[-.055em]">Стройте планы.<br />Наблюдайте за страной.</h1>
-        <p className="mt-6 max-w-xl text-[15px] leading-7 sm:text-[17px]">Tasktopia превращает ваши дела в живую страну. Развитие городов становится понятным без ещё одной таблицы.</p>
+      <div className="auth-intro relative z-[2]">
+        <h1>Дела становятся городом.</h1>
+        <p>Задачи — здания, районы — спринты, города — ваши проекты.</p>
       </div>
-      <div className="auth-world" aria-hidden="true">
-        <i className="auth-world-water" /><i className="auth-world-road auth-world-road-h" /><i className="auth-world-road auth-world-road-v" />
+      <div className="auth-world" aria-hidden="true" style={{ backgroundImage: `url(${gameAssetUrl(TERRAIN_SPRITES.GRASS![0]!)})` }}>
+        <i className="auth-world-water" style={{ backgroundImage: `url(${gameAssetUrl(TERRAIN_SPRITES.SHALLOW_WATER![0]!)})` }} />
+        <AuthRoad /><AuthRoad vertical />
         {authBuildingStages.map((stage, index) => <img key={index} data-auth-scene-sprite
           className={`auth-world-sprite auth-world-building auth-world-building-${index + 1}`}
           src={authBuilding.stages[stage - 1]} width={authBuilding.spriteSize.width * 2} height={authBuilding.spriteSize.height * 2} alt="" />)}
@@ -119,32 +114,22 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
       </div>
     </section>
 
-    <section className="grid place-items-center border-t p-4 sm:p-8 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:p-10">
-      <div className="w-full max-w-[500px] rounded-[24px] border p-5 sm:p-8">
-        <p className="eyebrow">{mode === "login" ? "С ВОЗВРАЩЕНИЕМ" : "НОВОЕ ПРОСТРАНСТВО"}</p>
-        <h2 className="m-0 text-3xl font-black tracking-[-.04em] sm:text-4xl">{mode === "login" ? "Войти в Tasktopia" : "Основать страну"}</h2>
-        <p className="mt-3 text-sm leading-6">{mode === "login" ? "Вернитесь к управлению страной и её городами." : "Создадим страну и первый город — карта будет готова сразу после регистрации."}</p>
-
-        <dl className="mt-5 grid grid-cols-2 gap-2" aria-label="Как устроена Tasktopia">
-          {domainLevels.map(([world, work, number]) => <div key={world} className="grid grid-cols-[24px_1fr] gap-x-2 rounded-xl border px-3 py-2.5">
-            <dt className="row-span-2 font-mono text-xs font-bold">{number}</dt>
-            <dd className="m-0 text-xs font-black">{world}</dd>
-            <dd className="m-0 text-xs">{work}</dd>
-          </div>)}
-        </dl>
+    <section className="auth-form-section">
+      <AuthPanel headingLevel={2} title={mode === 'login' ? 'Войти в Tasktopia' : 'Основать страну'}>
+        {mode === 'register' && <p>Создадим страну и первый город. Карта откроется после регистрации.</p>}
 
         <form onSubmit={submit} className="mt-6 grid gap-3.5">
           {mode === "register" && <>
-            <Field label="Имя" name="name" minLength={2} maxLength={60} required autoComplete="name" />
+            <Field label="Имя" name="name" minLength={2} maxLength={60} required autoComplete="name" disabled={pending} />
             <div className="grid gap-3.5 sm:grid-cols-2">
-              <Field label="Название вашей первой страны" name="countryName" minLength={2} maxLength={100} required placeholder="Например, Атутаелия" hint="Её имя появится на карте" />
-              <Field label="Название первого города" name="cityName" minLength={2} maxLength={100} required placeholder="Например, Столица" hint="Первый город создаётся сразу" />
+              <Field label="Название вашей первой страны" name="countryName" minLength={2} maxLength={100} required placeholder="Например, Атутаелия" hint="Её имя появится на карте" disabled={pending} />
+              <Field label="Название первого города" name="cityName" minLength={2} maxLength={100} required placeholder="Например, Столица" hint="Первый город создаётся сразу" disabled={pending} />
             </div>
           </>}
-          <Field label="Email" name="email" type="email" required autoComplete="email" />
-          <Field label="Пароль" name="password" type="password" minLength={8} maxLength={128} required autoComplete={mode === "login" ? "current-password" : "new-password"} />
-          {mode === "register" && <Field label="Повторите пароль" name="passwordConfirmation" type="password" minLength={8} maxLength={128} required autoComplete="new-password" />}
-          {visibleError && <div className="form-error"><strong className="text-xs tracking-wider">НЕ УДАЛОСЬ ПРОДОЛЖИТЬ</strong><span role="alert">{visibleError}</span></div>}
+          <Field label="Email" name="email" type="email" required autoComplete="email" disabled={pending} />
+          <Field label="Пароль" name="password" type="password" minLength={8} maxLength={128} required autoComplete={mode === "login" ? "current-password" : "new-password"} disabled={pending} />
+          {mode === "register" && <Field label="Повторите пароль" name="passwordConfirmation" type="password" minLength={8} maxLength={128} required autoComplete="new-password" disabled={pending} />}
+          {visibleError && <div className="form-error" role="alert">{visibleError}</div>}
           <Button variant="primary" type="submit" className="mt-1 w-full" disabled={pending}>{pending ? "Подождите…" : mode === "login" ? "Открыть страну" : "Создать аккаунт"}</Button>
         </form>
         {mode === "login" && <Button variant="quiet" disabled={pending} onClick={() => setRecovering(true)}>Забыли пароль?</Button>}
@@ -152,7 +137,7 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
         {(registrationEnabled || mode === "register") && <Button variant="quiet" disabled={pending} className="mt-2 w-full" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setCountryLoadFailed(false); }}>
           {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
         </Button>}
-      </div>
+      </AuthPanel>
     </section>
   </main>;
 }

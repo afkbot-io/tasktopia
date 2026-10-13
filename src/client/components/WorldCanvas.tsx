@@ -6,6 +6,8 @@ import { planRoadEpisode, roadEpisodePose, type RoadEpisode } from "../city-road
 import { createCityCinematicView } from "../city-cinematic-view";
 import { createEverydayController } from '../city-everyday-controller';
 import { createEverydayView } from '../city-everyday-view';
+import { createTaskActivityController } from '../task-activity-feedback';
+import { createTaskActivityView } from '../task-activity-view';
 import { cinematicMarkerMatches } from "../city-cinematics";
 import { playCitySound, silenceCityAudio, unlockCityAudio, cityAudioMetrics } from "../city-audio";
 import { planCityParking } from "../city-parking";
@@ -1830,6 +1832,47 @@ export function WorldCanvas({ selectedTransportRoute,transportRevision = 0, depe
       const everydayController = createEverydayController(focusCityId ?? countryId, () => mobility, cue => { playCitySound(cue); });
       const everydayView = createEverydayView(developmentTexture, cachedTexture, placePixelAgent);
       agentOverlayLayer.addChild(everydayView.root);
+      const taskActivity = createTaskActivityController(() => mobility);
+      const taskActivityView = createTaskActivityView((view, x, y) => {
+        const pose = pixelAgentPose(x, y, 12, 12, { x: world.x, y: world.y, scale: world.scale.x });
+        view.scale.set(pose.scale); view.position.set(pose.x, pose.y);
+      });
+      agentOverlayLayer.addChild(taskActivityView.root);
+      let taskActivityTimer: ReturnType<typeof setTimeout> | undefined, nextActivityTelemetry = 0;
+      const activityOptions = () => ({ enabled: activeRef.current && !document.hidden && currentLod === 'DETAIL' && readWorldPreferences().cityLife,
+        reducedMotion, economy });
+      const activityVisible = (task: ChunkTaskDto | undefined) => {
+        const entrance = task?.accessPath[0]; if (!entrance) return false;
+        const x = (entrance.x + .5) * CELL_SIZE * world.scale.x + world.x;
+        const y = (entrance.y + .5) * CELL_SIZE * world.scale.x + world.y;
+        return x >= 0 && x <= app.screen.width && y >= 0 && y <= app.screen.height;
+      };
+      const updateTaskActivity = (force = false) => {
+        if (!force && !taskActivity.activeCount && !taskActivityView.count) return;
+        const now = readServerWorldTime() ?? Date.now();
+        const options = activityOptions();
+        const poses = taskActivity.update(now, attentionTasks, options).filter(pose => {
+          const constructionSignal = pose.static && cinematicEvents.get(pose.taskId)?.event.type === 'task.status_changed';
+          if (activityVisible(attentionTasks.get(pose.taskId)) && (!cinematicView.has(pose.taskId) || constructionSignal)) return true;
+          taskActivity.cancel(pose.taskId); return false;
+        });
+        taskActivityView.update(poses, now);
+        if (force || now >= nextActivityTelemetry || !poses.length) {
+          nextActivityTelemetry = now + 100;
+          host.dataset.taskActivity = JSON.stringify(poses.map(p => ({ taskId: p.taskId, eventId: p.eventId, kind: p.kind, phase: p.phase, arrived: p.arrived, visitors: p.visitors.length, static: p.static })));
+          host.dataset.taskActivityStarted = String(taskActivity.metrics.started);
+          host.dataset.taskActivityMerged = String(taskActivity.metrics.merged);
+          host.dataset.taskActivityDelivered = String(taskActivity.metrics.delivered);
+        }
+        if (options.reducedMotion) {
+          if (taskActivityTimer) clearTimeout(taskActivityTimer);
+          taskActivityTimer = poses.length ? setTimeout(() => updateTaskActivity(true), Math.max(10, Math.min(...poses.map(p => p.expiresAt)) - now + 10)) : undefined;
+          if (paintedFrame) app.render();
+        }
+      };
+      const clearTaskActivity = () => { taskActivity.clear(); if (taskActivityTimer) clearTimeout(taskActivityTimer); taskActivityTimer = undefined; updateTaskActivity(true); };
+      startupDisposers.push(() => { taskActivity.clear(); if (taskActivityTimer) clearTimeout(taskActivityTimer); taskActivityView.destroy(); });
+      host.dataset.taskActivity = '[]';
       let lastCrewReservations: ReadonlySet<string> | undefined, lastEverydayReservations: ReadonlySet<string> | undefined;
       function applyWalkReservations() {
         const crew = cinematicView.reservedCells(), everyday = everydayController.reservedCells();
@@ -2166,6 +2209,7 @@ export function WorldCanvas({ selectedTransportRoute,transportRevision = 0, depe
         applyLighting();
         updateCompletedLife();
         updateEveryday();
+        updateTaskActivity();
         if(paintedFrame){const now=readServerWorldTime()??Date.now();animateCityTrains(now);animateCityAircraft(now);animatePortShip();}
         if (reducedMotion && paintedFrame) app.render();
       };
@@ -2189,6 +2233,7 @@ export function WorldCanvas({ selectedTransportRoute,transportRevision = 0, depe
         updateConstructionWorkers();
         updateCompletedLife();
         updateEveryday();
+        updateTaskActivity();
         for (let index = groundFades.length - 1; index >= 0; index -= 1) {
           const fade = groundFades[index]!;
           fade.elapsed += elapsed;
@@ -4369,6 +4414,7 @@ export function WorldCanvas({ selectedTransportRoute,transportRevision = 0, depe
             if (reconcilePending) scheduleEntityReconcile(false);
           } else {
             clearCinematics();
+            clearTaskActivity();
             clearRoadEvent(); roadWindow = Math.floor((readServerWorldTime() ?? Date.now()) / 90_000);
             clearEveryday();
             endStreamingFeedback();
@@ -4400,11 +4446,21 @@ export function WorldCanvas({ selectedTransportRoute,transportRevision = 0, depe
           void loadVisible();
         },
         invalidateBatch(incoming) {
-          const events = incoming.filter(event => mapInvalidationImpact(event) !== 'NONE'
-            && mapInvalidationAffectsCity(event, focusCityId));
-          if (events.length === 0) return;
-          if (events.some(event => event.resync || event.type === "country.regenerated" || event.type === "city.deleted")) { clearCinematics(); clearRoadEvent(); clearEveryday(); }
+          const scoped = incoming.filter(event => mapInvalidationAffectsCity(event, focusCityId));
+          const events = scoped.filter(event => mapInvalidationImpact(event) !== 'NONE');
+          if (events.some(event => event.resync || event.type === "country.regenerated" || event.type === "city.deleted")) { clearCinematics(); clearRoadEvent(); clearEveryday(); clearTaskActivity(); }
           const animated = new Set(events.filter(beginCinematic).map(event => event.id));
+          for (const event of scoped) {
+            if (event.taskId && (animated.has(event.id) || ['task.deleted', 'task.transferred'].includes(event.type))) taskActivity.cancel(event.taskId);
+            else {
+              const task = event.taskId ? attentionTasks.get(event.taskId) : undefined;
+              const options = activityOptions();
+              taskActivity.begin(event, task, readServerWorldTime() ?? Date.now(), { ...options,
+                reducedMotion: options.reducedMotion || !!task && cinematicView.has(task.id), enabled: options.enabled && activityVisible(task) });
+            }
+          }
+          updateTaskActivity(true);
+          if (events.length === 0) return;
           const latest = events.at(-1)!;
           // Completed districts use compact snapshot tasks, not chunk task
           // payloads. Reopening one must replace that authoritative snapshot.
@@ -4605,7 +4661,7 @@ export function WorldCanvas({ selectedTransportRoute,transportRevision = 0, depe
         host.dataset.animationActive = String(active);
         if (active) app.start(); else app.stop();
       };
-      const visibility = () => { if (document.hidden) { silenceCityAudio(); clearRoadEvent(); clearEveryday(); roadWindow = Math.floor((readServerWorldTime() ?? Date.now()) / 90_000); } else updateCinematics(); updateAnimation(); };
+      const visibility = () => { if (document.hidden) { silenceCityAudio(); clearRoadEvent(); clearEveryday(); clearTaskActivity(); roadWindow = Math.floor((readServerWorldTime() ?? Date.now()) / 90_000); } else updateCinematics(); updateAnimation(); };
       const audioGesture = (event: PointerEvent) => { void unlockCityAudio(event.isTrusted); };
       canvas.addEventListener("pointerdown", audioGesture);
       startupDisposers.push(() => canvas.removeEventListener("pointerdown", audioGesture));
@@ -4619,6 +4675,7 @@ export function WorldCanvas({ selectedTransportRoute,transportRevision = 0, depe
           for (const celebration of celebrations.splice(0)) for (const particle of celebration.particles) particle.view.destroy();
           animateCameraZoom({ deltaMS: 1_000 });
         }
+        updateTaskActivity(true);
         updateAnimation();
         scheduleEntityReconcile(false);
       };

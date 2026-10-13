@@ -38,7 +38,7 @@ export function mapInvalidationAffectsCity(event: MapInvalidation, cityId?: stri
 export function mapInvalidationImpact(event: MapInvalidation): MapInvalidationImpact {
   if (event.resync || event.groundRoadTopologyChanged === true || event.transportTopologyChanged === true) return 'SCENE';
   if (['task.comment_added', 'task.assignee_changed', 'country.profile_updated', 'archive.record_updated'].includes(event.type)) return 'NONE';
-  if (event.type === 'task.fields_updated' && event.changedFields?.length
+  if (event.type === 'task.fields_updated' && event.changedFields !== undefined
     && event.changedFields.every(field => TASK_DETAIL_FIELDS.has(field))) return 'NONE';
   return event.type === 'task.status_changed' && event.groundChanged === false && event.serviceRole !== 'AIRPORT' && event.serviceRole !== 'RAILWAY' && event.serviceRole !== 'PORT'
     && event.taskId && event.status && event.progress !== undefined && event.stage !== undefined ? 'TASK_STATUS' : 'SCENE';
@@ -50,8 +50,17 @@ export function enqueueMapInvalidation(current: readonly MapInvalidation[], next
   const latest = ordered.at(-1)!;
   if (ordered.some(event => event.resync)) return [{ id: latest.id, worldVersion: Math.max(...ordered.map(event => event.worldVersion)), type: 'world.resync_required', resync: true }];
   const latestTaskStatus = new Map<string, number>();
+  const latestTaskFeedback = new Map<string, number>();
   for (const event of ordered) if (mapInvalidationImpact(event) === 'TASK_STATUS') latestTaskStatus.set(event.taskId!, event.id);
-  const pending = ordered.filter(event => mapInvalidationImpact(event) !== 'TASK_STATUS' || latestTaskStatus.get(event.taskId!) === event.id);
+  // Detail caches already receive every event in App. Before Pixi is ready,
+  // retain one visual cue per task/type without overflowing into a scene read.
+  for (const event of ordered) if (event.taskId && mapInvalidationImpact(event) === 'NONE')
+    latestTaskFeedback.set(`${event.taskId}:${event.type}`, event.id);
+  const pending = ordered.filter(event => {
+    const impact = mapInvalidationImpact(event);
+    if (impact === 'TASK_STATUS') return latestTaskStatus.get(event.taskId!) === event.id;
+    return impact !== 'NONE' || !event.taskId || latestTaskFeedback.get(`${event.taskId}:${event.type}`) === event.id;
+  });
   if (pending.length <= Math.max(1, capacity)) return pending;
   return [{ id: latest.id, worldVersion: Math.max(...ordered.map(event => event.worldVersion)), type: 'world.resync_required', resync: true }];
 }
@@ -92,6 +101,7 @@ export function eventInvalidation(event: RealtimeEvent): MapInvalidation {
       ? event.payload.serviceRole as BlockServiceRole : undefined,
     cityId: typeof event.payload.cityId === 'string' ? event.payload.cityId
       : typeof building?.city?.id === 'string' ? building.city.id : undefined,
-    changedFields: Array.isArray(event.payload.changedFields) ? event.payload.changedFields.filter((field): field is string => typeof field === 'string') : undefined,
+    changedFields: Array.isArray(event.payload.changedFields) && event.payload.changedFields.every((field): field is string => typeof field === 'string')
+      ? event.payload.changedFields : undefined,
   };
 }

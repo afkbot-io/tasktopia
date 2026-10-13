@@ -1,5 +1,5 @@
-import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { CITY_LIFE_LABEL, type CityLifeScene } from './city-life';
+import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import type { CityLifeScene } from './city-life';
 import { microAmbientSprite, microDirection } from '../shared/micro-ambient';
 
 /** All actors reuse authored native people; only tiny activity cues are drawn.
@@ -8,10 +8,7 @@ export function createCityLifeView(textureFor:(url:string)=>Texture|undefined) {
   const root=new Container({eventMode:'none',label:'city-life'});
   const person=new Sprite({eventMode:'none',roundPixels:true});person.anchor.set(.5);
   const cue=new Graphics({eventMode:'none'});
-  const caption=new Text({text:'',resolution:2,style:{fontFamily:'Arial, sans-serif',fontSize:7,fill:0xf0e6bd,fontWeight:'600'}});
-  caption.anchor.set(.5,1);
-  const plate=new Graphics({eventMode:'none'});
-  root.addChild(person,cue,plate,caption);root.visible=false;
+  root.addChild(person,cue);root.visible=false;
   let identity='',lastFrame=-1;
   return {root,update(scene:CityLifeScene|undefined,now:number) {
     root.visible=Boolean(scene);if(!scene)return;
@@ -32,12 +29,7 @@ export function createCityLifeView(textureFor:(url:string)=>Texture|undefined) {
       if(scene.kind==='MAINTENANCE') cue.rect(3,-5,1,8).rect(6,-5,1,8).rect(4,-3,2,1).rect(4,0,2,1).fill(0xc8b889);
       if(scene.kind==='DRILL') cue.rect(3,1,3,1).fill(0xd0955e).rect(4,-1,1,2).fill(0xebc982);
     }
-    const active=scene.phase==='ACTIVITY';cue.visible=active;caption.visible=active;plate.visible=active;
-    if(caption.text!==CITY_LIFE_LABEL[scene.kind]) {
-      caption.text=CITY_LIFE_LABEL[scene.kind];
-      plate.clear().rect(-caption.width/2-3,-caption.height-2,caption.width+6,caption.height+4).fill({color:0x183932,alpha:.88});
-    }
-    caption.position.set((anchor.x+.5)*8,(anchor.y+.5)*8-10);plate.position.copyFrom(caption.position);
+    cue.visible=scene.phase==='ACTIVITY';
     const elapsed=now-scene.start;person.alpha=Math.min(1,elapsed/650,(scene.durationMs-elapsed)/650);
   }};
 }

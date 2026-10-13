@@ -26,6 +26,16 @@ test("вход использует хвойную поверхность и ч�
   expect(surface.contrast).toBeGreaterThanOrEqual(4.5);
   expect(surface.font).toContain("Manrope");
   expect(surface.radius).toBeGreaterThanOrEqual(12);
+  expect(await panel.evaluate(el => getComputedStyle(el).borderRadius)).toBe(await panel.evaluate(el => getComputedStyle(el).getPropertyValue('--ui-radius-panel').trim()));
+  expect(await page.locator('.auth-world').evaluate(el => getComputedStyle(el).transform), 'мини-карта сохраняет оси и угол игровых спрайтов').toBe('none');
+  for (const sprite of await page.locator('[data-auth-scene-sprite]').all()) {
+    expect(await sprite.evaluate(el => getComputedStyle(el).filter), 'авторские спрайты без размытых CSS-теней').toBe('none');
+  }
+  for (const road of await page.locator('.auth-world canvas').all()) {
+    await expect(road).toHaveAttribute('data-material-loaded', 'true');
+    expect(await road.evaluate((el: HTMLCanvasElement) => ({ width: el.clientWidth, height: el.clientHeight })))
+      .toEqual(await road.evaluate((el: HTMLCanvasElement) => ({ width: el.width, height: el.height })));
+  }
   const email = page.getByLabel("Email");
   expect((await surfaceColors(email)).contrast).toBeGreaterThanOrEqual(4.5);
   await email.focus();
@@ -47,5 +57,18 @@ test("вход использует хвойную поверхность и ч�
     const submit=page.getByRole("button",{name:"Открыть страну",exact:true});
     await submit.scrollIntoViewIfNeeded();
     await expect(submit).toBeInViewport();
+  }
+});
+
+test('восстановление доступа прокручивается внутри экрана и сохраняет игровую рамку на коротком телефоне', async ({page},info) => {
+  await page.setViewportSize({width:320,height:568});await page.goto('/');
+  await page.getByRole('button',{name:'Забыли пароль?'}).click();
+  for(const [width,height] of [[320,568],[390,844],[768,600],[1440,480]]){
+    await page.setViewportSize({width,height});
+    expect(await page.locator('.auth-screen').evaluate(el=>el.clientHeight<=innerHeight),'форма должна прокручиваться внутри viewport, а не обрезаться root').toBe(true);
+    const title=page.getByRole('heading',{name:'Вернуться в свой мир'});await title.scrollIntoViewIfNeeded();await expect(title).toBeInViewport();
+    const back=page.getByRole('button',{name:'Вернуться ко входу'});await back.scrollIntoViewIfNeeded();await expect(back).toBeInViewport();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.screenshot({path:info.outputPath(`recovery-${width}-${height}.png`)});
   }
 });
