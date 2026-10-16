@@ -50,7 +50,10 @@ test("attention outlines assigned buildings without camera or terrain changes", 
     const loadedRequests = requests;
     await menu.getByRole("button", { name: "Приёмка", exact: true }).click();
     await expect(menu.getByRole("button", { name: "Приёмка", exact: true })).toHaveAttribute("aria-pressed", "true");
-    await menu.getByRole("button", { name: "Мои объекты", exact: true }).click();
+    await expect(menu.getByRole("button", { name: "Мои объекты", exact: true })).toHaveAttribute("aria-pressed", "true");
+    // Filters intersect: our assigned completed task cannot also be in testing.
+    await expect(host).toHaveAttribute("data-attention-tasks", "0");
+    await menu.getByRole("button", { name: "Приёмка", exact: true }).click();
     await expect.poll(async () => Number(await host.getAttribute("data-attention-tasks"))).toBeGreaterThan(0);
     expect(requests).toBe(loadedRequests);
     expect(await host.evaluate(el => [el.getAttribute("data-camera-world-x"), el.getAttribute("data-camera-world-y"), el.getAttribute("data-ground-rebuilds")])).toEqual(before);

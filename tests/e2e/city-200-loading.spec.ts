@@ -3,6 +3,7 @@ import { openMapCity, openMapPlanet } from "./map-navigation";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 
 test.skip(process.env.E2E_CITY_200 !== "true", "Requires the owned 200-task loading fixture");
+const fixtureEmail=process.env.E2E_CITY_EMAIL??"demo@tasktopia.local",fixturePassword=process.env.E2E_CITY_PASSWORD??"tasktopia-demo";
 
 for (const viewport of [{ width: 1440, height: 1000 }, { width: 1440, height: 1100 }, { width: 390, height: 844 }]) {
   test(`200-task first frame and exterior prewarm at ${viewport.width}x${viewport.height}`, async ({ page }, info) => {
@@ -23,14 +24,17 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1440, height: 11
     page.on("console", message => { if (message.type() === "error" || /passive|deprecated/i.test(message.text())) errors.push(message.text()); });
     page.on("request", request => requests.push(new URL(request.url()).pathname));
     const sceneResponse = page.waitForResponse(response => /\/cities\/[^/]+\/scene$/.test(new URL(response.url()).pathname));
-    expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
+    expect((await page.request.post("/api/auth/login", { data: { email: fixtureEmail, password: fixturePassword } })).status()).toBe(200);
     await page.goto("/"); await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
     await expect(page.locator(".map-level-transition")).toHaveCount(0);
     const scene = await (await sceneResponse).json() as CitySceneDto;
     const taskIds = new Set([...scene.chunks.flatMap(c => c.tasks), ...scene.completedDistrictSnapshots.flatMap(s => s.tasks)].map(t => t.id));
-    expect(taskIds.size).toBe(200); await expect(host).toHaveAttribute("data-task-building-views", "200");
+    expect(taskIds.size).toBe(200); await expect(host).toHaveAttribute("data-canonical-task-count", "200");
+    const residentViews=Number(await host.getAttribute("data-task-building-views"));
+    expect(residentViews).toBeGreaterThan(0);expect(residentViews).toBeLessThanOrEqual(200);
+    expect(Number(await host.getAttribute("data-resident-chunks"))).toBeLessThanOrEqual(Number(await host.getAttribute("data-city-resident-chunk-budget")));
     expect(await page.evaluate(() => (window as typeof window & { cityNumberPaintAudit: { numberPaints: number } }).cityNumberPaintAudit.numberPaints),
       "Building numbers share glyph textures instead of painting 200 separate canvases").toBeLessThan(10);
     const initial = await host.evaluate(node => {
@@ -89,11 +93,12 @@ test("200-task city remains usable with unavailable webfonts", async ({ page }) 
   let failures = 0;
   await page.route(/\/assets\/manrope-[^/]+\.woff2$/, route => { failures++; return route.abort(); });
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
-  expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
+  expect((await page.request.post("/api/auth/login", { data: { email: fixtureEmail, password: fixturePassword } })).status()).toBe(200);
   await page.goto("/"); await openMapCity(page);
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
-  await expect(host).toHaveAttribute("data-task-building-views", "200");
+  await expect(host).toHaveAttribute("data-canonical-task-count", "200");
+  expect(Number(await host.getAttribute("data-task-building-views"))).toBeGreaterThan(0);
   await expect(page.locator(".map-level-transition")).toHaveCount(0);
   expect(failures).toBeGreaterThan(0); expect(errors).toEqual([]);
 });
@@ -112,7 +117,7 @@ test("shared number atlas survives warm return and is released on logout", async
     };
   });
   const painted = () => page.evaluate(() => (window as typeof window & { cityGlyphAudit: { glyphPaints: number } }).cityGlyphAudit.glyphPaints);
-  expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
+  expect((await page.request.post("/api/auth/login", { data: { email: fixtureEmail, password: fixturePassword } })).status()).toBe(200);
   await page.goto("/"); await openMapCity(page);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
   const initial = await painted(); expect(initial).toBeGreaterThanOrEqual(10);
@@ -124,7 +129,7 @@ test("shared number atlas survives warm return and is released on logout", async
   await page.getByRole("button", { name: "Аккаунт и настройки", exact: true }).click();
   await page.getByRole("button", { name: "Выйти из аккаунта", exact: true }).click();
   await expect(page.locator(".world-canvas")).toHaveCount(0);
-  await page.getByLabel("Email").fill("demo@tasktopia.local"); await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Email").fill(fixtureEmail); await page.getByLabel("Пароль", { exact: true }).fill(fixturePassword);
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click(); await openMapCity(page);
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
   expect(await painted(), "A disposed font is generated anew for the next renderer").toBeGreaterThanOrEqual(initial + 10);

@@ -284,7 +284,7 @@ test("keeps cars and walkers moving safely through a long sampled run, district 
 
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   await expect(page.locator(".country-title-button")).toBeVisible();

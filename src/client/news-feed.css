@@ -1,0 +1,25 @@
+.world-digest .news-feed {width:min(380px,calc(100vw - 24px));max-height:calc(100dvh - 90px);box-sizing:border-box;overscroll-behavior:contain;}
+.news-feed .world-digest-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.news-feed button,.news-feed select {min-height:44px;}
+.news-feed .world-digest-heading button {min-width:44px;flex:none;}
+.news-feed .news-kind {display:grid;gap:4px;margin:10px 0;font-size:13px;font-weight:700;}
+.news-feed .news-kind select {width:100%;min-width:0;background:var(--ui-raised);color:var(--game-ink);border:1px solid var(--ui-border-control);padding:8px;}
+.news-feed .news-read-page {margin:10px 0;}
+.news-feed .news-read-page button {width:100%;white-space:normal;}
+.news-feed ul {list-style:none;padding:0;margin:8px 0;max-height:40dvh;overflow:auto;overscroll-behavior:contain;}
+.news-feed li {border:1px solid var(--ui-border);margin:0 0 8px;overflow-wrap:anywhere;}
+.news-feed li[data-unread="true"] {border-left:3px solid var(--game-brass);}
+.news-feed li .news-task {display:grid;width:100%;text-align:left;gap:4px;padding:10px;border:0;background:transparent;}
+.news-feed li .news-mark-read {display:block;margin:0 8px 8px;max-width:calc(100% - 16px);white-space:normal;font-size:12px;}
+.news-feed .news-pagination {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;}
+.news-feed .news-pagination button {min-width:64px;}
+.news-feed .news-pagination span {font-size:12px;white-space:nowrap;color:var(--game-ink);}
+.news-feed .news-action-status {font-size:12px;min-height:1.5em;color:var(--game-ink);}
+.news-feed button:disabled {opacity:.55;cursor:default;}
+
+.news-feed .world-digest-heading h2 {margin:0;font-size:16px;font-weight:800;color:var(--game-ink);}
+
+/* Keep pagination visible while the event list uses the remaining height. */
+.world-digest .news-feed {display:flex;flex-direction:column;}
+.world-digest .news-feed > :not(ul) {flex-shrink:0;}
+.world-digest .news-feed > ul {flex:1 1 auto;min-height:0;}

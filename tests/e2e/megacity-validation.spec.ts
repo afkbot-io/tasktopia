@@ -17,7 +17,7 @@ test("opens and captures the 100-task megacity", async ({ page }) => {
 
   await page.goto("/");
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-megacity-validation");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByText("Республика Атлас", { exact: true })).toBeVisible();
   // The anonymous bootstrap request is expected to receive 401 before login;

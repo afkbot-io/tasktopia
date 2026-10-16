@@ -1,36 +1,31 @@
 name: verify
 
 on:
-  # Feature branches are verified by pull_request. Restrict push verification
-  # to main so the same SHA does not run this stateful, asset-heavy job twice.
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  dependencies:
     runs-on: ubuntu-latest
-    # The expanded 363-case browser matrix took 19.7 minutes through case 91
-    # on the hosted software renderer, after the asset/unit/recovery gates.
-    # Give the aggregate matrix room to finish; individual readiness,
-    # simulation and performance budgets remain unchanged inside each test.
-    timeout-minutes: 120
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: tasktopia_test
-          POSTGRES_USER: tasktopia
-          POSTGRES_PASSWORD: tasktopia
-        ports:
-          - 55432:5432
-        options: >-
-          --health-cmd "pg_isready -U tasktopia -d tasktopia_test"
-          --health-interval 2s --health-timeout 3s --health-retries 15
-    env:
-      TEST_DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test
-      DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Dependency failures appear before the long browser qualification.
+      - run: npm audit --audit-level=high
+
+  build-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,14 +34,59 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run assets:setup && npm run assets:build && npm run assets:verify
-      - run: npm run typecheck
       - run: npm run lint
-      # Stateful PostgreSQL fixtures share one seeded database. File-parallel
-      # execution makes unrelated MCP/deployment cases contend and intermittently
-      # exceed their per-test timeout on hosted runners.
+      # build includes typecheck. Browser/MCP jobs use these exact artifacts.
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-runtime
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error
+
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tasktopia_unit
+          POSTGRES_USER: tasktopia
+          POSTGRES_PASSWORD: tasktopia
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tasktopia -d tasktopia_unit"
+          --health-interval 2s --health-timeout 3s --health-retries 15
+    env:
+      TEST_DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_unit
+      DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # PNG normalization tests use the repository's ignored Python runtime.
+      - run: npm run assets:setup
+      # Files create independent PostgreSQL schemas; expensive generators stay
+      # sequential within this job and never share a browser seed.
       - run: npm test -- --no-file-parallelism
+
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
       - name: Compact database backup and recovery
         run: |
+          docker pull postgres:16-alpine
           pg_image_id="$(docker image inspect postgres:16-alpine --format '{{.Id}}')"
           python3 tests/compact_cutover_database_integration.py --pg-image "$pg_image_id"
       - name: Compact host maintenance and writer freeze
@@ -55,7 +95,41 @@ jobs:
           sudo apt-get install -y --no-install-recommends nginx-light
           pg_image_id="$(docker image inspect postgres:16-alpine --format '{{.Id}}')"
           python3 tests/compact_cutover_host_integration.py --nginx /usr/sbin/nginx --image "$pg_image_id"
-      - run: npm run build
+
+  mcp:
+    needs: [build-assets, dependencies]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tasktopia_mcp
+          POSTGRES_USER: tasktopia
+          POSTGRES_PASSWORD: tasktopia
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tasktopia -d tasktopia_mcp"
+          --health-interval 2s --health-timeout 3s --health-retries 15
+    env:
+      TEST_DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_mcp
+      DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_mcp
+      NODE_ENV: production
+      SESSION_COOKIE_SECURE: "false"
+      APP_ORIGIN: http://127.0.0.1:3000
+      SEED_PRINT_TOKEN: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # The compiled server runs in production mode; seed/smoke still use tsx.
+      - run: npm ci --include=dev
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-runtime
+          path: dist/
       - name: MCP protocol and authentication smoke
         run: |
           npm run seed:test
@@ -63,30 +137,72 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for _ in {1..30}; do
-            if curl -fsS http://127.0.0.1:3000/health >/dev/null; then break; fi
+            if curl -fsS --max-time 3 http://127.0.0.1:3000/health >/dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:3000/health
+          curl -fsS --max-time 3 http://127.0.0.1:3000/health
           npm run smoke:mcp
+
+  browser:
+    needs: [build-assets, dependencies]
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    services:
+      postgres:
+        image: postgres:16-alpine
         env:
-          NODE_ENV: production
-          SESSION_COOKIE_SECURE: "false"
-          APP_ORIGIN: http://127.0.0.1:3000
+          POSTGRES_DB: tasktopia_test
+          POSTGRES_USER: tasktopia
+          POSTGRES_PASSWORD: tasktopia
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tasktopia -d tasktopia_test"
+          --health-interval 2s --health-timeout 3s --health-retries 15
+    env:
+      TEST_DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test
+      DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test
+      E2E_DATABASE_URL: postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test
+      E2E_WEB_COMMAND: npm run seed:test && NODE_ENV=production PORT=5173 SESSION_COOKIE_SECURE=false npm start
+      CI: "true"
+      SEED_PRINT_TOKEN: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-runtime
+          path: dist/
       - run: npx playwright install --with-deps chromium firefox webkit
-      # Emit each failure immediately: the compact reporter buffers details
-      # until the end, losing diagnostics if the overall job times out. A
-      # failing run stops after three failures; a passing run still runs the
-      # entire browser matrix and all following gates.
-      - run: npm run test:e2e -- --reporter=line --max-failures=3
-        env:
-          CI: "true"
-          SEED_PRINT_TOKEN: "false"
-      - name: Retain browser failure evidence
+      # One worker per independent runner/DB preserves stateful file order.
+      # Existing readiness/performance/assertion budgets stay in the tests.
+      - run: npm run test:e2e -- --reporter=line --max-failures=3 --shard=${{ matrix.shard }}/4
+      - name: Retain browser evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-failure-evidence
+          name: browser-failure-evidence-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
           if-no-files-found: ignore
-      - run: npm audit --audit-level=high
+
+  # Preserve the existing required SCM check. A skipped/cancelled/missing gate
+  # fails this aggregate; splitting jobs never weakens merge protection.
+  test:
+    if: always()
+    needs: [dependencies, build-assets, unit, recovery, mcp, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GATE_RESULTS: ${{ toJSON(needs) }}
+    steps:
+      - name: Require every verification boundary
+        run: |
+          node -e 'const gates=JSON.parse(process.env.GATE_RESULTS); for(const [name,gate] of Object.entries(gates)){console.log(name,gate.result);} if(Object.values(gates).some(gate=>gate.result!=="success"))process.exit(1);'

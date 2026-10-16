@@ -10,7 +10,7 @@ test("records cold and repeated map opening on the fixed 100-task city", async (
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/");
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-megacity-validation");
   const start = Date.now();
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
   await openMapCity(page);

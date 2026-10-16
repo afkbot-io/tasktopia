@@ -61,7 +61,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await expect(page).toHaveTitle("Tasktopia — цифровая страна");
   await expect(page.locator("body")).not.toContainText(/проект|команда/i);
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page).toHaveTitle("Tasktopia — Тестовая страна");
   await openMapCity(page);

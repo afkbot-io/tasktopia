@@ -59,6 +59,7 @@ export default defineConfig({
     },
   ],
   server: {
+    watch: { ignored: ['**/.builder/**', '**/test-results/**', '**/playwright-report/**'] },
     port: devPort,
     strictPort: true,
     proxy: {

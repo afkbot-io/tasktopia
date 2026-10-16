@@ -3,7 +3,8 @@ import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import type { Cell, ChunkTaskDto, TaskDto } from "../../src/shared/contracts";
+import type { Cell, ChunkTaskDto } from "../../src/shared/contracts";
+import type { TaskCardDto } from "../../src/shared/task-read-contracts";
 import { ASSET_REVISION, getBuilding } from "../../src/shared/catalog";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../../src/shared/city-scene-contract";
 import { COURTYARD_FURNITURE } from "../../src/shared/courtyard-furniture";
@@ -171,9 +172,9 @@ test("published developed families and completed courtyard furniture render thro
   await expect(page.locator(".task-modal")).toHaveCount(0);
   await page.waitForTimeout(520);
   const afterSlowPoint = await centerOn(page, center(slowDragTask), tasks.size);
-  const slowDetails = page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${slowDragTask.id}` && r.request().method() === "GET");
+  const slowDetails = page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${slowDragTask.id}/card` && r.request().method() === "GET");
   await page.mouse.click(afterSlowPoint.x, afterSlowPoint.y);
-  expect(await (await slowDetails).json() as TaskDto).toMatchObject({ id: slowDragTask.id, stage: 5 });
+  expect(await (await slowDetails).json() as TaskCardDto).toMatchObject({ id: slowDragTask.id, stage: 5 });
   await expect(page.locator("#task-title")).toHaveText(slowDragTask.title);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(page.locator(".task-modal")).toHaveCount(0);
@@ -242,9 +243,9 @@ test("published developed families and completed courtyard furniture render thro
       // The slow-drag check already opened the apartment. Its warm modal is
       // intentionally cached; every other first open still validates real GET.
       const details = task.id === slowDragTask.id ? undefined
-        : page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${task.id}` && r.request().method() === "GET");
+        : page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${task.id}/card` && r.request().method() === "GET");
       await page.mouse.click(point.x, point.y);
-      if (details) expect(await (await details).json() as TaskDto).toMatchObject({ id: task.id, stage: 5 });
+      if (details) expect(await (await details).json() as TaskCardDto).toMatchObject({ id: task.id, stage: 5 });
       await expect(page.locator("#task-title")).toHaveText(task.title);
       await page.getByRole("button", { name: "Закрыть", exact: true }).click();
       await expect(page.locator(".task-modal")).toHaveCount(0);

@@ -119,4 +119,52 @@ describe("optional Redis world cache", () => {
     }, "test:", 60, 5);
     await expect(hanging.getChunk("key")).resolves.toBeUndefined();
   });
+
+  it("returns the canonical chunk even when Redis lease release never settles", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = {
+        get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue("OK"),
+        setEx: vi.fn().mockResolvedValue(undefined),
+        eval: vi.fn(() => new Promise<unknown>(() => undefined)),
+      } satisfies RedisCommands;
+      const cache = new OptionalRedisWorldCache(client, "release:", 60, 10);
+      let returned: unknown;
+      void cache.getOrBuildChunk("chunk", async () => payload).then(value => { returned = value; });
+      await vi.advanceTimersByTimeAsync(25);
+      expect(returned).toEqual({ payload, built: true });
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("uses one overall deadline while waiting for another Redis builder", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = {
+        get: vi.fn().mockResolvedValueOnce(null).mockImplementation(() => new Promise<string | null>(() => undefined)),
+        set: vi.fn().mockResolvedValue(null), setEx: vi.fn(),
+      } satisfies RedisCommands;
+      const build = vi.fn(async () => payload);
+      const cache = new OptionalRedisWorldCache(client, "wait:", 60, 500, 60);
+      let returned: unknown;
+      void cache.getOrBuildChunk("chunk", build).then(value => { returned = value; });
+      await vi.advanceTimersByTimeAsync(80);
+      expect(returned).toEqual({ payload, built: true });
+      expect(build).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("bounds graceful Redis shutdown and destroys a stalled connection", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = {
+        get: vi.fn(), setEx: vi.fn(), close: vi.fn(() => new Promise<unknown>(() => undefined)), destroy: vi.fn(),
+      };
+      const cache = new OptionalRedisWorldCache(client, "close:", 60, 10);
+      let closed = false;
+      void cache.close().then(() => { closed = true; });
+      await vi.advanceTimersByTimeAsync(20);
+      expect(closed).toBe(true);
+      expect(client.destroy).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
+  });
 });

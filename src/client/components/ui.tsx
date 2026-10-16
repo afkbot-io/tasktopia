@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useId, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
 
 export function cx(...values: Array<string | false | null | undefined>): string {
   return values.filter(Boolean).join(" ");
@@ -25,10 +25,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
   )} {...props} />;
 });
 
-export function Field({ label, hint, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: ReactNode }) {
-  return <label className="game-field grid gap-1.5 text-sm font-bold">
-    <span>{label}</span>
-    <input className={cx("min-h-12 w-full border px-3.5 text-base transition-colors", className)} {...props} />
-    {hint && <small className="font-normal leading-5">{hint}</small>}
-  </label>;
+export function Field({ label, hint, error, className, id: suppliedId, type, 'aria-describedby': describedBy, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: ReactNode; error?: string }) {
+  const generatedId = useId(), id = suppliedId ?? generatedId;
+  const [visible, setVisible] = useState(false);
+  const password = type === 'password';
+  const description = [describedBy, hint ? `${id}-hint` : undefined, error ? `${id}-error` : undefined].filter(Boolean).join(' ') || undefined;
+  return <div className="game-field grid gap-1.5 text-sm font-bold">
+    <label htmlFor={id}>{label}</label>
+    <div className={cx('game-field-control', password && 'game-password-control')}>
+      <input className={cx("min-h-12 w-full border px-3.5 text-base transition-colors", className)} {...props} id={id} type={password && visible ? 'text' : type} data-password-field={password ? '' : undefined} aria-invalid={error ? true : props['aria-invalid']} aria-describedby={description} />
+      {password && <Button variant="quiet" className="game-password-toggle" disabled={props.disabled} aria-controls={id} aria-pressed={visible} aria-label={`${visible ? 'Скрыть' : 'Показать'} пароль: ${label}`} title={visible ? 'Скрыть пароль' : 'Показать пароль'} onClick={() => setVisible(current => !current)}>
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>{visible && <path d="m3 3 18 18"/>}</svg>
+      </Button>}
+    </div>
+    {hint && <small id={`${id}-hint`} className="font-normal leading-5">{hint}</small>}
+    {error && <small id={`${id}-error`} className="game-field-error font-normal leading-5">{error}</small>}
+  </div>;
 }

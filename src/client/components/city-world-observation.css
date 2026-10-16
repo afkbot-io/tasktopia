@@ -1,0 +1,21 @@
+.city-world-observation{position:absolute;right:16px;bottom:16px;width:min(340px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;z-index:12;background:var(--ui-surface);color:var(--ui-text);border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-card);box-shadow:var(--ui-shadow);padding:16px;font-size:14px;line-height:1.45}
+.city-world-observation header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.city-world-observation h2{font-size:19px;line-height:1.25;margin:0;font-weight:800}
+.city-world-observation button{min-height:44px;border:1px solid var(--ui-border-control);background:var(--ui-raised);color:var(--ui-text);border-radius:var(--ui-radius-control);padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}
+.city-world-observation header>button{min-width:44px;font-size:22px;padding:4px}
+.city-world-observation button:hover{background:var(--ui-hover)}.city-world-observation button:focus-visible,.city-world-tour-trigger:focus-visible,.world-canvas-element:focus-visible{outline:3px solid var(--ui-accent);outline-offset:3px}
+.city-world-observation button[aria-pressed=true]{background:var(--ui-selected);color:var(--ui-accent)}
+.city-world-observation p{margin:8px 0}.city-world-kicker{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.09em;font-weight:700;margin-bottom:4px}.city-world-phase{font-weight:700}.city-world-hint{color:var(--ui-muted);font-size:12px}
+.city-world-observation progress{display:block;width:100%;height:8px;accent-color:var(--ui-success);margin:12px 0}.city-world-observation dl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.city-world-observation dl div{min-width:0}.city-world-observation dt{font-size:11px;color:var(--ui-muted)}.city-world-observation dd{margin:4px 0 0;font-weight:800}
+.city-world-observation footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.city-world-observation footer:empty{display:none}.city-world-observation footer button{flex:1}
+.city-world-tour{left:16px;right:auto}.city-world-tour ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.city-world-tour li button{display:grid;gap:4px;width:100%;text-align:left}.city-world-tour li span{font-size:12px;font-weight:400}
+.city-world-tour-trigger{position:absolute;bottom:16px;left:16px;z-index:10;min-height:44px;border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-control);background:var(--ui-surface);color:var(--ui-text);padding:8px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+@media(max-width:600px){.city-world-observation{bottom:78px;left:12px;right:12px;width:auto;max-height:min(390px,calc(100% - 96px));padding:12px}.city-world-tour-trigger{top:12px;bottom:auto;left:12px}}
+@media(max-height:500px){.city-world-observation{bottom:82px;max-height:calc(100% - 98px)}}
+.city-world-observation progress{appearance:none;border:0;background:var(--ui-raised);color:var(--ui-success)}
+.city-world-observation progress::-webkit-progress-bar{background:var(--ui-raised)}
+.city-world-observation progress::-webkit-progress-value{background:var(--ui-success)}
+.city-world-observation progress::-moz-progress-bar{background:var(--ui-success)}
+.city-world-observation header>div{min-width:0}
+.city-world-observation header>button{flex-shrink:0}
+.city-world-observation :is(h2,p,strong,span){overflow-wrap:anywhere}

@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-16",
+  "runtime": "Vite5315/fresh QA200 API5316",
+  "publicScenario": "tests/e2e/navigation-scope-recovery.spec.ts",
+  "testSha256": "786cc1b1dcd5d427ee202edd017b30f49e8522eb985420b2d780b61ad2beea72",
+  "browser": {
+    "initialPass": 4,
+    "lateSceneDeliveryRepeatPass": 2,
+    "profiles": [
+      "desktop-chromium",
+      "iphone-webkit"
+    ],
+    "pageerrors": 0
+  },
+  "boundaries": [
+    "P1 foreign select is a controlled reply derived from authorized bootstrap; actual native logout/login, no foreign membership claim",
+    "P2 controlled incoming Socket.IO frame on existing WebSocket, no server event write; held real backend scene delivered via route.fetch/fulfill",
+    "No Task/country/membership creation or mutation",
+    "Post-fix GREEN only; no RED claim",
+    "Final immutable matrix pending; emulation is not physical-device evidence"
+  ],
+  "finalStates": [
+    {
+      "profileCase": "navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-ui-review-mobile-webkit",
+      "raw": ".builder/world-perf-20261016/navigation-scope/navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-ui-review-mobile-webkit/popstate-city-cancel-epoch.json",
+      "url": "http://127.0.0.1:5315/?countryId=5cd62ace-ff7c-46e9-93c2-0021c9268b91",
+      "mode": "PLANET",
+      "taskDepth": 0
+    },
+    {
+      "profileCase": "navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-chromium",
+      "raw": ".builder/world-perf-20261016/navigation-scope/navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-chromium/popstate-city-cancel-epoch.json",
+      "url": "http://127.0.0.1:5315/?countryId=5cd62ace-ff7c-46e9-93c2-0021c9268b91",
+      "mode": "PLANET",
+      "taskDepth": 0
+    },
+    {
+      "profileCase": "navigation-scope-recovery--c575a-ter-actual-logout-and-login-chromium",
+      "raw": ".builder/world-perf-20261016/navigation-scope/navigation-scope-recovery--c575a-ter-actual-logout-and-login-chromium/initial-country-auth-epoch.json",
+      "url": "http://127.0.0.1:5315/?countryId=5cd62ace-ff7c-46e9-93c2-0021c9268b91",
+      "mode": "PLANET",
+      "taskDepth": 0
+    },
+    {
+      "profileCase": "navigation-scope-recovery--c575a-ter-actual-logout-and-login-ui-review-mobile-webkit",
+      "raw": ".builder/world-perf-20261016/navigation-scope/navigation-scope-recovery--c575a-ter-actual-logout-and-login-ui-review-mobile-webkit/initial-country-auth-epoch.json",
+      "url": "http://127.0.0.1:5315/?countryId=5cd62ace-ff7c-46e9-93c2-0021c9268b91",
+      "mode": "PLANET",
+      "taskDepth": 0
+    },
+    {
+      "profileCase": "navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-ui-review-mobile-webkit",
+      "raw": ".builder/world-perf-20261016/navigation-scope-late/navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-ui-review-mobile-webkit/popstate-city-cancel-epoch.json",
+      "url": "http://127.0.0.1:5315/?countryId=5cd62ace-ff7c-46e9-93c2-0021c9268b91",
+      "mode": "PLANET",
+      "taskDepth": 0
+    },
+    {
+      "profileCase": "navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-chromium",
+      "raw": ".builder/world-perf-20261016/navigation-scope-late/navigation-scope-recovery--e54fd-fore-its-late-scene-arrives-chromium/popstate-city-cancel-epoch.json",
+      "url": "http://127.0.0.1:5315/?countryId=5cd62ace-ff7c-46e9-93c2-0021c9268b91",
+      "mode": "PLANET",
+      "taskDepth": 0
+    }
+  ]
+}

@@ -2,7 +2,8 @@ import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
-import type { ChunkTaskDto, TaskDto } from "../../src/shared/contracts";
+import type { ChunkTaskDto } from "../../src/shared/contracts";
+import type { TaskCardDto } from "../../src/shared/task-read-contracts";
 import { TASK_PARK_VARIANTS } from "../../src/shared/task-park-catalog";
 import { PUBLIC_SPACES_CITY_NAME, PUBLIC_SPACES_PLAN } from "../fixtures/compact-public-spaces-plan";
 
@@ -45,12 +46,12 @@ function taskCenter(task: ChunkTaskDto) {
 }
 async function clickCanonicalPark(page: Page, task: ChunkTaskDto) {
   const point = await pointAt(page, taskCenter(task));
-  const response = page.waitForResponse(response => new URL(response.url()).pathname === `/api/tasks/${task.id}`
+  const response = page.waitForResponse(response => new URL(response.url()).pathname === `/api/tasks/${task.id}/card`
     && response.request().method() === "GET");
   await page.mouse.click(point.x, point.y);
   const loaded = await response;
   expect(loaded.status(), await loaded.text()).toBe(200);
-  expect(await loaded.json() as TaskDto).toMatchObject({ id: task.id, stage: task.stage, visualAssetKey: task.visualAssetKey });
+  expect(await loaded.json() as TaskCardDto).toMatchObject({ id: task.id, stage: task.stage, visualAssetKey: task.visualAssetKey });
   await expect(page.getByRole("dialog").locator("#task-title")).toHaveText(task.title);
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await expect(page.locator(".task-modal")).toHaveCount(0);

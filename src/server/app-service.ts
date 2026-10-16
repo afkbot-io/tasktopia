@@ -1,3 +1,6 @@
+import type { AppServiceRuntimeStats, CacheCounters } from "./runtime-stat-contracts";
+import { capturesCityMilestone, milestoneCityBefore, readCityDevelopmentFacts } from "./city-album-read";
+import { taskScalarChanges } from "../shared/task-scalar-history";
 import { readPersonalTransportRenderSnapshot } from "./world/personal-transport-render-snapshot";
 import { railPolyline } from "../shared/rail-convoy";
 import { transportSchedule } from "../shared/transport-schedule";
@@ -78,6 +81,7 @@ type WorldFeatureDto
 } from "../shared/contracts";
 import { COUNTRY_OVERVIEW_SCHEMA_VERSION,encodeCountryTerrain,type CountryOverviewDistrictDto,type CountryOverviewDto } from "../shared/country-overview-contract";
 import { countryOverviewEventImpact } from "../shared/country-overview-events";
+import { eventInvalidation, mapInvalidationAffectsCity, mapInvalidationImpact } from "../shared/map-invalidation";
 import { greenAreaPathCells } from "../shared/green-area";
 import { projectPlanetAtlas } from "../shared/planet-atlas";
 import { PLANET_ATLAS_SCHEMA_VERSION,type PlanetAtlasDto } from "../shared/planet-atlas-contract";
@@ -92,7 +96,10 @@ import { config } from "./config";
 import type { Db } from "./db";
 import { isTransactionActive,now,onTransactionCommit,onTransactionRollback,transaction } from "./db";
 import type { SharedWorldCache } from "./optional-redis-cache";
-import { readTaskDetailRow,taskDetailRows } from "./task-detail-read";
+import { readTaskCardRow,readTaskCoreRow,readTaskDetailRow,taskDetailRows } from "./task-detail-read";
+import { readTaskListPageRows, type TaskListFilters } from "./task-list-read";
+import { collectionCursor, readTaskCollectionRows, type CollectionOrder } from "./task-collection-read";
+import type { TaskListPageDto,TaskCardDto,TaskCollection,TaskCollectionItems,TaskCollectionPageDto,TaskCollectionCounts,TaskCommandResultDto,TaskDocumentMetadataDto,TaskMutationResult,TaskResultMode } from "../shared/task-read-contracts";
 import { blockTaskGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchronizeCityBlocks,CitySceneCapacityError } from "./world/active-block-layout";
 import { readCountryRoads, synchronizeCountryRoads } from "./world/intercity-road-store";
 import { citySceneIntercityRoads, intercityRoadCorridors, intercityRoadRasterNetwork } from "../shared/intercity-roads";
@@ -296,6 +303,31 @@ function taskChecklistItemDto(row: Row): TaskChecklistItemDto {
   };
 }
 
+
+type TaskCoreDto = Omit<TaskCardDto, "kind" | "version" | "countryId" | "counts" | "documentMetadata" | "documentsNextCursor">;
+function documentMetadataDto(row: Row): TaskDocumentMetadataDto {
+  return { id: String(row.id), taskId: String(row.task_id), fileName: String(row.file_name), title: String(row.title),
+    isDefault: Boolean(row.is_default), position: Number(row.position), actor: String(row.actor), updatedAt: String(row.updated_at),
+    isFilled: Boolean(row.is_filled), contentLength: Number(row.content_length) };
+}
+function collectionItemDto(collection: TaskCollection, row: Row, taskId: string): TaskCollectionItems[TaskCollection] {
+  switch (collection) {
+    case "comments": return { id: String(row.id), taskId, body: String(row.body), actor: String(row.actor), createdAt: String(row.created_at) };
+    case "events": return { id: Number(row.id), taskId, type: String(row.event_type) as TaskEventDto["type"],
+      actor: String(row.actor_label), actorUserId: row.actor_user_id ? String(row.actor_user_id) : null,
+      details: json<Record<string, unknown>>(row.details_json), createdAt: String(row.created_at) };
+    case "defects": return { id: String(row.id), taskId, title: String(row.title), description: String(row.description),
+      reproductionSteps: String(row.reproduction_steps), actualResult: String(row.actual_result), expectedResult: String(row.expected_result),
+      status: String(row.status) as TaskDefectDto["status"], fixedAt: row.fixed_at ? String(row.fixed_at) : null,
+      createdAt: String(row.created_at), updatedAt: String(row.updated_at) };
+    case "attachments": return attachmentDto(row);
+    case "documents": return documentMetadataDto(row);
+    case "checklist": return taskChecklistItemDto(row);
+    case "dependencies": return { id: String(row.id), taskNumber: Number(row.task_number), title: String(row.title), status: String(row.status) as TaskStatus };
+    case "mergeRequests": return { url: String(row.url), title: String(row.title), actor: String(row.actor), addedAt: String(row.created_at) };
+  }
+}
+
 const DEFAULT_TASK_DOCUMENTS = [
   { fileName: "system-analysis.md", title: "Системный анализ", position: 0, legacyField: "system_analysis" },
   { fileName: "architecture.md", title: "Архитектура", position: 1, legacyField: "architecture" },
@@ -360,6 +392,10 @@ export interface WorldGenerationDispatcher {
 }
 
 export class AppService {
+  private readonly cacheCounters: Record<"layouts" | "chunks" | "countryOverviews" | "cityScenes", CacheCounters> = {
+    layouts: { hits: 0, misses: 0, builds: 0, bypasses: 0 }, chunks: { hits: 0, misses: 0, builds: 0, bypasses: 0 },
+    countryOverviews: { hits: 0, misses: 0, builds: 0, bypasses: 0 }, cityScenes: { hits: 0, misses: 0, builds: 0, bypasses: 0 },
+  };
   private readonly blockLayouts = new Map<string, { revision: number; promise: Promise<CompiledBlockLayoutV1 | undefined> }>();
   private readonly chunkCache = new Map<string, ChunkPayloadDto>();
   private readonly pendingChunkBuilds = new Map<string, Promise<ChunkPayloadDto>>();
@@ -381,12 +417,23 @@ export class AppService {
     private readonly sharedWorldCache?: SharedWorldCache,
   ) {}
 
+  /** Operator metadata only: never enumerate keys or execute SQL. */
+  runtimeStats(): AppServiceRuntimeStats {
+    return { kind: "app-service.runtime-stats", version: 1, caches: {
+      layouts: { ...this.cacheCounters.layouts, entries: this.blockLayouts.size, maxEntries: 32 },
+      chunks: { ...this.cacheCounters.chunks, entries: this.chunkCache.size, maxEntries: AppService.CHUNK_CACHE_LIMIT },
+      countryOverviews: { ...this.cacheCounters.countryOverviews, entries: this.countryOverviewCache.size, maxEntries: 128 },
+      cityScenes: { ...this.cacheCounters.cityScenes, entries: this.citySceneCache.size, maxEntries: 8 },
+    }, pendingChunkBuilds: this.pendingChunkBuilds.size, knownCountryVersions: this.knownWorldVersions.size };
+  }
+
   private async activeLayout(cityId: string): Promise<CompiledBlockLayoutV1 | undefined> {
-    if (isTransactionActive()) return readActiveBlockLayout(this.db,cityId);
+    if (isTransactionActive()) { this.cacheCounters.layouts.bypasses++; this.cacheCounters.layouts.builds++; return readActiveBlockLayout(this.db,cityId); }
     const head=await this.db.prepare("SELECT revision FROM city_layouts_v1 WHERE city_id=? AND status='ACTIVE'").get<{revision:number}>(cityId);
-    if(!head){this.blockLayouts.delete(cityId);return undefined;}
+    if(!head){this.cacheCounters.layouts.misses++;this.blockLayouts.delete(cityId);return undefined;}
     const cached=this.blockLayouts.get(cityId);
-    if(cached?.revision===Number(head.revision)) return cached.promise;
+    if(cached?.revision===Number(head.revision)) { this.cacheCounters.layouts.hits++; return cached.promise; }
+    this.cacheCounters.layouts.misses++; this.cacheCounters.layouts.builds++;
     const promise=readActiveBlockLayout(this.db,cityId).catch(error=>{this.blockLayouts.delete(cityId);throw error;});
     this.blockLayouts.set(cityId,{revision:Number(head.revision),promise});
     while(this.blockLayouts.size>32) this.blockLayouts.delete(this.blockLayouts.keys().next().value!);
@@ -500,8 +547,7 @@ export class AppService {
   }
 
   private chunkInvalidationScope(event: RealtimeEvent): "NONE" | "ALL" | Rect {
-    if (event.type === "task.comment_added" || event.type === "task.assignee_changed"
-      || event.type === "country.profile_updated" || event.type === "archive.record_updated") return "NONE";
+    if (mapInvalidationImpact(eventInvalidation(event)) === "NONE") return "NONE";
     const candidate = event.payload.affectedBounds as Partial<Rect> | undefined;
     const hasBounds = candidate
       && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite);
@@ -563,13 +609,26 @@ export class AppService {
     if (countryOverviewEventImpact(event) !== "NONE") {
       for (const key of this.countryOverviewCache.keys()) if (key.includes(`:${event.countryId}:`)) this.countryOverviewCache.delete(key);
     }
-    if (this.chunkInvalidationScope(event) !== "NONE") {
-      for (const key of this.citySceneCache.keys()) if (key.startsWith(`${event.countryId}:`)) this.citySceneCache.delete(key);
+    const invalidation = eventInvalidation(event);
+    const visual = mapInvalidationImpact(invalidation) !== "NONE";
+    for (const [key, scene] of this.citySceneCache) {
+      const [countryId, cityId, version] = key.split(":");
+      if (countryId !== event.countryId || Number(version) >= event.worldVersion) continue;
+      this.citySceneCache.delete(key);
+      // A missing intermediate event could contain a physical change. Only
+      // advance a projection after every country-local publication is known.
+      if (Number(version) + 1 !== event.worldVersion || (visual && mapInvalidationAffectsCity(invalidation, cityId))) continue;
+      const nextKey = `${countryId}:${cityId}:${event.worldVersion}`;
+      if (!this.citySceneCache.has(nextKey)) this.citySceneCache.set(nextKey, {
+        ...scene,
+        chunks: scene.chunks.map(chunk => ({ ...chunk, publishedVersion: event.worldVersion })),
+      });
     }
     const knownVersion = this.knownWorldVersions.get(event.countryId) ?? 0;
     if (event.worldVersion <= knownVersion) return;
     this.knownWorldVersions.set(event.countryId, event.worldVersion);
-    if (this.chunkInvalidationScope(event) !== "NONE") this.blockLayouts.clear();
+    // activeLayout checks the canonical revision before reuse. Clearing every
+    // country's immutable layout after a local task change discards safe work.
     this.invalidateChunkCache(event.countryId, event);
 
   }
@@ -633,11 +692,18 @@ export class AppService {
   }
 
   /** Command identity survives renderer migrations; only its read projection changes. */
-  async rehydrateGenerationResult<T>(countryId: string, operation: string, result: T): Promise<T> {
+  async rehydrateGenerationResult<T>(countryId: string, operation: string, result: T, resultMode?: "full"): Promise<T>;
+  async rehydrateGenerationResult<T>(countryId: string, operation: string, result: T, resultMode: TaskResultMode): Promise<T | TaskCommandResultDto>;
+  async rehydrateGenerationResult<T>(countryId: string, operation: string, result: T, resultMode: TaskResultMode = "full"): Promise<T | TaskCommandResultDto> {
     const kind = SPATIAL_RESULT_KINDS.get(operation);
     if (!kind) return result;
     const id = result && typeof result === "object" && "id" in result ? result.id : undefined;
     if (typeof id !== "string") throw new DomainError("NOT_FOUND", "Сохранённый результат операции больше недоступен");
+    if (result && typeof result === "object" && "receiptVersion" in result && result.receiptVersion === 2
+      && (!("entityKind" in result) || result.entityKind !== kind || !("entityId" in result) || result.entityId !== id)) {
+      throw new DomainError("CONFLICT", "Сохранённая ссылка результата не соответствует операции");
+    }
+    if (kind === "task" && resultMode === "compact") return this.taskCommandResult(countryId, await this.getTaskCore(countryId, id));
     if (kind === "task") return await this.getTask(countryId, id) as T;
     if (kind === "city") {
       const row = await this.db.prepare("SELECT * FROM cities_v3 WHERE id=? AND country_id=?").get<Row>(id, countryId);
@@ -652,14 +718,14 @@ export class AppService {
     return district as T;
   }
 
-  private async mutate<T>(countryId: string, operation: string, idempotencyKey: string, payload: unknown, callback: () => Promise<{ data: T; eventType: string; eventPayload: Record<string, unknown> }> | { data: T; eventType: string; eventPayload: Record<string, unknown> }): Promise<T> {
+  private async mutate<T>(countryId: string, operation: string, idempotencyKey: string, payload: unknown, callback: () => Promise<{ data: T; eventType: string; eventPayload: Record<string, unknown> }> | { data: T; eventType: string; eventPayload: Record<string, unknown> }, resultMode: TaskResultMode = "full"): Promise<T> {
     if (!idempotencyKey || idempotencyKey.length > 160) throw new DomainError("INVALID_INPUT", "Нужен корректный idempotencyKey");
     const requestHash = stableHash(payload);
     const existing = await this.db.prepare("SELECT request_hash, response_json FROM idempotency WHERE country_id = ? AND operation = ? AND idempotency_key = ?")
                       .get(countryId, operation, idempotencyKey) as Row | undefined;
     if (existing) {
       if (existing.request_hash !== requestHash) throw new DomainError("CONFLICT", "Этот idempotencyKey уже использован с другими данными");
-      return this.rehydrateGenerationResult(countryId, operation, json<T>(existing.response_json));
+      return await this.rehydrateGenerationResult(countryId, operation, json<T>(existing.response_json), resultMode) as T;
     }
     let emitted: RealtimeEvent | undefined;
     const data = await transaction(this.db, async () => {
@@ -668,11 +734,21 @@ export class AppService {
                                                                                                       .get(countryId, operation, idempotencyKey) as Row | undefined;
                                 if (raced) {
                                   if (raced.request_hash !== requestHash) throw new DomainError("CONFLICT", "Этот idempotencyKey уже использован с другими данными");
-                                  return this.rehydrateGenerationResult(countryId, operation, json<T>(raced.response_json));
+                                  return await this.rehydrateGenerationResult(countryId, operation, json<T>(raced.response_json), resultMode) as T;
                                 }
                                 const transportMutation=/^(?:task\.(?:create|delete|transfer|status)|city\.(?:create|delete)|district\.delete|country\.regenerate)\.v\d+$/.test(operation);
                                 const transportBefore=transportMutation?await readCountryTransportNetworks(this.db,countryId):null;
+                                const captureMilestone = capturesCityMilestone(operation, payload);
+                                const previousCityId = captureMilestone ? await milestoneCityBefore(this.db, countryId, payload) : undefined;
+                                const beforeDevelopment = previousCityId ? await readCityDevelopmentFacts(this.db, countryId, previousCityId) : undefined;
                                 const result = await callback();
+                                if (captureMilestone) {
+                                  const data = result.data && typeof result.data === "object" ? result.data as Record<string, unknown> : undefined;
+                                  const cityId = typeof result.eventPayload.cityId === "string" ? result.eventPayload.cityId
+                                    : typeof data?.cityId === "string" ? data.cityId : result.eventType === "city.created" && typeof data?.id === "string" ? data.id : previousCityId;
+                                  if (cityId) result.eventPayload.development = { version: 1, cityId, before: beforeDevelopment ?? null,
+                                    after: await readCityDevelopmentFacts(this.db, countryId, cityId) ?? null };
+                                }
                                 if(transportBefore && await synchronizeCountryTransportNetworks(this.db,countryId,transportBefore))result.eventPayload.transportTopologyChanged=true;
                                 if (["city.created", "city.deleted", "district.created", "district.deleted", "task.created", "task.deleted", "task.transferred", "country.regenerated"].includes(result.eventType)) {
                                   // A newly connected remote city also needs a
@@ -688,8 +764,14 @@ export class AppService {
                                 // canonical mutation so a restart cannot revive
                                 // geometry that is already stale.
                                 await this.invalidatePublishedChunkPayloads(countryId, emitted);
+                                const kind = SPATIAL_RESULT_KINDS.get(operation);
+                                const entity = result.data && typeof result.data === "object" ? result.data as Record<string,unknown> : undefined;
+                                const receipt = kind && typeof entity?.id === "string"
+                                  ? { receiptVersion: 2, entityKind: kind, entityId: entity.id, id: entity.id,
+                                    ...(kind === "task" && typeof entity.taskNumber === "number" ? { taskNumber: entity.taskNumber } : {}) }
+                                  : result.data;
                                 await this.db.prepare("INSERT INTO idempotency (country_id, operation, idempotency_key, request_hash, response_json, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-                                                                          .run(countryId, operation, idempotencyKey, requestHash, JSON.stringify(result.data), now());
+                                                                          .run(countryId, operation, idempotencyKey, requestHash, JSON.stringify(receipt), now());
                                 return result.data;
                               });
     if (emitted) {
@@ -1055,10 +1137,12 @@ export class AppService {
     const cacheKey = `${userId}:${countryId}:${geographyRevision}`;
     const cached = this.countryOverviewCache.get(cacheKey);
     if (cached) {
+      this.cacheCounters.countryOverviews.hits++;
       this.countryOverviewCache.delete(cacheKey);
       this.countryOverviewCache.set(cacheKey, cached);
       return cached;
     }
+    this.cacheCounters.countryOverviews.misses++;
     const storedSnapshot = await this.db.prepare(`SELECT payload_json FROM country_overview_snapshots_v1
       WHERE user_id = ? AND country_id = ? AND schema_version = ? AND planet_revision = ?`)
       .get<{ payload_json: CountryOverviewDto }>(userId, countryId, COUNTRY_OVERVIEW_SCHEMA_VERSION, geographyRevision);
@@ -1074,6 +1158,7 @@ export class AppService {
       });
       return storedOverview;
     }
+    this.cacheCounters.countryOverviews.builds++;
     const [country, cities, districtRows] = await Promise.all([
       this.countryRow(countryId),
       this.listCities(countryId),
@@ -1287,16 +1372,19 @@ export class AppService {
       this.countryRow(countryId),
     ]);
     if (!cityRow) throw new DomainError("NOT_FOUND", "Город не найден");
-    const layout = await this.activeLayout(cityId);
-    if (!layout) throw new DomainError("WORLD_REGENERATION_REQUIRED", "Геометрия города ещё не пересобрана. Требуется перегенерация мира.");
     const city = cityDto(cityRow);
     const cacheKey = `${countryId}:${cityId}:${Number(country.world_version)}`;
     const cached = this.citySceneCache.get(cacheKey);
     if (cached) {
+      this.cacheCounters.cityScenes.hits++;
       this.citySceneCache.delete(cacheKey);
       this.citySceneCache.set(cacheKey, cached);
       return cached;
     }
+    this.cacheCounters.cityScenes.misses++;
+    const layout = await this.activeLayout(cityId);
+    if (!layout) throw new DomainError("WORLD_REGENERATION_REQUIRED", "Геометрия города ещё не пересобрана. Требуется перегенерация мира.");
+    this.cacheCounters.cityScenes.builds++;
     const groundRoadSnapshot = await readCountryRoads(this.db, countryId);
     if (!groundRoadSnapshot && layout.blocks.length > 0) {
       throw new DomainError("WORLD_REGENERATION_REQUIRED", "Межгородские дороги ещё не пересобраны. Требуется перегенерация мира.");
@@ -1381,7 +1469,7 @@ export class AppService {
       railway,
       intercityRoads,
       roadContext,
-      chunks: sceneChunks.map((chunk) => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash, version: chunk.publishedVersion })),
+      chunks: sceneChunks.map((chunk) => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash })),
     };
     const scene: CitySceneDto = {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
@@ -1534,6 +1622,58 @@ export class AppService {
     return readPermanentSiteFeatures(this.db,countryId);
   }
 
+
+  private async projectTaskCore(row: Row): Promise<TaskCoreDto> {
+    const core = row;
+    const task = (await this.projectTasks([core]))[0]!;
+    const accounts = taskDetailRows(row, "accounts");
+    const account = (id: unknown) => {
+      const value = accounts.find(item => item.id === id);
+      return value ? { id: String(value.id), name: String(value.name), email: String(value.email) } : null;
+    };
+    // Remove deliberately omitted fields instead of publishing a partial TaskDto.
+    const base = Object.fromEntries(Object.entries(task).filter(([key]) =>
+      !["systemAnalysis", "architecture", "designSystem", "implementationPlan", "mergeRequests"].includes(key))) as TaskCoreDto;
+    return { ...base, creator: account(core.creator_user_id), assignee: account(core.assignee_user_id), forUser: account(core.for_user_id) };
+  }
+
+  private async getTaskCore(countryId: string, taskId: string): Promise<TaskCoreDto> {
+    const row = await readTaskCoreRow(this.db, countryId, taskId);
+    if (!row) throw new DomainError("NOT_FOUND", "Задача не найдена");
+    return this.projectTaskCore(row);
+  }
+
+  private taskCommandResult(countryId: string, task: TaskCoreDto): TaskCommandResultDto {
+    return { kind: "task.command-result", version: 1, countryId, id: task.id, taskNumber: task.taskNumber,
+      cityId: task.cityId, districtId: task.districtId, title: task.title, workItemType: task.workItemType,
+      estimate: task.estimate, priority: task.priority, status: task.status, progress: task.progress,
+      stage: task.stage, updatedAt: task.updatedAt };
+  }
+
+  async getTaskCard(countryId: string, taskId: string): Promise<TaskCardDto> {
+    const row = await readTaskCardRow(this.db, countryId, taskId);
+    if (!row) throw new DomainError("NOT_FOUND", "Задача не найдена");
+    const documents = taskDetailRows(row, "document_metadata");
+    return { ...(await this.projectTaskCore(row)), kind: "task.card", version: 1, countryId,
+      counts: json<TaskCollectionCounts>(row.counts), documentMetadata: documents.slice(0, 50).map(documentMetadataDto),
+      documentsNextCursor: documents.length > 50 ? collectionCursor(countryId, taskId, "documents", "asc", documents[49]!) : null };
+  }
+
+  async getTaskCollection<Collection extends TaskCollection>(countryId: string, taskId: string, collection: Collection,
+    options: { cursor?: string; limit?: number; order?: CollectionOrder } = {}): Promise<TaskCollectionPageDto<Collection>> {
+    const page = await readTaskCollectionRows(this.db, countryId, taskId, collection, options);
+    return { kind: "task.collection-page", version: 1, countryId, taskId, collection,
+      items: page.rows.map(row => collectionItemDto(collection, row, taskId)) as TaskCollectionItems[Collection][], nextCursor: page.nextCursor };
+  }
+
+  async getTaskDocument(countryId: string, taskId: string, documentId: string): Promise<TaskDocumentDto> {
+    const row = await this.db.prepare(`SELECT document.* FROM task_documents_v1 document
+      JOIN tasks_v3 task ON task.id=document.task_id JOIN cities_v3 city ON city.id=task.city_id
+      WHERE document.id=? AND task.id=? AND city.country_id=?`).get<Row>(documentId, taskId, countryId);
+    if (!row) throw new DomainError("NOT_FOUND", "Документ не найден");
+    return taskDocumentDto(row);
+  }
+
   async getTask(countryId: string, taskId: string): Promise<TaskDto> {
     const row = await readTaskDetailRow(this.db,countryId,taskId);
     if (!row) throw new DomainError("NOT_FOUND", "Задача не найдена");
@@ -1568,6 +1708,14 @@ export class AppService {
     task.documents = taskDetailRows(row,"documents").map(taskDocumentDto);
     task.checklist = taskDetailRows(row,"checklist").map(taskChecklistItemDto);
     return task;
+  }
+
+  async listTaskPage(countryId: string, options: TaskListFilters = {}): Promise<TaskListPageDto> {
+    const page = await readTaskListPageRows(this.db, countryId, options);
+    const projected = await this.projectTaskSearchRows(page.rows);
+    return { kind: "task.list-page", version: 1, countryId,
+      items: projected.map((task, index) => ({ ...task, estimate: Number(page.rows[index]!.estimate) as Estimate,
+        priority: String(page.rows[index]!.priority) as TaskPriority, updatedAt: String(page.rows[index]!.updated_at) })), nextCursor: page.nextCursor };
   }
 
   async searchTasks(countryId: string, query: string, limit = 10): Promise<TaskSearchResultDto[]> {
@@ -2130,7 +2278,8 @@ export class AppService {
       if(visualKind==="PARK"&&!isTaskParkVariant(parkVariant)) throw new DomainError("INVALID_INPUT","Неизвестный вариант общественного пространства");
       if(visualKind==="BUILDING"&&input.parkVariant) throw new DomainError("INVALID_INPUT","parkVariant допустим только для общественного пространства");
       const id=randomUUID(),createdAt=now();
-      const taskNumber=Number((await this.db.prepare("SELECT COALESCE(MAX(t.task_number),0)+1 AS next FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=?").get(countryId) as Row).next);
+      // PostgreSQL allocates the lifetime number for both this and rollback images.
+      const taskNumber=0;
       await this.db.prepare(`INSERT INTO tasks_v3(id,task_number,city_id,district_id,title,description,work_item_type,acceptance_criteria,system_analysis,architecture,design_system,implementation_plan,estimate,priority,status,progress,due_at,building_type,visual_kind,visual_asset_key,platform_type,creator_user_id,assignee_user_id,assignee_role,for_user_id,created_at,updated_at)
         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PLANNING',0,?,?,?,?,?,?,?,?,?,?,?)`).run(id,taskNumber,input.cityId,String(district.id),title,input.description?.trim().slice(0,8000)??"",input.workItemType??"TASK",input.acceptanceCriteria?.trim().slice(0,8000)??"",input.systemAnalysis?.trim().slice(0,16000)??"",input.architecture?.trim().slice(0,16000)??"",input.designSystem?.trim().slice(0,16000)??"",input.implementationPlan?.trim().slice(0,16000)??"",input.estimate,input.priority??"NORMAL",input.dueAt??null,"compact-apartment-v1",visualKind,visualKind==="PARK"?parkVariant:"compact-apartment-v1",visualKind==="PARK"?"PARK":"STONE",input.creatorUserId??null,input.assigneeUserId??null,input.assigneeRole?.trim()??null,input.forUserId??null,createdAt,createdAt);
       await this.db.prepare("UPDATE tasks_v3 SET visual_auto=?,requested_building_family=? WHERE id=?").run(!input.visualKind&&!input.buildingHint&&!input.parkVariant,visualKind==="BUILDING"?input.buildingHint??null:null,id);
@@ -2153,7 +2302,7 @@ export class AppService {
                       const task = await this.getTask(countryId, input.taskId);
                       const updatedAt = now();
                       await this.db.prepare("UPDATE tasks_v3 SET title = ?, updated_at = ? WHERE id = ?").run(title, updatedAt, input.taskId);
-                      await this.recordTaskEvent(input.taskId, "TITLE_CHANGED", input.actor ?? "MCP", input.actorUserId, { from: task.title, to: title }, updatedAt);
+                      await this.recordTaskEvent(input.taskId, "TITLE_CHANGED", input.actor ?? "MCP", input.actorUserId, { from: task.title, to: title, changes: taskScalarChanges(task, { ...task, title }) }, updatedAt);
                       const data = await this.getTask(countryId, input.taskId);
                       return { data, eventType: "task.renamed", eventPayload: { taskId: input.taskId, districtId: task.districtId, title, affectedBounds: boundsOf(data.footprint) } };
                     });
@@ -2201,7 +2350,10 @@ export class AppService {
       const changedFields = Object.entries(input)
         .filter(([field, value]) => value !== undefined && !["countryId", "taskId", "idempotencyKey", "actor", "actorUserId"].includes(field))
         .map(([field]) => field);
-      await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { changedFields }, updatedAt);
+      await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { changedFields,
+        changes: taskScalarChanges(current, { ...current, title, workItemType: input.workItemType ?? current.workItemType,
+          estimate: input.estimate ?? current.estimate, priority: input.priority ?? current.priority,
+          dueAt: input.dueAt === undefined ? current.dueAt : input.dueAt }) }, updatedAt);
       const data = await this.getTask(countryId, input.taskId);
       return { data, eventType: "task.fields_updated", eventPayload: { taskId: data.id, districtId: data.districtId, changedFields, affectedBounds: boundsOf(data.footprint) } };
     });
@@ -2318,9 +2470,9 @@ export class AppService {
     });
   }
 
-  async updateTaskStatus(countryId: string, input: { taskId: string; status: TaskStatus; progress?: number; comment?: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
-    return await this.mutate(countryId, "task.status.v3", input.idempotencyKey, input, async () => {
-                      const task = await this.getTask(countryId, input.taskId);
+  async updateTaskStatus<Mode extends TaskResultMode = "full">(countryId: string, input: { taskId: string; status: TaskStatus; progress?: number; comment?: string; actor?: string; actorUserId?: string; idempotencyKey: string }, resultMode?: Mode): Promise<TaskMutationResult<Mode>> {
+    return await this.mutate<TaskMutationResult<Mode>>(countryId, "task.status.v3", input.idempotencyKey, input, async () => {
+                      const task = await this.getTaskCore(countryId, input.taskId);
                       const district = await this.db.prepare("SELECT status FROM districts_v3 WHERE id = ?").get(task.districtId) as Row | undefined;
                       if (district?.status === "PLANNED" && input.status !== "PLANNING") {
                         throw new DomainError("DISTRICT_NOT_ACTIVE", "Задачу планового района нельзя начать до активации района");
@@ -2333,8 +2485,8 @@ export class AppService {
                       }
                       if (to > from + 1) throw new DomainError("INVALID_TRANSITION", "Нельзя пропускать стадии строительства");
                       if (input.status === "COMPLETED") {
-                        const incompleteChecklist = task.checklist?.filter((item) => !item.done) ?? [];
-                        if (incompleteChecklist.length > 0) {
+                        const incompleteChecklist = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM task_checklist_items_v1 WHERE task_id=? AND NOT done").get(task.id) as Row).count);
+                        if (incompleteChecklist > 0) {
                           throw new DomainError("CHECKLIST_INCOMPLETE", "Нельзя завершить задачу, пока в чек-листе есть невыполненные пункты");
                         }
                         const activeDefects = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM task_defects_v18 WHERE task_id = ? AND status <> 'FIXED'").get(task.id) as Row).count);
@@ -2348,61 +2500,68 @@ export class AppService {
                       // Reading/progress updates never take ownership away from another member.
                       const autoAssign = !task.assignee && input.actorUserId &&
                         task.status === "PLANNING" && input.status === "STARTED";
+                      let autoAssignedName: string | undefined;
                       if (autoAssign) {
-                        const member = await this.db.prepare("SELECT role FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, input.actorUserId) as Row | undefined;
+                        const member = await this.db.prepare("SELECT membership.role,account.name FROM country_members membership JOIN users account ON account.id=membership.user_id WHERE membership.country_id=? AND membership.user_id=?").get(countryId, input.actorUserId) as Row | undefined;
+                        autoAssignedName = member ? String(member.name) : undefined;
                         if (!member || member.role === "VIEWER") throw new DomainError("FORBIDDEN", "Начать работу может только участник с правом изменения задач");
                         await this.db.prepare("UPDATE tasks_v3 SET assignee_user_id = ? WHERE id = ?").run(input.actorUserId, task.id);
                         await this.recordTaskEvent(task.id, "ASSIGNEE_CHANGED", input.actor ?? "MCP", input.actorUserId,
-                          { fromUserId: null, toUserId: input.actorUserId, reason: "WORK_STARTED" }, updatedAt);
+                          { fromUserId: null, toUserId: input.actorUserId, reason: "WORK_STARTED",
+                            changes: taskScalarChanges(task, { ...task, assignee: { id: input.actorUserId!, name: autoAssignedName } }) }, updatedAt);
                       }
                       await this.db.prepare("UPDATE tasks_v3 SET status = ?, progress = ?, updated_at = ? WHERE id = ?").run(input.status, progress, updatedAt, input.taskId);
                       if (input.comment?.trim()) await this.db.prepare("INSERT INTO task_comments_v3 (id, task_id, body, actor, created_at) VALUES (?, ?, ?, ?, ?)")
                                                                         .run(randomUUID(), input.taskId, input.comment.trim().slice(0, 8000), input.actor ?? "MCP client", updatedAt);
                       await this.recordTaskEvent(input.taskId, "STATUS_CHANGED", input.actor ?? "MCP", input.actorUserId, {
                                                         from: task.status, to: input.status, progress, comment: input.comment?.trim() || null,
+                                                        changes: taskScalarChanges(task, { ...task, status: input.status, progress, assignee: autoAssign ? { id: input.actorUserId!, name: autoAssignedName } : task.assignee }),
                                                       }, updatedAt);
                       if (task.stage !== TASK_STAGE[input.status]) await this.synchronizeBlocks(countryId, task.cityId);
-                      const data = await this.getTask(countryId, input.taskId);
+                      const updated = resultMode === "compact" ? await this.getTaskCore(countryId, input.taskId) : await this.getTask(countryId, input.taskId);
+                      const data = (resultMode === "compact" ? this.taskCommandResult(countryId, updated) : updated) as TaskMutationResult<Mode>;
                       return {
                         data,
                         eventType: "task.status_changed",
                         eventPayload: {
                           taskId: input.taskId,
                           status: input.status,
-                          ...(autoAssign ? { assigneeUserId: data.assignee?.id } : {}),
+                          ...(autoAssign ? { assigneeUserId: updated.assignee?.id } : {}),
                           progress,
                           stage: data.stage,
-                          serviceRole: data.serviceRole,
+                          serviceRole: updated.serviceRole,
                           // Ordinary building progress changes only dynamic
                           // entities and can be patched over realtime without
                           // refetching or rebaking static chunk ground. A park
                           // development change still invalidates its ground.
-                          groundChanged: data.visualKind === "PARK",
+                          groundChanged: updated.visualKind === "PARK",
                           // Frontage decorations are generated from the task's
                           // access/footprint context and can land one cell into
                           // a neighbouring chunk. Invalidate that ownership halo
                           // even though ordinary building ground remains reusable.
-                          affectedBounds: expandRect(boundsOf([...data.footprint, ...data.accessPath]), 1),
+                          affectedBounds: expandRect(boundsOf([...updated.footprint, ...updated.accessPath]), 1),
                         },
                       };
-                    });
+                    }, resultMode);
   }
 
-  async addTaskComment(countryId: string, input: { taskId: string; body: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
-    return await this.mutate(countryId, "task.comment.v3", input.idempotencyKey, input, async () => {
-                      await this.getTask(countryId, input.taskId);
-                      await this.db.prepare("INSERT INTO task_comments_v3 (id, task_id, body, actor, created_at) VALUES (?, ?, ?, ?, ?)")
-                                                        .run(randomUUID(), input.taskId, input.body.trim().slice(0, 8000), input.actor ?? "MCP client", now());
-                      await this.recordTaskEvent(input.taskId, "COMMENT_ADDED", input.actor ?? "MCP", input.actorUserId, { body: input.body.trim().slice(0, 8000) });
-                      const data = await this.getTask(countryId, input.taskId);
-                      return { data, eventType: "task.comment_added", eventPayload: { taskId: input.taskId, cityId: data.cityId, affectedBounds: boundsOf(data.footprint) } };
-                    });
+  async addTaskComment<Mode extends TaskResultMode = "full">(countryId: string, input: { taskId: string; body: string; actor?: string; actorUserId?: string; idempotencyKey: string }, resultMode?: Mode): Promise<TaskMutationResult<Mode>> {
+    return this.mutate<TaskMutationResult<Mode>>(countryId, "task.comment.v3", input.idempotencyKey, input, async () => {
+      const task = await this.getTaskCore(countryId, input.taskId);
+      const body = input.body.trim().slice(0, 8000);
+      await this.db.prepare("INSERT INTO task_comments_v3 (id, task_id, body, actor, created_at) VALUES (?, ?, ?, ?, ?)")
+        .run(randomUUID(), input.taskId, body, input.actor ?? "MCP client", now());
+      await this.recordTaskEvent(input.taskId, "COMMENT_ADDED", input.actor ?? "MCP", input.actorUserId, { body });
+      const data = (resultMode === "compact" ? this.taskCommandResult(countryId, task) : await this.getTask(countryId, input.taskId)) as TaskMutationResult<Mode>;
+      return { data, eventType: "task.comment_added", eventPayload: { taskId: input.taskId, cityId: task.cityId, affectedBounds: boundsOf(task.footprint) } };
+    }, resultMode);
   }
 
   async assignTask(countryId: string, input: { taskId: string; assigneeUserId: string | null; assigneeRole?: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
     return await this.mutate(countryId, "task.assign.v7", input.idempotencyKey, input, async () => {
                       const task = await this.getTask(countryId, input.taskId);
-                      if (input.assigneeUserId && !await this.db.prepare("SELECT 1 FROM country_members WHERE country_id = ? AND user_id = ?").get(countryId, input.assigneeUserId)) {
+                      const targetMember = input.assigneeUserId ? await this.db.prepare("SELECT account.name FROM country_members membership JOIN users account ON account.id=membership.user_id WHERE membership.country_id=? AND membership.user_id=?").get<Row>(countryId, input.assigneeUserId) : undefined;
+                      if (input.assigneeUserId && !targetMember) {
                         throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен состоять в правительстве страны");
                       }
                       if (input.assigneeRole?.trim() && input.assigneeRole.length > 80) throw new DomainError("INVALID_INPUT", "Роль ответственного не длиннее 80 символов");
@@ -2412,6 +2571,7 @@ export class AppService {
                                                         .run(input.assigneeUserId, input.assigneeRole?.trim().slice(0, 80) ?? null, updatedAt, input.taskId);
                       await this.recordTaskEvent(input.taskId, "ASSIGNEE_CHANGED", input.actor ?? "MCP", input.actorUserId, {
                                                         fromUserId: previous, toUserId: input.assigneeUserId, assigneeRole: input.assigneeRole?.trim() ?? null,
+                                                        changes: taskScalarChanges(task, { ...task, assignee: input.assigneeUserId ? { id: input.assigneeUserId, name: String(targetMember!.name) } : null }),
                                                       }, updatedAt);
                       const data = await this.getTask(countryId, input.taskId);
                       return { data, eventType: "task.assignee_changed", eventPayload: { taskId: input.taskId, assigneeUserId: input.assigneeUserId, affectedBounds: boundsOf(data.footprint) } };
@@ -2624,7 +2784,8 @@ export class AppService {
     const resolved = new Map<string, ChunkPayloadDto>();
     let unresolved = coordinates.filter(({ cacheKey }) => {
       const cached = this.cachedChunk(cacheKey);
-      if (!cached || cached.publishedVersion !== worldVersion) return true;
+      if (!cached || cached.publishedVersion !== worldVersion) { this.cacheCounters.chunks.misses++; return true; }
+      this.cacheCounters.chunks.hits++;
       resolved.set(cacheKey, cached);
       return false;
     });
@@ -2741,7 +2902,7 @@ export class AppService {
     const cacheKey = `${countryId}:${chunkX}:${chunkY}:${lod}`;
     const cached = this.cachedChunk(cacheKey);
     if (cached) {
-      if (cached.publishedVersion === worldVersion) return cached;
+      if (cached.publishedVersion === worldVersion) { this.cacheCounters.chunks.hits++; return cached; }
       // Another app replica may have committed a visual mutation and deleted
       // the shared projection while this process still owns an L1 entry. Only
       // carry a payload across world versions when the authoritative row still
@@ -2750,11 +2911,13 @@ export class AppService {
         WHERE country_id = ? AND chunk_x = ? AND chunk_y = ? AND lod = ?`)
         .get(countryId, chunkX, chunkY, lod) as Row | undefined;
       if (validation?.content_hash === cached.contentHash) {
+        this.cacheCounters.chunks.hits++;
         return this.storeChunk(cacheKey, { ...cached, publishedVersion: worldVersion });
       }
       this.chunkCache.delete(cacheKey);
     }
 
+    this.cacheCounters.chunks.misses++;
     const shared = await this.sharedWorldCache?.getChunk(this.sharedChunkKey(cacheKey, worldVersion));
     if (this.validSharedChunk(shared, chunkX, chunkY, lod, worldVersion)) return this.storeChunk(cacheKey, shared);
 
@@ -2847,6 +3010,7 @@ export class AppService {
     publish = true,
     spatialSnapshot?: ViewportSpatialSnapshot,
   ): Promise<ChunkPayloadDto> {
+    this.cacheCounters.chunks.builds++;
     const seed = Number(country.seed);
     const terrainProfile = parseWorldTerrainProfile(country.terrain_profile_json);
     const minX = chunkX * CHUNK_SIZE;

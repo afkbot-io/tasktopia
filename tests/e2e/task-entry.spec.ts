@@ -24,7 +24,7 @@ test("ошибки ссылки и карточки допускают повт�
   await page.request.post("/api/auth/login", {data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
   let failResolve = true, failDetail = true;
   await page.route("**/api/tasks/resolve?*", route => failResolve ? route.fulfill({status:503,json:{error:"TEMPORARY",message:"Связь прервалась"}}) : route.continue());
-  await page.route(/\/api\/tasks\/[a-f0-9-]{36}$/, route => failDetail ? route.fulfill({status:503,json:{error:"TEMPORARY",message:"Связь прервалась"}}) : route.continue());
+  await page.route(/\/api\/tasks\/[a-f0-9-]{36}\/card\?countryId=/, route => failDetail ? route.fulfill({status:503,json:{error:"TEMPORARY",message:"Связь прервалась"}}) : route.continue());
   await page.goto("/task/1");
   await expect(page.getByRole("alert")).toContainText("Связь прервалась");
   await expect(page.locator(".map-region")).toHaveCount(0);
@@ -42,13 +42,14 @@ test("закрытая во время поиска карточка не воз
   let release!:()=>void;
   const gate = new Promise<void>(resolve => { release=resolve; });
   let requested=false;
-  await page.route("**/api/tasks/resolve?*", async route => {requested=true;await gate;await route.continue();});
+  await page.route("**/api/tasks/resolve?*", async route => {requested=true;await gate;await route.continue().catch(()=>undefined);});
   try {
     await page.goto("/task/1");
     await expect.poll(()=>requested).toBe(true);
     await page.getByRole("button",{name:"Закрыть",exact:true}).click();
-    const response = page.waitForResponse(r=>r.url().includes("/api/tasks/resolve?"));
-    release();await response;
+    // Closing now aborts the real request. A late transport response is no
+    // longer guaranteed; the public guarantee is that it cannot reopen UI.
+    release();
     await expect(page.locator('.planet-atlas[data-planet-ready="true"]')).toBeVisible({timeout:30_000});
     await expect(page.locator(".task-modal")).toHaveCount(0);
     await expect(page.locator(".world-canvas")).toHaveCount(0);
@@ -84,13 +85,13 @@ test("карточка читается на узком и низком экра
 test("истёкшая сессия возвращает вход и сохраняет ссылку на задачу", async ({page}) => {
   await page.request.post("/api/auth/login", {data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
   let expired=false;
-  await page.route(/\/api\/tasks\/[a-f0-9-]{36}$/, async route => {
+  await page.route(/\/api\/tasks\/[a-f0-9-]{36}\/card\?countryId=/, async route => {
     if(!expired) {expired=true;await page.request.post('/api/auth/logout');await route.fulfill({status:401,json:{error:'UNAUTHORIZED'}});}
     else await route.continue();
   });
   await page.goto('/task/1');
   await expect(page.getByRole('heading',{name:'Войти в Tasktopia',exact:true})).toBeVisible();
-  await page.getByLabel('Email').fill('demo@tasktopia.local');await page.getByLabel('Пароль').fill('tasktopia-demo');
+  await page.getByLabel('Email').fill('demo@tasktopia.local');await page.getByLabel('Пароль', { exact: true }).fill('tasktopia-demo');
   await page.getByRole('button',{name:'Открыть страну',exact:true}).click();
   await expect(page.locator('#task-title')).toBeVisible();
   await expect(page.locator('.map-region,canvas')).toHaveCount(0);

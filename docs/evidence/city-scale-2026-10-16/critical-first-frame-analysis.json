@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-16",
+  "mode": "READ_ONLY_SOURCE_ANALYSIS",
+  "status": "PLAN_ONLY_NO_SOURCE_CHANGE_OR_PERFORMANCE_CLAIM",
+  "owner": "client_performance_review: WorldCanvas and first-frame integration; root accepts any change to the coherent first-frame contract",
+  "findings": [
+    {
+      "file": "src/client/components/WorldCanvas.tsx",
+      "line": 4461,
+      "boundary": "drainVisibleLoads / decodedCityRevision",
+      "observed": "Promise.all всех scene.chunks завершается до запуска resident fetch/assets/ground pipeline на4484. Для исходных fixtures это20/72 data pages. Offscreen decode не создаёт GPUviews, но всё же стоит на критическом пути первого кадра.",
+      "effect": "Сетевая/PNG и ground-bake фазы resident pages не могут перекрыть оставшуюся worker materialization всех канонических страниц."
+    },
+    {
+      "file": "src/client/components/WorldCanvas.tsx",
+      "line": 4484,
+      "boundary": "Promise.all(wanted), covered4630 and atomic4652",
+      "observed": "wanted берётся из planCityResidency: actual visible keys плюс halo1. Весь wanted ground выполняется одним ожидаемым Promise.all; covered также проверяет все wanted.",
+      "support": ["src/client/components/WorldCanvas.tsx:4729", "src/client/components/WorldCanvas.tsx:4742", "src/client/city-residency.ts:5"],
+      "effect": "Невидимый resident halo является first-frame prerequisite, хотя является запасом для следующего движения камеры."
+    },
+    {
+      "file": "src/client/components/WorldCanvas.tsx",
+      "line": 4333,
+      "boundary": "publishCitySceneEntities / requiredEntityAssets",
+      "observed": "Перед atomic ожидается PNG union всех wanted chunks и residentCompletedTasks; opening prefetch4073 также объединяет visible+halo tasks. Completed snapshots дополнительно используют16cell margin для крыш/краёв.",
+      "support": ["src/client/components/WorldCanvas.tsx:4066", "src/client/components/WorldCanvas.tsx:4073", "src/client/components/WorldCanvas.tsx:1231", "src/client/city-residency.ts:20"],
+      "effect": "PNG здания полностью за экраном может задержать все visible entities. Простое исключение halo без проверки sprite overhang нарушило бы качество края."
+    },
+    {
+      "file": "src/client/asset-lease-registry.ts",
+      "line": 74,
+      "boundary": "pendingLoads URL→batch",
+      "observed": "Все fresh URL одного load получают общий batch promise. Последующий запрос только critical subset собирает existing promises на59–62 и ждёт весь исходный batch на80. Bootstrap4061/4074 ещё явно ждёт все10terrainfamilies.",
+      "effect": "Меньший список assets у visible consumer сам по себе не устраняет зависимость от ранее запущенного mixed visible+halo batch."
+    }
+  ],
+  "alreadyCorrect": [
+    "Exterior terrain padding исключает invisible prewarm ring до paintedFrame: WorldCanvas2896–2899. waitForVisibleMapWork4636 и map-frame-work.ts фильтруют именно visibleKeys.",
+    "world-camera.ts15 уже задаёт PREFETCH_VIEWPORT_RATIO=0; дополнительный resident halo возникает в city-residency, а не в скрытом ratio камеры.",
+    "ChunkMaterializer ограничивает pool1–4 и queue32. Нельзя запускать все72materialize напрямую в обход concurrencyGate8: это изменит работу очереди/отмены.",
+    "CanonicalCityData не отдаёт частичный физический граф. Все200/1000 DTO tasks и полный физический мир должны остаться."
+  ],
+  "narrowFirstSlice": {
+    "scope": "Только порядок/перекрытие уже существующей работы WorldCanvas; не менять AssetLease, данные, геометрию, population, quality или first-frame completeness.",
+    "steps": [
+      "Сначала запустить wanted resident pipelines в existing center/visible-first order, затем очередь оставшихся canonical pages. Использовать существующие pendingChunks/dedup и concurrencyGate8.",
+      "Resident decode→asset readiness→ground bake идёт параллельно background canonical decode. Не ставить72canonical jobs в FIFOgate до resident jobs: иначе resident acquire снова окажется за ними.",
+      "До coherent publishCitySceneEntities/flushEntityReconcile и atomic всё ещё дождаться полного canonical decode и resident ground. decodedCityRevision обновляется только после проверки той же scene revision.",
+      "Сохранить all wanted residency/PNG publication на первом cut. Это уменьшает последовательную зависимость, не меняя понятие готового кадра и не показывая частичную physics."
+    ],
+    "expectedBenefit": "Только гипотеза: часть ground/PNG ожидания перекроется оставшейся worker работой. Выигрыш требует causal probe; RAF steady превышение этим source-only планом не объяснено и не обещано исправленным.",
+    "publicRedGreenPlan": [
+      "На управляемой worker границе held последняя offscreen page: resident asset/bake должен стартовать до её release, но canonical/atomic commit всё ещё ждёт её. Порядок visible-first проверяется по наблюдаемым публичным запросам.",
+      "После release остаются exact canonical tasks/chunks/hash, один scene request, pan/warm0reads и прежний canvas. Held decode failure/cancel не публикует старую scene revision.",
+      "Сохранить соседние realtime stage/decoration threshold, authoritative refresh и camera-gate regression cases; никаких ослаблений сроков или assertions."
+    ]
+  },
+  "laterSeparateSlicesIfCausalEvidenceRequires": [
+    {
+      "scope": "Critical vs halo assets/ground publication",
+      "requires": "Явно согласованный coherent first-frame contract. Critical entity set включает реальный sprite overhang/roof/prop borders и completed snapshot margins, не только task origin chunk.",
+      "guard": "Separate critical batch должен стартовать до background batch; mixed opening prefetch отменяет пользу. Background остаётся в неизменной residency/quality, camera keeps previous coherent frame до готовности следующего visible viewport."
+    },
+    {
+      "scope": "Bootstrap terrain-family preload",
+      "requires": "Visible chunk/padding first requires только реально необходимые exact atlas families; остальные10семейств догружаются после coherent paint отдельными batches.",
+      "guard": "cityTerrainAtlasesReady остаётся false до загрузки полного набора, чтобы immediate native padding не использовал незагруженный atlas. Обычный exact padding/camera gate сохраняется; placeholder/flat terrain не добавляется."
+    }
+  ],
+  "verificationOwnership": "Renderer держит GPU и выполняет causal cut/native/original failed profiles; UX сейчас не запускает browser/build/tests/SQL и не меняет production source. Full36/fresh restore остаются остановлены до явного handoff.",
+  "limits": [
+    "Строки относятся к прочитанному WIP checkpoint; владелец WorldCanvas продолжает работу, это не final immutable manifest.",
+    "Source доказывает зависимость ожиданий, но не миллисекундный вклад каждого барьера. Новые бюджеты или performance PASS не заявляются."
+  ]
+}

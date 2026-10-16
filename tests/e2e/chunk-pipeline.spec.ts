@@ -24,7 +24,7 @@ test("starts the whole-city request before slow sprite downloads", async ({ page
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   trackingCityLoad = true;
@@ -56,7 +56,7 @@ test("retries a failed building texture before the atomic scene commit", async (
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
     await openMapCity(page);
   await expect.poll(() => buildingFailureSeen, { timeout: 30_000 }).toBe(true);

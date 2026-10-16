@@ -39,7 +39,7 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
       const path = new URL(request.url()).pathname;
       if (path.endsWith("/scene") || /\/api\/(?:world\/viewport|chunks\/)/.test(path)) dataReads.push(path);
     });
-    expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).ok()).toBe(true);
+    expect((await page.request.post("/api/auth/login", { data: { email: process.env.E2E_CITY_EMAIL??"demo@tasktopia.local", password: process.env.E2E_CITY_PASSWORD??"tasktopia-demo" } })).ok()).toBe(true);
     const response = page.waitForResponse(response => new URL(response.url()).pathname.endsWith("/scene"));
     await page.goto("/"); await openMapCity(page);
     const scene = await (await response).json() as CitySceneDto;
@@ -86,6 +86,7 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
       const fraction = Math.min(1, box.width * .35 / Math.max(1, Math.abs(dx)), box.height * .35 / Math.max(1, Math.abs(dy)));
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
       await page.mouse.move(box.x + box.width / 2 + dx * fraction, box.y + box.height / 2 + dy * fraction); await page.mouse.up();
+      await expect(host).toHaveAttribute("data-camera-presentation-pending", "false");
       centeringDrags++;
     }
     expect(Math.abs(Number(await host.getAttribute("data-camera-world-x")) - target.x) * 8 * 4).toBeLessThan(2);
@@ -94,7 +95,7 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
     let release!: () => void;
     const gate = new Promise<void>(resolve => { release = resolve; });
     let detailRequested = false;
-    await page.route(`**/api/tasks/${task.id}`, async route => { detailRequested = true; await gate; await route.continue(); });
+    await page.route(`**/api/tasks/${task.id}/card?*`, async route => { detailRequested = true; await gate; await route.continue(); });
     try {
       await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
       await expect(page.getByRole("dialog")).toBeVisible();

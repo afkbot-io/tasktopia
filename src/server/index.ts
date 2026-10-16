@@ -19,10 +19,13 @@ import { registerMcpHttp } from "./mcp-http";
 import { registerRoutes } from "./routes";
 import { isStaticAssetRequest } from "./static-path";
 import { consumeDurableWorldEvents, publishWorldEvent } from "./world-event-relay";
-import { PostgresWorldGenerationDispatcher, startWorldGenerationWorker } from "./world-generation-jobs";
+import { PostgresWorldGenerationDispatcher, readWorldGenerationQueueStats, startWorldGenerationWorker, subscribeToWorldGenerationJobs } from "./world-generation-jobs";
 import { createOptionalRedisWorldCache } from "./optional-redis-cache";
 import { createWebPushGateway } from "./push-gateway";
 import { startPushDeliveryWorker } from "./push-delivery";
+import { readSocketSessionWithinDeadline, startSocketSessionRevalidation } from "./socket-session-revalidation";
+import { createNodeRuntimeMetrics, registerRuntimeObservability } from './runtime-observability';
+import { createRuntimeShutdown } from './runtime-shutdown';
 
 const app = Fastify({
   logger: {
@@ -74,41 +77,41 @@ function cookieValue(header: string | undefined, name: string): string | undefin
   return header?.split(";").map((part) => part.trim().split("=")).find(([key]) => key === name)?.[1];
 }
 
-io?.use(async (socket, next) => {
+io?.use((socket, next) => {
   const sessionToken = cookieValue(socket.handshake.headers.cookie, SESSION_COOKIE);
-  const user = await getSessionUser(db, sessionToken);
-  if (!user) return next(new Error("unauthorized"));
-  socket.data.user = user;
-  socket.data.sessionToken = sessionToken;
-  return next();
+  void readSocketSessionWithinDeadline(() => getSessionUser(db, sessionToken)).then(user => {
+    if (!user) return next(new Error("unauthorized"));
+    socket.data.user = user;
+    socket.data.sessionToken = sessionToken;
+    next();
+  }).catch(error => {
+    app.log.error({ err: error }, "Socket authentication failed");
+    next(new Error("unauthorized"));
+  });
 });
 
 io?.on("connection", (socket) => {
   const user = socket.data.user as { id: string; countryId: string };
-  void socket.join(`user:${user.id}`);
-  void socket.join(`country:${user.countryId}`);
+  void Promise.all([socket.join(`user:${user.id}`), socket.join(`country:${user.countryId}`)]).catch(error => {
+    app.log.error({ err: error }, "Socket room subscription failed");
+    socket.disconnect(true);
+  });
   // Long-lived sockets must not outlive their session or keep a stale active
   // country forever. Explicit logout/member revocation disconnects immediately;
   // this bounded recheck also covers natural expiration and out-of-band changes.
-  const revalidate = setInterval(() => void (async () => {
-    const current = await getSessionUser(db, socket.data.sessionToken as string | undefined);
-    if (!current) {
-      socket.disconnect(true);
-      return;
-    }
-    const previous = socket.data.user as { countryId: string };
-    if (previous.countryId !== current.countryId) {
-      void socket.leave(`country:${previous.countryId}`);
-      void socket.join(`country:${current.countryId}`);
-    }
-    socket.data.user = current;
-  })(), 60_000);
-  revalidate.unref();
-  socket.once("disconnect", () => clearInterval(revalidate));
+  startSocketSessionRevalidation(socket, token => getSessionUser(db, token), error => {
+    app.log.error({ err: error }, "Socket session revalidation failed");
+  });
 });
 
 const generationDispatcher = config.runtimeRole === "web" || config.runtimeRole === "mcp"
-  ? new PostgresWorldGenerationDispatcher(db, config.generationWaitMs)
+  ? new PostgresWorldGenerationDispatcher(db, config.generationWaitMs, 500,
+    error => app.log.error({ err: error }, "World generation status poll failed"))
+  : undefined;
+const generationSubscription = generationDispatcher
+  ? await subscribeToWorldGenerationJobs(config.databaseUrl, jobId => generationDispatcher.notify(jobId),
+    error => app.log.error({ err: error }, "World generation notification failed"))
+    .catch(error => { app.log.warn({ err: error }, "World generation notifications unavailable; using bounded polling"); return undefined; })
   : undefined;
 const sharedWorldCache = createOptionalRedisWorldCache(config.redisUrl, {
   ttlSeconds: config.redisChunkTtlSeconds,
@@ -130,20 +133,23 @@ const worldGenerationWorker = config.runtimeRole === "world"
   : undefined;
 const worldEventSubscription = config.runtimeRole === "web"
   ? await consumeDurableWorldEvents(db, config.databaseUrl, async (event) => {
-      try {
-        service.acceptExternalEvent(event);
-        io?.to(`country:${event.countryId}`).emit("world:event", event);
-        await invalidateForeignTransport(event);
-      } catch (error) {
-        app.log.error({ err: error, eventId: event.id }, "World event relay failed");
-      }
-    })
+      service.acceptExternalEvent(event);
+      io?.to(`country:${event.countryId}`).emit("world:event", event);
+      await invalidateForeignTransport(event);
+    }, 5_000, error => app.log.error({ err: error }, "World event relay failed"))
   : undefined;
 const mcpHandler = servesMcp ? registerMcpHttp(app, db, service, config.APP_ORIGIN) : undefined;
 const pushGateway = createWebPushGateway(config.pushVapid);
 const pushDeliveryWorker = servesWeb
   ? startPushDeliveryWorker(db, pushGateway, (error) => app.log.error({ err: error }, "Push delivery worker pump failed"))
   : undefined;
+const nodeRuntimeMetrics = config.OBSERVABILITY_TOKEN ? createNodeRuntimeMetrics() : undefined;
+registerRuntimeObservability(app, config.OBSERVABILITY_TOKEN, async () => ({
+  role: config.runtimeRole, uptime: Math.round(process.uptime()), sampledAt: Date.now(),
+  node: nodeRuntimeMetrics?.snapshot(), database: db.runtimeMetrics?.(), service: service.runtimeStats(),
+  generation: { queue: await readWorldGenerationQueueStats(db), dispatcher: generationDispatcher?.runtimeStats(), worker: worldGenerationWorker?.runtimeStats() },
+  relay: worldEventSubscription?.runtimeStats(),
+}));
 
 if (servesApiRoutes) await registerRoutes(app, db, service, servesWeb ? {
   registrationEnabled: config.registrationEnabled,
@@ -227,18 +233,33 @@ if (servesWeb && config.NODE_ENV === "production" && existsSync(publicRoot)) {
   });
 }
 
-const close = async () => {
-  io?.close();
-  await mcpHandler?.close();
-  await worldEventSubscription?.close();
-  await worldGenerationWorker?.close();
-  await pushDeliveryWorker?.close();
-  await sharedWorldCache?.close();
-  await app.close();
-  await db.close();
-};
+const shutdown = createRuntimeShutdown({
+  deadlineMs: 30_000,
+  drain: [
+    { name: 'http', close: () => app.close() },
+    { name: 'sockets', close: () => !io ? undefined : new Promise<void>((resolve, reject) => {
+      io.close(error => {
+        // Fastify and Socket.IO share this HTTP server and close concurrently.
+        if (error && (error as NodeJS.ErrnoException).code !== 'ERR_SERVER_NOT_RUNNING') reject(error); else resolve();
+      });
+    }) },
+    { name: 'generation-notifications', close: () => generationSubscription?.close() },
+    { name: 'generation-dispatcher', close: () => generationDispatcher?.close() },
+    { name: 'mcp', close: () => mcpHandler?.close() },
+    { name: 'world-events', close: () => worldEventSubscription?.close() },
+    { name: 'world-generation', close: () => worldGenerationWorker?.close() },
+    { name: 'push-delivery', close: () => pushDeliveryWorker?.close() },
+    { name: 'node-metrics', close: () => nodeRuntimeMetrics?.close() },
+  ],
+  release: [{ name: 'redis', close: () => sharedWorldCache?.close() }, { name: 'database', close: () => db.close() }],
+  onError: (step, error) => app.log.error({ err: error, step }, 'Runtime shutdown failed'),
+  terminate: (code, result) => {
+    if (code) app.log.error({ shutdown: result }, 'Runtime shutdown did not drain within its budget');
+    process.exit(code);
+  },
+});
 
-process.on("SIGINT", () => void close().then(() => process.exit(0)));
-process.on("SIGTERM", () => void close().then(() => process.exit(0)));
+process.on('SIGINT', () => { void shutdown.close(); });
+process.on('SIGTERM', () => { void shutdown.close(); });
 
 await app.listen({ host: config.HOST, port: config.PORT });

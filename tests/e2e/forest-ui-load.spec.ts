@@ -16,7 +16,7 @@ test("новая тема укладывается в бюджеты шрифт�
   expect(fonts.every(f => new URL(f.url).origin === new URL(page.url()).origin)).toBe(true);
   expect(fonts.reduce((sum,f)=>sum+f.bytes,0)).toBeLessThanOrEqual(45_000);
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button",{name:"Открыть страну",exact:true}).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready","true");
   const samples: number[] = [];

@@ -1,9 +1,13 @@
 import { createMobilityRouteSearch } from "./mobility-route-search";
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from "./cooperative-preparation";
 import type { CityParkingPlan } from "./city-parking";
 import type { Cell, RoadCellDto } from "../shared/contracts";
 import { roadBandRole } from "../shared/road-profile";
 
 export const mobilityCellKey = (cell: Cell): string => `${cell.x},${cell.y}`;
+// Local cheap loops cooperate in bounded batches; delegated sorts retain
+// their own checkpoints, so native sort runs are never multiplied here.
+const NETWORK_CHECKPOINT_BATCH = 16;
 export const MOBILITY_DIRECTIONS = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }] as const;
 export type MobilityNetworkInput = {
   parking?: readonly CityParkingPlan[];
@@ -37,13 +41,21 @@ export type MobilityNetwork = {
 };
 
 export function mobilityNetworkSignature(input: MobilityNetworkInput): string {
-  return JSON.stringify([
-    [...input.roads].map(([key, cell]) => `${key}:${cell.roadClass}`).sort(),
-    [...input.walkGraph.keys()].sort(), [...input.crosswalks].sort(), [...input.activityCells].sort(),
-    (input.parking??[]).map(p=>[p.id,p.route,p.bay]),
-    [...input.buildingEntrances ?? []].sort(),
-    [...input.transferCells ?? []].sort(),
-  ]);
+  return completePreparation(mobilityNetworkSignatureSteps(input));
+}
+function* mobilityNetworkSignatureSteps(input: MobilityNetworkInput): Generator<void, string, void> {
+  const roadKeys: string[] = [];
+  for (const [key, cell] of input.roads) { roadKeys.push(`${key}:${cell.roadClass}`); yield; }
+  const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
+  const roads = yield* stableSortPreparation(roadKeys, compare);
+  const walking = yield* stableSortPreparation(input.walkGraph.keys(), compare);
+  const crossings = yield* stableSortPreparation(input.crosswalks, compare);
+  const activities = yield* stableSortPreparation(input.activityCells, compare);
+  const parking: unknown[] = [];
+  for (const plan of input.parking ?? []) { parking.push([plan.id, plan.route, plan.bay]); yield; }
+  const entrances = yield* stableSortPreparation(input.buildingEntrances ?? [], compare);
+  const transfers = yield* stableSortPreparation(input.transferCells ?? [], compare);
+  return JSON.stringify([roads, walking, crossings, activities, parking, entrances, transfers]);
 }
 
 /** One-shot utility; the live controller retains the compiled topology. */
@@ -56,12 +68,23 @@ export function searchMobilityRoutes(graph: ReadonlyMap<string, Cell>, edges: Re
  * preserved. Actual crossings, curb paths and task access points are retained.
  * This is navigation geometry, not a modification of the rendered sidewalk. */
 export function buildWalkingSpine(input: MobilityNetworkInput): Map<string, Cell> {
-  const cells = new Map([...input.walkGraph].filter(([key]) => !input.roads.has(key) || input.crosswalks.has(key))
-    .sort(([a], [b]) => a.localeCompare(b)));
-  const originalCore = new Set(cells.keys());
-  const coreDegrees = new Map([...cells].map(([cellKey, cell]) => [cellKey, MOBILITY_DIRECTIONS.filter(d => cells.has(`${cell.x + d.x},${cell.y + d.y}`)).length]));
-  const tails = [...coreDegrees].filter(([, degree]) => degree < 2).map(([cellKey]) => cellKey);
+  return completePreparation(buildWalkingSpineSteps(input));
+}
+function* buildWalkingSpineSteps(input: MobilityNetworkInput): Generator<void, Map<string, Cell>, void> {
+  let work = 0;
+  const entries: Array<[string, Cell]> = [];
+  for (const entry of input.walkGraph) { if (!input.roads.has(entry[0]) || input.crosswalks.has(entry[0])) entries.push(entry); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  const ordered = yield* stableSortPreparation(entries, ([a], [b]) => a.localeCompare(b));
+  const cells = new Map<string, Cell>();
+  for (const [id, cell] of ordered) { cells.set(id, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  const originalCore = new Set<string>(), coreDegrees = new Map<string, number>(), tails: string[] = [];
+  for (const [cellKey, cell] of cells) {
+    originalCore.add(cellKey);
+    const degree = MOBILITY_DIRECTIONS.filter(d => cells.has(`${cell.x + d.x},${cell.y + d.y}`)).length;
+    coreDegrees.set(cellKey, degree); if (degree < 2) tails.push(cellKey); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
+  }
   for (let i = 0; i < tails.length; i++) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     const cellKey = tails[i]!;
     if (!originalCore.delete(cellKey)) continue;
     const cell = cells.get(cellKey)!;
@@ -72,12 +95,14 @@ export function buildWalkingSpine(input: MobilityNetworkInput): Map<string, Cell
       coreDegrees.set(nextKey, degree); if (degree < 2) tails.push(nextKey);
     }
   }
-  const protectedCells = new Set([...input.crosswalks, ...input.activityCells, ...input.buildingEntrances ?? [], ...input.transferCells ?? []]);
-  for (const [cellKey, cell] of cells) if (MOBILITY_DIRECTIONS.some(d => input.roads.has(`${cell.x + d.x},${cell.y + d.y}`))) protectedCells.add(cellKey);
+  const protectedCells = new Set<string>();
+  for (const source of [input.crosswalks, input.activityCells, input.buildingEntrances ?? [], input.transferCells ?? []]) for (const id of source) { protectedCells.add(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  for (const [cellKey, cell] of cells) { if (MOBILITY_DIRECTIONS.some(d => input.roads.has(`${cell.x + d.x},${cell.y + d.y}`))) protectedCells.add(cellKey); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   let changed = true;
   while (changed) {
     changed = false;
     for (const [cellKey, cell] of cells) {
+      if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
       if (protectedCells.has(cellKey)) continue;
       const neighbors = MOBILITY_DIRECTIONS.map(d => ({ x: cell.x + d.x, y: cell.y + d.y })).filter(c => cells.has(mobilityCellKey(c)));
       if (neighbors.length < 2 || neighbors.length === 4) continue;
@@ -98,16 +123,31 @@ export function buildWalkingSpine(input: MobilityNetworkInput): Map<string, Cell
       cells.delete(cellKey); changed = true;
     }
   }
+  // The caller starts another bounded loop. Flush a partial child batch so
+  // its remaining work cannot be added to the parent's next sixteen cells.
+  if (work) yield;
   return cells;
 }
 
 /** Compile topology only when geography changes, never on an animation frame. */
 export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwork {
-  const orderedRoads = new Map([...input.roads].sort(([a], [b]) => a.localeCompare(b)));
-  const roles = new Map([...orderedRoads].map(([key, cell]) => [key, roadBandRole(orderedRoads, cell)]));
+  return completePreparation(buildMobilityNetworkSteps(input));
+}
+export function buildMobilityNetworkAsync(input: MobilityNetworkInput, options: CooperativePreparationOptions = {}): Promise<MobilityNetwork> {
+  return prepareCooperatively(buildMobilityNetworkSteps(input), options);
+}
+/** Shared canonical steps also prepare the live controller's route indexes. */
+export function* buildMobilityNetworkSteps(input: MobilityNetworkInput): Generator<void, MobilityNetwork, void> {
+  let work = 0;
+  const ordered = yield* stableSortPreparation(input.roads, ([a], [b]) => a.localeCompare(b));
+  const orderedRoads = new Map<string, RoadCellDto>();
+  for (const [id, cell] of ordered) { orderedRoads.set(id, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  const roles = new Map<string, ReturnType<typeof roadBandRole>>();
+  for (const [id, cell] of orderedRoads) { roles.set(id, roadBandRole(orderedRoads, cell)); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   const carEdges = new Map<string, Cell[]>();
   const neighbors = (cell: Cell) => MOBILITY_DIRECTIONS.map(delta => ({ x: cell.x + delta.x, y: cell.y + delta.y }));
   for (const [key, cell] of orderedRoads) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     const role = roles.get(key)!;
     if (role.kind !== "TRAVEL" && role.kind !== "JUNCTION") continue;
     carEdges.set(key, neighbors(cell).filter(next => {
@@ -118,22 +158,28 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
         && (nextRole.kind === "JUNCTION" || nextRole.dx === dx && nextRole.dy === dy);
     }));
   }
-  const carCells=new Map<string,Cell>(orderedRoads);
+  const carCells = new Map<string, Cell>();
+  for (const [id, cell] of orderedRoads) { carCells.set(id, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   const parkingBays=new Set<string>();
   for(const plan of input.parking??[]) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     if(!carEdges.has(mobilityCellKey(plan.route[0]!))||!carEdges.has(mobilityCellKey(plan.route.at(-1)!)))continue;
     parkingBays.add(mobilityCellKey(plan.bay));
     for(let i=0;i<plan.route.length-1;i++) {
+      if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
       const cell=plan.route[i]!,next=plan.route[i+1]!,id=mobilityCellKey(cell);
       carCells.set(id,cell);
       carEdges.set(id,[...(carEdges.get(id)??[]),next]);
     }
   }
   // Trim true road tails; no car may be born with an inevitable graph dead end.
-  const predecessors = new Map([...carEdges.keys()].map(key => [key, new Set<string>()]));
-  for (const [key, next] of carEdges) for (const cell of next) predecessors.get(mobilityCellKey(cell))?.add(key);
-  const queue = [...carEdges.keys()].filter(key => !carEdges.get(key)!.length || !predecessors.get(key)!.size);
+  const predecessors = new Map<string, Set<string>>();
+  for (const id of carEdges.keys()) { predecessors.set(id, new Set()); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  for (const [key, next] of carEdges) for (const cell of next) { predecessors.get(mobilityCellKey(cell))?.add(key); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  const queue: string[] = [];
+  for (const id of carEdges.keys()) { if (!carEdges.get(id)!.length || !predecessors.get(id)!.size) queue.push(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   for (let index = 0; index < queue.length; index++) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     const key = queue[index]!;
     if (!carEdges.has(key)) continue;
     for (const cell of carEdges.get(key)!) {
@@ -149,16 +195,24 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
       if (!remaining.length) queue.push(previous);
     }
   }
-  const cars = new Map([...carCells].filter(([key]) => carEdges.has(key)));
-  for(const bay of parkingBays)if(!cars.has(bay))parkingBays.delete(bay);
-  const walkers = buildWalkingSpine({...input,walkGraph:new Map([...input.walkGraph].filter(([id])=>!parkingBays.has(id)))});
-  const walkerEdges = new Map([...walkers].map(([key, cell]) => [key, neighbors(cell).filter(next => walkers.has(mobilityCellKey(next)))]));
-  const buildingEntrances = new Set([...input.buildingEntrances ?? []].filter(id => walkers.has(id) && !input.roads.has(id) && !input.crosswalks.has(id)));
-  const transferCells = new Set([...input.transferCells ?? []].filter(id => walkers.has(id) && !input.roads.has(id) && !input.crosswalks.has(id)));
+  const cars = new Map<string, Cell>();
+  for (const [id, cell] of carCells) { if (carEdges.has(id)) cars.set(id, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  for (const bay of parkingBays) { if (!cars.has(bay)) parkingBays.delete(bay); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  const walkingInput = new Map<string, Cell>();
+  for (const [id, cell] of input.walkGraph) { if (!parkingBays.has(id)) walkingInput.set(id, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  if (work) { work = 0; yield; }
+  const walkers = yield* buildWalkingSpineSteps({ ...input, walkGraph: walkingInput });
+  const walkerEdges = new Map<string, Cell[]>();
+  for (const [id, cell] of walkers) { walkerEdges.set(id, neighbors(cell).filter(next => walkers.has(mobilityCellKey(next)))); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  const buildingEntrances = new Set<string>(), transferCells = new Set<string>();
+  for (const id of input.buildingEntrances ?? []) { if (walkers.has(id) && !input.roads.has(id) && !input.crosswalks.has(id)) buildingEntrances.add(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  for (const id of input.transferCells ?? []) { if (walkers.has(id) && !input.roads.has(id) && !input.crosswalks.has(id)) transferCells.add(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   // A one-cell-wide blind spur has no safe turnaround lane. Ambient walkers
   // use the connected walkable core; do not spawn them in inevitable dead ends.
-  const walkTails = [...walkerEdges].filter(([, next]) => next.length < 2).map(([key]) => key);
+  const walkTails: string[] = [];
+  for (const [id, next] of walkerEdges) { if (next.length < 2) walkTails.push(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   for (let index = 0; index < walkTails.length; index++) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     const tail = walkTails[index]!;
     // A real building is a destination with an indoor turnaround, not an
     // unusable blind alley. Preserve its approach all the way to the core.
@@ -173,11 +227,12 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
   // Connected junction/crosswalk cells are ONE conflict resource. A crossing
   // touching a box cannot issue independent, contradictory admission permits.
   const conflict = new Map<string, Cell>();
-  for (const [key, cell] of orderedRoads) if (roles.get(key)?.kind === "JUNCTION" || input.crosswalks.has(key)) conflict.set(key, cell);
+  for (const [key, cell] of orderedRoads) { if (roles.get(key)?.kind === "JUNCTION" || input.crosswalks.has(key)) conflict.set(key, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   // The curb junction and pedestrian corner are part of the manoeuvre too.
   // Reserving only asphalt strands a turning person between through walkers:
   // the rotated body can no longer fit when reaching the unreserved curb.
   for (const [key, cell] of walkers) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     const next = walkerEdges.get(key)!;
     const straight = next.length === 2 && next[0]!.x + next[1]!.x === cell.x * 2 && next[0]!.y + next[1]!.y === cell.y * 2;
     if (!straight && !transferCells.has(key) && !(next.length === 1 && buildingEntrances.has(key))) conflict.set(key, cell);
@@ -185,15 +240,18 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
   // The same reservations guard both curb crossings and the parking aisle.
   // A bay is a safe destination outside the entrance/exit conflict resources.
   for(const plan of input.parking??[])for(const cell of plan.route) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     const id=mobilityCellKey(cell);
     if(cars.has(id)&&!parkingBays.has(id))conflict.set(id,cell);
   }
   const visited = new Set<string>(), zones: MobilityZone[] = [], zoneByCell = new Map<string, MobilityZone>();
   for (const [seedKey, seed] of conflict) {
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     if (visited.has(seedKey)) continue;
     const cells: Cell[] = [], pending = [seed];
     visited.add(seedKey);
     for (let index = 0; index < pending.length; index++) {
+      if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
       const cell = pending[index]!; cells.push(cell);
       for (const next of neighbors(cell)) {
         const key = mobilityCellKey(next);
@@ -214,6 +272,7 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
     // Presentation follows actual directed entrances, not the four corners of
     // an arbitrary bounding box. A straight crossing has only two approaches.
     for (const cell of cells) for (const from of neighbors(cell)) {
+      if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
       const fromKey = mobilityCellKey(from);
       if (zoneCells.has(fromKey) || !carEdges.get(fromKey)?.some(next => next.x === cell.x && next.y === cell.y)) continue;
       incomingApproaches.add(cell.x > from.x ? "W" : cell.x < from.x ? "E" : cell.y > from.y ? "N" : "S");
@@ -221,7 +280,12 @@ export function buildMobilityNetwork(input: MobilityNetworkInput): MobilityNetwo
     const zone: MobilityZone = { id: `${minX},${minY}:${maxX},${maxY}`, cells: zoneCells, bounds,
       signalPosts: roadZone ? posts.filter(post => incomingApproaches.has(post.approach) && !input.roads.has(mobilityCellKey(post.origin))) : [] };
     zones.push(zone);
-    for (const cell of cells) zoneByCell.set(mobilityCellKey(cell), zone);
+    for (const cell of cells) { zoneByCell.set(mobilityCellKey(cell), zone); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   }
-  return { signature: mobilityNetworkSignature(input), roads: orderedRoads, cars, walkers, carEdges, walkerEdges, zones, zoneByCell, activityCells: new Set(input.activityCells), buildingEntrances, transferCells, parkingBays };
+  if (work) { work = 0; yield; }
+  const signature = yield* mobilityNetworkSignatureSteps(input);
+  yield; // Signature serialization is its own atomic phase, before activity cells.
+  const activityCells = new Set<string>();
+  for (const id of input.activityCells) { activityCells.add(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  return { signature, roads: orderedRoads, cars, walkers, carEdges, walkerEdges, zones, zoneByCell, activityCells, buildingEntrances, transferCells, parkingBays };
 }

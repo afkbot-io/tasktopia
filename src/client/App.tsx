@@ -32,18 +32,26 @@ import { PushNotificationCard } from "./components/PushNotificationCard";
 import { SiteHistoryModal } from "./components/SiteHistoryModal";
 import { DialogLoadState, PanelLoadState, UiLoadBoundary } from "./components/UiLoadState";
 import { advanceMapSceneCaches, clearMapSceneCaches, invalidateTransportSceneCaches, loadCityScene, rememberCountryRevision } from "./map-scene-cache";
-import { clearTaskDetailCache, invalidateTaskDetails } from "./task-detail-cache";
+import { clearTaskDetailCache, invalidateTaskDetails, taskEventRefreshesDependencies } from "./task-detail-cache";
 import { taskResolutionQuery } from "./task-navigation";
 import { clearPlanetAtlasCache } from "./planet-atlas-cache";
 import { CoalescedRefresh } from "./coalesced-refresh";
 import { WorldPreferences } from "./components/WorldPreferences";
 import { WorldAmbientLighting } from "./components/WorldAmbientLighting";
+import { bindCityAudioLifecycle, playCitySound, silenceCityAudio } from "./city-audio";
+import { AppNavigation, readNavigationState, type NavigationView } from './app-navigation';
+import type { CityViewState } from './city-view-state';
+import { acceptsCityNavigationPose } from './city-navigation-pose';
+import type { TaskCardDto } from '../shared/task-read-contracts';
+import { RealtimeReplay } from './realtime-replay';
+import { matchesRealtimeScope } from './realtime-scope';
 
 const loadWorldRenderer = () => import("./components/WorldCanvas").then(module => ({ default: module.WorldCanvas }));
 const WorldCanvas = lazy(loadWorldRenderer);
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
 const CityDocuments = lazy(() => import("./components/CityDocuments").then(module => ({ default: module.CityDocuments })));
 const CityDevelopmentPanel = lazy(() => import("./components/CityDevelopmentPanel").then(module => ({ default: module.CityDevelopmentPanel })));
+const CityAlbum = lazy(() => import('./components/CityAlbum').then(module => ({ default: module.CityAlbum })));
 const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
@@ -66,27 +74,8 @@ function TaskModalFallback({ onClose, standalone = false, error, onRetry }: { on
   </div>;
 }
 
-function playCompletionChime(): void {
-  if (document.hidden) return;
-  const AudioContextClass = window.AudioContext;
-  if (!AudioContextClass) return;
-  try {
-    const context = new AudioContextClass();
-    const gain = context.createGain();
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.055, context.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.42);
-    gain.connect(context.destination);
-    for (const [offset, frequency] of [[0, 659], [0.12, 784], [0.24, 988]] as const) {
-      const oscillator = context.createOscillator();
-      oscillator.type = "triangle"; oscillator.frequency.value = frequency; oscillator.connect(gain);
-      oscillator.start(context.currentTime + offset); oscillator.stop(context.currentTime + offset + 0.18);
-    }
-    window.setTimeout(() => { void context.close(); }, 900);
-  } catch { /* Audio is optional when the browser has not granted activation. */ }
-}
-
 export function App() {
+  useEffect(bindCityAudioLifecycle, []);
   const [invitationToken, setInvitationToken] = useState(() => {
     const token = new URLSearchParams(location.hash.slice(1)).get("invite");
     if (token && /^[A-Za-z0-9_-]{43}$/.test(token)) {
@@ -96,6 +85,14 @@ export function App() {
     return sessionStorage.getItem("tasktopia-invitation");
   });
   const [wheelNavigation] = useState(createAtlasWheelNavigation);
+  const [navigation] = useState(() => new AppNavigation(window.history, () => location.pathname + location.search));
+  const [cityViewMemory] = useState(() => new Map<string, CityViewState>());
+  const navigationRestoringRef = useRef(false), navigationRequestRef = useRef(0), navigationRestoreEpochRef = useRef(0);
+  const restoredTaskRef = useRef<string | null>(null);
+  const taskNavigationAbortRef = useRef<AbortController | undefined>(undefined);
+  const [cityViewRestore, setCityViewRestore] = useState<{ scope: string; view: CityViewState; token: number }>();
+  const cityRestoreTokensRef = useRef(new Map<string, number>());
+  const [planetRestoreToken, setPlanetRestoreToken] = useState(0);
   const [bootstrap, setBootstrap] = useState<BootstrapDto | null>(null);
   const [retainedCityKey,setRetainedCityKey]=useState<string|null>(null);
   const [sessionState, setSessionState] = useState<SessionState>("INITIALIZING");
@@ -108,7 +105,9 @@ export function App() {
   const [bootstrapRefresh, setBootstrapRefresh] = useState(0);
   const sessionGenerationRef = useRef(0);
   const authenticationEpochRef=useRef(0);
+  const [renderedAuthenticationEpoch, setRenderedAuthenticationEpoch] = useState(0);
   const bootstrapLoadRef = useRef(new CoalescedRefresh());
+  const bootstrapAbortRef = useRef<AbortController | undefined>(undefined);
   const [selectedArchiveRecord, setSelectedArchiveRecord] = useState<string | null>(null);
   const [tokensOpen, setTokensOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<"mcp" | "account">("mcp");
@@ -144,6 +143,8 @@ export function App() {
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const closeDocuments = useCallback(() => setDocumentsOpen(false), []);
   const [developmentOpen, setDevelopmentOpen] = useState(false);
+  const [albumOpen, setAlbumOpen] = useState(false);
+  const closeAlbum = useCallback(() => setAlbumOpen(false), []);
   const closeDevelopment = useCallback(() => setDevelopmentOpen(false), []);
   const [attentionRevision, setAttentionRevision] = useState(0);
   useEffect(() => { if (selectedTask) { setDependencyTask(undefined); setDependencyData({ scope: "" }); } }, [selectedTask]);
@@ -157,18 +158,63 @@ export function App() {
   const [pushOfferDismissed, setPushOfferDismissed] = useState(() => localStorage.getItem("tasktopia:push-offer-dismissed") === "1");
   const cityReadyResolverRef = useRef<(() => void) | null>(null);
   const countryId = bootstrap?.country.id;
-  useEffect(() => { setSelectedSite(null); setDirectoryFocus(undefined); }, [countryId, sessionState]);
+  const cancelPendingNavigation = useCallback(() => {
+    navigationRequestRef.current++; navigationRestoreEpochRef.current++; taskEntryRequestRef.current++;
+    navigationRestoringRef.current = false; restoredTaskRef.current = null;
+    taskNavigationAbortRef.current?.abort();
+  }, []);
+  const navigationView = useCallback((): NavigationView | null => {
+    if (!countryId) return null;
+    const city = mapMode === 'CITY' ? focusCity ?? bootstrap?.initialCity : null;
+    return { countryId, cityId: city?.id ?? null, mode: city ? 'CITY' : 'PLANET',
+      cityView: city ? cityViewMemory.get(countryId + ':' + city.id) : undefined,
+      planetView: planetViewMemory.get('last') };
+  }, [countryId, mapMode, focusCity, bootstrap?.initialCity, cityViewMemory, planetViewMemory]);
+  const cameraAuthenticationEpoch = renderedAuthenticationEpoch;
+  const rememberCityView = useCallback((view: CityViewState, meta?: { source: 'interaction' | 'cleanup'; restoreToken?: number }) => {
+    const city = focusCity ?? bootstrap?.initialCity;
+    if (!countryId || !city || meta?.source === 'cleanup' && navigationRestoringRef.current) return;
+    const current: NavigationView = { countryId, cityId: city.id, mode: 'CITY' };
+    const scope = current.countryId + ':' + current.cityId;
+    if (eventCountryRef.current !== countryId || !acceptsCityNavigationPose(cameraAuthenticationEpoch, meta?.restoreToken, authenticationEpochRef.current, cityRestoreTokensRef.current.get(scope))) return;
+    cityViewMemory.delete(scope); cityViewMemory.set(scope, view);
+    while (cityViewMemory.size > 20) cityViewMemory.delete(cityViewMemory.keys().next().value!);
+    if (!navigationRestoringRef.current) navigation.pose({ ...current, cityView: view });
+  }, [countryId, focusCity, bootstrap?.initialCity, cityViewMemory, navigation, cameraAuthenticationEpoch]);
+  const rememberPlanetNavigation = useCallback((view: PlanetViewState) => {
+    rememberPlanetView(view);
+    const current = navigationView();
+    if (current?.mode === 'PLANET' && !navigationRestoringRef.current) navigation.pose({ ...current, planetView: view });
+  }, [navigationView, navigation, rememberPlanetView]);
+  const recordTaskNavigation = useCallback((task: TaskCardDto) => {
+    const view = navigationView();
+    if (view && task.id === selectedTask && task.countryId === countryId && eventCountryRef.current === countryId && renderedAuthenticationEpoch === authenticationEpochRef.current) {
+      navigation.task(view, task, Boolean(taskEntry), navigationRestoringRef.current || restoredTaskRef.current === task.id);
+      if (restoredTaskRef.current === task.id) restoredTaskRef.current = null;
+    }
+  }, [navigation, navigationView, selectedTask, countryId, taskEntry, renderedAuthenticationEpoch]);
+  useEffect(() => {
+    const view = navigationView();
+    if (view && selectedTask && restoredTaskRef.current !== selectedTask && !navigationRestoringRef.current) navigation.pending(view, selectedTask, Boolean(taskEntry));
+    if (view && deepLinkHandledRef.current && sessionState === 'AUTHENTICATED' && !selectedTask && !taskEntry && !navigationRestoringRef.current) navigation.view(view);
+  }, [navigation, navigationView, selectedTask, taskEntry, sessionState]);
+  useEffect(() => { setSelectedSite(null); setDirectoryFocus(undefined); setAlbumOpen(false); }, [countryId, sessionState]);
   const closeSite = useCallback(() => setSelectedSite(null), []);
   const closeTask = useCallback(() => {
-    setSelectedTask(null);
-    if (taskEntry) {
-      taskEntryRequestRef.current++;
-      setTaskEntry(null);
-      setMapTransitionError("");
-      window.history.replaceState(null, "", "/");
-      setMapMode(selectedTask && focusCity ? "CITY" : "PLANET");
-    }
-  }, [taskEntry, selectedTask, focusCity]);
+    restoredTaskRef.current = null;
+    taskEntryRequestRef.current++; navigationRequestRef.current++; navigationRestoreEpochRef.current++;
+    taskNavigationAbortRef.current?.abort(); mapTransitionAbortRef.current?.abort(); setMapTransition(null);
+    const view = navigationView();
+    const city = selectedTask && taskEntry ? focusCity : null;
+    const destination = city && countryId ? { ...view!, countryId, cityId: city.id, mode: 'CITY' as const, cityView: cityViewMemory.get(countryId + ':' + city.id) } : view;
+    navigationRestoringRef.current = Boolean(navigation.current()?.task && navigation.current()!.taskDepth > 0);
+    const wentBack = destination ? navigation.close(destination) : false;
+    setSelectedTask(null); setTaskEntry(null); setMapTransitionError('');
+    if (!wentBack) { navigationRestoringRef.current = false; if (destination) setMapMode(destination.mode); else window.history.replaceState(null, '', '/'); }
+  }, [taskEntry, selectedTask, focusCity, countryId, navigationView, navigation, cityViewMemory]);
+  const selectVisibleTask = useCallback((id: string) => {
+    cancelPendingNavigation(); setTaskEntry(null); setSelectedTask(id);
+  }, [cancelPendingNavigation]);
   const closeArchiveRecord = useCallback(() => setSelectedArchiveRecord(null), []);
   const closeSettings = useCallback(() => setTokensOpen(false), []);
   const openSettings = useCallback((section: "mcp" | "account") => {
@@ -179,12 +225,30 @@ export function App() {
     setDirectorySection("archive");
     setDirectoryOpen(true);
   }, []);
+  const clearPrivateSessionUi = useCallback(() => {
+    sessionGenerationRef.current++; navigationRequestRef.current++; navigationRestoreEpochRef.current++;
+    navigationRestoringRef.current = false; restoredTaskRef.current = null;
+    deepLinkHandledRef.current = false;
+    setTaskEntry(taskResolutionQuery(new URL(location.href)));
+    taskNavigationAbortRef.current?.abort(); mapTransitionAbortRef.current?.abort();
+    setMapTransition(null); setMapInvalidations([]); setMapMode('PLANET');
+    setFocusCity(null); setFocusTask(null); setPreparedCityScene(null); setRetainedCityKey(null);
+    setSelectedTask(null); setSelectedSite(null); setSelectedArchiveRecord(null);
+    setTokensOpen(false); setDirectoryOpen(false); setDirectoryFocus(undefined); setCountryMenuOpen(false); setCountryDialog(null);
+    setDocumentsOpen(false); setDevelopmentOpen(false); setAlbumOpen(false); setSelectedTransportRoute(undefined);
+    setAttention({ scope: '', ids: [] }); setDependencyTask(undefined); setDependencyData({ scope: '' }); setNotices([]);
+    eventCountryRef.current = undefined; lastWorldEventIdRef.current = 0;
+    clearMapSceneCaches(); clearTaskDetailCache(); clearPlanetAtlasCache(); silenceCityAudio();
+    cityViewMemory.clear(); cityRestoreTokensRef.current.clear(); planetViewMemory.clear();
+  }, [cityViewMemory, planetViewMemory]);
   const transitionMap = useCallback(async (
     to: MapLevel,
     focus: { x: number; y: number },
     commit: (signal: AbortSignal) => Promise<void> | void,
     destinationName?: string,
+    preserveNavigation = false,
   ) => {
+    if (!preserveNavigation) cancelPendingNavigation();
     mapTransitionAbortRef.current?.abort();
     const controller = new AbortController();
     mapTransitionAbortRef.current = controller;
@@ -209,11 +273,14 @@ export function App() {
         if (mapTransitionAbortRef.current === controller) mapTransitionAbortRef.current = null;
       }
     }
-  }, [mapMode]);
+  }, [mapMode, cancelPendingNavigation]);
   const logout = useCallback(async () => {
     authenticationEpochRef.current++;
+    setRenderedAuthenticationEpoch(authenticationEpochRef.current);
+    silenceCityAudio();
     invalidateCountrySelections();
     sessionGenerationRef.current += 1;
+    bootstrapAbortRef.current?.abort();
     mapTransitionAbortRef.current?.abort();
     setMapTransition(null);
     clearMapSceneCaches();
@@ -221,6 +288,7 @@ export function App() {
     clearPlanetAtlasCache();
     await clearPushSubscriptionForLogout();
     await api("/api/auth/logout", { method: "POST" });
+    clearPrivateSessionUi();
     setBootstrap(null);
     setFocusCity(null);
     setFocusTask(null);
@@ -232,9 +300,8 @@ export function App() {
     planetViewMemory.clear();
     setTokensOpen(false);
     setNotices([]);
-  }, [planetViewMemory]);
+  }, [planetViewMemory, clearPrivateSessionUi]);
 
-  const renderedAuthenticationEpoch = authenticationEpochRef.current;
   const applyBootstrap = useCallback((next: BootstrapDto, requestedMode?: MapLevel, preserveTransition = false) => {
     sessionGenerationRef.current += 1;
     if (!preserveTransition) { mapTransitionAbortRef.current?.abort(); setMapTransition(null); }
@@ -265,9 +332,12 @@ export function App() {
 
   const load = useCallback(() => bootstrapLoadRef.current.request(async () => {
     const generation = sessionGenerationRef.current;
+    const controller = new AbortController();
+    bootstrapAbortRef.current = controller;
+    const deadline = window.setTimeout(() => controller.abort(new DOMException('Не удалось загрузить страну вовремя. Повторите попытку.', 'TimeoutError')), 15_000);
     setSessionState((current) => current === "AUTHENTICATED" ? current : "INITIALIZING");
     try {
-      const next = await api<BootstrapDto>("/api/bootstrap");
+      const next = await api<BootstrapDto>("/api/bootstrap", { signal: controller.signal });
       if (generation !== sessionGenerationRef.current) return;
       const countryChanged = eventCountryRef.current !== next.country.id;
       if (countryChanged) {
@@ -284,7 +354,7 @@ export function App() {
         ...next, country: { ...next.country, worldVersion: Math.max(next.country.worldVersion, current.country.worldVersion) },
         eventCursor: Math.max(next.eventCursor, current.eventCursor),
       } : next);
-      setFocusCity((current) => current ?? next.initialCity);
+      setFocusCity((current) => countryChanged ? next.initialCity : current ?? next.initialCity);
       if (countryChanged) setMapMode("PLANET");
       setSessionState("AUTHENTICATED");
       setAuthError("");
@@ -292,10 +362,9 @@ export function App() {
       if (generation !== sessionGenerationRef.current) return;
       if (error instanceof ApiError && error.status === 401) {
         authenticationEpochRef.current++;
+        setRenderedAuthenticationEpoch(authenticationEpochRef.current);
         invalidateCountrySelections();
-        clearMapSceneCaches();
-        clearTaskDetailCache();
-        clearPlanetAtlasCache();
+        clearPrivateSessionUi();
         setBootstrap(null);
         setSelectedTask(null);
         deepLinkHandledRef.current = false;
@@ -308,12 +377,24 @@ export function App() {
       setAuthError(error instanceof Error ? error.message : "Не удалось загрузить страну");
       setSessionState((current) => current === "AUTHENTICATED" ? current : "RECOVERABLE_ERROR");
       throw error;
+    } finally {
+      window.clearTimeout(deadline);
+      if (bootstrapAbortRef.current === controller) bootstrapAbortRef.current = undefined;
     }
-  }), []);
+  }), [clearPrivateSessionUi]);
 
-  const openBuilding = useCallback((target: BuildingNavigationTarget, session = bootstrap) => {
+  const openBuilding = useCallback((target: BuildingNavigationTarget, session = bootstrap, keepCamera = false, fromResolver = false) => {
+    if (!fromResolver) {
+      restoredTaskRef.current = null;
+      taskNavigationAbortRef.current?.abort(); navigationRequestRef.current++; navigationRestoreEpochRef.current++;
+      navigationRestoringRef.current = false; setTaskEntry(null);
+    }
+    if (!navigationRestoringRef.current && session && (mapMode !== 'CITY' || focusCity?.id !== target.city.id)) {
+      navigation.view({ countryId: session.country.id, cityId: target.city.id, mode: 'CITY',
+        cityView: cityViewMemory.get(session.country.id + ':' + target.city.id), planetView: planetViewMemory.get('last') });
+    }
     const focus = () => {
-      setFocusTask({ origin: target.origin, token: Date.now() });
+      setFocusTask(keepCamera ? null : { origin: target.origin, token: Date.now() });
       setSelectedTask(target.id);
     };
     // The card is independent of terrain preparation, even on direct links.
@@ -329,8 +410,8 @@ export function App() {
         setMapMode("CITY");
       await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
       cityReadyResolverRef.current = null;
-    });
-  }, [bootstrap, countryId, focusCity?.id, mapMode, transitionMap]);
+    }, undefined, true);
+  }, [bootstrap, countryId, focusCity?.id, mapMode, transitionMap, navigation, cityViewMemory, planetViewMemory]);
 
   const openTaskFromSearch = useCallback((result: TaskSearchResultDto) => {
     openBuilding({
@@ -340,14 +421,19 @@ export function App() {
     });
   }, [openBuilding]);
 
-  const openCanonicalTask = useCallback(async (query: string, entryOnly = false) => {
+  const openCanonicalTask = useCallback(async (query: string, entryOnly = false, restoreView?: NavigationView, fromHistory = false) => {
+    if (!fromHistory) cancelPendingNavigation();
+    taskNavigationAbortRef.current?.abort();
+    const controller = new AbortController(); taskNavigationAbortRef.current = controller;
+    const deadline = window.setTimeout(() => controller.abort(new DOMException('Не удалось открыть задачу вовремя. Повторите попытку.', 'TimeoutError')), 15_000);
+    const navigationRequest = ++navigationRequestRef.current;
     const generation = sessionGenerationRef.current;
     const epoch = authenticationEpochRef.current;
     const request = entryOnly ? ++taskEntryRequestRef.current : 0;
-    const entryCancelled = () => entryOnly && request !== taskEntryRequestRef.current;
+    const entryCancelled = () => navigationRequest !== navigationRequestRef.current || entryOnly && request !== taskEntryRequestRef.current;
     setMapTransitionError("");
     try {
-      const resolved = await api<TaskResolutionDto>(`/api/tasks/resolve?${query}`);
+      const resolved = await api<TaskResolutionDto>(`/api/tasks/resolve?${query}`, { signal: controller.signal });
       if (generation !== sessionGenerationRef.current || epoch !== authenticationEpochRef.current || entryCancelled()) return;
       let session = bootstrap;
       if (resolved.countryId !== countryId || countrySelectionPending()) {
@@ -360,17 +446,27 @@ export function App() {
       }
       const target = { id: resolved.id, origin: resolved.origin,
         city: { id: resolved.cityId, name: resolved.cityName, center: resolved.cityCenter, bounds: resolved.cityBounds } };
+      const keepCamera = Boolean(restoreView?.cityView && restoreView.countryId === resolved.countryId && restoreView.cityId === resolved.cityId);
+      if (keepCamera) {
+        const scope = resolved.countryId + ':' + resolved.cityId;
+        cityViewMemory.set(scope, restoreView!.cityView!);
+        cityRestoreTokensRef.current.set(scope, navigationRequest);
+        setCityViewRestore({ scope, view: restoreView!.cityView!, token: navigationRequest });
+      }
       if (entryOnly) {
         setFocusCity(target.city);
-        setFocusTask({ origin: target.origin, token: Date.now() });
+        setFocusTask(keepCamera ? null : { origin: target.origin, token: Date.now() });
         setSelectedTask(target.id);
-      } else openBuilding(target, session);
+      } else openBuilding(target, session, keepCamera, true);
     } catch (error) {
       if (epoch !== authenticationEpochRef.current || entryCancelled()) return;
       if (error instanceof ApiError && error.status === 401) { void load().catch(() => undefined); return; }
       setMapTransitionError(error instanceof Error ? error.message : "Не удалось открыть задачу");
+    } finally {
+      window.clearTimeout(deadline);
+      if (taskNavigationAbortRef.current === controller) taskNavigationAbortRef.current = undefined;
     }
-  }, [bootstrap, countryId, applyBootstrap, openBuilding, load]);
+  }, [bootstrap, countryId, applyBootstrap, openBuilding, load, cityViewMemory, cancelPendingNavigation]);
 
   useEffect(() => { void load().catch(() => undefined); }, [load]);
   useEffect(() => {
@@ -415,8 +511,60 @@ export function App() {
     }, cityName);
   }, [bootstrap,applyBootstrap,transitionMap]);
   useEffect(() => () => {
+    sessionGenerationRef.current++;
     mapTransitionAbortRef.current?.abort();
+    bootstrapAbortRef.current?.abort();
+    taskNavigationAbortRef.current?.abort();
   }, []);
+  useEffect(() => {
+    const restore = async (event: PopStateEvent) => {
+      if (!bootstrap || sessionState !== 'AUTHENTICATED') return;
+      const state = readNavigationState(event.state), query = taskResolutionQuery(new URL(location.href));
+      restoredTaskRef.current = state?.task?.id ?? null;
+      const request = ++navigationRequestRef.current, restoreEpoch = ++navigationRestoreEpochRef.current, epoch = authenticationEpochRef.current;
+      navigationRestoringRef.current = true; mapTransitionAbortRef.current?.abort(); setMapTransition(null);
+      taskEntryRequestRef.current++; taskNavigationAbortRef.current?.abort(); setSelectedTask(null); setMapTransitionError('');
+      try {
+        if (state?.task || query) {
+          const entry = state?.task ? state.task.standalone : true;
+          const taskQuery = state?.task ? new URLSearchParams({ id: state.task.id }).toString() : query!;
+          setTaskEntry(entry ? taskQuery : null);
+          await openCanonicalTask(taskQuery, entry, state?.view, true);
+          return;
+        }
+        setTaskEntry(null);
+        const url = new URL(location.href), view = state?.view;
+        const destinationCountry = view?.countryId ?? url.searchParams.get('countryId') ?? bootstrap.country.id;
+        let session = bootstrap;
+        if (destinationCountry !== session.country.id || countrySelectionPending()) {
+          session = await selectCountrySession(destinationCountry);
+          if (epoch !== authenticationEpochRef.current) return;
+          applyBootstrap(session, 'PLANET', true);
+          if (request !== navigationRequestRef.current) return;
+        }
+        const cityId = view?.mode === 'CITY' ? view.cityId : view ? null : url.searchParams.get('cityId');
+        if (cityId) {
+          const scene = await loadCityScene(session.country.id, cityId, session.country.worldVersion);
+          if (request !== navigationRequestRef.current || epoch !== authenticationEpochRef.current) return;
+          if (view?.cityView) {
+            const scope = session.country.id + ':' + cityId;
+            cityViewMemory.set(scope, view.cityView); cityRestoreTokensRef.current.set(scope, request); setCityViewRestore({ scope, view: view.cityView, token: request });
+          }
+          setPreparedCityScene(scene); setFocusCity(scene.city); setFocusTask(null); setMapMode('CITY');
+        } else {
+          if (view?.planetView) planetViewMemory.set('last', view.planetView);
+          setPlanetRestoreToken(value => value + 1); setPlanetEntryCountryId(session.country.id); setMapMode('PLANET');
+        }
+      } catch (error) {
+        if (epoch === authenticationEpochRef.current && request === navigationRequestRef.current) {
+          if (error instanceof ApiError && error.status === 401) void load().catch(() => undefined);
+          else setMapTransitionError(error instanceof Error ? error.message : 'Не удалось вернуться к карте');
+        }
+      } finally { if (epoch === authenticationEpochRef.current && restoreEpoch === navigationRestoreEpochRef.current) navigationRestoringRef.current = false; }
+    };
+    const listener = (event: PopStateEvent) => { void restore(event); };
+    window.addEventListener('popstate', listener); return () => window.removeEventListener('popstate', listener);
+  }, [bootstrap, sessionState, applyBootstrap, cityViewMemory, planetViewMemory, openCanonicalTask, load]);
   useEffect(() => {
     document.title = bootstrap ? `Tasktopia — ${bootstrap.country.name}` : "Tasktopia — цифровая страна";
   }, [bootstrap]);
@@ -432,13 +580,25 @@ export function App() {
     deepLinkHandledRef.current = true;
     const query = taskEntry ?? taskResolutionQuery(new URL(window.location.href));
     if (query) void openCanonicalTask(query, true);
-  }, [bootstrap, openCanonicalTask, taskEntry]);
+    else {
+      const url = new URL(location.href), cityId = url.searchParams.get('cityId'), scope = url.searchParams.get('countryId') ?? bootstrap.country.id;
+      if (cityId) void openPlanetCity(scope, cityId);
+      else if (scope !== bootstrap.country.id) {
+        const epoch = authenticationEpochRef.current, generation = sessionGenerationRef.current, request = ++navigationRequestRef.current;
+        const current = () => epoch === authenticationEpochRef.current && generation === sessionGenerationRef.current && request === navigationRequestRef.current;
+        void selectCountrySession(scope).then(next => { if (current()) applyBootstrap(next); })
+          .catch(error => { if (current()) setMapTransitionError(error instanceof Error ? error.message : 'Не удалось открыть страну'); });
+      }
+      else { const view = navigationView(); if (view) navigation.view(view); }
+    }
+  }, [bootstrap, openCanonicalTask, openPlanetCity, taskEntry, navigation, navigationView, applyBootstrap]);
   const applyRealtimeEvent = useCallback((event: RealtimeEvent) => {
-    if (event.countryId !== countryId || event.id <= lastWorldEventIdRef.current) return;
+    if (!matchesRealtimeScope(countryId, renderedAuthenticationEpoch, eventCountryRef.current, authenticationEpochRef.current)
+      || event.countryId !== countryId || event.id <= lastWorldEventIdRef.current) return;
     if (!event.type.startsWith("task.comment") && (event.type.startsWith("task.") || event.type.startsWith("district.") || event.type === "country.regenerated")) setAttentionRevision(value => value + 1);
     advanceMapSceneCaches(event);
     const affectedTask = invalidateTaskDetails(event);
-    if (affectedTask === null || affectedTask === selectedTaskRef.current) setTaskRevision(value => value + 1);
+    if (affectedTask === null || affectedTask === selectedTaskRef.current || taskEventRefreshesDependencies(event)) setTaskRevision(value => value + 1);
     lastWorldEventIdRef.current = event.id;
     setMapInvalidations(current => enqueueMapInvalidation(current, eventInvalidation(event)));
     if (countryOverviewEventImpact(event) !== "NONE") setPlanetRevision((value) => value + 1);
@@ -446,14 +606,14 @@ export function App() {
     if (notice) {
       setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));
       window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), notice.tone === "success" ? 10_000 : 7_000);
-      if (notice.tone === "success") playCompletionChime();
+      if (notice.tone === "success") playCitySound("bell");
     }
-    setBootstrap((current) => current
+    setBootstrap((current) => current?.country.id === event.countryId
         ? { ...current, country: { ...current.country, worldVersion: event.worldVersion }, eventCursor: event.id }
         : current);
     setRevision((value) => value + 1);
     if (countryOverviewEventImpact(event) === "STRUCTURE" || event.type === "country.profile_updated") setBootstrapRefresh(value => value + 1);
-  }, [countryId]);
+  }, [countryId, renderedAuthenticationEpoch]);
   useEffect(() => {
     if (bootstrapRefresh === 0) return;
     // Replay bursts commit together; one bootstrap refresh owns the batch.
@@ -474,50 +634,65 @@ export function App() {
     void import("socket.io-client").then(({ io }) => {
       if (!active) return;
       const socket = io({ path: "/socket.io", withCredentials: true });
-      disconnect = () => socket.disconnect();
-      let replaying = true;
       let connectedOnce = false;
-      let buffered: RealtimeEvent[] = [];
-      const receive = (event: RealtimeEvent) => {
-        if (event.countryId !== countryId) return;
-        if (replaying) buffered.push(event);
-        else applyRealtimeEvent(event);
+      let sessionCheck: Promise<void> | undefined;
+      let sessionRetry: number | undefined;
+      const epoch = authenticationEpochRef.current;
+      const currentScope = () => active && matchesRealtimeScope(countryId, epoch, eventCountryRef.current, authenticationEpochRef.current);
+      const recheckSession = () => {
+        if (!currentScope() || sessionCheck) return;
+        sessionCheck = load().then(() => {
+          if (currentScope() && !socket.connected) socket.connect();
+        }).catch(() => {
+          // A database interruption is temporary; one bounded read owns each
+          // retry. A confirmed 401 clears the private UI inside load().
+          if (currentScope()) sessionRetry = window.setTimeout(recheckSession, 5_000);
+        }).finally(() => { sessionCheck = undefined; });
       };
+      const replay = new RealtimeReplay({
+        countryId, cursor: () => lastWorldEventIdRef.current,
+        read: (cursor, signal) => api<RealtimeEvent[]>(`/api/events?after=${cursor}`, { signal }),
+        apply: applyRealtimeEvent, online: value => { if (currentScope()) setOnline(value); },
+        commitCursor: cursor => { if (currentScope()) lastWorldEventIdRef.current = cursor; },
+        resynchronize: async signal => {
+          const epoch = authenticationEpochRef.current;
+          try {
+            const next = await api<BootstrapDto>('/api/bootstrap', { signal });
+            if (!currentScope() || signal.aborted || epoch !== authenticationEpochRef.current) throw new DOMException('Recovery cancelled', 'AbortError');
+            if (next.country.id !== countryId) { await load(); throw new DOMException('Recovery scope changed', 'AbortError'); }
+            clearMapSceneCaches(); clearTaskDetailCache(); clearPlanetAtlasCache();
+            rememberCountryRevision(next.country.id, next.country.worldVersion);
+            setBootstrap(next);
+            setFocusCity(current => current?.id === next.initialCity?.id ? next.initialCity : current);
+            setPreparedCityScene(null); setRetainedCityKey(null);
+            setTaskRevision(value => value + 1); setAttentionRevision(value => value + 1);
+            setPlanetRevision(value => value + 1); setTransportRevision(value => value + 1);
+            setMapInvalidations(current => enqueueMapInvalidation(current, {
+              id: next.eventCursor, worldVersion: next.country.worldVersion, type: 'world.resync_required', resync: true,
+            }));
+            return next.eventCursor;
+          } catch (error) {
+            if (currentScope() && error instanceof ApiError && error.status === 401) void load().catch(() => undefined);
+            throw error;
+          }
+        },
+      });
+      disconnect = () => { window.clearTimeout(sessionRetry); replay.close(); socket.disconnect(); };
       socket.on("connect", () => {
+        if (!currentScope()) return;
         // The initial country bootstrap already clears scene caches. Only a
         // reconnect can have missed foreign transport events while offline.
         if (connectedOnce) invalidateForeignTransport();
         connectedOnce = true;
-        setOnline(true);
-        replaying = true;
-        void (async () => {
-          const replayed: RealtimeEvent[] = [];
-          let cursor = lastWorldEventIdRef.current;
-          while (active && socket.connected) {
-            const page = await api<RealtimeEvent[]>(`/api/events?after=${cursor}`);
-            replayed.push(...page);
-            if (page.length < 500) break;
-            cursor = page.at(-1)!.id;
-          }
-          if (!active || !socket.connected) return;
-          const pending = [...replayed, ...buffered].sort((left, right) => left.id - right.id);
-          buffered = [];
-          replaying = false;
-          for (const event of pending) applyRealtimeEvent(event);
-        })().catch(() => {
-          replaying = false;
-          const pending = buffered.sort((left, right) => left.id - right.id);
-          buffered = [];
-          for (const event of pending) applyRealtimeEvent(event);
-          setOnline(false);
-        });
+        void replay.connect();
       });
-      socket.on("disconnect", () => setOnline(false));
-      socket.on("world:event", receive);
-      socket.on("atlas:invalidate", invalidateForeignTransport);
-    });
+      socket.on("disconnect", reason => { replay.disconnect(); if (reason === 'io server disconnect') recheckSession(); });
+      socket.on('connect_error', error => { if (error.message === 'unauthorized') recheckSession(); });
+      socket.on("world:event", event => { if (currentScope()) replay.receive(event); });
+      socket.on("atlas:invalidate", () => { if (currentScope()) invalidateForeignTransport(); });
+    }).catch(() => { if (active && matchesRealtimeScope(countryId, renderedAuthenticationEpoch, eventCountryRef.current, authenticationEpochRef.current)) setOnline(false); });
     return () => { active = false; disconnect?.(); };
-  }, [applyRealtimeEvent, countryId, invalidateForeignTransport]);
+  }, [applyRealtimeEvent, countryId, invalidateForeignTransport, load, renderedAuthenticationEpoch]);
 
   if (sessionState === "INITIALIZING" && !bootstrap) return <div className="app-loading" role="status"><div className="loader-square" /><span>{taskEntry ? "Открываем задачу…" : "Открываем мир…"}</span></div>;
   if (sessionState === "ANONYMOUS" || sessionState === "RECOVERABLE_ERROR" || !bootstrap) {
@@ -529,7 +704,7 @@ export function App() {
   const dependencyScope = `${bootstrap.user.id}:${countryId}:${activeCity?.id}`;
   if (taskEntry) return <main className="task-entry" aria-label="Карточка задачи">
     {selectedTask ? <UiLoadBoundary key={`${countryId}:${selectedTask}`} fallback={<DialogLoadState label="Задача" onClose={closeTask} error />}><Suspense fallback={<TaskModalFallback standalone onClose={closeTask} />}>
-      <TaskModal onAuthenticationRequired={load} standalone key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision}
+      <TaskModal onTaskReady={recordTaskNavigation} onNavigateTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString(), Boolean(taskEntry)); }} onAuthenticationRequired={load} standalone key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision}
         onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} />
     </Suspense></UiLoadBoundary> : <TaskModalFallback standalone onClose={closeTask} error={mapTransitionError} onRetry={() => { void openCanonicalTask(taskEntry, true); }} />}
   </main>;
@@ -540,7 +715,7 @@ export function App() {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const trigger = target.closest('button, summary');
-      if (!trigger || trigger.closest('.game-popover-panel, .map-legend-panel, .country-switcher, .task-search-results')) return;
+      if (!trigger || trigger.closest('.game-popover-panel, .map-legend-panel, .country-switcher, .task-search-results, [data-map-catalog]')) return;
       for (const panel of event.currentTarget.querySelectorAll<HTMLDetailsElement>('details[open]')) {
         if (!panel.contains(trigger)) panel.open = false;
       }
@@ -555,7 +730,7 @@ export function App() {
           <span className="text-xs font-bold tracking-[.08em] text-[var(--ui-muted)]">МИР</span>
           <strong className="block max-w-[180px] truncate text-sm text-paper md:max-w-[240px]">{bootstrap.country.name}</strong>
         </button>
-        {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={next => { if (renderedAuthenticationEpoch === authenticationEpochRef.current) applyBootstrap(next); }} onCities={() => { setCountryMenuOpen(false); setDirectoryFocus(undefined); setDirectorySection("cities"); setDirectoryOpen(true); }} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} />}
+        {countryMenuOpen && <CountrySwitcher bootstrap={bootstrap} onClose={() => setCountryMenuOpen(false)} onBootstrap={next => { if (renderedAuthenticationEpoch === authenticationEpochRef.current) { cancelPendingNavigation(); applyBootstrap(next); } }} onCities={() => { setCountryMenuOpen(false); setDirectoryFocus(undefined); setDirectorySection("cities"); setDirectoryOpen(true); }} onManage={() => { setCountryMenuOpen(false); setCountryDialog("manage"); }} />}
         </div>
         {headerCity && <button className="header-city" aria-label={`Районы города ${headerCity.name}`} onClick={() => { setDirectoryFocus({cityId:headerCity.id,districtId:""});setDirectorySection("cities");setDirectoryOpen(value=>!value); }}>
           <span className="text-xs font-bold tracking-[.08em] text-[var(--ui-muted)]">ГОРОД</span>
@@ -564,7 +739,7 @@ export function App() {
       </div>
 
       <div className="header-search map-toolbar-search">
-        <TaskSearch key={countryId} onSelect={openTaskFromSearch} />
+        <TaskSearch key={countryId} countryId={bootstrap.country.id} revision={attentionRevision} onSelect={openTaskFromSearch} />
       </div>
 
       <div className="map-toolbar-actions">
@@ -572,8 +747,9 @@ export function App() {
           <WorldAmbientLighting />
           {effectiveMapMode === "CITY" && activeCity && <GamePopover label="Фильтры" icon={<GameIcon name="filter" />} activeLabel={attention.scope===`${bootstrap.user.id}:${countryId}:${activeCity.id}`?attention.label:undefined}>
             <strong>Показать на карте</strong>
-            <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} />
+            <MapAttention key={`${bootstrap.user.id}:${countryId}:${activeCity.id}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onChange={setAttention} onSelectTask={openTaskFromSearch} />
             <button className="city-development-toggle" onClick={event => { const menu = event.currentTarget.closest("details"); if (menu) menu.open = false; setDevelopmentOpen(value => !value); }} aria-expanded={developmentOpen}>Развитие города</button>
+            <button onClick={event => { const menu = event.currentTarget.closest('details'); if (menu) { menu.open = false; menu.querySelector('summary')?.focus(); } setAlbumOpen(true); }}>Альбом города</button>
           </GamePopover>}
           <GamePopover label="Меню" icon={<GameIcon name="menu" />} className="world-menu">
             <strong>{bootstrap.country.name}</strong>
@@ -588,7 +764,7 @@ export function App() {
           </GamePopover>
           <WorldPreferences />
           <MapLegend />
-          <WorldDigest key={`${bootstrap.user.id}:${countryId}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} onTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString()); }} />
+          <WorldDigest key={`${bootstrap.user.id}:${countryId}`} userId={bootstrap.user.id} countryId={bootstrap.country.id} revision={revision} onAuthenticationRequired={load} onTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString()); }} />
           <ProfilePresence initial={bootstrap.user.name.slice(0, 1).toUpperCase()} online={online} onOpen={() => openSettings("account")} />
         </nav>
       </div>
@@ -599,16 +775,16 @@ export function App() {
       wheelNavigation.observe({ at: event.timeStamp, deltaY: event.deltaY });
     }}>
       <Suspense fallback={<div className="app-loading" role="status"><div className="loader-square" /><span>Загружаем карту…</span></div>}>
-          {effectiveMapMode === "PLANET" ? <PlanetAtlasCanvas
+          {effectiveMapMode === "PLANET" ? <PlanetAtlasCanvas key={countryId + ":" + planetRestoreToken}
             wheelNavigation={wheelNavigation} userId={bootstrap.user.id} activeCountryId={bootstrap.country.id}
             initialFocusCountryId={planetEntryCountryId ?? undefined} refreshToken={planetRevision}
-            initialView={planetViewMemory.get("last")} onViewChange={rememberPlanetView}
+            initialView={planetViewMemory.get("last")} onViewChange={rememberPlanetNavigation}
             onCitySelect={openPlanetCity} onCityIntent={prepareCityIntent}
           /> : !activeCity ? <div className="world-empty"><div className="empty-square" aria-hidden="true">＋</div><h2>Пока нет городов</h2><p>Создайте первый город через MCP — он сразу появится на планете.</p><button className="primary-button" onClick={() => openSettings("mcp")}>Подключить MCP</button></div> : null}
       </Suspense>
       {activeCity && (effectiveMapMode === "CITY" || preparedCityScene !== null || retainedCityKey===`${bootstrap.country.id}:${activeCity.id}`) && <div aria-hidden={effectiveMapMode !== "CITY"} style={{ position:"absolute", inset:0, visibility:effectiveMapMode === "CITY" ? "visible" : "hidden", pointerEvents:effectiveMapMode === "CITY" ? "auto" : "none" }}>
         <Suspense fallback={<div className="app-loading" role="status">Готовим город…</div>}>
-          <WorldCanvas selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={setSelectedTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
+          <WorldCanvas initialView={cityViewMemory.get(bootstrap.country.id + ':' + activeCity.id)} onViewChange={rememberCityView} restoreView={cityViewRestore?.scope === bootstrap.country.id + ':' + activeCity.id ? cityViewRestore : undefined} onInspectTask={(scope, id) => { void openCanonicalTask(new URLSearchParams({ countryId: scope, id }).toString()); }} selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={selectVisibleTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
                   setRetainedCityKey(`${bootstrap.country.id}:${activeCity.id}`);
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
@@ -627,6 +803,7 @@ export function App() {
         </Suspense>
       </div>}
       <MapLevelNav level={effectiveMapMode} hasCity={Boolean(activeCity)} showDistricts={showDistricts} onDistrictsChange={setShowDistricts} onChange={(nextLevel) => {
+        cancelPendingNavigation();
         if (nextLevel === effectiveMapMode || (nextLevel === "CITY" && !activeCity)) return;
             void transitionMap(nextLevel, { x: .5, y: .5 }, () => {
           if (nextLevel === "PLANET") setPlanetEntryCountryId(bootstrap.country.id);
@@ -639,12 +816,12 @@ export function App() {
       }} />}
       {mapTransitionError && !mapTransition && <div className="map-transition-error" role="alert"><span>{mapTransitionError}</span><button type="button" onClick={() => setMapTransitionError("")}>Закрыть</button></div>}
       {effectiveMapMode === "CITY" && dependencyTask?.scope === dependencyScope && <MapDependencies key={`${dependencyScope}:${dependencyTask.id}`} countryId={bootstrap.country.id} taskId={dependencyTask.id} scope={dependencyScope} revision={attentionRevision} onChange={setDependencyData} onClose={() => { setDependencyTask(undefined); setDependencyData({ scope: "" }); }} />}
-      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <UiLoadBoundary key={dependencyScope} fallback={<PanelLoadState onClose={closeDevelopment} error />}><Suspense fallback={<PanelLoadState onClose={closeDevelopment} />}><CityDevelopmentPanel selectedRoute={selectedTransportRoute} key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); setSelectedTask(id); }} onRoute={id=>{setSelectedTransportRoute(id);closeDevelopment();}} onCity={(scope,id,name)=>{closeDevelopment();setSelectedTransportRoute(undefined);void openPlanetCity(scope,id,{x:.5,y:.5},name);}} /></Suspense></UiLoadBoundary>}
+      {effectiveMapMode === "CITY" && activeCity && developmentOpen && <UiLoadBoundary key={dependencyScope} fallback={<PanelLoadState onClose={closeDevelopment} error />}><Suspense fallback={<PanelLoadState onClose={closeDevelopment} />}><CityDevelopmentPanel selectedRoute={selectedTransportRoute} key={dependencyScope} countryId={bootstrap.country.id} cityId={activeCity.id} revision={attentionRevision} onClose={closeDevelopment} onTask={id => { closeDevelopment(); selectVisibleTask(id); }} onRoute={id=>{setSelectedTransportRoute(id);closeDevelopment();}} onCity={(scope,id,name)=>{closeDevelopment();setSelectedTransportRoute(undefined);void openPlanetCity(scope,id,{x:.5,y:.5},name);}} /></Suspense></UiLoadBoundary>}
       {effectiveMapMode === "CITY" && activeCity && <DistrictPlans key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} revision={revision} onSelect={districtId => {
         setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true);
       }} />}
-      {documentsOpen && <UiLoadBoundary fallback={<DialogLoadState label="Документы" onClose={closeDocuments} error />}><Suspense fallback={<DialogLoadState label="Загрузка документов" onClose={closeDocuments} />}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={setSelectedTask} /></Suspense></UiLoadBoundary>}
-      {directoryOpen && <CityDirectory key={`${countryId}:${directoryFocus?.districtId ?? "general"}`} initialFocus={directoryFocus} bootstrap={bootstrap} refreshToken={revision} initialSection={directorySection} onClose={() => setDirectoryOpen(false)} onCityFocus={(city) => {
+      {documentsOpen && <UiLoadBoundary fallback={<DialogLoadState label="Документы" onClose={closeDocuments} error />}><Suspense fallback={<DialogLoadState label="Загрузка документов" onClose={closeDocuments} />}><CityDocuments key={countryId} countryId={bootstrap.country.id} initialCityId={headerCity?.id} revision={attentionRevision} hidden={Boolean(selectedTask)} onClose={closeDocuments} onTask={selectVisibleTask} /></Suspense></UiLoadBoundary>}
+      {directoryOpen && <CityDirectory key={`${countryId}:${directoryFocus?.districtId ?? "general"}`} initialFocus={directoryFocus} bootstrap={bootstrap} refreshToken={revision} initialSection={directorySection} onTaskNavigate={openTaskFromSearch} onClose={() => setDirectoryOpen(false)} onCityFocus={(city) => {
         setDirectoryOpen(false);
         void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
           const scene = await loadCityScene(bootstrap.country.id, city.id, bootstrap.country.worldVersion);
@@ -657,10 +834,11 @@ export function App() {
           await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
           cityReadyResolverRef.current = null;
         }, city.name);
-      }} onTaskSelect={setSelectedTask} onArchiveRecordSelect={setSelectedArchiveRecord} />}
+      }} onTaskSelect={selectVisibleTask} onArchiveRecordSelect={setSelectedArchiveRecord} />}
     </section>
 
-    {selectedTask && <UiLoadBoundary key={`${countryId}:${selectedTask}`} fallback={<DialogLoadState label="Задача" onClose={closeTask} error />}><Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense></UiLoadBoundary>}
+    {albumOpen && activeCity && <UiLoadBoundary fallback={<DialogLoadState label="Альбом города" onClose={closeAlbum} error />}><Suspense fallback={<DialogLoadState label="Альбом города" onClose={closeAlbum} />}><CityAlbum key={`${countryId}:${activeCity.id}`} countryId={bootstrap.country.id} cityId={activeCity.id} cityName={activeCity.name} revision={attentionRevision} onClose={closeAlbum} onAuthenticationRequired={load} onTask={id => { setAlbumOpen(false); void openCanonicalTask(new URLSearchParams({ id }).toString()); }} /></Suspense></UiLoadBoundary>}
+    {selectedTask && <UiLoadBoundary key={`${countryId}:${selectedTask}`} fallback={<DialogLoadState label="Задача" onClose={closeTask} error />}><Suspense fallback={<TaskModalFallback onClose={closeTask} />}><TaskModal onTaskReady={recordTaskNavigation} onNavigateTask={id => { void openCanonicalTask(new URLSearchParams({ id }).toString(), Boolean(taskEntry)); }} onAuthenticationRequired={load} key={`${countryId}:${selectedTask}`} countryId={bootstrap.country.id} taskId={selectedTask} revision={taskRevision} onShowDependencies={id => { setDependencyData({ scope: "" }); setDependencyTask({ scope: dependencyScope, id }); closeTask(); }} onClose={closeTask} /></Suspense></UiLoadBoundary>}
     {selectedSite?.countryId === bootstrap.country.id && <SiteHistoryModal feature={selectedSite.feature} onClose={closeSite} />}
     {selectedArchiveRecord && <UiLoadBoundary key={selectedArchiveRecord} fallback={<DialogLoadState label="Архив" onClose={closeArchiveRecord} error />}><Suspense fallback={<DialogLoadState label="Загрузка архива" onClose={closeArchiveRecord} />}><ArchiveRecordModal recordId={selectedArchiveRecord} onClose={closeArchiveRecord} /></Suspense></UiLoadBoundary>}
     {countryDialog && <CountryPanel bootstrap={bootstrap} onClose={() => setCountryDialog(null)} />}

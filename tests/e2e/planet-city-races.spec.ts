@@ -4,7 +4,7 @@ test('отмена медленного входа и быстрый выбор 
   test.setTimeout(90_000);
   const errors:string[]=[],failed:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   page.on('response',r=>{if(r.status()>=400)failed.push(`${r.status()} ${new URL(r.url()).pathname}`);});
-  await page.goto('/');await page.getByLabel('Email').fill('world-validation@tasktopia.local');await page.getByLabel('Пароль').fill('tasktopia-world-validation');
+  await page.goto('/');await page.getByLabel('Email').fill('world-validation@tasktopia.local');await page.getByLabel('Пароль', { exact: true }).fill('tasktopia-world-validation');
   await page.getByRole('button',{name:'Открыть страну',exact:true}).click();
   const planet=page.locator('.planet-atlas');await expect(planet).toHaveAttribute('data-planet-ready','true',{timeout:45_000});
   failed.length=0; // The anonymous bootstrap 401 precedes this authenticated journey.

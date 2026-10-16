@@ -1,0 +1,149 @@
+{
+  "date": "2026-10-16",
+  "candidateSourceHash": "0929eddf5da7f54685ad352d0816b7fa41c6d73069e97e8cc76b8ef60fd8dfb4",
+  "readOnlyGuard": "migrate:false; startup options=-c default_transaction_read_only=on; SHOW default_transaction_read_only asserted on before measured reads",
+  "samplesPerFixture": {
+    "processCold": 1,
+    "warm": 20
+  },
+  "rows": [
+    {
+      "tasks": 200,
+      "baselineColdServiceMs": 130.227667,
+      "finalColdServiceMs": 107.22595799999996,
+      "baselineColdQueries": 16,
+      "finalColdQueries": 16,
+      "baselineWarm": {
+        "timeMs": {
+          "count": 20,
+          "p50": 0.9788330000000087,
+          "p95": 1.508707999999956,
+          "max": 2.4734580000000506
+        },
+        "queries": {
+          "count": 20,
+          "p50": 3,
+          "p95": 3,
+          "max": 3
+        },
+        "sqlMs": {
+          "count": 20,
+          "p50": 1.460250999999971,
+          "p95": 2.408666999999923,
+          "max": 4.475415999999996
+        }
+      },
+      "finalWarm": {
+        "timeMs": {
+          "count": 20,
+          "p50": 0.5954160000000002,
+          "p95": 0.7259999999999991,
+          "max": 1.762833999999998
+        },
+        "queries": {
+          "count": 20,
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "sqlMs": {
+          "count": 20,
+          "p50": 1.0762080000000651,
+          "p95": 1.3149170000000368,
+          "max": 3.3611249999999586
+        }
+      },
+      "baselineJsonBytes": 1244392,
+      "finalJsonBytes": 1244392,
+      "baselineGzipBytes": 165952,
+      "finalGzipBytes": 165953,
+      "sourceFingerprints": {
+        "src/server/app-service.ts": "23f828282e9cdd78ff9bd88d776655873b3c3c280d15b24c89e666cd205c9153",
+        "src/server/task-detail-read.ts": "d120f0e1fbb9eeba173f1341eb4385792cca7937026213125f5a8b1762284181",
+        "src/server/db.ts": "8b74ea9a048027a65cefae460cc235612a5db9205b138780597ce2df28e11e2e"
+      },
+      "baselineReport": {
+        "path": ".builder/world-perf-20261016/server-baseline-200.json",
+        "sha256": "aa84e384e3c07fcfbc99511e45afd1d820c29ffa7e6b6d3fe29afdb602bc675b"
+      },
+      "finalReport": {
+        "path": ".builder/world-perf-20261016/final-v2-server-200.json",
+        "sha256": "9714506ca57ed8c81fc0e6d732a9e785eddc3bfd951460f68e7bd1480ec9397d"
+      }
+    },
+    {
+      "tasks": 1000,
+      "baselineColdServiceMs": 399.15083300000003,
+      "finalColdServiceMs": 371.06237500000003,
+      "baselineColdQueries": 16,
+      "finalColdQueries": 16,
+      "baselineWarm": {
+        "timeMs": {
+          "count": 20,
+          "p50": 1.0128330000000005,
+          "p95": 2.5430419999997866,
+          "max": 3.3618340000000444
+        },
+        "queries": {
+          "count": 20,
+          "p50": 3,
+          "p95": 3,
+          "max": 3
+        },
+        "sqlMs": {
+          "count": 20,
+          "p50": 1.5005409999999983,
+          "p95": 4.50545800000009,
+          "max": 6.1709159999998064
+        }
+      },
+      "finalWarm": {
+        "timeMs": {
+          "count": 20,
+          "p50": 0.6056660000001557,
+          "p95": 2.600541999999905,
+          "max": 3.705165999999963
+        },
+        "queries": {
+          "count": 20,
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "sqlMs": {
+          "count": 20,
+          "p50": 1.0757080000003043,
+          "p95": 5.088209000000006,
+          "max": 7.27020900000025
+        }
+      },
+      "baselineJsonBytes": 6520530,
+      "finalJsonBytes": 6520530,
+      "baselineGzipBytes": 869087,
+      "finalGzipBytes": 869083,
+      "sourceFingerprints": {
+        "src/server/app-service.ts": "23f828282e9cdd78ff9bd88d776655873b3c3c280d15b24c89e666cd205c9153",
+        "src/server/task-detail-read.ts": "d120f0e1fbb9eeba173f1341eb4385792cca7937026213125f5a8b1762284181",
+        "src/server/db.ts": "8b74ea9a048027a65cefae460cc235612a5db9205b138780597ce2df28e11e2e"
+      },
+      "baselineReport": {
+        "path": ".builder/world-perf-20261016/server-baseline-1000.json",
+        "sha256": "a9a7ce3f2b52348c48b4c2b7979b39e1f837cffe8adc6423e382a7a53f95ca8d"
+      },
+      "finalReport": {
+        "path": ".builder/world-perf-20261016/final-v2-server-1000.json",
+        "sha256": "af569d4fd707d5ae2ef277d1c3cf7a38194a8f9443503fc32edad5e77eaa0b29"
+      }
+    }
+  ],
+  "limits": [
+    "Первый service read не включает JSON.stringify/gzip и не объявляет дисковый PG/OS cache холодным. Cold — один sample без статистического p95.",
+    "SQL durations включают round-trip overhead; параллельные запросы суммируются и могут превышать wall time. Нагрузочный throughput не измерялся.",
+    "Одинаковый размер JSON не доказывает идентичность payload. Gzip размеры отличаются на+1/-4byte; они не объявлены идентичными.",
+    "SQL producer AppService/db/task-detail-read fingerprints совпадают с v2. Не заявляется тождество всего editable checkout с frozen sourceHash."
+  ],
+  "wrapper": {
+    "path": ".builder/world-perf-20261016/measure-final-server-readonly.ts",
+    "sha256": "26f726828e4c96f5756cc82bfa1f9ad68a301ab1e8692f7dc45e26889bce1256"
+  }
+}
