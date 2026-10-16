@@ -124,7 +124,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # The compiled server runs in production mode; seed/smoke still use tsx.
+      - run: npm ci --include=dev
       - uses: actions/download-artifact@v4
         with:
           name: verified-runtime
