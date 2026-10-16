@@ -1,6 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 import { createMcpHandler, McpServer, ResourceTemplate, type AuthInfo, type McpHttpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { taskCollectionPageSchema, taskListPageSchema } from "./task-read-schemas";
 import { BUILDING_CATALOG } from "../shared/catalog";
 import type { AppService } from "./app-service";
 import { DomainError } from "./app-service";
@@ -248,10 +249,28 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("task.get", { description: "Получить задачу, Markdown-документы, чек-лист, дефекты, комментарии, MR, файлы и веб-ссылку для людей.", inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ countryId, taskId }) => {
+  server.registerTool("task.list_page", { description: "Получить страницу задач с поиском и совместимыми фильтрами; limit по умолчанию 50, nextCursor продолжает тот же запрос.",
+    inputSchema: taskListPageSchema.extend({ countryId: countryIdSchema }), annotations: { readOnlyHint: true } }, async (input) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "tasks:read"); return response(await service.listTaskPage(input.countryId, input)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.collection_list", { description: "Получить страницу комментариев, истории, дефектов, файлов, метаданных документов, чек-листа, зависимостей или MR. История начинается с последних записей; документы не включают content.",
+    inputSchema: taskCollectionPageSchema.extend({ countryId: countryIdSchema }), annotations: { readOnlyHint: true } }, async (input) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "tasks:read"); return response(await service.getTaskCollection(input.countryId, input.taskId, input.collection, input)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.document_get", { description: "Получить содержимое одного Markdown-документа по задаче и стране.",
+    inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), documentId: z.string().uuid() }).strict(), annotations: { readOnlyHint: true } }, async ({ countryId, taskId, documentId }) => {
+    try { await requireCountryAccess(db, identity, countryId, "tasks:read"); return response(await service.getTaskDocument(countryId, taskId, documentId)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.get", { description: "Получить задачу, Markdown-документы, чек-лист, дефекты, комментарии, MR, файлы и веб-ссылку для людей. view=compact возвращает task.card с counts и ограниченными метаданными документов без истории; full — прежний полный ответ.", inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), view: z.enum(["full", "compact"]).optional() }), annotations: { readOnlyHint: true } }, async ({ countryId, taskId, view }) => {
     try {
       await requireCountryAccess(db, identity, countryId, "tasks:read");
-      const task = await service.getTask(countryId, taskId);
+      const task = view === "compact" ? await service.getTaskCard(countryId, taskId) : await service.getTask(countryId, taskId);
       return response({ ...task, url: taskUrl(countryId, task) });
     }
     catch (error) { return failure(error); }
@@ -380,9 +399,10 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   const statusInput = {
     countryId: countryIdSchema, taskId: z.string().uuid(), status: z.enum(["PLANNING", "STARTED", "IN_PROGRESS", "TESTING", "COMPLETED"]),
     progress: z.number().int().min(0).max(100).optional(), comment: z.string().max(8000).optional(), idempotencyKey: z.string().min(4).max(160),
+    resultMode: z.enum(["full", "compact"]).optional(),
   };
   server.registerTool("task.set_status", { description: "Перевести задачу на следующую строительную стадию.", inputSchema: z.object(statusInput), annotations: { idempotentHint: true } }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); return response(await service.updateTaskStatus(input.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); const { resultMode, ...command } = input; return response(await service.updateTaskStatus(input.countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode)); }
     catch (error) { return failure(error); }
   });
 
@@ -391,16 +411,16 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     inputSchema: z.object({ ...statusInput, progress: z.number().int().min(0).max(100), comment: z.string().min(1).max(8000) }),
     annotations: { idempotentHint: true },
   }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); return response(await service.updateTaskStatus(input.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); const { resultMode, ...command } = input; return response(await service.updateTaskStatus(input.countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode)); }
     catch (error) { return failure(error); }
   });
 
   server.registerTool("task.add_comment", {
     description: "Добавить комментарий без изменения стадии.",
-    inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), body: z.string().min(1).max(8000), idempotencyKey: z.string().min(4).max(160) }),
+    inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), body: z.string().min(1).max(8000), idempotencyKey: z.string().min(4).max(160), resultMode: z.enum(["full", "compact"]).optional() }),
     annotations: { idempotentHint: true },
   }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "comments:write"); return response(await service.addTaskComment(input.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
+    try { await requireCountryAccess(db, identity, input.countryId, "comments:write"); const { resultMode, ...command } = input; return response(await service.addTaskComment(input.countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode)); }
     catch (error) { return failure(error); }
   });
 

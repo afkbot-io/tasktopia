@@ -80,7 +80,7 @@ test("real auto-assigned clinic and fire station render at native proportions an
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByLabel("Email")).toHaveCount(0, { timeout: 30_000 });
   const bootstrapResponse = await page.request.get("/api/bootstrap");

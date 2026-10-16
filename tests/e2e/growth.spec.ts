@@ -10,7 +10,7 @@ test("captures a deterministic city growth checkpoint", async ({ page }) => {
 
   await page.goto("/");
   await page.getByLabel("Email").fill("growth@tasktopia.local");
-  await page.getByLabel("Пароль").fill("growth-demo-100");
+  await page.getByLabel("Пароль", { exact: true }).fill("growth-demo-100");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByText("Centuria", { exact: true })).toBeVisible();
   const map = page.locator(".world-canvas");

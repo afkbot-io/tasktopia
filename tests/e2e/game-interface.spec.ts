@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 test('карточка и компактное меню сохраняют функции, а настройки реально ограничивают рендер',async({page},info)=>{
   test.setTimeout(90000);
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('/');await page.getByLabel('Email').fill('demo@tasktopia.local');await page.getByLabel('Пароль').fill('tasktopia-demo');
+  await page.goto('/');await page.getByLabel('Email').fill('demo@tasktopia.local');await page.getByLabel('Пароль', { exact: true }).fill('tasktopia-demo');
   await page.getByRole('button',{name:'Открыть страну',exact:true}).click();
   await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready','true',{timeout:45000});
   await expect(page.getByRole('button',{name:'План',exact:true})).toHaveCount(0);

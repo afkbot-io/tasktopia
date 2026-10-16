@@ -1,17 +1,20 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { loadMapAttention } from "../map-attention-loader";
-import { matchesMapAttention, type MapAttentionMode, type MapAttentionTask } from "../../shared/map-attention";
-const MODES: [MapAttentionMode, string][] = [["MINE", "Мои объекты"], ["TESTING", "Приёмка"], ["DEFECTS", "Нужен ремонт"], ["OVERDUE", "Срыв сроков"]];
-export function MapAttention({ countryId, cityId, userId, revision, onChange }: {
-  countryId: string; cityId: string; userId: string; revision: number; onChange: (value: { scope: string; ids: string[]; label?:string }) => void;
+import { type MapAttentionMode, type MapAttentionTask } from "../../shared/map-attention";
+import { MAP_ATTENTION_FILTERS, filterMapAttention, mapAttentionFilterLabel } from '../map-attention-filters';
+import type { TaskListItemDto } from '../../shared/task-read-contracts';
+import { TaskCatalogDialog } from './TaskCatalogDialog';
+export function MapAttention({ countryId, cityId, userId, revision, onChange, onSelectTask }: {
+  countryId: string; cityId: string; userId: string; revision: number; onChange: (value: { scope: string; ids: string[]; label?:string }) => void; onSelectTask?: (task:TaskListItemDto)=>void;
 }) {
-  const [mode, setMode] = useState<MapAttentionMode | null>(null);
+  const [modes, setModes] = useState<MapAttentionMode[]>([]);
+  const [catalogOpen,setCatalogOpen]=useState(false);
   const [tasks, setTasks] = useState<MapAttentionTask[] | null>(null);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
   const [now, setNow] = useState(Date.now);
   const cached = useRef<{ key: string; fetchedAt: number; tasks: MapAttentionTask[] } | null>(null);
-  const enabled = mode !== null;
+  const enabled = modes.length > 0;
   const scope = `${userId}:${countryId}:${cityId}`;
   useEffect(() => {
     if (!enabled) return;
@@ -44,20 +47,25 @@ export function MapAttention({ countryId, cityId, userId, revision, onChange }: 
     return () => { window.removeEventListener("online", refresh); document.removeEventListener("visibilitychange", refresh); clearInterval(timer); };
   }, [enabled]);
   useEffect(() => {
-    if (mode !== "OVERDUE" || !tasks) return;
+    if (!modes.includes("OVERDUE") || !tasks) return;
     const time = Date.now();
     const deadlines = tasks.filter(task => task.status !== "COMPLETED" && task.dueAt && Date.parse(task.dueAt) > time).map(task => Date.parse(task.dueAt!));
     if (!deadlines.length) return;
     const timer = window.setTimeout(() => setNow(Date.now()), Math.min(2_147_000_000, Math.max(1, Math.min(...deadlines) - time)));
     return () => clearTimeout(timer);
-  }, [mode, tasks, now]);
+  }, [modes, tasks, now]);
+  const matching=useMemo(()=>tasks?filterMapAttention(tasks,modes,now):[],[tasks,modes,now]);
+  const label=mapAttentionFilterLabel(modes);
   useLayoutEffect(() => {
-    onChange({ scope, label:MODES.find(([value])=>value===mode)?.[1], ids: mode && tasks ? tasks.filter(task => matchesMapAttention(task, mode, now)).map(task => task.id) : [] });
-  }, [scope, mode, tasks, now, onChange]);
-  const count = mode && tasks ? tasks.filter(task => matchesMapAttention(task, mode, now)).length : 0;
-  return <nav className="map-attention" aria-label="Подсветка построек">
-    {MODES.map(([value, label]) => <button key={value} aria-pressed={mode === value} onClick={() => { setNow(Date.now()); setMode(mode === value ? null : value); }}>{label}</button>)}
-    {mode && <button onClick={()=>setMode(null)}>Сбросить фильтр</button>}
-    {mode && <span role="status">{error ? <button onClick={() => setRetry(n => n + 1)}>Повторить загрузку</button> : tasks ? `Найдено: ${count}` : "Загрузка…"}</span>}
-  </nav>;
+    onChange({scope,label,ids:matching.map(task=>task.id)});
+  },[scope,label,matching,onChange]);
+  return <>
+    <nav className="map-attention" aria-label="Подсветка построек">
+      {MAP_ATTENTION_FILTERS.map(([value,label])=><button key={value} aria-pressed={modes.includes(value)} onClick={()=>{setNow(Date.now());setModes(current=>current.includes(value)?current.filter(mode=>mode!==value):[...current,value]);}}>{label}</button>)}
+      {enabled&&<button onClick={()=>setModes([])}>Сбросить фильтр</button>}
+      {enabled&&<span role="status">{error?<button onClick={()=>setRetry(value=>value+1)}>Повторить загрузку</button>:tasks?`Найдено: ${matching.length}`:'Загрузка…'}</span>}
+      {onSelectTask&&<button type="button" aria-haspopup="dialog" onClick={()=>setCatalogOpen(true)}>Список задач города</button>}
+    </nav>
+    {catalogOpen&&onSelectTask&&<TaskCatalogDialog countryId={countryId} cityId={cityId} userId={userId} revision={revision} onClose={()=>setCatalogOpen(false)} onSelectTask={onSelectTask} />}
+  </>;
 }

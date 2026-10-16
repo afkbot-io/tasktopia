@@ -64,7 +64,7 @@ test("480real tasks across20sprints keep compact art, one resident scene and acc
   for (const task of examples) {
     const point = await center(page, task);
     const time = Date.now();
-    const detail = page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${task.id}`);
+    const detail = page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${task.id}/card`);
     await page.mouse.click(point.x, point.y); expect((await detail).status()).toBe(200);
     await expect(page.getByRole("dialog").locator("#task-title")).toHaveText(task.title); taskTimes.push(Date.now() - time);
     await page.getByRole("button", { name: "Закрыть", exact: true }).click(); await expect(page.locator(".task-modal")).toHaveCount(0);
@@ -116,7 +116,7 @@ test("six newly authored service families render and open their actual tasks", a
     const task = tasks.find(task => task.buildingType === key && task.stage === 5);
     expect(task, `Completed authored ${key}, not a structural service fallback`).toBeTruthy();
     const point = await center(page, task!);
-    const detail = page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${task!.id}`);
+    const detail = page.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${task!.id}/card`);
     await page.mouse.click(point.x, point.y); expect((await detail).status()).toBe(200);
     await expect(page.getByRole("dialog").locator("#task-title")).toHaveText(task!.title);
     await page.getByRole("button", { name: "Закрыть", exact: true }).click(); await expect(page.locator(".task-modal")).toHaveCount(0);

@@ -1,0 +1,117 @@
+{
+  "date": "2026-10-16",
+  "status": "producer-verified-integration-and-performance-pending",
+  "description": "Кооперативная подготовка городских сценок и остановок с синхронным guarded commit без снимков актёров.",
+  "sourceHashes": {
+    "src/client/city-life.ts": "1380da8883d9b90f45738383e4d32dcf921f118269b527efc2feb5ecc1d935dd",
+    "src/client/city-everyday-life.ts": "477e06e9d53aea4b97f8d4c8d4806d12c3bef472de71dcb5843eba02cb2c6235",
+    "src/client/city-everyday-controller.ts": "189334935cb23fe2ee5c2f64a178269faa5a3deeff26d6ca942fa12d20954a81",
+    "tests/city-life-preparation.test.ts": "125acef7f04b6b62f643280605b23ee70b6b67ddf5a6d0dea2d962c22f9c5541"
+  },
+  "red": {
+    "cityLife": "cityLifeSitesAsync отсутствует",
+    "everyday": "prepareEverydayAsync отсутствует",
+    "witnessed": true
+  },
+  "verification": {
+    "focused": {
+      "files": 5,
+      "passed": 46,
+      "newCases": 7,
+      "durationSeconds": 3.84
+    },
+    "scopedTypeScript": "PASS",
+    "scopedESLint": "PASS",
+    "cases": [
+      "literal route/order and immutable inputs",
+      "park pad coordinates/paths and old curb identities",
+      "real reachable school curb pair and non-overlapping queue/shelter",
+      "held road scan abort before full-city read, no live director writes",
+      "held canonical city life batch abort, no publication",
+      "stage and role revision changes reject stale prepared state",
+      "fresh latest-input commit cancels invalid visit while retaining current actor positions"
+    ]
+  },
+  "smallFixtureIndependentOracle": {
+    "baseline": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+    "checks": [
+      {
+        "name": "school-transit",
+        "identical": true,
+        "sha256": "93792d13a77c8f481a319340957fc435b4a3e9ce652de266eb2288dffb7cb9a7",
+        "items": 9
+      },
+      {
+        "name": "school-transit-reversed",
+        "identical": true,
+        "sha256": "93792d13a77c8f481a319340957fc435b4a3e9ce652de266eb2288dffb7cb9a7",
+        "items": 9
+      },
+      {
+        "name": "park-sites",
+        "identical": true,
+        "sha256": "47b8283849433c60700a5f05f32100d26b4714f5c702add8e60738e6d810563d",
+        "items": 3
+      },
+      {
+        "name": "city-life",
+        "identical": true,
+        "sha256": "c78a3d98af8e75fd049e8b69b0ce7825711619a5a973c67b156e275097032b94",
+        "items": 1
+      }
+    ],
+    "baselineSourceSha256": "b417319fe651fb094559381cf4b10cc0d3d58c147a442f04a20f2edf09634c94",
+    "stopIds": [
+      "stop:1,-1",
+      "stop:13,-1",
+      "stop:25,-1",
+      "stop:37,-1",
+      "stop:49,-1",
+      "stop:61,-1",
+      "stop:73,-1",
+      "stop:85,-1",
+      "stop:97,-1"
+    ]
+  },
+  "limits": [
+    "Результат касается pure producer и guarded commit. WorldCanvas owner/fences интегрирует renderer.",
+    "4 ms scheduler default и существующие бюджеты не изменены. Browser/200/1000 qualification этого изменения ещё не проведена.",
+    "Канонические данные передаются caller; свежесть semantic life revision проверяется required isCurrent guard непосредственно перед live commit."
+  ],
+  "rawEvidence": {
+    ".builder/world-perf-20261016/life-preparation-red.log": "fbcc608451580a76552192ef5daf9a9b1922798d8108425123e0e45e66a053e3",
+    ".builder/world-perf-20261016/everyday-preparation-red.log": "51ca8d9ea853723b0a9d3b66e8e1f18fb13a224dd36ce139bad4bd7ec13caafd",
+    ".builder/world-perf-20261016/everyday-preparation-green-final.log": "4ea410ed5eaa642eabc5340a4f28e90f0c411e8af5facd16a6799ed8c141551b",
+    ".builder/world-perf-20261016/life-preparation-tsc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".builder/world-perf-20261016/life-preparation-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".builder/world-perf-20261016/life-preparation-oracle.json": "f1d894c3e7b746edeeacc1a3fc1d63aab0328c4ef35d2bfe5df94faf9fc2f19c"
+  },
+  "independentReview": {
+    "status": "no-open-P1-P2",
+    "report": ".builder/world-reliability-evolution-20261016/backend/review-life-preparation.json",
+    "sha256": "e93f0fa3e8fb397eea9f9ff6ded7bad884f753e31cc65945e9fe5ec65f37544d"
+  },
+  "actualFrozenFixtureParity": {
+    "status": "PASS",
+    "report": ".builder/world-reliability-evolution-20261016/backend/cooperative-preparation/paired-final-old053e-proof.json",
+    "sha256": "6158c10e96cdc5fccc7fa297be90cda9d0f849437844e8dc0f90ff4ec923e5e6",
+    "readOnly": true,
+    "tasks": [
+      200,
+      1000
+    ],
+    "lifeSites": [
+      160,
+      800
+    ],
+    "everydaySites": [
+      155,
+      694
+    ],
+    "transitStops": [
+      16,
+      16
+    ],
+    "sourceHashesCheckedBeforeAfter": true
+  }
+}

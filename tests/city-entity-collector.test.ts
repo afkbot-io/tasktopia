@@ -12,6 +12,7 @@ describe("immutable city entity collection", () => {
     const initial = collect([first], [], true);
     expect(initial.tasks.get("task")!.stage).toBe(3);
     expect(collect([first], [], true)).toBe(initial);
+    expect(collect([{...first,worldVersion:20}],[],true),"Publication fences do not replace physical entity collections").toBe(initial);
     const patched = { ...first, tasks: [{ ...first.tasks[0]!, stage: 4 as const }] };
     const next = collect([patched], [], true);
     expect(next).not.toBe(initial);

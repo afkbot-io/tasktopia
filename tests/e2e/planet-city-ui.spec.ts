@@ -8,7 +8,7 @@ test('планета открывает город напрямую и сохр�
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');
   await page.getByLabel('Email').fill('demo@tasktopia.local');
-  await page.getByLabel('Пароль').fill('tasktopia-demo');
+  await page.getByLabel('Пароль', { exact: true }).fill('tasktopia-demo');
   requests.length=0;
   await page.getByRole('button',{name:'Открыть страну',exact:true}).click();
   const planet=page.locator('.planet-atlas');

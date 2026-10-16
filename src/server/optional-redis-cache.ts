@@ -10,6 +10,7 @@ export type RedisCommands = {
   setEx(key: string, ttlSeconds: number, value: string): Promise<unknown>;
   eval?(script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown>;
   close?(): Promise<unknown>;
+  destroy?(): unknown;
   connect?(): Promise<unknown>;
   on?(event: string, listener: (error: Error) => void): unknown;
 };
@@ -40,9 +41,11 @@ export class OptionalRedisWorldCache implements SharedWorldCache {
     private readonly prefix = "tasktopia:v1:",
     private readonly ttlSeconds = 300,
     private readonly operationTimeoutMs = 40,
+    private readonly sharedBuildWaitMs = 1_000,
   ) {}
 
   private key(key: string): string { return `${this.prefix}${key}`; }
+  private available(): boolean { return Date.now() >= this.retryAfter && this.client.isReady !== false; }
 
   private parsedChunk(value: string, locator: string): ChunkPayloadDto | undefined {
     const payload = JSON.parse(value) as ChunkPayloadDto;
@@ -53,11 +56,18 @@ export class OptionalRedisWorldCache implements SharedWorldCache {
   }
 
   async getChunk(key: string): Promise<ChunkPayloadDto | undefined> {
+    return this.readChunk(key);
+  }
+
+  private async readChunk(key: string, deadline = Date.now() + 2 * this.operationTimeoutMs): Promise<ChunkPayloadDto | undefined> {
     if (Date.now() < this.retryAfter || this.client.isReady === false) return undefined;
+    const remaining = () => Math.min(this.operationTimeoutMs, deadline - Date.now());
+    if (remaining() <= 0) return undefined;
     try {
-      const locator = await timeout(this.client.get(this.key(key)), this.operationTimeoutMs);
+      const locator = await timeout(this.client.get(this.key(key)), remaining());
       if (!locator || !/^[a-f0-9]{64}$/.test(locator)) return undefined;
-      const value = await timeout(this.client.get(this.key(`chunk-content:${locator}`)), this.operationTimeoutMs);
+      if (remaining() <= 0) return undefined;
+      const value = await timeout(this.client.get(this.key(`chunk-content:${locator}`)), remaining());
       return value ? this.parsedChunk(value, locator) : undefined;
     } catch {
       this.retryAfter = Date.now() + 1_000;
@@ -96,9 +106,10 @@ export class OptionalRedisWorldCache implements SharedWorldCache {
       return { payload: await build(), built: true };
     }
     if (!acquired) {
-      for (let attempt = 0; attempt < 40; attempt += 1) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 25));
-        const shared = await this.getChunk(key);
+      const deadline = Date.now() + this.sharedBuildWaitMs;
+      while (Date.now() < deadline && this.available()) {
+        await new Promise<void>((resolve) => setTimeout(resolve, Math.min(25, deadline - Date.now())));
+        const shared = await this.readChunk(key, deadline);
         if (shared) return { payload: shared, built: false };
       }
       // A dead owner or a slow optional cache must never block PostgreSQL.
@@ -110,16 +121,19 @@ export class OptionalRedisWorldCache implements SharedWorldCache {
       return { payload, built: true };
     } finally {
       try {
-        await this.client.eval?.(
+        await timeout(Promise.resolve(this.client.eval?.(
           "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
           { keys: [leaseKey], arguments: [token] },
-        );
+        )), this.operationTimeoutMs);
       } catch { /* Lease expires automatically; release is best effort. */ }
     }
   }
 
   async close(): Promise<void> {
-    try { await this.client.close?.(); } catch { /* Optional cache shutdown is best effort. */ }
+    try { await timeout(Promise.resolve(this.client.close?.()), this.operationTimeoutMs); }
+    catch {
+      try { this.client.destroy?.(); } catch { /* Optional cache shutdown is best effort. */ }
+    }
   }
 }
 

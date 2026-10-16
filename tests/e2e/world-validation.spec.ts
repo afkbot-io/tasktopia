@@ -30,7 +30,7 @@ test("validates and captures ten new-build cities", async ({ page }) => {
 
   await page.goto("/");
   await page.getByLabel("Email").fill("world-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-world-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-world-validation");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByText("Федерация Новостроек", { exact: true })).toBeVisible();
 

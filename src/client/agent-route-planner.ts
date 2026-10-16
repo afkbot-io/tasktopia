@@ -1,3 +1,4 @@
+import {completePreparation,prepareCooperatively,type CooperativePreparationOptions} from "./cooperative-preparation";
 import type { Cell } from "../shared/contracts";
 import { agentCellKey, nextSeededRandom } from "./agent-routing";
 
@@ -7,9 +8,18 @@ const VISIT_LIMIT = 8_000;
 /** Compile immutable undirected animal ground once per network replacement.
  * Numeric searches preserve the legacy BFS order, seed consumption and
  * shortest-route/fewest-turn tie breaking without per-edge strings/objects. */
-export function createAgentRoutePlanner(graph: ReadonlyMap<string, Cell>) {
-  const cells = [...graph.values()];
-  const indices = new Map(cells.map((cell, index) => [agentCellKey(cell), index]));
+export type AgentRoutePlanner=(start:Cell,randomState:number,sampleCount?:number,avoidFirst?:Cell)=>{route:Cell[];randomState:number};
+export function createAgentRoutePlanner(graph:ReadonlyMap<string,Cell>):AgentRoutePlanner {
+  return completePreparation(prepareAgentRoutePlanner(graph));
+}
+export function createAgentRoutePlannerAsync(graph:ReadonlyMap<string,Cell>,options:CooperativePreparationOptions={}):Promise<AgentRoutePlanner>{
+  return prepareCooperatively(prepareAgentRoutePlanner(graph),options);
+}
+function* prepareAgentRoutePlanner(graph:ReadonlyMap<string,Cell>):Generator<void,AgentRoutePlanner,void>{
+  const cells:Cell[]=[];
+  for(const cell of graph.values()){cells.push(cell);yield;}
+  const indices=new Map<string,number>();
+  for(let index=0;index<cells.length;index++){indices.set(agentCellKey(cells[index]!),index);yield;}
   const root = cells.length * 4;
   const neighbors = new Int32Array(root).fill(-1);
   for (let index = 0; index < cells.length; index++) {
@@ -18,6 +28,7 @@ export function createAgentRoutePlanner(graph: ReadonlyMap<string, Cell>) {
       const d = DIRECTIONS[direction]!;
       neighbors[index * 4 + direction] = indices.get(`${cell.x + d.x},${cell.y + d.y}`) ?? -1;
     }
+    yield;
   }
 
   const shortest = (start: Cell, startIndex: number, targetIndex: number, avoidIndex: number | undefined): Cell[] => {

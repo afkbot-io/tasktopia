@@ -14,6 +14,8 @@ const serverPort = new URL(baseURL).port || (baseURL.startsWith("https:") ? "443
 const webCommand = process.env.E2E_WEB_COMMAND
   ?? `${seedCommand} && npm run build && NODE_ENV=production PORT=${serverPort} SESSION_COOKIE_SECURE=false npm start`;
 
+const worldReviewMatch = /(?:task-card-paging|task-navigation-history|navigation-scope-recovery|socket-session-expiry|realtime-replay-recovery|city-album|task-catalog-navigation|news-feed-explicit|city-render-reliability|city-world-observation)\.spec\.ts/;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 60_000,
@@ -60,6 +62,10 @@ export default defineConfig({
         serviceWorkers: "block",
       },
     },
+    { name: "world-review-firefox", testMatch: worldReviewMatch, use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "world-review-webkit", testMatch: worldReviewMatch, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
+    { name: "world-review-android", testMatch: worldReviewMatch, use: { ...devices["Pixel 7"], serviceWorkers: "block" } },
+    { name: "world-review-iphone", testMatch: worldReviewMatch, use: { ...devices["iPhone 13"], serviceWorkers: "block" } },
     { name: "webkit-visual", testMatch: /(?:transport-rework-live|city-200-loading|city-documents|city-development|world-digest|task-entry|atlas-transport|atlas-flight-geometry|atlas-pixel-zoom|planet-feedback|visual-consistency|visual-services|world-preferences|city-asset-overlap|auth-game-entry|forest-ui-design|forest-ui-surfaces|forest-ui-archive|forest-ui-states|living-city-events|everyday-city-events)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
     { name: "ui-review-firefox", testMatch: /(?:auth-game-entry|ui-design-review|ui-public-preview)\.spec\.ts/, use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },
     { name: "ui-review-webkit", testMatch: /(?:auth-game-entry|ui-design-review|ui-public-preview)\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, serviceWorkers: "block" } },

@@ -5,8 +5,8 @@ it('creates audio only after trusted opt-in, bounds voices, silences hidden/mute
  const param=()=>({setValueAtTime:vi.fn(),exponentialRampToValueAtTime:vi.fn()});
  const create=vi.fn(),gains:ReturnType<typeof param>[]=[];
  class Audio {state='running';currentTime=1;destination={};constructor(){create();}resume=vi.fn(async()=>{});createGain(){const gain=param();gains.push(gain);return{gain,connect:vi.fn(),disconnect:vi.fn()};}createOscillator(){const node={onended:null,frequency:param(),connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn()};nodes.push(node);return node;}}
- vi.stubGlobal('window',{AudioContext:Audio,localStorage:{getItem:()=>null,setItem:vi.fn()},addEventListener:vi.fn()});vi.stubGlobal('AudioContext',Audio);const visibility={hidden:false};vi.stubGlobal('document',visibility);
- const preferences=await import('../src/client/world-preferences'),sound=await import('../src/client/city-audio');
+ vi.stubGlobal('window',{AudioContext:Audio,localStorage:{getItem:()=>null,setItem:vi.fn()},addEventListener:vi.fn(),removeEventListener:vi.fn()});vi.stubGlobal('AudioContext',Audio);const visibility={hidden:false,addEventListener:vi.fn(),removeEventListener:vi.fn()};vi.stubGlobal('document',visibility);
+ const preferences=await import('../src/client/world-preferences'),sound=await import('../src/client/city-audio');const dispose=sound.bindCityAudioLifecycle();
  await sound.unlockCityAudio(true);expect(create).not.toHaveBeenCalled();expect(sound.playCitySound('blast')).toBe(false);
  preferences.setWorldPreferences({sound:true});await sound.unlockCityAudio(false);expect(create).not.toHaveBeenCalled();
  await sound.unlockCityAudio(true);expect(create).toHaveBeenCalledTimes(1);
@@ -14,7 +14,9 @@ it('creates audio only after trusted opt-in, bounds voices, silences hidden/mute
  for(const cue of ['hammer','rotor','blast','siren'] as const)expect(sound.playCitySound(cue,.5)).toBe(true);
  expect(gains[0]!.setValueAtTime).toHaveBeenCalledWith(.0125,1);
  expect(sound.playCitySound('reveal')).toBe(false);expect(sound.cityAudioMetrics().voices).toBe(4);
- visibility.hidden=true;expect(sound.playCitySound('reveal')).toBe(false);
- sound.silenceCityAudio();expect(sound.cityAudioMetrics().voices).toBe(0);for(const node of nodes)expect(node.disconnect).toHaveBeenCalledTimes(1);
- visibility.hidden=false;preferences.setWorldPreferences({sound:false});expect(sound.playCitySound('hammer')).toBe(false);
+ preferences.setWorldPreferences({sound:false});expect(sound.cityAudioMetrics().voices).toBe(0);expect(sound.playCitySound('bell')).toBe(false);
+ for(const node of nodes)expect(node.disconnect).toHaveBeenCalledTimes(1);
+ preferences.setWorldPreferences({sound:true});expect(sound.playCitySound('bell')).toBe(true);visibility.hidden=true;expect(sound.playCitySound('reveal')).toBe(false);
+ visibility.addEventListener.mock.calls[0]![1]();expect(sound.cityAudioMetrics().voices).toBe(0);dispose();
+ expect(visibility.removeEventListener).toHaveBeenCalledWith('visibilitychange',visibility.addEventListener.mock.calls[0]![1]);
 });

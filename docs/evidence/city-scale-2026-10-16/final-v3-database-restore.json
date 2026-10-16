@@ -1,0 +1,45 @@
+{
+  "sourceHash": "934cac5a02de5690d2c3920d93fc5676d9f33341ba11aaf572f85df126d404b8",
+  "runtimeManifest": {
+    "path": ".builder/world-perf-20261016/candidate-terrain-priority-v1/source-manifest.json",
+    "sha256": "3c90893b93b57d2db70d8b4d7e327d157fbdc54c0975d7ec33fd934cc6af8c16"
+  },
+  "evidence": {
+    "path": ".builder/world-perf-20261016/final-v3-database-restore.json",
+    "sha256": "f99c834f321e412e40955506af93caef536c0f8dc68ca15b372d0cfb346f4e47"
+  },
+  "at": "2026-10-16T14:10:22.789Z",
+  "originalDumpsRestored": true,
+  "regenerated": false,
+  "seeded": false,
+  "forcedSessions": false,
+  "verificationReadOnly": true,
+  "rows": [
+    {
+      "tasks": 200,
+      "chunks": 20,
+      "auditViolations": 0,
+      "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+      "statusCounts": {
+        "COMPLETED": 160,
+        "IN_PROGRESS": 30,
+        "PLANNING": 10
+      },
+      "dumpSha256": "b8d276f6727dde5c8e45186ae4bc44a9f1dd54179d175859ee95e81e045adb7b"
+    },
+    {
+      "tasks": 1000,
+      "chunks": 72,
+      "auditViolations": 0,
+      "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+      "statusCounts": {
+        "COMPLETED": 800,
+        "IN_PROGRESS": 150,
+        "PLANNING": 50
+      },
+      "dumpSha256": "48bc2b5a9b42304bffeaa831837d6736d37c1f943b15fc22f22d9bff9c5b18d9"
+    }
+  ],
+  "migrations": "0043/0044 применяются штатным final runtime startup после этой проверки; никаких ручных SQL схемы.",
+  "limit": "Только собственные локальные test DB из original frozen dumps; не production. Миграции0043/0044 выполняет штатный startup того же frozen runtime."
+}

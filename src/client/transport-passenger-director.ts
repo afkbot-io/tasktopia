@@ -3,7 +3,7 @@ import type { TransportStopActivity } from "../shared/transport-schedule";
 import type { CityMobility } from "./city-mobility";
 export type TransportPassengerSample={visitId:string;activity:TransportStopActivity;approaching:boolean;position:Cell;doors:readonly Cell[]};
 export type TransportPassengerProvider={vehicleId:string;routeId:string;stopId:string;boardingCells:readonly Cell[];sample:(time:number)=>TransportPassengerSample};
-type Entry={provider:TransportPassengerProvider;carrierId:string;queueId:string;geometry:string;nextQueueAt:number};
+type Entry={provider:TransportPassengerProvider;carrierId:string;queueId:string;geometry:string;nextQueueAt:number;visitId?:string;boarded:number;alighted:number};
 /** Local bounded representatives use the resident pool. No persistent person
  * records, catch-up playback, renderer timers or frame-by-frame WebSockets. */
 export function createTransportPassengerDirector(mobility:CityMobility,passengerLimit:()=>number=()=>16){
@@ -22,7 +22,7 @@ export function createTransportPassengerDirector(mobility:CityMobility,passenger
     if(old&&old.geometry===signature){old.provider=provider;continue;}
     if(old)cancel(old);
     const carrierId=`transport:${provider.vehicleId}:${signature}`;
-    entries.set(provider.vehicleId,{provider,geometry:signature,carrierId,queueId:`transport:queue:${provider.routeId}:${signature}`,nextQueueAt:0});
+    entries.set(provider.vehicleId,{provider,geometry:signature,carrierId,queueId:`transport:queue:${provider.routeId}:${signature}`,nextQueueAt:0,boarded:0,alighted:0});
    }
    const aliveQueues=new Set([...entries.values()].map(entry=>entry.queueId));
    for(const queue of oldQueues)if(!aliveQueues.has(queue))mobility.clearVisits(queue);
@@ -37,13 +37,14 @@ export function createTransportPassengerDirector(mobility:CityMobility,passenger
    let carried=mobility.agents.filter(agent=>agent.carrier?.startsWith("transport:")).length;
    for(const entry of entries.values()){
     const {provider,carrierId,queueId}=entry,state=provider.sample(time);
+    if(entry.visitId!==state.visitId){entry.visitId=state.visitId;entry.boarded=0;entry.alighted=0;}
     const cells=provider.boardingCells.filter(cell=>mobility.walkingCells.has(`${cell.x},${cell.y}`));
     const open=state.activity==="ALIGHTING"||state.activity==="BOARDING";
     mobility.updateExternalCarrier({id:carrierId,position:state.position,doors:state.doors,boardingCells:cells,doorsOpen:open,capacity:Math.min(3,Math.max(0,carriedLimit-carried)+mobility.agents.filter(agent=>agent.carrier===carrierId).length)});
     if(!cells.length)continue;
     if(state.activity==="ALIGHTING"){
      const incoming=mobility.agents.filter(agent=>agent.carrier===carrierId).map(agent=>agent.id);
-     const count=mobility.alightExternalCarrier(carrierId);alighted+=count;carried-=count;const f=flow(provider);if(f)f.alighted+=count;
+     const count=mobility.alightExternalCarrier(carrierId);alighted+=count;entry.alighted+=count;carried-=count;const f=flow(provider);if(f)f.alighted+=count;
      for(const id of incoming)if(!mobility.agents.some(agent=>agent.id===id&&agent.carrier===carrierId))releasedUntil.set(id,time+10_000);
     }
     const arrivingPassengers=mobility.agents.some(agent=>agent.carrier===carrierId);
@@ -56,9 +57,14 @@ export function createTransportPassengerDirector(mobility:CityMobility,passenger
      if(waiting<queueLimit&&totalWaiting+carried<limit){const candidates=mobility.agents.filter(agent=>!releasedUntil.has(agent.id)).map(agent=>agent.id);const queued=mobility.dispatchVisit(queueId,targets,Math.min(queueLimit-waiting,carriedLimit-carried,limit-totalWaiting-carried),30_000,false,candidates).length;const f=flow(provider);if(f)f.queued+=queued;}
     }
     if(state.activity==="BOARDING"&&carried<carriedLimit){
-     const count=mobility.boardExternalVisit(queueId,carrierId);boarded+=count;carried+=count;const f=flow(provider);if(f)f.boarded+=count;
+     const count=mobility.boardExternalVisit(queueId,carrierId);boarded+=count;entry.boarded+=count;carried+=count;const f=flow(provider);if(f)f.boarded+=count;
     }
    }
+  },
+  inspect(vehicleId:string){const entry=entries.get(vehicleId);if(!entry)return;
+   return {visitId:entry.visitId,boarded:entry.boarded,alighted:entry.alighted,
+    aboard:mobility.agents.filter(agent=>agent.carrier===entry.carrierId).length,
+    waiting:mobility.agents.filter(agent=>agent.visit?.id===entry.queueId&&!agent.carrier).length};
   },
   dispose(){for(const queue of new Set([...entries.values()].map(entry=>entry.queueId)))mobility.clearVisits(queue);for(const entry of entries.values())cancel(entry);entries.clear();releasedUntil.clear();},
   get metrics(){const waiting=mobility.agents.filter(agent=>agent.visit?.id.startsWith('transport:queue:')&&!agent.carrier);

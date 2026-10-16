@@ -12,7 +12,7 @@ test("authentication and MCP settings have no serious accessibility violations",
   expect(seriousViolations(await new AxeBuilder({ page }).analyze())).toEqual([]);
 
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await page.getByRole("button", { name: "Настройки аккаунта" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -40,7 +40,7 @@ test("key screens do not overflow at supported breakpoints", async ({ page }) =>
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await page.locator(".country-title-button").click();
   const switcher = page.getByRole("dialog", { name: "Выбор страны" });

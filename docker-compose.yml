@@ -39,6 +39,7 @@ services:
     cpus: ${REDIS_CPU_LIMIT:-0.50}
 
   app:
+    stop_grace_period: 35s
     image: ${APP_IMAGE:-${COMPOSE_PROJECT_NAME:-tasktopia}-app:latest}
     build:
       context: .
@@ -65,6 +66,7 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       TRUST_PROXY: "true"
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      OBSERVABILITY_TOKEN: ${OBSERVABILITY_TOKEN:-}
       UPLOAD_DIR: /data/uploads
     volumes:
       - tasktopia_uploads:/data/uploads
@@ -96,6 +98,7 @@ services:
         max-file: "5"
 
   mcp:
+    stop_grace_period: 35s
     image: ${APP_IMAGE:-${COMPOSE_PROJECT_NAME:-tasktopia}-app:latest}
     restart: unless-stopped
     environment:
@@ -113,6 +116,7 @@ services:
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       TRUST_PROXY: "true"
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      OBSERVABILITY_TOKEN: ${OBSERVABILITY_TOKEN:-}
       UPLOAD_DIR: /data/uploads
     volumes:
       - tasktopia_uploads:/data/uploads
@@ -143,6 +147,7 @@ services:
         max-file: "5"
 
   world:
+    stop_grace_period: 35s
     image: ${APP_IMAGE:-${COMPOSE_PROJECT_NAME:-tasktopia}-app:latest}
     restart: unless-stopped
     environment:
@@ -160,6 +165,7 @@ services:
       REGISTRATION_ENABLED: "false"
       TRUST_PROXY: "true"
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      OBSERVABILITY_TOKEN: ${OBSERVABILITY_TOKEN:-}
       UPLOAD_DIR: /data/uploads
     volumes:
       - tasktopia_uploads:/data/uploads

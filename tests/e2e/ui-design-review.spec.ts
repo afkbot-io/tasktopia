@@ -5,6 +5,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { writeFile } from "node:fs/promises";
 import type { TaskDto } from "../../src/shared/contracts";
+import type { TaskCardDto, TaskListPageDto } from "../../src/shared/task-read-contracts";
 
 async function login(page: Page) {
   await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } });
@@ -33,10 +34,10 @@ test("поиск показывает ожидание и ошибку, скры
   await login(page);
   const input = page.getByLabel("Поиск здания по номеру или названию");
   await input.fill("1");
-  await expect(page.locator(".task-search-results button").first()).toBeVisible();
+  await expect(page.locator(".task-search-results [role=option]").first()).toBeVisible();
   let release!: () => void;
   const held = new Promise<void>(resolve => { release = resolve; });
-  await page.route("**/api/tasks/search?*", async route => {
+  await page.route("**/api/tasks/list-page?*", async route => {
     await held;
     await route.fulfill({ status: 503, json: { message: "unavailable" } });
   });
@@ -51,7 +52,7 @@ test("поиск показывает ожидание и ошибку, скры
   } finally { release(); }
   await expect(page.locator(".task-search-results [role=alert]")).toContainText("Не удалось выполнить поиск");
   await page.screenshot({ path: info.outputPath("search-error.png") });
-  await page.unroute("**/api/tasks/search?*");
+  await page.unroute("**/api/tasks/list-page?*");
   await page.getByRole("button", { name: "Повторить поиск" }).click();
   await expect(page.locator(".task-search-results [role=status]")).toHaveText("Ничего не найдено");
 });
@@ -59,8 +60,11 @@ test("поиск показывает ожидание и ошибку, скры
 test("поиск выбирает второй результат стрелками и не открывается вновь после Escape", async ({ page }) => {
   await login(page);
   const input = page.getByLabel("Поиск здания по номеру или названию");
-  const response = await page.request.get("/api/tasks/search?q=Задача&limit=10");
-  const results = await response.json();
+  const bootstrap = await (await page.request.get("/api/bootstrap")).json();
+  const response = await page.request.get(`/api/tasks/list-page?${new URLSearchParams({ countryId: bootstrap.country.id, q: "Задача", limit: "50" })}`);
+  expect(response.ok()).toBe(true);
+  const resultPage = await response.json() as TaskListPageDto;
+  const results = resultPage.items;
   expect(results.length).toBeGreaterThan(1);
   await input.fill("Задача");
   await expect(page.locator(".task-search-results [role=option]")).toHaveCount(results.length);
@@ -72,12 +76,17 @@ test("поиск выбирает второй результат стрелка
   await page.keyboard.press("Escape");
   let release!: () => void;
   const held = new Promise<void>(resolve => { release = resolve; });
-  await page.route("**/api/tasks/search?*", async route => { await held; await route.fulfill({ json: results }); });
+  let searchHeld = false;
+  const delayedResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/tasks/list-page" && response.ok());
+  void delayedResponse.catch(() => undefined);
+  await page.route("**/api/tasks/list-page?*", async route => { searchHeld = true; await held; await route.fulfill({ json: resultPage }); });
   await input.fill("Задача");
   try {
+    await expect.poll(() => searchHeld).toBe(true);
     await expect(input).toHaveAttribute("aria-expanded", "true");
     await input.press("Escape");
     release();
+    await delayedResponse;
     await expect(input).toHaveAttribute("aria-expanded", "false");
     await expect(page.locator(".task-search-results")).toHaveCount(0);
     await input.press("Enter");
@@ -222,9 +231,9 @@ test("здание открывает свою карточку на карте 
 
 test("длинное название и материалы не вытесняют содержимое карточки на телефоне", async ({ page }, info) => {
   await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } });
-  await page.route(/\/api\/tasks\/[a-f0-9-]{36}$/, async route => {
+  await page.route(/\/api\/tasks\/[a-f0-9-]{36}\/card(?:\?.*)?$/, async route => {
     const response = await route.fetch({ headers: { ...route.request().headers(), "accept-encoding": "identity" } });
-    const task = await response.json();
+    const task = await response.json() as TaskCardDto;
     await route.fulfill({ json: { ...task, title: "Проверка длинного названия и доступности материалов задачи в небольшом окне браузера ".repeat(2), description: "Полное описание задачи доступно.\n\n```ts\n" + "long_material_".repeat(60) + "\n```" } });
   });
   await page.setViewportSize({ width: 320, height: 640 });

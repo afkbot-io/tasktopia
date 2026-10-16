@@ -3,7 +3,7 @@ import { api, ApiError } from "../api";
 import { taskSharePublicText, type TaskShareDraft } from "../../shared/task-share-preview";
 import type { TaskDto } from "../../shared/contracts";
 
-export function TaskSharePreview({countryId,task}:{countryId:string;task:TaskDto}) {
+export function TaskSharePreview({countryId,task}:{countryId:string;task:Pick<TaskDto, 'id'>}) {
   const [open,setOpen]=useState(false),[url,setUrl]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
   const [draft,setDraft]=useState<TaskShareDraft|null>(null);
   const [description,setDescription]=useState(""),[includeDescription,setIncludeDescription]=useState(false);

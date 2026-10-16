@@ -19,7 +19,7 @@ const expectedNames = [
   "country.get", "country.list", "country.update_profile", "world_generation.get",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
   "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
-  "task.list", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete",
+  "task.list", "task.list_page", "task.collection_list", "task.document_get", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete",
   "task.set_status", "task.report_progress", "task.add_comment", "task.assign", "task.activity", "task.dependency_add", "task.dependency_remove",
   "task.document_list", "task.document_upsert", "task.document_delete", "task.checklist_replace", "task.checklist_item_update",
   "task.link_add", "task.link_remove", "task.attachment_add", "task.attachment_list",
@@ -56,7 +56,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
   const snapshot = async () => ({ version: await version(), events: await service.listEvents(countryId), task: await service.getTask(countryId, home.id) });
   const minimal = (tool: Tool): Record<string, unknown> => {
     const values: Record<string, unknown> = {
-      countryId, cityId: home.cityId, districtId: home.districtId, taskId: home.id,
+      countryId, collection: "comments", limit: 50, cityId: home.cityId, districtId: home.districtId, taskId: home.id,
       recordId: crypto.randomUUID(), defectId: crypto.randomUUID(), documentId: crypto.randomUUID(), itemId: crypto.randomUUID(),
       targetDistrictId: home.districtId, dependsOnTaskId: home.id, jobId,
       name: "Проверка MCP", title: "Проверка MCP", confirmName: "Проверка MCP", confirmTitle: home.title,
@@ -165,6 +165,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     const dependency = await checked<TaskDto>("task.create", { cityId: city.id, districtId: district.id, title: "Зависимая задача", estimate: 2, idempotencyKey: "all-dependency" });
     const taskId = task.id;
     await checked("task.list", { districtId: district.id }); await checked("task.get", { taskId });
+    await checked("task.list_page", { districtId: district.id }); await checked("task.collection_list", { taskId, collection: "comments" });
     await checked("task.rename", { taskId, title: "Обновлённая задача", idempotencyKey: "all-rename" });
     await checked("task.update_fields", { taskId, description: "Новый текст", workItemType: "BUG", dueAt: null, idempotencyKey: "all-fields" });
     const fieldEvent = (await service.listEvents(countryId)).findLast(event => event.type === 'task.fields_updated' && event.payload.taskId === taskId)!;
@@ -176,7 +177,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     await checked("task.dependency_remove", { taskId, dependsOnTaskId: dependency.id, idempotencyKey: "all-dep-remove" });
     await checked("task.document_upsert", { taskId, fileName: "architecture.md", content: "# Архитектура", idempotencyKey: "all-standard-doc" });
     const document = await checked<{ id: string }>("task.document_upsert", { taskId, fileName: "qa.md", title: "Проверка", content: "# Проверка", idempotencyKey: "all-extra-doc" });
-    await checked("task.document_list", { taskId });
+    await checked("task.document_list", { taskId }); await checked("task.document_get", { taskId, documentId: document.id });
     await checked("task.document_delete", { taskId, documentId: document.id, idempotencyKey: "all-doc-delete" });
     const checklist = await checked<Array<{ id: string }>>("task.checklist_replace", { taskId, items: [{ title: "Проверить MCP" }], idempotencyKey: "all-checklist" });
     await checked("task.checklist_item_update", { taskId, itemId: checklist[0]!.id, done: true, idempotencyKey: "all-checklist-done" });

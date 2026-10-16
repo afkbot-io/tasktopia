@@ -13,7 +13,7 @@ test("captures the real README showcase city", async ({ page }) => {
 
   await page.goto("/");
   await page.getByLabel("Email").fill("showcase@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-showcase");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-showcase");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await expect(page.getByText("Республика Аврора", { exact: true })).toBeVisible();
 

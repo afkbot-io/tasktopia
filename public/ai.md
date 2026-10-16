@@ -233,7 +233,7 @@ Reads one accepted generation operation in the explicitly requested country.
 `PENDING` and `RUNNING` are transient. `COMPLETED` includes `result`; final
 `FAILED` includes a safe error object. Required scope: `country:read`.
 
-The server exposes 47 tools.
+The server exposes 50 tools.
 
 ### Countries
 
@@ -499,6 +499,38 @@ artifacts, human-facing task number, and browser URL.
 ```
 
 Required scope: `tasks:read`.
+
+#### Bounded reads: `task.list_page`, `task.collection_list`, `task.document_get`
+
+For large task histories, use `task.get` with optional `view: "compact"`. It
+returns a distinct `kind: "task.card", version: 1` with overview text, accounts,
+geometry, real collection counts and at most 50 document metadata records.
+Document metadata includes `isFilled` and `contentLength`, never `content`.
+Omitting `view` preserves the full legacy response.
+
+`task.list_page` accepts explicit `countryId`, optional `q`, `cityId`, `districtId`,
+`status`, `workItemType`, `priority`, `assigneeUserId`, `limit`, `cursor`. It returns
+`kind: "task.list-page", version: 1` with short task locations ordered by updated
+time and ID descending. Keep the same country and filters when continuing.
+
+`task.collection_list` accepts explicit `countryId`, `taskId`, `collection` and
+optional `limit`, `cursor`, `order: "asc" | "desc"`. Collections are `comments`,
+`events`, `defects`, `attachments`, `documents`, `checklist`, `dependencies`,
+`mergeRequests`. It returns `kind: "task.collection-page", version: 1`, `items`,
+`nextCursor`. History defaults to latest first, documents/checklist to position,
+and dependencies to task number. Cursors belong to one country, task, collection
+and order. Both tools default to 50 records and accept 1–100; the final page has
+`nextCursor: null`. All three tools require `tasks:read`.
+
+`task.document_get` takes `countryId`, `taskId`, `documentId` and returns only that
+full Markdown document. It rejects foreign or deleted documents.
+
+`task.add_comment`, `task.set_status`, `task.report_progress` accept optional
+`resultMode: "compact"` for a small, explicitly tagged `task.command-result`
+(version 1). The default remains full. Result mode does not change command
+identity: retrying the same key and payload with another mode never repeats the
+mutation. Task numbers increase for the lifetime of a country and are not reused
+after deletion. Existing full clients and stored receipts remain compatible.
 
 #### `task.create`
 

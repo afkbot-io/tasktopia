@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { waitForVisibleMapWork } from "../src/client/map-frame-work";
+import { visibleMapPaddingReady, waitForVisibleMapWork } from "../src/client/map-frame-work";
 
 describe("first map frame", () => {
   it("does not wait for invisible prewarming", async () => {
@@ -23,4 +23,16 @@ describe("first map frame", () => {
     finishTrees(); await result;
     expect(ready).toBe(true);
   });
+});
+
+it("requires a successful visible exterior road overlay, while accepting genuinely empty road padding", () => {
+  const terrainAndTrees = {terrainView:{},treeViews:[]};
+  expect(visibleMapPaddingReady({...terrainAndTrees,roads:{},roadComplete:true,roadFailed:true})).toBe(false);
+  expect(visibleMapPaddingReady({...terrainAndTrees,roads:{},roadComplete:false})).toBe(false);
+  expect(visibleMapPaddingReady({...terrainAndTrees,roads:{},roadComplete:true})).toBe(false);
+  expect(visibleMapPaddingReady({...terrainAndTrees,roads:{},roadComplete:true,overlayView:{}})).toBe(true);
+  expect(visibleMapPaddingReady({...terrainAndTrees,roadComplete:true})).toBe(true);
+  expect(visibleMapPaddingReady(undefined)).toBe(false);
+  expect(visibleMapPaddingReady({treeViews:[]})).toBe(false);
+  expect(visibleMapPaddingReady({terrainView:{}})).toBe(false);
 });
